@@ -6,10 +6,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
+    <!-- EventSource [Event] parameters intentionally use snake_case
+         so the ETW payload keys land directly in the JSONL output.
+         Suppress the naming-style warning — the convention is
+         documented in Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
 
   <!-- Pure timer module — Stopwatch wrapper + formatter, reusable by
        any module that wants a "time since trigger" reading without
        pulling the visual UserControl. No XAML, no WindowsAppSDK,
-       no Composition — just System.Diagnostics.Stopwatch. -->
+       no Composition — just System.Diagnostics.Stopwatch.
+       Depends on Deckle.Diagnostics to expose its EventSource. -->
 </Project>

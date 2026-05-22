@@ -132,6 +132,22 @@ public partial class App : Microsoft.UI.Xaml.Application
         TelemetryService.Instance.AddSink(new JsonlFileSink());
         Milestone("filesink");
 
+        // New EventSource-based observability pipeline, installed alongside
+        // the legacy sinks during the migration window. Wires the four
+        // JsonlEventListeners (app / latency / microphone / corpus, parked
+        // under telemetry/validation/ in Wave 1) and the LogWindow bridge
+        // so live emissions from Deckle.* providers surface in the legacy
+        // viewer until LogWindow itself moves to Deckle.Diagnostics.Logging.
+        Deckle.Diagnostics.AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
+        Milestone("diagnostics");
+
+        // Wave 1 sanity check — exercise the full pipeline (provider →
+        // EventListener → JsonlEventListener + LegacyLogWindowSink) once
+        // at boot. The pilot emission is a no-op in production behaviour
+        // and will be retired in Wave 2 once a real applicative provider
+        // (Audio) emits genuine events.
+        Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted("wave 1 boot");
+
         // Resolved paths logged once at boot — useful for support: tells us
         // where the app is looking for settings, models, native DLLs, and
         // telemetry. Touching any AppPaths member triggers the static ctor
