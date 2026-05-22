@@ -42,17 +42,33 @@ La table couvre les patterns d'appel les plus fréquents observés dans le code 
 
 `new UserFeedback(title, body, severity, role)` passé en argument au sink HUD legacy devient une émission supplémentaire `Deckle<Module>Source.Log.UserFeedbackEmitted((int)severity, title, body, (int)role)` à côté de l'event de jalon principal. Le `HudFeedbackEventListener` filtre exclusivement sur le nom d'event canonique `UserFeedbackEmitted`.
 
-## Inventaire des providers — état initial vague 1
+## Inventaire des providers
 
-Un seul provider concret existe à l'issue de la vague 1 : le pilote Chrono. Les autres vagues étofferont cette section à mesure qu'elles aboutissent.
+Section étoffée vague par vague. Les providers à introduire par les vagues suivantes, dans l'ordre du brief : `DeckleCoreSource` + `DeckleVisionSource` + `DeckleLightingSource` (vague 3), `DeckleShellSource` + `DeckleLlmSource` + `DeckleSettingsSource` (vague 4), `DeckleWhispSource` + `DeckleAmbientSource` + `DecklePlaygroundSource` + `DeckleAppSource` (vague 5). La suppression finale du pilier legacy se fait en vague 6.
 
-**`Deckle.Chrono` → `DeckleChronoSource`** — provider pilote, un seul event `PilotEmitted(string note)` ; niveau `Informational`, keyword `Lifecycle`. L'event est émis une fois au boot par `App.OnLaunched` pour exercer la pipeline complète. Sera remplacé en vague suivante par les vrais jalons du chrono quand des sites d'appel applicatifs migreront. Schéma JSONL :
+**`Deckle.Chrono` → `DeckleChronoSource`** — pilote vague 1, un seul event `PilotEmitted(string note)` ; niveau `Informational`, keyword `Lifecycle`. L'event est émis une fois au boot par `App.OnLaunched` pour exercer la pipeline complète. Sera remplacé en vague suivante par les vrais jalons du chrono quand des sites d'appel applicatifs migreront. Schéma JSONL :
 
 ```json
 {"timestamp":"2026-05-22T18:35:00.0000000+02:00","kind":"log","session":"2026-05-22-a1b2","payload":{"note":"wave 1 boot"}}
 ```
 
-Les providers à introduire par les vagues suivantes, dans l'ordre du brief : `DeckleAudioSource` (vague 2), `DeckleCoreSource` + `DeckleVisionSource` + `DeckleLightingSource` (vague 3), `DeckleShellSource` + `DeckleLlmSource` + `DeckleSettingsSource` (vague 4), `DeckleWhispSource` + `DeckleAmbientSource` + `DecklePlaygroundSource` + `DeckleAppSource` (vague 5). La suppression finale du pilier legacy se fait en vague 6.
+**`Deckle.Audio` → `DeckleAudioSource`** — vague 2, premier provider applicatif réel. Seize events couvrant la boucle de capture microphone, les anomalies, le récap télémétrie structuré et la persistance settings du module. Les events de jalon sont en `Informational` avec keyword `Capture` (`RecordingStarted`, `CaptureStarted`, `RecordingCompleted`, `RecordingTailSummary`). Les anomalies sont en `Warning` ou `Error` selon la gravité (`EmptyBufferReceived`, `LowAudioDetected`, `CaptureLagDetected`, `DurationCapReached`, `MicrophoneTelemetryEmpty` en Warning ; `MicrophoneOpenFailed` en Error ; `DurationCapReached` combine `Capture | Lifecycle` parce que c'est aussi une transition d'état du recording). Le récap structuré `MicrophoneTelemetryRecorded` est en `Verbose` avec keyword `Heartbeat` et porte 14 paramètres aplatis depuis le legacy `MicrophoneTelemetryPayload` :
+
+```
+duration_seconds, samples,
+min_dbfs, p10_dbfs, p25_dbfs, p50_dbfs, p75_dbfs, p90_dbfs, max_dbfs,
+mean_rms, mean_dbfs, tail_rms, tail_dbfs, tail_state
+```
+
+Schéma JSONL miroir du legacy `microphone.jsonl` (sous-dossier `validation/` pendant la coexistence) :
+
+```json
+{"timestamp":"<iso>","kind":"microphone","session":"<id>","payload":{"duration_seconds":2.4,"samples":48,"min_dbfs":-72.3,"p10_dbfs":-61.4,"p25_dbfs":-55.9,"p50_dbfs":-48.2,"p75_dbfs":-41.6,"p90_dbfs":-36.7,"max_dbfs":-22.4,"mean_rms":0.0048,"mean_dbfs":-46.4,"tail_rms":0.0021,"tail_dbfs":-53.6,"tail_state":"silence"}}
+```
+
+Les quatre events de persistance settings (`SettingsLoaded`, `SettingsLoadComplete`, `SettingsLoadWarning`, `SettingsLoadError`) acceptent un message brut sous keyword `Lifecycle`. Cette zone est temporairement paramétrée par message — la doctrine strict-typed par opération est tenue ailleurs sur le provider mais relâchée ici parce que les delegates de `JsonSettingsStore<T>` dans `Deckle.Core` sont `Action<string>` et ne distinguent pas l'opération à l'appel. La refonte propre vient à la vague 4 quand `SettingsHost` migre lui-même sur EventSource. Le préfixe `[audio]` qui ouvrait les messages legacy disparaît : la source label LogWindow vient désormais du nom du provider (`Deckle.Audio` → `AUDIO`).
+
+Le payload `MicrophoneTelemetryPayload` reste un POCO carrier dans `Deckle.Logging` jusqu'à la vague 6 — utilisé par `MicrophoneTelemetryCalculator`, `CaptureResult` et le ring d'auto-calibration de `WhispEngine`. `Deckle.Audio.csproj` garde une `ProjectReference` type-only vers `Deckle.Logging` documentée comme dette transitoire ; à la vague 6 le payload migre dans `Deckle.Audio`.
 
 ## Schéma JSONL — contrat machine
 
