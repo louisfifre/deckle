@@ -9,6 +9,10 @@
 # %LOCALAPPDATA%\Deckle\models\, sourced by the first-run wizard.
 whisper.cpp/
 
+# Legacy doc revisions kept locally for reference — superseded versions
+# of docs/*.md moved aside when a new revision lands. Not shipped.
+docs/archives/
+
 # ─────────────────────────────────────────────────────────────────────────
 #  Build artifacts
 # ─────────────────────────────────────────────────────────────────────────
@@ -107,8 +111,7 @@ appsettings.development.json
 local.settings.json
 *.local.json
 
-# Misplaced MCP config (a token leaked here once and was purged from
-# history; this entry is preventive).
+# Misplaced MCP config — preventive, these files may embed tokens.
 .mcp.json
 mcp.json
 
@@ -124,9 +127,6 @@ mcp.json
 #  Runtime artifacts
 # ─────────────────────────────────────────────────────────────────────────
 
-# Temporary audio file written during recording.
-**/temp.wav
-
 # Crash dumps and ad hoc diagnostic files.
 .tmp/
 **/.tmp-*
@@ -135,14 +135,9 @@ mcp.json
 crash-*.log
 crashdumps/
 
-# File-based crash logs (see HudComposition.DebugLog pattern). The
-# folder itself stays versioned so the path exists when code writes
-# to it.
-logs/*
-!logs/.gitkeep
-
-# Top-level run log (live tail captured by build-run.ps1).
-run.log
+# Ad hoc DebugLog folder used for native crash instrumentation —
+# temporary by doctrine, never committed (see Deckle.Logging/CLAUDE.md).
+logs/
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Benchmark — runtime artifacts, never versioned
