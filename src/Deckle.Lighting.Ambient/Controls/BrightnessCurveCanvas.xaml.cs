@@ -119,7 +119,11 @@ public sealed partial class BrightnessCurveCanvas : UserControl
             StrokeEndLineCap = PenLineCap.Round,
         };
 
-        double param = double.IsNaN(Gamma) || Gamma <= 0 ? 1.0 : Gamma;
+        // Defensive : NaN means a misconfigured caller, fall back to
+        // the neutral 1.0 (Linear-equivalent under every curve type).
+        // Negative values are valid under the SCurve type — they
+        // flag the anti-S variant — so don't clamp them away.
+        double param = double.IsNaN(Gamma) ? 1.0 : Gamma;
 
         for (int i = 0; i <= SampleCount; i++)
         {
@@ -146,14 +150,25 @@ public sealed partial class BrightnessCurveCanvas : UserControl
                 return x;
 
             case BrightnessCurveType.Gamma:
+                // Math.Pow handles γ ∈ (0, ∞) naturally — γ < 1 lifts
+                // the bottom of the range (concave, similar in spirit
+                // to Logarithmic), γ > 1 squashes it. γ = 1 collapses
+                // to Linear.
                 return System.Math.Pow(x, param);
 
             case BrightnessCurveType.SCurve:
-                double k = System.Math.Max(0.01, param);
+                // Matches AmbientEngine.ApplyBrightnessCurve : |k| for
+                // the logistic, dead-zone around 0 (the normalisation
+                // divides by zero at k = 0), reflection around y = x
+                // when k is negative — gives the anti-S that flattens
+                // mid-tones toward grey.
+                if (System.Math.Abs(param) < 0.05) return x;
+                double k = System.Math.Abs(param);
                 double a = 1.0 / (1.0 + System.Math.Exp(0.5 * k));
                 double b = 1.0 / (1.0 + System.Math.Exp(-0.5 * k));
                 double raw = 1.0 / (1.0 + System.Math.Exp(-k * (x - 0.5)));
-                return (raw - a) / (b - a);
+                double y = (raw - a) / (b - a);
+                return param < 0.0 ? (2.0 * x - y) : y;
 
             case BrightnessCurveType.Logarithmic:
                 return System.Math.Log10(1.0 + 9.0 * x);

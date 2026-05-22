@@ -124,24 +124,35 @@ public sealed partial class AmbientPage
                            || type == BrightnessCurveType.SCurve;
         PlaygroundGammaSlider.IsEnabled = paramHasEffect;
 
-        // Slider range follows the active curve : Gamma stays close
-        // to its practical interval [1.0, 3.0] ; SCurve goes all the
-        // way to 15. Order matters when shrinking (Max < current Value
-        // clamps Value), so we always set Max before Value is
-        // re-projected by the caller.
+        // Slider range follows the active curve.
+        //   - Gamma [0.3, 3.0] with 1.0 as the neutral mid-point.
+        //     γ > 1 squashes the bottom of the range (legacy direction) ;
+        //     γ < 1 lifts the bottom, behaving like a tunable
+        //     Logarithmic. The asymmetric range mirrors that γ = 1/x
+        //     is the symmetric reflection through y = x, but the lower
+        //     half is sharper perceptually so [0.3, 1] covers enough.
+        //   - SCurve [-5.0, 5.0] symmetric around 0. k > 0 is the
+        //     classic S that pushes mid-tones away from grey ; k < 0
+        //     is the anti-S that flattens mid-tones toward grey. The
+        //     dead-zone around 0 reads as Linear (the engine traps
+        //     |k| < 0.05). 5 reads "near-step" per the engine notes,
+        //     overshoot beyond that buys nothing.
+        // Order matters when shrinking (Max < current Value clamps
+        // Value), so we always set Max before Min and the caller
+        // re-projects Value right after.
         switch (type)
         {
             case BrightnessCurveType.Gamma:
                 PlaygroundGammaSlider.Maximum = 3.0;
-                PlaygroundGammaSlider.Minimum = 1.0;
+                PlaygroundGammaSlider.Minimum = 0.3;
                 break;
             case BrightnessCurveType.SCurve:
-                PlaygroundGammaSlider.Maximum = 15.0;
-                PlaygroundGammaSlider.Minimum = 1.0;
+                PlaygroundGammaSlider.Maximum = 5.0;
+                PlaygroundGammaSlider.Minimum = -5.0;
                 break;
             default:
-                PlaygroundGammaSlider.Maximum = 15.0;
-                PlaygroundGammaSlider.Minimum = 1.0;
+                PlaygroundGammaSlider.Maximum = 5.0;
+                PlaygroundGammaSlider.Minimum = -5.0;
                 break;
         }
 
@@ -155,8 +166,8 @@ public sealed partial class AmbientPage
         PlaygroundGammaCaption.Text = type switch
         {
             BrightnessCurveType.Linear      => "Direct pass-through — input max channel is sent to the lamp as-is. No parameter to tune ; rely on smoothing and min brightness for fine control.",
-            BrightnessCurveType.Gamma       => "Power-law squash on the bottom of the bri range. Higher γ dims dim scenes harder without touching saturated highlights. 1.0 — linear · 1.8 — default · 2.5 — strongly dimmed shadows.",
-            BrightnessCurveType.SCurve      => "Logistic S-curve pushed mid-tones away from grey in both directions. Higher steepness = harder contrast. 1.0 — almost linear · 2.0 — default · 5.0 — near-step.",
+            BrightnessCurveType.Gamma       => "Power-law shaping on the bri range. γ > 1 squashes dim scenes harder without touching saturated highlights. γ < 1 lifts the bottom of the range — same direction as Logarithmic, with the slider letting you dial how hard. 0.5 — strongly lifted shadows · 1.0 — linear · 1.8 — default · 2.5 — strongly dimmed shadows.",
+            BrightnessCurveType.SCurve      => "Logistic shaping around the mid-grey. k > 0 pushes mid-tones away from grey (dim scenes darker, bright scenes brighter — high-contrast feel). k < 0 mirrors the curve into an anti-S that flattens mid-tones toward grey (calmer, averaging feel). −5.0 — near anti-step · −2.0 — soft anti-S · 0 — linear · 2.0 — default · 5.0 — near-step.",
             BrightnessCurveType.Logarithmic => "Lifts the bottom of the range so even very dim scenes stay clearly lit. No parameter to tune — the curve is fixed.",
             _ => string.Empty,
         };
@@ -209,9 +220,10 @@ public sealed partial class AmbientPage
 
         // ComboBoxes first : SelectBrightnessCurveTypeInCombo drives
         // the curve type that UpdatePlaygroundBrightnessCurveDependentUi
-        // reads to rescale the param slider Max. Then Max is set. Only
-        // then can the Value safely take any SCurve k up to 15 without
-        // being clamped by a stale Gamma 3.0 ceiling.
+        // reads to rescale the param slider range. Then Min/Max are
+        // set. Only then can the Value safely take any SCurve k (which
+        // may be negative now) without being clamped by a stale Gamma
+        // [0.3, 3.0] window.
         SelectBrightnessCurveTypeInCombo(ViewModel.BrightnessCurveType);
         SelectAmbientModeInCombo(ViewModel.Mode);
         UpdatePlaygroundBrightnessCurveDependentUi();
@@ -295,10 +307,10 @@ public sealed partial class AmbientPage
     {
         var type = ReadBrightnessCurveTypeFromCombo();
 
-        // Order matters when the slider range is shrinking : Max must
-        // be set before Value so we don't transiently clamp a valid
-        // SCurve k=15 onto Gamma's 3.0 ceiling and lose the user's
-        // intent.
+        // Order matters when the slider range is shrinking : Min/Max
+        // must be set before Value so we don't transiently clamp a
+        // valid SCurve k = −4 onto Gamma's 0.3 floor (or k = 4 onto
+        // Gamma's 3.0 ceiling) and lose the user's intent.
         UpdatePlaygroundBrightnessCurveDependentUi();
         bool prev = _initializing;
         _initializing = true;

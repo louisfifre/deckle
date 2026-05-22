@@ -1043,13 +1043,33 @@ public sealed class AmbientEngine : IAsyncDisposable
 
             case BrightnessCurveType.SCurve:
                 // Logistic centered on 0.5, normalised so f(0)=0 and
-                // f(1)=1. Steepness k = param. k = 1 reads almost
-                // linear, k = 5 reads almost step.
-                double k = Math.Max(0.01, param);
+                // f(1)=1. Steepness k = param. k > 0 = classic S-curve
+                // (pushes mid-tones away from grey, dims dim scenes
+                // harder and brightens bright scenes harder). k < 0
+                // mirrors the curve around the y=x diagonal, giving an
+                // anti-sigmoid that flattens mid-tones toward grey —
+                // useful when the screen content is high-contrast and
+                // the user wants the lamp to read closer to the
+                // average rather than amplifying extremes. |k| ≈ 1
+                // reads almost linear, |k| = 5 reads almost step (or
+                // almost step-flat at 0.5 on the negative side).
+                //
+                // k ≈ 0 is mathematically degenerate (the normalisation
+                // divides by bN - a → 0) ; treat the dead-zone as
+                // Linear so the slider's neutral position is well
+                // defined.
+                if (Math.Abs(param) < 0.05) return (r, g, b);
+                double k = Math.Abs(param);
                 double a = 1.0 / (1.0 + Math.Exp(0.5 * k));
                 double bN = 1.0 / (1.0 + Math.Exp(-0.5 * k));
                 double raw = 1.0 / (1.0 + Math.Exp(-k * (ratio - 0.5)));
                 y = (raw - a) / (bN - a);
+                // Negative k : reflect y around the y = x diagonal.
+                // The reflected sigmoid is exactly its functional
+                // inverse (logit), which is the anti-S shape — fixed
+                // points (0, 0), (0.5, 0.5), (1, 1) ; concavity
+                // flipped between them.
+                if (param < 0.0) y = 2.0 * ratio - y;
                 break;
 
             case BrightnessCurveType.Logarithmic:

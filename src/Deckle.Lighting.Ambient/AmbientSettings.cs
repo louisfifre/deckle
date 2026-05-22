@@ -193,17 +193,30 @@ public sealed class AmbientSettings
     public BrightnessCurveType BrightnessCurveType { get; set; } = BrightnessCurveType.Gamma;
 
     /// <summary>Gamma exponent for <see cref="BrightnessCurveType.Gamma"/>,
-    /// in [1.0, 3.0]. Default 1.8 (legacy shipping curve). 1.0
-    /// collapses to Linear ; higher values squash dim scenes harder
-    /// without touching saturated highlights. Ignored by every other
-    /// curve type — they have their own dedicated parameter so the
-    /// slider value stays meaningful when the user switches curves.</summary>
+    /// in [0.3, 3.0]. Default 1.8 (legacy shipping curve). 1.0
+    /// collapses to Linear ; γ &gt; 1 squashes dim scenes harder
+    /// without touching saturated highlights ; γ &lt; 1 lifts the
+    /// bottom of the range (concave, similar in spirit to
+    /// Logarithmic) — picked up after the 2026-05-19 HDR session
+    /// where the "log + min 20" combo worked because every other
+    /// curve only offered the squash direction. Ignored by every
+    /// other curve type — they have their own dedicated parameter
+    /// so the slider value stays meaningful when the user switches
+    /// curves.</summary>
     public double BrightnessCurveParam { get; set; } = 1.8;
 
     /// <summary>Logistic steepness for <see cref="BrightnessCurveType.SCurve"/>,
-    /// in [1.0, 5.0]. Default 2.0 — a visible mid-tone contrast
-    /// without sliding into near-step territory. 1.0 reads almost
-    /// linear, 5.0 reads almost hard step. Stored separately from
+    /// in [-5.0, 5.0]. Default 2.0 — a visible mid-tone contrast
+    /// without sliding into near-step territory. k &gt; 0 is the
+    /// classic S-curve (pushes mid-tones away from grey, dims dim
+    /// scenes harder, brightens bright scenes harder). k &lt; 0
+    /// mirrors the curve around the y=x diagonal, giving an anti-S
+    /// that flattens mid-tones toward grey — useful when the screen
+    /// content is already high-contrast and the user wants the lamp
+    /// to read closer to the average rather than amplifying
+    /// extremes. |k| &lt; 0.05 collapses to Linear (the normalisation
+    /// is numerically degenerate at k = 0). |k| ≈ 1 reads almost
+    /// linear, |k| = 5 reads almost step. Stored separately from
     /// <see cref="BrightnessCurveParam"/> so toggling between Gamma
     /// and SCurve doesn't reinterpret one knob's value as another
     /// curve's parameter (a Gamma 1.8 read as SCurve k = 1.8 is
