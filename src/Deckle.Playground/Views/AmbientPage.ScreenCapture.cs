@@ -26,7 +26,7 @@ public sealed partial class AmbientPage
 {
     private void OnScreenCaptureToggleClick(object sender, RoutedEventArgs e)
     {
-        _log.Verbose(LogSource.Screen,
+        DecklePlaygroundSource.Log.ScreenCaptureVerbose(
             $"playground toggle | running={_screenCapture is { IsRunning: true }}");
 
         if (_screenCapture is { IsRunning: true })
@@ -65,7 +65,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Screen,
+            DecklePlaygroundSource.Log.ScreenCaptureWarning(
                 $"Playground toggle aborted — {ex.GetType().Name}: {ex.Message}");
             ScreenCaptureStatusText.Text = $"Failed: {ex.Message}";
             ScreenCaptureStatusDot.Fill = GetThemeBrush("SystemFillColorCriticalBrush");

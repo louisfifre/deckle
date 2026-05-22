@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Lighting.Ambient;
-using Deckle.Logging;
 
 namespace Deckle.Playground.ViewModels;
 
@@ -27,7 +26,6 @@ namespace Deckle.Playground.ViewModels;
 // lifetime is tied to the Page instance, not to the persisted settings.
 public partial class AmbientViewModel : ObservableObject
 {
-    private static readonly LogService _log = LogService.Instance;
     private bool _isSyncing;
 
     // ── HDR tuning ───────────────────────────────────────────────────────────
@@ -83,7 +81,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnExposureEvChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"Exposure ← {value:F2} EV");
+        DecklePlaygroundSource.Log.SettingChanged("Exposure", $"{value:F2} EV");
         AmbientSettingsService.Instance.Current.ExposureEv = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -92,7 +90,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnSaturationBoostChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"Saturation ← {value * 100.0:F0} %");
+        DecklePlaygroundSource.Log.SettingChanged("Saturation", $"{value * 100.0:F0} %");
         AmbientSettingsService.Instance.Current.SaturationBoost = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -101,7 +99,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnMinBrightnessChanged(int value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"MinBrightness ← {value}");
+        DecklePlaygroundSource.Log.SettingChanged("MinBrightness", value.ToString());
         AmbientSettingsService.Instance.Current.MinBrightness = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -110,7 +108,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveTypeChanged(BrightnessCurveType value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"BrightnessCurveType ← {value}");
+        DecklePlaygroundSource.Log.SettingChanged("BrightnessCurveType", value.ToString());
         AmbientSettingsService.Instance.Current.BrightnessCurveType = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -119,7 +117,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveParamChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"BrightnessCurveParam ← {value:F2}");
+        DecklePlaygroundSource.Log.SettingChanged("BrightnessCurveParam", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveParam = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -128,7 +126,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnBrightnessCurveSCurveSteepnessChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"BrightnessCurveSCurveSteepness ← {value:F2}");
+        DecklePlaygroundSource.Log.SettingChanged("BrightnessCurveSCurveSteepness", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.BrightnessCurveSCurveSteepness = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -137,7 +135,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnChangeThresholdChanged(int value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"ChangeThreshold ← {value}");
+        DecklePlaygroundSource.Log.SettingChanged("ChangeThreshold", value.ToString());
         AmbientSettingsService.Instance.Current.ChangeThreshold = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -146,7 +144,7 @@ public partial class AmbientViewModel : ObservableObject
     partial void OnSmoothingAlphaChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.Ambient, $"SmoothingAlpha ← {value:F2}");
+        DecklePlaygroundSource.Log.SettingChanged("SmoothingAlpha", value.ToString("F2"));
         AmbientSettingsService.Instance.Current.SmoothingAlpha = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
@@ -156,8 +154,8 @@ public partial class AmbientViewModel : ObservableObject
     {
         if (_isSyncing) return;
         string modeLabel = value ? "per-zone" : "group";
-        _log.Info(LogSource.Ambient, $"Pipeline mode set to {modeLabel}");
-        _log.Verbose(LogSource.Ambient, $"settings update | key=UseMultiLight | value={value}");
+        DecklePlaygroundSource.Log.AmbientInfo($"Pipeline mode set to {modeLabel}");
+        DecklePlaygroundSource.Log.AmbientVerbose($"settings update | key=UseMultiLight | value={value}");
         AmbientSettingsService.Instance.Current.UseMultiLight = value;
         AmbientSettingsService.Instance.Save();
     }

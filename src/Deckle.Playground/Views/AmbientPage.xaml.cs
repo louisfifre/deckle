@@ -48,8 +48,6 @@ namespace Deckle.Playground;
 //     reflect here without re-subscribing on every navigate.
 public sealed partial class AmbientPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public AmbientViewModel ViewModel { get; } = new();
 
     // Guards programmatic Slider / ComboBox writes during ViewModel sync
