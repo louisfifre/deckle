@@ -61,7 +61,7 @@ Deckle.Settings         → Core, Logging, Localization
 Deckle.Llm              → Core, Logging
 Deckle.Transcription            → Core, Logging, Audio, Llm
 Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
-Deckle                  → all of the above (app host, WinUI 3 entry point)
+Deckle.App              → all of the above (app host, WinUI 3 entry point)
 ```
 
 Dependencies are acyclic. Each module is one csproj. Sub-namespaces within a
@@ -85,7 +85,7 @@ module are used when internal structure warrants it.
 
 Five of fifteen modules have non-trivial contracts documented:
 
-- `src/Deckle/CLAUDE.md` — app host lifetime, WinUI 3 pitfalls, build commands
+- `src/Deckle.App/CLAUDE.md` — app host lifetime, WinUI 3 pitfalls, build commands
 - `src/Deckle.Audio/CLAUDE.md` — WASAPI capture, circular buffers, RMS
 - `src/Deckle.Logging/CLAUDE.md` — TelemetryService singleton, sink architecture
 - `src/Deckle.Settings/CLAUDE.md` — NavigationView shell, SettingsHost, modular pages

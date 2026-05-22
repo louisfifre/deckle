@@ -1,0 +1,39 @@
+<Application
+    x:Class="Deckle.App.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!-- Deckle.Catalog ships the centralized Segoe Fluent Icons
+                     ResourceDictionary. Keys are consumed everywhere via
+                     {StaticResource Icon.Microphone} etc. The matching
+                     constants live in Deckle.Catalog.Glyphs for code-behind. -->
+                <ResourceDictionary Source="ms-appx:///Deckle.Catalog/Themes/Icons.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Ressources partagées par toutes les Settings pages et leurs UserControls.
+                 Promues au niveau App pour que les UserControls (Settings/Llm/*) y accèdent
+                 sans duplication. WhisperPage/GeneralPage redéfinissent encore localement
+                 les mêmes clés (shadow sans effet), sera nettoyé lors de leur refacto. -->
+            <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+            <Style x:Key="SettingsSectionHeaderTextBlockStyle"
+                   BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+                   TargetType="TextBlock">
+                <Style.Setters>
+                    <Setter Property="Margin" Value="1,30,0,6" />
+                </Style.Setters>
+            </Style>
+
+            <!-- Pas de style "Critical / destructive" custom au niveau
+                 App. WinUI 3 n'en fournit pas, et l'imiter avec des
+                 rouges hardcodés produit un bouton qui ne suit pas le
+                 thème (light/dark/contrast). Pattern Microsoft officiel
+                 pour les actions destructrices : ContentDialog de
+                 confirmation, pas bouton rouge. Forget / Remove restent
+                 DefaultButtonStyle, le dialog qu'ils ouvrent porte le
+                 signal. -->
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
