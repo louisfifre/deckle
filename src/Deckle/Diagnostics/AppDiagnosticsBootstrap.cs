@@ -25,6 +25,7 @@ namespace Deckle.Diagnostics;
 internal static class AppDiagnosticsBootstrap
 {
     private static LogWindowEventListener? _logWindowListener;
+    private static HudFeedbackEventListener? _hudFeedbackListener;
 
     public static void Initialize(string telemetryDirectory)
     {
@@ -38,5 +39,19 @@ internal static class AppDiagnosticsBootstrap
         // exists. The bridge forwards to TelemetryService.Log which
         // buffers in the central history and replays on lazy-open.
         _logWindowListener = new LogWindowEventListener(new LegacyLogWindowSink());
+    }
+
+    // Wires the HudFeedbackEventListener once the HUD surfaces are
+    // available. Called from App.OnLaunched after the HudWindow and
+    // HudOverlayManager have been constructed — the listener can only
+    // route events to live UI objects, so deferring construction until
+    // they exist avoids a no-op early phase. Module providers that
+    // emit UserFeedbackEmitted before this call lose their feedback
+    // (no listener attached); in practice that doesn't happen because
+    // every UserFeedback emission is in a runtime path (hotkey,
+    // rewrite, pairing) that fires well after boot.
+    public static void AttachHudFeedbackSink(IHudFeedbackSink sink)
+    {
+        _hudFeedbackListener = new HudFeedbackEventListener(sink);
     }
 }

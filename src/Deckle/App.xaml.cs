@@ -284,6 +284,16 @@ public partial class App : Microsoft.UI.Xaml.Application
             onReplacement: fb => _hudWindow.ShowUserFeedback(fb),
             onOverlay:     fb => _overlayManager.Enqueue(fb)));
 
+        // EventSource parallel: route UserFeedbackEmitted events from
+        // migrated modules through the same HUD surfaces. The bridge sink
+        // rebuilds a legacy UserFeedback from the FeedbackEntry payload
+        // and dispatches to the same Replacement / Overlay callbacks.
+        // Both pipelines coexist until Wave 6 retires the legacy sink.
+        Deckle.Diagnostics.AppDiagnosticsBootstrap.AttachHudFeedbackSink(
+            new Deckle.Diagnostics.LegacyHudFeedbackSink(
+                onReplacement: fb => _hudWindow.ShowUserFeedback(fb),
+                onOverlay:     fb => _overlayManager.Enqueue(fb)));
+
         // Warm pass: brief Show + Hide of the HUD at its real position so the
         // first composition (swap chain DComp + visual tree + Bitcount font
         // shaping) happens at boot rather than at first hotkey. The flash is

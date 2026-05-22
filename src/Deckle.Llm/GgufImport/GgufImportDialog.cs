@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Llm;
 using Deckle.Catalog;
-using Deckle.Logging;
 
 namespace Deckle.Llm.GgufImport;
 
@@ -54,8 +53,7 @@ internal static class GgufImportDialog
                 if (t.IsFaulted && t.Exception is not null)
                 {
                     var ex = t.Exception.GetBaseException();
-                    LogService.Instance.Error(LogSource.SetLlm,
-                        $"GGUF import task faulted: {ex.GetType().Name}: {ex.Message}");
+                    DeckleLlmSource.Log.GgufImportFailed(ex.GetType().Name, ex.Message);
                 }
             }, TaskScheduler.Default);
         };

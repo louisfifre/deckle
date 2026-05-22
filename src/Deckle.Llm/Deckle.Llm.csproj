@@ -33,10 +33,17 @@
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- For SettingsHost.GetSettingsWindow — cross-assembly App-side hook
          called from GgufImportView for the FileOpenPicker hwnd parent.
          Same rationale as Deckle.Whisp.csproj. -->
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
 </Project>
