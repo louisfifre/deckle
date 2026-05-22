@@ -69,6 +69,11 @@ Deckle.App              → all of the above (app host, WinUI 3 entry point)
 Dependencies are acyclic. Each module is one csproj. Sub-namespaces within a
 module are used when internal structure warrants it.
 
+For the canonical reference — per-module responsibilities, internal layout
+convention (Engine/Ui/Setup), namespace homogenization rules, cross-module
+patterns (Settings per-module, SettingsHost, multi-assembly PRI) — see
+[`docs/reference--cartographie-modules--1.0.md`](docs/reference--cartographie-modules--1.0.md).
+
 ---
 
 ## Where documentation lives
