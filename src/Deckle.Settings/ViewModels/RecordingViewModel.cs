@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Audio;
-using Deckle.Logging;
+using System.Globalization;
 
 namespace Deckle.Settings.ViewModels;
 
@@ -18,7 +18,6 @@ namespace Deckle.Settings.ViewModels;
 // curve on the next sub-window without restart.
 public partial class RecordingViewModel : ObservableObject
 {
-    private static readonly LogService _log = LogService.Instance;
     private bool _isSyncing;
 
     // ── Microphone ──────────────────────────────────────────────────────────
@@ -29,7 +28,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnAudioInputDeviceIdChanged(int value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Audio input device ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
     }
 
@@ -55,7 +54,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMinDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Verbose(LogSource.SetGeneral, $"LevelWindow.MinDbfs ← {value:F1} dBFS");
+        DeckleSettingsSource.Log.SettingChangedDetail("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -63,7 +62,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMaxDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Verbose(LogSource.SetGeneral, $"LevelWindow.MaxDbfs ← {value:F1} dBFS");
+        DeckleSettingsSource.Log.SettingChangedDetail("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -71,7 +70,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowExponentChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Verbose(LogSource.SetGeneral, $"LevelWindow.DbfsCurveExponent ← {value:F2}");
+        DeckleSettingsSource.Log.SettingChangedDetail("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -79,7 +78,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowAutoCalibrationChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"LevelWindow.AutoCalibration ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
         PushToSettings();
     }
 
@@ -144,6 +143,6 @@ public partial class RecordingViewModel : ObservableObject
         finally { _isSyncing = false; }
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
-        _log.Info(LogSource.SetGeneral, "Recording section reset to defaults");
+        DeckleSettingsSource.Log.SectionReset("Recording");
     }
 }

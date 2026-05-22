@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Deckle.Core;
-using Deckle.Logging;
 
 namespace Deckle.Settings;
 
@@ -108,8 +107,7 @@ public static class SettingsBootstrap
             {
                 InjectIntoModuleFile("whisp", "modelsDirectory", JsonValue.Create(modelsDir));
                 paths.Remove("modelsDirectory");
-                LogService.Instance.Info(LogSource.Settings,
-                    "migrated paths.modelsDirectory → modules/whisp/modelsDirectory");
+                DeckleSettingsSource.Log.MigrationModelsDirectoryDispatched();
                 mutated = true;
             }
             else if (root["paths"] is JsonObject pathsB
@@ -123,14 +121,12 @@ public static class SettingsBootstrap
             if (mutated)
             {
                 File.WriteAllText(legacyPath, root.ToJsonString(_jsonOptions));
-                LogService.Instance.Info(LogSource.Settings,
-                    "Settings split into per-module files");
+                DeckleSettingsSource.Log.SettingsSplitIntoPerModuleFiles();
             }
         }
         catch (Exception ex)
         {
-            LogService.Instance.Error(LogSource.Settings,
-                $"per-module migration failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.PerModuleMigrationFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -149,16 +145,14 @@ public static class SettingsBootstrap
             // migration that crashed midway). Don't overwrite — the per-
             // module file is canonical now. Just strip the legacy key.
             root.Remove(jsonKey);
-            LogService.Instance.Verbose(LogSource.Settings,
-                $"dispatch {jsonKey} skipped (target exists) | path={targetPath}");
+            DeckleSettingsSource.Log.MigrationDispatchSkipped(jsonKey, targetPath);
             return true;
         }
 
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
         File.WriteAllText(targetPath, section.ToJsonString(_jsonOptions));
         root.Remove(jsonKey);
-        LogService.Instance.Info(LogSource.Settings,
-            $"migrated {jsonKey} → modules/{moduleId}/settings.json");
+        DeckleSettingsSource.Log.MigrationDispatched(jsonKey, moduleId);
         return true;
     }
 
@@ -192,8 +186,7 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.Settings,
-                $"inject {key} into {moduleId} failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.InjectFailed(key, moduleId, ex.GetType().Name, ex.Message);
         }
     }
 
@@ -215,17 +208,13 @@ public static class SettingsBootstrap
         try
         {
             Directory.Move(oldDir, newDir);
-            LogService.Instance.Info(LogSource.Settings,
-                $"Module folder migrated ({oldId} → {newId})");
-            LogService.Instance.Verbose(LogSource.Settings,
-                $"module rename | old=modules/{oldId} | new=modules/{newId}");
+            DeckleSettingsSource.Log.ModuleFolderMigrated(oldId, newId);
+            DeckleSettingsSource.Log.ModuleRenameDetail(oldId, newId);
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.Settings,
-                $"Module folder rename failed — {oldId} could not be moved to {newId}.");
-            LogService.Instance.Verbose(LogSource.Settings,
-                $"module rename failed | old=modules/{oldId} | new=modules/{newId} | error={ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.ModuleFolderRenameFailed(oldId, newId);
+            DeckleSettingsSource.Log.ModuleFolderRenameFailedDetail(oldId, newId, ex.GetType().Name, ex.Message);
         }
     }
 
@@ -240,7 +229,7 @@ public static class SettingsBootstrap
         if (root[oldKey] is not JsonNode legacy || root[newKey] is not null) return false;
         root[newKey] = legacy.DeepClone();
         root.Remove(oldKey);
-        LogService.Instance.Info(LogSource.Settings, $"migrated {oldKey} → {newKey}");
+        DeckleSettingsSource.Log.RenamedRootKey(oldKey, newKey);
         return true;
     }
 
@@ -265,7 +254,7 @@ public static class SettingsBootstrap
         };
         root["telemetry"] = telemetry;
         root.Remove("corpusLogging");
-        LogService.Instance.Info(LogSource.Settings, "migrated corpusLogging → telemetry");
+        DeckleSettingsSource.Log.MigratedCorpusToTelemetry();
         return true;
     }
 
@@ -283,7 +272,7 @@ public static class SettingsBootstrap
         {
             llm["slotAProfileName"] = legacyManual.DeepClone();
             llm.Remove("manualProfileName");
-            LogService.Instance.Info(LogSource.Settings, "migrated llm.manualProfileName → llm.slotAProfileName");
+            DeckleSettingsSource.Log.MigratedLlmManualToSlotA();
             mutated = true;
         }
 
@@ -292,7 +281,7 @@ public static class SettingsBootstrap
         {
             llm["primaryRewriteProfileName"] = legacySlotA.DeepClone();
             llm.Remove("slotAProfileName");
-            LogService.Instance.Info(LogSource.Settings, "migrated llm.slotAProfileName → llm.primaryRewriteProfileName");
+            DeckleSettingsSource.Log.MigratedLlmSlotAToPrimary();
             mutated = true;
         }
 
@@ -301,7 +290,7 @@ public static class SettingsBootstrap
         {
             llm["secondaryRewriteProfileName"] = legacySlotB.DeepClone();
             llm.Remove("slotBProfileName");
-            LogService.Instance.Info(LogSource.Settings, "migrated llm.slotBProfileName → llm.secondaryRewriteProfileName");
+            DeckleSettingsSource.Log.MigratedLlmSlotBToSecondary();
             mutated = true;
         }
 

@@ -2,7 +2,6 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using Deckle.Logging;
 using Deckle.Settings.ViewModels;
 
 namespace Deckle.Settings;
@@ -17,8 +16,6 @@ namespace Deckle.Settings;
 // _suppress* re-entry guards.
 public sealed partial class DiagnosticsPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public DiagnosticsViewModel ViewModel { get; } = new();
 
     private bool _initializing;

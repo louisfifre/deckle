@@ -49,6 +49,11 @@
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Type-only carry-over: DiagnosticsViewModel consomme encore
+         LoggingSettingsService / TelemetrySettingsService du legacy
+         pour bridger le toggle utilisateur. La ProjectReference disparaît
+         à la vague 6 quand ces POCO migrent dans Deckle.Diagnostics.* . -->
     <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
     <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
@@ -57,4 +62,11 @@
          POCOs (each module owns its own JSON file via
          WhispSettingsService / LlmSettingsService since C2b). -->
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
 </Project>
