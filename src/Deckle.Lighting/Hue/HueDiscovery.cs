@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using Deckle.Logging;
 
 namespace Deckle.Lighting.Hue;
 
@@ -31,8 +30,6 @@ public static class HueDiscovery
         Timeout = TimeSpan.FromSeconds(10),
     };
 
-    private static readonly LogService _log = LogService.Instance;
-
     /// <summary>
     /// Looks up Hue bridges reachable from the current WAN egress via
     /// the Philips-hosted discovery endpoint. Returns an empty list if
@@ -42,21 +39,18 @@ public static class HueDiscovery
     /// </summary>
     public static async Task<IReadOnlyList<HueBridge>> DiscoverViaCloudAsync(CancellationToken ct = default)
     {
-        _log.Info(LogSource.Hue, "Looking up Hue bridges");
-        _log.Verbose(LogSource.Hue,
-            $"discover start | source=cloud | url={CloudDiscoveryUrl}");
+        DeckleLightingSource.Log.DiscoveryStarted();
+        DeckleLightingSource.Log.DiscoveryStartedDetail(CloudDiscoveryUrl);
 
         try
         {
             var bridges = await _http.GetFromJsonAsync<HueBridge[]>(CloudDiscoveryUrl, ct)
                           ?? [];
 
-            _log.Success(LogSource.Hue,
-                $"Found {bridges.Length} Hue bridge{(bridges.Length == 1 ? "" : "s")}");
+            DeckleLightingSource.Log.DiscoveryFound(bridges.Length);
             foreach (var b in bridges)
             {
-                _log.Verbose(LogSource.Hue,
-                    $"discover result | bridge_id={b.Id} | bridge_ip={b.InternalIpAddress}");
+                DeckleLightingSource.Log.DiscoveryBridgeFound(b.Id, b.InternalIpAddress);
             }
             return bridges;
         }
@@ -66,8 +60,7 @@ public static class HueDiscovery
             // Warning and return empty so the UI can prompt for manual
             // IP entry. TaskCanceledException covers both the explicit
             // CancellationToken path and the HttpClient.Timeout firing.
-            _log.Warning(LogSource.Hue,
-                $"Cloud discovery failed — {ex.GetType().Name}: {ex.Message}");
+            DeckleLightingSource.Log.DiscoveryFailed(ex.GetType().Name, ex.Message);
             return [];
         }
     }
