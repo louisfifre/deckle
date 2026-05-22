@@ -47,22 +47,23 @@ under `scripts/lib/` and are callable directly. Run from PowerShell 7+.
 Leaves first, app host last. Arrows mean "depends on".
 
 ```
-Deckle.Core
-Deckle.Logging          → Core
-Deckle.Catalog     → Core
-Deckle.Audio            → Core, Logging
+Deckle.Core             (standalone)
+Deckle.Catalog          (standalone)
 Deckle.Chrono           (standalone)
-Deckle.Composition      (standalone)
-Deckle.Vision           → Core, Logging
+Deckle.Logging          → Core
+Deckle.Audio            → Core, Logging
+Deckle.Composition      → Core, Logging
+Deckle.Vision           → Core, Logging, Composition
 Deckle.Lighting         → Core, Logging
-Deckle.Shell            → Core, Logging
-Deckle.Settings         → Core, Logging, Catalog
-Deckle.Hud              → Core, Logging, Catalog, Audio, Chrono, Composition, Settings, Shell
+Deckle.Shell            → Core, Catalog, Logging
+Deckle.Settings         → Core, Catalog, Logging, Audio, Shell
+Deckle.Hud              → Core, Catalog, Logging, Audio, Chrono, Composition, Settings, Shell
 Deckle.Llm              → Core, Logging
-Deckle.Llm.Rewrite      → Core, Logging, Catalog, Llm
-Deckle.Transcription    → Core, Logging, Catalog, Audio, Llm, Llm.Rewrite, Settings
-Deckle.Setup            → Core, Logging, Catalog, Transcription
-Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
+Deckle.Llm.Rewrite      → Core, Catalog, Logging, Llm
+Deckle.Transcription    → Core, Catalog, Logging, Audio, Llm, Llm.Rewrite, Settings
+Deckle.Setup            → Core, Catalog, Logging, Transcription
+Deckle.Lighting.Ambient → Core, Catalog, Logging, Composition, Vision, Lighting, Settings
+Deckle.Playground       → Core, Catalog, Logging, Audio, Composition, Hud, Vision, Lighting, Lighting.Ambient, Settings, Shell
 Deckle.App              → all of the above (app host, WinUI 3 entry point)
 ```
 

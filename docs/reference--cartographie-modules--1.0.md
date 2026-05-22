@@ -13,24 +13,27 @@ Le binaire publié reste `Deckle.exe` malgré le module hôte renommé en `Deckl
 Feuilles d'abord. Une flèche signifie « dépend de ».
 
 ```
-Deckle.Core
-Deckle.Logging          → Core
-Deckle.Catalog          → Core
-Deckle.Audio            → Core, Logging
+Deckle.Core             (standalone)
+Deckle.Catalog          (standalone)
 Deckle.Chrono           (standalone)
-Deckle.Composition      (standalone)
-Deckle.Vision           → Core, Logging
+Deckle.Logging          → Core
+Deckle.Audio            → Core, Logging
+Deckle.Composition      → Core, Logging
+Deckle.Vision           → Core, Logging, Composition
 Deckle.Lighting         → Core, Logging
-Deckle.Shell            → Core, Logging
-Deckle.Settings         → Core, Logging, Catalog
-Deckle.Hud              → Core, Logging, Catalog, Audio, Chrono, Composition, Settings, Shell
+Deckle.Shell            → Core, Catalog, Logging
+Deckle.Settings         → Core, Catalog, Logging, Audio, Shell
+Deckle.Hud              → Core, Catalog, Logging, Audio, Chrono, Composition, Settings, Shell
 Deckle.Llm              → Core, Logging
-Deckle.Llm.Rewrite      → Core, Logging, Catalog, Llm
-Deckle.Transcription    → Core, Logging, Catalog, Audio, Llm, Llm.Rewrite, Settings
-Deckle.Setup            → Core, Logging, Catalog, Transcription
-Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
+Deckle.Llm.Rewrite      → Core, Catalog, Logging, Llm
+Deckle.Transcription    → Core, Catalog, Logging, Audio, Llm, Llm.Rewrite, Settings
+Deckle.Setup            → Core, Catalog, Logging, Transcription
+Deckle.Lighting.Ambient → Core, Catalog, Logging, Composition, Vision, Lighting, Settings
+Deckle.Playground       → Core, Catalog, Logging, Audio, Composition, Hud, Vision, Lighting, Lighting.Ambient, Settings, Shell
 Deckle.App              → tous les modules ci-dessus
 ```
+
+Le graphe ci-dessus est synthétisé directement des `<ProjectReference>` des dix-huit csprojs et reflète l'état réel à la racine de la branche `refactor/cartographie-cleanup`. Une commande `Get-Content src/Deckle.*/Deckle.*.csproj | Select-String 'ProjectReference Include="\.\.\\Deckle\.[^"]*"'` reproduit le matériau brut. Si une discordance apparaît plus tard entre cette table et un csproj, le csproj est la source de vérité — ce document doit être mis à jour pour s'aligner.
 
 ## Convention de layout interne
 
