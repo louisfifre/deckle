@@ -4,17 +4,15 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Diagnostics;
 
-// Boot-time wiring of the new EventSource-based observability pipeline,
-// installed alongside the legacy TelemetryService sinks during the
-// migration window. App.OnLaunched calls Initialize() right after
-// TelemetryGates.Configure (legacy gates) and AddSink (legacy file
-// sink) so the new listeners are in place before any first emission.
+// Boot-time wiring of the EventSource-based observability pipeline.
+// App.OnLaunched calls Initialize() pour que les listeners soient en
+// place avant la première emission de tout provider Deckle.*.
 //
 // What we wire here:
 //   1. JsonlEventListener × 4 — via TelemetryListenerBootstrap.
-//      Writes under <TelemetryDirectory>/validation/ during Wave 1
-//      to avoid mixing with the legacy file sink that owns the
-//      canonical paths.
+//      Écrit sous `<TelemetryDirectory>/{app,latency,microphone,corpus}
+//      .jsonl` (paths canoniques depuis la sous-vague 6e — le legacy
+//      JsonlFileSink qui les possédait jadis a disparu).
 //   2. LogWindowEventListener — buffer ring qui démarre vide au boot
 //      et accepte des sinks ILogWindowSink lazy. Le LogWindow s'y
 //      attache à sa première ouverture via AttachLogWindowSink et
@@ -30,11 +28,11 @@ internal static class AppDiagnosticsBootstrap
 
     public static void Initialize(string telemetryDirectory)
     {
-        // JSONL listeners — parallel files for schema validation in
-        // Wave 1. Flip the second argument to false in Wave 6 to take
-        // over the canonical paths once the legacy JsonlFileSink is
-        // removed.
-        TelemetryListenerBootstrap.Configure(telemetryDirectory, validationSubdirectory: true);
+        // JSONL listeners — écrit aux paths canoniques (`<TelemetryDir>/
+        // {app,latency,microphone,corpus}.jsonl`). Le legacy `JsonlFile-
+        // Sink` qui les possédait jadis a été retiré en sous-vague 6e,
+        // ce pipeline prend la relève sur les mêmes fichiers.
+        TelemetryListenerBootstrap.Configure(telemetryDirectory, validationSubdirectory: false);
 
         // LogWindow listener — démarre le buffer dès le boot. Aucun
         // sink attaché à ce stade ; le LogWindow lazy s'attachera

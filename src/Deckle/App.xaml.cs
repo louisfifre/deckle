@@ -1,7 +1,6 @@
 using Deckle.Interop;
 using Deckle.Lighting.Ambient;
 using Deckle.Logging;
-using Deckle.Logging.Sinks;
 using Deckle.Playground;
 using Deckle.Shell;
 using Deckle.Whisp;
@@ -133,19 +132,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         Deckle.Core.CorpusPaths.ConfigureStorageDirectoryOverride(
             () => TelemetryGates.Current.StorageDirectoryOverride);
 
-        // File sink first — captures every event from boot, including the
-        // startup milestones flushed at the end of OnLaunched. Writes under
-        // the telemetry storage directory (benchmark/ in dev layout, or
-        // LocalState/telemetry/ in packaged mode — see AppPaths).
-        TelemetryService.Instance.AddSink(new JsonlFileSink());
-        Milestone("filesink");
-
-        // New EventSource-based observability pipeline, installed alongside
-        // the legacy sinks during the migration window. Wires the four
-        // JsonlEventListeners (app / latency / microphone / corpus, parked
-        // under telemetry/validation/ in Wave 1) and the LogWindow bridge
-        // so live emissions from Deckle.* providers surface in the legacy
-        // viewer until LogWindow itself moves to Deckle.Diagnostics.Logging.
+        // EventSource observability pipeline — sous-vague 6e prend la
+        // relève des paths canoniques `<TelemetryDir>/{app,latency,
+        // microphone,corpus}.jsonl`. Le legacy `JsonlFileSink` et son
+        // `TelemetryService.AddSink` ont disparu ; les Jsonl-
+        // EventListeners écrivent directement aux paths canoniques.
+        // Le LogWindow lazy s'attachera au listener via
+        // `AttachLogWindowSink` à sa première ouverture.
         Deckle.Diagnostics.AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
