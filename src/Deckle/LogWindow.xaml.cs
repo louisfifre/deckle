@@ -155,13 +155,13 @@ public sealed partial class LogWindow : Window, ITelemetrySink
     public void Write(TelemetryEvent ev)
     {
         if (DispatcherQueue.HasThreadAccess) AddEntrySafe(ev);
-        else DispatcherQueue.TryEnqueueOrLog(() => AddEntrySafe(ev), LogSource.LogWin, "log entry");
+        else DispatcherQueue.TryEnqueueOrLog(() => AddEntrySafe(ev), "LOGWIN", "log entry");
     }
 
     public void Clear()
     {
         if (DispatcherQueue.HasThreadAccess) ClearAll();
-        else DispatcherQueue.TryEnqueueOrLog(ClearAll, LogSource.LogWin, "clear all");
+        else DispatcherQueue.TryEnqueueOrLog(ClearAll, "LOGWIN", "clear all");
     }
 
     // Beacon app icon (red = recording / grey = idle). Called from
@@ -169,7 +169,7 @@ public sealed partial class LogWindow : Window, ITelemetrySink
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
-        else DispatcherQueue.TryEnqueueOrLog(() => ApplyRecordingState(isRecording), LogSource.LogWin, "recording state");
+        else DispatcherQueue.TryEnqueueOrLog(() => ApplyRecordingState(isRecording), "LOGWIN", "recording state");
     }
 
     private void ApplyRecordingState(bool isRecording)
@@ -197,12 +197,12 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         if (_iconIdlePath is not null)
             _iconIdle = new BitmapImage(new Uri(_iconIdlePath));
         else
-            LogService.Instance.Warning(LogSource.LogWin, "idle icon not found");
+            DeckleAppSource.Log.LogWindowWarning("idle icon not found");
 
         if (_iconRecordingPath is not null)
             _iconRecording = new BitmapImage(new Uri(_iconRecordingPath));
         else
-            LogService.Instance.Warning(LogSource.LogWin, "recording icon not found");
+            DeckleAppSource.Log.LogWindowWarning("recording icon not found");
     }
 
     private void ClearAll()
@@ -302,7 +302,7 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.LogWin, $"scroll err: {ex.Message}");
+            DeckleAppSource.Log.LogWindowWarning($"scroll err: {ex.Message}");
         }
     }
 
@@ -580,7 +580,7 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.LogWin, $"save err: {ex.Message}");
+            DeckleAppSource.Log.LogWindowWarning($"save err: {ex.Message}");
         }
     }
 }

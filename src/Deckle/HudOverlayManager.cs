@@ -52,7 +52,7 @@ internal sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => Enqueue(fb), LogSource.Hud, "overlay enqueue");
+            _dispatcher.TryEnqueueOrLog(() => Enqueue(fb), "HUD", "overlay enqueue");
             return;
         }
 
@@ -100,7 +100,7 @@ internal sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => OnMainHudVisibilityChanged(sender, visible), LogSource.Hud, "main HUD visibility change");
+            _dispatcher.TryEnqueueOrLog(() => OnMainHudVisibilityChanged(sender, visible), "HUD", "main HUD visibility change");
             return;
         }
 

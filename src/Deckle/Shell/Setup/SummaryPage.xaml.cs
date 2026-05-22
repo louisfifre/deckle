@@ -19,8 +19,6 @@ namespace Deckle.Shell.Setup;
 // the choices step.
 internal sealed partial class SummaryPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     private SetupWindow? _setup;
     private SetupContext? _context;
 
@@ -56,7 +54,7 @@ internal sealed partial class SummaryPage : Page
 
         RenderResults();
 
-        _log.Info(LogSource.Setup,
+        DeckleSetupSource.Log.SetupInfo(
             $"setup summary | success={ok} | items={_context.Results.Count}");
     }
 

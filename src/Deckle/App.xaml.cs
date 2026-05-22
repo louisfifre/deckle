@@ -11,8 +11,6 @@ namespace Deckle;
 
 public partial class App : Microsoft.UI.Xaml.Application
 {
-    private static readonly LogService _log = LogService.Instance;
-
     private MessageOnlyHost? _messageHost;
     private HotkeyManager? _hotkeyManager;
     private LogWindow? _logWindow;
@@ -61,19 +59,19 @@ public partial class App : Microsoft.UI.Xaml.Application
         // are none of those in practice.
         this.UnhandledException += (_, e) =>
         {
-            _log.Error(LogSource.Crash, $"{e.Exception.GetType().Name}: {e.Exception.Message}");
-            _log.Error(LogSource.Crash, e.Exception.StackTrace ?? "(no stack)");
+            DeckleAppSource.Log.CrashUnhandled(e.Exception.GetType().Name, e.Exception.Message);
+            DeckleAppSource.Log.CrashStackTrace(e.Exception.StackTrace ?? "(no stack)");
             e.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             var ex = e.ExceptionObject as Exception;
-            _log.Error(LogSource.Crash, $"[AppDomain] {ex?.GetType().Name}: {ex?.Message}");
-            _log.Error(LogSource.Crash, ex?.StackTrace ?? "(no stack)");
+            DeckleAppSource.Log.CrashAppDomain(ex?.GetType().Name ?? "(unknown)", ex?.Message ?? "(no message)");
+            DeckleAppSource.Log.CrashStackTrace(ex?.StackTrace ?? "(no stack)");
         };
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            _log.Error(LogSource.Crash, $"[TaskScheduler] {e.Exception.GetType().Name}: {e.Exception.Message}");
+            DeckleAppSource.Log.CrashTaskScheduler(e.Exception.GetType().Name, e.Exception.Message);
             e.SetObserved();
         };
 
@@ -84,7 +82,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // un marqueur "on est sorti par cette voie".
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
-            _log.Info(LogSource.App, "ProcessExit triggered");
+            DeckleAppSource.Log.ProcessExit();
         };
     }
 
@@ -156,13 +154,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Doctrine logging : Info = jalon en phrase Capital courte ;
         // détails techniques (chemins résolus) en Verbose miroir, lisible
         // en filtre All sans polluer Activity.
-        _log.Info(LogSource.App, "Paths initialized");
-        _log.Verbose(LogSource.App,
-            $"paths | root={AppPaths.UserDataRoot}" +
-            $" | settings={AppPaths.SettingsFilePath}" +
-            $" | telemetry={AppPaths.TelemetryDirectory}" +
-            $" | models={AppPaths.ModelsDirectory}" +
-            $" | native={AppPaths.NativeDirectory}");
+        DeckleAppSource.Log.PathsInitialized();
+        DeckleAppSource.Log.PathsDetail(
+            AppPaths.UserDataRoot,
+            AppPaths.SettingsFilePath,
+            AppPaths.TelemetryDirectory,
+            AppPaths.ModelsDirectory,
+            AppPaths.NativeDirectory);
 
         // First-run gate — the engine ctor below loads the model immediately
         // and would throw DllNotFoundException without the native runtime
@@ -175,7 +173,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (!NativeRuntime.IsInstalled() ||
             !SpeechModels.IsDefaultInstalled())
         {
-            _log.Info(LogSource.Setup,
+            DeckleSetupSource.Log.SetupInfo(
                 $"first-run gate | natives_installed={NativeRuntime.IsInstalled()}" +
                 $" | default_model_installed={SpeechModels.IsDefaultInstalled()}");
             var setup = new Shell.Setup.SetupWindow();
@@ -184,7 +182,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             bool success = await setup.Completion;
             if (!success)
             {
-                _log.Info(LogSource.Setup, "wizard cancelled — exiting");
+                DeckleSetupSource.Log.SetupInfo("wizard cancelled — exiting");
                 Environment.Exit(0);
                 return;
             }
@@ -209,7 +207,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // event ; we don't relay through tray UpdateStatus to avoid
         // squatting the Whisp recording tooltip.
         _ambientEngine.StateChanged += s =>
-            _log.Info(LogSource.Ambient, $"Ambient pipeline state: {s}");
+            DeckleAppSource.Log.AmbientPipelineState(s.ToString());
         // AmbientPage's NotPaired InfoBar action button needs to open
         // the Playground (where Hue pairing lives in V0). Lighting.
         // Ambient cannot reference Deckle, so the App fills the slot.
@@ -334,7 +332,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         _engine.StatusChanged += status =>
         {
             _tray.UpdateStatus(status);
-            _log.Info(LogSource.Status, status);
+            DeckleAppSource.Log.StatusChanged(status);
             // Beacon app icon in LogWindow + PlaygroundWindow: red =
             // recording, grey = idle. Single source of truth driven
             // from the engine status transition. StartsWith covers the
@@ -394,7 +392,7 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         // Initial status — model loads on-demand at first hotkey, not at startup.
         _tray.UpdateStatus("Ready");
-        _log.Info(LogSource.Status, "Ready");
+        DeckleAppSource.Log.StatusChanged("Ready");
 
         // Force Ambient master toggle OFF at boot — explicit user
         // action via Settings / tray re-enables the pipeline. Louis
@@ -406,8 +404,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         {
             AmbientSettingsService.Instance.Current.Enabled = false;
             AmbientSettingsService.Instance.Save();
-            _log.Info(LogSource.Ambient,
-                "Ambient master toggle forced OFF at boot — explicit user action required to enable");
+            DeckleAppSource.Log.AmbientMasterForcedOff();
         }
 
         // Ambient Light master toggle observer. Drives Start / Stop on
@@ -439,14 +436,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         }
         catch (Exception ex)
         {
-            _log.Error(
-                LogSource.Hotkey,
-                $"Hotkey registration failed: {ex.Message}",
-                new UserFeedback(
-                    "Hotkeys unavailable",
-                    "Another app owns the chord (often WhispInteropTest still running). Use the tray icon to record.",
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Overlay));
+            DeckleAppSource.Log.HudWarning($"Hotkey registration failed: {ex.Message}");
+            DeckleAppSource.Log.UserFeedbackEmitted(
+                2, // Error
+                "Hotkeys unavailable",
+                "Another app owns the chord (often WhispInteropTest still running). Use the tray icon to record.",
+                1); // Overlay
         }
         Milestone("hotkeys");
 
@@ -476,7 +471,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             string? pageTag = settingsIdx + 1 < cliArgs.Length
                 ? cliArgs[settingsIdx + 1]
                 : null;
-            _log.Verbose(LogSource.App, $"--settings flag detected | page={pageTag ?? "(default)"}");
+            DeckleAppSource.Log.CmdLineSettingsFlag(pageTag ?? "(default)");
             // Voie lazy : crée la fenêtre + l'affiche sur la page demandée.
             // Indistinct du chemin tray quand l'utilisateur ouvre Settings
             // pour la première fois.
@@ -493,7 +488,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         int postBuildIdx = Array.IndexOf(cliArgs, "--post-build");
         if (postBuildIdx >= 0)
         {
-            _log.Verbose(LogSource.App, "--post-build flag detected | scheduling shell-execute relaunch in 800ms");
+            DeckleAppSource.Log.CmdLinePostBuildFlag();
             var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
             var timer = dq.CreateTimer();
             timer.Interval = TimeSpan.FromMilliseconds(800);
@@ -508,7 +503,7 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         sw.Stop();
         milestones.Add($"total {sw.ElapsedMilliseconds}ms");
-        _log.Verbose(LogSource.App, "startup milestones | " + string.Join(" | ", milestones));
+        DeckleAppSource.Log.StartupMilestones(string.Join(" | ", milestones));
     }
 
     // ── Level window ─────────────────────────────────────────────────────────
@@ -663,19 +658,19 @@ public partial class App : Microsoft.UI.Xaml.Application
     //               threads are IsBackground=true, they die with the process.
     private void QuitApp()
     {
-        _log.Info(LogSource.App, "Shutdown requested");
-        try { Settings.SettingsService.Instance.Flush(); } catch (Exception ex) { _log.Warning(LogSource.App, "settings flush: " + ex.Message); }
-        try { _hotkeyManager?.Dispose();   } catch (Exception ex) { _log.Warning(LogSource.App, "hotkeys dispose: " + ex.Message); }
-        try { _tray?.Dispose();            } catch (Exception ex) { _log.Warning(LogSource.App, "tray dispose: " + ex.Message); }
-        try { _messageHost?.Dispose();     } catch (Exception ex) { _log.Warning(LogSource.App, "message host dispose: " + ex.Message); }
-        try { _overlayManager?.Dispose();  } catch (Exception ex) { _log.Warning(LogSource.App, "overlay manager dispose: " + ex.Message); }
-        try { _engine?.Dispose();          } catch (Exception ex) { _log.Warning(LogSource.App, "engine dispose: " + ex.Message); }
+        DeckleAppSource.Log.ShutdownRequested();
+        try { Settings.SettingsService.Instance.Flush(); } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("settings flush: " + ex.Message); }
+        try { _hotkeyManager?.Dispose();   } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("hotkeys dispose: " + ex.Message); }
+        try { _tray?.Dispose();            } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("tray dispose: " + ex.Message); }
+        try { _messageHost?.Dispose();     } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("message host dispose: " + ex.Message); }
+        try { _overlayManager?.Dispose();  } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("overlay manager dispose: " + ex.Message); }
+        try { _engine?.Dispose();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("engine dispose: " + ex.Message); }
         // 5 s lets the push loop's in-flight HTTP push complete before
         // we hard-exit. A 2 s cap was hit on stalled Hue bridges (Wi-Fi
         // blip while quitting) and leaked D3D11 textures (intermediate
         // /staging/SRV) because the push loop wrapped mid-await.
         try { _ambientEngine?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)); }
-        catch (Exception ex) { _log.Warning(LogSource.App, "ambient engine dispose: " + ex.Message); }
+        catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("ambient engine dispose: " + ex.Message); }
         Environment.Exit(0);
     }
 
@@ -686,7 +681,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     // via QuitApp().
     public static void RestartApp(string? pageTag = null)
     {
-        _log.Info(LogSource.App, "Restart requested");
+        DeckleAppSource.Log.RestartRequested();
 
         // Flush settings synchronously BEFORE launching the new process.
         // Without this, the new process could read stale JSON if it starts
@@ -704,7 +699,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             var args = pageTag is not null
                 ? $"--settings \"{pageTag}\""
                 : "--settings";
-            _log.Verbose(LogSource.App, $"spawn new process | exe={exePath} | args={args}");
+            DeckleAppSource.Log.RestartSpawnNewProcess(exePath, args);
             System.Diagnostics.Process.Start(exePath, args);
         }
 
@@ -723,7 +718,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     // the launch.ps1 idiom on the PowerShell side.
     public static void RestartViaShellExecute()
     {
-        _log.Info(LogSource.App, "Post-build self-restart requested");
+        DeckleAppSource.Log.PostBuildRestartRequested();
         try { Settings.SettingsService.Instance.Flush(); } catch { }
 
         var exePath = Environment.ProcessPath;
@@ -736,11 +731,11 @@ public partial class App : Microsoft.UI.Xaml.Application
                 UseShellExecute = false,
                 CreateNoWindow  = true,
             };
-            _log.Verbose(LogSource.App, $"shell-execute relaunch | exe={exePath}");
+            DeckleAppSource.Log.PostBuildShellExecute(exePath);
             try { System.Diagnostics.Process.Start(psi); }
             catch (Exception ex)
             {
-                _log.Error(LogSource.App, $"shell-execute relaunch failed: {ex.Message}");
+                DeckleAppSource.Log.PostBuildRelaunchFailed(ex.Message);
             }
         }
 
@@ -769,8 +764,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     private void OnAmbientSettingsChanged()
     {
         bool enabled = AmbientSettingsService.Instance.Current.Enabled;
-        _log.Info(LogSource.Ambient,
-            $"Ambient master toggle {(enabled ? "ON" : "OFF")}");
+        DeckleAppSource.Log.AmbientPipelineState(enabled ? "Master ON" : "Master OFF");
         _ = ApplyAmbientEnabledAsync(enabled);
     }
 
@@ -789,8 +783,7 @@ public partial class App : Microsoft.UI.Xaml.Application
                 }
                 catch (Exception ex)
                 {
-                    _log.Error(LogSource.Ambient,
-                        $"Ambient pipeline start failed — {ex.GetType().Name}: {ex.Message} ; reverting Enabled to false");
+                    DeckleAppSource.Log.AmbientStartFailed(ex.GetType().Name, $"{ex.Message} ; reverting Enabled to false");
                     var s = AmbientSettingsService.Instance.Current;
                     s.Enabled = false;
                     AmbientSettingsService.Instance.Save();
@@ -809,12 +802,12 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     private void RestartAppFromTray()
     {
-        _log.Info(LogSource.App, "Restart from tray requested");
+        DeckleAppSource.Log.RestartFromTrayRequested();
         try { Settings.SettingsService.Instance.Flush(); } catch { }
         var exePath = Environment.ProcessPath;
         if (exePath is not null)
         {
-            _log.Verbose(LogSource.App, $"spawn new process | exe={exePath}");
+            DeckleAppSource.Log.RestartSpawnNewProcess(exePath, "");
             System.Diagnostics.Process.Start(exePath);
         }
         QuitApp();
@@ -879,17 +872,17 @@ public partial class App : Microsoft.UI.Xaml.Application
         switch (result)
         {
             case ToggleResult.Started:
-                _log.Success(LogSource.Hotkey,
-                    $"Start ({hotkeyName}{(manualProfile is null ? "" : $", LLM: {manualProfile}")})");
+                DeckleAppSource.Log.HotkeyStart(
+                    $"{hotkeyName}{(manualProfile is null ? "" : $", LLM: {manualProfile}")}");
                 _hudWindow?.ShowPreparing();
                 break;
 
             case ToggleResult.Stopped:
-                _log.Success(LogSource.Hotkey, "Stop");
+                DeckleAppSource.Log.HotkeyStop();
                 break;
 
             case ToggleResult.IgnoredNoProfile:
-                _log.Warning(LogSource.Hotkey, $"{hotkeyName} pressed — no profile bound, ignoring");
+                DeckleAppSource.Log.HotkeyNoProfile(hotkeyName);
                 break;
 
             case ToggleResult.IgnoredBusy:

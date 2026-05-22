@@ -265,7 +265,7 @@ public sealed partial class HudWindow : Window
     {
         if (!DispatcherQueue.HasThreadAccess)
         {
-            DispatcherQueue.TryEnqueueOrLog(PrimeAndHide, LogSource.Hud, "PrimeAndHide");
+            DispatcherQueue.TryEnqueueOrLog(PrimeAndHide, "HUD", "PrimeAndHide");
             return;
         }
 
@@ -299,7 +299,7 @@ public sealed partial class HudWindow : Window
         bool enqueued = DispatcherQueue.TryEnqueueOrLog(() =>
         {
             try { SetState(HudState.Hidden); } finally { done.Set(); }
-        }, LogSource.Hud, "HideSync");
+        }, "HUD", "HideSync");
 
         // Si l'enqueue a échoué (queue fermée pendant teardown), on évite
         // le Wait infini en libérant immédiatement. Le HUD ne sera pas
@@ -314,7 +314,7 @@ public sealed partial class HudWindow : Window
         // documenté dans docs/reference--paste-behavior--1.0.md, accepté en cas pathologique.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
-            LogService.Instance.Warning(LogSource.Hud, "HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
+            DeckleAppSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
         }
     }
 
@@ -439,7 +439,7 @@ public sealed partial class HudWindow : Window
     private void EnqueueUI(Action a)
     {
         if (DispatcherQueue.HasThreadAccess) a();
-        else DispatcherQueue.TryEnqueueOrLog(() => a(), LogSource.Hud, "ui action");
+        else DispatcherQueue.TryEnqueueOrLog(() => a(), "HUD", "ui action");
     }
 
     // Pixel rect the HUD would occupy at the current DPI + work area +
