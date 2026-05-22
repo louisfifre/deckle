@@ -162,24 +162,7 @@ public sealed record CorpusPayload(
     [property: JsonPropertyName("metrics")]          CorpusMetricsSection Metrics,
     [property: JsonPropertyName("audio_file")]       string?              AudioFile);
 
-// One row per Recording when TelemetrySettings.MicrophoneTelemetry is on.
-// dBFS percentile sweep over the 50 ms sub-window RMS series, plus the
-// linear mean RMS (the value worth comparing against MaxDbfs window when
-// calibrating). MeanDbfs is derived from the linear mean — log of the
-// mean, not mean of the log, since arithmetic mean of dBFS values gets
-// pulled too low by the silence floor.
-public sealed record MicrophoneTelemetryPayload(
-    [property: JsonPropertyName("duration_seconds")] double DurationSeconds,
-    [property: JsonPropertyName("samples")]          int    Samples,
-    [property: JsonPropertyName("min_dbfs")]         double MinDbfs,
-    [property: JsonPropertyName("p10_dbfs")]         double P10Dbfs,
-    [property: JsonPropertyName("p25_dbfs")]         double P25Dbfs,
-    [property: JsonPropertyName("p50_dbfs")]         double P50Dbfs,
-    [property: JsonPropertyName("p75_dbfs")]         double P75Dbfs,
-    [property: JsonPropertyName("p90_dbfs")]         double P90Dbfs,
-    [property: JsonPropertyName("max_dbfs")]         double MaxDbfs,
-    [property: JsonPropertyName("mean_rms")]         double MeanRms,
-    [property: JsonPropertyName("mean_dbfs")]        double MeanDbfs,
-    [property: JsonPropertyName("tail_rms")]         double TailRms,
-    [property: JsonPropertyName("tail_dbfs")]        double TailDbfs,
-    [property: JsonPropertyName("tail_state")]       string TailState);
+// MicrophoneTelemetryPayload (carry-over de la vague 6) — relocalisé
+// dans `Deckle.Audio.Telemetry` aux côtés du calculator qui le produit.
+// `TelemetryKind.Microphone` survit côté legacy pour `JsonlFileSink`,
+// qui disparaît en sous-vague 6e.

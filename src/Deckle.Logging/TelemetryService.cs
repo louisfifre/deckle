@@ -196,35 +196,13 @@ public sealed class TelemetryService
         Emit(new TelemetryEvent(TelemetryKind.Corpus, SessionId, payload, LogLevel.Info, feedback: null, text));
     }
 
-    // ── Microphone ─────────────────────────────────────────────────────────
-    //
-    // One row per Recording, summarising the per-50-ms-sub-window RMS series
-    // accumulated during capture. Gated by the caller (TelemetrySettings.
-    // MicrophoneTelemetry) — same posture as Latency / Corpus.
-    //
-    // Single emission: the same event carries both the human-readable Text
-    // (for LogWindow display, prefixed [CAPTURE] like the matching capture
-    // log lines) and the structured payload (for the microphone.jsonl
-    // sink). One source of truth — no parallel _log.Info on the Log
-    // pipeline, no duplicate row.
-    public void Microphone(MicrophoneTelemetryPayload p)
-    {
-        var c = CultureInfo.InvariantCulture;
-        string text =
-            $"{DateTime.Now:HH:mm:ss.fff} [CAPTURE] " +
-            $"Mic telemetry over {p.DurationSeconds.ToString("F1", c)}s " +
-            $"({p.Samples} samples @20Hz): " +
-            $"min={p.MinDbfs.ToString("F1", c)} " +
-            $"p10={p.P10Dbfs.ToString("F1", c)} " +
-            $"p25={p.P25Dbfs.ToString("F1", c)} " +
-            $"p50={p.P50Dbfs.ToString("F1", c)} " +
-            $"p75={p.P75Dbfs.ToString("F1", c)} " +
-            $"p90={p.P90Dbfs.ToString("F1", c)} " +
-            $"max={p.MaxDbfs.ToString("F1", c)} dBFS " +
-            $"| mean RMS={p.MeanRms.ToString("F4", c)} " +
-            $"({p.MeanDbfs.ToString("F1", c)} dBFS)";
-        Emit(new TelemetryEvent(TelemetryKind.Microphone, SessionId, p, LogLevel.Info, feedback: null, text));
-    }
+    // Microphone() (carry-over de la vague 6) : la méthode legacy
+    // `Microphone(MicrophoneTelemetryPayload)` a été supprimée parce
+    // que le payload migre vers `Deckle.Audio.Telemetry` et que son
+    // unique consommateur est désormais `DeckleAudioSource.Log.
+    // MicrophoneTelemetryRecorded` (event EventSource direct). Le
+    // membre `TelemetryKind.Microphone` survit le temps que
+    // `JsonlFileSink.ResolvePath` soit retiré (sous-vague 6e).
 
     private void Emit(TelemetryEvent ev)
     {

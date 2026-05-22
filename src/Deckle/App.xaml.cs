@@ -123,6 +123,16 @@ public partial class App : Microsoft.UI.Xaml.Application
         // the JSONL even when the user has the app log enabled.
         TelemetryGates.Configure(new AppTelemetryGates());
 
+        // Câblage `Deckle.Core.CorpusPaths` (relocalisé en sous-vague 6a) :
+        // le helper de paths storage lisait jadis `TelemetryGates.Current.
+        // StorageDirectoryOverride` directement. La dep est inversée par
+        // injection — l'App câble le getter sur la même source que les
+        // gates legacy ci-dessus. La cible bascule vers le nouveau
+        // `TelemetrySettingsService` (Deckle.Diagnostics.Telemetry) à la
+        // sous-vague 6d, puis disparaît avec Deckle.Logging à la 6g.
+        Deckle.Core.CorpusPaths.ConfigureStorageDirectoryOverride(
+            () => TelemetryGates.Current.StorageDirectoryOverride);
+
         // File sink first — captures every event from boot, including the
         // startup milestones flushed at the end of OnLaunched. Writes under
         // the telemetry storage directory (benchmark/ in dev layout, or

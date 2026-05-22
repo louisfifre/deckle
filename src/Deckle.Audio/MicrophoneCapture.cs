@@ -4,10 +4,6 @@ using System.Threading;
 using Deckle.Audio.Internal;
 using Deckle.Audio.Telemetry;
 using Deckle.Interop;
-// Deckle.Logging is referenced for the MicrophoneTelemetryPayload type
-// only (carrier between calculator and emission). No TelemetryService
-// or LogService call survives in this module after Wave 2.
-using Deckle.Logging;
 
 namespace Deckle.Audio;
 

@@ -3,10 +3,13 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Deckle.Audio;
 using Deckle.Audio.Telemetry;
+using Deckle.Core;
 using Deckle.Interop;
 using Deckle.Llm;
 using Deckle.Catalog;
 using Deckle.Logging;
+using Deckle.Whisp.Corpus;
+using Deckle.Whisp.Engine;
 using Deckle.Whisp.Pinvoke;
 using Deckle.Whisp.Setup;
 
@@ -305,7 +308,7 @@ public sealed class WhispEngine : IDisposable
     // a fresh MinDbfs/MaxDbfs back into Settings + HudChrono so the HUD
     // tracks the user's hardware drift without manual re-tuning. See
     // TryAutoCalibrate below for the heuristic.
-    private readonly Queue<Logging.MicrophoneTelemetryPayload> _autoCalibBuffer = new();
+    private readonly Queue<MicrophoneTelemetryPayload> _autoCalibBuffer = new();
 
     // VAD timing — whisper.cpp's Silero VAD runs inside whisper_full() natively,
     // so we can't bracket it with a C# stopwatch. Instead we watch the native
@@ -1586,7 +1589,7 @@ public sealed class WhispEngine : IDisposable
     // The user's manual slider edits override auto-calibration until the
     // next time it fires — there's no "manual flag" gating; whoever wrote
     // last wins, which is the natural behaviour from the user's POV.
-    private void TryAutoCalibrate(Logging.MicrophoneTelemetryPayload payload)
+    private void TryAutoCalibrate(MicrophoneTelemetryPayload payload)
     {
         var lw = _host.Audio.LevelWindow;
         if (!lw.AutoCalibrationEnabled) return;
@@ -1937,7 +1940,7 @@ public sealed class WhispEngine : IDisposable
         int  llmEvalTokens   = 0;
         var llmSettings = _host.Llm;
         double recDurationSec = (_recordingSw?.Elapsed.TotalSeconds) ?? 0;
-        int rawWordCount = Logging.TextMetrics.CountWords(fullText);
+        int rawWordCount = TextMetrics.CountWords(fullText);
 
         // Rewrite profile resolution:
         // - manual rewrite hotkey → the profile name passed to StartRecording
@@ -2056,7 +2059,7 @@ public sealed class WhispEngine : IDisposable
         // this to flash "Copied" or the Ctrl+V reminder before hiding.
         var outcome = (_shouldPaste && pasteVerified) ? TranscriptionOutcome.Pasted
                                                       : TranscriptionOutcome.ClipboardOnly;
-        int finalWordCount = Logging.TextMetrics.CountWords(fullText);
+        int finalWordCount = TextMetrics.CountWords(fullText);
 
         // Snapshot stage timers once for both the log line and the telemetry
         // payload. Each can be null when the run skipped that stage (e.g.
@@ -2125,7 +2128,7 @@ public sealed class WhispEngine : IDisposable
             int rawChars = rawText.Length;
             var timestamp = DateTimeOffset.Now;
 
-            string slug = $"{Logging.CorpusPaths.Slugify(profile.Name)}-{profile.Id}";
+            string slug = $"{CorpusPaths.Slugify(profile.Name)}-{profile.Id}";
 
             // Audio capture is a second, nested opt-in gated by the same
             // profile slug — so a replay pairs JSONL rows with their WAV
@@ -2133,7 +2136,7 @@ public sealed class WhispEngine : IDisposable
             // unambiguous even if the user triggers a new recording
             // while the file write is still settling.
             string? audioFile = telemetrySettings.RecordAudioCorpus
-                ? Logging.WavCorpusWriter.Write(slug, audio, timestamp)
+                ? WavCorpusWriter.Write(slug, audio, timestamp)
                 : null;
 
             double wordsPerSecond = recDurationSec > 0 ? rawWordCount / recDurationSec : 0;

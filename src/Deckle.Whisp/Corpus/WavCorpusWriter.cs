@@ -1,15 +1,16 @@
 using System;
 using System.IO;
+using Deckle.Core;
 
-namespace Deckle.Logging;
+namespace Deckle.Whisp.Corpus;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //
 // Binary side of corpus capture. Writes the raw 16 kHz mono PCM audio fed
 // to whisper_full as a 16-bit signed WAV, one file per transcription,
-// under <telemetry-root>/<slug>/audio/<timestamp>.wav. The slug is the
+// under `<telemetry-root>/<slug>/audio/<timestamp>.wav`. The slug is the
 // profile identity; the audio folder lives inside it, next to the paired
-// corpus.jsonl.
+// `corpus.jsonl`.
 //
 // Why 16-bit int PCM and not 32-bit float: the engine hands us float
 // [-1, 1] samples (the exact input whisper.cpp consumed). Quantizing to
@@ -17,16 +18,23 @@ namespace Deckle.Logging;
 // disk footprint — offline re-transcription accepts either just fine.
 //
 // Called as a helper (not a sink) because the output path needs to feed
-// back into the CorpusPayload.AudioFile slot on the paired JSONL event.
-// Returns the relative path (audio/<stamp>.wav) on success so the corpus
-// line stays portable — consumers resolve it against the profile directory
-// that holds corpus.jsonl. Null on any failure — callers surface "no audio
-// file" in the payload instead of crashing.
+// back into the `CorpusRecorded` event's `audio_file` slot on the paired
+// JSONL line. Returns the relative path (`audio/<stamp>.wav`) on success
+// so the corpus line stays portable — consumers resolve it against the
+// profile directory that holds `corpus.jsonl`. Null on any failure —
+// callers surface "no audio file" in the payload instead of crashing.
+//
+// Carry-over de la vague 6 : ce helper vivait jadis dans `Deckle.Logging`
+// aux côtés de `CorpusPaths`. Relocalisé ici parce que son unique
+// consommateur métier est `WhispEngine` ; `CorpusPaths` reste dans
+// `Deckle.Core` parce qu'il est aussi consommé par les dialogs de
+// consentement côté `Deckle.Settings` (qui ne peut pas dépendre de
+// `Deckle.Whisp` sans introduire un cycle).
 public static class WavCorpusWriter
 {
-    private const int    SampleRate    = 16_000;
-    private const short  BitsPerSample = 16;
-    private const short  NumChannels   = 1;
+    private const int    SampleRate     = 16_000;
+    private const short  BitsPerSample  = 16;
+    private const short  NumChannels    = 1;
     private const string AudioSubfolder = "audio";
 
     public static string? Write(string slugPrefix, float[] audio, DateTimeOffset timestamp)
@@ -43,7 +51,7 @@ public static class WavCorpusWriter
 
             // Millisecond-precision stamp in the filename: back-to-back
             // transcriptions stay ordered unambiguously and the name can
-            // be joined directly to the paired CorpusPayload timestamp.
+            // be joined directly to the paired corpus line timestamp.
             string stamp = timestamp.ToLocalTime().ToString("yyyyMMdd-HHmmss-fff");
             string fileName = stamp + ".wav";
             string path = Path.Combine(profileDir, fileName);

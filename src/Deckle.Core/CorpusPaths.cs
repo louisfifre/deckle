@@ -1,28 +1,49 @@
+using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Deckle.Logging;
+namespace Deckle.Core;
 
 // ── CorpusPaths ─────────────────────────────────────────────────────────────
 //
 // Storage layout helper — resolves the base directory for telemetry JSONL
 // and audio WAV files, and normalizes profile names into filesystem-safe
-// slugs. Shared by Settings UI, consent dialogs, the JSONL sink, and the
-// WAV writer so there's a single source of truth for the storage layout.
+// slugs. Shared by the Settings consent dialogs, the corpus writer
+// (`Deckle.Whisp.Corpus.WavCorpusWriter`), and the structured-telemetry
+// listeners (`Deckle.Diagnostics.Telemetry`) so there's a single source
+// of truth for the storage layout.
 //
 // Resolution order:
-//   1. ITelemetryGates.StorageDirectoryOverride (host-configured absolute
-//      path), when non-empty. Read on every call so a host that flips the
-//      override at runtime gets picked up immediately.
-//   2. AppPaths.TelemetryDirectory (= <UserDataRoot>\telemetry\), always
-//      present and writable.
+//   1. Host-configured storage directory override (via
+//      `ConfigureStorageDirectoryOverride`). Read on every call so a
+//      host that flips the override at runtime gets picked up immediately.
+//   2. `AppPaths.TelemetryDirectory` (= `<UserDataRoot>\telemetry\`),
+//      always present and writable.
+//
+// Carry-over de la vague 6 : ce helper vivait jadis dans `Deckle.Logging`
+// et lisait `TelemetryGates.Current.StorageDirectoryOverride` directement.
+// Le couplage au hub legacy est remplacé par un délégué injectable —
+// l'App câble le getter au boot (cf. `App.OnLaunched`) sur le service de
+// settings retenu (legacy `TelemetrySettingsService` pour la sous-vague
+// 6a, puis `Deckle.Diagnostics.Telemetry.TelemetrySettingsService` quand
+// ce dernier sera créé en sous-vague 6d).
 public static class CorpusPaths
 {
+    private static Func<string?> _storageDirectoryOverride = static () => null;
+
+    // Host hook — called once at startup. The getter is invoked on every
+    // `GetDirectoryPath()` call, so the source of truth is live (a
+    // settings change in the UI takes effect on the next read).
+    public static void ConfigureStorageDirectoryOverride(Func<string?> getter)
+    {
+        _storageDirectoryOverride = getter ?? throw new ArgumentNullException(nameof(getter));
+    }
+
     public static string GetDirectoryPath()
     {
-        string? custom = TelemetryGates.Current.StorageDirectoryOverride;
+        string? custom = _storageDirectoryOverride();
         if (!string.IsNullOrWhiteSpace(custom))
             return custom;
 
