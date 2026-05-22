@@ -15,9 +15,10 @@ namespace Deckle.Diagnostics;
 //      Writes under <TelemetryDirectory>/validation/ during Wave 1
 //      to avoid mixing with the legacy file sink that owns the
 //      canonical paths.
-//   2. LogWindowEventListener — bridge to the legacy LogWindow via
-//      LegacyLogWindowSink, so new events show up live next to old
-//      ones without LogWindow needing any awareness of EventSource.
+//   2. LogWindowEventListener — buffer ring qui démarre vide au boot
+//      et accepte des sinks ILogWindowSink lazy. Le LogWindow s'y
+//      attache à sa première ouverture via AttachLogWindowSink et
+//      reçoit en replay tout l'historique bufferisé depuis le boot.
 //
 // The listener instance is held as a static field so it survives for
 // the life of the process. EventListener.Dispose() unregisters cleanly;
@@ -35,10 +36,11 @@ internal static class AppDiagnosticsBootstrap
         // removed.
         TelemetryListenerBootstrap.Configure(telemetryDirectory, validationSubdirectory: true);
 
-        // LogWindow bridge — wire even before the LogWindow itself
-        // exists. The bridge forwards to TelemetryService.Log which
-        // buffers in the central history and replays on lazy-open.
-        _logWindowListener = new LogWindowEventListener(new LegacyLogWindowSink());
+        // LogWindow listener — démarre le buffer dès le boot. Aucun
+        // sink attaché à ce stade ; le LogWindow lazy s'attachera
+        // via `AttachLogWindowSink` à sa première ouverture, recevra
+        // l'historique buffer en replay, puis sera live ensuite.
+        _logWindowListener = new LogWindowEventListener();
     }
 
     // Wires the HudFeedbackEventListener once the HUD surfaces are
@@ -53,5 +55,19 @@ internal static class AppDiagnosticsBootstrap
     public static void AttachHudFeedbackSink(IHudFeedbackSink sink)
     {
         _hudFeedbackListener = new HudFeedbackEventListener(sink);
+    }
+
+    // Attache un sink LogWindow et lui rejoue l'historique bufferisé
+    // depuis le boot. Appelée à la première ouverture du LogWindow
+    // (chemin lazy `App.ShowLogWindowLazy`) ; le sink reçoit live les
+    // events futurs jusqu'à `DetachLogWindowSink`.
+    public static void AttachLogWindowSink(ILogWindowSink sink)
+    {
+        _logWindowListener?.AttachSink(sink);
+    }
+
+    public static void DetachLogWindowSink(ILogWindowSink sink)
+    {
+        _logWindowListener?.DetachSink(sink);
     }
 }

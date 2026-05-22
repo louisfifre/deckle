@@ -225,13 +225,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         Milestone("ambient_engine");
 
         // LogWindow lazy : instanciée à la première ouverture via
-        // ShowLogWindowLazy(). Le sink est inscrit à ce moment-là, et
-        // TelemetryService.Replay() rejoue l'historique du buffer
-        // central pour que le viewer soit complet dès l'ouverture.
-        // Évite de payer un swap chain DComp + visual tree DWM au boot
-        // pour une fenêtre dont l'utilisateur n'a pas systématiquement
-        // besoin. Les events boot sont préservés dans app.jsonl
-        // (JsonlFileSink reste inscrit dès le boot).
+        // ShowLogWindowLazy(). Le sink ILogWindowSink est attaché à ce
+        // moment-là via AppDiagnosticsBootstrap, qui rejoue dans
+        // l'opération atomique le buffer ring du LogWindowEventListener
+        // pour que le viewer soit complet dès l'ouverture. Évite de
+        // payer un swap chain DComp + visual tree DWM au boot pour une
+        // fenêtre dont l'utilisateur n'a pas systématiquement besoin.
+        // Les events boot sont préservés dans app.jsonl (JsonlFileSink
+        // reste inscrit dès le boot).
 
         // SettingsWindow lazy : instanciée à la première ouverture via
         // ShowSettingsWindowLazy(). La branche --settings du boot
@@ -584,18 +585,23 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     // ── LogWindow lazy creation ──────────────────────────────────────────────
     //
-    // Created on first tray open (or via Settings → "Logs" footer). Inscrit
-    // comme sink à ce moment, et TelemetryService.Replay() rejoue le buffer
-    // central pour que le viewer affiche tout depuis le boot. Beacon seedé
+    // Created on first tray open (or via Settings → "Logs" footer). Le sink
+    // s'attache à ce moment via AppDiagnosticsBootstrap, qui rejoue dans
+    // l'opération atomique le buffer ring du LogWindowEventListener — la
+    // fenêtre voit l'historique complet depuis le boot, sans race avec les
+    // emissions live qui s'intercaleraient pendant l'attache. Beacon seedé
     // avec _lastRecordingState et theme appliqué pour que la fenêtre ait le
     // bon look dès son premier render.
+    //
+    // Pas de Detach : le LogWindow se cache (Closing → SW_HIDE), il ne se
+    // dispose pas. L'instance est réutilisée à chaque réouverture, sink
+    // resté attaché en continu.
     private void ShowLogWindowLazy()
     {
         if (_logWindow is null)
         {
             _logWindow = new LogWindow();
-            TelemetryService.Instance.AddSink(_logWindow);
-            TelemetryService.Instance.Replay(_logWindow);
+            Deckle.Diagnostics.AppDiagnosticsBootstrap.AttachLogWindowSink(_logWindow);
             _logWindow.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(_logWindow);
         }

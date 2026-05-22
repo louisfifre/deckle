@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Input;
 using System.Collections.ObjectModel;
+using System.Diagnostics.Tracing;
 using System.Text;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -14,7 +15,7 @@ using Microsoft.UI.Xaml.Data;
 using WinRT.Interop;
 using Deckle.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle;
@@ -31,14 +32,14 @@ internal enum LogFilterMode { All, Activity, Alerts }
 // Live search via AutoSuggestBox.
 //
 // Model:
-//   _entries : full buffer (cap 5000) — every TelemetryEvent, any kind
-//   _visible : displayed subset (kind/level filter + search)
+//   _entries : full buffer (cap 5000) — every LogEntry, any event
+//   _visible : displayed subset (event/level filter + search)
 // Copy/Save operate on _visible — the user copies what they see.
 
-public sealed partial class LogWindow : Window, ITelemetrySink
+public sealed partial class LogWindow : Window, ILogWindowSink
 {
-    private readonly List<TelemetryEvent> _entries = new();
-    private readonly ObservableCollection<TelemetryEvent> _visible = new();
+    private readonly List<LogEntry> _entries = new();
+    private readonly ObservableCollection<LogEntry> _visible = new();
     private readonly IntPtr _hwnd;
     private bool _isVisible;
 
@@ -150,14 +151,22 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         SizeChanged += OnWindowSizeChanged;
     }
 
-    // ── ITelemetrySink (receives events from TelemetryService) ─────────────────
+    // ── ILogWindowSink (events from LogWindowEventListener) ────────────────────
 
-    public void Write(TelemetryEvent ev)
+    public void Write(EventEntry entry)
     {
-        if (DispatcherQueue.HasThreadAccess) AddEntrySafe(ev);
-        else DispatcherQueue.TryEnqueueOrLog(() => AddEntrySafe(ev), "LOGWIN", "log entry");
+        // Le listener émet sur le thread d'origine de l'EventSource ;
+        // wrap immédiat en LogEntry pour précomputer Text une seule
+        // fois (mêmes raisons que sur le pipeline legacy : éviter le
+        // formatage répété pendant la virtualisation ListView).
+        var le = new LogEntry(entry);
+        if (DispatcherQueue.HasThreadAccess) AddEntrySafe(le);
+        else DispatcherQueue.TryEnqueueOrLog(() => AddEntrySafe(le), "LOGWIN", "log entry");
     }
 
+    // Pas exposé sur l'interface — ILogWindowSink est un canal write-only.
+    // Conservé en méthode publique pour l'usage interne (OnClearClick et
+    // futur reset programmatique). Marshalling identique à Write.
     public void Clear()
     {
         if (DispatcherQueue.HasThreadAccess) ClearAll();
@@ -234,21 +243,21 @@ public sealed partial class LogWindow : Window, ITelemetrySink
 
     // ── Implementation ─────────────────────────────────────────────────────────
 
-    private void AddEntrySafe(TelemetryEvent ev)
+    private void AddEntrySafe(LogEntry entry)
     {
-        _entries.Add(ev);
+        _entries.Add(entry);
 
         const int MaxEntries = 5000;
         while (_entries.Count > MaxEntries)
         {
             var removed = _entries[0];
             _entries.RemoveAt(0);
-            // Ref equality (TelemetryEvent is a class) → no collision possible
-            // on two entries with the same text.
+            // Ref equality (LogEntry est une class) → pas de collision
+            // possible entre deux entries au même Text.
             _visible.Remove(removed);
         }
 
-        if (Matches(ev)) _visible.Add(ev);
+        if (Matches(entry)) _visible.Add(entry);
 
         if (!_isVisible) return;
         if (AutoScrollToggle?.IsChecked != true) return;
@@ -256,24 +265,34 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         ScrollToBottom();
     }
 
-    private bool Matches(TelemetryEvent e)
+    // Les rows télémétrie pures sont filtrées par EventName parce que la
+    // sémantique « metadata diagnostique vs log » ne survit pas dans
+    // EventLevel BCL — les trois events (LatencyRecorded, CorpusRecorded,
+    // MicrophoneTelemetryRecorded) sont Informational comme un log normal.
+    private static bool IsTelemetryRow(LogEntry e)
+        => e.EventName == "LatencyRecorded"
+        || e.EventName == "CorpusRecorded"
+        || e.EventName == "MicrophoneTelemetryRecorded";
+
+    private bool Matches(LogEntry e)
     {
-        // Progressive kind + level filter (All > Activity > Alerts):
-        //   All       → everything passes (log of any level, latency, corpus)
-        //   Activity  → log-kind Info + Success + Warning + Error + Narrative
-        //               (hide Verbose, Latency, Corpus). Narrative reads as a
-        //               primary-text milestone inside the broader stream —
-        //               kept here rather than carved into its own tab where
-        //               it lost the surrounding context.
-        //   Alerts    → log-kind Warning + Error only
+        // Progressive event + level filter (All > Activity > Alerts) :
+        //   All       → tout passe (events de n'importe quel niveau,
+        //               + rows télémétrie)
+        //   Activity  → Informational + Warning + Error + Critical,
+        //               hors Verbose et hors rows télémétrie
+        //   Alerts    → Warning + Error + Critical uniquement,
+        //               hors rows télémétrie
         bool modeOk = _filterMode switch
         {
             LogFilterMode.All      => true,
-            LogFilterMode.Activity => e.Kind == TelemetryKind.Log
-                                   && e.Level != LogLevel.Verbose,
-            LogFilterMode.Alerts   => e.Kind == TelemetryKind.Log
-                                   && (e.Level == LogLevel.Warning
-                                    || e.Level == LogLevel.Error),
+            LogFilterMode.Activity => !IsTelemetryRow(e)
+                                   && e.Level != EventLevel.Verbose
+                                   && e.Level != EventLevel.LogAlways,
+            LogFilterMode.Alerts   => !IsTelemetryRow(e)
+                                   && (e.Level == EventLevel.Warning
+                                    || e.Level == EventLevel.Error
+                                    || e.Level == EventLevel.Critical),
             _                      => true,
         };
         if (!modeOk) return false;
@@ -430,7 +449,7 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         _isDragging = true;
         var localY = e.GetCurrentPoint(LogItems).Position.Y;
         var container = FindContainerAtY(localY);
-        _dragStartIndex = container?.Content is TelemetryEvent ev
+        _dragStartIndex = container?.Content is LogEntry ev
             ? _visible.IndexOf(ev)
             : -1;
     }
@@ -462,7 +481,7 @@ public sealed partial class LogWindow : Window, ITelemetrySink
         CopyBadgeTransform.Y = pos.Y + (container.ActualHeight - CopyBadge.ActualHeight) / 2;
         CopyBadge.Visibility = Visibility.Visible;
 
-        if (_isDragging && _dragStartIndex >= 0 && container.Content is TelemetryEvent currentEntry)
+        if (_isDragging && _dragStartIndex >= 0 && container.Content is LogEntry currentEntry)
         {
             int currentIndex = _visible.IndexOf(currentEntry);
             if (currentIndex >= 0)
