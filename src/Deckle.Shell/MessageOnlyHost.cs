@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using Deckle.Interop;
-using Deckle.Logging;
 
 namespace Deckle.Shell;
 
@@ -85,7 +84,7 @@ public sealed class MessageOnlyHost : IDisposable
                 $"CreateWindowEx(HWND_MESSAGE) failed (Win32 err {err})");
         }
 
-        LogService.Instance.Verbose(LogSource.MsgHost, $"message-only window created hwnd={_hwnd}");
+        DeckleShellSource.Log.MessageOnlyHostCreated(_hwnd.ToInt64());
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)

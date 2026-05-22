@@ -1,5 +1,4 @@
 using Microsoft.UI.Dispatching;
-using Deckle.Logging;
 
 namespace Deckle.Shell;
 
@@ -22,19 +21,17 @@ namespace Deckle.Shell;
 
 public static class DispatcherQueueExtensions
 {
-    private static readonly LogService _log = LogService.Instance;
-
     [System.ThreadStatic]
     private static bool _logging;
 
     /// <summary>
     /// Enqueue le callback sur la dispatcher queue. Si l'enqueue échoue
-    /// (queue fermée), logue un Warning avec la source et la description
-    /// fournie par le caller, puis retourne false.
+    /// (queue fermée), émet un Warning sur DeckleShellSource avec la
+    /// source caller et la description fournie, puis retourne false.
     /// </summary>
     /// <param name="queue">La dispatcher queue cible.</param>
     /// <param name="callback">Le delegate à exécuter sur le UI thread.</param>
-    /// <param name="source">Constante LogSource pour identifier l'émetteur.</param>
+    /// <param name="source">Identifiant libre de l'émetteur (ex. "HUD", "LOGWIN"). Passé en champ payload de l'event.</param>
     /// <param name="what">Description courte de l'event perdu (ex. "log entry", "recording state").</param>
     public static bool TryEnqueueOrLog(
         this DispatcherQueue queue,
@@ -48,7 +45,7 @@ public static class DispatcherQueueExtensions
             _logging = true;
             try
             {
-                _log.Warning(source, $"DispatcherQueue.TryEnqueue rejected ({what}) — UI event dropped");
+                DeckleShellSource.Log.DispatcherEnqueueRejected(source, what);
             }
             finally { _logging = false; }
         }
