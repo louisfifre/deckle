@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Logging;
 using Deckle.Settings.ViewModels;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 

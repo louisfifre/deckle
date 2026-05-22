@@ -3,6 +3,7 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Logging;
 using Deckle.Shell;
+using Deckle.Core;
 
 namespace Deckle.Settings.ViewModels;
 

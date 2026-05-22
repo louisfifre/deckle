@@ -1,8 +1,9 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Logging;
+using Deckle.Transcription.Pinvoke;
 
 namespace Deckle.Transcription;
 

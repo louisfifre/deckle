@@ -12,7 +12,7 @@ using Windows.Storage.Pickers;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Data;
 using WinRT.Interop;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Shell;

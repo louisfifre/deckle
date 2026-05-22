@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 
+using Deckle.Core;
 namespace Deckle.Transcription.Setup;
 
 // ── SetupContext ─────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Logging;
+using Deckle.Core;
 
 namespace Deckle.Settings.ViewModels;
 

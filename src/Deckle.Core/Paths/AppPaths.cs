@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace Deckle;
+namespace Deckle.Core;
 
 // ── AppPaths ───────────────────────────────────────────────────────────────
 //

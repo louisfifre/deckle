@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Deckle.Audio;
 using Deckle.Audio.Telemetry;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Catalog;

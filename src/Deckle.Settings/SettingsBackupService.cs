@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Deckle.Logging;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 

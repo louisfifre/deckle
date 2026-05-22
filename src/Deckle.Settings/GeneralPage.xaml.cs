@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Settings.ViewModels;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 

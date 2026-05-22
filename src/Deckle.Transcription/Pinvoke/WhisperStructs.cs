@@ -1,13 +1,13 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Deckle.Interop;
+namespace Deckle.Transcription.Pinvoke;
 
 // Whisper.cpp structs — referenced by [DllImport] signatures in
-// Deckle.Transcription.Native.WhisperPInvoke. Namespace stays Deckle.Interop to keep
-// the cross-module convention consistent (every P/Invoke struct sits there);
-// physically they live in Deckle.Transcription.dll because they describe a Whisper-
-// specific binary contract.
+// Deckle.Transcription.Pinvoke.WhisperPInvoke. Whisper-specific, so they sit
+// in the module's own Pinvoke namespace alongside the [DllImport] surface
+// they describe. The generic Win32 cluster (NativeMethods, UIAutomation,
+// Win32Util) lives in Deckle.Core.Interop.
 
 [StructLayout(LayoutKind.Sequential)]
 public struct WhisperContextParams

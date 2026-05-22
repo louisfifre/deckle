@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace Deckle.Interop;
+namespace Deckle.Core.Interop;
 
 // ─── Helpers Win32 pour le debug ──────────────────────────────────────────────
 //

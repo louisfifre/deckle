@@ -2,7 +2,8 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Deckle.Interop;
+using Deckle.Core.Interop;
+using Deckle.Core;
 
 namespace Deckle.Transcription.Pinvoke;
 

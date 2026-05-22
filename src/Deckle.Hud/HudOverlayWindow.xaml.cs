@@ -2,7 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Shell;

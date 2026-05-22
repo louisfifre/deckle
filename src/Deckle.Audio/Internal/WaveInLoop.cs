@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Logging;
 
 namespace Deckle.Audio.Internal;

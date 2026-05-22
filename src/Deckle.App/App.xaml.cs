@@ -1,5 +1,5 @@
 using Deckle.Hud;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Lighting.Ambient;
 using Deckle.Logging;
 using Deckle.Logging.Sinks;
@@ -8,6 +8,7 @@ using Deckle.Shell;
 using Deckle.Transcription;
 using Deckle.Transcription.Setup;
 using Deckle.App.Logging;
+using Deckle.Core;
 
 namespace Deckle.App;
 

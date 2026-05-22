@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Transcription.Setup;
+using Deckle.Core;
 
 namespace Deckle.Setup;
 

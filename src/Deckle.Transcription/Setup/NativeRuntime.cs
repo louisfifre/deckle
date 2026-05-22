@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Deckle.Core;
 namespace Deckle.Transcription.Setup;
 
 // ── NativeRuntime ────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Deckle.Core;
 namespace Deckle.Logging;
 
 // ── CorpusPaths ─────────────────────────────────────────────────────────────

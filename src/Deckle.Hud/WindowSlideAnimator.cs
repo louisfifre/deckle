@@ -1,6 +1,6 @@
 using System;
 using Microsoft.UI.Dispatching;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Settings;
 
 namespace Deckle.Hud;

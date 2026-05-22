@@ -14,6 +14,7 @@ using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Settings;
 using Deckle.Transcription.ViewModels;
+using Deckle.Core;
 
 namespace Deckle.Transcription;
 

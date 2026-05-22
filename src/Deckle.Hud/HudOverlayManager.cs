@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.UI.Dispatching;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Logging;
 using Deckle.Settings;
 using Deckle.Shell;
