@@ -13,7 +13,7 @@ namespace Deckle.Lighting.Ambient;
 // Error is a transient signal — the engine collapses back to Off
 // immediately after raising it so consumers don't sit in a sticky
 // failure state ; the actual error message is surfaced via the
-// LogService (Error level) and via the Enabled-revert in App.
+// DeckleAmbientSource (Error level) et via le revert Enabled côté App.
 public enum AmbientEngineState
 {
     /// <summary>Engine idle — no capture, no Hue traffic, no owned deps.</summary>
