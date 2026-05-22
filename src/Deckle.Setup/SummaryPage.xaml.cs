@@ -5,7 +5,7 @@ using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Transcription.Setup;
 
-namespace Deckle.App.Shell.Setup;
+namespace Deckle.Setup;
 
 // ── SummaryPage ──────────────────────────────────────────────────────────────
 //
@@ -17,7 +17,7 @@ namespace Deckle.App.Shell.Setup;
 // Retry path navigates back to InstallingPage with a fresh Results list —
 // the user gets another shot at the failed download(s) without re-doing
 // the choices step.
-internal sealed partial class SummaryPage : Page
+public sealed partial class SummaryPage : Page
 {
     private static readonly LogService _log = LogService.Instance;
 

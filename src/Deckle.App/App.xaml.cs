@@ -163,8 +163,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             _log.Info(LogSource.Setup,
                 $"first-run gate | natives_installed={NativeRuntime.IsInstalled()}" +
                 $" | default_model_installed={SpeechModels.IsDefaultInstalled()}");
-            var setup = new Shell.Setup.SetupWindow();
-            setup.Body.Navigate(typeof(Shell.Setup.ChoicesPage), setup);
+            var setup = new Deckle.Setup.SetupWindow();
+            setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
             setup.Activate();
             bool success = await setup.Completion;
             if (!success)
@@ -239,11 +239,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
         Settings.SettingsHost.OpenSetupWizard  = () =>
         {
-            // Wizard XAML lives in src/Deckle.App/Shell/Setup/ (namespace
-            // Deckle.App.Shell.Setup, App-side). Detached from the Settings
-            // window — Settings stays open behind it.
-            var setup = new Deckle.App.Shell.Setup.SetupWindow();
-            setup.Body.Navigate(typeof(Deckle.App.Shell.Setup.ChoicesPage), setup);
+            // Wizard XAML lives in the standalone Deckle.Setup module
+            // (extracted out of Deckle.App/Shell/Setup/ for J3). Detached
+            // from the Settings window — Settings stays open behind it.
+            var setup = new Deckle.Setup.SetupWindow();
+            setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
             setup.Activate();
         };
 

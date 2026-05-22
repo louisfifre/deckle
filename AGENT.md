@@ -57,9 +57,10 @@ Deckle.Vision           → Core, Logging
 Deckle.Lighting         → Core, Logging
 Deckle.Chrono.Hud       → Chrono, Composition
 Deckle.Shell            → Core, Logging
-Deckle.Settings         → Core, Logging, Localization
+Deckle.Settings         → Core, Logging, Catalog
 Deckle.Llm              → Core, Logging
-Deckle.Transcription            → Core, Logging, Audio, Llm
+Deckle.Transcription    → Core, Logging, Audio, Llm
+Deckle.Setup            → Core, Logging, Catalog, Transcription
 Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
 Deckle.App              → all of the above (app host, WinUI 3 entry point)
 ```

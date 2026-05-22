@@ -12,7 +12,7 @@ using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Transcription.Setup;
 
-namespace Deckle.App.Shell.Setup;
+namespace Deckle.Setup;
 
 // ── SetupWindow ──────────────────────────────────────────────────────────────
 //
@@ -38,7 +38,7 @@ namespace Deckle.App.Shell.Setup;
 // awaits Completion, and either boots the engine (success=true) or
 // exits the app (false). The TaskCompletionSource resolves on Complete()
 // or on Window.Closed, whichever fires first.
-internal sealed partial class SetupWindow : Window
+public sealed partial class SetupWindow : Window
 {
     private static readonly LogService _log = LogService.Instance;
     private readonly TaskCompletionSource<bool> _completion = new();

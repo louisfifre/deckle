@@ -86,6 +86,7 @@
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Playground\Deckle.Playground.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
+    <ProjectReference Include="..\Deckle.Setup\Deckle.Setup.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />

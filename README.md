@@ -182,7 +182,8 @@ service, nothing machine-wide.
 │   ├── Deckle.Shell/           System shell (tray, hotkeys, autostart, message-only host)
 │   ├── Deckle.Settings/        Settings UI shell + per-module persistence
 │   ├── Deckle.Llm/             LLM rewrite via Ollama
-│   └── Deckle.Transcription/           Whisper transcription pipeline
+│   ├── Deckle.Transcription/   Whisper transcription pipeline
+│   └── Deckle.Setup/           First-run wizard (natives + models)
 ├── scripts/                    Build, publish, setup, launcher (deckle.ps1 + lib/)
 ├── docs/                       Reference sheets and research notes
 ├── benchmark/                  Python benchmark suite (optional, to be extracted)

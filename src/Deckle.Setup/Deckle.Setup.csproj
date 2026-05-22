@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Deckle.Setup</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <!-- WinUI XAML compilation : Deckle.Setup hosts the first-run wizard
+         (SetupWindow + ChoicesPage / InstallingPage / SummaryPage). Extracted
+         from Deckle.App/Shell/Setup/ to break the App-side coupling — the
+         wizard now only sees Deckle.Transcription's setup primitives and
+         Deckle.Catalog/Logging/Core, not the full host. -->
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in the wizard pages
+         resolve against the Deckle.Setup/Resources subtree. The resw under
+         Strings/en-US/ is a copy of the App's resw — same pattern as
+         Deckle.Settings + Deckle.Llm + Deckle.Transcription. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Versions aligned on Deckle.App.csproj. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <!-- Transcription owns the setup primitives (SpeechModels, Downloader,
+         NativeRuntime, SetupContext) that the wizard orchestrates. -->
+    <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+  </ItemGroup>
+</Project>

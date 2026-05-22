@@ -11,7 +11,7 @@ using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Transcription.Setup;
 
-namespace Deckle.App.Shell.Setup;
+namespace Deckle.Setup;
 
 // ── InstallingPage ───────────────────────────────────────────────────────────
 //
@@ -37,7 +37,7 @@ namespace Deckle.App.Shell.Setup;
 // worked and what didn't, EXCEPT for a placeholder native bundle URL,
 // which short-circuits the run since nothing else can be installed
 // without the runtime.
-internal sealed partial class InstallingPage : Page
+public sealed partial class InstallingPage : Page
 {
     private const int TotalSteps = 3;
     private const string NativeRuntimeItemId = "native-runtime";

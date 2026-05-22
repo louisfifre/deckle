@@ -50,8 +50,8 @@ public static class SettingsHost
 
     // Re-open the first-run setup wizard on demand (Browse model,
     // replace native runtime…). The wizard XAML and code live in the
-    // App assembly (namespace Deckle.App.Shell.Setup) until they get
-    // factored into a dedicated module — so we go through a hook here
-    // to avoid taking a back-reference to the App.
+    // standalone Deckle.Setup module — we go through a hook here so
+    // Deckle.Settings doesn't take a back-reference to either Deckle.App
+    // or Deckle.Setup just for the wizard entry point.
     public static Action? OpenSetupWizard;
 }

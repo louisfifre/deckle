@@ -6,7 +6,7 @@ using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Transcription.Setup;
 
-namespace Deckle.App.Shell.Setup;
+namespace Deckle.Setup;
 
 // ── ChoicesPage ──────────────────────────────────────────────────────────────
 //
@@ -23,7 +23,7 @@ namespace Deckle.App.Shell.Setup;
 // The Install button is enabled only when both the runtime is installed
 // and a model is selected. Clicking Install navigates to InstallingPage
 // (B.4), which downloads the chosen model + Silero VAD.
-internal sealed partial class ChoicesPage : Page
+public sealed partial class ChoicesPage : Page
 {
     private static readonly LogService _log = LogService.Instance;
 
