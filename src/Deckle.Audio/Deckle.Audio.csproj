@@ -7,10 +7,23 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Type-only carry-over: MicrophoneTelemetryPayload reste dans
+         Deckle.Logging comme POCO record le temps que WhispEngine
+         (vague 5) cesse de le consommer pour son ring d'auto-
+         calibration. Aucun appel TelemetryService/LogService ne
+         subsiste dans Deckle.Audio — voir le grep zéro de fin de
+         vague. Cette ProjectReference disparaît à la vague 6 quand
+         le payload migre dans Deckle.Audio aux côtés du calculator
+         qui le produit. -->
     <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
   </ItemGroup>
 </Project>

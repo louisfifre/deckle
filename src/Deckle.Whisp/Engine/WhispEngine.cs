@@ -439,7 +439,11 @@ public sealed class WhispEngine : IDisposable
 
         _llm = new LlmService();
 
-        _capture = new MicrophoneCapture(_log);
+        // MicrophoneCapture n'attend plus de LogService — l'observabilité
+        // d'Audio est passée sur DeckleAudioSource (vague 2 de la refonte
+        // EventSource). WhispEngine continue d'utiliser son propre _log
+        // pour les jalons internes ; il migrera lui-même à la vague 5.
+        _capture = new MicrophoneCapture();
         _recordingHost = new RecordingHostAdapter(_host);
         // Forward the per-sub-window RMS to whoever subscribes to the engine
         // (HUD chrono today). Capture stays unaware of UI consumers.
