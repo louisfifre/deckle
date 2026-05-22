@@ -1,8 +1,8 @@
 <Window
-    x:Class="Deckle.App.HudOverlayWindow"
+    x:Class="Deckle.Hud.HudOverlayWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:Deckle.App.Controls">
+    xmlns:controls="using:Deckle.Hud">
     <!-- Overlay card hosted by HudOverlayManager. Same technical shell as
          HudWindow (fixed 272x78, opaque card painted by LayerFillColorDefaultBrush,
          DWM round + default stroke in code-behind) minus proximity fade and

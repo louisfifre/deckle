@@ -15,7 +15,7 @@ namespace Deckle.Settings;
 // to the App assembly? Because that would close the dependency cycle
 // (App → Deckle.Settings → App). The pattern mirrors what
 // `HudChrono.MaxRecordingDurationSecondsProvider` does in
-// Deckle.Chrono.Hud: the lib exposes static fields, the App wires them
+// Deckle.Hud: the lib exposes static fields, the App wires them
 // once at boot, the lib's call sites invoke them with `?.Invoke(...)`
 // and degrade silently to no-op when nothing is wired (so the lib
 // remains buildable / testable in isolation).

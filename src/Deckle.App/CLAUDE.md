@@ -41,9 +41,9 @@ Le lifetime des fenêtres WinUI 3 dans Deckle est piloté par `Closing→Cancel`
 
 Le tray et les hotkeys globaux ne peuvent pas être hébergés par une `Microsoft.UI.Xaml.Window` : le sous-classage Win32 nécessaire (`SetWindowSubclass`) est incompatible. La solution canonique est une message-only window Win32 (`MessageOnlyHost`, parent `HWND_MESSAGE`) créée dans `App.OnLaunched`. Invisible par construction — pas de flash possible, pas de trick off-screen. `TrayIconManager.Register(hwnd)` et `HotkeyManager` s'attachent dessus.
 
-## HudWindow — rappel spec
+## HudWindow — usage côté hôte
 
-`HudWindow` est une `Window` WinUI 3 d'environ 320×64, positionnée bas-centre via `DisplayArea.Primary.WorkArea`, en `OverlappedPresenter` non resizable, avec `ExtendsContentIntoTitleBar=true`. Elle est créée une fois dans `OnLaunched` et n'est jamais détruite. Les handlers UI sont marshalés via `DispatcherQueue.TryEnqueue` car les events `WhispEngine` viennent de threads de fond.
+La classe `HudWindow` vit désormais dans `Deckle.Hud` (extraite du hôte en cartographie cleanup). Le hôte instancie le singleton une fois dans `OnLaunched` et ne le détruit jamais. Les handlers UI sont marshalés via `DispatcherQueue.TryEnqueue` car les events `WhispEngine` viennent de threads de fond. Détail interne de la fenêtre : `Window` WinUI 3 d'environ 320×64, positionnée bas-centre via `DisplayArea.Primary.WorkArea`, en `OverlappedPresenter` non resizable, avec `ExtendsContentIntoTitleBar=true`.
 
 Pour afficher la HUD, la séquence est `MoveAndResize` puis `ShowWindow(SW_SHOWNOACTIVATE)` suivi de `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. Jamais `SetForegroundWindow` — la HUD ne doit pas voler le focus. Pour la masquer, `ShowWindow(SW_HIDE)`. Les détails (coloration progressive du chrono, fade proximité souris via Raw Input et alpha layered avec smoothstep, contrainte d'ombre layered, régressions de notification) vivent dans [docs/reference--hud--1.0.md](../../docs/reference--hud--1.0.md).
 

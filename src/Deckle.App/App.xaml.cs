@@ -1,3 +1,4 @@
+using Deckle.Hud;
 using Deckle.Interop;
 using Deckle.Lighting.Ambient;
 using Deckle.Logging;
@@ -220,11 +221,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // chain + DWM visual tree at boot for a window rarely used.
         // Same Closing→Hide contract once created.
 
-        // Wire the recording cap into the chrono lib. Deckle.Chrono.Hud is
+        // Wire the recording cap into the Hud lib. Deckle.Hud is
         // a Settings-agnostic module ; the App is the one that reads
         // Settings on every vsync to honour live edits to MaxRecordingDurationSeconds
         // (Capture page slider). Provider is invoked from UpdateClock at vsync.
-        Deckle.Chrono.Hud.HudChrono.MaxRecordingDurationSecondsProvider =
+        Deckle.Hud.HudChrono.MaxRecordingDurationSecondsProvider =
             () => Audio.CaptureSettingsService.Instance.Current.MaxRecordingDurationSeconds;
 
         // SettingsHost — App-side hooks the Deckle.Settings UI surface

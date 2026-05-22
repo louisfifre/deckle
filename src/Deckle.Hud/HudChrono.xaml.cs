@@ -8,7 +8,7 @@ using Deckle.Audio;
 using Deckle.Chrono;
 using Deckle.Composition;
 
-namespace Deckle.Chrono.Hud;
+namespace Deckle.Hud;
 
 // Chrono card — container + clock + processing stroke attach.
 //

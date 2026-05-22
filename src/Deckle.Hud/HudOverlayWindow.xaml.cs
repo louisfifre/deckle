@@ -2,13 +2,12 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
-using Deckle.App.Controls;
 using Deckle.Interop;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Shell;
 
-namespace Deckle.App;
+namespace Deckle.Hud;
 
 // Overlay card Window used by HudOverlayManager. Each enqueued overlay creates
 // one HudOverlayWindow; the manager owns its position and life timer, the

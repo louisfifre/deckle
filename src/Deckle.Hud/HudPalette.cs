@@ -1,7 +1,6 @@
 using Deckle.Catalog;
-using Deckle.App.Controls;
 
-namespace Deckle.App.Composition;
+namespace Deckle.Hud;
 
 // Semantic palette + Segoe Fluent glyphs for HUD message badges.
 //

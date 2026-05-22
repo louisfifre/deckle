@@ -168,14 +168,14 @@ service, nothing machine-wide.
 ```
 <repo-root>/
 ├── src/
-│   ├── Deckle/                 WinUI 3 app host — entry point, windows, tray
+│   ├── Deckle.App/             WinUI 3 app host — entry point, windows, tray
 │   ├── Deckle.Core/            Foundations (AppPaths, JsonSettingsStore, Win32 interop)
 │   ├── Deckle.Logging/         Central telemetry hub (TelemetryService + sinks)
-│   ├── Deckle.Catalog/    ResourceLoader facade (x:Uid pattern)
+│   ├── Deckle.Catalog/         ResourceLoader facade (x:Uid pattern)
 │   ├── Deckle.Audio/           Microphone capture (WASAPI, RMS, calibration)
 │   ├── Deckle.Chrono/          Timer primitive (no UI)
-│   ├── Deckle.Chrono.Hud/      UserControl for the stopwatch HUD
 │   ├── Deckle.Composition/     Direct2D + Composition primitives (ColorSpace, easing)
+│   ├── Deckle.Hud/             HUD subsystem (HudWindow, overlay stack, HudChrono)
 │   ├── Deckle.Vision/          Screen capture (DXGI Output Duplication)
 │   ├── Deckle.Lighting/        LED driver abstraction (ILightOutput)
 │   ├── Deckle.Lighting.Ambient/ Ambient lighting consumer (Vision + Lighting → Hue)

@@ -3,7 +3,7 @@ using Microsoft.UI.Dispatching;
 using Deckle.Interop;
 using Deckle.Settings;
 
-namespace Deckle.App;
+namespace Deckle.Hud;
 
 // Window-level animators used by HudOverlayManager to slide and fade overlay
 // cards. Both run on a DispatcherQueueTimer ticking at ~60 fps, 150 ms total,

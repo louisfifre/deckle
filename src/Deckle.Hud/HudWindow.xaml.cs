@@ -3,14 +3,12 @@ using System.Threading;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
-using Deckle.Chrono.Hud;
-using Deckle.App.Controls;
 using Deckle.Interop;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Shell;
 
-namespace Deckle.App;
+namespace Deckle.Hud;
 
 // ─── HUD bottom-center ───────────────────────────────────────────────────────
 //

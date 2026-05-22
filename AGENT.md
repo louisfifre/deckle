@@ -55,9 +55,9 @@ Deckle.Chrono           (standalone)
 Deckle.Composition      (standalone)
 Deckle.Vision           → Core, Logging
 Deckle.Lighting         → Core, Logging
-Deckle.Chrono.Hud       → Chrono, Composition
 Deckle.Shell            → Core, Logging
 Deckle.Settings         → Core, Logging, Catalog
+Deckle.Hud              → Core, Logging, Catalog, Audio, Chrono, Composition, Settings, Shell
 Deckle.Llm              → Core, Logging
 Deckle.Transcription    → Core, Logging, Audio, Llm
 Deckle.Setup            → Core, Logging, Catalog, Transcription
@@ -92,8 +92,8 @@ Five of fifteen modules have non-trivial contracts documented:
 - `src/Deckle.Settings/CLAUDE.md` — NavigationView shell, SettingsHost, modular pages
 - `src/Deckle.Transcription/CLAUDE.md` — transcription pipeline, segment callback, VAD, hot-reload
 
-The remaining ten modules (Core, Chrono, Chrono.Hud, Composition, Vision,
-Lighting, Lighting.Ambient, Llm, Localization, Shell) are either
+The remaining ten modules (Core, Chrono, Hud, Composition, Vision,
+Lighting, Lighting.Ambient, Llm, Catalog, Shell) are either
 straightforward or still being scaffolded.
 
 ---

@@ -6,7 +6,7 @@ using Deckle.Logging;
 using Deckle.Settings;
 using Deckle.Shell;
 
-namespace Deckle.App;
+namespace Deckle.Hud;
 
 // Owns the stack of transient overlay cards displayed alongside the main
 // HudWindow. Each enqueued UserFeedback with Role=Overlay creates one
@@ -27,7 +27,7 @@ namespace Deckle.App;
 //   Top*     → stack grows downward.
 // When the main HUD hides, slot 0 takes over its exact position; all other
 // slots shift one stride toward the HUD's old location.
-internal sealed class HudOverlayManager : IDisposable
+public sealed class HudOverlayManager : IDisposable
 {
     private const int GapDip = 12;
 

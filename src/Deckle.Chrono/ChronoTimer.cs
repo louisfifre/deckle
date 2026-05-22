@@ -7,7 +7,7 @@ namespace Deckle.Chrono;
 // Thin wrapper around System.Diagnostics.Stopwatch. Exists so consumers
 // don't have to inline a Stopwatch field every time they want a "time
 // since trigger" reading, and so the hosting visual (HudChrono UserControl
-// in Deckle.Chrono.Hud) can be fed by an external timer when the source
+// in Deckle.Hud) can be fed by an external timer when the source
 // of timing is something other than its own start.
 //
 // Reusable by Ask-Ollama, spell-correction, or any module that wants to

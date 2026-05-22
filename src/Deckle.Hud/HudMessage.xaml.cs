@@ -1,9 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Deckle.App.Composition;
 
-namespace Deckle.App.Controls;
+namespace Deckle.Hud;
 
 // Message card used for Pasted / Copied / Error / UserFeedback feedback.
 //

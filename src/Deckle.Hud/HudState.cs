@@ -1,4 +1,4 @@
-namespace Deckle.Chrono.Hud;
+namespace Deckle.Hud;
 
 // Visual states the HudChrono can render. Cross-assembly (consumed by the
 // App-side HudWindow + PlaygroundWindow), so public — internal would force

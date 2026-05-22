@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="Deckle.Chrono.Hud.HudChrono"
+    x:Class="Deckle.Hud.HudChrono"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
