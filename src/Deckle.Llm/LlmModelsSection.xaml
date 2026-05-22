@@ -23,19 +23,14 @@
         <StackPanel x:Name="ModelsContainer"
                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-        <StackPanel Orientation="Horizontal"
-                    Spacing="8"
-                    Margin="0,4,0,0">
-            <Button x:Name="ImportGgufButton"
-                    x:Uid="LlmImportGgufButton"
-                    Click="ImportGguf_Click" />
-            <Button x:Name="RefreshModelsButton"
-                    Click="RefreshModels_Click">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                    <TextBlock x:Uid="LlmRefreshLabel" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
+        <Button x:Name="RefreshModelsButton"
+                Click="RefreshModels_Click"
+                HorizontalAlignment="Left"
+                Margin="0,4,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                <TextBlock x:Uid="LlmRefreshLabel" />
+            </StackPanel>
+        </Button>
     </StackPanel>
 </UserControl>

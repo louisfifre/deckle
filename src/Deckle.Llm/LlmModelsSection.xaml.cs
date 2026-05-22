@@ -5,21 +5,22 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Llm;
 using Deckle.Catalog;
-using Deckle.Llm.GgufImport;
 
 namespace Deckle.Llm;
 
 // ─── Section Models de LlmPage ─────────────────────────────────────────────
 //
-// Liste les modèles locaux d'Ollama (via LlmOllamaContext) + boutons Import
-// GGUF et Refresh. Remove par modèle avec ContentDialog de confirmation.
-//
-// Délégation de l'import vers GgufImportDialog (module autonome dans
-// Settings/Llm/GgufImport/). Le host écoute RefreshRequested pour relancer
-// RefreshOllamaStateAsync côté page après refresh manuel ou import réussi.
+// Liste les modèles locaux d'Ollama (via LlmOllamaContext) + bouton Refresh.
+// Remove par modèle avec ContentDialog de confirmation. Le host écoute
+// RefreshRequested pour relancer RefreshOllamaStateAsync côté page après
+// refresh manuel.
 //
 // Erreurs locales affichées dans l'ErrorBar de la section — la StatusBar
 // globale de LlmPage ne sert qu'à l'état de disponibilité d'Ollama.
+//
+// L'import GGUF a été retiré : Ollama gère nativement `ollama create` et
+// `ollama pull` depuis le shell, donc un wrapper UI in-app n'apporte rien
+// au-delà de la liste + refresh + delete.
 
 public sealed partial class LlmModelsSection : UserControl
 {
@@ -76,7 +77,6 @@ public sealed partial class LlmModelsSection : UserControl
         ModelsContainer.Children.Clear();
 
         bool enabled = _context?.Available ?? false;
-        ImportGgufButton.IsEnabled = enabled;
         RefreshModelsButton.IsEnabled = enabled;
 
         if (!enabled) return;
@@ -163,7 +163,7 @@ public sealed partial class LlmModelsSection : UserControl
         {
             ModelsContainer.Children.Add(new TextBlock
             {
-                Text = "No models found in Ollama. Pull a model or import a GGUF file.",
+                Text = "No models found in Ollama. Pull a model with `ollama pull` from your shell.",
                 Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
                 Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
                 Margin = new Thickness(1, 4, 0, 0)
@@ -174,14 +174,5 @@ public sealed partial class LlmModelsSection : UserControl
     private void RefreshModels_Click(object sender, RoutedEventArgs e)
     {
         RefreshRequested?.Invoke(this, EventArgs.Empty);
-    }
-
-    private async void ImportGguf_Click(object sender, RoutedEventArgs e)
-    {
-        if (_context?.Service == null || !_context.Available) return;
-
-        bool imported = await GgufImportDialog.ShowAsync(this.XamlRoot, _context.Service);
-        if (imported)
-            RefreshRequested?.Invoke(this, EventArgs.Empty);
     }
 }
