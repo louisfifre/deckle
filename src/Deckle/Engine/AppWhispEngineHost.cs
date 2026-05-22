@@ -1,14 +1,14 @@
 using Deckle.Audio;
 using Deckle.Llm;
 using Deckle.Logging;
-using Deckle.Whisp;
+using Deckle.Transcription;
 
 namespace Deckle;
 
 // ── AppWhispEngineHost ────────────────────────────────────────────────────────
 //
 // App-side implementation of IWhispEngineHost. The engine reads its
-// settings through this bridge so Deckle.Whisp can stay free of any
+// settings through this bridge so Deckle.Transcription can stay free of any
 // reference to the App project or to the shell SettingsService.
 //
 // After slice C2b each module owns its own settings file

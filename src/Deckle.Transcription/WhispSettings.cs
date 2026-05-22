@@ -1,4 +1,4 @@
-namespace Deckle.Whisp;
+namespace Deckle.Transcription;
 
 // ── WhispSettings ─────────────────────────────────────────────────────────────
 //

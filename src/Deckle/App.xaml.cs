@@ -4,8 +4,8 @@ using Deckle.Logging;
 using Deckle.Logging.Sinks;
 using Deckle.Playground;
 using Deckle.Shell;
-using Deckle.Whisp;
-using Deckle.Whisp.Setup;
+using Deckle.Transcription;
+using Deckle.Transcription.Setup;
 
 namespace Deckle;
 
@@ -671,7 +671,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (exePath is not null)
         {
             // Quote pageTag because assembly-qualified tags
-            // ("Deckle.Whisp.WhisperPage, Deckle.Whisp") contain a space
+            // ("Deckle.Transcription.WhisperPage, Deckle.Transcription") contain a space
             // — without quoting, the relaunched process would split it
             // into two argv entries and the SettingsWindow tag match
             // would fail.

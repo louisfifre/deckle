@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Logging;
 
-namespace Deckle.Whisp.ViewModels;
+namespace Deckle.Transcription.ViewModels;
 
 // ViewModel for WhisperPage — bridges the 7 AppSettings sections
 // (Paths, Transcription, SpeechDetection, Decoding, Confidence,

@@ -14,7 +14,7 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups resolve against
          Deckle.Playground/Strings — same pattern as Deckle.Lighting.Ambient
-         and Deckle.Whisp. -->
+         and Deckle.Transcription. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 

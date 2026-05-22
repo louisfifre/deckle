@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Deckle.Interop;
 using Deckle.Logging;
 
-namespace Deckle.Whisp;
+namespace Deckle.Transcription;
 
 // ── WhisperParamsMapper ───────────────────────────────────────────────────────
 //

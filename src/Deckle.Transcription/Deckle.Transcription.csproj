@@ -2,12 +2,12 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>Deckle.Whisp</RootNamespace>
+    <RootNamespace>Deckle.Transcription</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- WinUI XAML compilation : Deckle.Whisp now ships WhisperPage.xaml +
+    <!-- WinUI XAML compilation : Deckle.Transcription now ships WhisperPage.xaml +
          WhisperViewModel.cs (moved from Deckle.Settings in slice C1). The
          engine, native runtime setup, and capture host stay in this same
          assembly — they share the lifecycle and the Whisp module's owner
@@ -16,7 +16,7 @@
     <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in WhisperPage
-         resolve against the Deckle.Whisp/Resources subtree. The resw
+         resolve against the Deckle.Transcription/Resources subtree. The resw
          under Strings/en-US/ is a copy of the App's resw — same pattern
          as Deckle.Settings (cf. Microsoft Learn "Localize a class
          library", PowerToys, WindowsAppSDK#3451). -->

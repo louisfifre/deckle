@@ -14,7 +14,7 @@ Built with WinUI 3, .NET 10, and Windows App SDK 1.8. Targets Windows 11.
 
 ## Subsystems
 
-### Voice transcription (Whisp)
+### Voice transcription
 
 Press a hotkey, talk, release — the transcription lands in the clipboard,
 ready to paste anywhere.
@@ -182,7 +182,7 @@ service, nothing machine-wide.
 │   ├── Deckle.Shell/           System shell (tray, hotkeys, autostart, message-only host)
 │   ├── Deckle.Settings/        Settings UI shell + per-module persistence
 │   ├── Deckle.Llm/             LLM rewrite via Ollama
-│   └── Deckle.Whisp/           Whisper transcription pipeline
+│   └── Deckle.Transcription/           Whisper transcription pipeline
 ├── scripts/                    Build, publish, setup, launcher (deckle.ps1 + lib/)
 ├── docs/                       Reference sheets and research notes
 ├── benchmark/                  Python benchmark suite (optional, to be extracted)

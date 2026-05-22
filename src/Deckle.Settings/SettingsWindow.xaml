@@ -47,7 +47,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="SettingsNavTranscription"
-                                    Tag="Deckle.Whisp.WhisperPage, Deckle.Whisp">
+                                    Tag="Deckle.Transcription.WhisperPage, Deckle.Transcription">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{StaticResource Icon.Speech}" />
                     </NavigationViewItem.Icon>

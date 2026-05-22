@@ -18,7 +18,7 @@ namespace Deckle.Settings;
 //
 // What moved out (loaded via the matching XxxSettingsService.Instance):
 //   • CaptureSettings        → Deckle.Audio/CaptureSettingsService
-//   • WhispSettings          → Deckle.Whisp/WhispSettingsService
+//   • WhispSettings          → Deckle.Transcription/WhispSettingsService
 //   • LlmSettings            → Deckle.Llm/LlmSettingsService
 //   • TelemetrySettings      → Deckle.Logging/TelemetrySettingsService
 //

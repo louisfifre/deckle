@@ -10,7 +10,7 @@ using WinRT.Interop;
 using Deckle.Interop;
 using Deckle.Catalog;
 using Deckle.Logging;
-using Deckle.Whisp.Setup;
+using Deckle.Transcription.Setup;
 
 namespace Deckle.Shell.Setup;
 

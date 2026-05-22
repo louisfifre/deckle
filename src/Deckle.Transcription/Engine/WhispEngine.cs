@@ -7,10 +7,10 @@ using Deckle.Interop;
 using Deckle.Llm;
 using Deckle.Catalog;
 using Deckle.Logging;
-using Deckle.Whisp.Pinvoke;
-using Deckle.Whisp.Setup;
+using Deckle.Transcription.Pinvoke;
+using Deckle.Transcription.Setup;
 
-namespace Deckle.Whisp;
+namespace Deckle.Transcription;
 
 // Result of a pipeline pass, consumed by the HUD post-paste handler.
 //   None            — nothing to show (empty audio, empty text, error).

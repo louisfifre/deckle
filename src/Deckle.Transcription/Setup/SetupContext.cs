@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Deckle.Whisp.Setup;
+namespace Deckle.Transcription.Setup;
 
 // ── SetupContext ─────────────────────────────────────────────────────────────
 //

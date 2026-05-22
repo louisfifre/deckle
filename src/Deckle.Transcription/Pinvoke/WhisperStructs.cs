@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 namespace Deckle.Interop;
 
 // Whisper.cpp structs — referenced by [DllImport] signatures in
-// Deckle.Whisp.Native.WhisperPInvoke. Namespace stays Deckle.Interop to keep
+// Deckle.Transcription.Native.WhisperPInvoke. Namespace stays Deckle.Interop to keep
 // the cross-module convention consistent (every P/Invoke struct sits there);
-// physically they live in Deckle.Whisp.dll because they describe a Whisper-
+// physically they live in Deckle.Transcription.dll because they describe a Whisper-
 // specific binary contract.
 
 [StructLayout(LayoutKind.Sequential)]

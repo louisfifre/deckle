@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Logging;
-using Deckle.Whisp.Setup;
+using Deckle.Transcription.Setup;
 
 namespace Deckle.Shell.Setup;
 

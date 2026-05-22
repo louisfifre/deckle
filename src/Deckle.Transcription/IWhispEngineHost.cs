@@ -2,7 +2,7 @@ using Deckle.Audio;
 using Deckle.Llm;
 using Deckle.Logging;
 
-namespace Deckle.Whisp;
+namespace Deckle.Transcription;
 
 // ── IWhispEngineHost ──────────────────────────────────────────────────────────
 //

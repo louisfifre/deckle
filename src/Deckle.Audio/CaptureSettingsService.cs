@@ -14,7 +14,7 @@ namespace Deckle.Audio;
 // modules/capture/ per-module layout is handled by
 // SettingsBootstrap.MigrateLegacyToPerModule(). Two historical renames
 // converge on the current `audio` id: `recording` → `capture`
-// (2026-05-02 module extraction from Deckle.Whisp) and `capture` →
+// (2026-05-02 module extraction from Deckle.Transcription) and `capture` →
 // `audio` (2026-05-15 module rename when the false-generic `Capture`
 // name was retired in favour of an honest audio-domain name).
 public sealed class CaptureSettingsService

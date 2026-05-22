@@ -13,9 +13,9 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Settings;
-using Deckle.Whisp.ViewModels;
+using Deckle.Transcription.ViewModels;
 
-namespace Deckle.Whisp;
+namespace Deckle.Transcription;
 
 public sealed partial class WhisperPage : Page
 {
@@ -478,7 +478,7 @@ public sealed partial class WhisperPage : Page
 
     private void RestartNow_Click(object sender, RoutedEventArgs e)
     {
-        SettingsHost.RestartApp?.Invoke("Deckle.Whisp.WhisperPage, Deckle.Whisp");
+        SettingsHost.RestartApp?.Invoke("Deckle.Transcription.WhisperPage, Deckle.Transcription");
     }
 
     private void RestartDiscard_Click(object sender, RoutedEventArgs e)

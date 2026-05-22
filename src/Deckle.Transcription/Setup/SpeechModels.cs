@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Deckle.Whisp.Setup;
+namespace Deckle.Transcription.Setup;
 
 // ── ModelEntry ───────────────────────────────────────────────────────────────
 //

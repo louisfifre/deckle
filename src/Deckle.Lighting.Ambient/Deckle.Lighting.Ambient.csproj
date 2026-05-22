@@ -9,12 +9,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- WinUI XAML compilation : Lighting.Ambient ships AmbientPage.xaml
          (Settings page) + AmbientViewModel.cs starting in J0c. Aligned on
-         Deckle.Whisp / Deckle.Llm pattern. -->
+         Deckle.Transcription / Deckle.Llm pattern. -->
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <!-- Generates the lib's own .pri so x:Uid lookups in AmbientPage
          resolve against the Deckle.Lighting.Ambient/Resources subtree.
-         Same pattern as Deckle.Whisp and Deckle.Llm. -->
+         Same pattern as Deckle.Transcription and Deckle.Llm. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 

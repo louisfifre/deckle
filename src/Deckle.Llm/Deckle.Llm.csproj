@@ -16,7 +16,7 @@
     <!-- Generates the lib's own .pri so x:Uid lookups in LlmPage / sections
          resolve against the Deckle.Llm/Resources subtree. The resw under
          Strings/en-US/ is a copy of the App's resw — same pattern as
-         Deckle.Settings + Deckle.Whisp. -->
+         Deckle.Settings + Deckle.Transcription. -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 

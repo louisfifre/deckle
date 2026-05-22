@@ -59,7 +59,7 @@ Deckle.Chrono.Hud       → Chrono, Composition
 Deckle.Shell            → Core, Logging
 Deckle.Settings         → Core, Logging, Localization
 Deckle.Llm              → Core, Logging
-Deckle.Whisp            → Core, Logging, Audio, Llm
+Deckle.Transcription            → Core, Logging, Audio, Llm
 Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
 Deckle                  → all of the above (app host, WinUI 3 entry point)
 ```
@@ -89,7 +89,7 @@ Five of fifteen modules have non-trivial contracts documented:
 - `src/Deckle.Audio/CLAUDE.md` — WASAPI capture, circular buffers, RMS
 - `src/Deckle.Logging/CLAUDE.md` — TelemetryService singleton, sink architecture
 - `src/Deckle.Settings/CLAUDE.md` — NavigationView shell, SettingsHost, modular pages
-- `src/Deckle.Whisp/CLAUDE.md` — transcription pipeline, segment callback, VAD, hot-reload
+- `src/Deckle.Transcription/CLAUDE.md` — transcription pipeline, segment callback, VAD, hot-reload
 
 The remaining ten modules (Core, Chrono, Chrono.Hud, Composition, Vision,
 Lighting, Lighting.Ambient, Llm, Localization, Shell) are either

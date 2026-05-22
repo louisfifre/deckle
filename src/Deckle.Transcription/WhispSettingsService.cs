@@ -2,7 +2,7 @@ using System.Text.Json;
 using Deckle.Core;
 using Deckle.Logging;
 
-namespace Deckle.Whisp;
+namespace Deckle.Transcription;
 
 // ── WhispSettingsService ──────────────────────────────────────────────────
 //
@@ -13,10 +13,10 @@ namespace Deckle.Whisp;
 //
 // Why per-module rather than the previous monolithic AppSettings root?
 // So the Whisp module can move into a place where it owns its UI surface
-// (slice C1: WhisperPage migrating into Deckle.Whisp) without having to
+// (slice C1: WhisperPage migrating into Deckle.Transcription) without having to
 // reach back into Deckle.Settings to read its own settings — that would
 // close the dependency cycle Whisp → Settings → Whisp. Owning the
-// settings here instead breaks the cycle: pages from Deckle.Whisp talk
+// settings here instead breaks the cycle: pages from Deckle.Transcription talk
 // to WhispSettingsService.Instance directly.
 //
 // The legacy <UserDataRoot>/settings.json file used to carry a `whisp`
