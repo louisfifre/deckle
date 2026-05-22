@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Deckle.Core;
-using Deckle.Logging;
 
 namespace Deckle.Lighting.Ambient;
 

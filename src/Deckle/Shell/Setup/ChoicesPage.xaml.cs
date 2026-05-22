@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Whisp.Setup;
 
 namespace Deckle.Shell.Setup;

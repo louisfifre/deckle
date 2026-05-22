@@ -10,7 +10,6 @@ using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
 using Deckle.Lighting.Hue;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Playground.ViewModels;
 using Deckle.Vision;
 

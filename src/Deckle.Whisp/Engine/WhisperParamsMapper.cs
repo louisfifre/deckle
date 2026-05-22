@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Deckle.Interop;
-using Deckle.Logging;
 
 namespace Deckle.Whisp;
 

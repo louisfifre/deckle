@@ -9,7 +9,6 @@ using Windows.Graphics;
 using WinRT.Interop;
 using Deckle.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Whisp.Setup;
 
 namespace Deckle.Shell.Setup;

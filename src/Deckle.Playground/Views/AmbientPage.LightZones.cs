@@ -7,7 +7,6 @@ using Deckle.Catalog;
 using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
 using Deckle.Lighting.Hue;
-using Deckle.Logging;
 
 namespace Deckle.Playground;
 

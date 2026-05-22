@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Interop;
-using Deckle.Logging;
 using Deckle.Shell;
 
 namespace Deckle.Playground;
