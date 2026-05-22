@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Llm;
 
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ─── Section General de LlmPage ────────────────────────────────────────────
 //

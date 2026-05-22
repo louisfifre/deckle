@@ -1,6 +1,6 @@
 using System;
 
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ── LlmSettingsMigrations ─────────────────────────────────────────────────
 //

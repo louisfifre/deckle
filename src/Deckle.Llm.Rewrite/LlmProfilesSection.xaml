@@ -1,9 +1,9 @@
 <UserControl
-    x:Class="Deckle.Llm.LlmProfilesSection"
+    x:Class="Deckle.Llm.Rewrite.LlmProfilesSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:vm="using:Deckle.Llm"
+    xmlns:vm="using:Deckle.Llm.Rewrite"
     x:Name="Root">
 
     <UserControl.Resources>

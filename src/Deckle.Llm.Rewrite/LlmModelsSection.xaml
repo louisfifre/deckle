@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="Deckle.Llm.LlmModelsSection"
+    x:Class="Deckle.Llm.Rewrite.LlmModelsSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 

@@ -59,7 +59,8 @@ Deckle.Shell            → Core, Logging
 Deckle.Settings         → Core, Logging, Catalog
 Deckle.Hud              → Core, Logging, Catalog, Audio, Chrono, Composition, Settings, Shell
 Deckle.Llm              → Core, Logging
-Deckle.Transcription    → Core, Logging, Audio, Llm
+Deckle.Llm.Rewrite      → Core, Logging, Catalog, Llm
+Deckle.Transcription    → Core, Logging, Catalog, Audio, Llm, Llm.Rewrite, Settings
 Deckle.Setup            → Core, Logging, Catalog, Transcription
 Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
 Deckle.App              → all of the above (app host, WinUI 3 entry point)

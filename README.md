@@ -181,7 +181,8 @@ service, nothing machine-wide.
 │   ├── Deckle.Lighting.Ambient/ Ambient lighting consumer (Vision + Lighting → Hue)
 │   ├── Deckle.Shell/           System shell (tray, hotkeys, autostart, message-only host)
 │   ├── Deckle.Settings/        Settings UI shell + per-module persistence
-│   ├── Deckle.Llm/             LLM rewrite via Ollama
+│   ├── Deckle.Llm/             Ollama HTTP client (model administration, health-check)
+│   ├── Deckle.Llm.Rewrite/     Rewrite engine + LlmPage Settings UI (uses Deckle.Llm)
 │   ├── Deckle.Transcription/   Whisper transcription pipeline
 │   └── Deckle.Setup/           First-run wizard (natives + models)
 ├── scripts/                    Build, publish, setup, launcher (deckle.ps1 + lib/)

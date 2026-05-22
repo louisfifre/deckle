@@ -2,7 +2,7 @@ using System.Text.Json;
 using Deckle.Core;
 using Deckle.Logging;
 
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ── LlmSettingsService ────────────────────────────────────────────────────
 //

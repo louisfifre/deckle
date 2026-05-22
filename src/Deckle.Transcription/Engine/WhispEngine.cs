@@ -5,6 +5,7 @@ using Deckle.Audio;
 using Deckle.Audio.Telemetry;
 using Deckle.Interop;
 using Deckle.Llm;
+using Deckle.Llm.Rewrite;
 using Deckle.Catalog;
 using Deckle.Logging;
 using Deckle.Transcription.Pinvoke;

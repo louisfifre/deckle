@@ -1,5 +1,5 @@
 using Deckle.Audio;
-using Deckle.Llm;
+using Deckle.Llm.Rewrite;
 using Deckle.Logging;
 using Deckle.Transcription;
 

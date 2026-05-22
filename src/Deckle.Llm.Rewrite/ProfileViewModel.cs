@@ -1,7 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Data;
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ViewModel for a single rewrite profile — used inside an ItemsRepeater
 // DataTemplate in LlmProfilesSection. Auto-saves on every change, aligning

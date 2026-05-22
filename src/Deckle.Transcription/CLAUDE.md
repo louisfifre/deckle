@@ -1,6 +1,6 @@
 # CLAUDE.md — Deckle.Transcription
 
-Module de transcription vocale via whisper.cpp. Couvre tout le pipeline du hotkey à l'écriture clipboard final : ouverture du runtime natif, chargement du modèle Whisper, capture audio (déléguée à `Deckle.Audio`), VAD, transcription monobloc avec callback par segment, filtrage de répétitions, optionnellement réécriture LLM (déléguée à `Deckle.Llm`), écriture clipboard, paste optionnel. Le module possède aussi son UI Settings (`WhisperPage.xaml`) et son setup first-run (téléchargement des natives et des modèles).
+Module de transcription vocale via whisper.cpp. Couvre tout le pipeline du hotkey à l'écriture clipboard final : ouverture du runtime natif, chargement du modèle Whisper, capture audio (déléguée à `Deckle.Audio`), VAD, transcription monobloc avec callback par segment, filtrage de répétitions, optionnellement réécriture LLM (déléguée à `Deckle.Llm.Rewrite` pour le moteur de réécriture et à `Deckle.Llm` pour la disponibilité Ollama), écriture clipboard, paste optionnel. Le module possède aussi son UI Settings (`WhisperPage.xaml`) et son setup first-run (téléchargement des natives et des modèles).
 
 Le contrat avec l'app hôte passe par `IWhispEngineHost` — interface bridge qui expose les settings utiles côté engine sans coupler `Deckle.Transcription` à `Deckle.Settings`. L'app implémente `AppWhispEngineHost` dans `src/Deckle.App/Engine/`. La transcription en elle-même est invoquée via `_engine.RequestToggle(...)` depuis le handler de hotkey.
 

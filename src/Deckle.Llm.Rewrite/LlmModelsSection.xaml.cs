@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Deckle.Llm;
 using Deckle.Catalog;
 
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ─── Section Models de LlmPage ─────────────────────────────────────────────
 //

@@ -6,33 +6,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
-    <!-- WinUI XAML compilation : Deckle.Llm ships LlmPage + 5 sections,
-         LlmOllamaContext + ProfileViewModel (moved from Deckle.Settings
-         in slice C1), OllamaService, and the LlmSettings POCO +
-         LlmSettingsService — all in the same assembly. -->
-    <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in LlmPage / sections
-         resolve against the Deckle.Llm/Resources subtree. The resw under
-         Strings/en-US/ is a copy of the App's resw — same pattern as
-         Deckle.Settings + Deckle.Transcription. -->
-    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions aligned on Deckle.csproj. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
-    <!-- MVVM Toolkit — [ObservableProperty] in ProfileViewModel. -->
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <!-- SettingsCard / SettingsExpander — LlmPage and sections canonical layout. -->
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+    <!-- No WinUI / Settings dependencies — this module is the bare-bones
+         Ollama HTTP wrapper (model administration + health-check). The
+         rewrite-specific layer (LlmService, LlmSettings, prompt
+         templates, ProfileViewModel, the LlmPage Settings UI) lives in
+         Deckle.Llm.Rewrite. Future Ollama consumers (AskOllama, …)
+         depend on this module without dragging the rewrite UI in. -->
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
   </ItemGroup>
 </Project>

@@ -814,7 +814,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Prefer the stable ProfileId (survives renames): resolve it to the
         // profile's current Name. Fall back to the legacy *ProfileName field
         // when the Id slot is empty (pre-migration configs).
-        var llm = Llm.LlmSettingsService.Instance.Current;
+        var llm = Llm.Rewrite.LlmSettingsService.Instance.Current;
         string? ResolveSlotName(string? id, string? nameFallback) =>
             (!string.IsNullOrEmpty(id)
                 ? llm.Profiles.Find(p => p.Id == id)?.Name

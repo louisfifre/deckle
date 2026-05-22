@@ -1,4 +1,4 @@
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ─── Templates de prompt par famille de modèle ────────────────────────────────
 //

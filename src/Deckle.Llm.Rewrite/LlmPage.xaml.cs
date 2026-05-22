@@ -10,7 +10,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Logging;
 
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ─── LlmPage — host fin ────────────────────────────────────────────────────
 //

@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Deckle.Logging;
 
-namespace Deckle.Llm;
+namespace Deckle.Llm.Rewrite;
 
 // ─── LLM rewrite service via Ollama (RAW mode) ───────────────────────────────
 //
