@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.UI.Dispatching;
 using Deckle.Interop;
-using Deckle.Logging;
 using Deckle.Settings;
 using Deckle.Shell;
 
@@ -46,13 +45,16 @@ internal sealed class HudOverlayManager : IDisposable
         mainHud.MainHudVisibilityChanged += OnMainHudVisibilityChanged;
     }
 
-    public void Enqueue(UserFeedback fb)
+    // Sous-vague 6b : signature en primitives plutôt qu'en `UserFeedback`
+    // record. Severity convention 0=Info, 1=Warning, 2+=Error — alignée
+    // sur l'event EventSource `UserFeedbackEmitted(severity, ...)`.
+    public void Enqueue(int severity, string title, string body)
     {
         if (_disposed) return;
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => Enqueue(fb), "HUD", "overlay enqueue");
+            _dispatcher.TryEnqueueOrLog(() => Enqueue(severity, title, body), "HUD", "overlay enqueue");
             return;
         }
 
@@ -69,13 +71,13 @@ internal sealed class HudOverlayManager : IDisposable
         int newSlot = _entries.Count;
         var (xPx, yPx) = ComputeSlotPositionPx(newSlot);
 
-        window.ApplyPayload(fb);
+        window.ApplyPayload(severity, title, body);
         window.ShowAt(xPx, yPx);
 
         var slide = new WindowSlideAnimator(hwnd, _dispatcher, xPx, yPx);
 
         var lifeTimer = _dispatcher.CreateTimer();
-        lifeTimer.Interval = UserFeedbackDurations.For(fb.Severity);
+        lifeTimer.Interval = HudWindow.FeedbackDuration(severity);
         lifeTimer.IsRepeating = false;
 
         var entry = new OverlayEntry(window, slide, lifeTimer, newSlot);

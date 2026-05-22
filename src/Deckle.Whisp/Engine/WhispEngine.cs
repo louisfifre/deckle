@@ -7,7 +7,6 @@ using Deckle.Core;
 using Deckle.Interop;
 using Deckle.Llm;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Whisp.Corpus;
 using Deckle.Whisp.Engine;
 using Deckle.Whisp.Pinvoke;
@@ -134,28 +133,22 @@ public sealed class WhispEngine : IDisposable
 
     // ── Internal state ───────────────────────────────────────────────────────
 
-    // Module-local UserFeedback emission point. EventSource le serialise via
-    // self-describing ETW ; HudFeedbackEventListener filtre par event name
-    // pour drainer la file HUD. Centralise la conversion enum → int au
-    // niveau d'un seul site privé pour éviter de la disperser dans 12 call
-    // sites de la pipeline.
-    private static void EmitUserFeedback(UserFeedback feedback)
-    {
-        int severity = feedback.Severity switch
-        {
-            UserFeedbackSeverity.Info    => 0,
-            UserFeedbackSeverity.Warning => 1,
-            UserFeedbackSeverity.Error   => 2,
-            _                            => 0,
-        };
-        int role = feedback.Role switch
-        {
-            UserFeedbackRole.Replacement => 0,
-            UserFeedbackRole.Overlay     => 1,
-            _                            => 0,
-        };
-        DeckleWhispSource.Log.UserFeedbackEmitted(severity, feedback.Title, feedback.Body, role);
-    }
+    // ── UserFeedback emission ───────────────────────────────────────────────
+    //
+    // Wrapper minimaliste sur l'event EventSource `UserFeedbackEmitted` du
+    // provider Whisp. Severity et Role passent en primitives — conserve la
+    // sémantique de l'ancien enum `UserFeedback{Severity,Role}` (Wave 6b)
+    // sans pull sur Deckle.Logging. Le sink hôte `AppHudFeedbackSink` route
+    // chaque event vers la surface principale (Replacement) ou la stack
+    // (Overlay) selon `role`.
+    private const int FB_INFO          = 0;
+    private const int FB_WARN          = 1;
+    private const int FB_ERROR         = 2;
+    private const int FB_REPLACEMENT   = 0;
+    private const int FB_OVERLAY       = 1;
+
+    private static void EmitUserFeedback(int severity, string title, string body, int role = FB_REPLACEMENT)
+        => DeckleWhispSource.Log.UserFeedbackEmitted(severity, title, body, role);
 
     private readonly string     _modelPath;
     private readonly LlmService _llm;
@@ -483,11 +476,10 @@ public sealed class WhispEngine : IDisposable
     private void OnCaptureLowAudioDetected()
     {
         DeckleWhispSource.Log.RecordingLowAudio();
-        EmitUserFeedback(new UserFeedback(
+        EmitUserFeedback(FB_WARN,
             Loc.Get("Engine_LowAudio_Title"),
             Loc.Get("Engine_LowAudio_Body"),
-            UserFeedbackSeverity.Warning,
-            UserFeedbackRole.Overlay));
+            FB_OVERLAY);
     }
 
     // Adapter that maps IWhispEngineHost → IAudioRecordingHost. Lives inside
@@ -763,11 +755,10 @@ public sealed class WhispEngine : IDisposable
         if (!File.Exists(_modelPath))
         {
             DeckleWhispSource.Log.ModelLoadAborted("file_not_found", _modelPath);
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_WhisperModelNotFound_Title"),
                 Loc.Get("Engine_WhisperModelNotFound_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_Ready"));
             return false;
         }
@@ -796,11 +787,10 @@ public sealed class WhispEngine : IDisposable
         if (_ctx == IntPtr.Zero)
         {
             DeckleWhispSource.Log.ModelLoadFailed(_modelPath);
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Get("Engine_ModelLoadFailed_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_Ready"));
             return false;
         }
@@ -1256,11 +1246,10 @@ public sealed class WhispEngine : IDisposable
                 if (!ModelWarmupOk)
                 {
                     DeckleWhispSource.Log.WarmupFlagModelKO();
-                    EmitUserFeedback(new UserFeedback(
+                    EmitUserFeedback(FB_ERROR,
                         Loc.Get("Engine_ModelNotReady_Title"),
                         Loc.Get("Engine_ModelNotReady_Body"),
-                        UserFeedbackSeverity.Error,
-                        UserFeedbackRole.Replacement));
+                        FB_REPLACEMENT);
                     return ToggleResult.IgnoredBusy;
                 }
                 if (!OllamaWarmupOk)
@@ -1290,11 +1279,10 @@ public sealed class WhispEngine : IDisposable
                     if (!reachableNow)
                     {
                         DeckleWhispSource.Log.WarmupFlagOllamaKO();
-                        EmitUserFeedback(new UserFeedback(
+                        EmitUserFeedback(FB_WARN,
                             Loc.Get("Engine_RewriterUnavailable_Title"),
                             Loc.Get("Engine_RewriterUnavailable_Body"),
-                            UserFeedbackSeverity.Warning,
-                            UserFeedbackRole.Overlay));
+                            FB_OVERLAY);
                     }
                     else
                     {
@@ -1316,8 +1304,7 @@ public sealed class WhispEngine : IDisposable
             {
                 var (title, body) = LocalizeMicError(probe.Kind, probe.MmsysErr);
                 DeckleWhispSource.Log.RecordingProbeFailed(probe.MmsysErr, title);
-                EmitUserFeedback(new UserFeedback(title, body,
-                    UserFeedbackSeverity.Error, UserFeedbackRole.Replacement));
+                EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 return ToggleResult.IgnoredBusy;
             }
 
@@ -1421,8 +1408,7 @@ public sealed class WhispEngine : IDisposable
                 var (title, body) = LocalizeMicError(
                     MicErrorKind.Unavailable, capture.MmsysErr);
                 DeckleWhispSource.Log.RecordingMicError(capture.MmsysErr, title);
-                EmitUserFeedback(new UserFeedback(title, body,
-                    UserFeedbackSeverity.Error, UserFeedbackRole.Replacement));
+                EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 RaiseFinished(TranscriptionOutcome.None);
                 return;
             }
@@ -1485,11 +1471,10 @@ public sealed class WhispEngine : IDisposable
         catch (Exception ex)
         {
             DeckleWhispSource.Log.PipelineCrashed(ex.GetType().Name, ex.Message);
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             RaiseFinished(TranscriptionOutcome.None);
         }
         finally
@@ -1867,11 +1852,10 @@ public sealed class WhispEngine : IDisposable
         if (result != 0 && !_abortRequested)
         {
             DeckleWhispSource.Log.TranscribeFailed(result);
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
             RaiseFinished(TranscriptionOutcome.None);
             return;
@@ -2178,11 +2162,10 @@ public sealed class WhispEngine : IDisposable
         if (hMem == IntPtr.Zero)
         {
             DeckleWhispSource.Log.ClipboardAllocFailed(byteCount);
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             return false;
         }
 
@@ -2196,11 +2179,10 @@ public sealed class WhispEngine : IDisposable
         if (!opened)
         {
             DeckleWhispSource.Log.ClipboardOpenFailed();
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardUnavailable_Title"),
                 Loc.Get("Engine_ClipboardUnavailable_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             return false;
         }
 
@@ -2210,11 +2192,10 @@ public sealed class WhispEngine : IDisposable
         if (setHandle == IntPtr.Zero)
         {
             DeckleWhispSource.Log.ClipboardSetDataFailed();
-            EmitUserFeedback(new UserFeedback(
+            EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardCopyFailed_Refused_Title"),
                 Loc.Get("Engine_ClipboardCopyFailed_Refused_Body"),
-                UserFeedbackSeverity.Error,
-                UserFeedbackRole.Replacement));
+                FB_REPLACEMENT);
             return false;
         }
 
@@ -2228,11 +2209,10 @@ public sealed class WhispEngine : IDisposable
             if (h == IntPtr.Zero)
             {
                 DeckleWhispSource.Log.ClipboardVerifyMissing();
-                EmitUserFeedback(new UserFeedback(
+                EmitUserFeedback(FB_WARN,
                     Loc.Get("Engine_ClipboardIncomplete_Unverified_Title"),
                     Loc.Get("Engine_ClipboardIncomplete_Unverified_Body"),
-                    UserFeedbackSeverity.Warning,
-                    UserFeedbackRole.Overlay));
+                    FB_OVERLAY);
             }
             else
             {
@@ -2242,11 +2222,10 @@ public sealed class WhispEngine : IDisposable
                 if (back is null || back.Length != text.Length)
                 {
                     DeckleWhispSource.Log.ClipboardVerifyMismatch(text.Length, back?.Length ?? -1);
-                    EmitUserFeedback(new UserFeedback(
+                    EmitUserFeedback(FB_WARN,
                         Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
                         Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
-                        UserFeedbackSeverity.Warning,
-                        UserFeedbackRole.Overlay));
+                        FB_OVERLAY);
                 }
             }
             NativeMethods.CloseClipboard();

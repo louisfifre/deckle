@@ -282,25 +282,18 @@ public partial class App : Microsoft.UI.Xaml.Application
         // positions; reacts to main HUD show/hide via MainHudVisibilityChanged.
         _overlayManager = new HudOverlayManager(_hudWindow, _hudWindow.DispatcherQueue);
 
-        // HUD feedback sink: picks up log entries that carry a UserFeedback
-        // payload and surfaces them on the HUD. Events without feedback flow
-        // only through the file sink and LogWindow. Added after HudWindow and
-        // HudOverlayManager are constructed so the closures capture non-null
-        // references. Routing rule: Replacement → main HUD slot (chrono
-        // swapped out); Overlay → stacked card via HudOverlayManager.
-        TelemetryService.Instance.AddSink(new HudFeedbackSink(
-            onReplacement: fb => _hudWindow.ShowUserFeedback(fb),
-            onOverlay:     fb => _overlayManager.Enqueue(fb)));
-
-        // EventSource parallel: route UserFeedbackEmitted events from
-        // migrated modules through the same HUD surfaces. The bridge sink
-        // rebuilds a legacy UserFeedback from the FeedbackEntry payload
-        // and dispatches to the same Replacement / Overlay callbacks.
-        // Both pipelines coexist until Wave 6 retires the legacy sink.
+        // HUD feedback sink unique (canal EventSource direct depuis la
+        // sous-vague 6b). `HudFeedbackEventListener` (Deckle.Diagnostics)
+        // filtre les events `UserFeedbackEmitted` de tout provider Deckle.*
+        // et passe une `FeedbackEntry(title, body, severity:int, role:int)`
+        // à ce sink. Le sink route vers la surface principale (`ShowUser-
+        // Feedback`) ou la stack (`HudOverlayManager.Enqueue`) selon role.
+        // Le double-câblage legacy (HudFeedbackSink + LegacyHudFeedback-
+        // Sink) a disparu — un seul pipeline.
         Deckle.Diagnostics.AppDiagnosticsBootstrap.AttachHudFeedbackSink(
-            new Deckle.Diagnostics.LegacyHudFeedbackSink(
-                onReplacement: fb => _hudWindow.ShowUserFeedback(fb),
-                onOverlay:     fb => _overlayManager.Enqueue(fb)));
+            new Deckle.Diagnostics.AppHudFeedbackSink(
+                onReplacement: (sev, title, body) => _hudWindow.ShowUserFeedback(sev, title, body),
+                onOverlay:     (sev, title, body) => _overlayManager.Enqueue(sev, title, body)));
 
         // Warm pass: brief Show + Hide of the HUD at its real position so the
         // first composition (swap chain DComp + visual tree + Bitcount font
