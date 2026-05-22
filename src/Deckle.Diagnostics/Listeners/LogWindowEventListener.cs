@@ -32,6 +32,20 @@ public sealed class LogWindowEventListener : EventListener
     private readonly List<EventEntry> _buffer = new(capacity: BufferCapacity);
     private readonly object _lock = new();
 
+    // Optional drop filter. Quand non-null et retourne true, l'entry
+    // est ignorée AVANT insertion dans le buffer ring et AVANT broadcast
+    // aux sinks. Conséquence directe : un entry filtré ne sera pas non
+    // plus rejoué par AttachSink, puisqu'il n'a jamais atterri dans le
+    // buffer. Posture délibérée — le filter exprime un signal "cet
+    // event n'a pas vocation à exister dans la fenêtre de log live",
+    // pas un masquage temporaire de l'affichage.
+    //
+    // Câblé par le host via ConfigureDropFilter. Cas d'usage actuel :
+    // silencer les Verbose ambient pendant la capture loop quand le
+    // toggle LogAmbientCaptureActivity est off (consommé via
+    // Deckle.Diagnostics.Logging.AmbientCaptureGate).
+    private Func<EventEntry, bool>? _dropFilter;
+
     // We collect EventSources observed before the derived constructor
     // is ready, then enable them in the constructor body. EventListener's
     // base constructor invokes OnEventSourceCreated for every already-
@@ -79,6 +93,17 @@ public sealed class LogWindowEventListener : EventListener
         lock (_lock) _sinks.Remove(sink);
     }
 
+    // Installe un filter de drop unique. Un seul filter actif à la
+    // fois — un nouvel appel remplace le précédent. Null désinstalle.
+    // Le filter est consulté dans OnEventWritten avant insertion dans
+    // le buffer et avant broadcast aux sinks ; un entry filtré n'est
+    // donc jamais vu par les sinks (ni en live, ni au replay
+    // d'AttachSink).
+    public void ConfigureDropFilter(Func<EventEntry, bool> filter)
+    {
+        _dropFilter = filter;
+    }
+
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
         if (eventSource.Name is null) return;
@@ -99,6 +124,17 @@ public sealed class LogWindowEventListener : EventListener
     {
         if (eventData.EventSource.Name is null) return;
         var entry = BuildEntry(eventData);
+
+        // Drop filter consulté avant le buffer pour qu'un entry filtré
+        // ne soit ni rejoué ni broadcasté. Lecture non locked du field :
+        // une race au moment d'un ConfigureDropFilter passe au pire un
+        // event de trop ou un event de moins, jamais une corruption.
+        var dropFilter = _dropFilter;
+        if (dropFilter is not null)
+        {
+            try { if (dropFilter(entry)) return; }
+            catch { /* A filter must never crash the listener. */ }
+        }
 
         ILogWindowSink[] snapshot;
         lock (_lock)

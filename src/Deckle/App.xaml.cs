@@ -149,6 +149,41 @@ public partial class App : Microsoft.UI.Xaml.Application
         Deckle.Diagnostics.AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
+        // Sous-vague 6d : câblage des gates utilisateur côté
+        // JsonlEventListeners (Deckle.Diagnostics.Telemetry) et du
+        // drop filter ambient côté LogWindowEventListener (Deckle.
+        // Diagnostics). Les deux sources de vérité restent
+        // provisoirement le legacy AppTelemetryGates et le legacy
+        // LoggingSettingsService ; basculeront sur le nouveau
+        // TelemetrySettingsService (Deckle.Diagnostics.Telemetry) et
+        // LoggingSettingsService (Deckle.Diagnostics.Logging) en
+        // sous-vague 6g, au moment du retrait de Deckle.Logging.
+        Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
+        {
+            "ApplicationLogToDisk" => TelemetryGates.Current.ApplicationLogToDisk,
+            "LatencyEnabled"       => TelemetryGates.Current.LatencyEnabled,
+            "MicrophoneTelemetry"  => TelemetryGates.Current.MicrophoneTelemetry,
+            "CorpusEnabled"        => TelemetryGates.Current.CorpusEnabled,
+            _                      => false,
+        });
+
+        // Drop filter ambient : silence les Verbose des providers
+        // Ambient / Vision / Lighting quand une capture loop est
+        // active ET que l'utilisateur n'a pas opt-in à LogAmbient-
+        // CaptureActivity. La capture gate (AmbientCaptureGate) vit
+        // dans Deckle.Diagnostics.Logging et est flippée par l'Ambient
+        // engine au Start / Stop. Le toggle utilisateur reste lu sur
+        // le legacy LoggingSettingsService jusqu'à la sous-vague 6g.
+        Deckle.Diagnostics.AppDiagnosticsBootstrap.ConfigureLogWindowDropFilter(entry =>
+        {
+            if (entry.Level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
+            if (!Deckle.Diagnostics.Logging.AmbientCaptureGate.IsActive) return false;
+            if (LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
+            return entry.Provider == "Deckle.Ambient"
+                || entry.Provider == "Deckle.Vision"
+                || entry.Provider == "Deckle.Lighting";
+        });
+
         // Wave 1 sanity check — exercise the full pipeline (provider →
         // EventListener → JsonlEventListener + LegacyLogWindowSink) once
         // at boot. The pilot emission is a no-op in production behaviour

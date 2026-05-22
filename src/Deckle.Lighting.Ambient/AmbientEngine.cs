@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Deckle.Composition;
+using Deckle.Diagnostics.Logging;
 using Deckle.Lighting;
 using Deckle.Lighting.Hue;
-using Deckle.Logging;
 using Deckle.Vision;
 
 namespace Deckle.Lighting.Ambient;
@@ -540,13 +540,15 @@ public sealed class AmbientEngine : IAsyncDisposable
 
             // Open the capture-active window AFTER the started
             // milestones (Info + Verbose mirror above) have flushed,
-            // so they pass the central filter even with
+            // so they pass the LogWindow drop filter even with
             // LogAmbientCaptureActivity off. From here on, Verbose
             // AMBIENT / SCREEN / HUE inside the loop are candidates
-            // for filtering — see TelemetryService.Log. The window
-            // closes at the very top of Stop() so the matching stop
-            // milestones also pass.
-            TelemetryService.Instance.SetCaptureActive(true);
+            // for filtering — l'App câble le drop filter sur le
+            // LogWindowEventListener au boot et le filter combine
+            // cette gate avec le toggle utilisateur pour décider.
+            // La fenêtre se referme au sommet de Stop() pour que les
+            // milestones de stop passent aussi.
+            AmbientCaptureGate.SetActive(true);
 
             _pushLoopTask = Task.Run(() => PushLoopAsync(_cts.Token), _cts.Token);
 
@@ -616,12 +618,12 @@ public sealed class AmbientEngine : IAsyncDisposable
         SetState(AmbientEngineState.Stopping);
 
         // Close the capture-active window FIRST so the stopped
-        // milestones (Info + Verbose mirror below) pass the central
-        // filter even with LogAmbientCaptureActivity off. The push
-        // loop may still emit a final tick before cancellation
+        // milestones (Info + Verbose mirror below) pass the LogWindow
+        // drop filter even with LogAmbientCaptureActivity off. The
+        // push loop may still emit a final tick before cancellation
         // propagates ; those late Verbose lines also pass since the
-        // flag is already off.
-        TelemetryService.Instance.SetCaptureActive(false);
+        // gate est déjà off.
+        AmbientCaptureGate.SetActive(false);
 
         long endTimestamp = Stopwatch.GetTimestamp();
         double durationSec = (endTimestamp - _startTimestamp) / (double)Stopwatch.Frequency;
@@ -766,10 +768,10 @@ public sealed class AmbientEngine : IAsyncDisposable
             _lastR = targetR; _lastG = targetG; _lastB = targetB;
             _pushedCount++;
             _hbPushed++;
-            // Verbose gating is centralised in TelemetryService :
-            // since the capture-active flag is on at this point and
-            // source=AMBIENT, this line is dropped automatically when
-            // the user toggle is off. No call-site check needed.
+            // Verbose gating is handled by the LogWindow drop filter
+            // (App.OnLaunched) : provider=Deckle.Ambient + capture
+            // gate ouverte + user toggle off ⇒ ce Verbose est filtré
+            // avant insertion buffer. No call-site check needed.
             DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, httpMs);
         }
         catch (OperationCanceledException) { throw; }
@@ -1216,11 +1218,11 @@ public sealed class AmbientEngine : IAsyncDisposable
             httpStats = $" | http_avg_ms={avg:F1} | http_p95_ms={p95:F1} | http_max_ms={max:F1}";
         }
 
-        // Per-tick Verbose : centrally gated by the capture-active
-        // window + user toggle in TelemetryService. Counters are
-        // reset whether the line was emitted or not, so the next
-        // heartbeat window starts from zero — the metric stays
-        // correct when the toggle flips mid-session.
+        // Per-tick Verbose : filtered by the LogWindow drop filter
+        // (capture gate + user toggle). Counters are reset whether
+        // the line was emitted or not, so the next heartbeat window
+        // starts from zero — the metric stays correct when the
+        // toggle flips mid-session.
         DeckleAmbientSource.Log.Heartbeat(
             _multiLightActive ? "multi" : "group",
             elapsedMs / 1000.0,

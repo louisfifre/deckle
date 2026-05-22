@@ -70,4 +70,19 @@ internal static class AppDiagnosticsBootstrap
     {
         _logWindowListener?.DetachSink(sink);
     }
+
+    // Câble un drop filter sur le LogWindowEventListener. Appelée au
+    // boot de l'App pour que les Verbose ambient soient filtrés
+    // pendant la capture loop quand le toggle utilisateur est off.
+    // Le filter est conservé pour la vie du process — un seul filter
+    // actif à la fois.
+    //
+    // Si Initialize n'a pas encore été appelée, l'appel est silencieux
+    // (no-op). En pratique l'App appelle Initialize d'abord, puis
+    // ConfigureLogWindowDropFilter immédiatement après — l'ordre est
+    // strict côté caller.
+    public static void ConfigureLogWindowDropFilter(System.Func<EventEntry, bool> filter)
+    {
+        _logWindowListener?.ConfigureDropFilter(filter);
+    }
 }
