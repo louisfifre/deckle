@@ -59,10 +59,10 @@ public sealed class WhispSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Whisp-Save",
             jsonOptions: _jsonOptions,
-            logInfo:     msg => LogService.Instance.Info(LogSource.Settings, $"[whisp] {msg}"),
-            logVerbose:  msg => LogService.Instance.Verbose(LogSource.Settings, $"[whisp] {msg}"),
-            logWarning:  msg => LogService.Instance.Warning(LogSource.Settings, $"[whisp] {msg}"),
-            logError:    msg => LogService.Instance.Error(LogSource.Settings, $"[whisp] {msg}"));
+            logInfo:     msg => DeckleWhispSource.Log.WhispSettingsPrefixed($"[whisp] {msg}"),
+            logVerbose:  msg => DeckleWhispSource.Log.SettingsLoadComplete($"[whisp] {msg}"),
+            logWarning:  msg => DeckleWhispSource.Log.SettingsLoadWarning($"[whisp] {msg}"),
+            logError:    msg => DeckleWhispSource.Log.SettingsLoadError($"[whisp] {msg}"));
     }
 
     /// <summary>Schedule a debounced disk write (300 ms).</summary>
