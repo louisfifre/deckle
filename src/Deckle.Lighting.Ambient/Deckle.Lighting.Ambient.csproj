@@ -34,10 +34,6 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <!-- Deckle.Logging reste référencé : AmbientPage.xaml.cs et
-         AmbientSettingsService.cs portent encore un `using Deckle.Logging`
-         résiduel à nettoyer dans une passe distincte (sous-vague 6e/6f). -->
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>

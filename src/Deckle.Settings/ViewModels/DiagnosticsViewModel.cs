@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Logging;
+using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Settings.ViewModels;
 

@@ -1,6 +1,7 @@
+using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Telemetry;
 using Deckle.Interop;
 using Deckle.Lighting.Ambient;
-using Deckle.Logging;
 using Deckle.Playground;
 using Deckle.Shell;
 using Deckle.Whisp;
@@ -113,24 +114,22 @@ public partial class App : Microsoft.UI.Xaml.Application
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
         Milestone("settings-bootstrap");
 
-        // Wire Deckle.Logging's gates to the host's TelemetrySettings BEFORE
-        // attaching JsonlFileSink: the sink's first emit reads
-        // TelemetryGates.Current to decide whether to land on disk, and an
-        // unconfigured Logging defaults to the closed posture (every toggle
-        // false, no override path). Without Configure here, the very first
-        // log lines flushed below ("Paths initialized") would silently skip
-        // the JSONL even when the user has the app log enabled.
-        TelemetryGates.Configure(new AppTelemetryGates());
+        // Plus de TelemetryGates.Configure : depuis la sous-vague 6g, les
+        // listeners JsonlEventListener consultent directement
+        // TelemetrySettingsService.Instance.Current via le callback câblé
+        // sur TelemetryListenerBootstrap.ConfigureGates juste en-dessous.
+        // Le bridge legacy AppTelemetryGates a disparu avec Deckle.Logging.
 
         // Câblage `Deckle.Core.CorpusPaths` (relocalisé en sous-vague 6a) :
-        // le helper de paths storage lisait jadis `TelemetryGates.Current.
-        // StorageDirectoryOverride` directement. La dep est inversée par
-        // injection — l'App câble le getter sur la même source que les
-        // gates legacy ci-dessus. La cible bascule vers le nouveau
-        // `TelemetrySettingsService` (Deckle.Diagnostics.Telemetry) à la
-        // sous-vague 6d, puis disparaît avec Deckle.Logging à la 6g.
-        Deckle.Core.CorpusPaths.ConfigureStorageDirectoryOverride(
-            () => TelemetryGates.Current.StorageDirectoryOverride);
+        // le helper de paths storage avait besoin d'un getter sur le
+        // StorageDirectory utilisateur sans dépendre d'un module
+        // observabilité. La dep est inversée par injection — l'App câble
+        // le getter sur le nouveau TelemetrySettingsService.
+        Deckle.Core.CorpusPaths.ConfigureStorageDirectoryOverride(() =>
+        {
+            string s = TelemetrySettingsService.Instance.Current.StorageDirectory;
+            return string.IsNullOrWhiteSpace(s) ? null : s;
+        });
 
         // EventSource observability pipeline — sous-vague 6e prend la
         // relève des paths canoniques `<TelemetryDir>/{app,latency,
@@ -142,21 +141,17 @@ public partial class App : Microsoft.UI.Xaml.Application
         Deckle.Diagnostics.AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
-        // Sous-vague 6d : câblage des gates utilisateur côté
-        // JsonlEventListeners (Deckle.Diagnostics.Telemetry) et du
-        // drop filter ambient côté LogWindowEventListener (Deckle.
-        // Diagnostics). Les deux sources de vérité restent
-        // provisoirement le legacy AppTelemetryGates et le legacy
-        // LoggingSettingsService ; basculeront sur le nouveau
-        // TelemetrySettingsService (Deckle.Diagnostics.Telemetry) et
-        // LoggingSettingsService (Deckle.Diagnostics.Logging) en
-        // sous-vague 6g, au moment du retrait de Deckle.Logging.
+        // Câblage des gates utilisateur côté JsonlEventListeners
+        // (Deckle.Diagnostics.Telemetry). Lecture directe sur le
+        // TelemetrySettingsService canonique depuis la sous-vague 6g —
+        // le bridge legacy AppTelemetryGates a disparu avec
+        // Deckle.Logging.
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
         {
-            "ApplicationLogToDisk" => TelemetryGates.Current.ApplicationLogToDisk,
-            "LatencyEnabled"       => TelemetryGates.Current.LatencyEnabled,
-            "MicrophoneTelemetry"  => TelemetryGates.Current.MicrophoneTelemetry,
-            "CorpusEnabled"        => TelemetryGates.Current.CorpusEnabled,
+            "ApplicationLogToDisk" => TelemetrySettingsService.Instance.Current.ApplicationLogToDisk,
+            "LatencyEnabled"       => TelemetrySettingsService.Instance.Current.LatencyEnabled,
+            "MicrophoneTelemetry"  => TelemetrySettingsService.Instance.Current.MicrophoneTelemetry,
+            "CorpusEnabled"        => TelemetrySettingsService.Instance.Current.CorpusEnabled,
             _                      => false,
         });
 
@@ -165,13 +160,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         // active ET que l'utilisateur n'a pas opt-in à LogAmbient-
         // CaptureActivity. La capture gate (AmbientCaptureGate) vit
         // dans Deckle.Diagnostics.Logging et est flippée par l'Ambient
-        // engine au Start / Stop. Le toggle utilisateur reste lu sur
-        // le legacy LoggingSettingsService jusqu'à la sous-vague 6g.
+        // engine au Start / Stop. Le toggle utilisateur est lu sur le
+        // nouveau LoggingSettingsService canonique depuis la sous-vague
+        // 6g (auparavant le legacy Deckle.Logging.LoggingSettingsService).
         Deckle.Diagnostics.AppDiagnosticsBootstrap.ConfigureLogWindowDropFilter(entry =>
         {
             if (entry.Level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
             if (!Deckle.Diagnostics.Logging.AmbientCaptureGate.IsActive) return false;
-            if (LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
+            if (Deckle.Diagnostics.Logging.LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
             return entry.Provider == "Deckle.Ambient"
                 || entry.Provider == "Deckle.Vision"
                 || entry.Provider == "Deckle.Lighting";

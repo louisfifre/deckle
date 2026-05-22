@@ -29,6 +29,5 @@
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
   </ItemGroup>
 </Project>

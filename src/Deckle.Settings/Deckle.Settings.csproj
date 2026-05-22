@@ -50,11 +50,11 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Type-only carry-over: DiagnosticsViewModel consomme encore
-         LoggingSettingsService / TelemetrySettingsService du legacy
-         pour bridger le toggle utilisateur. La ProjectReference disparaît
-         à la vague 6 quand ces POCO migrent dans Deckle.Diagnostics.* . -->
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <!-- DiagnosticsViewModel consomme LoggingSettingsService /
+         TelemetrySettingsService — successeurs canoniques des stores
+         legacy (Deckle.Logging supprimé en sous-vague 6g). -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <!-- Deckle.Whisp and Deckle.Llm refs dropped in slice C1: their pages
