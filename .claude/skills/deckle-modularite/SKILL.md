@@ -11,6 +11,30 @@ Skill projet-spécifique qui répond à deux questions : **où s'arrête un modu
 
 La doctrine cible deux objectifs joints. Faciliter le travail avec un agent LLM, qui repère plus facilement quel fichier est concerné quand l'arborescence est lisible et que les fichiers restent à taille humaine. Et faciliter la relecture par Louis a posteriori, étape par étape, sans avoir à charger en mémoire des fichiers de plusieurs milliers de lignes.
 
+## Taxonomie en quatre catégories
+
+Avant de raisonner sur un module — où il s'arrête, ce qu'il doit exposer, qui peut le référencer — identifier d'abord à quelle **catégorie structurelle** il appartient. Le repo se range en quatre, et les règles d'une catégorie ne sont pas celles des autres.
+
+**Librairie support** porte du code passif sans état runtime propre. Code statique, structs, primitives, ressources nommées par clé sémantique. Référencée largement, ne référence quasi-rien. Pas de singleton actif, pas de boucle, pas d'écoute d'événements Windows. C'est l'étage le plus bas du graphe. Modules concernés à ce jour : `Deckle.Core`, `Deckle.Catalog`, `Deckle.Composition`, `Deckle.Chrono`.
+
+**Module métier** porte un domaine, un état runtime actif, et souvent un store Settings + une page Settings. Singleton actif qui tient un état pendant la vie de l'app et agit sur le système — il écoute des events Windows, lit un device, mute le clipboard, tient un buffer, pilote une boucle. La plupart des modules `Deckle.*` qui font quelque chose sont des modules métier.
+
+**Shell** est une coquille de présentation qui reçoit et n'expose rien aux modules métier. Ne référence pas les domaines, agrège dynamiquement via registry de delegates ou résolution par nom. `Deckle.Settings` est aujourd'hui le seul du genre : sa `NavigationView` charge les pages possédées par les modules métier via `Type.GetType(tag)` depuis le `Tag` du `NavigationViewItem`.
+
+**Host** référence largement, agrège, sert un usage différencié. `Deckle.App` est le host de production (point d'entrée EXE, composition root qui voit tous les modules). `Deckle.Setup` est le host first-run wizard (transient, ouvrable depuis Settings pour ré-exécution). `Deckle.Playground` est le host dev/tuning (persistant, exposé via le tray). **Les hosts sont explicitement exemptés de la doctrine de modularité** — leur rôle *est* d'agréger. `Playground` n'est pas une exception ad-hoc qu'on tolère ; c'est une instance d'une catégorie nommée qui inclut aussi `App` et `Setup`.
+
+## Critère discriminant librairie support vs module métier (K3)
+
+Quand un module est candidat entre librairie support et module métier, le test : **porte-t-il un singleton actif qui tient un état pendant la vie de l'app et agit sur le système** ? Si oui, module métier. Sinon, librairie support. Ce critère est stable structurellement — il ne dépend pas de l'apparition future d'un Settings POCO ou d'une page UI, il capture la vraie différence entre passif utilitaire et actif agissant.
+
+L'apparition d'un état runtime dans un ancien support l'élève en module métier ; c'est un changement structurel qui mérite d'être nommé. À l'inverse, retirer le dernier état runtime d'un module métier le redescend en support — c'est aussi un changement structurel.
+
+## Doctrine de modularité Settings
+
+**La page Settings qui configure un domaine vit dans le module qui possède ce domaine, et son service de persistance aussi.** Conséquence directe : `WhisperPage` dans `Deckle.Transcription`, `LlmPage` dans `Deckle.Llm.Rewrite`, `AmbientPage` dans `Deckle.Lighting.Ambient`. Les pages encore mal placées (typiquement `RecordingPage` côté capture audio, `DiagnosticsPage` côté observabilité) sont des résidus historiques à migrer.
+
+Le `Deckle.Settings` shell ne référence aucun module métier — c'est `Deckle.App`, en tant que composition root, qui voit tout le monde et qui câble. Le shell agrège dynamiquement les pages des modules métier via un mécanisme de registry (aujourd'hui `Type.GetType(tag)` ; évolution prévue vers un registry statique `SettingsHost.Register(SettingsPageDescriptor)` pushé par `App.OnLaunched` pour garantir le compile-time check).
+
 ## Une responsabilité par module
 
 Un module Deckle porte **une responsabilité claire et nommable en une phrase**. Si on a besoin de plus d'une phrase pour décrire ce que fait un module, c'est probablement qu'il en porte plusieurs et qu'il mérite d'être scindé en sous-modules. La responsabilité s'exprime en termes métier ou fonctionnels (« la capture audio depuis le microphone », « la transcription d'un blob audio en texte », « le pilotage des lampes externes »), pas en termes d'architecture (« le service », « le manager », « les helpers »).
