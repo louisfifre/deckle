@@ -9,7 +9,7 @@ using Windows.Graphics;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
-using Deckle.Transcription.Setup;
+using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.Setup;
 
@@ -62,7 +62,11 @@ public sealed partial class SetupWindow : Window
     public SetupWindow()
     {
         InitializeComponent();
-        Context = new SetupContext();
+        // SetupContext stays backend-agnostic (no hard reference to any
+        // ASR catalog). The wizard host wires the default Whisper model
+        // into the initial state — when a second backend ships (Voxtral),
+        // the host picks the catalog based on the user's selected engine.
+        Context = new SetupContext { SelectedModel = SpeechModels.DefaultWhisperModel };
 
         // Mica on long-lived windows — same primitive as Settings, Logs,
         // and the rest of the app's persistent surfaces. DWM applies the

@@ -15,7 +15,7 @@ namespace Deckle.Diagnostics.Telemetry;
 //
 // Consumers : DiagnosticsViewModel (lecture / écriture UI), App
 // boot wiring (CorpusPaths.ConfigureStorageDirectoryOverride + Telemetry-
-// ListenerBootstrap.ConfigureGates), AppWhispEngineHost (lecture par
+// ListenerBootstrap.ConfigureGates), AppTranscriptionEngineHost (lecture par
 // le pipeline transcription).
 //
 // Logs internes du store. JsonSettingsStore<T> reçoit ses callbacks

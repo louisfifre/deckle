@@ -31,8 +31,12 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Transcription owns the setup primitives (SpeechModels, Downloader,
-         NativeRuntime, SetupContext) that the wizard orchestrates. -->
+    <!-- Transcription parent owns the wizard-agnostic primitives (ModelEntry,
+         Downloader) and the EventSource provider. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+    <!-- Whisper-specific catalogs (SpeechModels) and the libwhisper native
+         runtime descriptor migrated to the child module — Setup consumes
+         both directly to drive the wizard pages. -->
+    <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
   </ItemGroup>
 </Project>

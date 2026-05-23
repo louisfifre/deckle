@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Deckle.Transcription.Pinvoke;
+namespace Deckle.Transcription.Whisper.Pinvoke;
 
 // Whisper.cpp structs — referenced by [DllImport] signatures in
 // Deckle.Transcription.Pinvoke.WhisperPInvoke. Whisper-specific, so they sit

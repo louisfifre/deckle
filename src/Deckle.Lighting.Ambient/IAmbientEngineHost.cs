@@ -1,7 +1,7 @@
 namespace Deckle.Lighting.Ambient;
 
 // Bridge that lets AmbientEngine read its settings without touching
-// the App's SettingsService. Same posture as IWhispEngineHost — the
+// the App's SettingsService. Same posture as ITranscriptionEngineHost — the
 // App-side implementation forwards each access to
 // AmbientSettingsService.Instance.Current so live edits made in the
 // AmbientPage (or in any other surface) take effect on the next read

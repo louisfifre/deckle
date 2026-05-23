@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Transcription;
 
 // Whisp module provider. Couvre le moteur de transcription
-// (WhispEngine), le cycle de vie du modèle Whisper natif (chargement
+// (TranscriptionEngine), le cycle de vie du modèle Whisper natif (chargement
 // paresseux, idle unload), le warmup boot, la transcription elle-même
 // (params, prompt, segments, complétion), le clipboard, le paste, la
 // redirection des logs whisper.cpp, et les heartbeats structurés de
@@ -141,6 +141,10 @@ public sealed class DeckleWhispSource : DeckleEventSource
     public const int EvtPageResetAll                     = 98;
     public const int EvtPageStackTrace                   = 99;
     public const int EvtWhispSettingsPrefixed            = 100;
+    public const int EvtWhisperInitParamsParsed          = 101;
+    public const int EvtWhisperModelLoadParsed           = 102;
+    public const int EvtWhisperBackendInitParsed         = 103;
+    public const int EvtWhisperInitStateParsed           = 104;
 
     // ── Warmup clip ──────────────────────────────────────────────────────
 
@@ -454,6 +458,50 @@ public sealed class DeckleWhispSource : DeckleEventSource
     public void VadParsed(string summary)
     {
         if (IsEnabled()) WriteEvent(EvtVadParsed, summary);
+    }
+
+    // ── Whisper init-phase compaction ────────────────────────────────────
+    //
+    // Each event consolidates one phase of whisper.cpp's init flow that
+    // would otherwise spam 3 to 17 separate Verbose lines. The summary
+    // payload is built by WhisperBackend's log hook from the per-phase
+    // lines as they arrive; flush happens on the first line of the next
+    // phase (or on any non-phase line).
+
+    [Event(EvtWhisperInitParamsParsed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "whisper init params | {0}")]
+    public void WhisperInitParamsParsed(string summary)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperInitParamsParsed, summary);
+    }
+
+    [Event(EvtWhisperModelLoadParsed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "whisper model load | {0}")]
+    public void WhisperModelLoadParsed(string summary)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperModelLoadParsed, summary);
+    }
+
+    [Event(EvtWhisperBackendInitParsed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "whisper backend init | {0}")]
+    public void WhisperBackendInitParsed(string summary)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperBackendInitParsed, summary);
+    }
+
+    [Event(EvtWhisperInitStateParsed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "whisper init state | {0}")]
+    public void WhisperInitStateParsed(string summary)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperInitStateParsed, summary);
     }
 
     // ── Hotkey / start gating ───────────────────────────────────────────
@@ -927,7 +975,7 @@ public sealed class DeckleWhispSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtUserFeedbackEmitted, severity, title, body, role);
     }
 
-    // ── Llm-side observation depuis WhispEngine ────────────────────────
+    // ── Llm-side observation depuis TranscriptionEngine ────────────────────────
 
     [Event(EvtManualProfileNotFound,
            Level = EventLevel.Warning,
@@ -1005,7 +1053,7 @@ public sealed class DeckleWhispSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 
-    // ── WhispSettings persistence (préfixés [whisp] dans le legacy) ─────
+    // ── TranscriptionSettings persistence (préfixés [whisp] dans le legacy) ─────
     // Entorse identique à celle de DeckleAudioSource pour les delegates
     // JsonSettingsStore — pas connu au site d'appel quelle opération
     // exacte est en cours. Préservé séparé de SettingsLoaded* pour

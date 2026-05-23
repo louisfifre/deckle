@@ -9,7 +9,8 @@ using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Transcription;
-using Deckle.Transcription.Setup;
+using Deckle.Transcription.Whisper;
+using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.App;
 
@@ -25,7 +26,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;
     private TrayIconManager? _tray;
-    private WhispEngine? _engine;
+    private TranscriptionEngine? _engine;
     private AmbientEngine? _ambientEngine;
 
     // Canonical engine accessor for surfaces that observe the running
@@ -56,7 +57,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         InitializeComponent();
 
-        // Diagnostic safety net — without this, a crash in a WhispEngine
+        // Diagnostic safety net — without this, a crash in a TranscriptionEngine
         // event disappears silently. Any sink registered later in OnLaunched
         // picks these up (the JsonlFileSink writes them to app.jsonl). Events
         // raised before OnLaunched have no sinks yet and are dropped — there
@@ -227,7 +228,13 @@ public partial class App : Microsoft.UI.Xaml.Application
             Milestone("wizard");
         }
 
-        _engine = new WhispEngine(new AppWhispEngineHost());
+        // Compose the engine with the Whisper backend — the App is the
+        // composition root that knows which IAsrBackend to instantiate.
+        // When a second backend ships (Voxtral), the choice surfaces in
+        // Settings and gates the construction here.
+        var host = new AppTranscriptionEngineHost();
+        var backend = new WhisperBackend(host);
+        _engine = new TranscriptionEngine(host, backend);
         Milestone("engine");
 
         // Canonical Ambient engine — owns its own ScreenCaptureService,

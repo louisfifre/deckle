@@ -3,26 +3,14 @@ using System.IO;
 using System.Linq;
 
 using Deckle.Core;
-namespace Deckle.Transcription.Setup;
+using Deckle.Transcription.Setup;
 
-// ── ModelEntry ───────────────────────────────────────────────────────────────
-//
-// One Whisper or Silero model the wizard knows how to install. Url + Sha256
-// + SizeBytes drive the downloader; Url empty means the entry can only be
-// satisfied by a local copy. SizeBytes is nominal — used to size the
-// progress bar and budget the disk estimate, not for verification.
-public sealed record ModelEntry(
-    string Id,
-    string FileName,
-    string DisplayName,
-    string Url,
-    long SizeBytes,
-    string? Sha256 = null);
+namespace Deckle.Transcription.Whisper.Setup;
 
 // ── SpeechModels ─────────────────────────────────────────────────────────────
 //
 // **Single source of truth** for every speech model the app understands.
-// WhispEngine, the wizard, Settings — they all read filenames, default
+// TranscriptionEngine, the wizard, Settings — they all read filenames, default
 // IDs, and download URLs from this catalog instead of hard-coding them.
 //
 // V1 catalog: two Whisper models (base, large-v3) plus the mandatory
@@ -32,7 +20,7 @@ public sealed record ModelEntry(
 public static class SpeechModels
 {
     // Default Whisper model the engine targets when no override is set.
-    // Single source of truth — WhispEngine reads this rather than its
+    // Single source of truth — TranscriptionEngine reads this rather than its
     // own copy of the filename. Swap it here when bumping the default.
     public const string DefaultModelFileName = "ggml-large-v3.bin";
 

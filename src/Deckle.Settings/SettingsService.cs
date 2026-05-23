@@ -12,7 +12,7 @@ namespace Deckle.Settings;
 //
 // Module-specific settings (Whisp / Llm / Capture / Telemetry) used to
 // hang off this AppSettings root, but moved to per-module SettingsServices
-// in slice C2b — see WhispSettingsService / LlmSettingsService /
+// in slice C2b — see TranscriptionSettingsService / LlmSettingsService /
 // CaptureSettingsService / TelemetrySettingsService and
 // SettingsBootstrap.MigrateLegacyToPerModule for the dispatch logic.
 //
@@ -23,7 +23,7 @@ namespace Deckle.Settings;
 //   • The Reload entry point used by SettingsBackupService.RestoreFromBackup.
 //
 // Notably absent now: ResolveModelsDirectory (moved to
-// WhispSettingsService since the model directory is a Whisper-engine
+// TranscriptionSettingsService since the model directory is a Whisper-engine
 // concern), MigrateProfileIds (moved to Deckle.Llm.Rewrite/LlmSettingsMigrations),
 // MigrateLegacyKeys (moved to SettingsBootstrap so it runs before the
 // per-module dispatch).

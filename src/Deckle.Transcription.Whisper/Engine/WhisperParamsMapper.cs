@@ -2,20 +2,22 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Deckle.Core.Interop;
-using Deckle.Transcription.Pinvoke;
+using Deckle.Transcription;
+using Deckle.Transcription.Whisper.Pinvoke;
+using Deckle.Transcription.Whisper.Setup;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Whisper.Engine;
 
 // ── WhisperParamsMapper ───────────────────────────────────────────────────────
 //
-// Pont entre WhispSettings (modèle orienté utilisateur) et WhisperFullParams
-// (struct C native). Appelé par WhispEngine.Transcribe() juste avant
+// Pont entre TranscriptionSettings (modèle orienté utilisateur) et WhisperFullParams
+// (struct C native). Appelé par TranscriptionEngine.Transcribe() juste avant
 // whisper_full(), après que la struct a été initialisée via
 // whisper_full_default_params_by_ref().
 //
 // Ne touche QUE les champs hot-reload : tout ce qui n'exige pas de relancer
 // le contexte whisper_init. Le choix du modèle et use_gpu sont appliqués
-// séparément au moment du LoadModelAsync() (voir WhispEngine._modelPath).
+// séparément au moment du LoadModelAsync() (voir TranscriptionEngine._modelPath).
 //
 // Allocations non managées retournées : le caller est responsable de les
 // libérer après whisper_full() via FreeAllocations().
@@ -51,19 +53,19 @@ public static class WhisperParamsMapper
     // a initialisés par défaut.
     //
     // `modelsDirectory` est le dossier où le modèle Silero VAD est cherché —
-    // résolu côté hôte (IWhispEngineHost.ResolveModelsDirectory) pour que ce
+    // résolu côté hôte (ITranscriptionEngineHost.ResolveModelsDirectory) pour que ce
     // module reste indépendant du SettingsService de l'app.
     public static NativeAllocations Apply(
         ref WhisperFullParams wparams,
-        WhispSettings whisp,
+        TranscriptionSettings whisp,
         string modelsDirectory)
     {
         // ── Transcription ─────────────────────────────────────────────────
-        IntPtr langPtr = Marshal.StringToCoTaskMemUTF8(whisp.Transcription.Language);
-        IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(whisp.Transcription.InitialPrompt);
+        IntPtr langPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.Language);
+        IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.InitialPrompt);
         wparams.language = langPtr;
         wparams.initial_prompt = promptPtr;
-        wparams.carry_initial_prompt = (byte)(whisp.Transcription.CarryInitialPrompt ? 1 : 0);
+        wparams.carry_initial_prompt = (byte)(whisp.Engine.CarryInitialPrompt ? 1 : 0);
 
         // ── Seuils de confiance ───────────────────────────────────────────
         wparams.entropy_thold = (float)whisp.Confidence.EntropyThreshold;
@@ -118,7 +120,7 @@ public static class WhisperParamsMapper
             // Silero version to ship.
             string vadModelPath = Path.Combine(
                 modelsDirectory,
-                Setup.SpeechModels.VadModelFileName);
+                SpeechModels.VadModelFileName);
 
             if (File.Exists(vadModelPath))
             {
@@ -136,7 +138,7 @@ public static class WhisperParamsMapper
                 wparams.vad = 0;
                 DeckleWhispSource.Log.WhisperLogWarning(
                     $"Silero VAD model not found at {vadModelPath} — VAD disabled. " +
-                    $"Download from {Setup.SpeechModels.VadModel.Url}");
+                    $"Download from {SpeechModels.VadModel.Url}");
             }
         }
 

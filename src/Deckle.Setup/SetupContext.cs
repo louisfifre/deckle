@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 
 using Deckle.Core;
-namespace Deckle.Transcription.Setup;
+using Deckle.Transcription.Setup;
+
+namespace Deckle.Setup;
 
 // ── SetupContext ─────────────────────────────────────────────────────────────
 //
@@ -9,6 +11,12 @@ namespace Deckle.Transcription.Setup;
 // state from here, mutates user choices, and (in the install page) writes
 // back the per-item results. The Window observes this object to enable/
 // disable Next, format the summary on the final page, etc.
+//
+// Lives in Deckle.Setup itself — the wizard module owns its own runtime
+// state. SetupContext used to sit in Deckle.Transcription.Setup but the
+// only consumers are the wizard pages here, and keeping it in the
+// transcription module forced parent ↔ child cycles once Whisper-specific
+// catalogs (SpeechModels) migrated to Deckle.Transcription.Whisper.
 //
 // Plain POCO — no Action delegates for navigation. Pages call
 // `Frame.Navigate(typeof(NextPage), context)` directly, which keeps the
@@ -21,9 +29,11 @@ public sealed class SetupContext
     // an app restart in V1, so this stays read-only after construction.
     public string Location { get; init; } = AppPaths.UserDataRoot;
 
-    // Speech model the user picked in the Choices page. Defaults to the
-    // catalog's default model so the page can pre-select it.
-    public ModelEntry SelectedModel { get; set; } = SpeechModels.DefaultWhisperModel;
+    // Speech model the user picked in the Choices page. Null until the
+    // wizard page initializes it from the active backend's catalog —
+    // SetupContext itself does not couple to any specific backend, so it
+    // never holds a hard reference to a Whisper or Voxtral default.
+    public ModelEntry? SelectedModel { get; set; }
 
     // True after the user has clicked Install on the Choices page — gates
     // the transition to the Installing page.

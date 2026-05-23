@@ -220,7 +220,7 @@
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
-       One-shot status strings raised by WhispEngine.RaiseStatus(...).
+       One-shot status strings raised by TranscriptionEngine.RaiseStatus(...).
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and
        echoed to LogWindow under [STATUS]. Status_Rewriting takes the
        active rewrite profile name as {0}. -->
@@ -247,7 +247,7 @@
   </data>
 
   <!-- ─── Engine feedback ────────────────────────────────────────────
-       UserFeedback Title/Body pairs raised by WhispEngine when an
+       UserFeedback Title/Body pairs raised by TranscriptionEngine when an
        error or warning is worth surfacing in the HUD. Each pair maps
        to one (Severity, Role) combination decided in code, not here.
        Naming: Engine_<Reason>_Title and Engine_<Reason>_Body. -->
@@ -325,7 +325,7 @@
   </data>
 
   <!-- ─── Microphone errors ──────────────────────────────────────────
-       UserFeedback pairs raised by WhispEngine.LocalizeMicError when
+       UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The
        Unavailable body interpolates the raw MMSYSERR code as {0}
        for diagnostic clarity. -->
@@ -364,7 +364,7 @@
 
   <!-- ─── Tray ───────────────────────────────────────────────────────
        Tray icon tooltip. Capped at 127 chars by Shell_NotifyIcon. The
-       {0} placeholder receives a Status_* string from WhispEngine. -->
+       {0} placeholder receives a Status_* string from TranscriptionEngine. -->
   <data name="Tray_Tooltip_Format" xml:space="preserve">
     <value>Deckle — {0}</value>
   </data>

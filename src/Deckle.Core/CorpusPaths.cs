@@ -11,7 +11,7 @@ namespace Deckle.Core;
 // Storage layout helper — resolves the base directory for telemetry JSONL
 // and audio WAV files, and normalizes profile names into filesystem-safe
 // slugs. Shared by the Settings consent dialogs, the corpus writer
-// (`Deckle.Whisp.Corpus.WavCorpusWriter`), and the structured-telemetry
+// (`Deckle.Transcription.Corpus.WavCorpusWriter`), and the structured-telemetry
 // listeners (`Deckle.Diagnostics.Telemetry`) so there's a single source
 // of truth for the storage layout.
 //

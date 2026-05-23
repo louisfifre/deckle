@@ -10,7 +10,7 @@ namespace Deckle.App;
 // SettingsService.
 //
 // Reads happen on every access (no caching), same posture as
-// AppWhispEngineHost : a setting flipped through the AmbientPage takes
+// AppTranscriptionEngineHost : a setting flipped through the AmbientPage takes
 // effect on the next read with no event subscription needed.
 internal sealed class AppAmbientEngineHost : IAmbientEngineHost
 {

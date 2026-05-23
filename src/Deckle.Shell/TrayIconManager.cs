@@ -82,7 +82,7 @@ public sealed class TrayIconManager : IDisposable
 
     // ── Status update ───────────────────────────────────────────────────────
     //
-    // Wired in App.OnLaunched as the unique sink of WhispEngine.StatusChanged:
+    // Wired in App.OnLaunched as the unique sink of TranscriptionEngine.StatusChanged:
     // every transition emitted by the engine (Loading model… → Ready →
     // Recording… → Transcribing… → Rewriting (...)… → Ready) lands here AND
     // in LogService.Status, so the tooltip is by construction in sync with

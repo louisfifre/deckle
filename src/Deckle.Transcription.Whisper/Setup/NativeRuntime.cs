@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Deckle.Core;
-namespace Deckle.Transcription.Setup;
+namespace Deckle.Transcription.Whisper.Setup;
 
 // ── NativeRuntime ────────────────────────────────────────────────────────────
 //

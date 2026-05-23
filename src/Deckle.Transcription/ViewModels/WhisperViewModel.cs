@@ -289,20 +289,20 @@ public partial class WhisperViewModel : ObservableObject
 
     // ── Sync with SettingsService ────────────────────────────────────────────
 
-    // After slice C2b, all Whisp settings live in modules/whisp/settings.json
-    // and ModelsDirectory moved off Paths into WhispSettings — so a single
+    // All transcription settings live in modules/transcription/settings.json
+    // and ModelsDirectory moved off Paths into TranscriptionSettings — so a single
     // module read covers everything this VM exposes.
     public void Load()
     {
         _isSyncing = true;
         try
         {
-            var s = WhispSettingsService.Instance.Current;
+            var s = TranscriptionSettingsService.Instance.Current;
             ModelsDirectory = s.ModelsDirectory;
-            Model = s.Transcription.Model;
-            UseGpu = s.Transcription.UseGpu;
-            Language = s.Transcription.Language;
-            InitialPrompt = s.Transcription.InitialPrompt;
+            Model = s.Engine.Model;
+            UseGpu = s.Engine.UseGpu;
+            Language = s.Engine.Language;
+            InitialPrompt = s.Engine.InitialPrompt;
             VadEnabled = s.SpeechDetection.Enabled;
             VadThreshold = s.SpeechDetection.Threshold;
             VadMinSpeechDurationMs = s.SpeechDetection.MinSpeechDurationMs;
@@ -329,13 +329,13 @@ public partial class WhisperViewModel : ObservableObject
 
     private void PushToSettings()
     {
-        var s = WhispSettingsService.Instance.Current;
+        var s = TranscriptionSettingsService.Instance.Current;
 
         s.ModelsDirectory = ModelsDirectory;
-        s.Transcription.Model = Model;
-        s.Transcription.UseGpu = UseGpu;
-        s.Transcription.Language = Language;
-        s.Transcription.InitialPrompt = InitialPrompt;
+        s.Engine.Model = Model;
+        s.Engine.UseGpu = UseGpu;
+        s.Engine.Language = Language;
+        s.Engine.InitialPrompt = InitialPrompt;
 
         s.SpeechDetection.Enabled = VadEnabled;
         s.SpeechDetection.Threshold = (float)VadThreshold;
@@ -363,6 +363,6 @@ public partial class WhisperViewModel : ObservableObject
         if (!double.IsNaN(MaxTokens))
             s.Context.MaxTokens = (int)MaxTokens;
 
-        WhispSettingsService.Instance.Save();
+        TranscriptionSettingsService.Instance.Save();
     }
 }

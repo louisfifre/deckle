@@ -10,7 +10,7 @@ namespace Deckle.Audio;
 // Microphone capture engine — owns the waveIn handle, the polling loop,
 // the per-recording RMS log, and the post-recording telemetry payload.
 //
-// Designed as a service consumed by orchestrators (today: WhispEngine;
+// Designed as a service consumed by orchestrators (today: TranscriptionEngine;
 // future: Ask-Ollama). Capture has no notion of pipeline state — it just
 // blocks in Record() until the cancellation token fires or the duration
 // cap hits, then returns the captured float[] and a structured outcome.
@@ -57,7 +57,7 @@ public sealed class MicrophoneCapture : System.IDisposable
 
     // Fired after waveInStart succeeds — the mic is now live and the first
     // 50 ms buffer is on its way. Used by the orchestrator to close the
-    // hotkey-to-capture latency stopwatch (_hotkeySw in WhispEngine).
+    // hotkey-to-capture latency stopwatch (_hotkeySw in TranscriptionEngine).
     public event System.Action? CaptureStarted;
 
     // Fired once during a Record() call when the live low-audio tracker
@@ -183,7 +183,7 @@ public sealed class MicrophoneCapture : System.IDisposable
         NativeMethods.waveInStart(hWaveIn);
         // Hotkey-to-capture latency closes here — the mic is now live and the
         // first 50 ms buffer is on its way. The orchestrator's stopwatch
-        // (_hotkeySw in WhispEngine) is closed via the CaptureStarted event.
+        // (_hotkeySw in TranscriptionEngine) is closed via the CaptureStarted event.
         CaptureStarted?.Invoke();
 
         // Reset the per-recording RMS series — the previous session's tail
