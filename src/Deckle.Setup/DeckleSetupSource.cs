@@ -1,7 +1,7 @@
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
-namespace Deckle.App;
+namespace Deckle.Setup;
 
 // Setup wizard provider. Couvre les pages du wizard first-run sous
 // src/Deckle/Shell/Setup/ : ChoicesPage (sélection des items à

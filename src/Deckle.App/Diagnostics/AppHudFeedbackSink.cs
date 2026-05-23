@@ -1,3 +1,5 @@
+using Deckle.Diagnostics;
+
 namespace Deckle.App.Diagnostics;
 
 // Sink concret hôte qui reçoit chaque `FeedbackEntry` capturée par le

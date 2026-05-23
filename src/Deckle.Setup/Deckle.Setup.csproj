@@ -30,7 +30,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- Transcription owns the setup primitives (SpeechModels, Downloader,
          NativeRuntime, SetupContext) that the wizard orchestrates. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />

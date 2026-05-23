@@ -336,7 +336,7 @@ public sealed partial class HudWindow : Window
         // documenté dans docs/reference--paste-behavior--1.0.md, accepté en cas pathologique.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
-            DeckleAppSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
+            DeckleHudSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
         }
     }
 
