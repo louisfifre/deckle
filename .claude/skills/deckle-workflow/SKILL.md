@@ -69,6 +69,22 @@ Quand Louis décrit un bug avec trigger externe (post-build, après N restarts, 
 Détecter les idées soulevées en passant dans la conversation et les sauvegarder dans l'habitat du projet (mémoire, `CLAUDE.md`, ADR, selon le poids), sans attendre qu'elles soient demandées explicitement.
 </idees_spontanees>
 
+## Release et push GitHub
+
+<push>
+Claude pousse `main` sur GitHub quand un état cohérent atterrit localement. Le push n'a pas besoin d'un tag pour être légitime — `main` est synchronisé fréquemment pour sauvegarde et traçabilité externe.
+</push>
+
+<main_releasable>
+`main` ne reçoit que des merges d'états cohérents et testés en usage. Ce qui n'est pas encore mûr vit en branche locale ou en worktree. La règle « `main` = merges seulement » porte ici son sens fort : un clone frais de `main` donne une app runnable, en permanence.
+</main_releasable>
+
+<release_aux_jalons>
+Le bump de version et le tag annoté `vX.Y.Z` sont des actes rares — réservés aux jalons perceptibles (feature livrée, refonte structurelle aboutie, lot de fixes stable testé en usage). Pas à chaque push. Le SemVer est gouverné par `conventions-versionning.md` côté `personal-conventions` ; en phase 0.x (Deckle est en `0.x.y` jusqu'à la 1.0), un break compat bump le MINOR, une feature bump le PATCH.
+</release_aux_jalons>
+
+Le workflow release est : édit `<Version>` du `Deckle.App.csproj` (source unique), commit `chore(release): vX.Y.Z`, tag annoté `git tag -a vX.Y.Z -m "Release vX.Y.Z"`, puis push branche puis push tag. Le bundle natif `native-vX.Y.Z` suit son propre cycle de version, indépendant de l'app.
+
 ## UI doctrine essentielle
 
 Trois règles qui s'appliquent à toute surface XAML Deckle, en plus de la doctrine de chaque module.
