@@ -163,6 +163,15 @@ public sealed class AmbientEngine : IAsyncDisposable
     private long _startTimestamp;
     private bool _disposed;
 
+    // Deferred-cleanup task spun by Stop() so the UI thread that
+    // triggered the stop returns immediately while the DXGI duplication
+    // + sampler GPU buffers + Hue REST output get torn down on the
+    // thread pool. StartAsync / DisposeAsync await this before they
+    // touch the engine's owned deps, so a Start + Stop + Start sequence
+    // serialises cleanly without holding the duplication past Stop.
+    // Null when no cleanup is in flight (cold-start state).
+    private Task? _stopCleanupTask;
+
     // Group-mode state — last colour we actually pushed to the bridge.
     // Compared with the sampler's most recent average to decide whether
     // to push or suppress. Default to (-1, -1, -1) so the first tick
@@ -399,21 +408,27 @@ public sealed class AmbientEngine : IAsyncDisposable
 
         SetState(AmbientEngineState.Starting);
 
-        // Clean up any deps left over from a previous Stop (Stop only
-        // cancels the loop ; the deps stay around so an in-flight
-        // tick's await doesn't NRE). Idempotent if nothing to release.
+        // Wait for the deferred cleanup spun by the previous Stop()
+        // before we touch the owned deps. The cleanup task awaits the
+        // push loop's exit and disposes capture / sampler / output —
+        // skipping the wait here would race a new Start against the
+        // old DXGI duplication still alive on the worker thread.
+        if (_stopCleanupTask is not null)
+        {
+            try { await _stopCleanupTask.ConfigureAwait(false); } catch { }
+            _stopCleanupTask = null;
+        }
+
+        // Defensive : the cleanup above always nulls the owned deps,
+        // but the cold-start path (no prior Stop) lands here with
+        // _capture / _sampler / _output already null and skips the
+        // body. Idempotent.
         await DisposeOwnedDepsAsync().ConfigureAwait(false);
 
-        // Wait for the previous push loop's tail to exit before we
-        // spin up a new one. The cancel inside Stop already triggered
-        // the OperationCanceledException at Task.Delay ; awaiting here
-        // guarantees no two loops run in parallel against the same
-        // _output / _sampler reference set.
-        if (_pushLoopTask is not null)
-        {
-            try { await _pushLoopTask.ConfigureAwait(false); } catch { }
-            _pushLoopTask = null;
-        }
+        // _pushLoopTask was already awaited inside _stopCleanupTask ;
+        // null it out together with the spent CTS so the new run
+        // starts on a clean slate.
+        _pushLoopTask = null;
         _cts?.Dispose();
         _cts = null;
 
@@ -604,13 +619,15 @@ public sealed class AmbientEngine : IAsyncDisposable
     }
 
     /// <summary>
-    /// Cancels the push loop. Idempotent — calls on an idle engine
-    /// return silently. Transitions Running → Stopping → Off, firing
-    /// StateChanged on each step so subscribers can render a brief
-    /// "stopping" indicator before the final Off rendering. The full
-    /// dep teardown (sampler / output / bridge client / capture) is
-    /// deferred to the next StartAsync (re-create) or to DisposeAsync
-    /// to keep Stop non-blocking for the caller.
+    /// Cancels the push loop and spins a background task that releases
+    /// the owned deps (capture / sampler / output) once the loop has
+    /// exited. Idempotent — calls on an idle engine return silently.
+    /// Transitions Running → Stopping → Off, firing StateChanged on
+    /// each step so subscribers can render a brief "stopping"
+    /// indicator before the final Off rendering. Stop itself stays
+    /// non-blocking ; <see cref="StartAsync"/> and <see cref="DisposeAsync"/>
+    /// await the in-flight cleanup so the engine never races a new
+    /// run against a half-released DXGI duplication.
     /// </summary>
     public void Stop()
     {
@@ -640,16 +657,30 @@ public sealed class AmbientEngine : IAsyncDisposable
             _droppedCount);
 
         // Disconnect the FrameArrived subscription synchronously so
-        // no further frames queue against the still-mapped sampler.
-        // The full dep teardown (sampler / output / bridge client /
-        // capture) is deferred to the next StartAsync (re-create) or
-        // to DisposeAsync — keeps Stop non-blocking for the caller
-        // (tray click handler, AmbientSettings.Changed observer)
-        // while avoiding a race with the in-flight push tick's await.
+        // no further frames queue against the still-mapped sampler
+        // while the deferred cleanup task is being scheduled.
         if (_capture is not null)
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
         }
+
+        // Spin the dep teardown on the thread pool. Awaits the push
+        // loop's exit first (cancellation already triggered above),
+        // then DisposeOwnedDepsAsync which releases the DXGI duplication
+        // held by the capture — freeing the output for any other
+        // ScreenCaptureService (e.g. the Playground's standalone test
+        // toggle) that wants to call DuplicateOutput1 on the same
+        // monitor right after.
+        var pushTask = _pushLoopTask;
+        _stopCleanupTask = Task.Run(async () =>
+        {
+            if (pushTask is not null)
+            {
+                try { await pushTask.ConfigureAwait(false); }
+                catch { /* logged inside the loop */ }
+            }
+            await DisposeOwnedDepsAsync().ConfigureAwait(false);
+        });
 
         SetState(AmbientEngineState.Off);
     }
@@ -1351,16 +1382,22 @@ public sealed class AmbientEngine : IAsyncDisposable
 
         Stop();
 
-        if (_pushLoopTask is not null)
+        // Wait for the deferred cleanup Stop just spun on the thread
+        // pool. It already awaits the push loop's exit and the
+        // owned-deps disposal — DisposeAsync callers expect the engine
+        // to be fully torn down on return.
+        if (_stopCleanupTask is not null)
         {
-            try { await _pushLoopTask.ConfigureAwait(false); }
-            catch { /* logged in the loop already */ }
-            _pushLoopTask = null;
+            try { await _stopCleanupTask.ConfigureAwait(false); }
+            catch { /* logged inside the loop / DisposeOwnedDepsAsync */ }
+            _stopCleanupTask = null;
         }
 
-        // Sync await the owned-deps teardown that Stop kicked off
-        // fire-and-forget — DisposeAsync callers expect the engine
-        // to be fully torn down on return.
+        // Defensive : DisposeOwnedDepsAsync is idempotent and a no-op
+        // when Stop's cleanup already ran. Kept to cover the disposal
+        // of an engine that never reached the Running state (Start
+        // failed before the cleanup task got wired).
+        _pushLoopTask = null;
         await DisposeOwnedDepsAsync().ConfigureAwait(false);
 
         _cts?.Dispose();
