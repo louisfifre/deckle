@@ -6,6 +6,7 @@ using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
 using Deckle.Lighting.Ambient;
 using Deckle.Playground;
+using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Transcription;
 using Deckle.Transcription.Setup;
@@ -141,7 +142,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // EventListeners écrivent directement aux paths canoniques.
         // Le LogWindow lazy s'attachera au listener via
         // `AttachLogWindowSink` à sa première ouverture.
-        Deckle.Diagnostics.AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
+        AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
         // Câblage des gates utilisateur côté JsonlEventListeners
@@ -166,7 +167,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // engine au Start / Stop. Le toggle utilisateur est lu sur le
         // nouveau LoggingSettingsService canonique depuis la sous-vague
         // 6g (auparavant le legacy Deckle.Logging.LoggingSettingsService).
-        Deckle.Diagnostics.AppDiagnosticsBootstrap.ConfigureLogWindowDropFilter(entry =>
+        AppDiagnosticsBootstrap.ConfigureLogWindowDropFilter(entry =>
         {
             if (entry.Level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
             if (!Deckle.Diagnostics.Logging.AmbientCaptureGate.IsActive) return false;
@@ -318,8 +319,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Feedback`) ou la stack (`HudOverlayManager.Enqueue`) selon role.
         // Le double-câblage legacy (HudFeedbackSink + LegacyHudFeedback-
         // Sink) a disparu — un seul pipeline.
-        Deckle.Diagnostics.AppDiagnosticsBootstrap.AttachHudFeedbackSink(
-            new Deckle.Diagnostics.AppHudFeedbackSink(
+        AppDiagnosticsBootstrap.AttachHudFeedbackSink(
+            new AppHudFeedbackSink(
                 onReplacement: (sev, title, body) => _hudWindow.ShowUserFeedback(sev, title, body),
                 onOverlay:     (sev, title, body) => _overlayManager.Enqueue(sev, title, body)));
 
@@ -628,7 +629,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (_logWindow is null)
         {
             _logWindow = new LogWindow();
-            Deckle.Diagnostics.AppDiagnosticsBootstrap.AttachLogWindowSink(_logWindow);
+            AppDiagnosticsBootstrap.AttachLogWindowSink(_logWindow);
             _logWindow.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(_logWindow);
         }
