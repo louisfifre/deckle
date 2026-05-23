@@ -16,7 +16,7 @@
 #   - MinGW DLLs   : <scoop>\apps\mingw\current\bin\
 #
 # Recipe for rebuilding whisper.cpp lives in
-# src/Deckle/docs/reference--native-runtime--1.0.md.
+# docs/reference/reference--native-runtime--1.0.md.
 
 [CmdletBinding()]
 param(
@@ -221,7 +221,7 @@ MinGW C++ runtime  : GPL-3 with runtime exception (libgcc, libstdc++) /
 
 Reproduction
 ------------
-See src/Deckle/docs/reference--native-runtime--1.0.md in the Deckle
+See docs/reference/reference--native-runtime--1.0.md in the Deckle
 repository for the full recompilation recipe.
 "@
 

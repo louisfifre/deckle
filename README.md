@@ -105,7 +105,7 @@ environment).
   backend.
 - A local clone of [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
   outside this repo. See
-  [`docs/reference--native-runtime--1.0.md`](docs/reference--native-runtime--1.0.md)
+  [`docs/reference/reference--native-runtime--1.0.md`](docs/reference/reference--native-runtime--1.0.md)
   for the full recipe.
 
 #### Optional

@@ -65,7 +65,7 @@ La `LogWindow` jamais affichée n'a pas de layout initialisé — `LogScrollView
 
 La classe `HudWindow` vit désormais dans `Deckle.Hud` (extraite du hôte en cartographie cleanup). Le hôte instancie le singleton une fois dans `OnLaunched` et ne le détruit jamais. Les handlers UI sont marshalés via `DispatcherQueue.TryEnqueue` car les events `WhispEngine` viennent de threads de fond. Détail interne de la fenêtre : `Window` WinUI 3 d'environ 320×64, positionnée bas-centre via `DisplayArea.Primary.WorkArea`, en `OverlappedPresenter` non resizable, avec `ExtendsContentIntoTitleBar=true`.
 
-Pour afficher la HUD, la séquence est `MoveAndResize` puis `ShowWindow(SW_SHOWNOACTIVATE)` suivi de `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. Jamais `SetForegroundWindow` — la HUD ne doit pas voler le focus. Pour la masquer, `ShowWindow(SW_HIDE)`. Les détails (coloration progressive du chrono, fade proximité souris via Raw Input et alpha layered avec smoothstep, contrainte d'ombre layered, régressions de notification) vivent dans [docs/reference--hud--1.0.md](../../docs/reference--hud--1.0.md).
+Pour afficher la HUD, la séquence est `MoveAndResize` puis `ShowWindow(SW_SHOWNOACTIVATE)` suivi de `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. Jamais `SetForegroundWindow` — la HUD ne doit pas voler le focus. Pour la masquer, `ShowWindow(SW_HIDE)`. Les détails (coloration progressive du chrono, fade proximité souris via Raw Input et alpha layered avec smoothstep, contrainte d'ombre layered, régressions de notification) vivent dans [src/Deckle.Hud/CLAUDE.md](../Deckle.Hud/CLAUDE.md).
 
 ## Lifetime — `App.xaml.cs`
 

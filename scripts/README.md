@@ -92,5 +92,5 @@ gated on the EventSource logging refactor.
 - **Source mirror of whisper.cpp.** The repo no longer carries a
   `whisper.cpp/` clone. Rebuilders clone it themselves alongside the
   Deckle repo (recipe in
-  [`../docs/reference--native-runtime--1.0.md`](../docs/reference--native-runtime--1.0.md))
+  [`../docs/reference/reference--native-runtime--1.0.md`](../docs/reference/reference--native-runtime--1.0.md))
   and point `-WhisperRepo` at it.
