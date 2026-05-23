@@ -41,11 +41,15 @@ namespace Deckle.Vision;
 // the AmbientEngine push loop.
 //
 // Recovery. DXGI_ERROR_ACCESS_LOST fires on desktop switch, mode
-// change, secure-desktop transition, or fullscreen exclusive swap.
-// The IDXGIOutputDuplication is invalidated ; we re-call
-// DuplicateOutput1 on the same IDXGIOutput5 and resume. If recreation
-// fails repeatedly (display disconnected) the loop surfaces a Stopped
-// event and exits.
+// change, or fullscreen exclusive swap ; DXGI_ERROR_ACCESS_DENIED
+// and DXGI_ERROR_SESSION_DISCONNECTED fire on secure-desktop transitions
+// (UAC, Win+L, password screensaver) and RDP disconnects. All four
+// invalidate the IDXGIOutputDuplication. We release it, sleep 2 s,
+// re-call DuplicateOutput1, and resume — for as long as the user
+// has the engine running. The loop only exits on a fatal device
+// error (DEVICE_REMOVED, DEVICE_HUNG) or on cancellation. This is
+// the Hyperion.NG DDA grabber pattern : retry forever on transient,
+// surface Stopped only on truly fatal.
 public sealed class ScreenCaptureService : IDisposable
 {
     // ~15 Hz target. Matches the AmbientEngine push cadence so we
@@ -58,14 +62,19 @@ public sealed class ScreenCaptureService : IDisposable
     private const uint AcquireTimeoutMs = 200;
 
     // Back-off when AcquireNextFrame returns an unexpected error
-    // (anything that isn't S_OK / WAIT_TIMEOUT / ACCESS_LOST). Keeps
-    // a transient driver hiccup from busy-looping.
+    // (anything that isn't S_OK / WAIT_TIMEOUT / ACCESS_LOST /
+    // ACCESS_DENIED / SESSION_DISCONNECTED). Keeps a transient
+    // driver hiccup from busy-looping.
     private const int ErrorBackoffMs = 500;
 
-    // Maximum consecutive recreate attempts on ACCESS_LOST before
-    // surfacing Stopped and exiting. Recreate normally succeeds first
-    // try ; a sustained failure means the monitor is gone for good.
-    private const int MaxRecreateAttempts = 5;
+    // Sleep between recreate attempts after the duplication has been
+    // invalidated (ACCESS_LOST, ACCESS_DENIED, SESSION_DISCONNECTED).
+    // Each cause is transient — secure desktop (UAC, Win+L, password
+    // screensaver), display mode change, fullscreen exclusive swap,
+    // RDP disconnect — and resolves when the user returns. We retry
+    // for as long as the engine is running, exiting only on a fatal
+    // device error or cancellation. Mirrors Hyperion.NG DDA grabber.
+    private const int RecreateBackoffMs = 2_000;
 
     // Format priorities passed to DuplicateOutput1. The first format
     // the OS can honour wins. HDR sessions prefer FP16 scRGB ; SDR
@@ -318,19 +327,20 @@ public sealed class ScreenCaptureService : IDisposable
     {
         long lastDeliveredTicks = 0;
         long throttleTicks = Stopwatch.Frequency * ThrottleIntervalMs / 1000;
-        int consecutiveRecreates = 0;
 
         while (!ct.IsCancellationRequested)
         {
             // AcquireNextFrame blocks up to AcquireTimeoutMs. The duplication
-            // pointer might be 0 transiently if a prior ACCESS_LOST recovery
-            // attempt failed — try to recreate before each iteration.
+            // pointer might be 0 transiently after a recovery handler released
+            // it (ACCESS_LOST / ACCESS_DENIED / SESSION_DISCONNECTED) — the
+            // recreate helper retries internally with backoff for as long as
+            // the engine is running, only returning when DuplicateOutput1
+            // succeeds or cancellation fires.
             if (_duplicationPtr == 0)
             {
-                if (!TryRecreateDuplication(ref consecutiveRecreates))
-                {
-                    break;
-                }
+                TryRecreateDuplication(ct);
+                if (ct.IsCancellationRequested) break;
+                if (_duplicationPtr == 0) continue;
             }
 
             int hr = ScreenCaptureInterop.AcquireNextFrame(
@@ -348,7 +358,27 @@ public sealed class ScreenCaptureService : IDisposable
 
             if (hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_LOST)
             {
+                // Desktop switch, mode change, DWM on/off, fullscreen
+                // exclusive swap. Drop the duplication, recreate next
+                // iteration.
                 DeckleVisionSource.Log.AccessLostRecovering();
+                if (_duplicationPtr != 0)
+                {
+                    Marshal.Release(_duplicationPtr);
+                    _duplicationPtr = 0;
+                }
+                continue;
+            }
+
+            if (hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_DENIED ||
+                hr == ScreenCaptureInterop.DXGI_ERROR_SESSION_DISCONNECTED)
+            {
+                // Secure desktop (UAC, Win+L, password screensaver) or
+                // session disconnect (RDP, "switch user"). Both are
+                // transient — drop the duplication, the next recreate
+                // attempt will succeed when the user returns to the
+                // interactive desktop.
+                DeckleVisionSource.Log.SecureDesktopRecovering(hr);
                 if (_duplicationPtr != 0)
                 {
                     Marshal.Release(_duplicationPtr);
@@ -360,28 +390,25 @@ public sealed class ScreenCaptureService : IDisposable
             if (hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_REMOVED ||
                 hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_HUNG)
             {
+                // Fatal — GPU gone or hung. Surface Stopped so the
+                // engine can clean up ; recovery would need a full
+                // D3D device rebuild that lives outside this loop.
                 DeckleVisionSource.Log.DeviceLost(hr);
                 break;
             }
 
             if (hr != 0)
             {
-                // Downgraded to Verbose : the backoff + retry loop
-                // can fire this once every 500 ms for the lifetime of
-                // a degraded output (sleep / display unplug / HDR
-                // toggle landing on INVALID_CALL = 0x887A0001), which
-                // floods the LogWindow at Info. TODO : if a specific
-                // hr starts showing up often in field reports, add a
-                // dedicated recovery branch above (like ACCESS_LOST)
-                // rather than relying on the generic retry.
+                // Verbose : the generic backoff path. Used to catch
+                // INVALID_CALL transitions during HDR toggle, the
+                // 4-duplication NOT_CURRENTLY_AVAILABLE limit, and the
+                // UNSUPPORTED corner case (mode change to 8bpp / DWM
+                // off). All transient — sleep 500 ms and retry.
                 DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (desktopResourcePtr != 0) Marshal.Release(desktopResourcePtr);
                 try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); } catch (OperationCanceledException) { break; }
                 continue;
             }
-
-            // S_OK — got a frame. Reset the recreate streak.
-            consecutiveRecreates = 0;
 
             try
             {
@@ -458,43 +485,50 @@ public sealed class ScreenCaptureService : IDisposable
         }
     }
 
-    private bool TryRecreateDuplication(ref int consecutiveRecreates)
+    // Reopen the duplication after it was invalidated (ACCESS_LOST,
+    // ACCESS_DENIED, SESSION_DISCONNECTED). Retry forever with a 2 s
+    // backoff until either DuplicateOutput1 succeeds — meaning the
+    // user has returned from the secure desktop / unplugged the
+    // headset / cleared the UAC prompt / etc. — or the engine is
+    // cancelled. Never returns false ; the only exits are "succeeded"
+    // (with _duplicationPtr set) and "cancelled" (with _duplicationPtr
+    // still 0 and the caller seeing ct.IsCancellationRequested).
+    private void TryRecreateDuplication(CancellationToken ct)
     {
-        consecutiveRecreates++;
-        if (consecutiveRecreates > MaxRecreateAttempts)
+        int attempt = 0;
+        while (!ct.IsCancellationRequested && _duplicationPtr == 0)
         {
-            DeckleVisionSource.Log.DuplicationRecreateFailed(MaxRecreateAttempts);
-            return false;
-        }
-
-        try
-        {
-            uint[] formatList = _isHdrSession ? HdrFormats : SdrFormats;
-            _duplicationPtr = ScreenCaptureInterop.DuplicateOutput1(
-                _output5Ptr, _d3dDevicePtr, formatList);
-
-            var desc = ScreenCaptureInterop.GetDuplicationDesc(_duplicationPtr);
-            var newSize = new Windows.Graphics.SizeInt32
+            attempt++;
+            try
             {
-                Width  = (int)desc.ModeDesc.Width,
-                Height = (int)desc.ModeDesc.Height,
-            };
-            if (newSize.Width != _lastSize.Width || newSize.Height != _lastSize.Height)
-            {
-                DeckleVisionSource.Log.DuplicationResizeDetected(
-                    _lastSize.Width, _lastSize.Height, newSize.Width, newSize.Height);
-                _lastSize = newSize;
+                uint[] formatList = _isHdrSession ? HdrFormats : SdrFormats;
+                _duplicationPtr = ScreenCaptureInterop.DuplicateOutput1(
+                    _output5Ptr, _d3dDevicePtr, formatList);
+
+                var desc = ScreenCaptureInterop.GetDuplicationDesc(_duplicationPtr);
+                var newSize = new Windows.Graphics.SizeInt32
+                {
+                    Width  = (int)desc.ModeDesc.Width,
+                    Height = (int)desc.ModeDesc.Height,
+                };
+                if (newSize.Width != _lastSize.Width || newSize.Height != _lastSize.Height)
+                {
+                    DeckleVisionSource.Log.DuplicationResizeDetected(
+                        _lastSize.Width, _lastSize.Height, newSize.Width, newSize.Height);
+                    _lastSize = newSize;
+                }
+
+                DeckleVisionSource.Log.DuplicationRecreated(
+                    attempt, _lastSize.Width, _lastSize.Height);
+                return;
             }
-
-            DeckleVisionSource.Log.DuplicationRecreated(
-                consecutiveRecreates, _lastSize.Width, _lastSize.Height);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
-                consecutiveRecreates, MaxRecreateAttempts, ex.GetType().Name, ex.Message);
-            return false;
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
+                    attempt, ex.GetType().Name, ex.Message);
+                try { Task.Delay(RecreateBackoffMs, ct).Wait(ct); }
+                catch (OperationCanceledException) { return; }
+            }
         }
     }
 

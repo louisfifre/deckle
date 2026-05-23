@@ -166,6 +166,156 @@ public sealed class HueBridgeClient : IDisposable
         return groups;
     }
 
+    /// <summary>
+    /// Fetches the v2 ↔ v1 identifier maps for lights and grouped_lights.
+    /// The CLIP v2 EventStream emits resource UUIDs (v2) whereas the
+    /// REST CLIP v1 push path the engine uses takes integer ids (v1) —
+    /// we need both sides of the map to translate an incoming event for
+    /// a managed resource. Pairing must have completed.
+    /// </summary>
+    /// <remarks>
+    /// CLIP v2 authentication is via the <c>hue-application-key</c> header
+    /// (the same username string used in the v1 URL path), not via the
+    /// path. The response shape is
+    /// <c>{ "errors": [], "data": [{ "id": "&lt;uuid&gt;", "id_v1": "/lights/3", ... }] }</c>.
+    /// </remarks>
+    public async Task<HueV2IdMaps> FetchV2IdMapsAsync(CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsurePaired();
+
+        DeckleLightingSource.Log.FetchingV2IdMaps();
+
+        var lights = await FetchV2ResourceMapAsync("light", ct).ConfigureAwait(false);
+        var groups = await FetchV2ResourceMapAsync("grouped_light", ct).ConfigureAwait(false);
+
+        DeckleLightingSource.Log.V2IdMapsFetched(lights.Count, groups.Count);
+        return new HueV2IdMaps(lights, groups);
+    }
+
+    private async Task<Dictionary<string, string>> FetchV2ResourceMapAsync(
+        string resourceType, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"clip/v2/resource/{resourceType}");
+        request.Headers.Add("hue-application-key", _credentials!.Username);
+
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadFromJsonAsync<HueV2ListResponse>(_jsonOptions, ct).ConfigureAwait(false);
+        var map = new Dictionary<string, string>(payload?.Data?.Length ?? 0, StringComparer.Ordinal);
+        if (payload?.Data is null) return map;
+
+        foreach (var entry in payload.Data)
+        {
+            if (string.IsNullOrEmpty(entry.Id) || string.IsNullOrEmpty(entry.IdV1)) continue;
+            // id_v1 looks like "/lights/3" or "/groups/2" — strip the prefix
+            // to get the bare v1 integer the push path uses.
+            int slash = entry.IdV1.LastIndexOf('/');
+            var v1 = slash >= 0 ? entry.IdV1[(slash + 1)..] : entry.IdV1;
+            if (v1.Length > 0) map[entry.Id] = v1;
+        }
+        return map;
+    }
+
+    /// <summary>
+    /// Long-running consumer of the bridge's v2 EventStream (SSE). Yields
+    /// resource updates as they happen so callers can detect external
+    /// state changes (Hue app, Home Assistant, physical Dimmer Switch)
+    /// and reclaim. The method reconnects with a 2 s backoff on any
+    /// network/parsing error ; only cancellation stops the loop.
+    /// </summary>
+    /// <remarks>
+    /// The bridge echoes our own REST PUTs back as events. Discrimination
+    /// is the caller's responsibility (compare event timestamp with the
+    /// last self-push for the same resource).
+    /// </remarks>
+    public async Task StreamEventsAsync(
+        Action<HueResourceUpdate> onUpdate,
+        CancellationToken ct)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsurePaired();
+
+        // SSE needs a dedicated HttpClient with InfiniteTimeSpan : the
+        // shared _http has Timeout = 10 s which would cut the stream off.
+        using var streamHttp = CreateBridgeHttpClient(
+            _bridge.InternalIpAddress, _bridge.Port, Timeout.InfiniteTimeSpan);
+
+        DeckleLightingSource.Log.EventStreamStarting();
+
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await StreamOneConnectionAsync(streamHttp, onUpdate, ct).ConfigureAwait(false);
+                // Stream closed cleanly (bridge end). Reconnect immediately.
+                DeckleLightingSource.Log.EventStreamReconnecting("clean_close");
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                DeckleLightingSource.Log.EventStreamReconnecting($"{ex.GetType().Name}: {ex.Message}");
+            }
+
+            try { await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+        }
+
+        DeckleLightingSource.Log.EventStreamStopped();
+    }
+
+    private async Task StreamOneConnectionAsync(
+        HttpClient streamHttp,
+        Action<HueResourceUpdate> onUpdate,
+        CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "eventstream/clip/v2");
+        request.Headers.Add("hue-application-key", _credentials!.Username);
+        request.Headers.Add("Accept", "text/event-stream");
+
+        using var response = await streamHttp.SendAsync(
+            request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+
+        var parser = System.Net.ServerSentEvents.SseParser.Create(stream, (eventType, bytes) =>
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<HueEventStreamContainer[]>(bytes, _jsonOptions);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        });
+
+        await foreach (var item in parser.EnumerateAsync(ct).ConfigureAwait(false))
+        {
+            if (item.Data is not { } containers) continue;
+            foreach (var container in containers)
+            {
+                if (container.Type != "update" || container.Data is null) continue;
+                foreach (var resource in container.Data)
+                {
+                    if (string.IsNullOrEmpty(resource.Id) || string.IsNullOrEmpty(resource.Type)) continue;
+                    onUpdate(new HueResourceUpdate(
+                        V2ResourceId: resource.Id,
+                        ResourceType: resource.Type,
+                        CreationTime: container.CreationTime,
+                        On:           resource.On?.On,
+                        Brightness:   resource.Bri?.Bri,
+                        Xy:           resource.Xy?.Xy is { } xy ? (xy.X, xy.Y) : null));
+                }
+            }
+        }
+    }
+
     // Hue's `transitiontime` is the fade duration the bridge interpolates
     // toward the new state, expressed in deciseconds (1/10 s). The
     // factory default is 4 (= 400 ms), which feels sluggish on a fast
@@ -593,7 +743,12 @@ public sealed class HueBridgeClient : IDisposable
 
     // ── Helpers ─────────────────────────────────────────────────────
 
-    private static HttpClient CreateBridgeHttpClient(string ip, int port)
+    // Internal so HueEventStreamClient can reuse the exact same TLS
+    // handling (self-signed cert callback) instead of duplicating the
+    // setup. The SSE consumer needs its own HttpClient because it sets
+    // Timeout to InfiniteTimeSpan (a streaming GET would otherwise be
+    // cut off after 10 s), so we just hand it the factory.
+    internal static HttpClient CreateBridgeHttpClient(string ip, int port, TimeSpan? timeout = null)
     {
         var handler = new SocketsHttpHandler
         {
@@ -613,7 +768,7 @@ public sealed class HueBridgeClient : IDisposable
         return new HttpClient(handler)
         {
             BaseAddress = new Uri($"https://{ip}:{port}/"),
-            Timeout = TimeSpan.FromSeconds(10),
+            Timeout = timeout ?? TimeSpan.FromSeconds(10),
         };
     }
 
