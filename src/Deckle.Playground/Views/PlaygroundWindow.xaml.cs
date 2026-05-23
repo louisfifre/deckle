@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Shell;
 
 namespace Deckle.Playground;
@@ -288,7 +288,7 @@ public sealed partial class PlaygroundWindow : Window
     //
     // Same helper as in SettingsWindow ; kept duplicated by design — two
     // callsites isn't enough to justify a shared assembly, and pulling it
-    // into Deckle.Localization would force that pure resw-facing module
+    // into Deckle.Catalog would force that pure resw-facing module
     // to take a WinUI 3 control dependency it doesn't otherwise need.
     private static void OverrideNavPaneToggleTooltip(NavigationView nav, string tooltip)
     {

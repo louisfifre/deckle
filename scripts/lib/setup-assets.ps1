@@ -3,7 +3,7 @@
 # Populates <UserDataRoot>\native\ and <UserDataRoot>\models\ with the
 # whisper.cpp DLLs, MinGW C++ runtime, and Whisper models the app needs
 # at runtime. This is the canonical setup step — the app reads from
-# <UserDataRoot> exclusively (see src/Deckle/AppPaths.cs).
+# <UserDataRoot> exclusively (see src/Deckle.App/AppPaths.cs).
 #
 # Default <UserDataRoot> resolution mirrors AppPaths.ResolveUserDataRoot
 # on the C# side:

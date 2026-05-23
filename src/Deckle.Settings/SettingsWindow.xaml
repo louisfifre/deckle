@@ -47,13 +47,13 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="SettingsNavTranscription"
-                                    Tag="Deckle.Whisp.WhisperPage, Deckle.Whisp">
+                                    Tag="Deckle.Transcription.WhisperPage, Deckle.Transcription">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{StaticResource Icon.Speech}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="SettingsNavRewriting"
-                                    Tag="Deckle.Llm.LlmPage, Deckle.Llm">
+                                    Tag="Deckle.Llm.Rewrite.LlmPage, Deckle.Llm.Rewrite">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{StaticResource Icon.Sparkle}" />
                     </NavigationViewItem.Icon>

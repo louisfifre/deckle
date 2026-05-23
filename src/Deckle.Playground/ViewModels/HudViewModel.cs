@@ -90,7 +90,7 @@ public partial class HudViewModel : ObservableObject
     // so x:Bind picks them up on the toolbar. Two-button transport
     // (Play / Stop) ; Pause was retired in 2026-05-19 because freezing
     // the Composition Forever animations would require new entry points
-    // in Deckle.Chrono.Hud and Deckle.Composition, out of scope here.
+    // in Deckle.Hud and Deckle.Composition, out of scope here.
 
     public bool IsPlayEnabled => !IsPlaying;
     public bool IsStopEnabled => IsPlaying;

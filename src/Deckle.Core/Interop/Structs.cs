@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Interop;
+namespace Deckle.Core.Interop;
 
 // ── POINT ─────────────────────────────────────────────────────────────────────
 [StructLayout(LayoutKind.Sequential)]

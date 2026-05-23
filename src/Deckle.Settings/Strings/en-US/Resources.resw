@@ -1069,10 +1069,7 @@
     <value>Models</value>
   </data>
   <data name="LlmModelsBody.Text" xml:space="preserve">
-    <value>Models available in your local Ollama instance. Use the import button to create a model from a GGUF file with the correct chat template.</value>
-  </data>
-  <data name="LlmImportGgufButton.Content" xml:space="preserve">
-    <value>Import GGUF</value>
+    <value>Models available in your local Ollama instance. To add or remove models outside the app, use `ollama pull` / `ollama create` from your shell, then refresh.</value>
   </data>
   <data name="LlmRefreshLabel.Text" xml:space="preserve">
     <value>Refresh</value>
@@ -1390,71 +1387,6 @@
   </data>
   <data name="Settings_ErrorRemovingModel_Title" xml:space="preserve">
     <value>Error removing model</value>
-  </data>
-
-  <!-- ─── GGUF import ────────────────────────────────────────────────
-       Programmatic dialog wrapping GgufImportView; status text emitted
-       from the view code-behind during import. -->
-  <data name="Gguf_DialogTitle" xml:space="preserve">
-    <value>Import GGUF model</value>
-  </data>
-  <data name="Gguf_PrimaryButton" xml:space="preserve">
-    <value>Create</value>
-  </data>
-  <data name="Gguf_StatusPreparing" xml:space="preserve">
-    <value>Preparing...</value>
-  </data>
-
-  <!-- GGUF import view fields -->
-  <data name="GgufNameBox.Header" xml:space="preserve">
-    <value>Model name</value>
-  </data>
-  <data name="GgufNameBox.PlaceholderText" xml:space="preserve">
-    <value>my-model:latest</value>
-  </data>
-  <data name="GgufPathBox.Header" xml:space="preserve">
-    <value>GGUF file path</value>
-  </data>
-  <data name="GgufPathBox.PlaceholderText" xml:space="preserve">
-    <value>Click Browse to pick a .gguf file</value>
-  </data>
-  <data name="GgufTemplateBox.Header" xml:space="preserve">
-    <value>Template (optional)</value>
-  </data>
-  <data name="GgufTemplateBody.Text" xml:space="preserve">
-    <value>Go template that structures messages for the model. Copy from the model's page on HuggingFace or ollama.com. Leave empty to use the model's built-in template if available.</value>
-  </data>
-  <data name="GgufSystemPromptBox.Header" xml:space="preserve">
-    <value>System prompt (optional)</value>
-  </data>
-  <data name="GgufSystemPromptBox.PlaceholderText" xml:space="preserve">
-    <value>Default behavior for this model...</value>
-  </data>
-  <data name="GgufSystemPromptBody.Text" xml:space="preserve">
-    <value>Embedded in the model. Overridden by the profile's system prompt if one is set.</value>
-  </data>
-
-  <!-- GGUF import error messages -->
-  <data name="Gguf_Error_MissingFields_Title" xml:space="preserve">
-    <value>Missing fields</value>
-  </data>
-  <data name="Gguf_Error_MissingFields_Body" xml:space="preserve">
-    <value>Model name and GGUF file path are required.</value>
-  </data>
-  <data name="Gguf_Error_InvalidName_Title" xml:space="preserve">
-    <value>Invalid model name</value>
-  </data>
-  <data name="Gguf_Error_InvalidName_Body" xml:space="preserve">
-    <value>Use only letters, digits, dots, dashes, and underscores. Optional :tag suffix (e.g. my-model:latest).</value>
-  </data>
-  <data name="Gguf_Error_FileNotFound_Title" xml:space="preserve">
-    <value>File not found</value>
-  </data>
-  <data name="Gguf_Error_FileNotFound_Body_Format" xml:space="preserve">
-    <value>GGUF file not found: {0}</value>
-  </data>
-  <data name="Gguf_Error_ImportFailed_Title" xml:space="preserve">
-    <value>Import failed</value>
   </data>
 
   <!-- ─── LogWindow ──────────────────────────────────────────────────

@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Audio;
-using Deckle.Chrono.Hud;
+using Deckle.Hud;
 using Deckle.Composition;
 using Deckle.Playground.ViewModels;
 

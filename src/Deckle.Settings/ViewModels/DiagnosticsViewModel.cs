@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Core;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 

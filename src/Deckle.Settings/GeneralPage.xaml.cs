@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Settings.ViewModels;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 
@@ -176,10 +177,9 @@ public sealed partial class GeneralPage : Page
     {
         try
         {
-            // The first-run wizard lives in Deckle.Shell.Setup (App-side
-            // until factored into a dedicated module). Going through the
-            // SettingsHost hook keeps Deckle.Settings free of a back
-            // reference to Deckle.exe.
+            // The first-run wizard lives in the standalone Deckle.Setup
+            // module. Going through the SettingsHost hook keeps
+            // Deckle.Settings free of a back-reference to Deckle.exe.
             if (SettingsHost.OpenSetupWizard is null)
             {
                 DeckleSettingsSource.Log.SetupWizardHookNotWired();

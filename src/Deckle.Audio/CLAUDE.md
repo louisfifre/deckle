@@ -6,7 +6,7 @@ Le nom du module est volontairement plus large que son contenu actuel. Le module
 
 ## Contrat avec les consommateurs
 
-Le module expose `MicrophoneCapture` (orchestrateur de cycle de vie : `Probe()` pour pré-vol, `Record(IAudioRecordingHost, CancellationToken)` pour la séance), `IAudioRecordingHost` (contrat injecté par l'orchestrateur — Whisp typiquement — qui expose les settings live consultés à chaque entrée de `Record()`), `CaptureResult` (audio float[] + télémétrie micro + outcome), `CaptureSettings` + `CaptureSettingsService` (UI Settings → Recording page + auto-load), `AudioLevelMapper` (mappage RMS → niveau perceptuel utilisé par `Deckle.Chrono.Hud`).
+Le module expose `MicrophoneCapture` (orchestrateur de cycle de vie : `Probe()` pour pré-vol, `Record(IAudioRecordingHost, CancellationToken)` pour la séance), `IAudioRecordingHost` (contrat injecté par l'orchestrateur — Whisp typiquement — qui expose les settings live consultés à chaque entrée de `Record()`), `CaptureResult` (audio float[] + télémétrie micro + outcome), `CaptureSettings` + `CaptureSettingsService` (UI Settings → Recording page + auto-load), `AudioLevelMapper` (mappage RMS → niveau perceptuel utilisé par `Deckle.Hud`).
 
 Le pattern fondamental : le module ne sait pas pourquoi on capture (transcription, futur Ask-Ollama, autre). Il sait juste comment capturer proprement et comment exposer la télémétrie nécessaire pour calibrer l'expérience utilisateur. Les consommateurs implémentent `IAudioRecordingHost` pour fournir le device id, le cap durée et le toggle télémétrie, et reçoivent un `CaptureResult` complet à la sortie de `Record()`.
 

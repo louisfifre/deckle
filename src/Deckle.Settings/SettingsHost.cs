@@ -15,7 +15,7 @@ namespace Deckle.Settings;
 // to the App assembly? Because that would close the dependency cycle
 // (App → Deckle.Settings → App). The pattern mirrors what
 // `HudChrono.MaxRecordingDurationSecondsProvider` does in
-// Deckle.Chrono.Hud: the lib exposes static fields, the App wires them
+// Deckle.Hud: the lib exposes static fields, the App wires them
 // once at boot, the lib's call sites invoke them with `?.Invoke(...)`
 // and degrade silently to no-op when nothing is wired (so the lib
 // remains buildable / testable in isolation).
@@ -38,7 +38,7 @@ public static class SettingsHost
     public static Action<LevelWindowSettings>? ApplyLevelWindow;
 
     // Restart the process, optionally returning to a Settings page
-    // tag (e.g. "Deckle.Whisp.WhisperPage, Deckle.Whisp" — assembly-
+    // tag (e.g. "Deckle.Transcription.WhisperPage, Deckle.Transcription" — assembly-
     // qualified for cross-assembly Type.GetType resolution) so the user
     // lands back on the page that triggered the restart. Wired by App.
     public static Action<string?>? RestartApp;
@@ -50,8 +50,8 @@ public static class SettingsHost
 
     // Re-open the first-run setup wizard on demand (Browse model,
     // replace native runtime…). The wizard XAML and code live in the
-    // App assembly (namespace Deckle.Shell.Setup) until they get
-    // factored into a dedicated module — so we go through a hook here
-    // to avoid taking a back-reference to the App.
+    // standalone Deckle.Setup module — we go through a hook here so
+    // Deckle.Settings doesn't take a back-reference to either Deckle.App
+    // or Deckle.Setup just for the wizard entry point.
     public static Action? OpenSetupWizard;
 }

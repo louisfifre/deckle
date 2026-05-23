@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 using Deckle.Catalog;
 using Deckle.Shell;
 

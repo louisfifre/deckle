@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Deckle.Audio.Internal;
 using Deckle.Audio.Telemetry;
-using Deckle.Interop;
+using Deckle.Core.Interop;
 
 namespace Deckle.Audio;
 

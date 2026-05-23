@@ -50,8 +50,8 @@ if ($Pick) {
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 
-$ProjectDir = Join-Path $RepoRoot 'src\Deckle'
-$Csproj     = Join-Path $ProjectDir 'Deckle.csproj'
+$ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
+$Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 

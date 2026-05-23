@@ -47,25 +47,33 @@ under `scripts/lib/` and are callable directly. Run from PowerShell 7+.
 Leaves first, app host last. Arrows mean "depends on".
 
 ```
-Deckle.Core
-Deckle.Logging          → Core
-Deckle.Catalog     → Core
-Deckle.Audio            → Core, Logging
+Deckle.Core             (standalone)
+Deckle.Catalog          (standalone)
 Deckle.Chrono           (standalone)
-Deckle.Composition      (standalone)
-Deckle.Vision           → Core, Logging
+Deckle.Logging          → Core
+Deckle.Audio            → Core, Logging
+Deckle.Composition      → Core, Logging
+Deckle.Vision           → Core, Logging, Composition
 Deckle.Lighting         → Core, Logging
-Deckle.Chrono.Hud       → Chrono, Composition
-Deckle.Shell            → Core, Logging
-Deckle.Settings         → Core, Logging, Localization
+Deckle.Shell            → Core, Catalog, Logging
+Deckle.Settings         → Core, Catalog, Logging, Audio, Shell
+Deckle.Hud              → Core, Catalog, Logging, Audio, Chrono, Composition, Settings, Shell
 Deckle.Llm              → Core, Logging
-Deckle.Whisp            → Core, Logging, Audio, Llm
-Deckle.Lighting.Ambient → Core, Logging, Vision, Lighting
-Deckle                  → all of the above (app host, WinUI 3 entry point)
+Deckle.Llm.Rewrite      → Core, Catalog, Logging, Llm
+Deckle.Transcription    → Core, Catalog, Logging, Audio, Llm, Llm.Rewrite, Settings
+Deckle.Setup            → Core, Catalog, Logging, Transcription
+Deckle.Lighting.Ambient → Core, Catalog, Logging, Composition, Vision, Lighting, Settings
+Deckle.Playground       → Core, Catalog, Logging, Audio, Composition, Hud, Vision, Lighting, Lighting.Ambient, Settings, Shell
+Deckle.App              → all of the above (app host, WinUI 3 entry point)
 ```
 
 Dependencies are acyclic. Each module is one csproj. Sub-namespaces within a
 module are used when internal structure warrants it.
+
+For the canonical reference — per-module responsibilities, internal layout
+convention (Engine/Ui/Setup), namespace homogenization rules, cross-module
+patterns (Settings per-module, SettingsHost, multi-assembly PRI) — see
+[`docs/reference--cartographie-modules--1.0.md`](docs/reference--cartographie-modules--1.0.md).
 
 ---
 
@@ -85,14 +93,14 @@ module are used when internal structure warrants it.
 
 Five of fifteen modules have non-trivial contracts documented:
 
-- `src/Deckle/CLAUDE.md` — app host lifetime, WinUI 3 pitfalls, build commands
+- `src/Deckle.App/CLAUDE.md` — app host lifetime, WinUI 3 pitfalls, build commands
 - `src/Deckle.Audio/CLAUDE.md` — WASAPI capture, circular buffers, RMS
 - `src/Deckle.Logging/CLAUDE.md` — TelemetryService singleton, sink architecture
 - `src/Deckle.Settings/CLAUDE.md` — NavigationView shell, SettingsHost, modular pages
-- `src/Deckle.Whisp/CLAUDE.md` — transcription pipeline, segment callback, VAD, hot-reload
+- `src/Deckle.Transcription/CLAUDE.md` — transcription pipeline, segment callback, VAD, hot-reload
 
-The remaining ten modules (Core, Chrono, Chrono.Hud, Composition, Vision,
-Lighting, Lighting.Ambient, Llm, Localization, Shell) are either
+The remaining ten modules (Core, Chrono, Hud, Composition, Vision,
+Lighting, Lighting.Ambient, Llm, Catalog, Shell) are either
 straightforward or still being scaffolded.
 
 ---

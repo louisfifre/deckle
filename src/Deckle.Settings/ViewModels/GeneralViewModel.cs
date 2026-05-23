@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Shell;
+using Deckle.Core;
 
 namespace Deckle.Settings.ViewModels;
 

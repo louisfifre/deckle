@@ -24,7 +24,7 @@ namespace Deckle.Settings;
 //
 // Notably absent now: ResolveModelsDirectory (moved to
 // WhispSettingsService since the model directory is a Whisper-engine
-// concern), MigrateProfileIds (moved to Deckle.Llm/LlmSettingsMigrations),
+// concern), MigrateProfileIds (moved to Deckle.Llm.Rewrite/LlmSettingsMigrations),
 // MigrateLegacyKeys (moved to SettingsBootstrap so it runs before the
 // per-module dispatch).
 //

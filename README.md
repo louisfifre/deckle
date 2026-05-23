@@ -14,7 +14,7 @@ Built with WinUI 3, .NET 10, and Windows App SDK 1.8. Targets Windows 11.
 
 ## Subsystems
 
-### Voice transcription (Whisp)
+### Voice transcription
 
 Press a hotkey, talk, release — the transcription lands in the clipboard,
 ready to paste anywhere.
@@ -168,21 +168,23 @@ service, nothing machine-wide.
 ```
 <repo-root>/
 ├── src/
-│   ├── Deckle/                 WinUI 3 app host — entry point, windows, tray
+│   ├── Deckle.App/             WinUI 3 app host — entry point, windows, tray
 │   ├── Deckle.Core/            Foundations (AppPaths, JsonSettingsStore, Win32 interop)
 │   ├── Deckle.Logging/         Central telemetry hub (TelemetryService + sinks)
-│   ├── Deckle.Catalog/    ResourceLoader facade (x:Uid pattern)
+│   ├── Deckle.Catalog/         ResourceLoader facade (x:Uid pattern)
 │   ├── Deckle.Audio/           Microphone capture (WASAPI, RMS, calibration)
 │   ├── Deckle.Chrono/          Timer primitive (no UI)
-│   ├── Deckle.Chrono.Hud/      UserControl for the stopwatch HUD
 │   ├── Deckle.Composition/     Direct2D + Composition primitives (ColorSpace, easing)
+│   ├── Deckle.Hud/             HUD subsystem (HudWindow, overlay stack, HudChrono)
 │   ├── Deckle.Vision/          Screen capture (DXGI Output Duplication)
 │   ├── Deckle.Lighting/        LED driver abstraction (ILightOutput)
 │   ├── Deckle.Lighting.Ambient/ Ambient lighting consumer (Vision + Lighting → Hue)
 │   ├── Deckle.Shell/           System shell (tray, hotkeys, autostart, message-only host)
 │   ├── Deckle.Settings/        Settings UI shell + per-module persistence
-│   ├── Deckle.Llm/             LLM rewrite via Ollama
-│   └── Deckle.Whisp/           Whisper transcription pipeline
+│   ├── Deckle.Llm/             Ollama HTTP client (model administration, health-check)
+│   ├── Deckle.Llm.Rewrite/     Rewrite engine + LlmPage Settings UI (uses Deckle.Llm)
+│   ├── Deckle.Transcription/   Whisper transcription pipeline
+│   └── Deckle.Setup/           First-run wizard (natives + models)
 ├── scripts/                    Build, publish, setup, launcher (deckle.ps1 + lib/)
 ├── docs/                       Reference sheets and research notes
 ├── benchmark/                  Python benchmark suite (optional, to be extracted)

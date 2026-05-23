@@ -220,7 +220,7 @@ public static class SettingsBootstrap
 
     // recording → capture (capture module extraction, 2026-05-02). The
     // settings shape stayed identical; only the JSON key changed when
-    // RecordingSettings moved from Deckle.Whisp to Deckle.Audio and was
+    // RecordingSettings moved from Deckle.Transcription to Deckle.Audio and was
     // renamed CaptureSettings to align with its owning module. Silently
     // rebind the legacy key so existing settings.json files keep their
     // custom AudioInputDeviceId / LevelWindow values.

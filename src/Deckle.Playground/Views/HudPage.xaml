@@ -10,7 +10,7 @@
     x:Class="Deckle.Playground.HudPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:chrono="using:Deckle.Chrono.Hud">
+    xmlns:chrono="using:Deckle.Hud">
 
     <Grid>
         <Grid.ColumnDefinitions>
