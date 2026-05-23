@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Shell;
 
 namespace Deckle.Hud;
@@ -194,19 +193,18 @@ public sealed partial class HudWindow : Window
     public void SwitchToTranscribing() => EnqueueUI(() => SetState(HudState.Transcribing));
     public void SwitchToRewriting()    => EnqueueUI(() => SetState(HudState.Rewriting));
 
-    // Durations are severity-driven (see UserFeedbackDurations). Success and
-    // Informational clear fast, warnings and errors linger so the user has
-    // time to read the actionable body.
+    // Durations are severity-driven (see FeedbackDuration / SuccessDuration
+    // below). Success and Informational clear fast, warnings and errors
+    // linger so the user has time to read the actionable body.
 
     public void ShowError(string title, string body) =>
         EnqueueUI(() => SetState(HudState.Message,
-            new MessagePayload(MessageKind.Critical, title, body,
-                UserFeedbackDurations.For(UserFeedbackSeverity.Error))));
+            new MessagePayload(MessageKind.Critical, title, body, FeedbackDuration(2))));
 
     public void ShowPasted() =>
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Success, Loc.Get("Hud_Pasted_Title"), string.Empty,
-                UserFeedbackDurations.Success)));
+                SuccessDuration)));
 
     // "Copied to clipboard" is a *success* outcome — the transcription
     // landed on the clipboard, which is the default flow when
@@ -217,20 +215,46 @@ public sealed partial class HudWindow : Window
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Success,
                 Loc.Get("Hud_Copied_Title"), Loc.Get("Hud_Copied_Hint"),
-                UserFeedbackDurations.Success)));
+                SuccessDuration)));
 
-    public void ShowUserFeedback(UserFeedback fb)
+    // ─── Feedback routing ───────────────────────────────────────────────────
+    //
+    // Severity et duration arrivent en primitives plutôt qu'en `UserFeedback`
+    // record : depuis la sous-vague 6b, l'émission passe par le canal
+    // EventSource `UserFeedbackEmitted(severity:int, title, body, role:int)`
+    // exposé par chaque provider de module (DeckleWhispSource, etc.). Le sink
+    // host (`AppHudFeedbackSink`) route vers la surface réplica (`ShowUser-
+    // Feedback`) ou stack (`HudOverlayManager.Enqueue`) selon `role`.
+    //
+    // Severity convention : 0=Info, 1=Warning, 2+=Error (mêmes ordinaux que
+    // l'ancien `UserFeedbackSeverity` enum). Conservée à l'identique pour
+    // éviter une bascule de ce contrat côté providers.
+    public void ShowUserFeedback(int severity, string title, string body)
     {
-        MessageKind kind = fb.Severity switch
+        MessageKind kind = severity switch
         {
-            UserFeedbackSeverity.Info     => MessageKind.Informational,
-            UserFeedbackSeverity.Warning  => MessageKind.Warning,
-            _                              => MessageKind.Critical,
+            0 => MessageKind.Informational,
+            1 => MessageKind.Warning,
+            _ => MessageKind.Critical,
         };
         EnqueueUI(() => SetState(HudState.Message,
-            new MessagePayload(kind, fb.Title, fb.Body,
-                UserFeedbackDurations.For(fb.Severity))));
+            new MessagePayload(kind, title, body, FeedbackDuration(severity))));
     }
+
+    // ─── Feedback durations ─────────────────────────────────────────────────
+    //
+    // Tunées par sévérité : warn/error linger, info clears quickly. Constantes
+    // hardcoded — un knob Settings ici ajouterait de la complexité pour une
+    // valeur qu'un utilisateur ne touche jamais. `SuccessDuration` partagé
+    // avec les Success messages internes du HUD (ShowCopied / ShowPasted).
+    internal static readonly TimeSpan SuccessDuration = TimeSpan.FromSeconds(2);
+
+    internal static TimeSpan FeedbackDuration(int severity) => severity switch
+    {
+        0 => TimeSpan.FromSeconds(4),  // Info
+        1 => TimeSpan.FromSeconds(8),  // Warning
+        _ => TimeSpan.FromSeconds(8),  // Error
+    };
 
     public void Hide() => EnqueueUI(() => SetState(HudState.Hidden));
 
@@ -263,7 +287,7 @@ public sealed partial class HudWindow : Window
     {
         if (!DispatcherQueue.HasThreadAccess)
         {
-            DispatcherQueue.TryEnqueueOrLog(PrimeAndHide, LogSource.Hud, "PrimeAndHide");
+            DispatcherQueue.TryEnqueueOrLog(PrimeAndHide, "HUD", "PrimeAndHide");
             return;
         }
 
@@ -297,7 +321,7 @@ public sealed partial class HudWindow : Window
         bool enqueued = DispatcherQueue.TryEnqueueOrLog(() =>
         {
             try { SetState(HudState.Hidden); } finally { done.Set(); }
-        }, LogSource.Hud, "HideSync");
+        }, "HUD", "HideSync");
 
         // Si l'enqueue a échoué (queue fermée pendant teardown), on évite
         // le Wait infini en libérant immédiatement. Le HUD ne sera pas
@@ -312,7 +336,7 @@ public sealed partial class HudWindow : Window
         // documenté dans docs/reference--paste-behavior--1.0.md, accepté en cas pathologique.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
-            LogService.Instance.Warning(LogSource.Hud, "HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
+            DeckleAppSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
         }
     }
 
@@ -437,7 +461,7 @@ public sealed partial class HudWindow : Window
     private void EnqueueUI(Action a)
     {
         if (DispatcherQueue.HasThreadAccess) a();
-        else DispatcherQueue.TryEnqueueOrLog(() => a(), LogSource.Hud, "ui action");
+        else DispatcherQueue.TryEnqueueOrLog(() => a(), "HUD", "ui action");
     }
 
     // Pixel rect the HUD would occupy at the current DPI + work area +

@@ -7,7 +7,6 @@ using Deckle.Catalog;
 using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
 using Deckle.Lighting.Hue;
-using Deckle.Logging;
 
 namespace Deckle.Playground;
 
@@ -72,21 +71,21 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueWarning(
                 $"Listing lights failed — {ex.GetType().Name}: {ex.Message}");
             _placementLights = null;
             BuildLightZonesUi();
             return;
         }
 
-        _log.Verbose(LogSource.Ambient,
+        DecklePlaygroundSource.Log.AmbientVerbose(
             $"resolve lights | group_id={group.Id} | group_name={group.Name} | from_group={lights.Count}");
 
         var matchedArea = await FindMatchingEntertainmentAreaAsync(group, lights).ConfigureAwait(true);
 
         if (lights.Count == 0 && matchedArea is { LightPlacements.Count: > 0 })
         {
-            _log.Info(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueInfo(
                 $"Using entertainment area '{matchedArea.Name}' as the lights source ({matchedArea.LightPlacements.Count} lights)");
             foreach (var p in matchedArea.LightPlacements)
             {
@@ -116,14 +115,14 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Verbose(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueVerbose(
                 $"List entertainment configs failed — {ex.GetType().Name}: {ex.Message}");
             return null;
         }
 
         if (areas.Count == 0)
         {
-            _log.Verbose(LogSource.Ambient, "match ent area | result=no_areas");
+            DecklePlaygroundSource.Log.AmbientVerbose("match ent area | result=no_areas");
             return null;
         }
 
@@ -131,7 +130,7 @@ public sealed partial class AmbientPage
         {
             if (string.Equals(a.Name, group.Name, StringComparison.OrdinalIgnoreCase))
             {
-                _log.Verbose(LogSource.Ambient,
+                DecklePlaygroundSource.Log.AmbientVerbose(
                     $"match ent area | result=name | ent_id={a.Id} | name={a.Name}");
                 return a;
             }
@@ -152,13 +151,13 @@ public sealed partial class AmbientPage
             }
             if (best is not null)
             {
-                _log.Verbose(LogSource.Ambient,
+                DecklePlaygroundSource.Log.AmbientVerbose(
                     $"match ent area | result=overlap | ent_id={best.Id} | name={best.Name} | overlap={bestOverlap}");
                 return best;
             }
         }
 
-        _log.Verbose(LogSource.Ambient, "match ent area | result=no_match");
+        DecklePlaygroundSource.Log.AmbientVerbose("match ent area | result=no_match");
         return null;
     }
 
@@ -174,7 +173,7 @@ public sealed partial class AmbientPage
             if (!lightIdSet.Contains(p.LightId)) continue;
             var zone = LightZoneSuggester.Suggest(p);
             suggestions[p.LightId] = zone;
-            _log.Verbose(LogSource.Ambient,
+            DecklePlaygroundSource.Log.AmbientVerbose(
                 $"zone suggest | id={p.LightId} | zone={zone} | from=ent_config | ent_name={area.Name} | xyz={p.X:F2},{p.Y:F2},{p.Z:F2}");
         }
         return suggestions;
@@ -321,7 +320,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueWarning(
                 $"Identify failed — {ex.GetType().Name}: {ex.Message}");
         }
         finally
@@ -473,8 +472,8 @@ public sealed partial class AmbientPage
         string zoneSummary = tag.Zone == LightZone.None
             ? $"Zone cleared on {tag.LightName}"
             : $"Zone {tag.Zone} assigned to {tag.LightName}";
-        _log.Info(LogSource.Ambient, zoneSummary);
-        _log.Verbose(LogSource.Ambient,
+        DecklePlaygroundSource.Log.AmbientInfo(zoneSummary);
+        DecklePlaygroundSource.Log.AmbientVerbose(
             $"zone assign | id={tag.LightId} | zone={tag.Zone}");
 
         UpdateZoneOverlayHighlight();

@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Logging;
 using Deckle.Shell;
 using Deckle.Core;
 
@@ -20,7 +19,6 @@ namespace Deckle.Settings.ViewModels;
 // Partial properties (not fields) for WinRT/AOT compatibility (MVVMTK0045).
 public partial class GeneralViewModel : ObservableObject
 {
-    private static readonly LogService _log = LogService.Instance;
     private bool _isSyncing;
 
     // ── Appearance ───────────────────────────────────────────────────────────
@@ -31,7 +29,7 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnThemeChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Theme ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Theme", value);
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(value);
     }
@@ -66,35 +64,35 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnAutoPasteEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Auto-paste ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Auto-paste", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Overlay enabled ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Overlay enabled", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayFadeOnProximityChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Overlay fade ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Overlay fade", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayAnimationsChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Overlay animations ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Overlay animations", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayPositionChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Overlay position ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Overlay position", value);
         PushToSettings();
     }
 
@@ -116,7 +114,7 @@ public partial class GeneralViewModel : ObservableObject
         bool ok = value ? AutostartService.Enable() : AutostartService.Disable();
         if (ok)
         {
-            _log.Info(LogSource.SetGeneral, $"Start with Windows ← {value}");
+            DeckleSettingsSource.Log.SettingChanged("Start with Windows", value.ToString());
             return;
         }
 
@@ -130,7 +128,7 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnWarmupOnLaunchChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Warmup on launch ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Warmup on launch", value.ToString());
         PushToSettings();
     }
 
@@ -163,7 +161,7 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnBackupDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Paths.BackupDirectory ← \"{value}\"");
+        DeckleSettingsSource.Log.SettingChanged("Paths.BackupDirectory", $"\"{value}\"");
         PushToSettings();
         RefreshBackups();
     }
@@ -248,7 +246,7 @@ public partial class GeneralViewModel : ObservableObject
         finally { _isSyncing = false; }
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(Theme);
-        _log.Info(LogSource.SetGeneral, "Appearance section reset to defaults");
+        DeckleSettingsSource.Log.SectionReset("Appearance");
     }
 
     public void ResetBehaviourDefaults()
@@ -264,7 +262,7 @@ public partial class GeneralViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushToSettings();
-        _log.Info(LogSource.SetGeneral, "Behaviour section reset to defaults");
+        DeckleSettingsSource.Log.SectionReset("Behaviour");
     }
 
     public void ResetStartupDefaults()
@@ -282,6 +280,6 @@ public partial class GeneralViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushToSettings();
-        _log.Info(LogSource.SetGeneral, "Startup section reset to defaults");
+        DeckleSettingsSource.Log.SectionReset("Startup");
     }
 }

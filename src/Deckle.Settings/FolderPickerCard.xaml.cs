@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Deckle.Logging;
 
 namespace Deckle.Settings;
 
@@ -23,8 +22,6 @@ namespace Deckle.Settings;
 // without the misleading affordance of an editable input field.
 public sealed partial class FolderPickerCard : UserControl
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public static readonly DependencyProperty PathProperty =
         DependencyProperty.Register(
             nameof(Path), typeof(string), typeof(FolderPickerCard),
@@ -95,8 +92,7 @@ public sealed partial class FolderPickerCard : UserControl
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetGeneral,
-                $"FolderPickerCard pick failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -119,8 +115,7 @@ public sealed partial class FolderPickerCard : UserControl
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetGeneral,
-                $"FolderPickerCard open failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
         }
     }
 }

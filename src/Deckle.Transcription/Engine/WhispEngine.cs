@@ -3,11 +3,12 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Deckle.Audio;
 using Deckle.Audio.Telemetry;
+using Deckle.Catalog;
+using Deckle.Core;
 using Deckle.Core.Interop;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
-using Deckle.Catalog;
-using Deckle.Logging;
+using Deckle.Transcription.Corpus;
 using Deckle.Transcription.Pinvoke;
 using Deckle.Transcription.Setup;
 
@@ -130,22 +131,24 @@ public sealed class WhispEngine : IDisposable
         TranscriptionFinished?.Invoke(outcome);
     }
 
-    // Gate user-facing narratives the same way as RaiseStatus/RaiseFinished so
-    // the boot-time warmup doesn't pollute LogWindow with phrases describing a
-    // real transcription. The two warmup-specific narratives (priming start
-    // and pipeline-ready end) are emitted directly through _log.Narrative so
-    // they bypass this gate. `source` is a LogSource constant (string under
-    // the hood — LogSource is a static class of named string constants, not
-    // an enum).
-    private void RaiseNarrative(string source, string msg)
-    {
-        if (t_isWarmup) return;
-        _log.Narrative(source, msg);
-    }
-
     // ── Internal state ───────────────────────────────────────────────────────
 
-    private static readonly LogService _log = LogService.Instance;
+    // ── UserFeedback emission ───────────────────────────────────────────────
+    //
+    // Wrapper minimaliste sur l'event EventSource `UserFeedbackEmitted` du
+    // provider Whisp. Severity et Role passent en primitives — conserve la
+    // sémantique de l'ancien enum `UserFeedback{Severity,Role}` (Wave 6b)
+    // sans pull sur Deckle.Logging. Le sink hôte `AppHudFeedbackSink` route
+    // chaque event vers la surface principale (Replacement) ou la stack
+    // (Overlay) selon `role`.
+    private const int FB_INFO          = 0;
+    private const int FB_WARN          = 1;
+    private const int FB_ERROR         = 2;
+    private const int FB_REPLACEMENT   = 0;
+    private const int FB_OVERLAY       = 1;
+
+    private static void EmitUserFeedback(int severity, string title, string body, int role = FB_REPLACEMENT)
+        => DeckleWhispSource.Log.UserFeedbackEmitted(severity, title, body, role);
 
     private readonly string     _modelPath;
     private readonly LlmService _llm;
@@ -298,7 +301,7 @@ public sealed class WhispEngine : IDisposable
     // a fresh MinDbfs/MaxDbfs back into Settings + HudChrono so the HUD
     // tracks the user's hardware drift without manual re-tuning. See
     // TryAutoCalibrate below for the heuristic.
-    private readonly Queue<Logging.MicrophoneTelemetryPayload> _autoCalibBuffer = new();
+    private readonly Queue<MicrophoneTelemetryPayload> _autoCalibBuffer = new();
 
     // VAD timing — whisper.cpp's Silero VAD runs inside whisper_full() natively,
     // so we can't bracket it with a C# stopwatch. Instead we watch the native
@@ -319,9 +322,8 @@ public sealed class WhispEngine : IDisposable
     // _vadCapturing. All sentinels = -1 mean "not yet parsed" — included in
     // the consolidated Verbose summary line when present, omitted gracefully
     // if the line shape changes upstream. Raw whisper_vad* lines are
-    // suppressed from the log surface; the single consolidated Verbose line
-    // (technical totals, LogSource.Whisper) plus a minimalist Narrative
-    // (UX-facing) replace them.
+    // suppressed from the log surface ; le récap unique passe par
+    // DeckleWhispSource.VadParsed.
     private float _vadSpeechSec     = -1f;
     private int   _vadSegments      = -1;
     private float _vadReductionPct  = -1f;
@@ -440,7 +442,10 @@ public sealed class WhispEngine : IDisposable
 
         _llm = new LlmService();
 
-        _capture = new MicrophoneCapture(_log);
+        // MicrophoneCapture émet via DeckleAudioSource (vague 2). WhispEngine
+        // émet via DeckleWhispSource (vague 5). Plus aucune dépendance sur
+        // LogService dans le moteur lui-même.
+        _capture = new MicrophoneCapture();
         _recordingHost = new RecordingHostAdapter(_host);
         // Forward the per-sub-window RMS to whoever subscribes to the engine
         // (HUD chrono today). Capture stays unaware of UI consumers.
@@ -470,14 +475,11 @@ public sealed class WhispEngine : IDisposable
     // Body) and the UserFeedback role (Overlay — capture continues).
     private void OnCaptureLowAudioDetected()
     {
-        _log.Warning(
-            LogSource.Capture,
-            "low audio overlay surfaced",
-            new UserFeedback(
-                Loc.Get("Engine_LowAudio_Title"),
-                Loc.Get("Engine_LowAudio_Body"),
-                UserFeedbackSeverity.Warning,
-                UserFeedbackRole.Overlay));
+        DeckleWhispSource.Log.RecordingLowAudio();
+        EmitUserFeedback(FB_WARN,
+            Loc.Get("Engine_LowAudio_Title"),
+            Loc.Get("Engine_LowAudio_Body"),
+            FB_OVERLAY);
     }
 
     // Adapter that maps IWhispEngineHost → IAudioRecordingHost. Lives inside
@@ -518,9 +520,7 @@ public sealed class WhispEngine : IDisposable
 
         if (!Path.IsPathRooted(envPath) || !File.Exists(envPath))
         {
-            _log.Warning(LogSource.Engine,
-                $"DECKLE_MODEL_PATH ignored (not an existing absolute path): \"{envPath}\". " +
-                $"Falling back to \"{fallback}\".");
+            DeckleWhispSource.Log.ModelPathEnvIgnored(envPath, fallback);
             return fallback;
         }
 
@@ -585,7 +585,8 @@ public sealed class WhispEngine : IDisposable
                         // moved past its setup phase into actual work.
                         _stopToPipelineSw?.Stop();
                         _whisperInitSw?.Stop();
-                        RaiseNarrative(LogSource.Transcribe, "Looking for speech in the recording — a small detector is scanning the audio for spoken segments.");
+                        // Narrative abandonné — la séquence whisper.cpp est
+                        // déjà documentée via les events VadParsed.
                     }
 
                     // Parse-once: ignore later matches in the same window.
@@ -686,7 +687,7 @@ public sealed class WhispEngine : IDisposable
                 if (msg.StartsWith("whisper_backend_init_gpu", StringComparison.Ordinal) &&
                     msg.IndexOf("no GPU found", StringComparison.Ordinal) >= 0)
                 {
-                    _log.Verbose(LogSource.Whisper, msg);
+                    DeckleWhispSource.Log.WhisperLogVerbose(msg);
                     return;
                 }
 
@@ -695,9 +696,9 @@ public sealed class WhispEngine : IDisposable
                 // Verbose filter. Info/Debug/Cont stay in Verbose.
                 switch (level)
                 {
-                    case 4: _log.Error(LogSource.Whisper, msg); break;
-                    case 3: _log.Warning(LogSource.Whisper, msg); break;
-                    default: _log.Verbose(LogSource.Whisper, msg); break;
+                    case 4: DeckleWhispSource.Log.WhisperLogError(msg); break;
+                    case 3: DeckleWhispSource.Log.WhisperLogWarning(msg); break;
+                    default: DeckleWhispSource.Log.WhisperLogVerbose(msg); break;
                 }
             }
             catch
@@ -714,7 +715,7 @@ public sealed class WhispEngine : IDisposable
         {
             // whisper_log_set missing from a very old libwhisper: log and
             // continue — the rest of the pipeline doesn't depend on it.
-            _log.Warning(LogSource.Engine, $"whisper_log_set unavailable: {ex.Message}");
+            DeckleWhispSource.Log.WhisperLogSetUnavailable(ex.Message);
         }
     }
 
@@ -734,22 +735,7 @@ public sealed class WhispEngine : IDisposable
         if (_vadInferenceMs   >= 0) parts.Add($"inference {_vadInferenceMs:F0} ms");
         if (_vadMappingPoints >= 0) parts.Add($"mapping {_vadMappingPoints} pts");
         parts.Add($"wall {vadSec:F1} s");
-        _log.Verbose(LogSource.Whisper, "vad: " + string.Join(" | ", parts));
-
-        // UX-facing Narrative — minimalist, no technical figures beyond
-        // speech duration. Distinguishes "speech found" from "nothing found".
-        if (_vadSegments == 0)
-        {
-            RaiseNarrative(LogSource.Transcribe, "No speech detected in the recording.");
-        }
-        else if (_vadSpeechSec >= 0)
-        {
-            RaiseNarrative(LogSource.Transcribe, $"Speech detected — {_vadSpeechSec:F1} s of speech. Passing to Whisper for transcription.");
-        }
-        else
-        {
-            RaiseNarrative(LogSource.Transcribe, "Speech detected. Passing to Whisper for transcription.");
-        }
+        DeckleWhispSource.Log.VadParsed(string.Join(" | ", parts));
     }
 
     // ── Model lifecycle (lazy load + idle unload) ──────────────────────────────
@@ -768,23 +754,19 @@ public sealed class WhispEngine : IDisposable
 
         if (!File.Exists(_modelPath))
         {
-            _log.Warning(
-                LogSource.Model,
-                $"load aborted | reason=file_not_found | path={_modelPath}",
-                new UserFeedback(
-                    Loc.Get("Engine_WhisperModelNotFound_Title"),
-                    Loc.Get("Engine_WhisperModelNotFound_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.ModelLoadAborted("file_not_found", _modelPath);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_WhisperModelNotFound_Title"),
+                Loc.Get("Engine_WhisperModelNotFound_Body"),
+                FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_Ready"));
             return false;
         }
 
         double fileMb = new FileInfo(_modelPath).Length / 1024.0 / 1024.0;
         string basename = Path.GetFileName(_modelPath);
-        _log.Info(LogSource.Model, "Loading model");
-        RaiseNarrative(LogSource.Model, $"Loading the Whisper model into GPU memory — a {fileMb:F0} MB speech recognizer is being prepared so transcription can run locally.");
-        _log.Verbose(LogSource.Model, $"load start | file={basename} | file_mb={fileMb:F1} | use_gpu=1");
+        DeckleWhispSource.Log.ModelLoading();
+        DeckleWhispSource.Log.ModelLoadStart(basename, fileMb);
 
         // Reset the backend before init so a re-load after an idle unload
         // picks up the current backend rather than the one detected at the
@@ -800,18 +782,15 @@ public sealed class WhispEngine : IDisposable
 
         _ctx = WhisperPInvoke.whisper_init_from_file_with_params(_modelPath, ctxParams);
         sw.Stop();
-        _log.Verbose(LogSource.Engine, $"whisper_init_from_file returned ctx={_ctx}");
+        DeckleWhispSource.Log.ModelInitFromFile((long)_ctx);
 
         if (_ctx == IntPtr.Zero)
         {
-            _log.Error(
-                LogSource.Init,
-                $"load failed | path={_modelPath}",
-                new UserFeedback(
-                    Loc.Get("Engine_ModelLoadFailed_Title"),
-                    Loc.Get("Engine_ModelLoadFailed_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.ModelLoadFailed(_modelPath);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ModelLoadFailed_Title"),
+                Loc.Get("Engine_ModelLoadFailed_Body"),
+                FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_Ready"));
             return false;
         }
@@ -821,8 +800,8 @@ public sealed class WhispEngine : IDisposable
         // the cold-load cost; warm runs report 0.
         _modelLoadMs = sw.ElapsedMilliseconds;
 
-        _log.Success(LogSource.Model, $"Model loaded ({_detectedBackend})");
-        _log.Verbose(LogSource.Model, $"load complete | load_ms={sw.ElapsedMilliseconds} | backend={_detectedBackend}");
+        DeckleWhispSource.Log.ModelLoaded(_detectedBackend);
+        DeckleWhispSource.Log.ModelLoadComplete(sw.ElapsedMilliseconds, _detectedBackend);
 
         // Mirror the symmetric "Ready" emitted on the failure paths above so
         // the tray tooltip transitions Loading model… → Ready as soon as the
@@ -843,7 +822,7 @@ public sealed class WhispEngine : IDisposable
         lock (_modelLock)
         {
             if (_ctx != IntPtr.Zero) return true; // double-check after acquiring lock
-            _log.Verbose(LogSource.Model, "on-demand load | reason=first_use_or_after_idle_unload");
+            DeckleWhispSource.Log.ModelOnDemandLoad();
             return LoadModel();
         }
     }
@@ -862,15 +841,15 @@ public sealed class WhispEngine : IDisposable
             var state = (PipelineState)Volatile.Read(ref _state);
             if (state != PipelineState.Idle)
             {
-                _log.Verbose(LogSource.Model, $"idle unload skipped | state={state}");
+                DeckleWhispSource.Log.ModelIdleUnloadSkipped(state.ToString());
                 return;
             }
             if (_ctx == IntPtr.Zero) return;
 
             WhisperPInvoke.whisper_free(_ctx);
             _ctx = IntPtr.Zero;
-            _log.Success(LogSource.Model, "Model unloaded");
-            _log.Verbose(LogSource.Model, $"model unloaded | idle_s={MODEL_IDLE_TIMEOUT_MS / 1000} | state=vram-freed");
+            DeckleWhispSource.Log.ModelUnloadedJalon();
+            DeckleWhispSource.Log.ModelUnloaded(MODEL_IDLE_TIMEOUT_MS / 1000);
             // Re-check state right before RaiseStatus — a hotkey could have
             // landed during whisper_free (rare, since unload only runs after
             // the idle timer fires from Idle). If state has moved, defer to
@@ -891,7 +870,7 @@ public sealed class WhispEngine : IDisposable
             _idleTimer = new System.Threading.Timer(_ => UnloadModel(), null, MODEL_IDLE_TIMEOUT_MS, Timeout.Infinite);
         else
             _idleTimer.Change(MODEL_IDLE_TIMEOUT_MS, Timeout.Infinite);
-        _log.Verbose(LogSource.Model, $"idle timer set ({MODEL_IDLE_TIMEOUT_MS / 1000}s)");
+        DeckleWhispSource.Log.ModelIdleTimerSet(MODEL_IDLE_TIMEOUT_MS / 1000);
     }
 
     // ── Warmup clip loader ──────────────────────────────────────────────────
@@ -925,7 +904,7 @@ public sealed class WhispEngine : IDisposable
         {
             if (!File.Exists(path))
             {
-                _log.Verbose(LogSource.Init, $"warmup clip missing | path={path}");
+                DeckleWhispSource.Log.WarmupClipMissing(path);
                 return null;
             }
 
@@ -936,7 +915,7 @@ public sealed class WhispEngine : IDisposable
                 || bytes[12] != 'f' || bytes[13] != 'm' || bytes[14] != 't' || bytes[15] != ' '
                 || bytes[36] != 'd' || bytes[37] != 'a' || bytes[38] != 't' || bytes[39] != 'a')
             {
-                _log.Warning(LogSource.Init, $"warmup clip header invalid | path={path}");
+                DeckleWhispSource.Log.WarmupClipHeaderInvalid(path);
                 return null;
             }
 
@@ -948,8 +927,7 @@ public sealed class WhispEngine : IDisposable
 
             if (audioFormat != 1 || numChannels != 1 || sampleRate != 16000 || bitsPerSample != 16)
             {
-                _log.Warning(LogSource.Init,
-                    $"warmup clip format unexpected | format={audioFormat} ch={numChannels} sr={sampleRate} bits={bitsPerSample} (expected PCM mono 16-bit 16 kHz)");
+                DeckleWhispSource.Log.WarmupClipSampleMismatch(audioFormat, numChannels, sampleRate, bitsPerSample);
                 return null;
             }
 
@@ -966,7 +944,7 @@ public sealed class WhispEngine : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Init, $"warmup clip load failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleWhispSource.Log.WarmupClipLoadFailed(ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -1022,7 +1000,7 @@ public sealed class WhispEngine : IDisposable
             try
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                _log.Info(LogSource.Init, "Warmup start");
+                DeckleWhispSource.Log.WarmupStart();
 
                 // 1) Mic probe — same code path StartRecording uses, just the
                 //    probe result is stored instead of blocking the recording.
@@ -1030,8 +1008,7 @@ public sealed class WhispEngine : IDisposable
 
                 if (ct.IsCancellationRequested)
                 {
-                    _log.Info(LogSource.Init,
-                        $"Warmup cancelled before model load | total_ms={sw.ElapsedMilliseconds}");
+                    DeckleWhispSource.Log.WarmupCancelledBeforeModel(sw.ElapsedMilliseconds);
                     return;
                 }
 
@@ -1042,16 +1019,14 @@ public sealed class WhispEngine : IDisposable
                 {
                     _modelWarmupOk  = 0;
                     _ollamaWarmupOk = 0;
-                    _log.Warning(LogSource.Init,
-                        $"warmup aborted | reason=model_load_failed | total_ms={sw.ElapsedMilliseconds} | mic_ok={MicrophoneWarmupOk} | model_ok=false | ollama_ok=skipped");
+                    DeckleWhispSource.Log.WarmupAbortedModelLoad(sw.ElapsedMilliseconds, MicrophoneWarmupOk);
                     return;
                 }
                 _modelWarmupOk = 1;
 
                 if (ct.IsCancellationRequested)
                 {
-                    _log.Info(LogSource.Init,
-                        $"Warmup cancelled before transcribe | total_ms={sw.ElapsedMilliseconds}");
+                    DeckleWhispSource.Log.WarmupCancelledBeforeTranscribe(sw.ElapsedMilliseconds);
                     return;
                 }
 
@@ -1067,9 +1042,6 @@ public sealed class WhispEngine : IDisposable
                 float[] warmupBuffer = TryLoadWarmupClip()
                     ?? new float[25_600];
 
-                _log.Narrative(LogSource.Init,
-                    "Priming the recognizer with a short reference clip — the audio pipeline is being warmed up so your first dictation feels instant.");
-
                 t_isWarmup = true;
                 try
                 {
@@ -1082,12 +1054,9 @@ public sealed class WhispEngine : IDisposable
 
                 if (ct.IsCancellationRequested)
                 {
-                    _log.Info(LogSource.Init,
-                        $"Warmup cancelled during transcribe | total_ms={sw.ElapsedMilliseconds}");
+                    DeckleWhispSource.Log.WarmupCancelledDuringTranscribe(sw.ElapsedMilliseconds);
                     return;
                 }
-
-                _log.Narrative(LogSource.Init, "Pipeline ready.");
 
                 // 3) Ollama health-check. Skipped (and left as OK) when the LLM
                 //    feature is disabled — no rewriter needed, no warning to
@@ -1112,13 +1081,16 @@ public sealed class WhispEngine : IDisposable
                 }
 
                 sw.Stop();
-                _log.Success(LogSource.Init, "Warmup complete");
-                _log.Verbose(LogSource.Init,
-                    $"warmup complete | total_ms={sw.ElapsedMilliseconds} | mic_ok={MicrophoneWarmupOk} | model_ok={ModelWarmupOk} | ollama_ok={OllamaWarmupOk}");
+                DeckleWhispSource.Log.WarmupComplete();
+                DeckleWhispSource.Log.WarmupCompleteDetail(
+                    sw.ElapsedMilliseconds,
+                    MicrophoneWarmupOk,
+                    ModelWarmupOk,
+                    OllamaWarmupOk);
             }
             catch (Exception ex)
             {
-                _log.Error(LogSource.Init, $"Warmup failed | error={ex.GetType().Name}: {ex.Message}");
+                DeckleWhispSource.Log.WarmupFailed(ex.GetType().Name, ex.Message);
             }
             finally
             {
@@ -1201,7 +1173,7 @@ public sealed class WhispEngine : IDisposable
             // for diagnosis when the user reports "I pressed but nothing
             // happened". Decision: ignore (Settings Win11 voice-typing
             // semantics).
-            _log.Verbose(LogSource.Hotkey, $"toggle ignored | state={current}");
+            DeckleWhispSource.Log.HotkeyToggleIgnored(current.ToString());
             return ToggleResult.IgnoredBusy;
         }
 
@@ -1273,14 +1245,11 @@ public sealed class WhispEngine : IDisposable
             {
                 if (!ModelWarmupOk)
                 {
-                    _log.Error(
-                        LogSource.Init,
-                        "warmup flag | model_ok=false",
-                        new UserFeedback(
-                            Loc.Get("Engine_ModelNotReady_Title"),
-                            Loc.Get("Engine_ModelNotReady_Body"),
-                            UserFeedbackSeverity.Error,
-                            UserFeedbackRole.Replacement));
+                    DeckleWhispSource.Log.WarmupFlagModelKO();
+                    EmitUserFeedback(FB_ERROR,
+                        Loc.Get("Engine_ModelNotReady_Title"),
+                        Loc.Get("Engine_ModelNotReady_Body"),
+                        FB_REPLACEMENT);
                     return ToggleResult.IgnoredBusy;
                 }
                 if (!OllamaWarmupOk)
@@ -1309,26 +1278,21 @@ public sealed class WhispEngine : IDisposable
 
                     if (!reachableNow)
                     {
-                        _log.Warning(
-                            LogSource.Init,
-                            "warmup flag | ollama_ok=false (live re-probe also failed)",
-                            new UserFeedback(
-                                Loc.Get("Engine_RewriterUnavailable_Title"),
-                                Loc.Get("Engine_RewriterUnavailable_Body"),
-                                UserFeedbackSeverity.Warning,
-                                UserFeedbackRole.Overlay));
+                        DeckleWhispSource.Log.WarmupFlagOllamaKO();
+                        EmitUserFeedback(FB_WARN,
+                            Loc.Get("Engine_RewriterUnavailable_Title"),
+                            Loc.Get("Engine_RewriterUnavailable_Body"),
+                            FB_OVERLAY);
                     }
                     else
                     {
-                        _log.Info(
-                            LogSource.Init,
-                            "warmup flag | ollama_ok=false but live re-probe ok — proceeding without warning");
+                        DeckleWhispSource.Log.WarmupFlagOllamaRecovered();
                     }
                     // Proceed with recording — rewrite is optional.
                 }
                 if (!MicrophoneWarmupOk)
                 {
-                    _log.Warning(LogSource.Init, "warmup flag | mic_ok=false (live probe below)");
+                    DeckleWhispSource.Log.WarmupFlagMicKO();
                 }
             }
 
@@ -1339,11 +1303,8 @@ public sealed class WhispEngine : IDisposable
             if (!probe.Ok)
             {
                 var (title, body) = LocalizeMicError(probe.Kind, probe.MmsysErr);
-                _log.Error(
-                    LogSource.Capture,
-                    $"probe MMSYSERR={probe.MmsysErr} — {title}",
-                    new UserFeedback(title, body,
-                        UserFeedbackSeverity.Error, UserFeedbackRole.Replacement));
+                DeckleWhispSource.Log.RecordingProbeFailed(probe.MmsysErr, title);
+                EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 return ToggleResult.IgnoredBusy;
             }
 
@@ -1365,7 +1326,7 @@ public sealed class WhispEngine : IDisposable
                     (int)PipelineState.Starting)
                 != (int)PipelineState.Starting)
             {
-                _log.Warning(LogSource.Hotkey, "starting → recording CAS lost (likely Dispose)");
+                DeckleWhispSource.Log.HotkeyStartingCASLost();
                 return ToggleResult.IgnoredDisposed;
             }
 
@@ -1434,7 +1395,6 @@ public sealed class WhispEngine : IDisposable
 
             _recordingSw = System.Diagnostics.Stopwatch.StartNew();
             RaiseStatus(Loc.Get("Status_Recording"));
-            RaiseNarrative(LogSource.Capture, "Recording from the microphone. Capture continues until you press the hotkey again.");
 
             CaptureResult capture = _capture.Record(_recordingHost, _recordCts.Token);
             _recordDrainDuration = capture.DrainDuration;
@@ -1447,20 +1407,14 @@ public sealed class WhispEngine : IDisposable
             {
                 var (title, body) = LocalizeMicError(
                     MicErrorKind.Unavailable, capture.MmsysErr);
-                _log.Error(
-                    LogSource.Capture,
-                    $"capture mic error MMSYSERR={capture.MmsysErr} — {title}",
-                    new UserFeedback(title, body,
-                        UserFeedbackSeverity.Error, UserFeedbackRole.Replacement));
+                DeckleWhispSource.Log.RecordingMicError(capture.MmsysErr, title);
+                EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 RaiseFinished(TranscriptionOutcome.None);
                 return;
             }
 
             if (capture.Outcome == CaptureOutcome.CapHit)
             {
-                int minutes = _host.Audio.MaxRecordingDurationSeconds / 60;
-                RaiseNarrative(LogSource.Capture,
-                    $"Recording hit the {minutes} min cap — stopping automatically. The audio captured so far will be transcribed.");
                 // CAS Recording → Stopping ourselves so the rest of the
                 // transition sequence below stays uniform with the user-
                 // driven Stop path. If Dispose won (state already Disposed)
@@ -1484,9 +1438,6 @@ public sealed class WhispEngine : IDisposable
                 }
             }
 
-            RaiseNarrative(LogSource.Capture,
-                $"Captured {capture.Pcm.Length / 16000.0:F1} s of audio. Moving on to analysis and transcription.");
-
             // Auto-calibration enveloppe — pure compute lives in
             // MicrophoneCalibrationCalculator; the ring buffer + side
             // effects (SaveSettings, ApplyLevelWindow, log) stay here.
@@ -1508,8 +1459,7 @@ public sealed class WhispEngine : IDisposable
                     (int)PipelineState.Stopping)
                 != (int)PipelineState.Stopping)
             {
-                _log.Verbose(LogSource.Transcribe,
-                    $"skip transcribe | state={(PipelineState)Volatile.Read(ref _state)}");
+                DeckleWhispSource.Log.TranscribeSkipped(((PipelineState)Volatile.Read(ref _state)).ToString());
                 RaiseFinished(TranscriptionOutcome.None);
                 return;
             }
@@ -1520,14 +1470,11 @@ public sealed class WhispEngine : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(
-                LogSource.Transcribe,
-                $"pipeline crashed: {ex.GetType().Name}: {ex.Message}",
-                new UserFeedback(
-                    Loc.Get("Engine_PipelineCrashed_Title"),
-                    Loc.Get("Engine_PipelineCrashed_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.PipelineCrashed(ex.GetType().Name, ex.Message);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_PipelineCrashed_Title"),
+                Loc.Get("Engine_PipelineCrashed_Body"),
+                FB_REPLACEMENT);
             RaiseFinished(TranscriptionOutcome.None);
         }
         finally
@@ -1627,7 +1574,7 @@ public sealed class WhispEngine : IDisposable
     // The user's manual slider edits override auto-calibration until the
     // next time it fires — there's no "manual flag" gating; whoever wrote
     // last wins, which is the natural behaviour from the user's POV.
-    private void TryAutoCalibrate(Logging.MicrophoneTelemetryPayload payload)
+    private void TryAutoCalibrate(MicrophoneTelemetryPayload payload)
     {
         var lw = _host.Audio.LevelWindow;
         if (!lw.AutoCalibrationEnabled) return;
@@ -1657,9 +1604,7 @@ public sealed class WhispEngine : IDisposable
         // (App.ApplyLevelWindow on the App side).
         _host.ApplyLevelWindow(lw);
 
-        _log.Success(LogSource.Capture,
-            $"Auto-calibrated level window: Min={calib.NewMinDbfs:F0} Max={calib.NewMaxDbfs:F0} dBFS "
-          + $"(median over {needed} sessions, p25-5dB / p90+5dB margins)");
+        DeckleWhispSource.Log.AutoCalibrated(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
     }
 
     // ── Whisper transcription ────────────────────────────────────────────────
@@ -1726,10 +1671,7 @@ public sealed class WhispEngine : IDisposable
                     _abortRequested = true;
                     string preview = segText.Trim();
                     if (preview.Length > 60) preview = preview[..60] + "…";
-                    _log.Warning(LogSource.Transcribe,
-                        $"repetition loop detected — {streak} identical segments ('{preview}'); requesting whisper to abort");
-                    RaiseNarrative(LogSource.Transcribe,
-                        "Whisper got stuck repeating the same segment — stopping transcription early. The text captured so far is preserved.");
+                    DeckleWhispSource.Log.TranscribeRepetitionLoop(streak, preview);
                 }
 
                 NewSegment?.Invoke(new SegmentArgs(segText, t0, t1, avgP));
@@ -1754,14 +1696,14 @@ public sealed class WhispEngine : IDisposable
                 //   elapsed: wall-clock time since whisper_full started (cumulative).
                 double elapsedSec = _transcribeSw?.Elapsed.TotalSeconds ?? 0;
                 string trimmed = segText.Trim();
-                _log.Verbose(LogSource.Callback,
+                DeckleWhispSource.Log.SegmentEmitted(
                     $"seg #{i + 1} | t0={t0 / 100.0:F1}s | t1={t1 / 100.0:F1}s | dur={dur:F1}s | gap={(gap >= 0 ? "+" : "")}{gap:F1}s | nsp={nsp:P0} | p̄={avgP:F2} | min={minP:F2} | tok={textTok}/{nTok} | elapsed={elapsedSec:F1}s | text=\"{trimmed}\"");
             }
         }
         catch (Exception ex)
         {
             // NEVER let an exception cross the managed→native boundary.
-            _log.Error(LogSource.Callback, $"{ex.GetType().Name}: {ex.Message}");
+            DeckleWhispSource.Log.SegmentCallbackThrew(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -1777,7 +1719,7 @@ public sealed class WhispEngine : IDisposable
 
         if (audio.Length == 0)
         {
-            _log.Warning(LogSource.Transcribe, "empty audio buffer, nothing to transcribe");
+            DeckleWhispSource.Log.TranscribeEmpty();
             // No RaiseStatus here — WorkerRun's finally is the canonical
             // emission point for "Ready" on the success path. Emitting it
             // both here and there would just send the event twice.
@@ -1825,15 +1767,11 @@ public sealed class WhispEngine : IDisposable
 
         float audioSec = (float)audio.Length / 16_000f;
         _strategyLabel = wparams.strategy == 1 ? $"beam{wparams.beam_search_beam_size}" : "greedy";
-        _log.Info(LogSource.Transcribe, "Transcribing");
-        _log.Verbose(LogSource.Transcribe, $"start | audio_sec={audioSec:F1} | samples={audio.Length} | strategy={_strategyLabel}");
-        // Workflow narration: VAD_END handles the "now transcribing" intro in
-        // its own line (it sits between VAD completion and transcription start),
-        // so a separate TRANSCRIBE_START narrative would be redundant — and
-        // would even fire out of order, before VAD_START which runs inside
-        // whisper_full's hook.
+        DeckleWhispSource.Log.TranscribeStarted();
+        DeckleWhispSource.Log.TranscribeStartDetail(audioSec, audio.Length, _strategyLabel);
         string strategyLabelVerbose = wparams.strategy == 1 ? $"beam(size={wparams.beam_search_beam_size})" : "greedy";
-        _log.Verbose(LogSource.Transcribe, $"params | strategy={strategyLabelVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2} | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2} | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst} | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
+        DeckleWhispSource.Log.TranscribeParams(
+            $"strategy={strategyLabelVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2} | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2} | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst} | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
 
         // Log the initial prompt sent to Whisper — conditions decoding style.
         string prompt = whispSettings.Transcription.InitialPrompt;
@@ -1841,7 +1779,7 @@ public sealed class WhispEngine : IDisposable
         if (!string.IsNullOrEmpty(prompt))
         {
             string truncated = prompt.Length > 60 ? prompt[..60] + "…" : prompt;
-            _log.Verbose(LogSource.Transcribe, $"prompt | len={prompt.Length} | carry={carry} | text=\"{truncated}\"");
+            DeckleWhispSource.Log.TranscribePrompt(prompt.Length, carry, truncated);
         }
 
         _vadSw = null;
@@ -1913,14 +1851,11 @@ public sealed class WhispEngine : IDisposable
         // is a real failure — surface it as before.
         if (result != 0 && !_abortRequested)
         {
-            _log.Error(
-                LogSource.Transcribe,
-                $"whisper_full failed | result={result}",
-                new UserFeedback(
-                    Loc.Get("Engine_TranscriptionFailed_Title"),
-                    Loc.Get("Engine_TranscriptionFailed_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.TranscribeFailed(result);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_TranscriptionFailed_Title"),
+                Loc.Get("Engine_TranscriptionFailed_Body"),
+                FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
             RaiseFinished(TranscriptionOutcome.None);
             return;
@@ -1938,18 +1873,8 @@ public sealed class WhispEngine : IDisposable
             fullText = string.Join(" ", _segments.Select(s => s.Text)).Trim();
         }
 
-        _log.Success(LogSource.Transcribe, $"Transcription complete ({nSeg} seg)");
-        _log.Verbose(LogSource.Transcribe,
-            $"complete | whisper_ms={transcribeMsTotal} | n_seg={nSeg} | chars={fullText.Length}");
-
-        // Suppress the post-transcription Narrative when nothing was transcribed
-        // — the "No speech detected in the recording." Narrative emitted by the
-        // VAD cycle is already the last word for the user, and saying "Whisper
-        // transcribed the speech into 0 segments" would be both noisy and silly.
-        if (nSeg > 0)
-        {
-            RaiseNarrative(LogSource.Transcribe, $"Whisper transcribed the speech into {nSeg} segments in {transcribeMsTotal / 1000.0:F1} s.");
-        }
+        DeckleWhispSource.Log.TranscribeCompleted(nSeg);
+        DeckleWhispSource.Log.TranscribeCompleteDetail(transcribeMsTotal, nSeg, fullText.Length);
 
         if (string.IsNullOrWhiteSpace(fullText))
         {
@@ -1999,7 +1924,7 @@ public sealed class WhispEngine : IDisposable
         int  llmEvalTokens   = 0;
         var llmSettings = _host.Llm;
         double recDurationSec = (_recordingSw?.Elapsed.TotalSeconds) ?? 0;
-        int rawWordCount = Logging.TextMetrics.CountWords(fullText);
+        int rawWordCount = TextMetrics.CountWords(fullText);
 
         // Rewrite profile resolution:
         // - manual rewrite hotkey → the profile name passed to StartRecording
@@ -2011,8 +1936,7 @@ public sealed class WhispEngine : IDisposable
                 string.Equals(p.Name, _manualProfileName, StringComparison.OrdinalIgnoreCase));
             if (profile is null)
             {
-                _log.Warning(LogSource.Llm,
-                    $"manual profile '{_manualProfileName}' not found in Profiles — transcript pasted without rewriting. Pick an existing profile on the Rewriting page.");
+                DeckleWhispSource.Log.ManualProfileNotFound(_manualProfileName);
             }
         }
         else if (llmSettings.Enabled)
@@ -2090,11 +2014,6 @@ public sealed class WhispEngine : IDisposable
                 // the raw text instead of making a loud noise about a failure
                 // that doesn't hurt the user.
                 CopyToClipboard(fullText);
-                RaiseNarrative(LogSource.Llm, $"Rewrite complete in {swLlm.Elapsed.TotalSeconds:F1} s with the {profile.Name} profile — the polished text is ready to paste.");
-            }
-            else
-            {
-                RaiseNarrative(LogSource.Llm, $"Rewrite failed after {swLlm.Elapsed.TotalSeconds:F1} s — raw transcript kept. Check the log for the Ollama error.");
             }
         }
 
@@ -2107,17 +2026,11 @@ public sealed class WhispEngine : IDisposable
             // point, nothing in Deckle touches activation until the end of
             // Transcribe — Ctrl+V delivery is protected.
             OnReadyToPaste?.Invoke();
-            _log.Verbose(LogSource.Paste, "HUD hidden (HideSync) — ready to paste");
+            DeckleWhispSource.Log.PasteHidSync();
             var swPaste = System.Diagnostics.Stopwatch.StartNew();
             pasteVerified = PasteFromClipboard();
             swPaste.Stop();
             pasteMs = swPaste.ElapsedMilliseconds;
-        }
-
-        if (_shouldPaste && pasteVerified)
-        {
-            string exeName = Win32Util.GetExeName(NativeMethods.GetForegroundWindow());
-            RaiseNarrative(LogSource.Paste, $"Final text pasted into {exeName}.");
         }
 
         // Split recap into two Info lines (timings / outputs) that land under
@@ -2130,7 +2043,7 @@ public sealed class WhispEngine : IDisposable
         // this to flash "Copied" or the Ctrl+V reminder before hiding.
         var outcome = (_shouldPaste && pasteVerified) ? TranscriptionOutcome.Pasted
                                                       : TranscriptionOutcome.ClipboardOnly;
-        int finalWordCount = Logging.TextMetrics.CountWords(fullText);
+        int finalWordCount = TextMetrics.CountWords(fullText);
 
         // Snapshot stage timers once for both the log line and the telemetry
         // payload. Each can be null when the run skipped that stage (e.g.
@@ -2146,43 +2059,45 @@ public sealed class WhispEngine : IDisposable
         // valid values.
         long vadInferenceMs    = _vadInferenceMs >= 0 ? (long)Math.Round(_vadInferenceMs) : 0;
 
-        _log.Success(LogSource.Done, $"Done ({outcome})");
-        _log.Verbose(LogSource.Done,
-            $"timings | audio_sec={recDurationSec:F1} | model_load_ms={_modelLoadMs} | hotkey_to_capture_ms={hotkeyToCaptureMs} | record_drain_ms={recordDrainMs} | stop_to_pipeline_ms={stopToPipelineMs} | whisper_init_ms={whisperInitMs} | vad_ms={vadMs} | vad_inference_ms={vadInferenceMs} | whisper_ms={whisperMs} | llm_ms={llmMs} | clipboard_ms={swClip.ElapsedMilliseconds} | paste_ms={pasteMs}");
-        _log.Verbose(LogSource.Done,
-            $"llm_metrics | ollama_load_ms={ollamaLoadMs} | prompt_eval_ms={llmPromptEvalMs} | eval_ms={llmEvalMs} | prompt_tokens={llmPromptTokens} | eval_tokens={llmEvalTokens}");
-        _log.Verbose(LogSource.Done,
-            $"outputs | n_seg={nSeg} | chars={fullText.Length} | words={finalWordCount} | strategy={_strategyLabel} | profile={profile?.Name ?? "(none)"} | outcome={outcome}");
-        RaiseNarrative(LogSource.Done, $"Done — {recDurationSec:F1} s of dictation processed. Ready for the next.");
+        DeckleWhispSource.Log.PipelineCompleted(outcome.ToString());
+        DeckleWhispSource.Log.PipelineTimings(
+            recDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
+            stopToPipelineMs, whisperInitMs, vadMs, vadInferenceMs,
+            whisperMs, llmMs, swClip.ElapsedMilliseconds, pasteMs);
+        DeckleWhispSource.Log.PipelineLlmMetrics(
+            ollamaLoadMs, llmPromptEvalMs, llmEvalMs, llmPromptTokens, llmEvalTokens);
+        DeckleWhispSource.Log.PipelineOutputs(
+            nSeg, fullText.Length, finalWordCount, _strategyLabel,
+            profile?.Name ?? "(none)", outcome.ToString());
 
         RaiseStatus(Loc.Get("Status_Ready"));
         _recordingSw?.Stop();
 
-        Logging.TelemetryService.Instance.Latency(new Logging.LatencyPayload(
-            AudioSec:          audioSec,
-            ModelLoadMs:       _modelLoadMs,
-            HotkeyToCaptureMs: hotkeyToCaptureMs,
-            RecordDrainMs:     recordDrainMs,
-            StopToPipelineMs:  stopToPipelineMs,
-            WhisperInitMs:     whisperInitMs,
-            VadMs:             vadMs,
-            VadInferenceMs:    vadInferenceMs,
-            WhisperMs:         whisperMs,
-            LlmMs:             llmMs,
-            OllamaLoadMs:      ollamaLoadMs,
-            LlmPromptEvalMs:   llmPromptEvalMs,
-            LlmEvalMs:         llmEvalMs,
-            LlmPromptTokens:   llmPromptTokens,
-            LlmEvalTokens:     llmEvalTokens,
-            ClipboardMs:       swClip.ElapsedMilliseconds,
-            PasteMs:           pasteMs,
-            Strategy:          _strategyLabel,
-            NSegments:         nSeg,
-            TextChars:         fullText.Length,
-            TextWords:         finalWordCount,
-            Profile:           profile?.Name ?? "",
-            Pasted:            pasteVerified,
-            Outcome:           outcome.ToString()));
+        DeckleWhispSource.Log.LatencyRecorded(
+            audio_sec:            audioSec,
+            model_load_ms:        _modelLoadMs,
+            hotkey_to_capture_ms: hotkeyToCaptureMs,
+            record_drain_ms:      recordDrainMs,
+            stop_to_pipeline_ms:  stopToPipelineMs,
+            whisper_init_ms:      whisperInitMs,
+            vad_ms:               vadMs,
+            vad_inference_ms:     vadInferenceMs,
+            whisper_ms:           whisperMs,
+            llm_ms:               llmMs,
+            ollama_load_ms:       ollamaLoadMs,
+            llm_prompt_eval_ms:   llmPromptEvalMs,
+            llm_eval_ms:          llmEvalMs,
+            llm_prompt_tokens:    llmPromptTokens,
+            llm_eval_tokens:      llmEvalTokens,
+            clipboard_ms:         swClip.ElapsedMilliseconds,
+            paste_ms:             pasteMs,
+            strategy:             _strategyLabel,
+            n_segments:           nSeg,
+            text_chars:           fullText.Length,
+            text_words:           finalWordCount,
+            profile:              profile?.Name ?? "",
+            pasted:               pasteVerified,
+            outcome:              outcome.ToString());
 
         // Corpus logging — captures the raw Whisper output only. We don't
         // persist the rewrite: prompts evolve, so paired (raw, rewrite)
@@ -2197,7 +2112,7 @@ public sealed class WhispEngine : IDisposable
             int rawChars = rawText.Length;
             var timestamp = DateTimeOffset.Now;
 
-            string slug = $"{Logging.CorpusPaths.Slugify(profile.Name)}-{profile.Id}";
+            string slug = $"{CorpusPaths.Slugify(profile.Name)}-{profile.Id}";
 
             // Audio capture is a second, nested opt-in gated by the same
             // profile slug — so a replay pairs JSONL rows with their WAV
@@ -2205,25 +2120,24 @@ public sealed class WhispEngine : IDisposable
             // unambiguous even if the user triggers a new recording
             // while the file write is still settling.
             string? audioFile = telemetrySettings.RecordAudioCorpus
-                ? Logging.WavCorpusWriter.Write(slug, audio, timestamp)
+                ? WavCorpusWriter.Write(slug, audio, timestamp)
                 : null;
 
-            var payload = new Logging.CorpusPayload(
-                Profile:         profile.Name,
-                ProfileId:       profile.Id,
-                Slug:            slug,
-                DurationSeconds: recDurationSec,
-                Whisper:         new Logging.WhisperSection(
-                                     whisperSettings.Model,
-                                     whisperSettings.Language,
-                                     whisperMs,
-                                     InitialPrompt: string.IsNullOrEmpty(prompt) ? null : prompt),
-                Raw:             new Logging.RawSection(rawText, rawWordCount, rawChars),
-                Metrics:         new Logging.CorpusMetricsSection(
-                                     WordsPerSecond: recDurationSec > 0 ? rawWordCount / recDurationSec : 0),
-                AudioFile:       audioFile);
-
-            Logging.TelemetryService.Instance.Corpus(payload);
+            double wordsPerSecond = recDurationSec > 0 ? rawWordCount / recDurationSec : 0;
+            DeckleWhispSource.Log.CorpusRecorded(
+                profile:          profile.Name,
+                profile_id:       profile.Id,
+                slug:             slug,
+                duration_seconds: recDurationSec,
+                model:            whisperSettings.Model,
+                language:         whisperSettings.Language,
+                elapsed_ms:       whisperMs,
+                initial_prompt:   string.IsNullOrEmpty(prompt) ? "" : prompt,
+                raw_text:         rawText,
+                raw_words:        rawWordCount,
+                raw_chars:        rawChars,
+                words_per_second: wordsPerSecond,
+                audio_file:       audioFile ?? "");
         }
 
         RaiseFinished(outcome);
@@ -2244,17 +2158,14 @@ public sealed class WhispEngine : IDisposable
         int byteCount = (text.Length + 1) * 2;
 
         IntPtr hMem = NativeMethods.GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)byteCount);
-        _log.Verbose(LogSource.Clipboard, $"GlobalAlloc | bytes={byteCount} | hMem={hMem}");
+        DeckleWhispSource.Log.ClipboardGlobalAlloc(byteCount, (long)hMem);
         if (hMem == IntPtr.Zero)
         {
-            _log.Error(
-                LogSource.Clipboard,
-                $"GlobalAlloc failed | bytes={byteCount}",
-                new UserFeedback(
-                    Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
-                    Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.ClipboardAllocFailed(byteCount);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
+                Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
+                FB_REPLACEMENT);
             return false;
         }
 
@@ -2264,17 +2175,14 @@ public sealed class WhispEngine : IDisposable
         NativeMethods.GlobalUnlock(hMem);
 
         bool opened = NativeMethods.OpenClipboard(IntPtr.Zero);
-        _log.Verbose(LogSource.Clipboard, $"OpenClipboard | ok={opened}");
+        DeckleWhispSource.Log.ClipboardOpen(opened);
         if (!opened)
         {
-            _log.Error(
-                LogSource.Clipboard,
-                "OpenClipboard failed",
-                new UserFeedback(
-                    Loc.Get("Engine_ClipboardUnavailable_Title"),
-                    Loc.Get("Engine_ClipboardUnavailable_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.ClipboardOpenFailed();
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ClipboardUnavailable_Title"),
+                Loc.Get("Engine_ClipboardUnavailable_Body"),
+                FB_REPLACEMENT);
             return false;
         }
 
@@ -2283,14 +2191,11 @@ public sealed class WhispEngine : IDisposable
         NativeMethods.CloseClipboard();
         if (setHandle == IntPtr.Zero)
         {
-            _log.Error(
-                LogSource.Clipboard,
-                "SetClipboardData failed | handle=0",
-                new UserFeedback(
-                    Loc.Get("Engine_ClipboardCopyFailed_Refused_Title"),
-                    Loc.Get("Engine_ClipboardCopyFailed_Refused_Body"),
-                    UserFeedbackSeverity.Error,
-                    UserFeedbackRole.Replacement));
+            DeckleWhispSource.Log.ClipboardSetDataFailed();
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ClipboardCopyFailed_Refused_Title"),
+                Loc.Get("Engine_ClipboardCopyFailed_Refused_Body"),
+                FB_REPLACEMENT);
             return false;
         }
 
@@ -2303,14 +2208,11 @@ public sealed class WhispEngine : IDisposable
             IntPtr h = NativeMethods.GetClipboardData(CF_UNICODETEXT);
             if (h == IntPtr.Zero)
             {
-                _log.Warning(
-                    LogSource.Clipboard,
-                    "verify failed | reason=no_unicode_data",
-                    new UserFeedback(
-                        Loc.Get("Engine_ClipboardIncomplete_Unverified_Title"),
-                        Loc.Get("Engine_ClipboardIncomplete_Unverified_Body"),
-                        UserFeedbackSeverity.Warning,
-                        UserFeedbackRole.Overlay));
+                DeckleWhispSource.Log.ClipboardVerifyMissing();
+                EmitUserFeedback(FB_WARN,
+                    Loc.Get("Engine_ClipboardIncomplete_Unverified_Title"),
+                    Loc.Get("Engine_ClipboardIncomplete_Unverified_Body"),
+                    FB_OVERLAY);
             }
             else
             {
@@ -2319,22 +2221,18 @@ public sealed class WhispEngine : IDisposable
                 NativeMethods.GlobalUnlock(h);
                 if (back is null || back.Length != text.Length)
                 {
-                    _log.Warning(
-                        LogSource.Clipboard,
-                        $"verify failed | expected_chars={text.Length} | actual_chars={back?.Length ?? -1}",
-                        new UserFeedback(
-                            Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
-                            Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
-                            UserFeedbackSeverity.Warning,
-                            UserFeedbackRole.Overlay));
+                    DeckleWhispSource.Log.ClipboardVerifyMismatch(text.Length, back?.Length ?? -1);
+                    EmitUserFeedback(FB_WARN,
+                        Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
+                        Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
+                        FB_OVERLAY);
                 }
             }
             NativeMethods.CloseClipboard();
         }
 
-        _log.Info(LogSource.Clipboard, "Copied to clipboard");
-        RaiseNarrative(LogSource.Clipboard, $"The transcription is now on the clipboard — {text.Length} characters ready to paste anywhere.");
-        _log.Verbose(LogSource.Clipboard, $"copy complete | chars={text.Length} | bytes={byteCount}");
+        DeckleWhispSource.Log.ClipboardCopied();
+        DeckleWhispSource.Log.ClipboardCopyComplete(text.Length, byteCount);
         return true;
     }
 
@@ -2356,11 +2254,11 @@ public sealed class WhispEngine : IDisposable
         const ushort VK_V            = 0x56;
 
         IntPtr fg = NativeMethods.GetForegroundWindow();
-        _log.Verbose(LogSource.Paste, $"foreground at paste: {Win32Util.DescribeHwnd(fg)}");
+        DeckleWhispSource.Log.PasteForeground(Win32Util.DescribeHwnd(fg));
 
         if (fg == IntPtr.Zero)
         {
-            _log.Warning(LogSource.Paste, "skipped: no foreground window. Clipboard holds the text — Ctrl+V where you want it.");
+            DeckleWhispSource.Log.PasteSkippedNoForeground();
             return false;
         }
 
@@ -2371,7 +2269,7 @@ public sealed class WhispEngine : IDisposable
         uint ownPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
         if (fgPid == ownPid)
         {
-            _log.Warning(LogSource.Paste, "skipped: foreground is Deckle itself. Clipboard holds the text — Ctrl+V in the right window.");
+            DeckleWhispSource.Log.PasteSkippedSelfTarget();
             return false;
         }
 
@@ -2379,10 +2277,10 @@ public sealed class WhispEngine : IDisposable
         // is anything other than "yes, it's an Edit or Document", we bail out
         // to the clipboard-only path. No speculative paste.
         bool editable = UIAutomation.IsFocusedElementTextEditable(out string uiaDiag);
-        _log.Verbose(LogSource.Paste, $"UIA: {uiaDiag}");
+        DeckleWhispSource.Log.PasteUiaDiag(uiaDiag);
         if (!editable)
         {
-            _log.Warning(LogSource.Paste, "skipped: focused element is not a text field. Clipboard holds the text — Ctrl+V where you want it.");
+            DeckleWhispSource.Log.PasteSkippedNotTextField();
             return false;
         }
 
@@ -2399,12 +2297,12 @@ public sealed class WhispEngine : IDisposable
         uint sent = NativeMethods.SendInput((uint)inputs.Length, inputs, cbSize);
         if (sent != inputs.Length)
         {
-            _log.Warning(LogSource.Paste, $"partial: SendInput injected {sent}/{inputs.Length} events. Clipboard holds the text — Ctrl+V manually.");
+            DeckleWhispSource.Log.PasteSendInputPartial((int)sent, inputs.Length);
             return false;
         }
 
-        _log.Info(LogSource.Paste, "Pasted");
-        _log.Verbose(LogSource.Paste, $"Ctrl+V sent to {Win32Util.DescribeHwnd(fg)}");
+        DeckleWhispSource.Log.PasteSucceeded();
+        DeckleWhispSource.Log.PasteSent(Win32Util.DescribeHwnd(fg));
         return true;
     }
 
@@ -2450,19 +2348,17 @@ public sealed class WhispEngine : IDisposable
         var worker = _worker;
         if (worker is not null && worker.IsAlive)
         {
-            _log.Verbose(LogSource.App,
-                $"dispose | waiting on worker | prev_state={prevState} | timeout_ms={DISPOSE_WORKER_JOIN_TIMEOUT_MS}");
+            DeckleWhispSource.Log.DisposeStart(prevState.ToString(), DISPOSE_WORKER_JOIN_TIMEOUT_MS);
             var swJoin = System.Diagnostics.Stopwatch.StartNew();
             bool joined = worker.Join(DISPOSE_WORKER_JOIN_TIMEOUT_MS);
             swJoin.Stop();
             if (!joined)
             {
-                _log.Warning(LogSource.App,
-                    $"dispose timeout | join_ms={swJoin.ElapsedMilliseconds} — worker still alive, leaking thread (process exiting)");
+                DeckleWhispSource.Log.DisposeWorkerJoinTimeout(swJoin.ElapsedMilliseconds);
             }
             else
             {
-                _log.Verbose(LogSource.App, $"dispose | worker joined | join_ms={swJoin.ElapsedMilliseconds}");
+                DeckleWhispSource.Log.DisposeWorkerJoined(swJoin.ElapsedMilliseconds);
             }
         }
 

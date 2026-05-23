@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Deckle.Logging;
 using Deckle.Core;
 
 namespace Deckle.Settings;
@@ -65,8 +64,7 @@ public static class SettingsBackupService
             string source = SettingsService.Instance.ConfigPath;
             if (!File.Exists(source))
             {
-                LogService.Instance.Warning(LogSource.Settings,
-                    $"backup skipped — source missing | path={source}");
+                DeckleSettingsSource.Log.BackupSkippedSourceMissing(source);
                 return null;
             }
 
@@ -81,14 +79,12 @@ public static class SettingsBackupService
 
             File.Copy(source, destination, overwrite: false);
 
-            LogService.Instance.Info(LogSource.Settings,
-                $"backup created | path={destination}");
+            DeckleSettingsSource.Log.BackupCreated(destination);
             return new BackupInfo(destination, stampNow);
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.Settings,
-                $"backup failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.BackupFailed(ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -122,8 +118,7 @@ public static class SettingsBackupService
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.Settings,
-                $"backup list failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.BackupListFailed(ex.GetType().Name, ex.Message);
             return Array.Empty<BackupInfo>();
         }
     }
@@ -137,8 +132,7 @@ public static class SettingsBackupService
         {
             if (string.IsNullOrWhiteSpace(backupPath) || !File.Exists(backupPath))
             {
-                LogService.Instance.Warning(LogSource.Settings,
-                    $"restore skipped — snapshot missing | path={backupPath ?? "(null)"}");
+                DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing(backupPath ?? "(null)");
                 return false;
             }
 
@@ -156,14 +150,12 @@ public static class SettingsBackupService
 
             SettingsService.Instance.Reload();
 
-            LogService.Instance.Info(LogSource.Settings,
-                $"restored from backup | path={backupPath}");
+            DeckleSettingsSource.Log.RestoredFromBackup(backupPath);
             return true;
         }
         catch (Exception ex)
         {
-            LogService.Instance.Error(LogSource.Settings,
-                $"restore failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.RestoreFailed(ex.GetType().Name, ex.Message);
             return false;
         }
     }

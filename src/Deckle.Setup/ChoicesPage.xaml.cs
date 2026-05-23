@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Transcription.Setup;
 
 namespace Deckle.Setup;
@@ -25,8 +24,6 @@ namespace Deckle.Setup;
 // (B.4), which downloads the chosen model + Silero VAD.
 public sealed partial class ChoicesPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     private SetupWindow? _setup;
     private SetupContext? _context;
 
@@ -81,7 +78,7 @@ public sealed partial class ChoicesPage : Page
             if (folder is null) return;
 
             int copied = NativeRuntime.CopyFromFolder(folder.Path);
-            _log.Info(LogSource.Setup,
+            DeckleSetupSource.Log.SetupInfo(
                 $"setup native source picked | source={folder.Path} | copied={copied}");
 
             RefreshNativeStatus();
@@ -89,7 +86,7 @@ public sealed partial class ChoicesPage : Page
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.Setup,
+            DeckleSetupSource.Log.SetupError(
                 $"setup browse native failed: {ex.GetType().Name}: {ex.Message}");
             NativeStatusText.Text = Loc.Format("Setup_Native_ImportFailed_Format", ex.Message);
         }
@@ -225,7 +222,7 @@ public sealed partial class ChoicesPage : Page
     {
         if (_setup is null || _context is null) return;
         _context.ChoicesConfirmed = true;
-        _log.Info(LogSource.Setup,
+        DeckleSetupSource.Log.SetupInfo(
             $"setup choices confirmed | location={_context.Location} | model={_context.SelectedModel.Id}");
         _setup.Body.Navigate(typeof(InstallingPage), _setup);
     }

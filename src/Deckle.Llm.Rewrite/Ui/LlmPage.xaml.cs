@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Logging;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -31,8 +30,6 @@ namespace Deckle.Llm.Rewrite;
 
 public sealed partial class LlmPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     // Borne agressive sur les appels Ollama d'admin (list, show). Sans CTS,
     // le HttpClient partagé d'OllamaService a un timeout de 30 min — adapté
     // au push de blob GGUF, fatal pour un appel "rapide" dont on attend un
@@ -74,7 +71,7 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetLlm, $"OnNavigatedTo failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleLlmSource.Log.PageNavigatedToFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -83,7 +80,7 @@ public sealed partial class LlmPage : Page
         try { await RefreshOllamaStateAsync(); }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.SetLlm, $"Endpoint refresh failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleLlmSource.Log.EndpointRefreshFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -92,7 +89,7 @@ public sealed partial class LlmPage : Page
         try { await RefreshOllamaStateAsync(); }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.SetLlm, $"Manual refresh failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleLlmSource.Log.ManualRefreshFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -136,7 +133,7 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.SetLlm, $"Ollama refresh skipped: {ex.GetType().Name}: {ex.Message}");
+            DeckleLlmSource.Log.OllamaRefreshSkipped(ex.GetType().Name, ex.Message);
             available = false;
             models = Array.Empty<OllamaModel>();
         }
@@ -211,7 +208,7 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetLlm, $"Reset all failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleLlmSource.Log.ResetAllFailed(ex.GetType().Name, ex.Message);
         }
     }
 }

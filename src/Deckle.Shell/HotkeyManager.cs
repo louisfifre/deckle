@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using Deckle.Core.Interop;
-using Deckle.Logging;
 
 namespace Deckle.Shell;
 
@@ -71,11 +70,11 @@ public sealed class HotkeyManager : IDisposable
 
         if (vk == 0)
         {
-            LogService.Instance.Warning(LogSource.Hotkey, $"MapVirtualKeyExW returned 0 for scancode 0x29 (HKL {hkl.ToInt64():X}) — skipping register");
+            DeckleShellSource.Log.HotkeyVkResolveFailed(hkl.ToInt64());
             return;
         }
 
-        LogService.Instance.Verbose(LogSource.Hotkey, $"register scancode 0x29 → VK 0x{vk:X2} under HKL {hkl.ToInt64():X}");
+        DeckleShellSource.Log.HotkeyRegistered(vk, hkl.ToInt64());
 
         foreach (var (id, modifiers) in Hotkeys)
         {
@@ -117,9 +116,9 @@ public sealed class HotkeyManager : IDisposable
         {
             // Keyboard layout changed — re-resolve and re-register. Continue
             // chaining so other subclasses / DefWindowProc still see the message.
-            LogService.Instance.Verbose(LogSource.Hotkey, "WM_INPUTLANGCHANGE — re-registering hotkeys");
+            DeckleShellSource.Log.HotkeyLayoutChange();
             try { RegisterAll(); }
-            catch (Exception ex) { LogService.Instance.Warning(LogSource.Hotkey, $"re-register failed: {ex.Message}"); }
+            catch (Exception ex) { DeckleShellSource.Log.HotkeyReregisterFailed(ex.Message); }
         }
 
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);

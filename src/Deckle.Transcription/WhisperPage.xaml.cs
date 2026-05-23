@@ -11,7 +11,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Settings;
 using Deckle.Transcription.ViewModels;
 using Deckle.Core;
@@ -20,8 +19,6 @@ namespace Deckle.Transcription;
 
 public sealed partial class WhisperPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public WhisperViewModel ViewModel { get; } = new();
 
     // Guards the Language combo's SelectionChanged and the model
@@ -51,11 +48,11 @@ public sealed partial class WhisperPage : Page
 
     public WhisperPage()
     {
-        _log.Verbose(LogSource.SetWhisper, "ctor start");
+        DeckleWhispSource.Log.PageInitStart();
         try
         {
             InitializeComponent();
-            _log.Verbose(LogSource.SetWhisper, "init component complete");
+            DeckleWhispSource.Log.PageInitComplete();
 
             // WinUI 3 release bug: cannot set Minimum > defaultValue in XAML
             // without a parser crash under trimming. We set Minimum (and
@@ -71,12 +68,12 @@ public sealed partial class WhisperPage : Page
             LogprobSlider.Maximum = -0.4;
             NoSpeechSlider.Minimum = 0.05;
 
-            _log.Verbose(LogSource.SetWhisper, "bugged slider min/max set in code-behind");
+            DeckleWhispSource.Log.PageBuggedSliderSet();
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetWhisper, $"init component threw | error={ex.GetType().Name}: {ex.Message}");
-            _log.Error(LogSource.SetWhisper, ex.StackTrace ?? "(no stack)");
+            DeckleWhispSource.Log.PageInitFailed(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.PageStackTrace(ex.StackTrace ?? "(no stack)");
             throw;
         }
 
@@ -89,7 +86,7 @@ public sealed partial class WhisperPage : Page
 
         Loaded += (_, _) =>
         {
-            _log.Verbose(LogSource.SetWhisper, "loaded fired");
+            DeckleWhispSource.Log.PageLoadedStart();
             try
             {
                 // Hover reveal for reset buttons — one-time setup.
@@ -143,13 +140,13 @@ public sealed partial class WhisperPage : Page
                 // state, model folder re-scan).
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-                _log.Success(LogSource.SetWhisper, "Whisper page ready");
-                _log.Verbose(LogSource.SetWhisper, "loaded complete | state=page-ready");
+                DeckleWhispSource.Log.PageReady();
+                DeckleWhispSource.Log.PageLoadedComplete();
             }
             catch (Exception ex)
             {
-                _log.Error(LogSource.SetWhisper, $"loaded threw | error={ex.GetType().Name}: {ex.Message}");
-                _log.Error(LogSource.SetWhisper, ex.StackTrace ?? "(no stack)");
+                DeckleWhispSource.Log.PageLoadedFailed(ex.GetType().Name, ex.Message);
+                DeckleWhispSource.Log.PageStackTrace(ex.StackTrace ?? "(no stack)");
             }
         };
     }
@@ -272,7 +269,7 @@ public sealed partial class WhisperPage : Page
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.SetWhisper, $"model scan failed: {ex.Message}");
+            DeckleWhispSource.Log.PageModelScanFailed(ex.Message);
         }
 
         string current = ViewModel.Model;
@@ -484,7 +481,7 @@ public sealed partial class WhisperPage : Page
 
     private void RestartDiscard_Click(object sender, RoutedEventArgs e)
     {
-        _log.Info(LogSource.SetWhisper, "Discard restart-requiring changes");
+        DeckleWhispSource.Log.PageDiscardRestartChanges();
 
         _initializing = true;
         try
@@ -526,7 +523,7 @@ public sealed partial class WhisperPage : Page
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return;
 
-        _log.Info(LogSource.SetWhisper, "Reset all Whisper settings to defaults");
+        DeckleWhispSource.Log.PageResetAll();
 
         // After slice C2b, all Whisper settings (including ModelsDirectory)
         // live in a single WhispSettings POCO at modules/whisp/settings.json.

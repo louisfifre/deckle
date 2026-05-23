@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Core.Interop;
-using Deckle.Logging;
 using Deckle.Shell;
 
 namespace Deckle.Playground;
@@ -34,7 +33,6 @@ namespace Deckle.Playground;
 // torn down.
 public sealed partial class PlaygroundWindow : Window
 {
-    private static readonly LogService _log = LogService.Instance;
     private readonly IntPtr _hwnd;
 
     // Icons shared with tray / LogWindow / SettingsWindow via IconAssets.
@@ -216,14 +214,14 @@ public sealed partial class PlaygroundWindow : Window
         if (args.SelectedItem is not NavigationViewItem item) return;
         if (item.Tag is not string tag)
         {
-            _log.Warning(LogSource.Playground, $"nav impossible | reason=no-tag | item={item.Content}");
+            DecklePlaygroundSource.Log.NavWarning($"nav impossible | reason=no-tag | item={item.Content}");
             return;
         }
 
         var pageType = Type.GetType(tag);
         if (pageType is null)
         {
-            _log.Error(LogSource.Playground, $"nav failed | reason=type-not-found | tag={tag}");
+            DecklePlaygroundSource.Log.NavError($"nav failed | reason=type-not-found | tag={tag}");
             return;
         }
 
@@ -234,7 +232,7 @@ public sealed partial class PlaygroundWindow : Window
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
             if (!ok)
             {
-                _log.Error(LogSource.Playground, $"navigate failed | page={pageType.Name} | reason=frame-returned-false");
+                DecklePlaygroundSource.Log.NavError($"navigate failed | page={pageType.Name} | reason=frame-returned-false");
                 return;
             }
 
@@ -256,7 +254,7 @@ public sealed partial class PlaygroundWindow : Window
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.Playground, $"navigate threw | page={pageType.Name} | error={ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.NavError($"navigate threw | page={pageType.Name} | error={ex.GetType().Name}: {ex.Message}");
         }
     }
 

@@ -4,7 +4,6 @@ using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.UI;
 using Deckle.Composition;
-using Deckle.Logging;
 
 namespace Deckle.Vision;
 
@@ -60,8 +59,6 @@ namespace Deckle.Vision;
 //     preview timer ; both via volatile read.
 public sealed class FrameSampler : IAsyncDisposable
 {
-    private static readonly LogService _log = LogService.Instance;
-
     private readonly int _sourceWidth;
     private readonly int _sourceHeight;
 
@@ -173,8 +170,9 @@ public sealed class FrameSampler : IAsyncDisposable
         _intermediateSrv = CreateIntermediateSrv();
         _stagingTex      = CreateStagingTexture();
 
-        _log.Verbose(LogSource.Screen,
-            $"sampler init | grid={_gridCols}x{_gridRows} | mip={_targetMip} | tone_map={(_isHdr ? "scrgb_to_srgb" : "none")} | peak_lum={_peakLuminance:F0}");
+        DeckleVisionSource.Log.SamplerInitialized(
+            _gridCols, _gridRows, _targetMip,
+            _isHdr ? "scrgb_to_srgb" : "none", _peakLuminance);
     }
 
     public void Process(CapturedFrame frame)
@@ -227,7 +225,7 @@ public sealed class FrameSampler : IAsyncDisposable
                     int hr = map(_d3dContext, _stagingTex, 0, ScreenCaptureInterop.D3D11_MAP_READ, 0, &mapped);
                     if (hr != 0)
                     {
-                        _log.Warning(LogSource.Screen, $"sampler map fail | hr=0x{hr:X8}");
+                        DeckleVisionSource.Log.SamplerMapFailed(hr);
                         return;
                     }
 
@@ -248,8 +246,7 @@ public sealed class FrameSampler : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Screen,
-                $"sampler process failed — {ex.GetType().Name}: {ex.Message}");
+            DeckleVisionSource.Log.SamplerProcessFailed(ex.GetType().Name, ex.Message);
         }
     }
 

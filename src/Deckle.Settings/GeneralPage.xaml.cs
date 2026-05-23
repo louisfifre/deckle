@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Settings.ViewModels;
 using Deckle.Core;
 
@@ -14,8 +13,6 @@ namespace Deckle.Settings;
 
 public sealed partial class GeneralPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public GeneralViewModel ViewModel { get; } = new();
 
     // Guards combo SelectionChanged during initial sync — the ThemeCombo
@@ -168,8 +165,7 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetGeneral,
-                $"Open data folder failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -186,16 +182,15 @@ public sealed partial class GeneralPage : Page
             // Deckle.Settings free of a back-reference to Deckle.exe.
             if (SettingsHost.OpenSetupWizard is null)
             {
-                _log.Warning(LogSource.SetGeneral, "setup wizard hook not wired — ignoring");
+                DeckleSettingsSource.Log.SetupWizardHookNotWired();
                 return;
             }
             SettingsHost.OpenSetupWizard.Invoke();
-            _log.Info(LogSource.SetGeneral, "setup window opened from Settings");
+            DeckleSettingsSource.Log.SetupWindowOpenedFromSettings();
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.SetGeneral,
-                $"open setup window failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSettingsSource.Log.SetupWindowOpenFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -219,8 +214,7 @@ public sealed partial class GeneralPage : Page
         var latest = ViewModel.LatestBackup;
         if (latest is null)
         {
-            _log.Warning(LogSource.SetGeneral,
-                "restore skipped | reason=no_backup");
+            DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing("(no_backup)");
             return;
         }
 

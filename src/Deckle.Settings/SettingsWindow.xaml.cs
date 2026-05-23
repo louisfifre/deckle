@@ -9,7 +9,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Shell;
 
 namespace Deckle.Settings;
@@ -30,7 +29,6 @@ namespace Deckle.Settings;
 
 public sealed partial class SettingsWindow : Window
 {
-    private static readonly LogService _log = LogService.Instance;
     private readonly IntPtr _hwnd;
 
     private BitmapImage? _iconIdle;
@@ -169,16 +167,16 @@ public sealed partial class SettingsWindow : Window
 
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        _log.Verbose(LogSource.Settings, $"selection changed | item={(args.SelectedItem as NavigationViewItem)?.Content}");
+        DeckleSettingsSource.Log.NavSelectionChanged((args.SelectedItem as NavigationViewItem)?.Content?.ToString() ?? "");
 
         if (args.SelectedItem is not NavigationViewItem item)
         {
-            _log.Verbose(LogSource.Settings, "selection ignored | reason=not-navview-item");
+            DeckleSettingsSource.Log.NavSelectionIgnored("not-navview-item");
             return;
         }
         if (item.Tag is not string tag)
         {
-            _log.Warning(LogSource.Settings, $"nav impossible | reason=no-tag | item={item.Content}");
+            DeckleSettingsSource.Log.NavImpossibleNoTag(item.Content?.ToString() ?? "");
             return;
         }
         if (tag == "logs") return;
@@ -186,33 +184,33 @@ public sealed partial class SettingsWindow : Window
         var pageType = Type.GetType(tag);
         if (pageType is null)
         {
-            _log.Error(LogSource.Settings, $"nav failed | reason=type-not-found | tag={tag}");
+            DeckleSettingsSource.Log.NavFailedTypeNotFound(tag);
             return;
         }
 
         if (PageFrame.CurrentSourcePageType == pageType)
         {
-            _log.Verbose(LogSource.Settings, $"nav skipped | reason=already-current | page={pageType.Name}");
+            DeckleSettingsSource.Log.NavSkippedAlreadyCurrent(pageType.Name);
             return;
         }
 
-        _log.Info(LogSource.Settings, $"Navigate to {pageType.Name}");
+        DeckleSettingsSource.Log.NavStarted(pageType.Name);
         try
         {
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
             if (!ok)
             {
-                _log.Error(LogSource.Settings, $"navigate failed | page={pageType.Name} | reason=frame-returned-false");
+                DeckleSettingsSource.Log.NavFailedFrameRejected(pageType.Name);
             }
             else
             {
-                _log.Success(LogSource.Settings, $"Navigated to {pageType.Name}");
+                DeckleSettingsSource.Log.NavCompleted(pageType.Name);
             }
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.Settings, $"navigate threw | page={pageType.Name} | error={ex.GetType().Name}: {ex.Message}");
-            _log.Error(LogSource.Settings, ex.StackTrace ?? "(no stack)");
+            DeckleSettingsSource.Log.NavFailedThrew(pageType.Name, ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.NavStackTrace(ex.StackTrace ?? "(no stack)");
         }
     }
 
@@ -222,10 +220,10 @@ public sealed partial class SettingsWindow : Window
     private void OnNavItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
         var item = args.InvokedItemContainer as NavigationViewItem;
-        _log.Verbose(LogSource.Settings, $"item invoked | content={item?.Content} | tag={item?.Tag}");
+        DeckleSettingsSource.Log.ItemInvoked(item?.Content?.ToString() ?? "", item?.Tag?.ToString() ?? "");
         if (item?.Tag as string == "logs")
         {
-            _log.Info(LogSource.Settings, "Open logs from footer");
+            DeckleSettingsSource.Log.OpenLogsFromFooter();
             OnShowLogsRequested?.Invoke();
         }
     }

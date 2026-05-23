@@ -4,7 +4,6 @@ using System.Threading;
 using Deckle.Audio.Internal;
 using Deckle.Audio.Telemetry;
 using Deckle.Core.Interop;
-using Deckle.Logging;
 
 namespace Deckle.Audio;
 
@@ -40,8 +39,6 @@ public sealed class MicrophoneCapture : System.IDisposable
     private const int  N_BUFFERS      = 4;
     private const int  BYTES_PER_BUF  = 16000 * 2 * 50 / 1000; // 50ms × 16kHz × 2 bytes/sample
 
-    private readonly LogService _log;
-
     // Per-recording RMS history — one linear-RMS sample per 50 ms sub-window
     // (so ~20 Hz). Cleared at every Record() entry, fed by EmitSubWindows
     // in flow order (in WaveInLoop). Drives:
@@ -70,9 +67,8 @@ public sealed class MicrophoneCapture : System.IDisposable
     // of any Loc.Get dependency.
     public event System.Action? LowAudioDetected;
 
-    public MicrophoneCapture(LogService log)
+    public MicrophoneCapture()
     {
-        _log = log;
     }
 
     // ── Pre-flight probe ──────────────────────────────────────────────────────
@@ -157,7 +153,7 @@ public sealed class MicrophoneCapture : System.IDisposable
             System.IntPtr.Zero, CALLBACK_EVENT);
         if (err != 0)
         {
-            _log.Error(LogSource.Capture, $"waveInOpen error {err}");
+            DeckleAudioSource.Log.MicrophoneOpenFailed(err);
             NativeMethods.CloseHandle(hEvent);
             return new CaptureResult(
                 Pcm:            System.Array.Empty<float>(),
@@ -204,7 +200,6 @@ public sealed class MicrophoneCapture : System.IDisposable
                 nBuffers:            N_BUFFERS,
                 hdrSize:             hdrSize,
                 host:                host,
-                log:                 _log,
                 rmsLog:              _rmsLog,
                 audioLevelCallback:  rms => AudioLevel?.Invoke(rms),
                 onLowAudioDetected:  () => LowAudioDetected?.Invoke(),
@@ -250,9 +245,8 @@ public sealed class MicrophoneCapture : System.IDisposable
         double rmsAvg  = nAggSamples > 0 ? System.Math.Sqrt(aggSumSq / nAggSamples) : 0;
         double dbfsAvg = rmsAvg > 0 ? 20.0 * System.Math.Log10(rmsAvg) : -120.0;
 
-        _log.Info(LogSource.Capture, $"Recording complete ({totalSec:F1} s)");
-        _log.Verbose(LogSource.Capture,
-            $"capture complete | audio_sec={totalSec:F1} | buffers={pump.BuffersReceived} | bytes={allBytes.Length} | rms_avg={rmsAvg:F4} | rms_peak={aggPeak:F4} | dbfs_avg={dbfsAvg:F1}");
+        DeckleAudioSource.Log.RecordingCompleted(totalSec);
+        DeckleAudioSource.Log.CaptureCompleted(totalSec, pump.BuffersReceived, allBytes.Length, rmsAvg, aggPeak, dbfsAvg);
 
         // Mic telemetry — distribution + tail summary derived from _rmsLog.
         // Replaces the previous Tail-on-allBytes computation, which was
@@ -269,7 +263,7 @@ public sealed class MicrophoneCapture : System.IDisposable
         var tail = MicrophoneTelemetryCalculator.ComputeTail(_rmsLog);
         if (tail is null)
         {
-            _log.Warning(LogSource.Capture, "Mic telemetry: no RMS samples captured (recording too short or audio thread starved)");
+            DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
         }
         else
         {
@@ -277,8 +271,8 @@ public sealed class MicrophoneCapture : System.IDisposable
             // selector to tell whether you stopped after a silence (the
             // natural case) or while still speaking (often a hotkey hit
             // too early — last words may be clipped).
-            _log.Info(LogSource.Capture,
-                $"{tail.Value.TailHeadline} (last {tail.Value.TailMs} ms at {tail.Value.TailDbfs:F1} dBFS)");
+            DeckleAudioSource.Log.RecordingTailSummary(
+                tail.Value.TailHeadline, tail.Value.TailMs, tail.Value.TailDbfs);
 
             telemetry = MicrophoneTelemetryCalculator.Compute(_rmsLog, tail.Value);
         }
@@ -287,10 +281,26 @@ public sealed class MicrophoneCapture : System.IDisposable
         // The payload is always *computed* (auto-calibration depends on
         // it); this flag only decides whether it's broadcast. Auto-
         // calibration itself runs on the orchestrator side — it has access
-        // to the host's settings + ApplyLevelWindow callback.
+        // to the host's settings + ApplyLevelWindow callback. EventSource
+        // sees a single emission, flat parameters mirror the legacy payload
+        // properties one-for-one (see DeckleAudioSource.MicrophoneTelemetryRecorded).
         if (telemetry is not null && host.MicrophoneTelemetryEnabled)
         {
-            TelemetryService.Instance.Microphone(telemetry);
+            DeckleAudioSource.Log.MicrophoneTelemetryRecorded(
+                telemetry.DurationSeconds,
+                telemetry.Samples,
+                telemetry.MinDbfs,
+                telemetry.P10Dbfs,
+                telemetry.P25Dbfs,
+                telemetry.P50Dbfs,
+                telemetry.P75Dbfs,
+                telemetry.P90Dbfs,
+                telemetry.MaxDbfs,
+                telemetry.MeanRms,
+                telemetry.MeanDbfs,
+                telemetry.TailRms,
+                telemetry.TailDbfs,
+                telemetry.TailState);
         }
 
         float[] pcmFloat = PcmConversion.PcmToFloat(allBytes);

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Deckle.Core;
-using Deckle.Logging;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -53,10 +52,10 @@ public sealed class LlmSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Llm-Save",
             jsonOptions: _jsonOptions,
-            logInfo:     msg => LogService.Instance.Info(LogSource.Settings, $"[llm] {msg}"),
-            logVerbose:  msg => LogService.Instance.Verbose(LogSource.Settings, $"[llm] {msg}"),
-            logWarning:  msg => LogService.Instance.Warning(LogSource.Settings, $"[llm] {msg}"),
-            logError:    msg => LogService.Instance.Error(LogSource.Settings, $"[llm] {msg}"),
+            logInfo:     msg => DeckleLlmSource.Log.SettingsLoaded(msg),
+            logVerbose:  msg => DeckleLlmSource.Log.SettingsLoadComplete(msg),
+            logWarning:  msg => DeckleLlmSource.Log.SettingsLoadWarning(msg),
+            logError:    msg => DeckleLlmSource.Log.SettingsLoadError(msg),
             // Profile id reconciliation: fill missing 12-char Guid suffixes
             // and re-pair rules/slots against the live Profiles list.
             postLoadMigration: LlmSettingsMigrations.RepairProfileReferences);

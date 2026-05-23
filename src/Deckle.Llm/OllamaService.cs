@@ -2,7 +2,6 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Deckle.Logging;
 
 namespace Deckle.Llm;
 
@@ -104,9 +103,7 @@ public sealed class OllamaService
         catch (JsonException ex)
         {
             string preview = json.Length > 200 ? json[..200] + "..." : json;
-            Logging.LogService.Instance.Warning(
-                Logging.LogSource.Llm,
-                $"ListModels: invalid JSON from Ollama ({ex.Message}) | preview={preview}");
+            DeckleLlmSource.Log.ListModelsInvalidJson(ex.Message, preview);
             return new();
         }
     }
@@ -132,9 +129,7 @@ public sealed class OllamaService
         catch (JsonException ex)
         {
             string preview = json.Length > 200 ? json[..200] + "..." : json;
-            Logging.LogService.Instance.Warning(
-                Logging.LogSource.Llm,
-                $"ShowModel: invalid JSON from Ollama ({ex.Message}) | model={name} | preview={preview}");
+            DeckleLlmSource.Log.ShowModelInvalidJson(ex.Message, name, preview);
             return null;
         }
     }
@@ -185,9 +180,7 @@ public sealed class OllamaService
 
             if (!AllowedSchemes.Contains(uri.Scheme))
             {
-                LogService.Instance.Warning(LogSource.Llm,
-                    $"Ollama endpoint scheme \"{uri.Scheme}\" is not allowed. " +
-                    $"Falling back to {DefaultBaseUrl}.");
+                DeckleLlmSource.Log.EndpointSchemeNotAllowed(uri.Scheme, DefaultBaseUrl);
                 return DefaultBaseUrl;
             }
 
@@ -199,9 +192,7 @@ public sealed class OllamaService
 
             if (!isLoopback && _lastNonLoopbackHostWarned != host)
             {
-                LogService.Instance.Warning(LogSource.Llm,
-                    $"Ollama endpoint host \"{host}\" is not loopback. " +
-                    "Requests will leave this machine. Make sure that is intended.");
+                DeckleLlmSource.Log.EndpointNonLoopbackHost(host);
                 _lastNonLoopbackHostWarned = host;
             }
 

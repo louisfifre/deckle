@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Deckle.Catalog;
-using Deckle.Logging;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 

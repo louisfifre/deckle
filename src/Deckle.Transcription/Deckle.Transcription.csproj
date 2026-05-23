@@ -37,9 +37,10 @@
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
     <!-- For SettingsHost.RestartApp — cross-assembly App-side hook called
          from WhisperPage's "Restart now" footer. WhisperPage participates
          in the Settings shell UI; the back-reference is intentional. -->

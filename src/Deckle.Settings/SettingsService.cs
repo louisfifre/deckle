@@ -1,7 +1,6 @@
 using System;
 using System.Text.Json;
 using Deckle.Core;
-using Deckle.Logging;
 
 namespace Deckle.Settings;
 
@@ -76,10 +75,10 @@ public sealed class SettingsService
             path:        AppPaths.SettingsFilePath,
             mutexName:   AppPaths.SettingsMutexName,
             jsonOptions: _jsonOptions,
-            logInfo:     msg => LogService.Instance.Info(LogSource.Settings, msg),
-            logVerbose:  msg => LogService.Instance.Verbose(LogSource.Settings, msg),
-            logWarning:  msg => LogService.Instance.Warning(LogSource.Settings, msg),
-            logError:    msg => LogService.Instance.Error(LogSource.Settings, msg));
+            logInfo:     msg => DeckleSettingsSource.Log.SettingsLoaded(msg),
+            logVerbose:  msg => DeckleSettingsSource.Log.SettingsLoadComplete(msg),
+            logWarning:  msg => DeckleSettingsSource.Log.SettingsLoadWarning(msg),
+            logError:    msg => DeckleSettingsSource.Log.SettingsLoadError(msg));
     }
 
     /// <summary>Schedule a debounced disk write (300 ms).</summary>

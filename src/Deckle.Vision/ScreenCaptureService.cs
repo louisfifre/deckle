@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Deckle.Logging;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
 
@@ -49,8 +48,6 @@ namespace Deckle.Vision;
 // event and exits.
 public sealed class ScreenCaptureService : IDisposable
 {
-    private static readonly LogService _log = LogService.Instance;
-
     // ~15 Hz target. Matches the AmbientEngine push cadence so we
     // don't acquire frames the engine never consumes.
     private const int ThrottleIntervalMs = 66;
@@ -176,7 +173,7 @@ public sealed class ScreenCaptureService : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (IsRunning) return;
 
-            _log.Info(LogSource.Screen, "Screen capture starting");
+            DeckleVisionSource.Log.ScreenCaptureStarting();
 
             try
             {
@@ -230,16 +227,15 @@ public sealed class ScreenCaptureService : IDisposable
 
                 IsRunning = true;
 
-                _log.Verbose(LogSource.Screen,
-                    $"start | hmon=0x{_hmon:X} | size={_lastSize.Width}x{_lastSize.Height} | format={_activeFormat} | hdr={(_isHdrSession ? "on" : "off")} | peak_lum={_peakLuminance:F0} | timeout_ms={AcquireTimeoutMs} | throttle_ms={ThrottleIntervalMs}");
-                _log.Success(LogSource.Screen, "Screen capture started");
+                DeckleVisionSource.Log.CaptureSessionConfigured(
+                    (long)_hmon, _lastSize.Width, _lastSize.Height, _activeFormat.ToString(),
+                    _isHdrSession ? "on" : "off", _peakLuminance, (int)AcquireTimeoutMs, ThrottleIntervalMs);
+                DeckleVisionSource.Log.ScreenCaptureStarted();
             }
             catch (Exception ex)
             {
-                _log.Error(LogSource.Screen,
-                    $"Screen capture failed to start — {ex.GetType().Name}: {ex.Message}");
-                _log.Verbose(LogSource.Screen,
-                    $"start failed | hr=0x{ex.HResult:X8} | type={ex.GetType().Name} | message={ex.Message}");
+                DeckleVisionSource.Log.CaptureStartFailed(ex.GetType().Name, ex.Message);
+                DeckleVisionSource.Log.CaptureStartFailedDetail(ex.HResult, ex.GetType().Name, ex.Message);
 
                 DisposeInternals();
                 throw;
@@ -257,13 +253,11 @@ public sealed class ScreenCaptureService : IDisposable
         var resolved = ScreenCaptureInterop.FindMonitorByDeviceName(targetMonitorDeviceName);
         if (resolved != 0)
         {
-            _log.Verbose(LogSource.Screen,
-                $"target monitor resolved | device_name={targetMonitorDeviceName} | hmon=0x{(long)resolved:X}");
+            DeckleVisionSource.Log.TargetMonitorResolved(targetMonitorDeviceName, (long)resolved);
             return resolved;
         }
 
-        _log.Warning(LogSource.Screen,
-            $"Monitor not found — requested={targetMonitorDeviceName}, falling back to primary. Display may be disconnected or the device name has changed.");
+        DeckleVisionSource.Log.MonitorNotFound(targetMonitorDeviceName);
         return ScreenCaptureInterop.GetPrimaryMonitor();
     }
 
@@ -298,8 +292,7 @@ public sealed class ScreenCaptureService : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Verbose(LogSource.Screen,
-                $"capture loop wait threw — {ex.GetType().Name}: {ex.Message} (continuing shutdown)");
+            DeckleVisionSource.Log.CaptureLoopWaitFailed(ex.GetType().Name, ex.Message);
         }
         try { cts?.Dispose(); } catch { /* best effort */ }
 
@@ -315,10 +308,8 @@ public sealed class ScreenCaptureService : IDisposable
 
             if (wasRunning)
             {
-                _log.Info(LogSource.Screen,
-                    $"Screen capture stopped ({frames} frames in {durationSec:F1} s)");
-                _log.Verbose(LogSource.Screen,
-                    $"stop | frames={frames} | duration_ms={durationMs} | fps_avg={fpsAvg:F1}");
+                DeckleVisionSource.Log.ScreenCaptureStopped(frames, durationSec);
+                DeckleVisionSource.Log.ScreenCaptureStoppedDetail(frames, durationMs, fpsAvg);
             }
         }
     }
@@ -357,8 +348,7 @@ public sealed class ScreenCaptureService : IDisposable
 
             if (hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_LOST)
             {
-                _log.Verbose(LogSource.Screen,
-                    "AcquireNextFrame returned ACCESS_LOST — desktop switch / mode change, recreating duplication");
+                DeckleVisionSource.Log.AccessLostRecovering();
                 if (_duplicationPtr != 0)
                 {
                     Marshal.Release(_duplicationPtr);
@@ -370,8 +360,7 @@ public sealed class ScreenCaptureService : IDisposable
             if (hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_REMOVED ||
                 hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_HUNG)
             {
-                _log.Error(LogSource.Screen,
-                    $"D3D11 device lost (hr=0x{hr:X8}) — capture session unrecoverable, stopping");
+                DeckleVisionSource.Log.DeviceLost(hr);
                 break;
             }
 
@@ -385,8 +374,7 @@ public sealed class ScreenCaptureService : IDisposable
                 // hr starts showing up often in field reports, add a
                 // dedicated recovery branch above (like ACCESS_LOST)
                 // rather than relying on the generic retry.
-                _log.Verbose(LogSource.Screen,
-                    $"AcquireNextFrame failed (hr=0x{hr:X8}) — backing off {ErrorBackoffMs} ms");
+                DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (desktopResourcePtr != 0) Marshal.Release(desktopResourcePtr);
                 try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); } catch (OperationCanceledException) { break; }
                 continue;
@@ -420,8 +408,7 @@ public sealed class ScreenCaptureService : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    _log.Warning(LogSource.Screen,
-                        $"Texture QI failed — {ex.GetType().Name}: {ex.Message} (frame dropped, session continues)");
+                    DeckleVisionSource.Log.TextureQueryFailed(ex.GetType().Name, ex.Message);
                     continue;
                 }
 
@@ -442,8 +429,7 @@ public sealed class ScreenCaptureService : IDisposable
                     }
                     catch (Exception ex)
                     {
-                        _log.Warning(LogSource.Screen,
-                            $"FrameArrived consumer threw — {ex.GetType().Name}: {ex.Message} (frame dropped, session continues)");
+                        DeckleVisionSource.Log.FrameConsumerThrew(ex.GetType().Name, ex.Message);
                     }
                 }
                 finally
@@ -457,8 +443,7 @@ public sealed class ScreenCaptureService : IDisposable
                 int releaseHr = ScreenCaptureInterop.ReleaseFrame(_duplicationPtr);
                 if (releaseHr != 0 && releaseHr != ScreenCaptureInterop.DXGI_ERROR_INVALID_CALL)
                 {
-                    _log.Verbose(LogSource.Screen,
-                        $"ReleaseFrame hr=0x{releaseHr:X8} (ignored)");
+                    DeckleVisionSource.Log.ReleaseFrameNonZero(releaseHr);
                 }
             }
         }
@@ -478,8 +463,7 @@ public sealed class ScreenCaptureService : IDisposable
         consecutiveRecreates++;
         if (consecutiveRecreates > MaxRecreateAttempts)
         {
-            _log.Error(LogSource.Screen,
-                $"Duplication recreate failed {MaxRecreateAttempts} times in a row — capture stopped, display may be disconnected");
+            DeckleVisionSource.Log.DuplicationRecreateFailed(MaxRecreateAttempts);
             return false;
         }
 
@@ -497,19 +481,19 @@ public sealed class ScreenCaptureService : IDisposable
             };
             if (newSize.Width != _lastSize.Width || newSize.Height != _lastSize.Height)
             {
-                _log.Verbose(LogSource.Screen,
-                    $"resize detected on recreate | old={_lastSize.Width}x{_lastSize.Height} | new={newSize.Width}x{newSize.Height}");
+                DeckleVisionSource.Log.DuplicationResizeDetected(
+                    _lastSize.Width, _lastSize.Height, newSize.Width, newSize.Height);
                 _lastSize = newSize;
             }
 
-            _log.Verbose(LogSource.Screen,
-                $"duplication recreated | attempt={consecutiveRecreates} | size={_lastSize.Width}x{_lastSize.Height}");
+            DeckleVisionSource.Log.DuplicationRecreated(
+                consecutiveRecreates, _lastSize.Width, _lastSize.Height);
             return true;
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Screen,
-                $"DuplicateOutput1 failed on recreate (attempt {consecutiveRecreates}/{MaxRecreateAttempts}) — {ex.GetType().Name}: {ex.Message}");
+            DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
+                consecutiveRecreates, MaxRecreateAttempts, ex.GetType().Name, ex.Message);
             return false;
         }
     }

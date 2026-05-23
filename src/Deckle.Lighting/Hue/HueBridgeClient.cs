@@ -2,7 +2,6 @@ using System.Net.Http.Json;
 using System.Net.Security;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Deckle.Logging;
 
 namespace Deckle.Lighting.Hue;
 
@@ -31,8 +30,6 @@ public sealed class HueBridgeClient : IDisposable
     // 7 chars, so we have 33 left for the machine name suffix.
     private const string DeviceTypePrefix = "deckle#";
     private const int    DeviceTypeMaxSuffixLength = 33;
-
-    private static readonly LogService _log = LogService.Instance;
 
     private readonly HueBridge _bridge;
     private readonly HttpClient _http;
@@ -91,10 +88,9 @@ public sealed class HueBridgeClient : IDisposable
         var deadline = DateTime.UtcNow + overallTimeout;
         var deviceType = BuildDeviceType(Environment.MachineName);
 
-        _log.Info(LogSource.Hue,
-            "Pairing started — press the link button on the bridge");
-        _log.Verbose(LogSource.Hue,
-            $"pair start | bridge_ip={_bridge.InternalIpAddress} | timeout_sec={(int)overallTimeout.TotalSeconds} | devicetype={deviceType}");
+        DeckleLightingSource.Log.PairingStarted();
+        DeckleLightingSource.Log.PairingStartedDetail(
+            _bridge.InternalIpAddress, (int)overallTimeout.TotalSeconds, deviceType);
 
         while (DateTime.UtcNow < deadline)
         {
@@ -105,23 +101,19 @@ public sealed class HueBridgeClient : IDisposable
             {
                 case PairOutcome.Success success:
                     _credentials = success.Credentials;
-                    _log.Success(LogSource.Hue,
-                        $"Bridge paired ({_bridge.Id})");
-                    _log.Verbose(LogSource.Hue,
-                        $"pair result | bridge_id={_bridge.Id} | username={_credentials.UsernameHead} | clientkey=[redacted]");
+                    DeckleLightingSource.Log.BridgePaired(_bridge.Id);
+                    DeckleLightingSource.Log.BridgePairedDetail(_bridge.Id, _credentials.UsernameHead);
                     return _credentials;
 
                 case PairOutcome.LinkButtonNotPressed:
                     // Verbose only — this is the expected state during
                     // the wait window, the user has not pressed the
                     // button yet. UI surfaces a separate countdown.
-                    _log.Verbose(LogSource.Hue,
-                        $"pair waiting | error_type=101 | next_attempt_in_ms={(int)interval.TotalMilliseconds}");
+                    DeckleLightingSource.Log.PairingWaiting((int)interval.TotalMilliseconds);
                     break;
 
                 case PairOutcome.OtherError otherError:
-                    _log.Error(LogSource.Hue,
-                        $"Pairing rejected by bridge — type={otherError.Type}: {otherError.Description}");
+                    DeckleLightingSource.Log.PairingRejected(otherError.Type, otherError.Description);
                     throw new HuePairingException(
                         $"Bridge refused pairing (type {otherError.Type}): {otherError.Description}");
             }
@@ -129,8 +121,7 @@ public sealed class HueBridgeClient : IDisposable
             await Task.Delay(interval, ct).ConfigureAwait(false);
         }
 
-        _log.Warning(LogSource.Hue,
-            "Pairing timed out — the link button was not pressed in time");
+        DeckleLightingSource.Log.PairingTimedOut();
         throw new TimeoutException(
             "Hue bridge pairing timed out. Press the link button on the bridge and try again.");
     }
@@ -148,7 +139,7 @@ public sealed class HueBridgeClient : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsurePaired();
 
-        _log.Info(LogSource.Hue, "Listing groups");
+        DeckleLightingSource.Log.ListingGroups();
 
         var dict = await _http.GetFromJsonAsync<Dictionary<string, HueGroupDto>>(
             $"api/{_credentials!.Username}/groups", _jsonOptions, ct)
@@ -156,7 +147,7 @@ public sealed class HueBridgeClient : IDisposable
 
         if (dict is null)
         {
-            _log.Warning(LogSource.Hue, "Bridge returned no groups payload");
+            DeckleLightingSource.Log.BridgeReturnedNoGroups();
             return [];
         }
 
@@ -167,12 +158,10 @@ public sealed class HueBridgeClient : IDisposable
             groups.Add(new HueGroup(id, dto.Name ?? "", dto.Type ?? "Unknown", lightsCount));
         }
 
-        _log.Verbose(LogSource.Hue,
-            $"groups list | bridge_id={_bridge.Id} | count={groups.Count}");
+        DeckleLightingSource.Log.GroupsListed(_bridge.Id, groups.Count);
         foreach (var g in groups)
         {
-            _log.Verbose(LogSource.Hue,
-                $"group | id={g.Id} | name={g.Name} | type={g.Type} | lights={g.LightsCount}");
+            DeckleLightingSource.Log.GroupListed(g.Id, g.Name, g.Type, g.LightsCount);
         }
         return groups;
     }
@@ -254,20 +243,19 @@ public sealed class HueBridgeClient : IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            _log.Warning(LogSource.Hue,
-                $"Set colour failed | {target} | hr={(int)response.StatusCode}");
+            DeckleLightingSource.Log.SetColorFailed(target, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
 
         if (bri == 0)
         {
-            _log.Verbose(LogSource.Hue,
-                $"push colour | {target} | rgb={color.R},{color.G},{color.B} | on=false | tt_ds={AmbientTransitionDeciseconds}");
+            DeckleLightingSource.Log.PushColorOff(
+                target, color.R, color.G, color.B, AmbientTransitionDeciseconds);
         }
         else
         {
-            _log.Verbose(LogSource.Hue,
-                $"push colour | {target} | rgb={color.R},{color.G},{color.B} | xy={xy.X:F4},{xy.Y:F4} | bri={bri} | tt_ds={AmbientTransitionDeciseconds}");
+            DeckleLightingSource.Log.PushColor(
+                target, color.R, color.G, color.B, xy.X, xy.Y, bri, AmbientTransitionDeciseconds);
         }
     }
 
@@ -295,14 +283,14 @@ public sealed class HueBridgeClient : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsurePaired();
 
-        _log.Info(LogSource.Hue, "Listing entertainment configurations");
+        DeckleLightingSource.Log.ListingEntertainmentConfigs();
 
         var entResponse = await GetV2Async<HueV2Response<HueV2EntertainmentConfigDto>>(
             "resource/entertainment_configuration", ct).ConfigureAwait(false);
 
         if (entResponse?.Data is null || entResponse.Data.Count == 0)
         {
-            _log.Verbose(LogSource.Hue, "entertainment list | count=0");
+            DeckleLightingSource.Log.EntertainmentEmpty();
             return [];
         }
 
@@ -353,8 +341,7 @@ public sealed class HueBridgeClient : IDisposable
                 entUuidToV1[es.Id] = es.IdV1[(slash + 1)..];
             }
         }
-        _log.Verbose(LogSource.Hue,
-            $"entertainment v2 catalog | services={entUuidToV1.Count} | lights={v1Names.Count}");
+        DeckleLightingSource.Log.EntertainmentV2Catalog(entUuidToV1.Count, v1Names.Count);
 
         var areas = new List<HueEntertainmentArea>(entResponse.Data.Count);
         foreach (var ent in entResponse.Data)
@@ -395,15 +382,13 @@ public sealed class HueBridgeClient : IDisposable
                 placements));
         }
 
-        _log.Verbose(LogSource.Hue, $"entertainment list | count={areas.Count}");
+        DeckleLightingSource.Log.EntertainmentListed(areas.Count);
         foreach (var area in areas)
         {
-            _log.Verbose(LogSource.Hue,
-                $"entertainment | id={area.Id} | name={area.Name} | lights={area.LightPlacements.Count}");
+            DeckleLightingSource.Log.EntertainmentArea(area.Id, area.Name, area.LightPlacements.Count);
             foreach (var p in area.LightPlacements)
             {
-                _log.Verbose(LogSource.Hue,
-                    $"placement | ent_id={area.Id} | light_id={p.LightId} | name={p.Name} | x={p.X:F3} | y={p.Y:F3} | z={p.Z:F3}");
+                DeckleLightingSource.Log.PlacementListed(area.Id, p.LightId, p.Name, p.X, p.Y, p.Z);
             }
         }
         return areas;
@@ -421,8 +406,7 @@ public sealed class HueBridgeClient : IDisposable
         var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            _log.Warning(LogSource.Hue,
-                $"CLIP v2 GET failed | path={path} | hr={(int)response.StatusCode}");
+            DeckleLightingSource.Log.ClipV2GetFailed(path, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
         return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct).ConfigureAwait(false);
@@ -466,13 +450,11 @@ public sealed class HueBridgeClient : IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            _log.Warning(LogSource.Hue,
-                $"Identify {phase} failed | light_id={lightId} | hr={(int)response.StatusCode}");
+            DeckleLightingSource.Log.IdentifyFailed(phase, lightId, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
 
-        _log.Verbose(LogSource.Hue,
-            $"light identify | light_id={lightId} | alert={alert} | phase={phase}");
+        DeckleLightingSource.Log.LightIdentified(lightId, alert, phase);
     }
 
     /// <summary>
@@ -489,7 +471,7 @@ public sealed class HueBridgeClient : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsurePaired();
 
-        _log.Info(LogSource.Hue, $"Listing lights in group {groupId}");
+        DeckleLightingSource.Log.ListingLightsInGroup(groupId);
 
         var groupDto = await _http.GetFromJsonAsync<HueGroupDto>(
             $"api/{_credentials!.Username}/groups/{groupId}", _jsonOptions, ct)
@@ -497,8 +479,7 @@ public sealed class HueBridgeClient : IDisposable
 
         if (groupDto?.Lights is null || groupDto.Lights.Length == 0)
         {
-            _log.Verbose(LogSource.Hue,
-                $"lights list | group_id={groupId} | count=0");
+            DeckleLightingSource.Log.LightsListedEmpty(groupId);
             return [];
         }
 
@@ -508,8 +489,7 @@ public sealed class HueBridgeClient : IDisposable
 
         if (lightsDict is null)
         {
-            _log.Warning(LogSource.Hue,
-                $"Bridge returned no lights payload | group_id={groupId}");
+            DeckleLightingSource.Log.BridgeReturnedNoLights(groupId);
             return [];
         }
 
@@ -535,12 +515,10 @@ public sealed class HueBridgeClient : IDisposable
             }
         }
 
-        _log.Verbose(LogSource.Hue,
-            $"lights list | group_id={groupId} | count={result.Count}");
+        DeckleLightingSource.Log.LightsListed(groupId, result.Count);
         foreach (var l in result)
         {
-            _log.Verbose(LogSource.Hue,
-                $"light | id={l.Id} | name={l.Name} | type={l.Type} | reachable={l.Reachable}");
+            DeckleLightingSource.Log.LightListed(l.Id, l.Name, l.Type, l.Reachable);
         }
         return result;
     }
@@ -574,8 +552,7 @@ public sealed class HueBridgeClient : IDisposable
         }
         catch (HttpRequestException ex)
         {
-            _log.Error(LogSource.Hue,
-                $"Bridge unreachable during pairing — {ex.GetType().Name}: {ex.Message}");
+            DeckleLightingSource.Log.BridgeUnreachable(ex.GetType().Name, ex.Message);
             throw new HueBridgeUnreachableException(
                 $"Bridge at {_bridge.InternalIpAddress} is unreachable.", ex);
         }
@@ -585,8 +562,7 @@ public sealed class HueBridgeClient : IDisposable
         // status code. 4xx / 5xx are real protocol failures.
         if (!response.IsSuccessStatusCode)
         {
-            _log.Error(LogSource.Hue,
-                $"Pairing HTTP error | hr={(int)response.StatusCode} | reason={response.ReasonPhrase}");
+            DeckleLightingSource.Log.PairingHttpError((int)response.StatusCode, response.ReasonPhrase ?? "");
             throw new HttpRequestException(
                 $"Hue bridge returned {(int)response.StatusCode} on pairing.");
         }

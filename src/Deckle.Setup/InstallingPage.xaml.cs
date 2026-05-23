@@ -8,9 +8,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Logging;
-using Deckle.Transcription.Setup;
 using Deckle.Core;
+using Deckle.Transcription.Setup;
 
 namespace Deckle.Setup;
 
@@ -42,8 +41,6 @@ public sealed partial class InstallingPage : Page
 {
     private const int TotalSteps = 3;
     private const string NativeRuntimeItemId = "native-runtime";
-
-    private static readonly LogService _log = LogService.Instance;
 
     private SetupWindow? _setup;
     private SetupContext? _context;
@@ -207,7 +204,7 @@ public sealed partial class InstallingPage : Page
                 Success:      false,
                 ErrorMessage: "auto-download URL is a placeholder; use Browse... on the previous step",
                 Bytes:        null));
-            _log.Error(LogSource.Setup,
+            DeckleSetupSource.Log.SetupError(
                 "setup native runtime aborted | reason=placeholder_url");
             SetItemFailed(NativeIcon, NativeProgress, NativeStatus,
                 Loc.Get("Setup_Install_NativePlaceholderUrl"));
@@ -249,7 +246,7 @@ public sealed partial class InstallingPage : Page
                     Success:      false,
                     ErrorMessage: dl.ErrorMessage,
                     Bytes:        null));
-                _log.Warning(LogSource.Setup,
+                DeckleSetupSource.Log.SetupWarning(
                     $"setup native download failed | error={dl.ErrorMessage}");
                 SetItemFailed(NativeIcon, NativeProgress, NativeStatus,
                     dl.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError"));
@@ -274,7 +271,7 @@ public sealed partial class InstallingPage : Page
                     Success:      false,
                     ErrorMessage: err,
                     Bytes:        bytes));
-                _log.Error(LogSource.Setup,
+                DeckleSetupSource.Log.SetupError(
                     $"setup native incomplete | extracted={extracted} | expected={NativeRuntime.RequiredDllNames.Count}");
                 SetItemFailed(NativeIcon, NativeProgress, NativeStatus, err);
                 return false;
@@ -286,7 +283,7 @@ public sealed partial class InstallingPage : Page
                 Success:      true,
                 ErrorMessage: null,
                 Bytes:        bytes));
-            _log.Info(LogSource.Setup,
+            DeckleSetupSource.Log.SetupInfo(
                 $"setup native ok | bundle=native-v{bundle.Version} | bytes={bytes} | dur_ms={durMs} | sha256={dl.ActualSha256}");
             SetItemDone(NativeIcon, NativeProgress, NativeStatus,
                 Loc.Format("Setup_Install_Done_Format", FormatBytes(bytes)));
@@ -300,7 +297,7 @@ public sealed partial class InstallingPage : Page
                 Success:      false,
                 ErrorMessage: "cancelled",
                 Bytes:        null));
-            _log.Info(LogSource.Setup, "setup native cancelled");
+            DeckleSetupSource.Log.SetupInfo( "setup native cancelled");
             SetItemFailed(NativeIcon, NativeProgress, NativeStatus, Loc.Get("Setup_Install_Cancelled"));
             TryDelete(zipPath);
             return false;
@@ -350,7 +347,7 @@ public sealed partial class InstallingPage : Page
                     Success:     true,
                     ErrorMessage: null,
                     Bytes:        bytes));
-                _log.Info(LogSource.Setup,
+                DeckleSetupSource.Log.SetupInfo(
                     $"setup item ok | id={entry.Id} | bytes={bytes} | dur_ms={durMs} | sha256={result.ActualSha256}");
                 SetItemDone(icon, bar, status, Loc.Format("Setup_Install_Done_Format", FormatBytes(bytes)));
             }
@@ -362,7 +359,7 @@ public sealed partial class InstallingPage : Page
                     Success:     false,
                     ErrorMessage: result.ErrorMessage,
                     Bytes:        null));
-                _log.Warning(LogSource.Setup,
+                DeckleSetupSource.Log.SetupWarning(
                     $"setup item failed | id={entry.Id} | error={result.ErrorMessage}");
                 SetItemFailed(icon, bar, status, result.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError"));
             }
@@ -375,7 +372,7 @@ public sealed partial class InstallingPage : Page
                 Success:     false,
                 ErrorMessage: "cancelled",
                 Bytes:        null));
-            _log.Info(LogSource.Setup, $"setup item cancelled | id={entry.Id}");
+            DeckleSetupSource.Log.SetupInfo( $"setup item cancelled | id={entry.Id}");
             SetItemFailed(icon, bar, status, Loc.Get("Setup_Install_Cancelled"));
         }
     }

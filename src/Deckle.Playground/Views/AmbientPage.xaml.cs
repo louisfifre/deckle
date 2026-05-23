@@ -10,7 +10,6 @@ using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
 using Deckle.Lighting.Hue;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Playground.ViewModels;
 using Deckle.Vision;
 
@@ -48,8 +47,6 @@ namespace Deckle.Playground;
 //     reflect here without re-subscribing on every navigate.
 public sealed partial class AmbientPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public AmbientViewModel ViewModel { get; } = new();
 
     // Guards programmatic Slider / ComboBox writes during ViewModel sync

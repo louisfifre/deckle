@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Logging;
 
 namespace Deckle.Transcription.ViewModels;
 
@@ -20,7 +19,6 @@ namespace Deckle.Transcription.ViewModels;
 // Partial properties (not fields) for WinRT/AOT compatibility (MVVMTK0045).
 public partial class WhisperViewModel : ObservableObject
 {
-    private static readonly LogService _log = LogService.Instance;
     private bool _isSyncing;
 
     // ── Paths ────────────────────────────────────────────────────────────────
@@ -31,7 +29,7 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnModelsDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Paths.ModelsDirectory ← \"{value}\"");
+        DeckleWhispSource.Log.SettingChanged("Paths.ModelsDirectory", $"\"{value}\"");
         PushToSettings();
     }
 
@@ -52,28 +50,28 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnModelChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Transcription.Model ← \"{value}\"");
+        DeckleWhispSource.Log.SettingChanged("Transcription.Model", $"\"{value}\"");
         PushToSettings();
     }
 
     partial void OnUseGpuChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Transcription.UseGpu ← {value}");
+        DeckleWhispSource.Log.SettingChanged("Transcription.UseGpu", value.ToString());
         PushToSettings();
     }
 
     partial void OnLanguageChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Transcription.Language ← \"{value}\"");
+        DeckleWhispSource.Log.SettingChanged("Transcription.Language", $"\"{value}\"");
         PushToSettings();
     }
 
     partial void OnInitialPromptChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Transcription.InitialPrompt ← ({value?.Length ?? 0} chars)");
+        DeckleWhispSource.Log.SettingChanged("Transcription.InitialPrompt", $"({value?.Length ?? 0} chars)");
         PushToSettings();
     }
 
@@ -103,49 +101,49 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnVadEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.Enabled ← {value}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.Enabled", value.ToString());
         PushToSettings();
     }
 
     partial void OnVadThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.Threshold ← {value:0.00}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.Threshold", value.ToString("0.00"));
         PushToSettings();
     }
 
     partial void OnVadMinSpeechDurationMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.MinSpeechDurationMs ← {(int)value}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MinSpeechDurationMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadMinSilenceDurationMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.MinSilenceDurationMs ← {(int)value}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MinSilenceDurationMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadMaxSpeechDurationSecChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.MaxSpeechDurationSec ← {(int)value}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MaxSpeechDurationSec", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadSpeechPadMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.SpeechPadMs ← {(int)value}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.SpeechPadMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadSamplesOverlapChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"SpeechDetection.SamplesOverlap ← {value:0.00}");
+        DeckleWhispSource.Log.SettingChanged("SpeechDetection.SamplesOverlap", value.ToString("0.00"));
         PushToSettings();
     }
 
@@ -160,14 +158,14 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnTemperatureChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Decoding.Temperature ← {value:0.0}");
+        DeckleWhispSource.Log.SettingChanged("Decoding.Temperature", value.ToString("0.0"));
         PushToSettings();
     }
 
     partial void OnTemperatureIncrementChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Decoding.TemperatureIncrement ← {value:0.0}");
+        DeckleWhispSource.Log.SettingChanged("Decoding.TemperatureIncrement", value.ToString("0.0"));
         PushToSettings();
     }
 
@@ -185,21 +183,21 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnEntropyThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Confidence.EntropyThreshold ← {value:0.0}");
+        DeckleWhispSource.Log.SettingChanged("Confidence.EntropyThreshold", value.ToString("0.0"));
         PushToSettings();
     }
 
     partial void OnLogprobThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Confidence.LogprobThreshold ← {value:0.00}");
+        DeckleWhispSource.Log.SettingChanged("Confidence.LogprobThreshold", value.ToString("0.00"));
         PushToSettings();
     }
 
     partial void OnNoSpeechThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Confidence.NoSpeechThreshold ← {value:0.00}");
+        DeckleWhispSource.Log.SettingChanged("Confidence.NoSpeechThreshold", value.ToString("0.00"));
         PushToSettings();
     }
 
@@ -217,21 +215,21 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnSuppressNonSpeechTokensChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"OutputFilters.SuppressNonSpeechTokens ← {value}");
+        DeckleWhispSource.Log.SettingChanged("OutputFilters.SuppressNonSpeechTokens", value.ToString());
         PushToSettings();
     }
 
     partial void OnSuppressBlankChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"OutputFilters.SuppressBlank ← {value}");
+        DeckleWhispSource.Log.SettingChanged("OutputFilters.SuppressBlank", value.ToString());
         PushToSettings();
     }
 
     partial void OnSuppressRegexChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"OutputFilters.SuppressRegex ← \"{value}\"");
+        DeckleWhispSource.Log.SettingChanged("OutputFilters.SuppressRegex", $"\"{value}\"");
         PushToSettings();
     }
 
@@ -246,14 +244,14 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnUseContextChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetWhisper, $"Context.UseContext ← {value}");
+        DeckleWhispSource.Log.SettingChanged("Context.UseContext", value.ToString());
         PushToSettings();
     }
 
     partial void OnMaxTokensChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        _log.Info(LogSource.SetWhisper, $"Context.MaxTokens ← {(int)value}");
+        DeckleWhispSource.Log.SettingChanged("Context.MaxTokens", ((int)value).ToString());
         PushToSettings();
     }
 

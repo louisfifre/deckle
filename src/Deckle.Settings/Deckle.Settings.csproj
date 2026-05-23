@@ -49,7 +49,12 @@
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- DiagnosticsViewModel consomme LoggingSettingsService /
+         TelemetrySettingsService — successeurs canoniques des stores
+         legacy (Deckle.Logging supprimé en sous-vague 6g). -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <!-- Deckle.Transcription and Deckle.Llm.Rewrite refs dropped in slice C1:
@@ -57,4 +62,11 @@
          their POCOs (each module owns its own JSON file via
          WhispSettingsService / LlmSettingsService since C2b). -->
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
 </Project>

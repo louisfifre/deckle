@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Controls;
 using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
 using Deckle.Lighting.Hue;
-using Deckle.Logging;
 
 namespace Deckle.Playground;
 
@@ -182,7 +181,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueWarning(
                 $"Listing groups failed — {ex.GetType().Name}: {ex.Message}");
         }
         finally
@@ -229,7 +228,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueWarning(
                 $"Selecting group failed — {ex.GetType().Name}: {ex.Message}");
             SetHueColorButtonsEnabled(false);
             SetPipelineNotReady();
@@ -257,7 +256,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueWarning(
                 $"Push colour failed — {ex.GetType().Name}: {ex.Message}");
         }
     }
@@ -291,7 +290,7 @@ public sealed partial class AmbientPage
         catch (OperationCanceledException) { /* expected */ }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
+            DecklePlaygroundSource.Log.HueWarning(
                 $"Test rotation failed — {ex.GetType().Name}: {ex.Message}");
         }
         finally

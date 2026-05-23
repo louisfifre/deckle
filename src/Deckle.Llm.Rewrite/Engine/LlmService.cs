@@ -3,7 +3,6 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Deckle.Logging;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -40,8 +39,6 @@ public readonly record struct RewriteResult(
 
 public class LlmService
 {
-    private static readonly LogService _log = LogService.Instance;
-
     // Default HttpClient.Timeout is 100 s — too short for large rewrites
     // (long transcriptions, big context, CPU-only Ollama). We disable the
     // built-in timeout and manage cancellation explicitly via a per-request
@@ -67,9 +64,7 @@ public class LlmService
     {
         if (string.IsNullOrWhiteSpace(profile.Model))
         {
-            _log.Warning(LogSource.Llm,
-                $"profile '{profile.Name}' has no model configured — rewrite skipped. " +
-                $"Set it in Settings → LLM.");
+            DeckleLlmSource.Log.RewriteSkippedNoModel(profile.Name);
             return default;
         }
 
@@ -81,9 +76,8 @@ public class LlmService
             string generateUrl = NormalizeGenerateUrl(endpoint);
             var options = BuildOptions(profile, stops);
 
-            _log.Info(LogSource.Llm, $"Rewriting ({profile.Name})");
-            _log.Narrative(LogSource.Llm, $"Rewriting the transcript with {profile.Name} — the {family} model running in Ollama is cleaning up the raw text into the final phrasing.");
-            _log.Verbose(LogSource.Llm, $"request | chars={text.Length} | model={profile.Model} | profile={profile.Name} | family={family} | {FormatOptions(options)}");
+            DeckleLlmSource.Log.RewriteStarted(profile.Name);
+            DeckleLlmSource.Log.RewriteStartedDetail(text.Length, profile.Model, profile.Name, family, FormatOptions(options));
 
             var body = new
             {
@@ -133,9 +127,9 @@ public class LlmService
 
                 sw.Stop();
                 string trimmed = PromptTemplates.StripStops(rewritten ?? "", family).Trim();
-                _log.Success(LogSource.Llm, "Rewrite complete");
-                _log.Verbose(LogSource.Llm, $"rewrite complete | ms={sw.ElapsedMilliseconds} | in_chars={text.Length} | out_chars={trimmed.Length} | profile={profile.Name}");
-                _log.Verbose(LogSource.Llm, FormatMetrics(doc.RootElement));
+                DeckleLlmSource.Log.RewriteCompleted();
+                DeckleLlmSource.Log.RewriteCompletedDetail(sw.ElapsedMilliseconds, text.Length, trimmed.Length, profile.Name);
+                DeckleLlmSource.Log.RewriteMetrics(FormatMetrics(doc.RootElement));
 
                 // Pull the same Ollama metrics the Verbose line above shows
                 // and lift them up to the caller in ms/tokens. Two lookups of
@@ -155,27 +149,24 @@ public class LlmService
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
             sw.Stop();
-            _log.Warning(
-                LogSource.Llm,
-                $"timeout | cap_min={REWRITE_HARD_CAP.TotalMinutes:F0} | profile={profile.Name} | model={profile.Model}",
-                new UserFeedback(
-                    "Rewriter took too long",
-                    $"Over {REWRITE_HARD_CAP.TotalMinutes:F0} min. Raw transcript copied.",
-                    UserFeedbackSeverity.Warning,
-                    UserFeedbackRole.Overlay));
+            DeckleLlmSource.Log.RewriteTimeout(REWRITE_HARD_CAP.TotalMinutes, profile.Name, profile.Model);
+            // severity 1 = Warning, role 1 = Overlay.
+            DeckleLlmSource.Log.UserFeedbackEmitted(
+                severity: 1,
+                title:    "Rewriter took too long",
+                body:     $"Over {REWRITE_HARD_CAP.TotalMinutes:F0} min. Raw transcript copied.",
+                role:     1);
             return new RewriteResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
         }
         catch (Exception ex)
         {
             sw.Stop();
-            _log.Warning(
-                LogSource.Llm,
-                $"unavailable | error={ex.GetType().Name}: {ex.Message} | profile={profile.Name} | model={profile.Model}",
-                new UserFeedback(
-                    "Rewriter unavailable",
-                    "Ollama unreachable. Raw transcript copied.",
-                    UserFeedbackSeverity.Warning,
-                    UserFeedbackRole.Overlay));
+            DeckleLlmSource.Log.RewriteUnavailable(ex.GetType().Name, ex.Message, profile.Name, profile.Model);
+            DeckleLlmSource.Log.UserFeedbackEmitted(
+                severity: 1,
+                title:    "Rewriter unavailable",
+                body:     "Ollama unreachable. Raw transcript copied.",
+                role:     1);
             return new RewriteResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
         }
     }
@@ -202,7 +193,7 @@ public class LlmService
                     using var resp = await _http.GetAsync(psUrl, ct);
                     if (!resp.IsSuccessStatusCode)
                     {
-                        _log.Warning(LogSource.Llm, $"ps probe unreachable | http={(int)resp.StatusCode} | hint=model may have crashed");
+                        DeckleLlmSource.Log.PsProbeUnreachable((int)resp.StatusCode);
                         continue;
                     }
 
@@ -212,7 +203,7 @@ public class LlmService
                         modelsArr.ValueKind != JsonValueKind.Array ||
                         modelsArr.GetArrayLength() == 0)
                     {
-                        _log.Warning(LogSource.Llm, "ps probe empty | hint=no resident model, request may be stuck");
+                        DeckleLlmSource.Log.PsProbeEmpty();
                         continue;
                     }
 
@@ -242,14 +233,12 @@ public class LlmService
 
                     double waitedSeconds = requestElapsed.Elapsed.TotalSeconds;
                     double capMinutes    = REWRITE_HARD_CAP.TotalMinutes;
-                    _log.Warning(
-                        LogSource.Llm,
-                        $"Ollama busy — {name} resident ({vramGb:F1} GB{unloadSuffix}). Waited {waitedSeconds:F0}s so far (giving up at {capMinutes:F0} min).");
+                    DeckleLlmSource.Log.OllamaBusy(name, vramGb, unloadSuffix, waitedSeconds, capMinutes);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    _log.Warning(LogSource.Llm, $"ps probe failed | error={ex.GetType().Name}: {ex.Message}");
+                    DeckleLlmSource.Log.PsProbeFailed(ex.GetType().Name, ex.Message);
                 }
             }
         }

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Deckle.Core.Interop;
-using Deckle.Logging;
 
 namespace Deckle.Audio.Internal;
 
@@ -55,7 +54,6 @@ internal static class WaveInLoop
         int               nBuffers,
         uint              hdrSize,
         IAudioRecordingHost    host,
-        LogService        log,
         List<float>       rmsLog,            // owned by MicrophoneCapture, cleared at start
         System.Action<float>? audioLevelCallback,
         System.Action?    onLowAudioDetected, // fires once when first 5 s lacked sustained voice
@@ -65,8 +63,8 @@ internal static class WaveInLoop
         // 1 sample = 2 bytes PCM16. At 16 kHz, 1 minute = 1.92M bytes.
         var allBytes = new List<byte>(capacity: 16000 * 2 * 60); // pre-reserve ~1 min
 
-        log.Info(LogSource.Capture, "Recording start");
-        log.Verbose(LogSource.Capture, "capture start | sample_rate=16 kHz | channels=mono");
+        DeckleAudioSource.Log.RecordingStarted();
+        DeckleAudioSource.Log.CaptureStarted();
 
         // Snapshot the cap at recording start so a mid-recording Settings
         // change doesn't shorten or extend a session already in progress.
@@ -133,7 +131,7 @@ internal static class WaveInLoop
                     bufferDoneCount++;
                     if (hdr.dwBytesRecorded == 0)
                     {
-                        log.Warning(LogSource.Capture, $"empty buffer | index={i}");
+                        DeckleAudioSource.Log.EmptyBufferReceived(i);
                     }
                     else
                     {
@@ -182,9 +180,8 @@ internal static class WaveInLoop
                             // Body) is emitted by the orchestrator via the
                             // onLowAudioDetected callback so Capture stays
                             // free of any Loc.Get dependency.
-                            log.Warning(
-                                LogSource.Capture,
-                                $"low audio detected | recording_ms={recordingMs} | no healthy voice ≥{NormalVoiceSustainedMs} ms above {NormalVoiceDbfsThreshold} dBFS");
+                            DeckleAudioSource.Log.LowAudioDetected(
+                                recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
                             onLowAudioDetected?.Invoke();
                         }
                     }
@@ -211,8 +208,11 @@ internal static class WaveInLoop
                 int diagGcNow0 = System.GC.CollectionCount(0);
                 int diagGcNow1 = System.GC.CollectionCount(1);
                 int diagGcNow2 = System.GC.CollectionCount(2);
-                log.Warning(LogSource.Capture,
-                    $"capture lag | buffers_ready={bufferDoneCount} iter={diagIterationCount} wait_ms={diagWaitMs} prev_iter_ms={diagLastIterMs} gc0={diagGcStart0}->{diagGcNow0} gc1={diagGcStart1}->{diagGcNow1} gc2={diagGcStart2}->{diagGcNow2}");
+                DeckleAudioSource.Log.CaptureLagDetected(
+                    bufferDoneCount, diagIterationCount, diagWaitMs, diagLastIterMs,
+                    diagGcStart0, diagGcNow0,
+                    diagGcStart1, diagGcNow1,
+                    diagGcStart2, diagGcNow2);
             }
 
             // Duration cap — forces a stop as if the user had pressed the
@@ -229,8 +229,7 @@ internal static class WaveInLoop
             if (!capHit && maxDurationSec > 0 && curSec >= maxDurationSec)
             {
                 capHit = true;
-                log.Warning(LogSource.Capture,
-                    $"duration cap reached | audio_sec={curSec:F1} | cap_sec={maxDurationSec}");
+                DeckleAudioSource.Log.DurationCapReached(curSec, maxDurationSec);
                 diagLastIterMs = diagIterWatch.ElapsedMilliseconds;
                 break;
             }

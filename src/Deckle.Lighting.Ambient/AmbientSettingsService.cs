@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Deckle.Core;
-using Deckle.Logging;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -47,10 +46,10 @@ public sealed class AmbientSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Ambient-Save",
             jsonOptions: _jsonOptions,
-            logInfo:     msg => LogService.Instance.Info(LogSource.Settings, $"[ambient] {msg}"),
-            logVerbose:  msg => LogService.Instance.Verbose(LogSource.Settings, $"[ambient] {msg}"),
-            logWarning:  msg => LogService.Instance.Warning(LogSource.Settings, $"[ambient] {msg}"),
-            logError:    msg => LogService.Instance.Error(LogSource.Settings, $"[ambient] {msg}"));
+            logInfo:     msg => DeckleAmbientSource.Log.AmbientSettingsPrefixed($"[ambient] {msg}"),
+            logVerbose:  msg => DeckleAmbientSource.Log.SettingsLoadComplete($"[ambient] {msg}"),
+            logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning($"[ambient] {msg}"),
+            logError:    msg => DeckleAmbientSource.Log.SettingsLoadError($"[ambient] {msg}"));
     }
 
     public void Save()                       => _store.Save();
