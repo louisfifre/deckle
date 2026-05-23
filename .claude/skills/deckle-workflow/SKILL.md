@@ -80,7 +80,7 @@ Claude pousse `main` sur GitHub quand un état cohérent atterrit localement. Le
 </main_releasable>
 
 <release_aux_jalons>
-Le bump de version et le tag annoté `vX.Y.Z` sont des actes rares — réservés aux jalons perceptibles (feature livrée, refonte structurelle aboutie, lot de fixes stable testé en usage). Pas à chaque push. Le SemVer est gouverné par `conventions-versionning.md` côté `personal-conventions` ; en phase 0.x (Deckle est en `0.x.y` jusqu'à la 1.0), un break compat bump le MINOR, une feature bump le PATCH.
+Le bump de version et le tag annoté `vX.Y.Z` sont des actes rares — réservés aux jalons perceptibles (feature livrée, refonte structurelle aboutie, lot de fixes stable testé en usage). Pas à chaque push. Le projet suit SemVer 2.0 ; en phase 0.x (Deckle est en `0.x.y` jusqu'à la 1.0), un break compat bump le MINOR, une feature bump le PATCH.
 </release_aux_jalons>
 
 Le workflow release est : édit `<Version>` du `Deckle.App.csproj` (source unique), commit `chore(release): vX.Y.Z`, tag annoté `git tag -a vX.Y.Z -m "Release vX.Y.Z"`, puis push branche puis push tag. Le bundle natif `native-vX.Y.Z` suit son propre cycle de version, indépendant de l'app.
