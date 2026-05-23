@@ -1,10 +1,12 @@
-# Cartographie des modules Deckle — référence 1.1
+# Cartographie des modules Deckle — référence 1.2
 
-Fiche canonique de la structure modulaire issue de la passe `cartographie-cleanup` (2026-05). Décrit la répartition des modules, leurs dépendances, les conventions internes de layout, et les patterns transverses. À lire avant d'ajouter un module, d'extraire du code d'un module existant, ou de toucher à un namespace racine.
+Fiche canonique de la structure modulaire. La version 1.2 ajoute le child `Deckle.Transcription.Whisper` extrait dans la passe `transcription-asr-backend-split` (2026-05-23) — l'orchestrateur de transcription bascule sur un backend ASR pluggable via `IAsrBackend`, l'implémentation whisper.cpp vit désormais dans le module enfant. Décision tracée dans [ADR-0010](../adr/0010-backend-asr-pluggable-via-iasrbackend.md).
+
+À lire avant d'ajouter un module, d'extraire du code d'un module existant, ou de toucher à un namespace racine.
 
 ## Vue d'ensemble
 
-Le projet est découpé en dix-sept modules de bibliothèque plus un module hôte. Chaque module est un csproj indépendant, ses dépendances sont déclarées explicitement, et le graphe est acyclique. Le module hôte `Deckle.App` est le seul point d'entrée WinUI 3 ; il référence tous les autres et compose l'application autour d'eux. Toutes les bibliothèques sont buildables et testables individuellement (aucune ne dépend du hôte).
+Le projet est découpé en dix-huit modules de bibliothèque plus un module hôte. Chaque module est un csproj indépendant, ses dépendances sont déclarées explicitement, et le graphe est acyclique. Le module hôte `Deckle.App` est le seul point d'entrée WinUI 3 ; il référence tous les autres et compose l'application autour d'eux. Toutes les bibliothèques sont buildables et testables individuellement (aucune ne dépend du hôte).
 
 Le binaire publié reste `Deckle.exe` malgré le module hôte renommé en `Deckle.App` — l'`<AssemblyName>` est explicitement épinglé à `Deckle` dans `Deckle.App.csproj` pour que les entries autostart, le tooltip du tray, le label taskbar et les filtres shell qui ciblent `Deckle.exe` continuent de fonctionner sans migration côté utilisateur.
 
@@ -26,8 +28,9 @@ Deckle.Settings         → Core, Catalog, Logging, Audio, Shell
 Deckle.Hud              → Core, Catalog, Logging, Audio, Chrono, Composition, Settings, Shell
 Deckle.Llm              → Core, Logging
 Deckle.Llm.Rewrite      → Core, Catalog, Logging, Llm
-Deckle.Transcription    → Core, Catalog, Logging, Audio, Llm, Llm.Rewrite, Settings
-Deckle.Setup            → Core, Catalog, Logging, Transcription
+Deckle.Transcription          → Core, Catalog, Logging, Audio, Llm, Llm.Rewrite, Settings
+Deckle.Transcription.Whisper  → Core, Transcription
+Deckle.Setup                  → Core, Catalog, Logging, Transcription, Transcription.Whisper
 Deckle.Lighting.Ambient → Core, Catalog, Logging, Composition, Vision, Lighting, Settings
 Deckle.Playground       → Core, Catalog, Logging, Audio, Composition, Hud, Vision, Lighting, Lighting.Ambient, Settings, Shell
 Deckle.App              → tous les modules ci-dessus
