@@ -63,7 +63,7 @@ La qualité d'un merge commit est **dérivée de la discipline interne de la bra
 
 ## Identité auteur
 
-Tous les commits sortent sous l'identité du maintainer (`PelopeeNoire <git@louisfifre.com>`). **Jamais** de trailer `Co-Authored-By: Claude <…@anthropic.com>`, **jamais** de ligne `🤖 Generated with [Claude Code](…)`. Ces marqueurs inscrivent Claude comme contributeur GitHub visible, ce qui est factuellement faux : un agent LLM n'est pas un contributeur au sens du contrôle de version. La règle est portée par le `CLAUDE.md` racine du projet ; elle est rappelée ici parce que c'est précisément l'acte de commit qui la met en jeu, et que c'est le moment où la tentation d'inscrire l'agent réapparaît.
+Tous les commits sortent sous l'identité du maintainer (`Louis <git@louisfifre.com>`). **Jamais** de trailer `Co-Authored-By: Claude <…@anthropic.com>`, **jamais** de ligne `🤖 Generated with [Claude Code](…)`. Ces marqueurs inscrivent Claude comme contributeur GitHub visible, ce qui est factuellement faux : un agent LLM n'est pas un contributeur au sens du contrôle de version. La règle est portée par le `CLAUDE.md` racine du projet ; elle est rappelée ici parce que c'est précisément l'acte de commit qui la met en jeu, et que c'est le moment où la tentation d'inscrire l'agent réapparaît.
 
 ## Trois signaux d'audit avant d'envoyer
 
