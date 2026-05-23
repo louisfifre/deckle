@@ -156,11 +156,15 @@ public sealed class AmbientSettings
     /// a 4K monitor at mip 6, so each cell covers ~64×64 source pixels).
     /// Same cell count applied on every edge — top, bottom, left, right
     /// — so the band feels equally thick on every side regardless of
-    /// the screen aspect ratio. Range of practical interest [1, 15] ;
-    /// the Playground slider clamps to that interval and steps by 1.
-    /// Default 8 — roughly matches the V0 vertical 40 % share on a
-    /// 60×33 grid without making the lateral bands eat the whole
-    /// frame.</summary>
+    /// the screen aspect ratio. Range of practical interest [4, 24]
+    /// stepping by 2 ; the Playground slider clamps and snaps to that
+    /// grid so every position lands on an even cell count. 24 cells
+    /// on a 60×33 grid covers ~73 % of the vertical axis and ~40 % of
+    /// the horizontal — enough headroom for narrow-aspect monitors or
+    /// 5:4 setups while still leaving room for the opposing band when
+    /// both edges are mapped. Default 8 — roughly matches the V0
+    /// vertical 40 % share on a 60×33 grid without making the lateral
+    /// bands eat the whole frame.</summary>
     public int BorderCells { get; set; } = 8;
 
     // ── HDR tuning (this branch) ───────────────────────────────────

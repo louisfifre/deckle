@@ -115,7 +115,7 @@ public sealed partial class AmbientPage : Page
         // ctor body runs). Maximum / Steps stay in XAML where they're
         // safe. The real Value is assigned later by PushViewModelToControls.
         PlaygroundBorderDepthSlider.Minimum = 5;
-        PlaygroundBorderCellsSlider.Minimum = 1;
+        PlaygroundBorderCellsSlider.Minimum = 4;
 
         _screenCaptureFpsTimer.Tick += OnScreenCaptureFpsTick;
 

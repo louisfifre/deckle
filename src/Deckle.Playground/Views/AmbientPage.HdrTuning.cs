@@ -241,7 +241,7 @@ public sealed partial class AmbientPage
         // range doesn't throw inside RangeBase. SelectBorderModeInRadios
         // + UpdateBorderRowsVisibility hide/show the active row.
         PlaygroundBorderDepthSlider.Value      = Math.Clamp(ViewModel.BorderDepth, 0.05, 0.5) * 100.0;
-        PlaygroundBorderCellsSlider.Value      = Math.Clamp(ViewModel.BorderCells, 1, 15);
+        PlaygroundBorderCellsSlider.Value      = Math.Clamp(ViewModel.BorderCells, 4, 24);
         SelectBorderModeInRadios(ViewModel.BorderMode);
         UpdateBorderRowsVisibility(ViewModel.BorderMode);
 
