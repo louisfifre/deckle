@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Deckle.Core;
-using Deckle.Logging;
 
 namespace Deckle.Audio;
 
@@ -50,10 +49,17 @@ public sealed class CaptureSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Audio-Save",
             jsonOptions: _jsonOptions,
-            logInfo:     msg => LogService.Instance.Info(LogSource.Settings, $"[audio] {msg}"),
-            logVerbose:  msg => LogService.Instance.Verbose(LogSource.Settings, $"[audio] {msg}"),
-            logWarning:  msg => LogService.Instance.Warning(LogSource.Settings, $"[audio] {msg}"),
-            logError:    msg => LogService.Instance.Error(LogSource.Settings, $"[audio] {msg}"));
+            // EventSource bascule. Le label "[audio]" qui préfixait
+            // les messages legacy disparaît parce que la source tag
+            // côté LogWindow vient désormais du nom du provider
+            // ("Deckle.Audio" → AUDIO), plus de LogSource.Settings.
+            // Les delegates restent Action<string> pour ne pas
+            // toucher au contrat JsonSettingsStore<T> avant la
+            // refonte SettingsHost de la vague 4.
+            logInfo:     msg => DeckleAudioSource.Log.SettingsLoaded(msg),
+            logVerbose:  msg => DeckleAudioSource.Log.SettingsLoadComplete(msg),
+            logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),
+            logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg));
     }
 
     public void Save()                      => _store.Save();

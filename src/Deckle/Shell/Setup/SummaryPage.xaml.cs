@@ -2,7 +2,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Whisp.Setup;
 
 namespace Deckle.Shell.Setup;
@@ -19,8 +18,6 @@ namespace Deckle.Shell.Setup;
 // the choices step.
 internal sealed partial class SummaryPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     private SetupWindow? _setup;
     private SetupContext? _context;
 
@@ -56,7 +53,7 @@ internal sealed partial class SummaryPage : Page
 
         RenderResults();
 
-        _log.Info(LogSource.Setup,
+        DeckleSetupSource.Log.SetupInfo(
             $"setup summary | success={ok} | items={_context.Results.Count}");
     }
 

@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Deckle.Composition;
+using Deckle.Diagnostics.Logging;
 using Deckle.Lighting;
 using Deckle.Lighting.Hue;
-using Deckle.Logging;
 using Deckle.Vision;
 
 namespace Deckle.Lighting.Ambient;
@@ -81,7 +81,6 @@ namespace Deckle.Lighting.Ambient;
 //   - DisposeAsync : Stop + dispose CTS. Idempotent.
 public sealed class AmbientEngine : IAsyncDisposable
 {
-    private static readonly LogService _log = LogService.Instance;
 
     // Push cadence — group mode. 15 Hz matches the screen capture
     // cadence throttled inside ScreenCaptureService (ThrottleIntervalMs
@@ -352,8 +351,7 @@ public sealed class AmbientEngine : IAsyncDisposable
         catch (Exception ex)
         {
             // A subscriber threw — don't let it kill the engine flow.
-            _log.Warning(LogSource.Ambient,
-                $"StateChanged subscriber threw — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.StateChangedSubscriberThrew(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -503,8 +501,7 @@ public sealed class AmbientEngine : IAsyncDisposable
                 }
                 else
                 {
-                    _log.Warning(LogSource.Ambient,
-                        "Multi-light requested but driver returned no lights — falling back to group push");
+                    DeckleAmbientSource.Log.MultiLightFallbackNoLights();
                     _pushIntervalMs = 1000 / GroupPushHz;
                 }
             }
@@ -512,16 +509,22 @@ public sealed class AmbientEngine : IAsyncDisposable
             {
                 if (_useMultiLightRequested)
                 {
-                    _log.Warning(LogSource.Ambient,
-                        $"Multi-light requested but driver doesn't expose IMultiLightOutput ({_output!.GetType().Name}) — falling back to group push");
+                    DeckleAmbientSource.Log.MultiLightDriverIncompat(_output!.GetType().Name);
                 }
                 _multiLightActive = false;
                 _pushIntervalMs = 1000 / GroupPushHz;
             }
 
-            _log.Info(LogSource.Ambient, "Ambient pipeline started");
-            _log.Verbose(LogSource.Ambient,
-                $"start | source={(_capture!.IsRunning ? "running" : "stopped")} | output={_output!.GetType().Name} | shape={(_multiLightActive ? "multi" : "group")} | lights={(_multiLights?.Count ?? 0)} | push_hz={(_multiLightActive ? MultiPushHz : GroupPushHz)} | sampler_grid={_sampler!.GridCols}x{_sampler.GridRows} | hdr={(_sampler.IsHdr ? "on" : "off")}");
+            DeckleAmbientSource.Log.PipelineStarted();
+            DeckleAmbientSource.Log.PipelineStartDetail(
+                _capture!.IsRunning ? "running" : "stopped",
+                _output!.GetType().Name,
+                _multiLightActive ? "multi" : "group",
+                _multiLights?.Count ?? 0,
+                _multiLightActive ? MultiPushHz : GroupPushHz,
+                _sampler!.GridCols,
+                _sampler.GridRows,
+                _sampler.IsHdr ? "on" : "off");
 
             _cts = new CancellationTokenSource();
             _startTimestamp = Stopwatch.GetTimestamp();
@@ -537,13 +540,15 @@ public sealed class AmbientEngine : IAsyncDisposable
 
             // Open the capture-active window AFTER the started
             // milestones (Info + Verbose mirror above) have flushed,
-            // so they pass the central filter even with
+            // so they pass the LogWindow drop filter even with
             // LogAmbientCaptureActivity off. From here on, Verbose
             // AMBIENT / SCREEN / HUE inside the loop are candidates
-            // for filtering — see TelemetryService.Log. The window
-            // closes at the very top of Stop() so the matching stop
-            // milestones also pass.
-            TelemetryService.Instance.SetCaptureActive(true);
+            // for filtering — l'App câble le drop filter sur le
+            // LogWindowEventListener au boot et le filter combine
+            // cette gate avec le toggle utilisateur pour décider.
+            // La fenêtre se referme au sommet de Stop() pour que les
+            // milestones de stop passent aussi.
+            AmbientCaptureGate.SetActive(true);
 
             _pushLoopTask = Task.Run(() => PushLoopAsync(_cts.Token), _cts.Token);
 
@@ -552,8 +557,7 @@ public sealed class AmbientEngine : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.Ambient,
-                $"Ambient pipeline failed to start — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.PipelineStartFailed(ex.GetType().Name, ex.Message);
             await DisposeOwnedDepsAsync().ConfigureAwait(false);
             SetState(AmbientEngineState.Error);
             SetState(AmbientEngineState.Off);
@@ -614,12 +618,12 @@ public sealed class AmbientEngine : IAsyncDisposable
         SetState(AmbientEngineState.Stopping);
 
         // Close the capture-active window FIRST so the stopped
-        // milestones (Info + Verbose mirror below) pass the central
-        // filter even with LogAmbientCaptureActivity off. The push
-        // loop may still emit a final tick before cancellation
+        // milestones (Info + Verbose mirror below) pass the LogWindow
+        // drop filter even with LogAmbientCaptureActivity off. The
+        // push loop may still emit a final tick before cancellation
         // propagates ; those late Verbose lines also pass since the
-        // flag is already off.
-        TelemetryService.Instance.SetCaptureActive(false);
+        // gate est déjà off.
+        AmbientCaptureGate.SetActive(false);
 
         long endTimestamp = Stopwatch.GetTimestamp();
         double durationSec = (endTimestamp - _startTimestamp) / (double)Stopwatch.Frequency;
@@ -627,9 +631,12 @@ public sealed class AmbientEngine : IAsyncDisposable
         try { _cts?.Cancel(); } catch { /* best effort */ }
         IsRunning = false;
 
-        _log.Info(LogSource.Ambient, "Ambient pipeline stopped");
-        _log.Verbose(LogSource.Ambient,
-            $"stop | reason=user | shape={(_multiLightActive ? "multi" : "group")} | duration_sec={durationSec:F1} | pushed={_pushedCount} | dropped={_droppedCount}");
+        DeckleAmbientSource.Log.PipelineStopped();
+        DeckleAmbientSource.Log.PipelineStopDetail(
+            _multiLightActive ? "multi" : "group",
+            durationSec,
+            _pushedCount,
+            _droppedCount);
 
         // Disconnect the FrameArrived subscription synchronously so
         // no further frames queue against the still-mapped sampler.
@@ -701,8 +708,7 @@ public sealed class AmbientEngine : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(LogSource.Ambient,
-                $"Push loop crashed — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.PushLoopCrashed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -762,12 +768,11 @@ public sealed class AmbientEngine : IAsyncDisposable
             _lastR = targetR; _lastG = targetG; _lastB = targetB;
             _pushedCount++;
             _hbPushed++;
-            // Verbose gating is centralised in TelemetryService :
-            // since the capture-active flag is on at this point and
-            // source=AMBIENT, this line is dropped automatically when
-            // the user toggle is off. No call-site check needed.
-            _log.Verbose(LogSource.Ambient,
-                $"push | mode=group | rgb={targetR},{targetG},{targetB} | off={isDark} | http_ms={httpMs:F1}");
+            // Verbose gating is handled by the LogWindow drop filter
+            // (App.OnLaunched) : provider=Deckle.Ambient + capture
+            // gate ouverte + user toggle off ⇒ ce Verbose est filtré
+            // avant insertion buffer. No call-site check needed.
+            DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, httpMs);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -775,8 +780,7 @@ public sealed class AmbientEngine : IAsyncDisposable
             // Warning unconditional — capture-activity gating never
             // suppresses faults, the user needs to see when the bridge
             // throws even with the toggle off.
-            _log.Warning(LogSource.Ambient,
-                $"Push failed — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.PushGroupFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -919,15 +923,12 @@ public sealed class AmbientEngine : IAsyncDisposable
 
             _pushedCount++;
             _hbPushed++;
-            // Verbose gating is centralised in TelemetryService.
-            _log.Verbose(LogSource.Ambient,
-                $"push | mode=multi | lights={toPush.Count}/{_multiLights.Count} | colors={FormatPushedColors(toPush)} | http_ms={httpMs:F1}");
+            DeckleAmbientSource.Log.PushMulti(toPush.Count, _multiLights.Count, FormatPushedColors(toPush), httpMs);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Ambient,
-                $"Multi-light push failed — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.PushMultiFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -1217,13 +1218,19 @@ public sealed class AmbientEngine : IAsyncDisposable
             httpStats = $" | http_avg_ms={avg:F1} | http_p95_ms={p95:F1} | http_max_ms={max:F1}";
         }
 
-        // Per-tick Verbose : centrally gated by the capture-active
-        // window + user toggle in TelemetryService. Counters are
-        // reset whether the line was emitted or not, so the next
-        // heartbeat window starts from zero — the metric stays
-        // correct when the toggle flips mid-session.
-        _log.Verbose(LogSource.Ambient,
-            $"heartbeat | mode={(_multiLightActive ? "multi" : "group")} | period_sec={elapsedMs / 1000.0:F1} | ticks={_hbTicks} | pushed={_hbPushed} | dropped={_hbDropped}{(_multiLightActive ? $" | unmapped_lights={_hbUnmappedLights}" : "")}{httpStats}");
+        // Per-tick Verbose : filtered by the LogWindow drop filter
+        // (capture gate + user toggle). Counters are reset whether
+        // the line was emitted or not, so the next heartbeat window
+        // starts from zero — the metric stays correct when the
+        // toggle flips mid-session.
+        DeckleAmbientSource.Log.Heartbeat(
+            _multiLightActive ? "multi" : "group",
+            elapsedMs / 1000.0,
+            _hbTicks,
+            _hbPushed,
+            _hbDropped,
+            _multiLightActive ? _hbUnmappedLights : 0,
+            httpStats);
 
         _hbTimestamp = now;
         _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;

@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Deckle.Interop;
-using Deckle.Logging;
 
 namespace Deckle.Whisp;
 
@@ -21,8 +20,6 @@ namespace Deckle.Whisp;
 // libérer après whisper_full() via FreeAllocations().
 public static class WhisperParamsMapper
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public readonly struct NativeAllocations
     {
         public readonly IntPtr Language;
@@ -136,7 +133,7 @@ public static class WhisperParamsMapper
             else
             {
                 wparams.vad = 0;
-                _log.Warning(LogSource.Whisper,
+                DeckleWhispSource.Log.WhisperLogWarning(
                     $"Silero VAD model not found at {vadModelPath} — VAD disabled. " +
                     $"Download from {Setup.SpeechModels.VadModel.Url}");
             }

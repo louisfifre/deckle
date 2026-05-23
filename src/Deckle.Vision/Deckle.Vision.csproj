@@ -24,9 +24,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- Deckle.Composition provides ColorSpace.ScRgbToSrgb (HDR
          tone-mapping) consumed by FrameSampler. -->
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
 </Project>

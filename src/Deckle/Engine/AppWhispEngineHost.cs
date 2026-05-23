@@ -1,6 +1,6 @@
 using Deckle.Audio;
+using Deckle.Diagnostics.Telemetry;
 using Deckle.Llm;
-using Deckle.Logging;
 using Deckle.Whisp;
 
 namespace Deckle;

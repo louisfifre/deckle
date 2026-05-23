@@ -9,7 +9,6 @@ using Windows.Graphics;
 using WinRT.Interop;
 using Deckle.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Whisp.Setup;
 
 namespace Deckle.Shell.Setup;
@@ -40,7 +39,6 @@ namespace Deckle.Shell.Setup;
 // or on Window.Closed, whichever fires first.
 internal sealed partial class SetupWindow : Window
 {
-    private static readonly LogService _log = LogService.Instance;
     private readonly TaskCompletionSource<bool> _completion = new();
 
     // Shared state every page reads/writes. Created here so pages don't
@@ -74,7 +72,7 @@ internal sealed partial class SetupWindow : Window
         ConfigureWindow();
 
         Closed += OnWindowClosed;
-        _log.Info(LogSource.Setup, "setup window opened");
+        DeckleSetupSource.Log.SetupInfo("setup window opened");
     }
 
     // ── Public surface for pages ───────────────────────────────────────────
@@ -93,7 +91,7 @@ internal sealed partial class SetupWindow : Window
 
     public void Complete(bool success)
     {
-        _log.Info(LogSource.Setup, $"setup window closing | success={success}");
+        DeckleSetupSource.Log.SetupInfo($"setup window closing | success={success}");
         if (!_completion.Task.IsCompleted) _completion.TrySetResult(success);
         Close();
     }

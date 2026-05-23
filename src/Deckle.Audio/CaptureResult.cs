@@ -1,4 +1,4 @@
-using Deckle.Logging;
+using Deckle.Audio.Telemetry;
 
 namespace Deckle.Audio;
 

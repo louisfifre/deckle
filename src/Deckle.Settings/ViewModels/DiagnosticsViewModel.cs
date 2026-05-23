@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Logging;
+using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Settings.ViewModels;
 
@@ -18,7 +19,6 @@ namespace Deckle.Settings.ViewModels;
 // lifecycle.
 public partial class DiagnosticsViewModel : ObservableObject
 {
-    private static readonly LogService _log = LogService.Instance;
     private bool _isSyncing;
 
     // ── Logging — runtime emission filters ──────────────────────────────────
@@ -81,49 +81,49 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnLogAmbientCaptureActivityChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Logging.LogAmbientCaptureActivity ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
         PushLoggingToSettings();
     }
 
     partial void OnApplicationLogToDiskChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Telemetry.ApplicationLogToDisk ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.ApplicationLogToDisk", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnMicrophoneTelemetryChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Telemetry.MicrophoneTelemetry ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryLatencyEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Telemetry.LatencyEnabled ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryCorpusEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Telemetry.CorpusEnabled ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnRecordAudioCorpusChanged(bool value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Telemetry.RecordAudioCorpus ← {value}");
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        _log.Info(LogSource.SetGeneral, $"Telemetry.StorageDirectory ← \"{value}\"");
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.StorageDirectory", $"\"{value}\"");
         PushTelemetryToSettings();
     }
 
@@ -206,7 +206,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();
-        _log.Info(LogSource.SetGeneral, "Logging section reset to defaults");
+        DeckleSettingsSource.Log.SectionReset("Logging");
     }
 
     public void ResetTelemetryDefaults()
@@ -223,6 +223,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushTelemetryToSettings();
-        _log.Info(LogSource.SetGeneral, "Telemetry section reset to defaults");
+        DeckleSettingsSource.Log.SectionReset("Telemetry");
     }
 }

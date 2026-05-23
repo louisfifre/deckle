@@ -5,7 +5,6 @@ using WinRT.Interop;
 using Deckle.Controls;
 using Deckle.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Shell;
 
 namespace Deckle;
@@ -127,15 +126,19 @@ public sealed partial class HudOverlayWindow : Window
     // Pushes the feedback payload into the embedded HudMessage control. The
     // Duration field of MessagePayload is unused here (HudMessage ignores it);
     // the manager owns the per-card timer.
-    public void ApplyPayload(UserFeedback fb)
+    //
+    // Sous-vague 6b : signature en primitives plutôt qu'en `UserFeedback`
+    // record. Severity convention 0=Info, 1=Warning, 2+=Error — alignée
+    // sur l'event EventSource `UserFeedbackEmitted(severity, ...)`.
+    public void ApplyPayload(int severity, string title, string body)
     {
-        MessageKind kind = fb.Severity switch
+        MessageKind kind = severity switch
         {
-            UserFeedbackSeverity.Info    => MessageKind.Informational,
-            UserFeedbackSeverity.Warning => MessageKind.Warning,
-            _                             => MessageKind.Critical,
+            0 => MessageKind.Informational,
+            1 => MessageKind.Warning,
+            _ => MessageKind.Critical,
         };
-        Message.Show(new MessagePayload(kind, fb.Title, fb.Body, TimeSpan.Zero));
+        Message.Show(new MessagePayload(kind, title, body, TimeSpan.Zero));
     }
 
     // Card pixel size for the current DPI — manager uses this to compute slot

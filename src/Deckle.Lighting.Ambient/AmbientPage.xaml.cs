@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using Deckle.Lighting.Hue;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -331,8 +330,7 @@ public sealed partial class AmbientPage : Page
         catch (Exception ex)
         {
             SetHuePairStatus(Loc.Format("AmbientHue_PairStatus_Failed_Format", ex.Message));
-            LogService.Instance.Warning(LogSource.Hue,
-                $"Pair from Settings failed — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.AmbientPagePairFailed(ex.GetType().Name, ex.Message);
         }
         finally
         {
@@ -381,8 +379,7 @@ public sealed partial class AmbientPage : Page
         }
         catch (Exception ex)
         {
-            LogService.Instance.Warning(LogSource.Hue,
-                $"Listing groups from Settings failed — {ex.GetType().Name}: {ex.Message}");
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
         }
         finally
         {

@@ -4,7 +4,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Interop;
 using Deckle.Catalog;
-using Deckle.Logging;
 using Deckle.Settings.ViewModels;
 
 namespace Deckle.Settings;
@@ -20,8 +19,6 @@ namespace Deckle.Settings;
 // the _initializing guard around the initial sync pass.
 public sealed partial class RecordingPage : Page
 {
-    private static readonly LogService _log = LogService.Instance;
-
     public RecordingViewModel ViewModel { get; } = new();
 
     private bool _initializing;

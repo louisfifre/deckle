@@ -1,6 +1,5 @@
 using System;
 using Microsoft.Win32;
-using Deckle.Logging;
 
 namespace Deckle.Shell;
 
@@ -36,8 +35,6 @@ namespace Deckle.Shell;
 // actuel sans propager — le toggle Settings ne doit jamais crasher l'UI.
 public static class AutostartService
 {
-    private static readonly LogService _log = LogService.Instance;
-
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName  = "Deckle";
 
@@ -51,7 +48,7 @@ public static class AutostartService
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Settings, $"autostart probe failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleShellSource.Log.AutostartProbeFailed(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -61,7 +58,7 @@ public static class AutostartService
         string? exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath))
         {
-            _log.Warning(LogSource.Settings, "autostart enable skipped | reason=Environment.ProcessPath empty");
+            DeckleShellSource.Log.AutostartEnableSkipped();
             return false;
         }
 
@@ -74,17 +71,17 @@ public static class AutostartService
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
             if (key is null)
             {
-                _log.Warning(LogSource.Settings, $"autostart enable failed | reason=cannot open HKCU\\{RunKeyPath}");
+                DeckleShellSource.Log.AutostartEnableFailedAcl(RunKeyPath);
                 return false;
             }
             key.SetValue(ValueName, command, RegistryValueKind.String);
-            _log.Info(LogSource.Settings, "Autostart enabled");
-            _log.Verbose(LogSource.Settings, $"autostart enabled | command={command}");
+            DeckleShellSource.Log.AutostartEnabled();
+            DeckleShellSource.Log.AutostartEnabledDetail(command);
             return true;
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Settings, $"autostart enable failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleShellSource.Log.AutostartEnableFailed(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -102,16 +99,16 @@ public static class AutostartService
             if (key.GetValue(ValueName) is string s && !IsOwnedByCurrentExe(s))
             {
                 // Entry belongs to another install of Deckle — leave it alone.
-                _log.Verbose(LogSource.Settings, "autostart disable skipped | reason=entry points to different install");
+                DeckleShellSource.Log.AutostartDisableSkipped();
                 return true;
             }
             key.DeleteValue(ValueName, throwOnMissingValue: false);
-            _log.Info(LogSource.Settings, "Autostart disabled");
+            DeckleShellSource.Log.AutostartDisabled();
             return true;
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Settings, $"autostart disable failed | error={ex.GetType().Name}: {ex.Message}");
+            DeckleShellSource.Log.AutostartDisableFailed(ex.GetType().Name, ex.Message);
             return false;
         }
     }

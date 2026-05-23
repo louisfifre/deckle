@@ -7,10 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <ProjectReference Include="..\Deckle.Logging\Deckle.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
 </Project>

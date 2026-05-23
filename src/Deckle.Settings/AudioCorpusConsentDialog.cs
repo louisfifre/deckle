@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
-using Deckle.Logging;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 

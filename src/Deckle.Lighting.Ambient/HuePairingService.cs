@@ -1,5 +1,4 @@
 using Deckle.Lighting.Hue;
-using Deckle.Logging;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -35,8 +34,6 @@ public sealed class HuePairingService : IDisposable
         new(() => new HuePairingService());
     public static HuePairingService Instance => _instance.Value;
 
-    private static readonly LogService _log = LogService.Instance;
-
     private readonly object _gate = new();
     private HueBridgeClient? _bridgeClient;
     private HueBridge?       _pairedBridge;
@@ -65,8 +62,7 @@ public sealed class HuePairingService : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Warning(LogSource.Hue,
-                $"Bridge auto-restore at boot failed — {ex.GetType().Name}: {ex.Message} (user will need to re-pair)");
+            DeckleAmbientSource.Log.BridgeAutoRestoreFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -171,8 +167,7 @@ public sealed class HuePairingService : IDisposable
         settings.HueUsername = creds.Username;
         AmbientSettingsService.Instance.Save();
 
-        _log.Info(LogSource.Hue,
-            $"Bridge pairing stored | bridge_id={bridge.Id} | username_head={creds.UsernameHead}");
+        DeckleAmbientSource.Log.BridgePairingStored(bridge.Id, creds.UsernameHead);
 
         BridgeChanged?.Invoke();
         return creds;
@@ -196,8 +191,7 @@ public sealed class HuePairingService : IDisposable
             string.IsNullOrWhiteSpace(settings.HueBridgeId) ||
             string.IsNullOrWhiteSpace(settings.HueUsername))
         {
-            _log.Verbose(LogSource.Hue,
-                "restore | skipped — no persisted bridge identity");
+            DeckleAmbientSource.Log.BridgeRestoreSkipped();
             return;
         }
 
@@ -218,8 +212,7 @@ public sealed class HuePairingService : IDisposable
         }
         previous?.Dispose();
 
-        _log.Info(LogSource.Hue,
-            $"Bridge restored from settings | bridge_id={bridge.Id} | bridge_ip={bridge.InternalIpAddress}");
+        DeckleAmbientSource.Log.BridgeRestoredFromSettings(bridge.Id, bridge.InternalIpAddress);
 
         BridgeChanged?.Invoke();
     }
@@ -277,7 +270,7 @@ public sealed class HuePairingService : IDisposable
         settings.HueLastGroupId = null;
         AmbientSettingsService.Instance.Save();
 
-        _log.Info(LogSource.Hue, "Bridge forgotten — persisted credentials cleared");
+        DeckleAmbientSource.Log.BridgeForgotten();
 
         BridgeChanged?.Invoke();
     }

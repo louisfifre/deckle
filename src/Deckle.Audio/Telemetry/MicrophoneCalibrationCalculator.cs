@@ -1,5 +1,3 @@
-using Deckle.Logging;
-
 namespace Deckle.Audio.Telemetry;
 
 // Pure compute: derives a fresh (MinDbfs, MaxDbfs) pair from a ring buffer
