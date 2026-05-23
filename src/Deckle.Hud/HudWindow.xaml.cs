@@ -333,7 +333,8 @@ public sealed partial class HudWindow : Window
         // mais si le UI thread est bloqué (composition glitch, deadlock
         // externe), on libère le caller plutôt que de hang la pipeline.
         // Le paste sera émis sans le rendezvous Hide → risque de race
-        // documenté dans docs/reference--paste-behavior--1.0.md, accepté en cas pathologique.
+        // documenté dans src/Deckle.Transcription/CLAUDE.md (section Paste),
+        // accepté en cas pathologique.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
             DeckleHudSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");

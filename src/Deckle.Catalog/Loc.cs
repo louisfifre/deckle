@@ -12,8 +12,7 @@ namespace Deckle.Catalog;
 // builds UI programmatically (ConsentDialogs, engine status,
 // UserFeedback, HUD, tray, setup wizard pages) goes through Loc.
 //
-// Key naming conventions live in
-// docs/reference--localization--1.0.md. Summary:
+// Key naming conventions live in src/Deckle.Catalog/CLAUDE.md. Summary:
 //
 //   x:Uid in XAML       UidValue.Property        e.g. "LogWindowSearchBox.PlaceholderText"
 //   C# direct lookup    Surface_Purpose          e.g. "CorpusConsent_Title"
