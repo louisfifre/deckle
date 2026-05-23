@@ -1,0 +1,93 @@
+# CLAUDE.md — Deckle.Hud
+
+Module HUD applicatif. Couvre la fenêtre principale bas-centre (`HudWindow`, ~320×64, `OverlappedPresenter` non resizable), les cartes transient empilées (`HudOverlayWindow`, `HudOverlayManager`), le UserControl chronomètre avec coloration progressive et stroke Composition (`HudChrono`), l'enum d'états visuels (`HudState`), et les primitives UI internes (`HudMessage`, `HudPalette`, `MessageKind`). Issu de la fusion de `Deckle.Chrono.Hud` (dissous) et de l'extraction du code HUD-side qui vivait dans `Deckle.App` pré-cartographie cleanup.
+
+## Architecture — shell technique + UserControls
+
+`HudWindow` est un shell technique : porte le HWND, les styles étendus, le subclass de proximité, le backdrop, et le dispatcher d'état. Aucune logique visuelle propre — elle est répartie dans deux UserControls. `HudChrono` (314×78) porte le chrono Bitcount + status dot + surface de stroke et d'ombre pour Charging / Recording / Transcribing / Rewriting. `HudMessage` (carte 272×78 dans une fenêtre 400×160) porte title + subtitle + badge sémantique pour Pasted / Copied / Error / UserFeedback ; la carte est centrée dans la fenêtre pour que l'ombre composite puisse déborder dans la marge transparente. Le XAML de `HudWindow` se réduit à un `Grid` qui empile `HudChrono` (Visible par défaut) et `HudMessage` (Collapsed par défaut). Pas de `Background` sur le Grid : chaque UserControl porte son propre `CardBackgroundFillColorDefaultBrush`, la fenêtre elle-même reste transparente (acrylic + content alpha-blended).
+
+## State machine
+
+Enum unique `HudState { Hidden, Charging, Recording, Transcribing, Rewriting, Message }`. Plus `MessageKind { Success, Critical, Warning, Informational }` et `MessagePayload(Kind, Title, Subtitle, Duration)`. Toutes les transitions passent par `HudWindow.SetState(next, msg = null)` — une seule source de vérité. Chaque appel public (`ShowPreparing`, `ShowRecording`, `SwitchToTranscribing`, `SwitchToRewriting`, `ShowError`, `ShowPasted`, `ShowCopied`, `ShowUserFeedback`, `Hide`) marshale un appel à `SetState`. Le dispatcher coupe les timers en cours (auto-hide message + retract, fade-in), toggle `Chrono.Visibility` / `Message.Visibility`, forward au control concerné (`Chrono.ApplyState(state)` ou `Message.Show(payload)`), recalcule la taille et la position via `ShowNoActivate` (DPI-aware), applique l'alpha via `ApplyShowAlpha` (warm pass force, fade-in 150 ms si `Hidden→visible` et `Overlay.Animations` on, sinon alpha instant), active la proximité à la fin de la transition, et pour les messages arme `_messageHideTimer` (durée totale) plus `_messageRetractTimer` (~800 ms si durée > 1 s).
+
+`HideSync` est la variante bloquante via rendezvous `ManualResetEventSlim`, appelée juste avant `PasteFromClipboard` pour garantir que `SW_HIDE` est effectif avant que `SendInput` envoie le Ctrl+V — sans ce verrou, la redistribution d'activation peut détourner le paste.
+
+## Palette sémantique
+
+Centralisée dans `HudPalette.cs`. Chaque kind a une couleur Full (au pic), une couleur Attenuated (après decay), et un glyph Segoe Fluent porté par le badge 16×16. Success Full `#0F7B0F` / Attenuated `#345634` / glyph ``. Critical Full `#C42B1C` / Attenuated `#8C5954` / glyph ``. Warning Full `#9D5D00` / Attenuated `#62523B` / glyph ``. Informational Full `#005FB7` / Attenuated `#455C72` / glyph ``. Le hex Critical Full correspond exactement à `SystemFillColorCriticalBrush` Win11 ; les autres mappings ne collent pas à une theme resource unique parce que le decay Attenuated demande une couleur intermédiaire spécifique — d'où les hex bruts.
+
+## Ombres composites — règle cardinale
+
+**Toutes les ombres du HUD sont composites multi-couches**. Une seule `DropShadow` produit un rendu plat ; le rendu Win11 vient toujours de l'empilement d'au moins deux couches qui jouent des rôles distincts. La **couche halo / fond** a un petit offset (Y proche de 0) et un grand blur — elle diffuse la couleur ambiante autour de la surface. La **couche drop / chute** a un grand offset Y vers le bas et un blur élevé — elle crée la perception de hauteur, le « grand recul » par rapport au fond. Les deux ensemble font la lecture. Si on n'en pose qu'une, la perception de profondeur s'effondre.
+
+La règle s'applique aux trois ombres composites du HUD. Transcribing utilise 2 couches halo + drop en gris. Rewriting utilise 8 couches colorées (1 par arc, distribuées à 45°). Message utilise 2 couches halo + drop en couleur sémantique. Aucune couche ne peut être omise — la règle s'étend à toute future surface qui aurait à porter une ombre.
+
+## Composition pipeline
+
+`HudComposition.cs` (helper statique, `Microsoft.UI.Composition` pur, zéro Win2D) héberge les trois constructeurs d'ombres. **Pattern silhouette** : une `DropShadow` prend la silhouette du Visual qu'elle décore. Pour obtenir une ombre conformée à un rounded rect sans Win2D, on héberge un `ShapeVisual` rempli avec un brush quasi-invisible (alpha `0x01`, soit 1/255) dans un `LayerVisual`. Le layer rasterise le fill, l'ombre lit la silhouette. Le fill est invisible à l'œil mais suffit à driver la forme.
+
+`CreateTranscribingStroke(compositor, size)` retourne un `ContainerVisual` avec une drop layer `offset=(-12,12)` / `blur=64` / `color=#66666647`, une halo layer `offset=(-2,2)` / `blur=21` / `color=#66666638`, et un stroke gradient diagonal (`(0,0)→(1,1)`) de `#757575` à `#BFBFBF`, thickness 1, geometry `RoundedRectangleGeometry` corner radius 8.
+
+`CreateRewritingStroke(compositor, size)` retourne un `ContainerVisual` avec 8 ombres colorées au radius 32, alpha `0x40`, distribuées aux 8 angles (0, 45°, 90°…) avec couleurs red, amber, lime, green, cyan, blue, violet, magenta. 8 arcs trim sur le périmètre du rounded rect — chacun avec sa propre `RoundedRectangleGeometry` parce que `TrimStart`/`TrimEnd` est une propriété de la géométrie, pas de la shape (géométries non partageables). Epsilon `0.005` ajouté à chaque `TrimEnd` pour masquer la couture entre arcs adjacents.
+
+`CreateMessageShadow(compositor, size, full, attenuated)` retourne `(ContainerVisual host, CompositionPropertySet anim)`. Le `PropertySet` expose un scalar `Saturation` (1.0 = full, 0.0 = attenuated). Les deux couches partagent la même couleur lerpée via `ExpressionAnimation` `ColorLerp(props.AttenuatedColor, props.FullColor, props.Saturation)`. L'animation tourne au niveau Composition, **off UI thread**. Drop layer `offset=(0,32)` / `blur=64`. Halo layer `offset=(0,2)` / `blur=21`. `AnimateShadowToAttenuated(compositor, props, duration)` est une `ScalarKeyFrameAnimation` sur `props.Saturation` de 1.0 vers 0.0, easing `CubicBezier((0.05, 0.95), (0.2, 1.0))` (pic puis plateau, mimique la log-décroissance demandée). Durée par défaut 650 ms appelée par `HudMessage.AnimateToAttenuated`.
+
+## Hybrid bleed — 400×160 puis retract à 272×78
+
+Le but du redimensionnement hybride : laisser l'ombre composite déborder loin autour de la carte au pic, puis rétracter la fenêtre à la taille de la carte une fois que l'ombre est attenuated. Séquence pour un message : à `t=0`, `SetState(Message)` redimensionne la fenêtre à `HUD_WIDTH_MESSAGE × HUD_HEIGHT_MESSAGE` (400×160) ; la carte 272×78 est centrée dans le grid (`HorizontalAlignment="Center" VerticalAlignment="Center"`), marge transparente ~64 px horizontal ~41 px vertical, l'ombre composite remplit cette marge. À `t=0` toujours, `Message.Show(payload)` crée la composite shadow (full) et lance l'animation `Saturation` (650 ms vers attenuated). À `t=650 ms`, animation terminée, ombre en couleur attenuated. À `t=800 ms`, `_messageRetractTimer` tick : `_messageRetracted=true`, `ShowNoActivate()` rappelé, la fenêtre passe à `HUD_WIDTH_MESSAGE_RETRACTED × HUD_HEIGHT_MESSAGE_RETRACTED` (272×78). La fenêtre snap à la taille exacte de la carte ; l'ombre attenuated continue d'exister mais est clippée par le bord fenêtre — visuellement le halo se « tasse » tandis que la carte reprend sa taille standard. À `t=duration` (e.g. 5 s pour Critical), `_messageHideTimer` tick, `SetState(Hidden)`.
+
+Pour les messages courts (Pasted à 500 ms), le retract est sauté (`MessageRetractMinDuration = 1 s`) — la fenêtre disparaît avant qu'on ait le temps de rétracter. `HudMessage` re-centre son shadow visual à chaque `OuterRoot.SizeChanged` : l'offset baked au moment du `Show` (calculé pour 400×160) deviendrait incorrect après le retract. La subscription découple l'ombre des resize de fenêtre. `ShowNoActivate` choisit la taille selon `(_state, _messageRetracted)` : `Message && !retracted → 400×160` ; `Message && retracted → 272×78` ; sinon 314×78 (chrono). DPI-aware : la valeur DIP est multipliée par `GetDpiForWindow(_hwnd) / 96.0` à chaque show, donc un changement DPI runtime entre deux dictées est absorbé sans relancer l'app.
+
+## Coloration progressive des chiffres (HudChrono)
+
+Chaque chiffre du chrono qui change au moins une fois passe en rouge `SystemFillColorCriticalBrush` (theme resource Windows, suit light/dark) et y reste jusqu'au prochain `ApplyState(Recording)`. Le `0` initial reste neutre tant qu'il n'a pas bougé. Les Run idle ne portent pas de Foreground local — ils héritent de `ClockText.Foreground = {ThemeResource TextFillColorPrimaryBrush}`, auto-réactif au theme. Le reset est `ClearValue(TextElement.ForegroundProperty)` sur chaque Run nommé.
+
+`ChronoRoot.ActualThemeChanged` re-résout le brush critical et le réapplique aux chiffres déjà allumés (un Foreground assigné en code ne suit pas un `ThemeResource` binding, il faut le réassigner manuellement). Cadence : `CompositionTarget.Rendering` (vsync, pas de `DispatcherTimer` → pas de jitter). Hookée uniquement en Recording, débranchée en Transcribing/Rewriting (le chrono fige sur la dernière valeur).
+
+## Surface de stroke (HudChrono)
+
+`ProcessingSurfaceHost` est un `Border` transparent `IsHitTestVisible=False` qui couvre les deux colonnes du chrono. C'est l'attach point de `ElementCompositionPreview.SetElementChildVisual` pour les visuels Composition retournés par `HudComposition.CreateTranscribingStroke` / `CreateRewritingStroke`. `AttachProcessingVisual` fallback aux dims (314, 78) si `ActualWidth/Height = 0` au premier attach (avant layout pass). Le visuel n'est pas auto-resize sur layout suivant — mais Charging/Recording resettent toujours la surface, et l'utilisateur n'atteint Transcribing qu'après au moins une mesure du chrono.
+
+## Fade proximité souris — event-driven
+
+Via Raw Input (`RegisterRawInputDevices` + `RIDEV_INPUTSINK`) interceptée par subclass HWND (`SubclassProc` en champ d'instance pour échapper au GC, ID `0x48554450`). Alpha layered global (`WS_EX_LAYERED` + `SetLayeredWindowAttributes(LWA_ALPHA)`) qui couvre Acrylic + content, mappé à la distance curseur via smoothstep. `NEAR_RADIUS_DIP=10` → alpha MIN (40, estompé), `FAR_RADIUS_DIP=128` → alpha MAX (255, pleine), entre les deux courbe `t²(3-2t)` douce sans cassure aux bords. Pas de polling, pas d'animation timer — la fluidité vient de la fréquence des `WM_INPUT` (~125 Hz). Activable/désactivable via `Settings.Overlay.FadeOnProximity`.
+
+Subclass `WM_NCACTIVATE` : force `wParam=TRUE` en permanence pour que DWM peigne la HUD comme active (ombre portée « Active Window » riche au lieu de l'ombre inactive aplatie). Styles étendus posés au constructeur : `WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT`. Note état Message : `_proximityActive = false` pendant un message, le fade est suspendu (le message doit rester pleinement lisible même si le curseur est dessus).
+
+## Spec Window
+
+`OverlappedPresenter` non resizable, `IsAlwaysOnTop=true`, `ExtendsContentIntoTitleBar=true`, `hasTitleBar: false`. Position centrée horizontalement, ancrage vertical configurable via `Settings.Overlay.Position` (TopCenter ou BottomCenter, default BottomCenter). Les anciennes valeurs de coin (TopLeft / BottomRight / …) éventuellement présentes dans un `settings.json` legacy sont normalisées vers TopCenter / BottomCenter par `StartsWith("Top")`.
+
+Le show passe par `MoveAndResize` (recalcule DPI à chaque show) puis `ShowWindow(SW_SHOWNOACTIVATE)` + `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. **Jamais `SetForegroundWindow`** — la HUD ne doit pas voler le focus. Le hide est `ShowWindow(SW_HIDE)`. La fenêtre est créée une fois dans `OnLaunched`, jamais détruite (`Closing → Cancel`). Les handlers UI sont marshalés via `DispatcherQueue.TryEnqueue` parce que les events `WhispEngine` viennent de threads de fond. L'overlay est désactivable dans Settings (`Overlay.Enabled`), vérifié en tête de `SetState`.
+
+**Backdrop** : `DesktopAcrylicBackdrop` (matériau canonique des fenêtres transient Win11). Signal DWM `DWMSBT_TRANSIENTWINDOW` posé explicitement (intention correcte côté doc, même si l'ombre Shell riche des menus système n'est pas accessible aux WinUI 3 unpackaged — validé runtime 2026-04-09).
+
+## Boot warm — invisible via layered alpha
+
+`PrimeAndHide()` est appelée une fois dans `App.OnLaunched` après la création de la `HudWindow`. Le but : payer le coût de la première composition (DComp swap chain, font shaping Bitcount, visual tree DWM) au boot plutôt qu'au premier hotkey, pour que le first show réel soit cold-path-free. La forme : `SetState(HudState.Charging, bypassGate: true, alphaOverride: 0)` présente la fenêtre, le compositor tourne, puis `SetAlphaImmediate(0)` rend la couche layered transparente — rien n'arrive à l'écran. Un dispatch Low priority enchaîne `SetState(HudState.Hidden)` → `SW_HIDE` + `SetAlphaImmediate(MAX_ALPHA)` qui réinitialise l'alpha pour le prochain show réel.
+
+Effet : aucun flash visible au boot, aucun risque de première frame partielle (contour DWM sans contenu) qui aurait pu signaler un démarrage cassé. Le warm fait son travail en silence. Le warm pass active `bypassGate: true` (le Settings `Overlay.Enabled` désactivé ne doit pas court-circuiter le warm) et `alphaOverride.HasValue` empêche `ApplyShowAlpha` d'activer la proximité (un curseur présent dans la zone HUD au boot pourrait sinon écraser alpha=0 par smoothstep). Pas de relocation off-screen — le warm paye le coût de la composition exactement à la position réelle (DPI, work area, ancrage Settings).
+
+## Show réel — fade-in 150 ms
+
+Tout `Hidden → visible` (Charging, Recording, Transcribing, Rewriting, Message) déclenche un fade-in 150 ms cubic ease-out (`1 - (1-t)^3`), aligné avec `WindowSlideAnimator` / `LayeredAlphaAnimator` du sous-système overlay. La transition est centralisée dans `ApplyShowAlpha`. Si `alphaOverride.HasValue`, c'est un warm pass, alpha forcé, proximité skippée. Sinon, si `!wasShown && AnimationSystemSetting.AreClientAreaAnimationsEnabled()`, `StartFadeIn(MAX_ALPHA)` ; pendant le fade `_proximityActive = false`, à la fin réactivation proximité + appel immédiat de `UpdateProximity`. Sinon (state switch en déjà-visible, ou animations off), `SetAlphaImmediate(MAX_ALPHA)` instant + proximité immédiate.
+
+L'implémentation est inline (timer dédié `_fadeInTimer` à ~60 fps) plutôt que via `LayeredAlphaAnimator` pour conserver `_currentAlpha` comme source de vérité unique côté `HudWindow` — l'instance partagée évite les désynchros avec le proximity fade. Gating via `Settings.Overlay.Animations` (et non `SPI_GETCLIENTAREAANIMATION`) pour la même raison que le reste du sous-système HUD : les transitions HUD sont load-bearing pour suivre quel état vient de remplacer quel autre, on ne se cale pas automatiquement sur la pref reduce-motion globale Windows.
+
+## Contrainte layered et ombre Shell
+
+`WS_EX_LAYERED` désactive par design l'ombre DWM Shell système riche. C'est une contrainte Win32 de base, aucune API DWM ne la contourne pour une WinUI 3 unpackaged. Les ombres « shell shadows » des menus contextuels Explorer passent par un chemin DWM privé inaccessible. C'est précisément ce constat qui valide l'approche Composition : on ne peut pas avoir l'ombre Shell, donc on dessine la nôtre — et au passage on gagne la possibilité de la **colorer** (que le shell système ne ferait pas). Pour les states Transcribing / Rewriting / Message, l'ombre composite est le bon outil. Pour les states Charging / Recording (pas d'overlay Composition), on garde `WM_NCACTIVATE → TRUE` forcé pour améliorer un peu le rendu DWM par défaut.
+
+## Engine wiring
+
+`App.xaml.cs` dispatch `WhispEngine.StatusChanged` vers les méthodes publiques de `HudWindow` : `"Recording" → ShowRecording()`, `"Transcribing" → SwitchToTranscribing()`, `"Réécriture"` ou `"Rewriting"` (préfixe) `→ SwitchToRewriting()`. Le double préfixe FR/EN est défensif tant que le sweep n'est pas complètement passé sur EN — le dispatcher reste robuste sur les deux chaînes en attendant.
+
+## HDR highlights — reporté à V2
+
+L'idée de scintiller des highlights `> 1.0` scRGB sur la stroke conique chrono et les transitions notifications via le headroom HDR du display n'est pas réalisable sur la pile actuelle. `Microsoft.UI.Composition` Windows App SDK 1.8 ne supporte pas de swap chain HDR / scRGB FP16 natif, et ses brushes (`CompositionSolidColorBrush`, `CompositionLinearGradientBrush`, `CompositionSurfaceBrush`) clippent implicitement à `[0, 1]` sRGB. Confirmé par [microsoft-ui-xaml#777](https://github.com/microsoft/microsoft-ui-xaml/issues/777) et [microsoft-ui-xaml#67](https://github.com/microsoft/microsoft-ui-xaml/issues/67), sans roadmap.
+
+Le seul workaround documenté est un `D3D11 SwapChainPanel` interopéré avec swap chain HDR10 ou scRGB FP16 alloué manuellement et rendering D3D direct — au prix de l'abandon des animations déclaratives Composition (`Expression`, `ImplicitAnimations`, `Effects`) sur la surface. Disproportionné pour le bénéfice perceptuel sur un overlay 320×64 secondaire. Re-éval triggers : Windows App SDK ajoute un support natif de backdrop HDR sur `Window` ou un brush Composition extended-range, ou un autre composant Deckle nécessite déjà un swap chain custom (viewport HDR debug Ambient, calibration tool) et la mutualisation devient rentable.
+
+## Observabilité
+
+Toutes les émissions passent par `DeckleHudSource.Log` — provider `Deckle.Hud` exposé en singleton statique, tag HUD dans la LogWindow.
