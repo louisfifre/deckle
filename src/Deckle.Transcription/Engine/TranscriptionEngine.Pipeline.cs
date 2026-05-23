@@ -1,0 +1,629 @@
+using System.Runtime.InteropServices;
+using Deckle.Audio;
+using Deckle.Audio.Telemetry;
+using Deckle.Catalog;
+using Deckle.Core;
+using Deckle.Core.Interop;
+using Deckle.Llm;
+using Deckle.Llm.Rewrite;
+using Deckle.Transcription.Corpus;
+using Deckle.Transcription.Engine;
+
+namespace Deckle.Transcription;
+
+public sealed partial class TranscriptionEngine
+{
+    // ── Pipeline partial — Transcribe + clipboard + paste + post-record helpers ────────────────────────────────────────
+
+    // ── Microphone error localization ──────────────────────────────────────────
+    //
+    // MicErrorKind → (title, body) for UI. Messages formulated for the end user
+    // — no Win32 jargon. Raw MMSYSERR code is included verbatim in the
+    // Unavailable_Body_Format path so users can paste it back when reporting.
+    // Capture itself stays free of any Loc.Get dependency; the engine owns
+    // the localization step.
+    private static (string Title, string Body) LocalizeMicError(MicErrorKind kind, uint err) => kind switch
+    {
+        MicErrorKind.NotDetected => (Loc.Get("MicError_NotDetected_Title"), Loc.Get("MicError_NotDetected_Body")),
+        MicErrorKind.InUse       => (Loc.Get("MicError_InUse_Title"),       Loc.Get("MicError_InUse_Body")),
+        _                        => (Loc.Get("MicError_Unavailable_Title"), Loc.Format("MicError_Unavailable_Body_Format", err)),
+    };
+
+
+    // Auto-calibration heuristic — runs after every Recording when
+    // LevelWindow.AutoCalibrationEnabled is true, independent of the
+    // Log microphone toggle (the payload is always computed in
+    // LogRecordingTelemetry above).
+    //
+    // Strategy:
+    //   - Keep the last N MicrophoneTelemetryPayloads in a ring buffer
+    //     (N = LevelWindow.AutoCalibrationSamples, default 5).
+    //   - Once the buffer is full, recompute MinDbfs / MaxDbfs from
+    //     median-across-sessions percentiles, with margins:
+    //       MinDbfs = median(p25) - 5 dB  — p25 (not p10) so a noise gate
+    //                                       cutting to digital silence
+    //                                       (-97 dBFS) doesn't drag the
+    //                                       floor into "anything below
+    //                                       the gate threshold". Then
+    //                                       -5 dB of headroom under the
+    //                                       useful-signal minimum.
+    //       MaxDbfs = median(p90) + 5 dB  — voice ceiling with breathing
+    //                                       room above routine peaks.
+    //   - Floor clamp at -75 dBFS to guarantee we never sit on the gate
+    //     even if p25 itself is in the noise floor.
+    //   - Refuse to write if the resulting window collapses to < 10 dB
+    //     (pathological case — e.g. all-silence sessions).
+    //   - Push to settings + HudChrono statics + log a Success line.
+    //
+    // The buffer is in-memory only: a fresh app launch starts collecting
+    // again, which is fine — calibration only fires after N consecutive
+    // recordings within one process anyway, and the persisted Min/Max
+    // already reflects the last successful auto-calibration.
+    //
+    // The user's manual slider edits override auto-calibration until the
+    // next time it fires — there's no "manual flag" gating; whoever wrote
+    // last wins, which is the natural behaviour from the user's POV.
+    private void TryAutoCalibrate(MicrophoneTelemetryPayload payload)
+    {
+        var lw = _host.Audio.LevelWindow;
+        if (!lw.AutoCalibrationEnabled) return;
+
+        int needed = Math.Max(1, lw.AutoCalibrationSamples);
+
+        _autoCalibBuffer.Enqueue(payload);
+        while (_autoCalibBuffer.Count > needed) _autoCalibBuffer.Dequeue();
+        if (_autoCalibBuffer.Count < needed) return;
+
+        // Pure compute lives in MicrophoneCalibrationCalculator — the
+        // constants (-5 dB / +5 dB margins, -75 floor, ≥10 dB spread,
+        // [-90,-10] / [-60,-10] clamps, 0.5 dB no-change tolerance) are
+        // preserved exactly. The enveloppe (ring buffer, SaveSettings,
+        // ApplyLevelWindow, log) stays here because the side effects
+        // belong to the orchestrator.
+        var calib = MicrophoneCalibrationCalculator.Compute(
+            _autoCalibBuffer, lw.MinDbfs, lw.MaxDbfs);
+        if (!calib.ShouldUpdate) return;
+
+        lw.MinDbfs = calib.NewMinDbfs;
+        lw.MaxDbfs = calib.NewMaxDbfs;
+        _host.SaveSettings();
+
+        // Push live into HudChrono so the next sub-window already uses the
+        // new calibration. The host owns the static-field write
+        // (App.ApplyLevelWindow on the App side).
+        _host.ApplyLevelWindow(lw);
+
+        DeckleWhispSource.Log.AutoCalibrated(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
+    }
+
+    // ── Whisper transcription ────────────────────────────────────────────────
+    //
+    // Monolithic call: all audio is passed at once to whisper_full(), which
+    // handles its own internal windowing (30s + dynamic seek) and inter-window
+    // context propagation via tokens. No chunking on the C# side.
+    //
+    // Progressive recovery via new_segment_callback: whisper.cpp invokes the
+    // callback for each new validated segment during decoding, on ITS inference
+    // thread — hence the lock on _segments. Final text is assembled from these
+    // segments at the end of the call.
+
+
+    private void Transcribe(float[] audio, CancellationToken ct = default)
+    {
+        if (!_backend.IsModelLoaded)
+        {
+            RaiseStatus(Loc.Get("Status_ModelNotReady"));
+            RaiseFinished(TranscriptionOutcome.None);
+            return;
+        }
+
+        if (audio.Length == 0)
+        {
+            DeckleWhispSource.Log.TranscribeEmpty();
+            // No RaiseStatus here — WorkerRun's finally is the canonical
+            // emission point for "Ready" on the success path.
+            RaiseFinished(TranscriptionOutcome.None);
+            return;
+        }
+
+        float audioSec = (float)audio.Length / 16_000f;
+
+        // Stop the pre-backend overhead stopwatch the moment we hand off to
+        // the backend. The backend's TranscriptionResult.InitDurationMs
+        // covers the pre-VAD phase inside the inference call itself — sum
+        // the two for the equivalent of the legacy "stop to first vad line"
+        // measurement.
+        if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
+
+        // Delegate the actual inference to the configured backend. Segment
+        // streaming and per-segment logging happen inside the backend; we
+        // forward each emitted segment to the NewSegment event so external
+        // subscribers (HUD, LogWindow) keep their existing contract.
+        TranscriptionResult result;
+        try
+        {
+            result = _backend.TranscribeAsync(
+                audio,
+                seg => NewSegment?.Invoke(seg),
+                ct).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            DeckleWhispSource.Log.TranscribeFailed(-1);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_TranscriptionFailed_Title"),
+                Loc.Get("Engine_TranscriptionFailed_Body"),
+                FB_REPLACEMENT);
+            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
+            RaiseFinished(TranscriptionOutcome.None);
+            DeckleWhispSource.Log.SegmentCallbackThrew(ex.GetType().Name, ex.Message);
+            return;
+        }
+
+        // Surface the backend's phase timings to the LatencyPayload builder.
+        long transcribeMsTotal = result.TotalDurationMs;
+        _whisperInitMs = result.InitDurationMs;
+        _vadMs = result.VadDurationMs;
+
+        // A non-zero result code paired with an abort means the backend
+        // bailed on our signal — not a decoder error. Segments emitted
+        // before the abort are still usable, so fall through. A non-zero
+        // result without an abort is a real failure.
+        if (result.ResultCode != 0 && !result.Aborted)
+        {
+            DeckleWhispSource.Log.TranscribeFailed(result.ResultCode);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_TranscriptionFailed_Title"),
+                Loc.Get("Engine_TranscriptionFailed_Body"),
+                FB_REPLACEMENT);
+            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
+            RaiseFinished(TranscriptionOutcome.None);
+            return;
+        }
+
+        string fullText = result.FullText;
+        int nSeg = result.Segments.Count;
+
+        DeckleWhispSource.Log.TranscribeCompleted(nSeg);
+        DeckleWhispSource.Log.TranscribeCompleteDetail(transcribeMsTotal, nSeg, fullText.Length);
+
+        if (string.IsNullOrWhiteSpace(fullText))
+        {
+            RaiseStatus(Loc.Get("Status_Ready"));
+            RaiseFinished(TranscriptionOutcome.None);
+            return;
+        }
+
+        // Warmup short-circuit. The expensive part — VAD + whisper_full +
+        // first-time Vulkan kernel compile — is now paid. Skipping the
+        // clipboard write, the LLM rewrite, and the paste keeps the user's
+        // clipboard untouched at boot, avoids a cold Ollama hit, and prevents
+        // a "Pasted" Narrative from leaking through. The Warmup() caller
+        // logs its own success line.
+        if (t_isWarmup)
+        {
+            return;
+        }
+
+        // Low-audio warning is emitted live by MicrophoneCapture once 5 s
+        // of sustained sub-threshold signal has accumulated — see the
+        // tracker in WaveInLoop.Pump and the OnCaptureLowAudioDetected
+        // localizer above. Alerting during recording is the whole point
+        // of that message: we want the user to stop talking into a broken
+        // mic within seconds, not discover it 20 min later.
+
+        // Always copy raw text first — safety net even if LLM fails. If the
+        // copy fails (all three CopyToClipboard error paths already emit a
+        // Critical UserFeedback), short-circuit: paste would send Ctrl+V into
+        // an empty clipboard, which in most apps pastes whatever was there
+        // before the transcription — confusing at best. Better to stop here.
+        var swClip = System.Diagnostics.Stopwatch.StartNew();
+        bool rawCopyOk = CopyToClipboard(fullText);
+        swClip.Stop();
+        if (!rawCopyOk)
+        {
+            RaiseStatus(Loc.Get("Status_Ready"));
+            RaiseFinished(TranscriptionOutcome.None);
+            return;
+        }
+
+        long llmMs           = 0;
+        long ollamaLoadMs    = 0;
+        long llmPromptEvalMs = 0;
+        long llmEvalMs       = 0;
+        int  llmPromptTokens = 0;
+        int  llmEvalTokens   = 0;
+        var llmSettings = _host.Llm;
+        double recDurationSec = (_recordingSw?.Elapsed.TotalSeconds) ?? 0;
+        int rawWordCount = TextMetrics.CountWords(fullText);
+
+        // Rewrite profile resolution:
+        // - manual rewrite hotkey → the profile name passed to StartRecording
+        // - plain transcribe hotkey → first matching AutoRewriteRule (duration-based)
+        RewriteProfile? profile = null;
+        if (!string.IsNullOrWhiteSpace(_manualProfileName) && llmSettings.Enabled)
+        {
+            profile = llmSettings.Profiles.Find(p =>
+                string.Equals(p.Name, _manualProfileName, StringComparison.OrdinalIgnoreCase));
+            if (profile is null)
+            {
+                DeckleWhispSource.Log.ManualProfileNotFound(_manualProfileName);
+            }
+        }
+        else if (llmSettings.Enabled)
+        {
+            // Pivot between the two auto-rule lists. "Words" is the default —
+            // word count is a truer proxy for LLM context load than wall-clock
+            // duration. "Duration" keeps the legacy behaviour.
+            RewriteProfile? ResolveRuleProfile(string? id, string? name)
+            {
+                var byId = !string.IsNullOrEmpty(id)
+                    ? llmSettings.Profiles.Find(p => p.Id == id)
+                    : null;
+                return byId ?? llmSettings.Profiles.Find(p =>
+                    string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            }
+
+            bool byWords = !string.Equals(llmSettings.RuleMetric, "Duration", StringComparison.OrdinalIgnoreCase);
+            if (byWords && llmSettings.AutoRewriteRulesByWords.Count > 0)
+            {
+                foreach (var rule in llmSettings.AutoRewriteRulesByWords
+                    .OrderByDescending(r => r.MinWordCount))
+                {
+                    if (rawWordCount >= rule.MinWordCount)
+                    {
+                        profile = ResolveRuleProfile(rule.ProfileId, rule.ProfileName);
+                        break;
+                    }
+                }
+            }
+            else if (!byWords && llmSettings.AutoRewriteRules.Count > 0)
+            {
+                foreach (var rule in llmSettings.AutoRewriteRules
+                    .OrderByDescending(r => r.MinDurationSeconds))
+                {
+                    if (recDurationSec >= rule.MinDurationSeconds)
+                    {
+                        profile = ResolveRuleProfile(rule.ProfileId, rule.ProfileName);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Preserve the raw text before any rewrite replaces fullText — the
+        // corpus logger (fired at the very end) captures only the raw side.
+        string rawText = fullText;
+
+        if (profile is not null)
+        {
+            RaiseStatus(Loc.Format("Status_Rewriting_Format", profile.Name));
+            // Narrative only after the call settles — on success we know it
+            // landed, on failure we say so explicitly. The previous pre-call
+            // "is now rewriting" line lied on failure by implying completion
+            // (no counter-narrative was ever emitted). HUD state + polling
+            // heartbeat already cover live feedback during the wait.
+            var swLlm = System.Diagnostics.Stopwatch.StartNew();
+            var llmResult = _llm.Rewrite(fullText, llmSettings.OllamaEndpoint, profile);
+            swLlm.Stop();
+            // Wall-clock total (caller-side) is the authoritative number for
+            // user-perceived latency — includes HTTP transit + JSON parse on
+            // top of the server-side Ollama timings. The structured Ollama
+            // metrics flow through to the LatencyPayload so we can later
+            // compare wall vs server side and isolate transit overhead.
+            llmMs           = swLlm.ElapsedMilliseconds;
+            ollamaLoadMs    = llmResult.OllamaLoadMs;
+            llmPromptEvalMs = llmResult.PromptEvalMs;
+            llmEvalMs       = llmResult.EvalMs;
+            llmPromptTokens = llmResult.PromptTokens;
+            llmEvalTokens   = llmResult.EvalTokens;
+            if (!string.IsNullOrWhiteSpace(llmResult.Text))
+            {
+                fullText = llmResult.Text;
+                // If the post-rewrite copy fails, the raw transcript from the
+                // first copy is still on the clipboard — degrade silently to
+                // the raw text instead of making a loud noise about a failure
+                // that doesn't hurt the user.
+                CopyToClipboard(fullText);
+            }
+        }
+
+        long pasteMs = 0;
+        bool pasteVerified = false;
+        if (_shouldPaste)
+        {
+            // Synchronous rendezvous: the handler (App) hides the HUD and only
+            // returns once SW_HIDE is effective on the UI thread. After this
+            // point, nothing in Deckle touches activation until the end of
+            // Transcribe — Ctrl+V delivery is protected.
+            OnReadyToPaste?.Invoke();
+            DeckleWhispSource.Log.PasteHidSync();
+            var swPaste = System.Diagnostics.Stopwatch.StartNew();
+            pasteVerified = PasteFromClipboard();
+            swPaste.Stop();
+            pasteMs = swPaste.ElapsedMilliseconds;
+        }
+
+        // Split recap into two Info lines (timings / outputs) that land under
+        // Activity, plus the existing Narrative for the user-facing closing line.
+        // The monolithic 200-char Verbose is gone — each line reads cleanly
+        // in LogWindow and stays grep-friendly through the standard `k=v` format.
+        // Outcome : Pasted on a verified paste delivery, ClipboardOnly when
+        // the text made it to the clipboard but paste was disabled or refused
+        // (target lost, Deckle itself, SendInput partial) — the HUD uses
+        // this to flash "Copied" or the Ctrl+V reminder before hiding.
+        var outcome = (_shouldPaste && pasteVerified) ? TranscriptionOutcome.Pasted
+                                                      : TranscriptionOutcome.ClipboardOnly;
+        int finalWordCount = TextMetrics.CountWords(fullText);
+
+        // Snapshot stage timers once for both the log line and the telemetry
+        // payload. Each can be null/zero when the run skipped that stage —
+        // coerce so the payload stays well-formed.
+        //
+        // Timing sourcing after the IAsrBackend split:
+        //   • _whisperInitMs, _vadMs   ← TranscriptionResult phase timings
+        //   • whisperMs (pure decode)  ← total - init - vad (clamped to 0)
+        //   • vadInferenceMs (Silero
+        //     CPU time, distinct from
+        //     wall-clock vad)          ← no longer surfaced after the split,
+        //                                kept in the payload as 0 until a
+        //                                backend exposes it through the
+        //                                interface.
+        long hotkeyToCaptureMs = _hotkeySw?.ElapsedMilliseconds ?? 0;
+        long recordDrainMs     = (long)_recordDrainDuration.TotalMilliseconds;
+        long stopToPipelineMs  = _stopToPipelineSw?.ElapsedMilliseconds ?? 0;
+        long whisperInitMs     = _whisperInitMs;
+        long vadMs             = _vadMs;
+        long whisperMs         = System.Math.Max(0, transcribeMsTotal - whisperInitMs - vadMs);
+        long vadInferenceMs    = 0;
+        // Backend name is the closest stable analogue to the old
+        // _strategyLabel for the telemetry surface.
+        string strategyLabel = _backend.Name;
+
+        DeckleWhispSource.Log.PipelineCompleted(outcome.ToString());
+        DeckleWhispSource.Log.PipelineTimings(
+            recDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
+            stopToPipelineMs, whisperInitMs, vadMs, vadInferenceMs,
+            whisperMs, llmMs, swClip.ElapsedMilliseconds, pasteMs);
+        DeckleWhispSource.Log.PipelineLlmMetrics(
+            ollamaLoadMs, llmPromptEvalMs, llmEvalMs, llmPromptTokens, llmEvalTokens);
+        DeckleWhispSource.Log.PipelineOutputs(
+            nSeg, fullText.Length, finalWordCount, strategyLabel,
+            profile?.Name ?? "(none)", outcome.ToString());
+
+        RaiseStatus(Loc.Get("Status_Ready"));
+        _recordingSw?.Stop();
+
+        DeckleWhispSource.Log.LatencyRecorded(
+            audio_sec:            audioSec,
+            model_load_ms:        _modelLoadMs,
+            hotkey_to_capture_ms: hotkeyToCaptureMs,
+            record_drain_ms:      recordDrainMs,
+            stop_to_pipeline_ms:  stopToPipelineMs,
+            whisper_init_ms:      whisperInitMs,
+            vad_ms:               vadMs,
+            vad_inference_ms:     vadInferenceMs,
+            whisper_ms:           whisperMs,
+            llm_ms:               llmMs,
+            ollama_load_ms:       ollamaLoadMs,
+            llm_prompt_eval_ms:   llmPromptEvalMs,
+            llm_eval_ms:          llmEvalMs,
+            llm_prompt_tokens:    llmPromptTokens,
+            llm_eval_tokens:      llmEvalTokens,
+            clipboard_ms:         swClip.ElapsedMilliseconds,
+            paste_ms:             pasteMs,
+            strategy:             strategyLabel,
+            n_segments:           nSeg,
+            text_chars:           fullText.Length,
+            text_words:           finalWordCount,
+            profile:              profile?.Name ?? "",
+            pasted:               pasteVerified,
+            outcome:              outcome.ToString());
+
+        // Corpus logging — captures the raw Whisper output only. We don't
+        // persist the rewrite: prompts evolve, so paired (raw, rewrite)
+        // samples go stale the moment the prompt is edited. Raw text stays
+        // useful for benchmarking Whisper itself (initial prompt, VAD, model
+        // swap). One file per rewrite profile so samples stay sliceable by
+        // the workflow they came from, even without the rewrite payload.
+        var telemetrySettings = _host.Telemetry;
+        if (telemetrySettings.CorpusEnabled && profile is not null)
+        {
+            var whisperSettings = _host.Transcription.Engine;
+            int rawChars = rawText.Length;
+            var timestamp = DateTimeOffset.Now;
+
+            string slug = $"{CorpusPaths.Slugify(profile.Name)}-{profile.Id}";
+
+            // Audio capture is a second, nested opt-in gated by the same
+            // profile slug — so a replay pairs JSONL rows with their WAV
+            // 1:1. Same timestamp as the text entry keeps the pairing
+            // unambiguous even if the user triggers a new recording
+            // while the file write is still settling.
+            string? audioFile = telemetrySettings.RecordAudioCorpus
+                ? WavCorpusWriter.Write(slug, audio, timestamp)
+                : null;
+
+            double wordsPerSecond = recDurationSec > 0 ? rawWordCount / recDurationSec : 0;
+            DeckleWhispSource.Log.CorpusRecorded(
+                profile:          profile.Name,
+                profile_id:       profile.Id,
+                slug:             slug,
+                duration_seconds: recDurationSec,
+                model:            whisperSettings.Model,
+                language:         whisperSettings.Language,
+                elapsed_ms:       whisperMs,
+                initial_prompt:   whisperSettings.InitialPrompt ?? "",
+                raw_text:         rawText,
+                raw_words:        rawWordCount,
+                raw_chars:        rawChars,
+                words_per_second: wordsPerSecond,
+                audio_file:       audioFile ?? "");
+        }
+
+        RaiseFinished(outcome);
+    }
+
+    // ── Presse-papier ─────────────────────────────────────────────────────────
+
+    // Returns true on a successful copy + verified read-back. False on any of
+    // the three fatal branches (GlobalAlloc, OpenClipboard, SetClipboardData) —
+    // each surfaces a Critical UserFeedback. Verify-length mismatch only emits
+    // a Warning since the bytes reached the clipboard; the length check is a
+    // safety net against clipboard-format mangling by a third-party watcher.
+    private bool CopyToClipboard(string text)
+    {
+        const uint GMEM_MOVEABLE  = 0x0002;
+        const uint CF_UNICODETEXT = 13;
+
+        int byteCount = (text.Length + 1) * 2;
+
+        IntPtr hMem = NativeMethods.GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)byteCount);
+        DeckleWhispSource.Log.ClipboardGlobalAlloc(byteCount, (long)hMem);
+        if (hMem == IntPtr.Zero)
+        {
+            DeckleWhispSource.Log.ClipboardAllocFailed(byteCount);
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
+                Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
+                FB_REPLACEMENT);
+            return false;
+        }
+
+        IntPtr ptr = NativeMethods.GlobalLock(hMem);
+        Marshal.Copy(text.ToCharArray(), 0, ptr, text.Length);
+        Marshal.WriteInt16(ptr, text.Length * 2, 0);
+        NativeMethods.GlobalUnlock(hMem);
+
+        bool opened = NativeMethods.OpenClipboard(IntPtr.Zero);
+        DeckleWhispSource.Log.ClipboardOpen(opened);
+        if (!opened)
+        {
+            DeckleWhispSource.Log.ClipboardOpenFailed();
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ClipboardUnavailable_Title"),
+                Loc.Get("Engine_ClipboardUnavailable_Body"),
+                FB_REPLACEMENT);
+            return false;
+        }
+
+        NativeMethods.EmptyClipboard();
+        IntPtr setHandle = NativeMethods.SetClipboardData(CF_UNICODETEXT, hMem);
+        NativeMethods.CloseClipboard();
+        if (setHandle == IntPtr.Zero)
+        {
+            DeckleWhispSource.Log.ClipboardSetDataFailed();
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_ClipboardCopyFailed_Refused_Title"),
+                Loc.Get("Engine_ClipboardCopyFailed_Refused_Body"),
+                FB_REPLACEMENT);
+            return false;
+        }
+
+        // Immediate read-back to verify the clipboard was set correctly.
+        // Mismatch is a Warning — the copy reached the OS, a third-party
+        // clipboard watcher may have re-encoded or trimmed the payload
+        // between SetClipboardData and our read.
+        if (NativeMethods.OpenClipboard(IntPtr.Zero))
+        {
+            IntPtr h = NativeMethods.GetClipboardData(CF_UNICODETEXT);
+            if (h == IntPtr.Zero)
+            {
+                DeckleWhispSource.Log.ClipboardVerifyMissing();
+                EmitUserFeedback(FB_WARN,
+                    Loc.Get("Engine_ClipboardIncomplete_Unverified_Title"),
+                    Loc.Get("Engine_ClipboardIncomplete_Unverified_Body"),
+                    FB_OVERLAY);
+            }
+            else
+            {
+                IntPtr p = NativeMethods.GlobalLock(h);
+                string? back = p != IntPtr.Zero ? Marshal.PtrToStringUni(p) : null;
+                NativeMethods.GlobalUnlock(h);
+                if (back is null || back.Length != text.Length)
+                {
+                    DeckleWhispSource.Log.ClipboardVerifyMismatch(text.Length, back?.Length ?? -1);
+                    EmitUserFeedback(FB_WARN,
+                        Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
+                        Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
+                        FB_OVERLAY);
+                }
+            }
+            NativeMethods.CloseClipboard();
+        }
+
+        DeckleWhispSource.Log.ClipboardCopied();
+        DeckleWhispSource.Log.ClipboardCopyComplete(text.Length, byteCount);
+        return true;
+    }
+
+    // Sends Ctrl+V to whatever window currently has the foreground at Stop
+    // time — but only when UI Automation confirms the focused element is a
+    // text-accepting control (Edit or Document). No Start-time capture, no
+    // bring-to-front, no focus comparison: the user had all the time of the
+    // recording + transcription to place their cursor where they want.
+    //
+    // Doctrine: clipboard is the safe default. Paste only when we are confident
+    // the target expects text. When in doubt — UIA refuses to answer, unknown
+    // control type, foreground is Deckle itself — the text stays on the
+    // clipboard and the HUD shows the Ctrl+V reminder.
+    private bool PasteFromClipboard()
+    {
+        const uint   INPUT_KEYBOARD  = 1;
+        const uint   KEYEVENTF_KEYUP = 0x0002;
+        const ushort VK_CONTROL      = 0x11;
+        const ushort VK_V            = 0x56;
+
+        IntPtr fg = NativeMethods.GetForegroundWindow();
+        DeckleWhispSource.Log.PasteForeground(Win32Util.DescribeHwnd(fg));
+
+        if (fg == IntPtr.Zero)
+        {
+            DeckleWhispSource.Log.PasteSkippedNoForeground();
+            return false;
+        }
+
+        // Refuse if the foreground is a Deckle window itself (LogWindow, HUD,
+        // Settings). Avoids the false positive where we would paste into our
+        // own logs while the user reads them.
+        NativeMethods.GetWindowThreadProcessId(fg, out uint fgPid);
+        uint ownPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+        if (fgPid == ownPid)
+        {
+            DeckleWhispSource.Log.PasteSkippedSelfTarget();
+            return false;
+        }
+
+        // UI Automation probe on the currently focused element. If the probe
+        // is anything other than "yes, it's an Edit or Document", we bail out
+        // to the clipboard-only path. No speculative paste.
+        bool editable = UIAutomation.IsFocusedElementTextEditable(out string uiaDiag);
+        DeckleWhispSource.Log.PasteUiaDiag(uiaDiag);
+        if (!editable)
+        {
+            DeckleWhispSource.Log.PasteSkippedNotTextField();
+            return false;
+        }
+
+        int cbSize = Marshal.SizeOf<INPUT>();
+
+        var inputs = new INPUT[]
+        {
+            new INPUT { type = INPUT_KEYBOARD, ki_wVk = VK_CONTROL },
+            new INPUT { type = INPUT_KEYBOARD, ki_wVk = VK_V },
+            new INPUT { type = INPUT_KEYBOARD, ki_wVk = VK_V,       ki_dwFlags = KEYEVENTF_KEYUP },
+            new INPUT { type = INPUT_KEYBOARD, ki_wVk = VK_CONTROL, ki_dwFlags = KEYEVENTF_KEYUP },
+        };
+
+        uint sent = NativeMethods.SendInput((uint)inputs.Length, inputs, cbSize);
+        if (sent != inputs.Length)
+        {
+            DeckleWhispSource.Log.PasteSendInputPartial((int)sent, inputs.Length);
+            return false;
+        }
+
+        DeckleWhispSource.Log.PasteSucceeded();
+        DeckleWhispSource.Log.PasteSent(Win32Util.DescribeHwnd(fg));
+        return true;
+    }
+}

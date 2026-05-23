@@ -26,7 +26,7 @@ namespace Deckle.Transcription.Corpus;
 //
 // Carry-over de la vague 6 : ce helper vivait jadis dans `Deckle.Logging`
 // aux côtés de `CorpusPaths`. Relocalisé ici parce que son unique
-// consommateur métier est `WhispEngine` ; `CorpusPaths` reste dans
+// consommateur métier est `TranscriptionEngine` ; `CorpusPaths` reste dans
 // `Deckle.Core` parce qu'il est aussi consommé par les dialogs de
 // consentement côté `Deckle.Settings` (qui ne peut pas dépendre de
 // `Deckle.Whisp` sans introduire un cycle).

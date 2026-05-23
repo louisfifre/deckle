@@ -3,7 +3,7 @@ namespace Deckle.Audio.Telemetry;
 // Pure compute: derives a fresh (MinDbfs, MaxDbfs) pair from a ring buffer
 // of recent MicrophoneTelemetryPayload samples. Returns whether the
 // calibration should be applied (false on too-narrow window, on no-change,
-// etc.) so the orchestrator (WhispEngine) can short-circuit the
+// etc.) so the orchestrator (TranscriptionEngine) can short-circuit the
 // SaveSettings + ApplyLevelWindow + log emission without re-implementing
 // the constants.
 //

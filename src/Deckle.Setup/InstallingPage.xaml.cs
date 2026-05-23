@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Transcription.Setup;
+using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.Setup;
 
@@ -68,7 +69,8 @@ public sealed partial class InstallingPage : Page
         setup.SetNextVisible(false);
         setup.SetCancelVisible(false); // inline Cancel install button instead
 
-        WhisperLabel.Text = _context.SelectedModel.DisplayName;
+        // SelectedModel is guaranteed non-null by SetupWindow construction.
+        WhisperLabel.Text = _context.SelectedModel!.DisplayName;
 
         _ = InstallAllAsync();
     }
@@ -110,21 +112,25 @@ public sealed partial class InstallingPage : Page
 
         // Step 2 — Whisper model (skip if already on disk — saves a 3 GB
         // re-download when the user only wiped the native bundle).
-        if (SpeechModels.IsInstalled(_context.SelectedModel))
+        // SelectedModel guaranteed non-null by SetupWindow construction.
+        // Local snapshot lifts the !-assertion to a single site instead of
+        // repeating it on every member access below.
+        ModelEntry selectedModel = _context.SelectedModel!;
+        if (SpeechModels.IsInstalled(selectedModel))
         {
             _context.Results.Add(new InstallResult(
-                ItemId:      _context.SelectedModel.Id,
-                DisplayName: _context.SelectedModel.DisplayName,
+                ItemId:      selectedModel.Id,
+                DisplayName: selectedModel.DisplayName,
                 Success:     true,
                 ErrorMessage: null,
-                Bytes:        new FileInfo(Path.Combine(AppPaths.ModelsDirectory, _context.SelectedModel.FileName)).Length));
+                Bytes:        new FileInfo(Path.Combine(AppPaths.ModelsDirectory, selectedModel.FileName)).Length));
             UpdateGlobalStep(2, Loc.Get("Setup_Install_AlreadyInstalled"));
             SetItemDone(WhisperIcon, WhisperProgress, WhisperStatus, Loc.Get("Setup_Install_AlreadyInstalled"));
         }
         else
         {
             await DownloadModelStepAsync(
-                entry:     _context.SelectedModel,
+                entry:     selectedModel,
                 stepIndex: 1,
                 icon:      WhisperIcon,
                 label:     WhisperLabel,

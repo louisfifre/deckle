@@ -10,7 +10,7 @@ namespace Deckle.Settings;
 //
 // What stays here:
 //   • Paths       — BackupDirectory only (ModelsDirectory migrated to
-//                   WhispSettings since it's a Whisper-engine concern).
+//                   TranscriptionSettings since it's a Whisper-engine concern).
 //   • Appearance  — global theme.
 //   • Startup     — boot behaviour.
 //   • Overlay     — HUD overlay system.
@@ -18,7 +18,7 @@ namespace Deckle.Settings;
 //
 // What moved out (loaded via the matching XxxSettingsService.Instance):
 //   • CaptureSettings        → Deckle.Audio/CaptureSettingsService
-//   • WhispSettings          → Deckle.Transcription/WhispSettingsService
+//   • TranscriptionSettings          → Deckle.Transcription/TranscriptionSettingsService
 //   • LlmSettings            → Deckle.Llm.Rewrite/LlmSettingsService
 //   • TelemetrySettings      → Deckle.Logging/TelemetrySettingsService
 //
@@ -81,7 +81,7 @@ public sealed class OverlaySettings
 //                    le user peut pointer vers un dossier OneDrive/Drive
 //                    pour faire suivre ses backups entre machines.
 //
-// ModelsDirectory used to live here too; it migrated to WhispSettings on
+// ModelsDirectory used to live here too; it migrated to TranscriptionSettings on
 // 2026-05-02 (per-module persistence) since it's a Whisper-engine concern.
 public sealed class PathsSettings
 {

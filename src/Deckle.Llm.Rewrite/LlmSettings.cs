@@ -244,7 +244,7 @@ public sealed class LlmSettings
     };
 
     // Auto-rules alignées sur les bornes des brackets cleanup. Évaluées
-    // par WhispEngine en ordre décroissant de seuil — le plus haut qui
+    // par TranscriptionEngine en ordre décroissant de seuil — le plus haut qui
     // matche gagne. Plancher à 60 s : en dessous, aucune règle ne matche,
     // le profil reste null et la réécriture LLM est skipée (comportement
     // no-op, le texte brut Whisper part au clipboard tel quel — Whisper

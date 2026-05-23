@@ -1,23 +1,19 @@
 namespace Deckle.Transcription;
 
-// ── WhispSettings ─────────────────────────────────────────────────────────────
+// ── TranscriptionSettings ────────────────────────────────────────────────────
 //
-// Container POCO grouping every Whisper-engine-scoped section under a single
-// node on the root AppSettings. Each module owns its own settings POCO; the
-// engine reads from `WhispSettings` exclusively (via IWhispEngineHost.Whisp).
-public sealed class WhispSettings
+// Root POCO for the transcription module. Groups every section consumed by
+// the orchestrator (TranscriptionEngine) and by the active IAsrBackend. The
+// module owns its own JSON file under <UserDataRoot>/modules/transcription/
+// settings.json (migrated from the legacy modules/whisp/ path).
+public sealed class TranscriptionSettings
 {
-    // User override for the directory containing .bin files (Whisper models +
-    // VAD Silero). Empty = fall back to AppPaths.ModelsDirectory
-    // (= <UserDataRoot>/models/). Migrated from the legacy
-    // PathsSettings.ModelsDirectory key in 2026-05-02 when the WhispSettings
-    // POCO took ownership of its own JSON file under
-    // <UserDataRoot>/modules/whisp/settings.json — the model directory is
-    // a Whisper-engine concern, not a shell concern, and it travels with
-    // the rest of the engine config.
+    // User override for the directory containing speech models (.bin files
+    // for Whisper, plus the Silero VAD). Empty = fall back to
+    // AppPaths.ModelsDirectory (= <UserDataRoot>/models/).
     public string ModelsDirectory { get; set; } = "";
 
-    public TranscriptionSettings   Transcription   { get; set; } = new();
+    public EngineSettings          Engine          { get; set; } = new();
     public SpeechDetectionSettings SpeechDetection { get; set; } = new();
     public ConfidenceSettings      Confidence      { get; set; } = new();
     public OutputFilterSettings    OutputFilters   { get; set; } = new();
@@ -25,9 +21,10 @@ public sealed class WhispSettings
     public ContextSettings         Context         { get; set; } = new();
 }
 
-// Choix fondamentaux du moteur. Les 3 premiers (Model / UseGpu / Language) sont
-// des paramètres « lourds » — ils demandent un reload du contexte whisper.cpp.
-public sealed class TranscriptionSettings
+// Bootstrap parameters for the active ASR engine. The first three (Model /
+// UseGpu / Language) are "heavy" settings — changing them requires reloading
+// the backend's model context.
+public sealed class EngineSettings
 {
     public string Model { get; set; } = "ggml-large-v3.bin";
     public bool UseGpu { get; set; } = true;

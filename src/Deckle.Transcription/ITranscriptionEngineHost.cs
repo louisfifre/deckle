@@ -4,22 +4,23 @@ using Deckle.Llm.Rewrite;
 
 namespace Deckle.Transcription;
 
-// ── IWhispEngineHost ──────────────────────────────────────────────────────────
+// ── ITranscriptionEngineHost ──────────────────────────────────────────────────────────
 //
 // Bridge that lets the engine read its dependencies without touching App's
 // SettingsService. The App-side implementation reads from SettingsService
 // on each access; this keeps the engine free of any reference to the App
 // project or to the root AppSettings POCO.
-public interface IWhispEngineHost
+public interface ITranscriptionEngineHost
 {
-    WhispSettings     Whisp     { get; }
-    CaptureSettings   Audio     { get; }
-    TelemetrySettings Telemetry { get; }
-    LlmSettings       Llm       { get; }
+    TranscriptionSettings Transcription { get; }
+    CaptureSettings       Audio         { get; }
+    TelemetrySettings     Telemetry     { get; }
+    LlmSettings           Llm           { get; }
 
-    // Used by ResolveModelPath fallback. Returns the directory where Whisper
-    // model .bin files live (typically <UserDataRoot>\modules\whisp\models\
-    // or the legacy <UserDataRoot>\models\ during migration).
+    // Used by the active IAsrBackend to resolve the speech model path.
+    // Returns the directory where model .bin files live (typically
+    // <UserDataRoot>\models\, may be overridden via TranscriptionSettings
+    // .ModelsDirectory).
     string ResolveModelsDirectory();
 
     // Auto-calibration writes back to LevelWindow then asks the host to

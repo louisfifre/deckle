@@ -4,7 +4,7 @@ using Deckle.Core;
 namespace Deckle.Lighting.Ambient;
 
 // Module-local persistence for AmbientSettings. Twin of
-// WhispSettingsService and CaptureSettingsService — same JsonSettingsStore
+// TranscriptionSettingsService and CaptureSettingsService — same JsonSettingsStore
 // pattern, same singleton lazy, same naming convention. Backing file:
 // <UserDataRoot>/modules/ambient/settings.json.
 public sealed class AmbientSettingsService

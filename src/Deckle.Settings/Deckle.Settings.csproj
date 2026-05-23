@@ -60,7 +60,7 @@
     <!-- Deckle.Transcription and Deckle.Llm.Rewrite refs dropped in slice C1:
          their pages moved out, and the Settings shell no longer references
          their POCOs (each module owns its own JSON file via
-         WhispSettingsService / LlmSettingsService since C2b). -->
+         TranscriptionSettingsService / LlmSettingsService since C2b). -->
   </ItemGroup>
 
   <PropertyGroup>

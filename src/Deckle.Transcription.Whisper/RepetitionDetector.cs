@@ -1,5 +1,7 @@
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Whisper;
 
+// ── RepetitionDetector ──────────────────────────────────────────────────────
+//
 // Guards against the Whisper hallucination loop: on a long audio with
 // ambiguous trailing silence, the greedy decoder can enter a state where it
 // emits the same segment forever. Observed 2026-04-18 — 84 identical
@@ -10,7 +12,11 @@ namespace Deckle.Transcription;
 // V1 targets the observed case: N identical consecutive segments (case- and
 // whitespace-insensitive). AB-AB alternation is not covered yet — upgrade
 // when a real case surfaces.
-internal sealed class RepetitionDetector  // engine-internal helper; only WhispEngine instantiates it
+//
+// Lives in Deckle.Transcription.Whisper because the failure mode is specific
+// to whisper.cpp's decoder behaviour — Voxtral and future backends will have
+// their own characteristics and their own detectors if needed.
+internal sealed class RepetitionDetector
 {
     private readonly int _threshold;
     private string? _lastText;

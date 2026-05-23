@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using Deckle.Catalog;
 using Deckle.Transcription.Setup;
+using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.Setup;
 
@@ -169,7 +170,10 @@ public sealed partial class ChoicesPage : Page
     {
         if (_context is null) return;
 
-        long modelsBytes = _context.SelectedModel.SizeBytes + SpeechModels.VadModel.SizeBytes;
+        // SelectedModel is initialized by SetupWindow construction — null
+        // here would mean a code path bypassed the wizard host, which we
+        // surface as a developer error rather than silently coercing.
+        long modelsBytes = _context.SelectedModel!.SizeBytes + SpeechModels.VadModel.SizeBytes;
         bool nativeInstalled  = NativeRuntime.IsInstalled();
         bool autoDownloadable = !nativeInstalled && !NativeRuntime.BundleUrlIsPlaceholder;
 
@@ -223,7 +227,7 @@ public sealed partial class ChoicesPage : Page
         if (_setup is null || _context is null) return;
         _context.ChoicesConfirmed = true;
         DeckleSetupSource.Log.SetupInfo(
-            $"setup choices confirmed | location={_context.Location} | model={_context.SelectedModel.Id}");
+            $"setup choices confirmed | location={_context.Location} | model={_context.SelectedModel!.Id}");
         _setup.Body.Navigate(typeof(InstallingPage), _setup);
     }
 }

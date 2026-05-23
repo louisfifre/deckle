@@ -92,6 +92,9 @@
     <ProjectReference Include="..\Deckle.Setup\Deckle.Setup.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+    <!-- Whisper ASR backend (IAsrBackend implementation). App composition
+         root instantiates WhisperBackend and injects it into the engine. -->
+    <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
 
@@ -104,7 +107,7 @@
     <Content Include="Assets\Fonts\**\*.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Warm-up audio (PCM 16-bit mono 16 kHz, lu par WhispEngine.Warmup) -->
+    <!-- Warm-up audio (PCM 16-bit mono 16 kHz, lu par TranscriptionEngine.Warmup) -->
     <Content Include="Assets\Sounds\**\*.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

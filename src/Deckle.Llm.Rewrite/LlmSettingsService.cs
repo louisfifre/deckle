@@ -5,7 +5,7 @@ namespace Deckle.Llm.Rewrite;
 
 // ── LlmSettingsService ────────────────────────────────────────────────────
 //
-// Module-local persistence for LlmSettings. Twin of WhispSettingsService —
+// Module-local persistence for LlmSettings. Twin of TranscriptionSettingsService —
 // see that file's comment for the design rationale (cycle avoidance via
 // per-module ownership of settings + file).
 //

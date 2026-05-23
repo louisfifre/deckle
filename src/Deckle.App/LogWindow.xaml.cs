@@ -175,7 +175,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     }
 
     // Beacon app icon (red = recording / grey = idle). Called from
-    // WhispEngine.StatusChanged via App.xaml.cs. Thread-safe.
+    // TranscriptionEngine.StatusChanged via App.xaml.cs. Thread-safe.
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);

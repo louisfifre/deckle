@@ -6,7 +6,7 @@ namespace Deckle.Audio;
 // ── CaptureSettingsService ────────────────────────────────────────────────
 //
 // Module-local persistence for CaptureSettings. Twin of
-// WhispSettingsService — see that file's comment for the design rationale.
+// TranscriptionSettingsService — see that file's comment for the design rationale.
 //
 // Backing file: <UserDataRoot>/modules/audio/settings.json. Migration
 // from the legacy combined settings.json and from the previous

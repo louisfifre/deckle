@@ -2,7 +2,7 @@ namespace Deckle.Audio;
 
 // Categorical decoding of MMSYSERR codes returned by waveInOpen during the
 // pre-flight probe. Capture stays free of any localization dependency:
-// the caller (WhispEngine, App) maps MicErrorKind to user-visible strings
+// the caller (TranscriptionEngine, App) maps MicErrorKind to user-visible strings
 // via Loc.Get on its side. The raw MMSYSERR value is also returned so the
 // caller can include it verbatim in error logs / format strings (the
 // "Unavailable_Body_Format" path uses {0} = err).

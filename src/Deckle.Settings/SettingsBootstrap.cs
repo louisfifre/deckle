@@ -95,7 +95,7 @@ public static class SettingsBootstrap
             mutated |= DispatchSection(root, "telemetry", "telemetry");
 
             // ModelsDirectory: the legacy paths.modelsDirectory key migrated
-            // to whispSettings.modelsDirectory in 2026-05-02 (it's a
+            // to TranscriptionSettings.modelsDirectory in 2026-05-02 (it's a
             // Whisper-engine concern). Read the legacy value, inject it
             // into the dispatched whisp file (which we just wrote above
             // OR which already existed from a partial migration), then

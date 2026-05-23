@@ -8,7 +8,7 @@ namespace Deckle.Transcription;
 // counts as one word — resilient to multiple spaces, tabs, CRLFs, mixed
 // punctuation. No locale/NLP assumptions.
 //
-// Used by `WhispEngine` to fill the `text_words` field of the
+// Used by `TranscriptionEngine` to fill the `text_words` field of the
 // `LatencyRecorded` and `CorpusRecorded` events. Carry-over de la vague
 // 6 : utilitaire jadis hébergé par `Deckle.Logging` avec les payloads,
 // relocalisé aux côtés de son seul consommateur métier.

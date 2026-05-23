@@ -4,7 +4,7 @@ namespace Deckle.Core.Interop;
 
 // ── UI Automation — focused-element text-editability probe ──────────────────
 //
-// Used by WhispEngine.PasteFromClipboard to decide whether the window that
+// Used by TranscriptionEngine.PasteFromClipboard to decide whether the window that
 // currently owns the keyboard focus at Stop time is safe to paste into.
 // "Safe" means: UIA can answer, and the focused element is a text-accepting
 // control (Edit or Document). "Can't tell" (UIA refuses, COM exception,

@@ -3,7 +3,7 @@ namespace Deckle.Audio.Internal;
 // PCM16 mono ↔ float helpers shared between the polling loop and the
 // telemetry calculator. All functions are pure; they never touch waveIn
 // state. `internal` because Capture is the only consumer — the warmup
-// path inside WhispEngine loads its priming WAV via TryLoadWarmupClip,
+// path inside TranscriptionEngine loads its priming WAV via TryLoadWarmupClip,
 // not through this conversion.
 internal static class PcmConversion
 {

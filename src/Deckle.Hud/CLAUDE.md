@@ -58,7 +58,7 @@ Subclass `WM_NCACTIVATE` : force `wParam=TRUE` en permanence pour que DWM peigne
 
 `OverlappedPresenter` non resizable, `IsAlwaysOnTop=true`, `ExtendsContentIntoTitleBar=true`, `hasTitleBar: false`. Position centrée horizontalement, ancrage vertical configurable via `Settings.Overlay.Position` (TopCenter ou BottomCenter, default BottomCenter). Les anciennes valeurs de coin (TopLeft / BottomRight / …) éventuellement présentes dans un `settings.json` legacy sont normalisées vers TopCenter / BottomCenter par `StartsWith("Top")`.
 
-Le show passe par `MoveAndResize` (recalcule DPI à chaque show) puis `ShowWindow(SW_SHOWNOACTIVATE)` + `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. **Jamais `SetForegroundWindow`** — la HUD ne doit pas voler le focus. Le hide est `ShowWindow(SW_HIDE)`. La fenêtre est créée une fois dans `OnLaunched`, jamais détruite (`Closing → Cancel`). Les handlers UI sont marshalés via `DispatcherQueue.TryEnqueue` parce que les events `WhispEngine` viennent de threads de fond. L'overlay est désactivable dans Settings (`Overlay.Enabled`), vérifié en tête de `SetState`.
+Le show passe par `MoveAndResize` (recalcule DPI à chaque show) puis `ShowWindow(SW_SHOWNOACTIVATE)` + `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. **Jamais `SetForegroundWindow`** — la HUD ne doit pas voler le focus. Le hide est `ShowWindow(SW_HIDE)`. La fenêtre est créée une fois dans `OnLaunched`, jamais détruite (`Closing → Cancel`). Les handlers UI sont marshalés via `DispatcherQueue.TryEnqueue` parce que les events `TranscriptionEngine` viennent de threads de fond. L'overlay est désactivable dans Settings (`Overlay.Enabled`), vérifié en tête de `SetState`.
 
 **Backdrop** : `DesktopAcrylicBackdrop` (matériau canonique des fenêtres transient Win11). Signal DWM `DWMSBT_TRANSIENTWINDOW` posé explicitement (intention correcte côté doc, même si l'ombre Shell riche des menus système n'est pas accessible aux WinUI 3 unpackaged — validé runtime 2026-04-09).
 
@@ -80,7 +80,7 @@ L'implémentation est inline (timer dédié `_fadeInTimer` à ~60 fps) plutôt q
 
 ## Engine wiring
 
-`App.xaml.cs` dispatch `WhispEngine.StatusChanged` vers les méthodes publiques de `HudWindow` : `"Recording" → ShowRecording()`, `"Transcribing" → SwitchToTranscribing()`, `"Réécriture"` ou `"Rewriting"` (préfixe) `→ SwitchToRewriting()`. Le double préfixe FR/EN est défensif tant que le sweep n'est pas complètement passé sur EN — le dispatcher reste robuste sur les deux chaînes en attendant.
+`App.xaml.cs` dispatch `TranscriptionEngine.StatusChanged` vers les méthodes publiques de `HudWindow` : `"Recording" → ShowRecording()`, `"Transcribing" → SwitchToTranscribing()`, `"Réécriture"` ou `"Rewriting"` (préfixe) `→ SwitchToRewriting()`. Le double préfixe FR/EN est défensif tant que le sweep n'est pas complètement passé sur EN — le dispatcher reste robuste sur les deux chaînes en attendant.
 
 ## HDR highlights — reporté à V2
 

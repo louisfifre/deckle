@@ -14,7 +14,7 @@ namespace Deckle.Audio.Telemetry;
 // Used as an intermediate POCO between `MicrophoneTelemetryCalculator`
 // (producer, pure compute) and `DeckleAudioSource.MicrophoneTelemetryRecorded`
 // (consumer, flat 14-arg EventSource event). The auto-calibration loop in
-// `WhispEngine` also pins recent payloads to feed back into the HUD
+// `TranscriptionEngine` also pins recent payloads to feed back into the HUD
 // thresholds, hence the public surface.
 //
 // Carry-over de la vague 6 : ce POCO vivait jadis dans `Deckle.Logging`

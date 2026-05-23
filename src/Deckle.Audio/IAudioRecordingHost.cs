@@ -1,11 +1,11 @@
 namespace Deckle.Audio;
 
-// Contract injected by the orchestrator (WhispEngine, future Ask-Ollama)
+// Contract injected by the orchestrator (TranscriptionEngine, future Ask-Ollama)
 // to expose its live capture-related settings to MicrophoneCapture without
 // the latter depending on the host's full settings shape.
 //
 // Concrete adapters live in the host project (e.g. RecordingHostAdapter
-// inside WhispEngine). Each property is read on every Record() entry —
+// inside TranscriptionEngine). Each property is read on every Record() entry —
 // the host is free to forward to a settings service that may have changed
 // since the previous call.
 public interface IAudioRecordingHost
