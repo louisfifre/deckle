@@ -69,6 +69,13 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public const int EvtLightsListed              = 34;
     public const int EvtLightListed               = 35;
 
+    // ── EventIds — v2 id maps + EventStream ─────────────────────────────
+    public const int EvtFetchingV2IdMaps          = 36;
+    public const int EvtV2IdMapsFetched           = 37;
+    public const int EvtEventStreamStarting       = 38;
+    public const int EvtEventStreamReconnecting   = 39;
+    public const int EvtEventStreamStopped        = 40;
+
     // ── Discovery ───────────────────────────────────────────────────────
 
     [Event(EvtDiscoveryStarted,
@@ -398,5 +405,52 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public void LightListed(string id, string name, string type, bool reachable)
     {
         if (IsEnabled()) WriteEvent(EvtLightListed, id, name, type, reachable);
+    }
+
+    // ── v2 id maps + EventStream ────────────────────────────────────────
+
+    [Event(EvtFetchingV2IdMaps,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Fetching CLIP v2 id maps (light + grouped_light)")]
+    public void FetchingV2IdMaps()
+    {
+        if (IsEnabled()) WriteEvent(EvtFetchingV2IdMaps);
+    }
+
+    [Event(EvtV2IdMapsFetched,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "v2 id maps | lights={0} | grouped_lights={1}")]
+    public void V2IdMapsFetched(int lights, int grouped_lights)
+    {
+        if (IsEnabled()) WriteEvent(EvtV2IdMapsFetched, lights, grouped_lights);
+    }
+
+    [Event(EvtEventStreamStarting,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
+           Message = "Hue EventStream subscriber starting")]
+    public void EventStreamStarting()
+    {
+        if (IsEnabled()) WriteEvent(EvtEventStreamStarting);
+    }
+
+    [Event(EvtEventStreamReconnecting,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "EventStream reconnect — reason={0}")]
+    public void EventStreamReconnecting(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtEventStreamReconnecting, reason);
+    }
+
+    [Event(EvtEventStreamStopped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
+           Message = "Hue EventStream subscriber stopped")]
+    public void EventStreamStopped()
+    {
+        if (IsEnabled()) WriteEvent(EvtEventStreamStopped);
     }
 }

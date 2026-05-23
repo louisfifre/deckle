@@ -165,8 +165,34 @@ public sealed class AmbientEngine : IAsyncDisposable
 
     private CancellationTokenSource? _cts;
     private Task? _pushLoopTask;
+    private Task? _eventStreamTask;
     private long _startTimestamp;
     private bool _disposed;
+
+    // Reason tag read by Stop() when emitting PipelineStopDetail. Set
+    // by the internal-trigger paths (OnCaptureStopped → "capture_lost",
+    // OnResourceUpdate → "external") before they post Stop() to the
+    // thread pool ; otherwise stays at the "user" default for the toggle
+    // path. Reset to "user" at the top of StartAsync so a previous
+    // internal stop doesn't leak into the next session's user-stop log.
+    private string _stopReason = "user";
+
+    // External-change detection state — populated at StartAsync from
+    // the bridge's CLIP v2 resource list. Used by OnResourceUpdate to
+    // translate event-side v2 UUIDs (what the EventStream carries)
+    // back to v1 ids (what the engine's push path takes), then decide
+    // whether the event is our own echo or a true external change.
+    // When external is confirmed, the engine stops itself cleanly and
+    // raises StoppedByExternalChange for the UI to surface.
+    private IReadOnlyDictionary<string, string>? _v2LightMap;          // v2_uuid → v1_light_id
+    private IReadOnlyDictionary<string, string>? _v2GroupedLightMap;   // v2_uuid → v1_group_id
+    private string? _managedGroupId;                                   // v1_group_id we are syncing
+
+    // Last successful self-push, per v1 id ("group:<id>" or "light:<id>"
+    // namespaced). Used to discriminate the bridge echoing back our own
+    // REST PUT (within EchoWindow) from a genuine external change.
+    private readonly Dictionary<string, DateTimeOffset> _lastPushAt = new();
+    private static readonly TimeSpan EchoWindow = TimeSpan.FromMilliseconds(300);
 
     // Group-mode state — last colour we actually pushed to the bridge.
     // Compared with the sampler's most recent average to decide whether
@@ -466,6 +492,7 @@ public sealed class AmbientEngine : IAsyncDisposable
                 ?? throw new InvalidOperationException(
                     "HuePairingService restored no bridge from settings — paired state in settings.json is inconsistent.");
             _output = new HueRestLightOutput(_bridgeClient, ambient.HueLastGroupId);
+            _managedGroupId = ambient.HueLastGroupId;
 
             _capture = new ScreenCaptureService();
             _capture.Start(ambient.SelectedMonitorDeviceName);
@@ -482,6 +509,13 @@ public sealed class AmbientEngine : IAsyncDisposable
             // thread-safe internally (lock + Volatile.Write on
             // _latestSample).
             _capture.FrameArrived += OnFrameArrived;
+
+            // Stopped fires only on fatal capture failure (DEVICE_REMOVED
+            // / DEVICE_HUNG) — transient interruptions (secure desktop,
+            // ACCESS_LOST, RDP disconnect) are absorbed by the capture
+            // service's retry loop. When we see this, the only sane move
+            // is to stop the engine cleanly so the UI toggles back to off.
+            _capture.Stopped += OnCaptureStopped;
 
             await _output!.ConnectAsync(ct).ConfigureAwait(false);
 
@@ -515,6 +549,24 @@ public sealed class AmbientEngine : IAsyncDisposable
                 _pushIntervalMs = 1000 / GroupPushHz;
             }
 
+            // Fetch the v2 ↔ v1 id maps for the EventStream-driven reclaim.
+            // Best effort : if the bridge happens to reject (rare ; older
+            // firmware, weird LAN), we log and continue without reclaim —
+            // the engine still pushes normally, just won't reclaim from
+            // external commands until the next StartAsync.
+            try
+            {
+                var maps = await _bridgeClient.FetchV2IdMapsAsync(ct).ConfigureAwait(false);
+                _v2LightMap = maps.Lights;
+                _v2GroupedLightMap = maps.GroupedLights;
+            }
+            catch (Exception ex)
+            {
+                DeckleAmbientSource.Log.ReclaimSetupFailed(ex.GetType().Name, ex.Message);
+                _v2LightMap = null;
+                _v2GroupedLightMap = null;
+            }
+
             DeckleAmbientSource.Log.PipelineStarted();
             DeckleAmbientSource.Log.PipelineStartDetail(
                 _capture!.IsRunning ? "running" : "stopped",
@@ -526,6 +578,30 @@ public sealed class AmbientEngine : IAsyncDisposable
                 _sampler.GridRows,
                 _sampler.IsHdr ? "on" : "off");
 
+            // Per-light config dump — surfaces unmapped lights (LightZone.None)
+            // and zero-brightness lights at engine start. Both states cause
+            // the push loop to silently skip the light forever, including
+            // during reclaim. Without this log the user would think "ambient
+            // doesn't reclaim that lamp" when it's actually been opted out
+            // by configuration. Info level so it shows even with the capture
+            // gate off.
+            if (_multiLightActive && _multiLights is not null)
+            {
+                var zoneAssignments = _host.Ambient.LightZones;
+                var lightBrightness = _host.Ambient.LightBrightness;
+                foreach (var light in _multiLights)
+                {
+                    LightZone zone = (zoneAssignments is not null && zoneAssignments.TryGetValue(light.Id, out var z))
+                        ? z : LightZone.None;
+                    double bri = 1.0;
+                    if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
+                        bri = Math.Clamp(b, 0.0, 1.0);
+                    bool controlled = zone != LightZone.None && bri > 0.0;
+                    DeckleAmbientSource.Log.PipelinePerLightConfig(
+                        light.Id, light.Name, zone.ToString(), bri, controlled);
+                }
+            }
+
             _cts = new CancellationTokenSource();
             _startTimestamp = Stopwatch.GetTimestamp();
             _hbTimestamp    = _startTimestamp;
@@ -536,6 +612,8 @@ public sealed class AmbientEngine : IAsyncDisposable
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
             _multiSmoothed.Clear();
+            _lastPushAt.Clear();
+            _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
 
             // Open the capture-active window AFTER the started
@@ -551,6 +629,18 @@ public sealed class AmbientEngine : IAsyncDisposable
             AmbientCaptureGate.SetActive(true);
 
             _pushLoopTask = Task.Run(() => PushLoopAsync(_cts.Token), _cts.Token);
+
+            // Subscribe to the bridge's v2 EventStream so external state
+            // changes (Hue app, Home Assistant, physical Dimmer Switch)
+            // trigger an immediate reclaim push on the next tick. Skip
+            // if the v2 maps weren't fetched (FetchV2IdMapsAsync failed
+            // earlier) — without the maps we can't translate events.
+            if (_v2LightMap is not null || _v2GroupedLightMap is not null)
+            {
+                _eventStreamTask = Task.Run(
+                    () => _bridgeClient.StreamEventsAsync(OnResourceUpdate, _cts.Token),
+                    _cts.Token);
+            }
 
             IsRunning = true;
             SetState(AmbientEngineState.Running);
@@ -570,11 +660,85 @@ public sealed class AmbientEngine : IAsyncDisposable
         _sampler?.Process(frame);
     }
 
+    // Capture worker thread → marshal off it via Task.Run because Stop()
+    // raises StateChanged whose subscribers (AmbientPage, tray) expect
+    // to live on their own dispatchers, and Stop() is not designed to
+    // run synchronously on the capture's loop thread.
+    private void OnCaptureStopped()
+    {
+        if (!IsRunning) return;
+        DeckleAmbientSource.Log.CaptureLost();
+        _stopReason = "capture_lost";
+        Task.Run(Stop);
+    }
+
+    // Called on the EventStream task (HttpClient SSE reader). Decides
+    // whether the bridge-side event reflects our own push (echo) or a
+    // genuine external command, and if external, arms the reclaim flag
+    // so the next push tick forces a push even when the dedup gate
+    // would otherwise drop it. Never blocks — only field reads and a
+    // single volatile write.
+    private void OnResourceUpdate(HueResourceUpdate ev)
+    {
+        // Translate the v2 UUID to the v1 id the engine pushes against.
+        // Lights and grouped_lights live in disjoint UUID spaces ;
+        // resource.type tells us which map to consult.
+        string? v1Id;
+        string scopedKey;
+        if (ev.ResourceType == "grouped_light")
+        {
+            if (_v2GroupedLightMap is null || !_v2GroupedLightMap.TryGetValue(ev.V2ResourceId, out v1Id))
+                return;
+            // Only react for the group the engine is currently syncing
+            // — other groups on the bridge are not our concern.
+            if (_managedGroupId is null || v1Id != _managedGroupId) return;
+            // In multi-light mode, group_action events are noise — the
+            // engine doesn't push the group, only individual lights.
+            if (_multiLightActive) return;
+            scopedKey = "group:" + v1Id;
+        }
+        else if (ev.ResourceType == "light")
+        {
+            if (_v2LightMap is null || !_v2LightMap.TryGetValue(ev.V2ResourceId, out v1Id)) return;
+            // In group mode we don't drive per-light, so per-light
+            // events shouldn't trigger a group reclaim.
+            if (!_multiLightActive) return;
+            if (_multiLights is null || !_multiLights.Any(l => l.Id == v1Id)) return;
+            scopedKey = "light:" + v1Id;
+        }
+        else
+        {
+            return;
+        }
+
+        // Echo discrimination via local-clock timestamp. The bridge's
+        // creationtime is in its own clock domain (potential drift) ;
+        // comparing local UtcNow to our last self-push avoids skew
+        // entirely. EchoWindow is sized to cover the bridge round-trip
+        // plus SSE delivery latency (~100-200 ms observed).
+        if (_lastPushAt.TryGetValue(scopedKey, out var lastPushed))
+        {
+            var sinceLastPush = DateTimeOffset.UtcNow - lastPushed;
+            if (sinceLastPush.Duration() < EchoWindow) return;
+        }
+
+        // Honest stop on external interference : we don't try to wrestle
+        // control back. Log and stop the engine off the SSE worker
+        // thread (Stop() raises StateChanged, marshalling needs the
+        // thread-pool). The user-facing notification for this case
+        // belongs to a later error-handling pass — for now the toggle
+        // simply flips off and the LogWindow shows the reason.
+        DeckleAmbientSource.Log.ExternalChangeStopped(v1Id, ev.ResourceType);
+        _stopReason = "external";
+        Task.Run(Stop);
+    }
+
     private async Task DisposeOwnedDepsAsync()
     {
         if (_capture is not null)
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
+            try { _capture.Stopped -= OnCaptureStopped; } catch { }
             try { _capture.Dispose(); } catch { }
             _capture = null;
         }
@@ -600,6 +764,19 @@ public sealed class AmbientEngine : IAsyncDisposable
         _bridgeClient = null;
         _multiLights = null;
         _multiLastPushed = null;
+
+        // EventStream task was running on _cts.Token — already cancelled
+        // by Stop(). Await briefly to let the SSE socket close cleanly
+        // before we drop the dictionaries it reads against.
+        if (_eventStreamTask is not null)
+        {
+            try { await _eventStreamTask.ConfigureAwait(false); } catch { /* expected on cancel */ }
+            _eventStreamTask = null;
+        }
+        _v2LightMap = null;
+        _v2GroupedLightMap = null;
+        _managedGroupId = null;
+        _lastPushAt.Clear();
     }
 
     /// <summary>
@@ -633,6 +810,7 @@ public sealed class AmbientEngine : IAsyncDisposable
 
         DeckleAmbientSource.Log.PipelineStopped();
         DeckleAmbientSource.Log.PipelineStopDetail(
+            _stopReason,
             _multiLightActive ? "multi" : "group",
             durationSec,
             _pushedCount,
@@ -648,6 +826,7 @@ public sealed class AmbientEngine : IAsyncDisposable
         if (_capture is not null)
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
+            try { _capture.Stopped -= OnCaptureStopped; } catch { }
         }
 
         SetState(AmbientEngineState.Off);
@@ -766,6 +945,13 @@ public sealed class AmbientEngine : IAsyncDisposable
             _hbHttpDurationsMs.Add(httpMs);
 
             _lastR = targetR; _lastG = targetG; _lastB = targetB;
+            // Stamp the push timestamp for echo discrimination — the
+            // bridge will emit a grouped_light EventStream update for
+            // this PUT within ~100 ms and OnResourceUpdate compares
+            // local UtcNow against this stamp to filter out our own
+            // echo from a genuine external command.
+            if (_managedGroupId is not null)
+                _lastPushAt["group:" + _managedGroupId] = DateTimeOffset.UtcNow;
             _pushedCount++;
             _hbPushed++;
             // Verbose gating is handled by the LogWindow drop filter
@@ -921,6 +1107,12 @@ public sealed class AmbientEngine : IAsyncDisposable
             double httpMs = (Stopwatch.GetTimestamp() - httpStart) * 1000.0 / Stopwatch.Frequency;
             _hbHttpDurationsMs.Add(httpMs);
 
+            // Stamp push timestamps for echo discrimination — the bridge
+            // will emit a light EventStream update for each PUT within
+            // ~100 ms and OnResourceUpdate compares local UtcNow against
+            // these stamps to filter out our own echo.
+            var nowUtc = DateTimeOffset.UtcNow;
+            foreach (var id in toPush.Keys) _lastPushAt["light:" + id] = nowUtc;
             _pushedCount++;
             _hbPushed++;
             DeckleAmbientSource.Log.PushMulti(toPush.Count, _multiLights.Count, FormatPushedColors(toPush), httpMs);

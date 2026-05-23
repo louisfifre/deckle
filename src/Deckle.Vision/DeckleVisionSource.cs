@@ -36,13 +36,13 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtTextureQueryFailed              = 14;
     public const int EvtFrameConsumerThrew              = 15;
     public const int EvtReleaseFrameNonZero             = 16;
-    public const int EvtDuplicationRecreateFailed       = 17;
     public const int EvtDuplicationResizeDetected       = 18;
     public const int EvtDuplicationRecreated            = 19;
     public const int EvtDuplicationRecreateAttemptFailed = 20;
     public const int EvtSamplerInitialized              = 21;
     public const int EvtSamplerMapFailed                = 22;
     public const int EvtSamplerProcessFailed            = 23;
+    public const int EvtSecureDesktopRecovering         = 24;
 
     // ── Capture session lifecycle ───────────────────────────────────────
 
@@ -192,16 +192,16 @@ public sealed class DeckleVisionSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtReleaseFrameNonZero, hr);
     }
 
-    // ── Duplication recreate resilience ─────────────────────────────────
-
-    [Event(EvtDuplicationRecreateFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Duplication recreate failed {0} times in a row — capture stopped, display may be disconnected")]
-    public void DuplicationRecreateFailed(int max_attempts)
+    [Event(EvtSecureDesktopRecovering,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "AcquireNextFrame returned hr=0x{0:X8} (secure desktop or session disconnect) — recreating duplication")]
+    public void SecureDesktopRecovering(int hr)
     {
-        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateFailed, max_attempts);
+        if (IsEnabled()) WriteEvent(EvtSecureDesktopRecovering, hr);
     }
+
+    // ── Duplication recreate resilience ─────────────────────────────────
 
     [Event(EvtDuplicationResizeDetected,
            Level = EventLevel.Verbose,
@@ -224,10 +224,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDuplicationRecreateAttemptFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "DuplicateOutput1 failed on recreate (attempt {0}/{1}) — {2}: {3}")]
-    public void DuplicationRecreateAttemptFailed(int attempt, int max, string ex_type, string message)
+           Message = "DuplicateOutput1 failed on recreate (attempt {0}) — {1}: {2}")]
+    public void DuplicationRecreateAttemptFailed(int attempt, string ex_type, string message)
     {
-        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailed, attempt, max, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailed, attempt, ex_type, message);
     }
 
     // ── FrameSampler ────────────────────────────────────────────────────

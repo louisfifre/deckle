@@ -49,6 +49,10 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public const int EvtSettingsLoadWarning           = 24;
     public const int EvtSettingsLoadError             = 25;
     public const int EvtAmbientSettingsPrefixed       = 26;
+    public const int EvtCaptureLost                   = 27;
+    public const int EvtExternalChangeStopped         = 28;
+    public const int EvtReclaimSetupFailed            = 29;
+    public const int EvtPipelinePerLightConfig        = 30;
 
     // ── AmbientEngine — lifecycle ───────────────────────────────────────
 
@@ -91,10 +95,46 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     [Event(EvtPipelineStopDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "stop | reason=user | shape={0} | duration_sec={1:F1} | pushed={2} | dropped={3}")]
-    public void PipelineStopDetail(string shape, double duration_sec, long pushed, long dropped)
+           Message = "stop | reason={0} | shape={1} | duration_sec={2:F1} | pushed={3} | dropped={4}")]
+    public void PipelineStopDetail(string reason, string shape, double duration_sec, long pushed, long dropped)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStopDetail, shape, duration_sec, pushed, dropped);
+        if (IsEnabled()) WriteEvent(EvtPipelineStopDetail, reason, shape, duration_sec, pushed, dropped);
+    }
+
+    [Event(EvtCaptureLost,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Ambient capture lost — fatal capture failure (likely DEVICE_REMOVED / DEVICE_HUNG). Engine stopping.")]
+    public void CaptureLost()
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureLost);
+    }
+
+    [Event(EvtExternalChangeStopped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "External change on {1} {0} — stopping engine to avoid a push war")]
+    public void ExternalChangeStopped(string v1_id, string resource_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtExternalChangeStopped, v1_id, resource_type);
+    }
+
+    [Event(EvtReclaimSetupFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Reclaim setup failed — bridge id maps unavailable, external command reclaim disabled this session ({0}: {1})")]
+    public void ReclaimSetupFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtReclaimSetupFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtPipelinePerLightConfig,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "light cfg | id={0} | name={1} | zone={2} | brightness={3:F2} | controlled={4}")]
+    public void PipelinePerLightConfig(string id, string name, string zone, double brightness, bool controlled)
+    {
+        if (IsEnabled()) WriteEvent(EvtPipelinePerLightConfig, id, name, zone, brightness, controlled);
     }
 
     [Event(EvtPushLoopCrashed,
