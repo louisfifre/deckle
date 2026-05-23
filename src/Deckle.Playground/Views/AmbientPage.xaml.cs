@@ -109,6 +109,14 @@ public sealed partial class AmbientPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
+        // Zone-sampling sliders — Minimum lives here because the WinUI 3
+        // release parser throws on Minimum > default Value (Slider's
+        // default Value = 0 ; XAML Minimum > 0 would fail before this
+        // ctor body runs). Maximum / Steps stay in XAML where they're
+        // safe. The real Value is assigned later by PushViewModelToControls.
+        PlaygroundBorderDepthSlider.Minimum = 5;
+        PlaygroundBorderCellsSlider.Minimum = 4;
+
         _screenCaptureFpsTimer.Tick += OnScreenCaptureFpsTick;
 
         // Re-align the LightZonesOverlay Canvas (sibling of the
@@ -246,6 +254,10 @@ public sealed partial class AmbientPage : Page
                 PushViewModelToControls();
                 SyncPipelineUiFromViewModel();
                 ApplyPipelineReadiness();
+                // BorderDepth landed in the store — repaint the zone
+                // overlay rectangles so a slider drag in the Settings
+                // AmbientPage shows here without a window resize.
+                LayoutLightZonesOverlayFromViewbox();
             }
             finally
             {

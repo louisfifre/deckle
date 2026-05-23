@@ -54,6 +54,23 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial double SmoothingAlpha { get; set; }
 
+    // Zone-sampling band thickness. Sits alongside UseMultiLight
+    // rather than the HDR tuning knobs : it's a structural setup
+    // value (room/lamp layout, how much of the frame each lamp
+    // summarises) not a per-scene content tuning, so it never flips
+    // Mode to Custom. The mode picker swaps the active scale on the
+    // engine ; both BorderDepth (share) and BorderCells (count) keep
+    // their last user-set value across mode flips so a round-trip
+    // back to a previous mode lands on the same setting.
+    [ObservableProperty]
+    public partial BorderThicknessMode BorderMode { get; set; }
+
+    [ObservableProperty]
+    public partial double BorderDepth { get; set; }
+
+    [ObservableProperty]
+    public partial int BorderCells { get; set; }
+
     // ── Mode & pipeline ──────────────────────────────────────────────────────
 
     [ObservableProperty]
@@ -150,6 +167,31 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
+    partial void OnBorderModeChanged(BorderThicknessMode value)
+    {
+        if (_isSyncing) return;
+        DecklePlaygroundSource.Log.SettingChanged("BorderMode", value.ToString());
+        AmbientSettingsService.Instance.Current.BorderMode = value;
+        AmbientSettingsService.Instance.Save();
+    }
+
+    partial void OnBorderDepthChanged(double value)
+    {
+        if (_isSyncing) return;
+        DecklePlaygroundSource.Log.SettingChanged("BorderDepth", $"{value * 100.0:F0} %");
+        AmbientSettingsService.Instance.Current.BorderDepth = value;
+        // No FlipToCustomMode — see the property doc above.
+        AmbientSettingsService.Instance.Save();
+    }
+
+    partial void OnBorderCellsChanged(int value)
+    {
+        if (_isSyncing) return;
+        DecklePlaygroundSource.Log.SettingChanged("BorderCells", value.ToString());
+        AmbientSettingsService.Instance.Current.BorderCells = value;
+        AmbientSettingsService.Instance.Save();
+    }
+
     partial void OnUseMultiLightChanged(bool value)
     {
         if (_isSyncing) return;
@@ -212,6 +254,9 @@ public partial class AmbientViewModel : ObservableObject
         BrightnessCurveSCurveSteepness  = 2.0;
         ChangeThreshold                 = 6;
         SmoothingAlpha                  = 0.30;
+        BorderMode                      = BorderThicknessMode.Share;
+        BorderDepth                     = 0.33;
+        BorderCells                     = 8;
         Mode                            = AmbientMode.Game;
         UseMultiLight                   = false;
         Enabled                         = false;
@@ -233,6 +278,9 @@ public partial class AmbientViewModel : ObservableObject
             BrightnessCurveSCurveSteepness  = s.BrightnessCurveSCurveSteepness;
             ChangeThreshold                 = s.ChangeThreshold;
             SmoothingAlpha                  = s.SmoothingAlpha;
+            BorderMode                      = s.BorderMode;
+            BorderDepth                     = s.BorderDepth;
+            BorderCells                     = s.BorderCells;
             Mode                            = s.Mode;
             UseMultiLight                   = s.UseMultiLight;
             Enabled                         = s.Enabled;

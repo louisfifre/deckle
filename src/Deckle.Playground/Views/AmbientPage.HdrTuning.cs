@@ -234,12 +234,25 @@ public sealed partial class AmbientPage
         PlaygroundSmoothingSlider.Value        = ViewModel.SmoothingAlpha;
         PlaygroundChangeThresholdSlider.Value  = ViewModel.ChangeThreshold;
 
+        // Zone sampling. Share slider is in percent (5–50, integer
+        // steps for clean ticks) ; the ViewModel stores the fraction
+        // (0.05–0.50). Cells slider is the raw count (1–15). Clamp
+        // before assignment so a hand-edited settings.json out of
+        // range doesn't throw inside RangeBase. SelectBorderModeInRadios
+        // + UpdateBorderRowsVisibility hide/show the active row.
+        PlaygroundBorderDepthSlider.Value      = Math.Clamp(ViewModel.BorderDepth, 0.05, 0.5) * 100.0;
+        PlaygroundBorderCellsSlider.Value      = Math.Clamp(ViewModel.BorderCells, 4, 24);
+        SelectBorderModeInRadios(ViewModel.BorderMode);
+        UpdateBorderRowsVisibility(ViewModel.BorderMode);
+
         UpdatePlaygroundExposureText();
         UpdatePlaygroundSaturationText();
         UpdatePlaygroundMinBrightnessText();
         UpdatePlaygroundGammaText();
         UpdatePlaygroundSmoothingText();
         UpdatePlaygroundChangeThresholdText();
+        UpdatePlaygroundBorderDepthText();
+        UpdatePlaygroundBorderCellsText();
     }
 
     // ── Slider handlers ─────────────────────────────────────────────────────
@@ -301,6 +314,59 @@ public sealed partial class AmbientPage
         UpdatePlaygroundChangeThresholdText();
         if (_initializing) return;
         ViewModel.ChangeThreshold = (int)Math.Round(PlaygroundChangeThresholdSlider.Value);
+    }
+
+    private void OnPlaygroundBorderDepthSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        UpdatePlaygroundBorderDepthText();
+        if (_initializing) return;
+        // Slider is in percent (5–50) for clean tick spacing ;
+        // ViewModel stores the fraction (0.05–0.50).
+        ViewModel.BorderDepth = PlaygroundBorderDepthSlider.Value / 100.0;
+    }
+
+    private void OnPlaygroundBorderCellsSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        UpdatePlaygroundBorderCellsText();
+        if (_initializing) return;
+        ViewModel.BorderCells = (int)Math.Round(PlaygroundBorderCellsSlider.Value);
+    }
+
+    private void OnPlaygroundBorderModeSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not RadioButtons radios) return;
+        if (radios.SelectedItem is not RadioButton rb || rb.Tag is not string tag) return;
+        if (!Enum.TryParse<BorderThicknessMode>(tag, out var mode)) return;
+
+        UpdateBorderRowsVisibility(mode);
+        if (_initializing) return;
+        if (ViewModel.BorderMode == mode) return;
+        ViewModel.BorderMode = mode;
+    }
+
+    private void SelectBorderModeInRadios(BorderThicknessMode mode)
+    {
+        string tag = mode.ToString();
+        for (int i = 0; i < PlaygroundBorderModeRadios.Items.Count; i++)
+        {
+            if (PlaygroundBorderModeRadios.Items[i] is RadioButton rb
+                && (rb.Tag as string) == tag)
+            {
+                PlaygroundBorderModeRadios.SelectedIndex = i;
+                return;
+            }
+        }
+        PlaygroundBorderModeRadios.SelectedIndex = 0;
+    }
+
+    private void UpdateBorderRowsVisibility(BorderThicknessMode mode)
+    {
+        PlaygroundBorderShareRow.Visibility = mode == BorderThicknessMode.Share
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        PlaygroundBorderCellsRow.Visibility = mode == BorderThicknessMode.Cells
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void OnPlaygroundBrightnessCurveTypeChanged(object sender, SelectionChangedEventArgs e)
@@ -374,4 +440,13 @@ public sealed partial class AmbientPage
 
     private void UpdatePlaygroundChangeThresholdText()
         => PlaygroundChangeThresholdValueText.Text = $"{(int)Math.Round(PlaygroundChangeThresholdSlider.Value)}";
+
+    private void UpdatePlaygroundBorderDepthText()
+        => PlaygroundBorderDepthValueText.Text = $"{(int)Math.Round(PlaygroundBorderDepthSlider.Value)} %";
+
+    private void UpdatePlaygroundBorderCellsText()
+    {
+        int cells = (int)Math.Round(PlaygroundBorderCellsSlider.Value);
+        PlaygroundBorderCellsValueText.Text = cells == 1 ? "1 cell" : $"{cells} cells";
+    }
 }
