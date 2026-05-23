@@ -256,11 +256,13 @@ public sealed partial class AmbientPage : Page
 
     private void OnAmbientEngineStateChanged(AmbientEngineState state)
     {
-        // Re-evaluate the preview timer when the engine starts or
-        // stops so an idle Playground page doesn't keep pumping the
-        // dispatcher at 5 Hz. AmbientEngine.StateChanged can fire from
-        // any thread — marshal to the UI thread before touching the
-        // timer / blanking the cells.
+        // Re-evaluate the preview timer + visibility when the engine
+        // starts or stops so an idle Playground page doesn't keep
+        // pumping the dispatcher at 5 Hz, and so the "Capture preview"
+        // empty state comes back on engine stop (cells stay allocated
+        // by the cached Page but the HasLiveSource gate now folds
+        // visibility into EvaluatePreviewTimerState). StateChanged can
+        // fire from any thread — marshal before touching UI.
         if (DispatcherQueue.HasThreadAccess)
         {
             EvaluatePreviewTimerState();

@@ -105,6 +105,10 @@ public sealed partial class AmbientPage
             _previewTimer?.Stop();
             BlankIdlePreviewState();
         }
+        // Visibility depends on HasLiveSource() too (the "Capture preview"
+        // empty state should come back when no live source is pumping
+        // even though _previewCells stays allocated by the cached page).
+        UpdatePreviewViewboxVisibility();
     }
 
     private bool HasLiveSource()
@@ -147,7 +151,13 @@ public sealed partial class AmbientPage
         // dismiss the preview area entirely when they don't want
         // anything on screen — matches the requested "if you uncheck
         // zones, there's nothing".
-        bool hasCells = _previewCells is not null;
+        // Cells stay allocated for the lifetime of the cached page —
+        // checking _previewCells != null alone would keep the preview
+        // visible after the engine has stopped, hiding the "Capture
+        // preview" empty state. Gate on HasLiveSource() so the cells
+        // only count as visible when there's actually fresh data
+        // landing.
+        bool hasCells = _previewCells is not null && HasLiveSource();
         bool hasZones = _placementLights is { Count: > 0 };
         bool zonesToggleOn = ShowZoneOverlaysToggle?.IsChecked == true;
         bool show = hasCells || (hasZones && zonesToggleOn);
