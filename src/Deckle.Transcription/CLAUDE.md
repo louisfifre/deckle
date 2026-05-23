@@ -54,7 +54,7 @@ Juste avant `PasteFromClipboard`, `OnReadyToPaste` est invoqué synchronement et
 
 ## Persistance settings
 
-`TranscriptionSettingsService` charge et persiste sous `<UserDataRoot>/modules/transcription/settings.json` via `JsonSettingsStore<T>`. Au premier chargement après la refonte 2026-05-23, si le fichier legacy `modules/whisp/settings.json` existe et que le nouveau n'existe pas encore, le service le déplace en place — migration one-shot, idempotente.
+`TranscriptionSettingsService` charge et persiste sous `<UserDataRoot>/modules/transcription/settings.json` via `JsonSettingsStore<T>`.
 
 ## Structure interne
 

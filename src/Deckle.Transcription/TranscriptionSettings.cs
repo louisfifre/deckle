@@ -5,7 +5,7 @@ namespace Deckle.Transcription;
 // Root POCO for the transcription module. Groups every section consumed by
 // the orchestrator (TranscriptionEngine) and by the active IAsrBackend. The
 // module owns its own JSON file under <UserDataRoot>/modules/transcription/
-// settings.json (migrated from the legacy modules/whisp/ path).
+// settings.json.
 public sealed class TranscriptionSettings
 {
     // User override for the directory containing speech models (.bin files

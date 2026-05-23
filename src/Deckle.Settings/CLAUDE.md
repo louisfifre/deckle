@@ -77,7 +77,7 @@ Chaque module possède son fichier de settings sous `<UserDataRoot>/modules/<mod
 | `SettingsService` | `settings.json` | Shell : Hotkeys, Theme, Behaviour (auto-paste + overlay), Startup, `Paths.BackupDirectory` |
 | `CaptureSettingsService` | `modules/audio/settings.json` | Microphone, Voice level window |
 | `TelemetrySettingsService` | `modules/telemetry/settings.json` | Diagnostics opt-ins + storage path |
-| `TranscriptionSettingsService` | `modules/transcription/settings.json` | Transcription orchestrator + active backend settings (migrated from legacy `modules/whisp/`) |
+| `TranscriptionSettingsService` | `modules/transcription/settings.json` | Transcription orchestrator + active backend settings |
 | `LlmSettingsService` | `modules/llm/settings.json` | Ollama + profiles + auto-rewrite rules + shortcuts |
 
 La migration de l'ancien fichier combiné vers le layout per-module vit dans `SettingsBootstrap.MigrateLegacyToPerModule()`. Cette méthode tourne en tout premier dans `App.OnLaunched`, avant qu'un service ne touche son fichier — sinon le service écrirait des defaults et la migration verrait une cible déjà existante. Elle gère aussi le renommage de la section JSON `recording → capture` (héritage 2026-05-02), le dispatch de la clé JSON `capture` vers le module id `audio` (2026-05-15 rename), et la migration de dossier `modules/capture/ → modules/audio/` pour les utilisateurs déjà passés en per-module. Toute future migration de module suit ce pattern via `MigrateModuleFolder` et l'ajustement du dispatch.
