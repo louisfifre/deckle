@@ -391,8 +391,30 @@ public sealed partial class AmbientPage
 
     private void LayoutLightZoneRects(double stageWidth, double stageHeight)
     {
-        double bandH = stageHeight * AmbientEngine.VerticalBorderDepth;
-        double bandV = stageWidth  * AmbientEngine.LateralBorderDepth;
+        // Pull the live thickness settings from the shared store so a
+        // slider drag in the Playground repaints the overlay on the
+        // next OnAmbientSettingsChanged tick. Share mode multiplies the
+        // fraction by the matching stage dimension ; Cells mode
+        // multiplies the cell count by the per-cell stage size derived
+        // from the grid. Both branches clamp to stay in lockstep with
+        // AmbientEngine.ResolveBandCells on a hand-edited settings.json.
+        var settings = AmbientSettingsService.Instance.Current;
+        int cols = _previewGridCols > 0 ? _previewGridCols : 30;
+        int rows = _previewGridRows > 0 ? _previewGridRows : 17;
+        double bandH, bandV;
+        if (settings.BorderMode == BorderThicknessMode.Cells)
+        {
+            int cellsRows = Math.Clamp(settings.BorderCells, 1, rows);
+            int cellsCols = Math.Clamp(settings.BorderCells, 1, cols);
+            bandH = stageHeight * cellsRows / rows;
+            bandV = stageWidth  * cellsCols / cols;
+        }
+        else
+        {
+            double depth = Math.Clamp(settings.BorderDepth, 0.05, 0.5);
+            bandH = stageHeight * depth;
+            bandV = stageWidth  * depth;
+        }
 
         Canvas.SetLeft(ZoneTopRect, 0);
         Canvas.SetTop (ZoneTopRect, 0);

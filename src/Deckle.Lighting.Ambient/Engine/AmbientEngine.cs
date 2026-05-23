@@ -33,12 +33,11 @@ namespace Deckle.Lighting.Ambient;
 //     per-second PUT count within the Hue REST CLIP v1 comfort zone
 //     for a typical 3-5 light setup (3 lights × 10 Hz = 30 PUT/s).
 //     The four zones are sampled once per tick from a band of
-//     <see cref="LateralBorderDepth"/> on the left / right edges and
-//     <see cref="VerticalBorderDepth"/> on the top / bottom edges —
-//     this mirrors HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c>
-//     concept, with asymmetric defaults tuned for a 3-lamp setup
-//     where each lamp needs to summarise a sizeable slice of the
-//     frame, not just a bezel-LED strip.
+//     <see cref="AmbientSettings.BorderDepth"/> on every edge — this
+//     mirrors HyperHDR's <c>horizontalDepth</c> / <c>verticalDepth</c>
+//     concept, collapsed to a single user-tunable value (V0 shipped
+//     asymmetric 0.33 / 0.40 hardcoded ; V1 lets the user pick one
+//     fraction that fits their room).
 //
 // If multi-light is requested but the driver doesn't expose the
 // capability, the engine logs a warning and falls back to group mode
@@ -114,23 +113,19 @@ public sealed class AmbientEngine : IAsyncDisposable
     // unambiguously dark content (lock screen, off display).
     private const int OffThreshold = 8;
 
-    // Border-band depth used by the four zone-sampling helpers, as a
-    // fraction of the matching screen dimension. Asymmetric defaults :
-    // lateral bands at 33 % and vertical bands at 40 %. The 3-lamp
-    // setup (Top + Left + Right) needs each lamp to summarise a much
-    // larger slice than a typical bezel-LED strip would — capturing
-    // a third of the screen on the sides, and the upper two-fifths on
-    // top so the lamp facing the user picks up the sky / dominant
-    // mood of the scene, not just the HUD overlay band. The top zone
-    // reads pixels in y ∈ [0, VerticalBorderDepth], the bottom zone
-    // in y ∈ [1-VerticalBorderDepth, 1], the left in
-    // x ∈ [0, LateralBorderDepth], the right in
-    // x ∈ [1-LateralBorderDepth, 1]. Hardcoded on purpose : the
-    // depths are a property of the room/lighting layout, not a
-    // per-scene tuning knob. Adjust here when the lamp arrangement
-    // changes.
-    public const double LateralBorderDepth = 0.33;
-    public const double VerticalBorderDepth = 0.40;
+    // Zone-sampling band thickness. V0 hardcoded an asymmetric pair
+    // (lateral 0.33, vertical 0.40) tuned for a 3-lamp Top + Left + Right
+    // setup ; V1 exposes the thickness to the user via two scales :
+    //   - Share — fraction of the matching screen dimension, same number
+    //     on every edge. The top / bottom bands end up thinner in pixels
+    //     than the lateral bands on a 16:9 screen.
+    //   - Pixels — fixed source-pixel thickness, same number on every
+    //     edge. The top band reads at the same physical thickness as
+    //     the lateral bands regardless of aspect ratio.
+    // Both values + the mode selector are persisted on AmbientSettings
+    // and snapshotted at the top of every tick (same live-reload
+    // pattern as the HDR sliders below). The engine converts the user
+    // value into a per-axis cell count before calling SampleZone.
 
     // Heartbeat cadence for the push-loop telemetry. The per-tick
     // "push" log used to fire 10-15 times a second on a steady
@@ -235,6 +230,12 @@ public sealed class AmbientEngine : IAsyncDisposable
     private BrightnessCurveType _brightnessCurveType = BrightnessCurveType.Linear;
     private int    _minBrightness         = 0;
     private int    _changeThreshold       = 6;
+    // Zone-sampling band thickness snapshot. See the field-doc block
+    // above and AmbientSettings.BorderMode / .BorderDepth / .BorderCells
+    // for the user-facing semantics.
+    private BorderThicknessMode _borderMode   = BorderThicknessMode.Share;
+    private double              _borderDepth  = 0.33;
+    private int                 _borderCells  = 8;
     // EMA factor snapshot. 1.0 = pass-through (no temporal smoothing).
     // Refreshed at the top of each tick from _host.Ambient.SmoothingAlpha.
     // The lamp jitter observed in dark scenes with small moving
@@ -677,6 +678,9 @@ public sealed class AmbientEngine : IAsyncDisposable
                 _minBrightness                  = ambient.MinBrightness;
                 _changeThreshold                = ambient.ChangeThreshold;
                 _smoothingAlpha                 = ambient.SmoothingAlpha;
+                _borderMode                     = ambient.BorderMode;
+                _borderDepth                    = ambient.BorderDepth;
+                _borderCells                    = ambient.BorderCells;
 
                 var sample = _sampler!.LatestSample;
                 if (sample is null)
@@ -800,10 +804,18 @@ public sealed class AmbientEngine : IAsyncDisposable
         // numbers shared across all lights that map to the same zone.
         // Zones with no assigned light are still computed for the
         // overlay UI but their result isn't pushed anywhere.
-        var topColor    = SampleZone(sample, LightZone.Top);
-        var bottomColor = SampleZone(sample, LightZone.Bottom);
-        var leftColor   = SampleZone(sample, LightZone.Left);
-        var rightColor  = SampleZone(sample, LightZone.Right);
+        // Resolve the band thickness in cells for each axis. The top /
+        // bottom bands slice the rows axis, the left / right bands slice
+        // the cols axis ; in Share mode the same fraction yields fewer
+        // rows than cols on a 16:9 grid, in Cells mode the same count
+        // applies on every edge.
+        int bandRows = ResolveBandCells(_borderMode, _borderDepth, _borderCells, sample.Rows);
+        int bandCols = ResolveBandCells(_borderMode, _borderDepth, _borderCells, sample.Cols);
+
+        var topColor    = SampleZone(sample, LightZone.Top,    bandRows);
+        var bottomColor = SampleZone(sample, LightZone.Bottom, bandRows);
+        var leftColor   = SampleZone(sample, LightZone.Left,   bandCols);
+        var rightColor  = SampleZone(sample, LightZone.Right,  bandCols);
 
         // Per-light fan-out + per-light early-exit. We build a
         // dictionary of (lightId → colour) only for lights whose target
@@ -1237,30 +1249,45 @@ public sealed class AmbientEngine : IAsyncDisposable
         _hbHttpDurationsMs.Clear();
     }
 
-    // Averages all cells whose centre falls inside the matching border
-    // rectangle, expressed in normalised [0,1]² coordinates on the
-    // frame grid. Top = y ∈ [0, VerticalBorderDepth] × x ∈ [0, 1] ;
-    // Bottom = y ∈ [1-VerticalBorderDepth, 1] × x ∈ [0, 1] ;
-    // Left = x ∈ [0, LateralBorderDepth] × y ∈ [0, 1] ;
-    // Right = x ∈ [1-LateralBorderDepth, 1] × y ∈ [0, 1]. The
-    // cell-index bounds are rounded inward via Floor / Ceiling so we
-    // never read out-of-range. Returned colour is the gamma-correct
-    // mean of the cells in the rectangle — sRGB bytes are linearised
-    // via ColorSpace.SrgbToLinear8Lut, averaged in linear light, then
-    // re-encoded via LinearToSrgb (matches the gamma-correct averaging
-    // applied upstream in FrameSampler). None / unknown zones return
-    // black so a misconfigured callsite leaves the lamps dark rather
-    // than tinting them arbitrarily.
-    public static LightColor SampleZone(SampledFrame sample, LightZone zone)
+    // Resolve the user's band setting into a concrete cell count along
+    // the matching axis (rows for top / bottom, cols for left / right).
+    // Share mode multiplies the fraction by the axis length ; Cells
+    // mode uses the user value directly. Both paths clamp into [1, dim]
+    // so a hand-edited settings.json can't blow past the grid bounds
+    // (we always sample at least one cell, never the whole frame).
+    private static int ResolveBandCells(BorderThicknessMode mode, double depthShare, int cellsPerEdge, int axisDim)
+    {
+        if (axisDim <= 0) return 0;
+        int raw = mode switch
+        {
+            BorderThicknessMode.Share  => (int)Math.Round(Math.Clamp(depthShare, 0.05, 0.5) * axisDim),
+            BorderThicknessMode.Cells  => cellsPerEdge,
+            _                          => (int)Math.Round(0.33 * axisDim),
+        };
+        return Math.Clamp(raw, 1, axisDim);
+    }
+
+    // Averages all cells inside the matching border band. The caller
+    // passes <paramref name="bandCells"/> — the number of rows
+    // (Top / Bottom) or columns (Left / Right) consumed by the band on
+    // its assigned axis ; the perpendicular axis spans the whole grid.
+    // Top selects rows [0, bandCells), Bottom selects rows
+    // [rows − bandCells, rows), Left selects cols [0, bandCells),
+    // Right selects cols [cols − bandCells, cols). Returned colour is
+    // the gamma-correct mean of the cells in the rectangle — sRGB bytes
+    // are linearised via ColorSpace.SrgbToLinear8Lut, averaged in linear
+    // light, then re-encoded via LinearToSrgb (matches the gamma-correct
+    // averaging applied upstream in FrameSampler). None / unknown zones
+    // return black so a misconfigured callsite leaves the lamps dark
+    // rather than tinting them arbitrarily.
+    public static LightColor SampleZone(SampledFrame sample, LightZone zone, int bandCells)
     {
         int cols = sample.Cols;
         int rows = sample.Rows;
 
         // Compute the cell-index bounding box for the zone. Inclusive
-        // on both ends — at least one cell is always selected even on
-        // a tiny grid where the depth × dim < 1. Top/Bottom take the
-        // vertical depth (rows axis), Left/Right take the lateral
-        // depth (cols axis).
+        // on both ends, with bandCells clamped to [1, axis-length] so
+        // an out-of-range caller still returns a well-defined slice.
         int cMin, cMax, rMin, rMax;
         switch (zone)
         {
@@ -1268,22 +1295,22 @@ public sealed class AmbientEngine : IAsyncDisposable
                 cMin = 0;
                 cMax = cols - 1;
                 rMin = 0;
-                rMax = Math.Max(0, (int)Math.Floor(VerticalBorderDepth * rows) - 1);
+                rMax = Math.Clamp(bandCells, 1, rows) - 1;
                 break;
             case LightZone.Bottom:
                 cMin = 0;
                 cMax = cols - 1;
-                rMin = Math.Min(rows - 1, (int)Math.Ceiling((1.0 - VerticalBorderDepth) * rows));
+                rMin = rows - Math.Clamp(bandCells, 1, rows);
                 rMax = rows - 1;
                 break;
             case LightZone.Left:
                 cMin = 0;
-                cMax = Math.Max(0, (int)Math.Floor(LateralBorderDepth * cols) - 1);
+                cMax = Math.Clamp(bandCells, 1, cols) - 1;
                 rMin = 0;
                 rMax = rows - 1;
                 break;
             case LightZone.Right:
-                cMin = Math.Min(cols - 1, (int)Math.Ceiling((1.0 - LateralBorderDepth) * cols));
+                cMin = cols - Math.Clamp(bandCells, 1, cols);
                 cMax = cols - 1;
                 rMin = 0;
                 rMax = rows - 1;

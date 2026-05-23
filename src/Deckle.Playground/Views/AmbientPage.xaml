@@ -614,6 +614,101 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Zone sampling card. Structural sampler knob shared
+                     by every multi-light zone — how thick the sampled
+                     band is around each assigned edge. Lives alongside
+                     the Light zones card (the per-lamp edge picker)
+                     rather than the HDR tuning panel because it's a
+                     room/lamp-layout property, not a per-scene tuning.
+                     Engine snapshots BorderMode / BorderDepth /
+                     BorderCells on every push tick so a drag applies
+                     live ; the overlay rectangles in the preview
+                     repaint on AmbientSettingsService.Changed. -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{ThemeResource ControlCornerRadius}"
+                        Padding="24">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Zone sampling"
+                                       Style="{ThemeResource SubtitleTextBlockStyle}" />
+                            <TextBlock Text="How thick the sampled band is around each edge. By share keeps the same proportion top, bottom, and sides ; by cells keeps the same sampler-cell count on every edge — useful on widescreen displays where percentages make the top and bottom bands feel too thin."
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       MaxWidth="440" />
+                        </StackPanel>
+
+                        <!-- Scale picker. RadioButtons mirrors the
+                             pipeline-mode pattern at the top of the
+                             page : two mutually exclusive options laid
+                             out horizontally with a discreet header. -->
+                        <RadioButtons x:Name="PlaygroundBorderModeRadios"
+                                      Header="Thickness"
+                                      MaxColumns="2"
+                                      SelectionChanged="OnPlaygroundBorderModeSelectionChanged">
+                            <RadioButton Content="By share" Tag="Share" />
+                            <RadioButton Content="By cells" Tag="Cells" />
+                        </RadioButtons>
+
+                        <!-- Share slider — fraction of the matching grid
+                             dimension. Minimum + Value seeded in
+                             code-behind to avoid the WinUI 3 release
+                             parser bug (Minimum > default Value=0
+                             throws ; same workaround as
+                             VadMaxSpeechSlider on WhisperPage). -->
+                        <StackPanel x:Name="PlaygroundBorderShareRow" Spacing="6">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="PlaygroundBorderDepthSlider"
+                                        Grid.Column="0"
+                                        Maximum="50"
+                                        StepFrequency="5"
+                                        SmallChange="5" LargeChange="10"
+                                        TickFrequency="5"
+                                        TickPlacement="Outside"
+                                        ValueChanged="OnPlaygroundBorderDepthSliderChanged" />
+                                <TextBlock x:Name="PlaygroundBorderDepthValueText"
+                                           Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           MinWidth="56"
+                                           TextAlignment="End" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Cells slider — direct sampler-grid count.
+                             Minimum + Value seeded in code-behind for
+                             the same parser-bug reason. -->
+                        <StackPanel x:Name="PlaygroundBorderCellsRow" Spacing="6">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="PlaygroundBorderCellsSlider"
+                                        Grid.Column="0"
+                                        Maximum="15"
+                                        StepFrequency="1"
+                                        SmallChange="1" LargeChange="5"
+                                        TickFrequency="1"
+                                        TickPlacement="Outside"
+                                        ValueChanged="OnPlaygroundBorderCellsSliderChanged" />
+                                <TextBlock x:Name="PlaygroundBorderCellsValueText"
+                                           Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           MinWidth="56"
+                                           TextAlignment="End" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- Light zones card. -->
                 <Border x:Name="LightZonesCard"
                         Visibility="Collapsed"
