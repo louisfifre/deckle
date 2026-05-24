@@ -95,7 +95,7 @@ class GeminiJudge(Judge):
         row_system_prompt:   str,
         row_model:           str = DEFAULT_ROW_MODEL,
         max_audio_inline_mb: float = 18.0,
-        max_tokens_row:      int = 1024,
+        max_tokens_row:      int = 4096,
         temperature:         float = 0.0,
     ) -> None:
         try:
@@ -125,6 +125,15 @@ class GeminiJudge(Judge):
         # de cette taille on lève — le code Files API n'est pas câblé
         # (corpus actuel : 252 s × 16 kHz mono 16 bit ≈ 8 MB max).
         self.max_audio_inline_mb = max_audio_inline_mb
+        # 4096 plutôt qu'une valeur calée sur la longueur du JSON visible
+        # (~110 tokens en pratique) : sur Gemini 2.5/3.5 Flash, le budget
+        # max_output_tokens est partagé entre les tokens de raisonnement
+        # interne ("thinking") et l'output émis. Sur les audios longs
+        # (38 s et plus), le thinking consomme l'essentiel d'un budget
+        # 1024 et il ne reste que ~30 tokens pour le JSON, qui ressort
+        # alors tronqué en plein milieu d'une clé. Mesuré sur le run v4
+        # 25 samples : 6/25 rows parse_ok=false, toutes sur audios >= 38 s,
+        # toutes coupées à 27-30 output tokens.
         self.max_tokens_row = max_tokens_row
         self.temperature = temperature
 
