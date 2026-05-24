@@ -26,11 +26,21 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any
 
 from ._base import Judge, JudgeScore
+
+
+# Quota tier gratuit constaté empiriquement sur gemini-3.5-flash :
+# 5 requêtes/minute. La doc Google ne publie plus de chiffres figés mais
+# l'erreur 429 le confirme (``quotaValue: '5'``). 12 s = 60/5 c'est le
+# fallback safe si l'API ne renvoie pas de retryDelay parseable.
+_RATE_LIMIT_FALLBACK_DELAY_S = 12.0
+_RATE_LIMIT_MARGIN_S = 1.0
+_RATE_LIMIT_MAX_RETRIES = 3
 
 
 # Modèle par défaut. Snapshot daté plutôt que ``gemini-flash-latest``
@@ -140,17 +150,7 @@ class GeminiJudge(Judge):
                 source_name=source_name,
                 audio_path=audio_path,
             )
-            response = self._client.models.generate_content(
-                model=self.row_model,
-                contents=parts,
-                config=self._types.GenerateContentConfig(
-                    system_instruction=self.row_system_prompt,
-                    response_mime_type="application/json",
-                    response_schema=_JUDGE_SCHEMA,
-                    temperature=self.temperature,
-                    max_output_tokens=self.max_tokens_row,
-                ),
-            )
+            response = self._call_with_retry(parts)
             raw = response.text or ""
         except Exception as exc:
             return JudgeScore(
@@ -184,6 +184,45 @@ class GeminiJudge(Judge):
         )
 
     # ── Internals ──────────────────────────────────────────────────────
+
+    def _call_with_retry(self, parts: list[Any]) -> Any:
+        """Appel ``generate_content`` avec retry sur 429 RESOURCE_EXHAUSTED.
+
+        Le SDK ``google-genai`` ne respecte pas tout seul le ``retryDelay``
+        renvoyé dans le payload d'erreur. On le parse et on sleep d'autant
+        — sans ça les rows courtes burn le quota free tier (5 RPM) en
+        moins d'une minute et la moitié des juges remontent en erreur.
+
+        Stratégie : retryDelay extrait du payload + 1 s de marge. Si on ne
+        sait pas le parser, fallback 12 s (60/5 = 1 call max par 12 s).
+        Plafond de 3 tentatives — au-delà c'est probablement un problème
+        de plan ou de clé et on laisse remonter.
+        """
+        last_exc: Exception | None = None
+        for attempt in range(_RATE_LIMIT_MAX_RETRIES):
+            try:
+                return self._client.models.generate_content(
+                    model=self.row_model,
+                    contents=parts,
+                    config=self._types.GenerateContentConfig(
+                        system_instruction=self.row_system_prompt,
+                        response_mime_type="application/json",
+                        response_schema=_JUDGE_SCHEMA,
+                        temperature=self.temperature,
+                        max_output_tokens=self.max_tokens_row,
+                    ),
+                )
+            except Exception as exc:
+                last_exc = exc
+                if not _is_rate_limit_error(exc):
+                    raise
+                if attempt == _RATE_LIMIT_MAX_RETRIES - 1:
+                    raise
+                delay = _extract_retry_delay(exc) or _RATE_LIMIT_FALLBACK_DELAY_S
+                time.sleep(delay + _RATE_LIMIT_MARGIN_S)
+        # Inatteignable : la boucle sort soit par return soit par raise.
+        # Mypy/Pyright voudraient un raise explicite ici.
+        raise last_exc if last_exc is not None else RuntimeError("retry loop exited unexpectedly")
 
     def _build_parts(
         self,
@@ -228,6 +267,52 @@ class GeminiJudge(Judge):
 
 
 # ── Helpers libres ────────────────────────────────────────────────────
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    """``True`` si l'exception est un 429 RESOURCE_EXHAUSTED de Gemini.
+
+    Le SDK google-genai expose le code HTTP via différents attributs selon
+    la version — on couvre les principaux et on fallback sur le texte de
+    l'exception. Un faux positif serait peu coûteux (sleep inutile) mais
+    pas une régression silencieuse."""
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    if code == 429:
+        return True
+    s = str(exc)
+    return "429" in s and ("RESOURCE_EXHAUSTED" in s or "rate limit" in s.lower())
+
+
+_RETRY_DELAY_PATTERNS = (
+    re.compile(r"'retryDelay':\s*'(\d+(?:\.\d+)?)s'"),
+    re.compile(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"'),
+    re.compile(r"retry in (\d+(?:\.\d+)?)\s*s"),
+)
+
+
+def _extract_retry_delay(exc: Exception) -> float | None:
+    """Extrait le ``retryDelay`` (en secondes) d'un 429 Gemini.
+
+    1. Essaie d'abord la voie structurée : ``exc.details`` est parfois une
+       liste de dicts incluant un bloc ``google.rpc.RetryInfo``.
+    2. Sinon parse la repr str() de l'exception qui contient typiquement
+       ``'retryDelay': '32s'``.
+    Retourne ``None`` si rien d'exploitable — le caller fallback alors
+    sur une valeur sûre."""
+    details = getattr(exc, "details", None)
+    if isinstance(details, list):
+        for d in details:
+            if isinstance(d, dict) and d.get("@type", "").endswith("RetryInfo"):
+                rd = str(d.get("retryDelay", ""))
+                m = re.match(r"^(\d+(?:\.\d+)?)s$", rd)
+                if m:
+                    return float(m.group(1))
+    s = str(exc)
+    for pat in _RETRY_DELAY_PATTERNS:
+        m = pat.search(s)
+        if m:
+            return float(m.group(1))
+    return None
+
 
 def _mime_from_ext(ext: str) -> str:
     """MIME type à passer à Gemini ``Part.from_bytes`` selon l'extension
