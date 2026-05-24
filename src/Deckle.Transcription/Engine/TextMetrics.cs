@@ -9,9 +9,10 @@ namespace Deckle.Transcription;
 // punctuation. No locale/NLP assumptions.
 //
 // Used by `TranscriptionEngine` to fill the `text_words` field of the
-// `LatencyRecorded` and `CorpusRecorded` events. Carry-over de la vague
-// 6 : utilitaire jadis hébergé par `Deckle.Logging` avec les payloads,
-// relocalisé aux côtés de son seul consommateur métier.
+// `LatencyRecorded`, `CorpusAsrRecorded` and `CorpusRewriteRecorded`
+// events. Carry-over de la vague 6 : utilitaire jadis hébergé par
+// `Deckle.Logging` avec les payloads, relocalisé aux côtés de son seul
+// consommateur métier.
 internal static class TextMetrics
 {
     private static readonly Regex _token = new(@"\S+", RegexOptions.Compiled);

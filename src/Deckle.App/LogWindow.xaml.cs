@@ -268,11 +268,15 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     // Les rows télémétrie pures sont filtrées par EventName parce que la
     // sémantique « metadata diagnostique vs log » ne survit pas dans
-    // EventLevel BCL — les trois events (LatencyRecorded, CorpusRecorded,
-    // MicrophoneTelemetryRecorded) sont Informational comme un log normal.
+    // EventLevel BCL — ces events sont Verbose ou Informational comme un
+    // log normal. Inclut le legacy CorpusRecorded le temps qu'il
+    // disparaisse, et les deux events normalisés CorpusAsr/RewriteRecorded
+    // qui le remplacent (voir ADR-0011).
     private static bool IsTelemetryRow(LogEntry e)
         => e.EventName == "LatencyRecorded"
         || e.EventName == "CorpusRecorded"
+        || e.EventName == "CorpusAsrRecorded"
+        || e.EventName == "CorpusRewriteRecorded"
         || e.EventName == "MicrophoneTelemetryRecorded";
 
     private bool Matches(LogEntry e)

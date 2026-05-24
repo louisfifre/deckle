@@ -110,6 +110,12 @@ public sealed partial class TranscriptionEngine
 
     private void Transcribe(float[] audio, CancellationToken ct = default)
     {
+        // Identité de cette invocation pipeline. Régénérée à chaque
+        // entrée dans Transcribe — le moindre early-return en aval
+        // n'émet aucun corpus event, donc l'ID n'a pas besoin d'être
+        // partagé avec le scope appelant. Voir ADR-0011.
+        _transcriptionId = System.Guid.NewGuid().ToString("N");
+
         if (!_backend.IsModelLoaded)
         {
             RaiseStatus(Loc.Get("Status_ModelNotReady"));
@@ -420,45 +426,72 @@ public sealed partial class TranscriptionEngine
             pasted:               pasteVerified,
             outcome:              outcome.ToString());
 
-        // Corpus logging — captures the raw Whisper output only. We don't
-        // persist the rewrite: prompts evolve, so paired (raw, rewrite)
-        // samples go stale the moment the prompt is edited. Raw text stays
-        // useful for benchmarking Whisper itself (initial prompt, VAD, model
-        // swap). One file per rewrite profile so samples stay sliceable by
-        // the workflow they came from, even without the rewrite payload.
+        // Corpus normalisé — voir ADR-0011. Deux events distincts joints
+        // par _transcriptionId : CorpusAsrRecorded capte toujours la
+        // sortie ASR, CorpusRewriteRecorded n'est émis que si un profil
+        // rewrite a tourné. L'audio WAV plat sous audio/<id>.wav est
+        // partagé entre les deux côtés via audioFileName.
         var telemetrySettings = _host.Telemetry;
-        if (telemetrySettings.CorpusEnabled && profile is not null)
+        if (telemetrySettings.CorpusEnabled)
         {
-            var whisperSettings = _host.Transcription.Engine;
-            int rawChars = rawText.Length;
-            var timestamp = DateTimeOffset.Now;
+            var asrSettings = _host.Transcription.Engine;
 
-            string slug = $"{CorpusPaths.Slugify(profile.Name)}-{profile.Id}";
+            // Bucket ASR : `raw` aujourd'hui (Whisper, et plus tard
+            // Voxtral en mode mot-pour-mot universel). Le futur mode
+            // Voxtral instruction-nommée prendra un bucket
+            // `voxtral-<instruction>` distinct quand le backend Voxtral
+            // sera branché.
+            string asrTier   = CorpusTier.Resolve(rawWordCount);
+            string asrBucket = "raw";
 
-            // Audio capture is a second, nested opt-in gated by the same
-            // profile slug — so a replay pairs JSONL rows with their WAV
-            // 1:1. Same timestamp as the text entry keeps the pairing
-            // unambiguous even if the user triggers a new recording
-            // while the file write is still settling.
-            string? audioFile = telemetrySettings.RecordAudioCorpus
-                ? WavCorpusWriter.Write(slug, audio, timestamp)
-                : null;
+            // Audio dédupliqué par transcription. Vide quand l'utilisateur
+            // n'a pas activé RecordAudioCorpus — la ligne JSONL reste
+            // utile sans WAV.
+            string audioFileName = telemetrySettings.RecordAudioCorpus
+                ? (WavCorpusWriter.Write(_transcriptionId, audio) ?? "")
+                : "";
 
-            double wordsPerSecond = recDurationSec > 0 ? rawWordCount / recDurationSec : 0;
-            DeckleWhispSource.Log.CorpusRecorded(
-                profile:          profile.Name,
-                profile_id:       profile.Id,
-                slug:             slug,
-                duration_seconds: recDurationSec,
-                model:            whisperSettings.Model,
-                language:         whisperSettings.Language,
-                elapsed_ms:       whisperMs,
-                initial_prompt:   whisperSettings.InitialPrompt ?? "",
-                raw_text:         rawText,
-                raw_words:        rawWordCount,
-                raw_chars:        rawChars,
-                words_per_second: wordsPerSecond,
-                audio_file:       audioFile ?? "");
+            DeckleWhispSource.Log.CorpusAsrRecorded(
+                transcription_id:      _transcriptionId,
+                audio_file:            audioFileName,
+                bucket:                asrBucket,
+                tier:                  asrTier,
+                backend:               _backend.Name,
+                model:                 asrSettings.Model,
+                language:              asrSettings.Language,
+                prompt_or_instruction: asrSettings.InitialPrompt ?? "",
+                text:                  rawText,
+                text_words:            rawWordCount,
+                text_chars:            rawText.Length,
+                duration_seconds:      recDurationSec,
+                words_per_second:      recDurationSec > 0 ? rawWordCount / recDurationSec : 0,
+                elapsed_ms:            whisperMs);
+
+            if (profile is not null)
+            {
+                int rewriteWordCount = TextMetrics.CountWords(fullText);
+                // Slugify normalise déjà en [a-z0-9-]+ ; Sanitize ajoute
+                // une ceinture-bretelles contre les composants problématiques
+                // qui pourraient se glisser dans Id (le suffixe n'est pas
+                // re-slugifié — un Id sortant de la fabrique est censé
+                // être 12 hex chars mais on ne le présume pas).
+                string rewriteBucket = CorpusPaths.Sanitize(
+                    $"rewrite-{CorpusPaths.Slugify(profile.Name)}-{profile.Id}");
+
+                DeckleWhispSource.Log.CorpusRewriteRecorded(
+                    transcription_id:      _transcriptionId,
+                    audio_file:            audioFileName,
+                    bucket:                rewriteBucket,
+                    rewrite_profile_id:    profile.Id,
+                    rewrite_profile_name:  profile.Name,
+                    ollama_endpoint:       llmSettings.OllamaEndpoint,
+                    ollama_model:          profile.Model ?? "",
+                    prompt_template_hash:  PromptTemplateHash.Of(profile),
+                    text:                  fullText,
+                    text_words:            rewriteWordCount,
+                    text_chars:            fullText.Length,
+                    elapsed_ms:            llmMs);
+            }
         }
 
         RaiseFinished(outcome);

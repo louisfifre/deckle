@@ -44,7 +44,13 @@ public sealed class LogEntryTemplateSelector : DataTemplateSelector
             switch (e.EventName)
             {
                 case "LatencyRecorded":             return Latency!;
+                // Trois events partagent le template Corpus : le legacy
+                // CorpusRecorded (le temps qu'il disparaisse) et les deux
+                // events normalisés CorpusAsr/RewriteRecorded qui le
+                // remplacent. Voir ADR-0011.
                 case "CorpusRecorded":              return Corpus!;
+                case "CorpusAsrRecorded":           return Corpus!;
+                case "CorpusRewriteRecorded":       return Corpus!;
                 case "MicrophoneTelemetryRecorded": return Microphone!;
             }
 
