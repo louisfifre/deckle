@@ -26,6 +26,7 @@ import json
 import os
 import re
 import time
+from pathlib import Path
 from typing import Any
 
 from ._base import Judge, JudgeScore
@@ -92,7 +93,12 @@ class ClaudeJudge(Judge):
         regime_name:   str,
         regime_label:  str,
         source_name:   str,
+        audio_path:    Path | None = None,
     ) -> JudgeScore:
+        # ``audio_path`` ignoré : l'API Anthropic ne consomme pas l'audio
+        # en input, seul le texte est jugé. Argument accepté pour la
+        # symétrie multi-juge — voir _base.Judge.score_row.
+        del audio_path
         user_msg = _build_user_message_row(
             hypothesis=hypothesis,
             reference=reference,

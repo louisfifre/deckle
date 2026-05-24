@@ -24,6 +24,7 @@ le rend lisible.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 
@@ -62,10 +63,19 @@ class Judge:
         regime_name:   str,
         regime_label:  str,
         source_name:   str,
+        audio_path:    Path | None = None,
     ) -> JudgeScore:
         """Note un row individuel. Reçoit la transcription hypothesis
         et éventuellement une référence (Whisper large-v3 par défaut).
-        ``reference=None`` quand la source EST le juge baseline."""
+        ``reference=None`` quand la source EST le juge baseline.
+
+        ``audio_path`` est le WAV source du sample, transmis à titre
+        optionnel pour les juges multimodaux capables d'écouter le
+        signal (Gemini par exemple). Les juges purement textuels
+        (Claude API) reçoivent l'argument mais l'ignorent — la
+        signature est uniforme pour que le bench n'ait pas à brancher
+        par type de juge.
+        """
         raise NotImplementedError
 
     def score_macro(
