@@ -150,14 +150,18 @@ public sealed class TrayContextMenuHost : IDisposable
             AreOpenCloseAnimationsEnabled = false,
         };
 
-        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
-        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Settings"),   () => OnShowSettings?.Invoke()));
-        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Playground"), () => OnShowPlayground?.Invoke()));
-        _flyout.Items.Add(new MenuFlyoutSeparator());
-
+        // Ambient Light en tête : c'est la commande à toggle la plus fréquente
+        // pour Louis (allumer/éteindre les LEDs sans naviguer dans Settings).
+        // Les commandes d'ouverture de fenêtre viennent ensuite, séparées des
+        // commandes de cycle de vie (Restart, Quit) par un séparateur final.
         _ambientItem = new ToggleMenuFlyoutItem { Text = Loc.Get("TrayMenu_AmbientLight") };
         _ambientItem.Click += (_, _) => { Hide(); OnToggleAmbient?.Invoke(); };
         _flyout.Items.Add(_ambientItem);
+
+        _flyout.Items.Add(new MenuFlyoutSeparator());
+        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
+        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Settings"),   () => OnShowSettings?.Invoke()));
+        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Playground"), () => OnShowPlayground?.Invoke()));
 
         _flyout.Items.Add(new MenuFlyoutSeparator());
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Restart"), () => OnRestart?.Invoke()));
