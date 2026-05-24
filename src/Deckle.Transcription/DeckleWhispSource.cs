@@ -118,7 +118,8 @@ public sealed class DeckleWhispSource : DeckleEventSource
     public const int EvtPipelineLlmMetrics               = 74;
     public const int EvtPipelineOutputs                  = 75;
     public const int EvtLatencyRecorded                  = 76;
-    public const int EvtCorpusRecorded                   = 77;
+    // 77 — EvtCorpusRecorded retiré au profit de CorpusAsr/RewriteRecorded
+    // (ADR-0011). L'ID est brûlé, jamais réutilisé.
     public const int EvtUserFeedbackEmitted              = 78;
     public const int EvtManualProfileNotFound            = 79;
     public const int EvtDisposeWorkerJoinTimeout         = 80;
@@ -915,10 +916,6 @@ public sealed class DeckleWhispSource : DeckleEventSource
     // Quand un rewrite tourne, les deux events partent avec le même
     // transcription_id — c'est la clé qui joint les lignes au WAV
     // (audio/<transcription_id>.wav).
-    //
-    // L'ancien event CorpusRecorded est conservé temporairement le temps
-    // de la transition pour ne pas casser un éventuel consommateur. Sera
-    // retiré en fin de chantier — voir ADR-0011 section Conséquences.
 
     [Event(EvtLatencyRecorded,
            Level = EventLevel.Verbose,
@@ -957,36 +954,6 @@ public sealed class DeckleWhispSource : DeckleEventSource
             whisper_ms, llm_ms, ollama_load_ms, llm_prompt_eval_ms, llm_eval_ms,
             llm_prompt_tokens, llm_eval_tokens, clipboard_ms, paste_ms,
             strategy, n_segments, text_chars, text_words, profile, pasted, outcome);
-    }
-
-    [System.Obsolete(
-        "Remplacé par CorpusAsrRecorded + CorpusRewriteRecorded (ADR-0011). " +
-        "Conservé temporairement pour cohabiter avec le listener legacy " +
-        "corpus.jsonl pendant la transition — sera retiré en fin de chantier.")]
-    [Event(EvtCorpusRecorded,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "profile={2} words={9} wps={11:F1}")]
-    public void CorpusRecorded(
-        string profile,
-        string profile_id,
-        string slug,
-        double duration_seconds,
-        string model,
-        string language,
-        long   elapsed_ms,
-        string initial_prompt,
-        string raw_text,
-        int    raw_words,
-        int    raw_chars,
-        double words_per_second,
-        string audio_file)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtCorpusRecorded,
-            profile, profile_id, slug, duration_seconds,
-            model, language, elapsed_ms, initial_prompt,
-            raw_text, raw_words, raw_chars, words_per_second, audio_file);
     }
 
     [Event(EvtCorpusAsrRecorded,

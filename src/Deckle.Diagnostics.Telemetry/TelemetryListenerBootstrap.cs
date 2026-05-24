@@ -33,10 +33,6 @@ namespace Deckle.Diagnostics.Telemetry;
 //   latency.jsonl                                  ← LatencyRecorded events
 //   microphone.jsonl                               ← MicrophoneTelemetryRecorded
 //                                                    events
-//   corpus.jsonl                                   ← CorpusRecorded events
-//                                                    (legacy, retiré en
-//                                                    fin de chantier
-//                                                    corpus normalisé)
 //   corpus/<bucket>/<tier>/corpus.jsonl            ← CorpusAsrRecorded events
 //                                                    (routés)
 //   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
@@ -44,10 +40,11 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    tier — voir ADR-0011)
 //
 // Sémantique des gates utilisateur :
-//   app.jsonl        ← ApplicationLogToDisk == true
-//   latency.jsonl    ← LatencyEnabled == true
-//   microphone.jsonl ← MicrophoneTelemetry == true
-//   corpus.jsonl, corpus/raw/…, corpus/rewrite-…/  ← CorpusEnabled == true
+//   app.jsonl              ← ApplicationLogToDisk == true
+//   latency.jsonl          ← LatencyEnabled == true
+//   microphone.jsonl       ← MicrophoneTelemetry == true
+//   corpus/raw/…,
+//   corpus/rewrite-…/      ← CorpusEnabled == true
 //
 // Posture par défaut : gates closes (false). Tant que ConfigureGates
 // n'a pas été appelée, aucune ligne ne touche disque — fail-safe
@@ -105,16 +102,10 @@ public static class TelemetryListenerBootstrap
             predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
-        _listeners.Add(new JsonlEventListener(
-            filePath:  Path.Combine(rootDirectory, "corpus.jsonl"),
-            kindLabel: "corpus",
-            predicate: e => e.EventName == "CorpusRecorded"
-                         && ReadGate("CorpusEnabled")));
-
-        // Corpus normalisé — voir ADR-0011. Les deux listeners routés
-        // qui suivent vivent à côté du legacy corpus.jsonl le temps de
-        // la transition. Quand le pipeline aura cessé d'émettre l'ancien
-        // CorpusRecorded, le listener legacy ci-dessus sera retiré.
+        // Corpus normalisé — voir ADR-0011. Deux listeners routés qui
+        // pulvérisent CorpusAsr/RewriteRecorded sur une arborescence
+        // bucketée. Le predicate des deux gate sur CorpusEnabled et le
+        // resolver compose le path à partir du payload de l'event.
         string corpusRoot = Path.Combine(rootDirectory, "corpus");
 
         _listeners.Add(new RoutedJsonlEventListener(
