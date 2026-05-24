@@ -255,9 +255,17 @@ public sealed class TrayContextMenuHost : IDisposable
         NativeMethods.ShowWindow(_hwnd, TrayMenuNativeMethods.SW_SHOWNORMAL);
         NativeMethods.SetForegroundWindow(_hwnd);
 
+        // FlyoutPlacementMode.Full : ouvre le menu à l'emplacement exact du
+        // target (notre frame). Sans Full, le mode Auto par défaut place le
+        // popup adjacent au target (typiquement au-dessus du frame), ce qui
+        // double l'offset déjà calculé par CalculatePopupWindowPosition — le
+        // menu apparaît alors décalé d'environ une hauteur de menu vers le
+        // haut. La fenêtre porteuse étant déjà positionnée à la coordonnée
+        // exacte voulue, Full est le mode qui colle.
         _flyout.ShowAt(_frame, new FlyoutShowOptions
         {
             ShowMode = FlyoutShowMode.Transient,
+            Placement = FlyoutPlacementMode.Full,
         });
     }
 
