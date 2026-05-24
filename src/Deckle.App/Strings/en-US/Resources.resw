@@ -363,10 +363,34 @@
   </data>
 
   <!-- ─── Tray ───────────────────────────────────────────────────────
-       Tray icon tooltip. Capped at 127 chars by Shell_NotifyIcon. The
-       {0} placeholder receives a Status_* string from TranscriptionEngine. -->
+       Tray icon tooltip + context menu items. Tooltip is consumed via
+       Loc.Format from TrayIconManager (Deckle.Shell). Menu items are
+       consumed via Loc.Get from TrayContextMenuHost (Deckle.Shell.TrayMenu).
+       Both live here because the default ResourceLoader only searches
+       the host's "Resources/" subtree of Deckle.pri — satellite module
+       .resw entries land under "<ModuleName>/Resources/" and are
+       invisible to the default loader. The {0} placeholder receives a
+       Status_* string from TranscriptionEngine. -->
   <data name="Tray_Tooltip_Format" xml:space="preserve">
     <value>Deckle — {0}</value>
+  </data>
+  <data name="TrayMenu_Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="TrayMenu_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="TrayMenu_Playground" xml:space="preserve">
+    <value>Playground</value>
+  </data>
+  <data name="TrayMenu_AmbientLight" xml:space="preserve">
+    <value>Ambient Light</value>
+  </data>
+  <data name="TrayMenu_Restart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="TrayMenu_Quit" xml:space="preserve">
+    <value>Quit</value>
   </data>
 
   <!-- ─── Setup wizard — shell ───────────────────────────────────────
