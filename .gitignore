@@ -155,6 +155,8 @@ benchmark/telemetry/
 benchmark/reports/
 benchmark/logs/
 benchmark/results.tsv
+benchmark/runs/
+benchmark/corpus/
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (benchmark/ + ad hoc scripts)
