@@ -170,7 +170,7 @@ benchmark/results.tsv
 .tox/
 *.egg-info/
 venv/
-.venv/
+.venv*/
 env/
 ENV/
 
