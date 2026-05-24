@@ -485,6 +485,10 @@ public partial class App : Microsoft.UI.Xaml.Application
             },
             OnRestart        = () => RestartAppFromTray(),
             OnQuit           = () => QuitApp(),
+            // Tray icon screen rect — the menu host uses it as the
+            // CalculatePopupWindowPosition exclude rect so the popup anchors
+            // tangent to the icon regardless of taskbar orientation.
+            GetIconRect      = () => _tray.GetIconRect(),
         };
         _tray.RightClickRequested += () => _trayMenu.Show();
 

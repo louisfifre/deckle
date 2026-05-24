@@ -51,6 +51,21 @@ public struct NOTIFYICONDATA
     public IntPtr hBalloonIcon;
 }
 
+// ── NOTIFYICONIDENTIFIER ──────────────────────────────────────────────────────
+//
+// Identifiant d'une icône tray pour Shell_NotifyIconGetRect (Vista+). cbSize
+// doit être Marshal.SizeOf<NOTIFYICONIDENTIFIER>() avant tout appel. Une icône
+// se désigne soit par (hWnd, uID), soit par guidItem — Deckle utilise la paire
+// (hWnd, uID) comme dans NOTIFYICONDATA.
+[StructLayout(LayoutKind.Sequential)]
+public struct NOTIFYICONIDENTIFIER
+{
+    public uint cbSize;
+    public IntPtr hWnd;
+    public uint uID;
+    public Guid guidItem;
+}
+
 // ── WNDCLASSEX ────────────────────────────────────────────────────────────────
 //
 // Window class descriptor passed to RegisterClassEx. cbSize must be set to

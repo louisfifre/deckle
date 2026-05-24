@@ -25,6 +25,8 @@ The `HotkeyManager` also listens for keyboard layout changes (`WM_INPUTLANGCHANG
 
 `TrayIconManager` registers a Shell_NotifyIcon icon with a context menu. The callbacks (start recording, open settings, open logs, quit) are supplied by the host app before `Register`. The icon can toggle between idle state and recording state (red) via `SetState` — it's the transcription pipeline that pushes the state at session start and end.
 
+`TrayIconManager.GetIconRect()` expose le rect en pixels physiques (screen coordinates) de l'icône dans la zone de notification, via l'API `Shell_NotifyIconGetRect`. Retourne `null` si l'icône n'a pas pu être localisée (encore non enregistrée, dans l'overflow caché, ou explorer.exe en cours de restart). Consommé par `TrayContextMenuHost` pour ancrer son popup tangent à l'icône — pattern canonique Windows qui rend la position correcte quelle que soit l'orientation de la taskbar.
+
 ## Autostart
 
 `AutostartService` manages the HKCU entry `Software\Microsoft\Windows\CurrentVersion\Run`. The written value targets `Environment.ProcessPath` (absolute path of the current exe). `Disable` does not touch an entry that points to another install — useful when the user has launched Deckle from a dev build while a release is installed elsewhere. States and errors are reported under `Lifecycle`. No MSIX StartupTask — decision recorded in [ADR-0002](../../docs/adr/0002-reporter-msix-rester-unpackaged.md).

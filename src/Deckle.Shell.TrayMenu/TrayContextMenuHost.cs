@@ -71,6 +71,15 @@ public sealed class TrayContextMenuHost : IDisposable
     public Action? OnQuit            { get; set; }
     public Func<bool>? IsAmbientOn   { get; set; }
 
+    /// <summary>
+    /// Optional accessor for the tray icon's screen rect. When provided, the
+    /// menu anchors tangent to the icon via <c>CalculatePopupWindowPosition</c>
+    /// — placement adapts automatically to the taskbar orientation (left,
+    /// right, top, bottom). When null or returning null, falls back to the
+    /// cursor position with a 36×36 px exclude rect.
+    /// </summary>
+    public Func<NativeMethods.RECT?>? GetIconRect { get; set; }
+
     public TrayContextMenuHost(IntPtr ownerHwnd)
     {
         _ownerHwnd = ownerHwnd;
@@ -187,15 +196,33 @@ public sealed class TrayContextMenuHost : IDisposable
         if (_ambientItem is not null && IsAmbientOn is not null)
             _ambientItem.IsChecked = IsAmbientOn();
 
-        NativeMethods.GetCursorPos(out POINT cursor);
-        var anchor = cursor;
-        NativeMethods.RECT exclude = new()
+        // Anchor + exclude : on préfère le rect réel de l'icône tray (API
+        // Shell_NotifyIconGetRect). Cela rend la position automatiquement
+        // correcte quelle que soit l'orientation de la taskbar — au-dessus si
+        // taskbar en bas, à droite si taskbar à gauche, etc. — sans dépendre
+        // du point de clic sur l'icône. Fallback sur la position du curseur
+        // si le shell ne sait pas (icône non encore enregistrée, dans
+        // l'overflow caché, ou explorer.exe en cours de restart).
+        NativeMethods.RECT? iconRect = GetIconRect?.Invoke();
+        POINT anchor;
+        NativeMethods.RECT exclude;
+        if (iconRect is { } icon)
         {
-            left   = cursor.X - CursorExcludeHalfExtent,
-            top    = cursor.Y - CursorExcludeHalfExtent,
-            right  = cursor.X + CursorExcludeHalfExtent,
-            bottom = cursor.Y + CursorExcludeHalfExtent,
-        };
+            anchor = new POINT { X = (icon.left + icon.right) / 2, Y = (icon.top + icon.bottom) / 2 };
+            exclude = icon;
+        }
+        else
+        {
+            NativeMethods.GetCursorPos(out POINT cursor);
+            anchor = cursor;
+            exclude = new NativeMethods.RECT
+            {
+                left   = cursor.X - CursorExcludeHalfExtent,
+                top    = cursor.Y - CursorExcludeHalfExtent,
+                right  = cursor.X + CursorExcludeHalfExtent,
+                bottom = cursor.Y + CursorExcludeHalfExtent,
+            };
+        }
 
         // DPI réel du moniteur sous le point d'ancrage. RasterizationScale du
         // XamlRoot refléterait le DPI du moniteur où la fenêtre porteuse est

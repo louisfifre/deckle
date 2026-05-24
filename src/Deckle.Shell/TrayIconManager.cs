@@ -73,6 +73,32 @@ public sealed class TrayIconManager : IDisposable
         NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero);
     }
 
+    // ── Position rect ─────────────────────────────────────────────────────────
+    //
+    // Retourne le rect en pixels physiques (screen coordinates) de l'icône
+    // dans la zone de notification, ou null si l'icône n'a pas pu être
+    // localisée (encore non enregistrée, dans l'overflow caché, ou shell
+    // momentanément indisponible pendant un restart d'explorer.exe). Consommé
+    // par TrayContextMenuHost pour ancrer son MenuFlyout tangent à l'icône
+    // via CalculatePopupWindowPosition — ce qui rend la position
+    // automatiquement correcte quelle que soit l'orientation de la taskbar
+    // (gauche, droite, bas, haut) et indépendante du point de clic.
+    public NativeMethods.RECT? GetIconRect()
+    {
+        if (!_iconAdded) return null;
+
+        var id = new NOTIFYICONIDENTIFIER
+        {
+            cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
+            hWnd = _hwnd,
+            uID = 1,
+            guidItem = Guid.Empty,
+        };
+
+        int hr = NativeMethods.Shell_NotifyIconGetRect(ref id, out NativeMethods.RECT rect);
+        return hr >= 0 ? rect : null;
+    }
+
     // ── Status update ───────────────────────────────────────────────────────
     //
     // Wired in App.OnLaunched as the unique sink of TranscriptionEngine.StatusChanged:
