@@ -92,9 +92,10 @@ environment).
 - **Windows 11.**
 - **.NET 10 SDK** (pinned by `global.json` with `rollForward: latestFeature`).
 - **Visual Studio 2026 Community** with the *WinUI application development*
-  workload. The build relies on its `MSBuild.exe` (Framework runtime) because
-  `dotnet build` currently breaks WinUI 3 XAML compilation — see the
-  *Build* section in [`CLAUDE.md`](CLAUDE.md) for the technical detail.
+  workload — installs the Windows SDK, the WinUI 3 templates, and the C++
+  toolchain needed for native module work. The build itself runs through
+  `dotnet build` (see ADR-0012 for the historical context on the previous
+  MSBuild VS workaround).
 
 #### Tier 2 — recompile whisper.cpp native DLLs (rare, maintainer-only)
 

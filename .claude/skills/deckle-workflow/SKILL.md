@@ -14,10 +14,10 @@ Ne duplique pas `personal-conventions` (git, branches, worktrees, langue) ni les
 ## Build et publish
 
 <build>
-Claude lance les builds Deckle localement pour valider la compilation. Le contournement MSBuild Visual Studio (cassé sur `dotnet build` à cause du bug XamlCompiler MSB3073) est documenté dans `src/Deckle.App/CLAUDE.md` — Claude suit la commande exacte, ou invoque `scripts/lib/build-run.ps1`. Le `publish` reste l'acte du maintainer — Claude ne le déclenche jamais.
+Claude lance les builds Deckle localement pour valider la compilation. Le build se fait via `dotnet build` — commande exacte documentée dans `src/Deckle.App/CLAUDE.md`. Au quotidien, invoquer `scripts/lib/build-run.ps1` (build + kill instance + relaunch). Le `publish` reste l'acte du maintainer — Claude ne le déclenche jamais. Le contournement historique via `MSBuild.exe` Visual Studio est tracé dans [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md), réactivable si le bug XamlCompiler MSB3073 réapparaît.
 </build>
 
-Depuis un worktree, le cwd pointe sur la racine du worktree avant d'exécuter. La variable d'environnement `DECKLE_MSBUILD` est typiquement définie chez Louis et court-circuite `vswhere` pour accélérer le démarrage du script.
+Depuis un worktree, le cwd pointe sur la racine du worktree avant d'exécuter.
 
 ## Outils tiers
 

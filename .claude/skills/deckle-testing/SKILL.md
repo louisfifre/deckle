@@ -9,7 +9,7 @@ description: Doctrine de testing pour le projet Deckle (Windows .NET 10 / WinUI 
 
 Skill projet-spécifique qui répond à la question récurrente « comment Deckle teste son code ». S'invoque avant d'écrire un test, avant d'ajouter un module à la couverture, avant de décider d'une stratégie de fake ou d'isolation, et chaque fois qu'une décision touche à la structure du projet de tests.
 
-Ne duplique pas le skill cross-projet `tdd` (philosophie générale et techniques) ni `deckle-nomenclature` (règles de nommage transverses). Capte le résidu Deckle-spécifique — stack technique gelée, frontières des strates, placement physique, pattern d'observabilité, contraintes plateforme (WinAppSDK + bug XamlCompiler).
+Ne duplique pas le skill cross-projet `tdd` (philosophie générale et techniques) ni `deckle-nomenclature` (règles de nommage transverses). Capte le résidu Deckle-spécifique — stack technique gelée, frontières des strates, placement physique, pattern d'observabilité, posture face au bug historique XamlCompiler (cf. ADR-0012).
 
 ## Philosophie
 
@@ -89,13 +89,13 @@ Deux pièges natifs à connaître. `OnEventSourceCreated` est invoqué pour les 
 
 Le `using` est important : `Dispose` désinscrit le listener, sinon il continue de capter les émissions des tests suivants.
 
-## Stratégie face au bug XamlCompiler
+## Progression de la couverture
 
-Le bug `MSB3073 XamlCompiler.exe exited with code 1` (voir `CLAUDE.md` racine + `microsoft-ui-xaml#8871`) frappe tout projet qui tire transitivement `Microsoft.WindowsAppSDK` quand il est compilé via `dotnet build` / `dotnet test`. Le contournement MSBuild VS marche pour `Deckle.App`, mais l'agent vise `dotnet test` direct pour l'ergonomie.
+`dotnet test` est utilisable sur n'importe quel module Deckle, y compris ceux qui tirent transitivement `Microsoft.WindowsAppSDK`. Le bug `MSB3073 XamlCompiler.exe exited with code 1` qui avait motivé une stratégie « leaf-first » historique (cf. `CLAUDE.md` racine et [microsoft-ui-xaml#8871](https://github.com/microsoft/microsoft-ui-xaml/issues/8871)) ne se reproduit plus dans la combinaison actuelle. Décision actée par [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md).
 
-**Conséquence opérationnelle** : la couverture s'étend en priorité aux **modules-feuilles purs** sans WinAppSDK dans leur graphe — `Deckle.Chrono` (pilote), `Deckle.Core` (à venir), parties pures de `Deckle.Composition` à condition qu'elles n'utilisent pas `Windows.UI.Color`, etc. Les modules qui tirent WinAppSDK (`Deckle.Catalog`, `Deckle.Hud`, `Deckle.Settings`, `Deckle.Transcription`, etc.) sont en attente d'une stratégie dédiée — soit résolution du bug upstream, soit recette de test via `MSBuild.exe` VS intégrée à `dotnet test` ou à un script d'orchestration.
+L'ordre de progression « modules purs avant modules à WinAppSDK » reste une **préférence pédagogique** raisonnable — démarrer par `Deckle.Chrono` puis `Deckle.Core` puis les parties pures de `Deckle.Composition` permet d'isoler la mécanique testing avant de croiser des dépendances plateforme. Mais ce n'est plus une **contrainte technique**. Quand un chantier touche un module à WinAppSDK (`Deckle.Catalog`, `Deckle.Hud`, `Deckle.Settings`, `Deckle.Transcription`, etc.), la couverture peut s'y étendre directement.
 
-Avant d'ajouter un module à la couverture, **vérifier son graphe de dépendances NuGet** — si `Microsoft.WindowsAppSDK` apparaît directement ou transitivement, surseoir et tracer le besoin.
+Si le bug réapparaît (signal : `MSB3073` sur `dotnet build` ou `dotnet test`, log enrichi par le fix WindowsAppSDK 1.8.8 qui rendra l'erreur lisible, échec sur un environnement CI/CD éventuel), réintroduire le contournement MSBuild VS — la recette technique est tracée dans [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md), réapplicable.
 
 ## Évolution
 
@@ -105,7 +105,7 @@ Le projet de tests démarre minimaliste. L'ajout d'une dimension (catégorie nou
 
 - **`tdd`** — philosophie générale du TDD, techniques de design pour la testabilité (deep modules, interface design, mocking, refactoring). Lu en complément quand une question de conception émerge.
 - **`deckle-nomenclature`** — règles de nommage transverses (PascalCase, suffixes admis) ; ce skill applique ces règles au contexte testing.
-- **`deckle-workflow`** — contraintes de build (bug XamlCompiler, MSBuild VS) que cette doctrine doit composer avec.
+- **`deckle-workflow`** — doctrine quotidienne de build (`dotnet build`, scripts d'orchestration) que cette doctrine recoupe.
 - **`deckle-docs`** — où vivent les traces écrites du projet ; un changement structurel du testing laisse trace ici ou en ADR selon le poids.
 - **`docs/reference/reference--eventsource-convention--1.0.md`** — convention transverse EventSource consommée par les tests d'observabilité.
 - **`src/Deckle.Diagnostics/CLAUDE.md`** — détaille le pattern test côté provider (motivation, exemple, lien ADR-0005).

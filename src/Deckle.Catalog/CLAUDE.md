@@ -46,7 +46,7 @@ Tout autre texte visible par l'utilisateur passe par le `.resw`.
 2. Avant d'inventer une clé spécifique, vérifier qu'un `Common_*` ne couvre pas déjà le besoin.
 3. Ajouter l'entrée dans le `Strings/en-US/Resources.resw` du module qui possède la surface. L'ordre dans le fichier suit les sections — Common, puis par surface. Garder le fichier groupé pour faciliter la relecture humaine.
 4. Côté code consommateur : en XAML, ajouter `x:Uid="<UidValue>"` sur l'élément et retirer la valeur littérale de l'attribut concerné ; en code, remplacer le littéral par `Loc.Get("<key>")` ou `Loc.Format("<key>_Format", args...)` (importer `Deckle.Catalog`).
-5. Builder via `MSBuild.exe` Framework (cf. CLAUDE.md projet — `dotnet build` est cassé sur les projets WinUI). Vérifier au runtime que la string s'affiche bien ; en DEBUG une clé manquante apparaît comme `[!key]` à l'écran (assez voyant pour être détecté en quelques secondes).
+5. Builder via `dotnet build`. Vérifier au runtime que la string s'affiche bien ; en DEBUG une clé manquante apparaît comme `[!key]` à l'écran (assez voyant pour être détecté en quelques secondes).
 
 ## Ajouter une langue future
 

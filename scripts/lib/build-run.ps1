@@ -1,15 +1,9 @@
 [CmdletBinding()]
 param(
-    # Kept for backward-compat with existing launch.json profiles; the
-    # script now always passes `-restore` to MSBuild (cheap no-op when
-    # the assets are current).
-    [switch]$Restore,
     [switch]$NoRun,
     [switch]$Wait,
     [ValidateSet('Release','Debug')]
     [string]$Configuration = 'Release',
-    # Explicit path to MSBuild.exe (takes priority over env + vswhere).
-    [string]$MsBuild,
     # Build a specific repo or worktree instead of the one containing this
     # script. Accepts any path — main repo or any git worktree root.
     [string]$Target,
@@ -59,55 +53,8 @@ if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$Repo
 # may change over time — historically 19041, now 26100 — and we don't
 # want a hardcoded TFM segment to silently launch a stale binary from a
 # previous TPV). We glob for the freshest net10.0-windows10.0.*\Deckle.exe
-# under the configured bin directory after MSBuild returns.
+# under the configured bin directory after the build returns.
 $BinConfigDir = Join-Path $ProjectDir "bin\x64\$Configuration"
-
-# =============================================================================
-# MSBuild configuration
-# -----------------------------------------------------------------------------
-# `dotnet build` is broken on Deckle due to the XamlCompiler MSB3073 bug,
-# so we must use the Visual Studio MSBuild Framework (MSBuildRuntimeType=Full).
-#
-# Resolution order:
-#   1. -MsBuild parameter (explicit override)
-#   2. DECKLE_MSBUILD env var (recommended for non-standard VS install paths;
-#      set once with: setx DECKLE_MSBUILD "<path\to\MSBuild.exe>")
-#   3. vswhere.exe (standard VS install under Program Files)
-#   4. error with instructions
-# =============================================================================
-function Resolve-MsBuild {
-    param([string]$Explicit)
-
-    if ($Explicit) {
-        if (-not (Test-Path $Explicit)) { throw "MSBuild not found: $Explicit" }
-        return $Explicit
-    }
-
-    if ($env:DECKLE_MSBUILD) {
-        if (-not (Test-Path $env:DECKLE_MSBUILD)) {
-            throw "DECKLE_MSBUILD points to a missing file: $($env:DECKLE_MSBUILD)"
-        }
-        return $env:DECKLE_MSBUILD
-    }
-
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (Test-Path $vswhere) {
-        $found = & $vswhere -latest -prerelease -products * `
-            -requires Microsoft.Component.MSBuild `
-            -find 'MSBuild\**\Bin\amd64\MSBuild.exe' | Select-Object -First 1
-        if ($found -and (Test-Path $found)) { return $found }
-    }
-
-    throw @"
-MSBuild.exe not found. Configure one of the following:
-  - parameter -MsBuild "<path\MSBuild.exe>"
-  - env var DECKLE_MSBUILD (persistent: setx DECKLE_MSBUILD "<path>")
-  - standard Visual Studio install detectable by vswhere
-"@
-}
-
-$MsBuildExe = Resolve-MsBuild -Explicit $MsBuild
-Write-Host "MSBuild: $MsBuildExe" -ForegroundColor DarkGray
 
 # 1. Kill running instance (otherwise the .exe is locked)
 Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
@@ -115,17 +62,15 @@ Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
     $_ | Stop-Process -Force
 }
 
-# 2. Build via VS MSBuild (XamlCompiler MSB3073 bug prevents dotnet build CLI)
-# Use the `-restore` FLAG (not `-t:Restore;Build`). The flag triggers a
-# separate evaluation phase before Build, so the WindowsAppSDK targets
-# (CompileXaml etc.) get imported from the freshly-regenerated
-# .nuget.g.targets. `-t:Restore;Build` runs both in a single evaluation
-# and silently skips CompileXaml in a fresh worktree -> CS5001 +
-# CS0103 InitializeComponent errors.
-# -restore is a no-op if assets are already current, so we always pass it.
-Write-Host "Build (Build, $Configuration x64)..." -ForegroundColor Cyan
-& $MsBuildExe $Csproj '-restore' '-t:Build' "-p:Configuration=$Configuration" '-p:Platform=x64' '-v:m' '-nologo'
-if ($LASTEXITCODE -ne 0) { throw "MSBuild failed (code $LASTEXITCODE)" }
+# 2. Build via `dotnet build`. Restore is implicit (separate evaluation
+# phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)
+# get imported from the freshly-regenerated .nuget.g.targets — no
+# CS5001 / CS0103 InitializeComponent surprise in a fresh worktree.
+# See ADR-0012 for the rationale on choosing `dotnet build` over the
+# historical MSBuild VS workaround.
+Write-Host "Build ($Configuration x64)..." -ForegroundColor Cyan
+& dotnet build $Csproj "-c:$Configuration" '-p:Platform=x64' '-v:m' '-nologo'
+if ($LASTEXITCODE -ne 0) { throw "dotnet build failed (code $LASTEXITCODE)" }
 
 # 3. Run
 if ($NoRun) { return }
@@ -160,9 +105,9 @@ Write-Host "Run $ExePath" -ForegroundColor Green
 # does nothing.
 #
 # Post-build mitigation: even with cmd /c start, the first launch right
-# after MSBuild has finished still occasionally exhibits the HUD-behind
+# after the build has finished still occasionally exhibits the HUD-behind
 # glitch (the foreground lock heuristic appears to be sensitive to the
-# timing of the PowerShell host that just spawned MSBuild). To work
+# timing of the PowerShell host that just spawned the build). To work
 # around this, we pass --post-build to Deckle.exe so it re-launches
 # itself once via cmd /c start after a short delay, then exits. The
 # second instance never inherits the post-build foreground state. Pass

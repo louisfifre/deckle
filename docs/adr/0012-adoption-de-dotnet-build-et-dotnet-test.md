@@ -1,0 +1,39 @@
+# ADR-0012 — Adoption de `dotnet build` et `dotnet test` partout
+
+**Status** — accepted le 2026-05-24
+
+## Contexte
+
+Le port WhispUI vers .NET 10 + WinUI 3 (7 avril 2026, commit `0994764`) a heurté le bug `MSB3073 XamlCompiler.exe exited with code 1` documenté en upstream sous [microsoft-ui-xaml#8871](https://github.com/microsoft/microsoft-ui-xaml/issues/8871). Cause identifiée dans `Microsoft.UI.Xaml.Markup.Compiler.interop.targets` : une condition force `UseXamlCompilerExecutable=true` dès que `MSBuildRuntimeType=Core` (donc `dotnet build`), ce qui invoque le binaire `XamlCompiler.exe` net472 au lieu de la Task net6.0 in-process. Le binaire échouait alors sans log exploitable. Contournement adopté : builder via `MSBuild.exe` Framework de Visual Studio 2026 (`MSBuildRuntimeType=Full`), avec tout l'outillage afférent — résolution multi-source (`-MsBuild` param, env `DECKLE_MSBUILD`, fallback `vswhere`), documentation dans le `CLAUDE.md` racine et `src/Deckle.App/CLAUDE.md`, intégration dans `scripts/lib/build-run.ps1`. La même contrainte a justifié une stratégie « leaf-first » côté tests, formalisée dans le skill `deckle-testing` — la couverture s'étendant en priorité aux modules-feuilles sans `Microsoft.WindowsAppSDK` dans leur graphe, les modules à WinAppSDK restant hors couverture en attendant.
+
+Sept semaines plus tard (24 mai 2026), une enquête reproductibilité menée sur la même machine avec .NET SDK 10.0.204 et `Microsoft.WindowsAppSDK 1.8.260317003` (le pin Deckle inchangé) constate que le bug **ne se reproduit plus**. Quatre scénarios testés : `dotnet build` sur un mini-projet WinUI 3 hors repo en Debug et Release, `dotnet build` sur Deckle.App complet (19 modules, ~45 s, 0 warning 0 erreur), `dotnet test` sur un projet xUnit v3 qui pull WinAppSDK transitivement via `ProjectReference`, et `dotnet test` sur un projet qui référence directement `Deckle.Catalog` (module avec `UseWinUI=true`, `EnableMsixTooling=true`, `Themes/Icons.xaml` compilé). Aucun MSB3073 nulle part. La condition fautive dans le `.targets` upstream est intacte — le pipeline emprunte donc toujours le chemin EXE — mais le binaire `XamlCompiler.exe` fonctionne désormais.
+
+Hypothèse plausible non vérifiable rétroactivement : update silencieuse du SDK .NET (la machine est passée de 10.0.108 / 10.0.202 à 10.0.204 dans l'intervalle) ou des build tools .NET Framework 4.8 qui a résolu une incompatibilité d'invocation cross-runtime. Ou alors le crash d'avril était attribué au mauvais coupable, et la cause réelle vivait ailleurs. Dans les deux cas, conserver aujourd'hui le contournement MSBuild VS au seul motif « le bug pourrait revenir » relève du cargo-culting — un contournement maintenu sans justification observable est de la dette qui pèse sur l'ergonomie quotidienne, pas un filet de sécurité.
+
+Le ticket upstream [#8871](https://github.com/microsoft/microsoft-ui-xaml/issues/8871) reste OPEN sans milestone — Microsoft n'a annoncé aucun fix officiel, des utilisateurs continuent de le rapporter en 2025 et début 2026. Le bug existe encore dans certaines combinaisons d'environnement. La machine Deckle n'en fait simplement pas partie aujourd'hui.
+
+## Options considérées
+
+- **A. Garder MSBuild VS comme voie nominale par sécurité.** La justification serait « insensibilité au bug par construction ». Mais : le bug n'est plus observable, l'outillage MSBuild VS est complexe (résolution `vswhere` + env var `DECKLE_MSBUILD` + paramètre `-MsBuild` du script), il demande une install Visual Studio 2026 avec workload spécifique, et il maintient une dépendance de plateforme là où `dotnet build` est l'outil canonique .NET. Garder par prudence un contournement dont la justification ne tient plus, c'est exactement le cargo-culting que la doctrine d'ingénierie cherche à éviter.
+
+- **B. Bascule complète sur `dotnet build` et `dotnet test`, suppression du contournement.** Reconnaît que la situation observée a changé. Simplifie drastiquement les scripts. Aligne sur l'outil canonique .NET. Si le bug réapparaît un jour, les signaux sont reconnaissables (MSB3073 au build ou aux tests, log enrichi par le fix WindowsAppSDK 1.8.8 qui rend l'erreur lisible), la recette de contournement est tracée dans cet ADR et réintroductible. Le risque assumé est de devoir refaire un peu de travail si la régression revient — pondéré par le bénéfice quotidien d'un workflow simple.
+
+- **C. Bascule par défaut sur `dotnet build`, fallback `MSBuild VS` conservé dans le script via switch.** Solution mixte qui garde un filet sans toucher au workflow principal. Mais : maintient le code mort dans le script (résolution `vswhere` + env var + paramètre), donc maintient une part du cargo-culting sous une autre forme. Position bancale qui ne tranche ni dans un sens ni dans l'autre.
+
+## Décision
+
+Option B retenue. `dotnet build` devient la voie nominale pour le build app, `dotnet test` devient la voie nominale pour la couverture de tests sur n'importe quel module (y compris ceux qui tirent `Microsoft.WindowsAppSDK` transitivement). L'outillage du contournement MSBuild VS est retiré complètement — résolution `vswhere`, lecture de l'env `DECKLE_MSBUILD`, paramètre `-MsBuild` du script `build-run.ps1`, toute la machinerie disparaît. La doctrine de progression « modules purs avant modules à WinAppSDK » côté tests reste utilisable comme **préférence pédagogique** (démarrer simple, isoler les variables), mais ne porte plus de contrainte technique.
+
+Le `publish` reste l'acte du maintainer et n'a pas été retesté dans cette enquête — il continue de passer par les outils que Louis pilote. Cet ADR ne touche pas à la chaîne de release.
+
+## Conséquences
+
+Devient plus facile : le workflow build/test redevient standard .NET. Plus de dépendance vswhere, plus d'env var à configurer, plus de paramètre `-MsBuild` à se rappeler. Le script `build-run.ps1` passe de ~190 lignes (dont ~30 dédiées à la résolution MSBuild) à une forme épurée — la logique métier (kill instance, build, launch via cmd /c start --post-build) reste, le ceremony plateforme part. Onboarding d'un nouveau dev simplifié — clone, `dotnet build`, c'est tout. La couverture de tests s'étend à n'importe quel module Deckle via `dotnet test` direct sans contrainte de graphe de dépendances.
+
+Devient plus difficile : il faut surveiller la réapparition du bug. Trois signaux à reconnaître — `MSB3073` au build ou aux tests, log enrichi par le fix WindowsAppSDK 1.8.8 qui explicitera ce que `XamlCompiler.exe` n'aime pas, échec sur un environnement CI/CD éventuel. Le cas échéant, repasser sur MSBuild VS en réintroduisant le wrapper dans `build-run.ps1` ; la recette est tracée ici. La variable d'environnement utilisateur `DECKLE_MSBUILD` chez Louis n'est plus lue par aucun script — Louis peut la garder dormante (aucun effet de bord) ou la nettoyer manuellement avec `[Environment]::SetEnvironmentVariable('DECKLE_MSBUILD', $null, 'User')`.
+
+Devient impossible : conserver une posture conservatrice cohérente (« on garde le contournement par prudence ») tout en prétendant suivre le principe « pas de cargo-culting ». Ce sont deux postures incompatibles ; cet ADR tranche dans le sens du principe.
+
+Notes techniques préservées. Le piège `-restore` FLAG vs `-t:Restore;Build` documenté dans l'ancien `build-run.ps1` (sur MSBuild VS, `-t:Restore;Build` faisait silencieusement skiper CompileXaml en fresh worktree, d'où l'usage du FLAG qui force une phase d'évaluation séparée) ne s'applique pas à `dotnet build`. Le restore y est implicite et en phase séparée par défaut — équivalent du FLAG, jamais du target. Aucun arrangement spécial nécessaire.
+
+Le contournement `UseXamlCompilerExecutable=false` en `/p:` est documenté comme inviable — il fait planter avec `MSB4061` (la Task .NET 10 n'est pas instanciable dans le hôte MSBuild Core). Le chemin EXE est aujourd'hui le seul viable pour `dotnet build` ; heureusement, il fonctionne.
