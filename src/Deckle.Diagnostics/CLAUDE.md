@@ -37,7 +37,7 @@ Cinq `EventLevel` natifs uniquement.
 - **`Error`** — défaillance ciblée d'une opération, autres opérations peuvent continuer. Transcription échouée, hotkey unavailable, bridge Hue inaccessible.
 - **`Warning`** — situation anormale sans casse. Buffer vide, dépendance lente, état dégradé qui se rétablit.
 - **`Informational`** — jalon de progression en phrase Capital courte (« Loading model », « Recording start »). C'est l'équivalent du legacy Info **et** Success — la sémantique de réussite se porte par le message, plus par un niveau dédié.
-- **`Verbose`** — détails techniques structurés, machine-greppables. Mesures, identifiants, payloads structurés. C'est le niveau qui porte les `LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusRecorded` et leurs paramètres détaillés.
+- **`Verbose`** — détails techniques structurés, machine-greppables. Mesures, identifiants, payloads structurés. C'est le niveau qui porte les `LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusAsrRecorded`, `CorpusRewriteRecorded` et leurs paramètres détaillés.
 
 Le legacy `Narrative` est abandonné. Si un texte UX adressé à l'utilisateur est nécessaire, il passe par `UserFeedbackEmitted` (HUD) ou par une string `.resw` (surface UI).
 
