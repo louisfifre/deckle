@@ -156,10 +156,16 @@ benchmark/reports/
 benchmark/logs/
 benchmark/results.tsv
 benchmark/runs/
-benchmark/corpus/
+benchmark/corpus/              # ancien layout, conservé pour rétrocompat
+benchmark/corpora/             # nouveau layout : chacun amène ses propres
+                               # samples, jamais sur Git (audio privé,
+                               # transcriptions Whisper de l'utilisateur)
 benchmark/external/
 benchmark/models-cache/
+benchmark/_archive/            # artefacts d'anciennes itérations, locales
 benchmark/config/voxtral_paths.toml
+benchmark/HANDOFF.md           # relais transitoire entre sessions Claude,
+                               # pas de la doctrine pérenne
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (benchmark/ + ad hoc scripts)
