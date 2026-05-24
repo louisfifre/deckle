@@ -319,11 +319,19 @@ public sealed class TrayContextMenuHost : IDisposable
 
     // ── Measure ───────────────────────────────────────────────────────────────
     //
-    // Itère les items du flyout, force une hauteur et un padding canonique
-    // (compense le défaut de mesure WinUI documenté en microsoft-ui-xaml#7374),
-    // mesure chacun et somme les dimensions. Convertit en pixels physiques via
-    // le scale du moniteur sous le point d'ancrage. Le surplus FlyoutFrameMargin
-    // × 2 couvre la card du MenuFlyout (border + padding interne).
+    // Itère les items du flyout après amorce du visual tree (cycle ShowAt/Hide
+    // dans OnFrameLoaded — compense microsoft-ui-xaml#7374), mesure chacun et
+    // somme. Pas de Height ni Padding hardcodé : forcer Height=32 réduisait
+    // seulement le ContentRoot des items, mais le MenuFlyoutPresenter
+    // continuait à allouer la hauteur native par cellule — le hover ne
+    // couvrait alors qu'une partie de la cellule et le texte n'était pas
+    // centré dans l'espace alloué. On laisse le rendu natif WinUI 3 Win11
+    // décider de tout, ce qui colle au comportement de la WinUI 3 Gallery
+    // pour ce type de menu. Largeur naturelle, déterminée par le libellé le
+    // plus long plus le ToggleSwitch éventuel — pas de MinWidth forcé, le
+    // menu colle au contenu pour rester compact. Surplus FlyoutFrameMargin
+    // × 2 couvre la card du MenuFlyout. Conversion en pixels physiques via
+    // le scale du moniteur sous le point d'ancrage.
 
     private (int width, int height) MeasureFlyout(double scale)
     {
@@ -333,8 +341,6 @@ public sealed class TrayContextMenuHost : IDisposable
         double height = 0;
         foreach (var item in _flyout.Items)
         {
-            item.Height = 32;
-            item.Padding = new Thickness(11, 0, 11, 0);
             item.Measure(new Windows.Foundation.Size(10_000, 10_000));
             width = Math.Max(width, item.DesiredSize.Width);
             height += item.DesiredSize.Height;
