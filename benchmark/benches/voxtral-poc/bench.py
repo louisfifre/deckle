@@ -59,7 +59,9 @@ MONITOR_SCRIPT = BENCHMARK_ROOT / "lib" / "monitor" / "gpu_monitor.ps1"
 
 
 DEFAULT_CORPUS_SLUG = "voxtral-poc"
-JUDGE_PROMPT = BENCHMARK_ROOT / "prompts" / "judges" / "claude_per_row.md"
+# Un prompt par juge sous prompts/judges/<judge>_per_row.md. Le nom du
+# fichier est dérivé du nom du juge (claude → claude_per_row.md, etc.).
+JUDGE_PROMPTS_DIR = BENCHMARK_ROOT / "prompts" / "judges"
 
 # Mapping source → fichier de régimes par défaut. Chaque source a son
 # propre fichier parce que les régimes valides dépendent du mode (un
@@ -97,7 +99,8 @@ def main() -> int:
     print(f"  corpus  : {args.corpus} ({len(samples)} samples)")
     print(f"  source  : {args.source} (dtype={args.dtype}{', cpu' if args.cpu else ''})")
     print(f"  régimes : {list(regimes.keys())}")
-    print(f"  judge   : {'skipped' if args.skip_judge else f'claude-haiku ({args.row_model})'}")
+    print(f"  judge   : {'skipped' if args.skip_judge else args.judge}"
+          f"{f' ({args.row_model})' if (args.row_model and not args.skip_judge) else ''}")
 
     # ── Judge ──────────────────────────────────────────────────────────
     # Construit avant la source parce qu'il ne pèse rien (juste un client
@@ -178,7 +181,9 @@ def main() -> int:
                     hypothesis=trans.text,
                     reference=sample.reference_text,
                 )
-                # Juge (si actif et trans OK)
+                # Juge (si actif et trans OK).
+                # audio_path passé systématiquement : les juges textuels
+                # l'ignorent, les juges multimodaux (Gemini) l'écoutent.
                 row["judge"] = None
                 if judge is not None and trans.ok and trans.text:
                     try:
@@ -188,6 +193,7 @@ def main() -> int:
                             regime_name=regime_name,
                             regime_label=regime_cfg.get("label", regime_name),
                             source_name=source.name,
+                            audio_path=sample.audio_path,
                         )
                         row["judge"] = asdict(score)
                     except Exception as e:
@@ -263,9 +269,15 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--skip-monitor", action="store_true",
                    help="Ne pas lancer le monitor PowerShell GPU/RAM en background.")
     p.add_argument("--skip-judge", action="store_true",
-                   help="Skip le juge Claude. Utile pour metrics rapides.")
-    p.add_argument("--row-model", default="claude-haiku-4-5",
-                   help="Modèle Claude pour le juge per-row.")
+                   help="Skip le juge LLM. Utile pour metrics rapides.")
+    p.add_argument("--judge", default="gemini",
+                   choices=["claude", "gemini"],
+                   help="Juge LLM per-row. 'gemini' (défaut) est multimodal "
+                        "et écoute l'audio. 'claude' est purement textuel.")
+    p.add_argument("--row-model", default="",
+                   help="Modèle pour le juge per-row. Si vide, le défaut du "
+                        "juge sélectionné s'applique (claude-haiku-4-5 ou "
+                        "gemini-3.5-flash).")
     p.add_argument("--run-name", default="",
                    help="Nom du run (défaut : voxtral-poc-YYYY-MM-DD-HHMM).")
     return p.parse_args()
@@ -335,22 +347,51 @@ def _build_source(args: argparse.Namespace):
 
 
 def _build_judge(args: argparse.Namespace):
-    """Instancie le juge Claude. Retourne None si la clé n'est pas
-    présente — bench continue sans juge mais émet un warning."""
+    """Instancie le juge selon ``args.judge``. Retourne None si la clé
+    API correspondante est absente — bench continue sans juge avec un
+    warning."""
     import os
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    judge_name = args.judge
+    prompt_path = JUDGE_PROMPTS_DIR / f"{judge_name}_per_row.md"
+    if not prompt_path.exists():
         print(
-            "  ⚠ ANTHROPIC_API_KEY absente — judge skipped.\n"
-            "    Créer un fichier benchmark/.env avec :\n"
-            "      ANTHROPIC_API_KEY=sk-ant-xxx\n"
-            "    ou exporter la variable dans la session shell."
+            f"  ⚠ prompt absent : {prompt_path.name} — judge skipped.",
+            file=sys.stderr,
         )
         return None
-    from lib.judges.claude import ClaudeJudge
-    return ClaudeJudge(
-        row_system_prompt=JUDGE_PROMPT.read_text(encoding="utf-8"),
-        row_model=args.row_model,
-    )
+
+    # Kwargs communs : on ne passe row_model que s'il a été explicitement
+    # fourni, sinon on laisse le default du juge s'appliquer.
+    kwargs: dict[str, Any] = {
+        "row_system_prompt": prompt_path.read_text(encoding="utf-8"),
+    }
+    if args.row_model:
+        kwargs["row_model"] = args.row_model
+
+    if judge_name == "claude":
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            print(
+                "  ⚠ ANTHROPIC_API_KEY absente — judge skipped.\n"
+                "    Créer un fichier benchmark/.env avec :\n"
+                "      ANTHROPIC_API_KEY=sk-ant-xxx"
+            )
+            return None
+        from lib.judges.claude import ClaudeJudge
+        return ClaudeJudge(**kwargs)
+
+    if judge_name == "gemini":
+        if not os.environ.get("GEMINI_API_KEY"):
+            print(
+                "  ⚠ GEMINI_API_KEY absente — judge skipped.\n"
+                "    Créer un fichier benchmark/.env avec :\n"
+                "      GEMINI_API_KEY=AIza...\n"
+                "    Clé à générer sur https://aistudio.google.com/apikey"
+            )
+            return None
+        from lib.judges.gemini import GeminiJudge
+        return GeminiJudge(**kwargs)
+
+    raise ValueError(f"Juge inconnu : {judge_name}")
 
 
 def _build_row(*, sample, source_name, source_label, regime_name,
