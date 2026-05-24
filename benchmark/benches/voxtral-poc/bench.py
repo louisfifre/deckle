@@ -99,11 +99,10 @@ def main() -> int:
     print(f"  régimes : {list(regimes.keys())}")
     print(f"  judge   : {'skipped' if args.skip_judge else f'claude-haiku ({args.row_model})'}")
 
-    # ── Source ─────────────────────────────────────────────────────────
-    source = _build_source(args)
-    print(f"  source ready : {source.label}")
-
     # ── Judge ──────────────────────────────────────────────────────────
+    # Construit avant la source parce qu'il ne pèse rien (juste un client
+    # HTTP) ; ça permet d'isoler le chargement du modèle ASR plus bas,
+    # encadré par les events model_load_{start,end} pour la mesure VRAM.
     judge = None
     if not args.skip_judge:
         judge = _build_judge(args)
@@ -130,6 +129,19 @@ def main() -> int:
     log.event("bench_start", corpus=args.corpus, source=args.source,
               dtype=args.dtype, regimes=list(regimes.keys()),
               n_samples=len(samples), max_new_tokens=args.max_new_tokens)
+
+    # ── Source (chargement modèle, instrumenté pour mesure VRAM) ───────
+    # Brève pause pour laisser le monitor capter quelques échantillons
+    # idle baseline avant qu'on attaque le load ; sans ça la fenêtre
+    # [monitor_start, model_load_start] est sub-50 ms et l'helper de
+    # jointure ne peut pas calculer un baseline propre.
+    if monitor_proc:
+        time.sleep(0.8)
+    log.event("model_load_start", source=args.source, dtype=args.dtype)
+    source = _build_source(args)
+    log.event("model_load_end", source=args.source, source_label=source.label,
+              n_params=getattr(source, "n_params", None))
+    print(f"  source ready : {source.label}")
 
     # ── Loop ───────────────────────────────────────────────────────────
     # Import lazy : cleanup_gpu n'a de sens que pour les sources Voxtral.
@@ -208,6 +220,19 @@ def main() -> int:
     print(f"  events  : {events_path}")
     if monitor_proc:
         print(f"  monitor : {monitor_path}")
+
+    # ── Enrichissement system ──────────────────────────────────────────
+    # Joint events.jsonl × monitor.jsonl post-mortem : ajoute une clé
+    # ``system`` à chaque row de results.jsonl (peaks dans la fenêtre
+    # [row_start, row_end]) et appose un event ``bench_summary`` à la
+    # fin de events.jsonl avec les phase peaks (idle / model_load /
+    # global_run). Idempotent et silencieux si le monitor n'a pas tourné.
+    from lib.monitor.joiner import enrich_run, format_summary_console
+    summary = enrich_run(run_dir)
+    if summary.get("samples_count", 0) > 0:
+        print()
+        print(format_summary_console(summary))
+
     return 0
 
 
