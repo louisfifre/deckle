@@ -90,11 +90,24 @@ def load_voxtral(
 
     from transformers import AutoProcessor, VoxtralForConditionalGeneration
     processor = AutoProcessor.from_pretrained(model_id)
+    # Historiquement on passait ``torch_dtype=`` ; transformers récent émet
+    # un DeprecationWarning et ignore le kwarg, ce qui chargeait le modèle
+    # en fp32 (~19 GB en VRAM) au lieu du fp16 demandé (~9.4 GB). Le nom
+    # canonique est ``dtype=``. L'assert ci-dessous vérifie après load que
+    # la précision réelle est bien celle demandée — fail fast plutôt que
+    # de silencieusement saturer la VRAM en aval.
     model = VoxtralForConditionalGeneration.from_pretrained(
         model_id,
-        torch_dtype=torch_dtype,
+        dtype=torch_dtype,
         low_cpu_mem_usage=True,
     )
+    if model.dtype != torch_dtype:
+        raise RuntimeError(
+            f"Voxtral chargé en {model.dtype} alors que dtype={torch_dtype} "
+            f"était demandé. transformers a peut-être ignoré le kwarg ; "
+            f"vérifier la version de transformers et la signature de "
+            f"VoxtralForConditionalGeneration.from_pretrained."
+        )
     model = model.to(device)
 
     return VoxtralBackend(
