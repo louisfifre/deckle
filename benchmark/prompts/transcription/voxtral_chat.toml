@@ -1,0 +1,40 @@
+# Régimes pour la source voxtral-chat (mode Audio QA / instruct).
+#
+# Voxtral en mode apply_chat_template accepte des instructions
+# utilisateur libres aux côtés du bloc audio. C'est par ce mode qu'on
+# peut faire : traduire, verbatim avec hésitations, annoter [pause]
+# [rire] etc. — toutes choses que le mode transcription canonique
+# ne sait pas faire (cf. recherche doc Mistral 2026-05-24).
+#
+# ATTENTION : ce mode est moins prévisible que le mode transcription.
+# Voxtral peut paraphraser, résumer, ou ne pas suivre l'instruction
+# à la lettre. La qualité dépend du modèle, pas d'un mode dédié.
+#
+# Le `system_prompt` ci-dessous est passé en `role: user` à côté du
+# bloc audio — Voxtral ne supporte pas de vrai system prompt à date.
+
+[V3_verbatim]
+label = "Verbatim avec hésitations (instruction)"
+description = """
+Demande verbatim word-for-word avec conservation des hésitations,
+répétitions, faux départs. Qualité non garantie — Voxtral n'a pas de
+mode 'verbatim' natif, c'est juste du conditioning LLM.
+"""
+system_prompt = "Transcris cet audio en français mot pour mot, en conservant les hésitations comme « euh », les répétitions et les faux départs."
+
+[V4_verbatim_annote]
+label = "Verbatim avec annotations paralinguistiques"
+description = """
+V3 + annotations entre crochets pour le paralinguistique. Comme V3,
+qualité variable selon comment Voxtral interprète l'instruction.
+"""
+system_prompt = "Transcris cet audio en français mot pour mot, garde les hésitations, et annote entre crochets [pause] pour les silences, [rire] pour les rires, [inaudible] pour les passages incompréhensibles."
+
+[V5_translate_en]
+label = "Traduction directe FR → EN"
+description = """
+Voxtral traduit l'audio français directement en anglais. Cas d'usage
+produit potentiel : dictée FR → notes EN sans étape intermédiaire.
+Vérifier la qualité grammaticale et la préservation du sens.
+"""
+system_prompt = "Translate this French audio to natural, fluent English. Output only the translation, no preamble."

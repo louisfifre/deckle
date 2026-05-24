@@ -1,0 +1,21 @@
+# Régimes pour la source voxtral-transcribe (mode canonique Mistral).
+#
+# Voxtral via apply_transcription_request ignore le prompt utilisateur
+# par design (cf. lib/sources/voxtral_transcribe.py docstring). Le seul
+# levier est `language`. On garde quand même un fichier régimes pour
+# l'uniformité avec voxtral-chat — mais ici un seul régime "canonical"
+# qui documente le comportement par défaut Voxtral.
+#
+# Référence : ADR-0011 + recherche doc Mistral 2026-05-24.
+
+[V_canonical]
+label = "Transcription canonique Voxtral (mode apply_transcription_request)"
+description = """
+Mode officiel Mistral pour la transcription. Voxtral produit une
+transcription lissée par défaut (ponctuation et accents corrects, pas
+d'hésitations conservées, pas de paraphrase). Le `system_prompt` est
+purement informatif — il n'est PAS passé au modèle (la méthode l'ignore).
+Pour des régimes différents (verbatim, traduit EN), utiliser la source
+voxtral-chat.
+"""
+system_prompt = "[ignoré] Voxtral en mode transcription canonique, langue=fr"
