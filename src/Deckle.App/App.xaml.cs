@@ -8,6 +8,7 @@ using Deckle.Lighting.Ambient;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
+using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 using Deckle.Transcription.Whisper.Setup;
@@ -26,6 +27,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;
     private TrayIconManager? _tray;
+    private TrayContextMenuHost? _trayMenu;
     private TranscriptionEngine? _engine;
     private AmbientEngine? _ambientEngine;
 
@@ -355,27 +357,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         _hudWindow.PrimeAndHide();
         Milestone("hudwindow");
 
+        // Tray icon : only left-click action lives here ; the right-click
+        // context menu is rendered by TrayContextMenuHost (created later,
+        // after the message-only host HWND is available to serve as owner).
         _tray = new TrayIconManager
         {
-            OnShowLogs        = () => ShowLogWindowLazy(),
-            OnShowSettings    = () => ShowSettingsWindowLazy(),
-            OnShowPlayground  = () => ShowPlaygroundLazy(),
             // Left-click tray = toggle transcription via the same path as the
             // standard hotkey. Allows starting with the mouse one-handed.
             OnToggleRecording = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE),
-            // Ambient Light tray entry — checkmark mirrors the persisted
-            // AmbientSettings.Enabled, click flips it. The actual engine
-            // start/stop reacts via the AmbientSettingsService.Changed
-            // observer wired in phase I.
-            IsAmbientOn       = () => AmbientSettingsService.Instance.Current.Enabled,
-            OnToggleAmbient   = () =>
-            {
-                var s = AmbientSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                AmbientSettingsService.Instance.Save();
-            },
-            OnRestart         = () => RestartAppFromTray(),
-            OnQuit            = () => QuitApp(),
         };
         Milestone("tray");
 
@@ -472,6 +461,33 @@ public partial class App : Microsoft.UI.Xaml.Application
         // parent). Hosts the tray callback and global hotkeys without any
         // XAML window or off-screen trick.
         _messageHost = new MessageOnlyHost();
+
+        // Tray context menu — WinUI 3 SecondWindow pattern. The host needs
+        // the message-only HWND as its owner so its popup inherits the tray's
+        // z-order / activation stack. Right-click on the tray icon raises
+        // RightClickRequested, which the menu host translates into a popup
+        // shown at the cursor with a Win11-native MenuFlyout.
+        _trayMenu = new TrayContextMenuHost(_messageHost.Hwnd)
+        {
+            OnShowLogs       = () => ShowLogWindowLazy(),
+            OnShowSettings   = () => ShowSettingsWindowLazy(),
+            OnShowPlayground = () => ShowPlaygroundLazy(),
+            // Ambient Light tray entry — checkmark mirrors the persisted
+            // AmbientSettings.Enabled, click flips it. The actual engine
+            // start/stop reacts via the AmbientSettingsService.Changed
+            // observer wired in phase I.
+            IsAmbientOn      = () => AmbientSettingsService.Instance.Current.Enabled,
+            OnToggleAmbient  = () =>
+            {
+                var s = AmbientSettingsService.Instance.Current;
+                s.Enabled = !s.Enabled;
+                AmbientSettingsService.Instance.Save();
+            },
+            OnRestart        = () => RestartAppFromTray(),
+            OnQuit           = () => QuitApp(),
+        };
+        _tray.RightClickRequested += () => _trayMenu.Show();
+
         _tray.Register(_messageHost.Hwnd);
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey);
         // Try/catch obligatoire : RegisterHotKey peut échouer avec err 1409
@@ -744,6 +760,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         try { Settings.SettingsService.Instance.Flush(); } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("settings flush: " + ex.Message); }
         try { _hotkeyManager?.Dispose();   } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("hotkeys dispose: " + ex.Message); }
         try { _tray?.Dispose();            } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("tray dispose: " + ex.Message); }
+        try { _trayMenu?.Dispose();        } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("tray menu dispose: " + ex.Message); }
         try { _messageHost?.Dispose();     } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("message host dispose: " + ex.Message); }
         try { _overlayManager?.Dispose();  } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("overlay manager dispose: " + ex.Message); }
         try { _engine?.Dispose();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning("engine dispose: " + ex.Message); }

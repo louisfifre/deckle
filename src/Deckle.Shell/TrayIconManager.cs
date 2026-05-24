@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
-using Deckle.Diagnostics;
 
 namespace Deckle.Shell;
 
@@ -11,22 +10,17 @@ namespace Deckle.Shell;
 //
 // Flux des événements :
 //   Shell32 → WM_TRAY (WM_USER+1) envoyé au HWND principal
-//   SubclassCallback dans HotkeyManager intercepte WM_TRAY
-//   → clic droit → TrackPopupMenu → commande choisie
+//   SubclassCallback intercepte WM_TRAY
+//   → clic gauche → OnToggleRecording invoqué directement
+//   → clic droit  → RightClickRequested raised, l'abonné rend le menu
 //
-// Register() doit être appelé depuis OnRootLoaded (après que le message pump
-// WinUI 3 est en place) pour que les messages WM_TRAY soient bien acheminés.
+// La responsabilité du menu contextuel vit dans le module sibling
+// Deckle.Shell.TrayMenu (TrayContextMenuHost) qui s'abonne à
+// RightClickRequested et présente un MenuFlyout WinUI 3 natif. Ce module
+// reste Win32-pur : il ne connaît pas le contenu du menu.
 
 public sealed class TrayIconManager : IDisposable
 {
-    // IDs des commandes du menu contextuel
-    private const uint CMD_LOGS            = 1;
-    private const uint CMD_SETTINGS        = 3;
-    private const uint CMD_PLAYGROUND      = 5;
-    private const uint CMD_AMBIENT_TOGGLE  = 6;
-    private const uint CMD_RESTART         = 4;
-    private const uint CMD_QUIT            = 2;
-
     private IntPtr _hwnd;
     private IntPtr _hIconIdle;
     private IntPtr _hIconRecording;
@@ -38,23 +32,21 @@ public sealed class TrayIconManager : IDisposable
     private NativeMethods.SubclassProc? _subclassDelegate;
     private static readonly UIntPtr SubclassId = new(0x5752_4159); // "WRAY"
 
-    // Callbacks vers l'app (marshaling UI déjà fait par l'abonné)
-    public Action? OnShowLogs         { get; set; }
-    public Action? OnShowSettings     { get; set; }
-    public Action? OnShowPlayground   { get; set; }
-    public Action? OnToggleRecording  { get; set; }
-    public Action? OnRestart          { get; set; }
-    public Action? OnQuit             { get; set; }
+    /// <summary>
+    /// Invoked on left-click of the tray icon. Marshaling to the UI thread is
+    /// the abonné's responsibility — this handler runs on the message pump
+    /// thread of the host HWND.
+    /// </summary>
+    public Action? OnToggleRecording { get; set; }
 
-    // Ambient Light entry — clic right-click → toggle Enabled in
-    // AmbientSettings via OnToggleAmbient. IsAmbientOn is read on
-    // each menu open so the checkmark reflects the latest state
-    // without TrayIconManager subscribing to settings events.
-    // Pattern reference : PowerToys Quick Access flyout — toggle
-    // a utility directly from the tray with a Win32 MF_CHECKED
-    // checkmark, no wizard.
-    public Func<bool>? IsAmbientOn    { get; set; }
-    public Action?     OnToggleAmbient { get; set; }
+    /// <summary>
+    /// Raised on right-click of the tray icon. The subscriber renders the
+    /// context menu (typically TrayContextMenuHost from Deckle.Shell.TrayMenu).
+    /// No payload : the menu host reads the current cursor position itself
+    /// via GetCursorPos, since the cursor may move between WM_RBUTTONUP and
+    /// the actual menu display.
+    /// </summary>
+    public event Action? RightClickRequested;
 
     // ── Initialisation ────────────────────────────────────────────────────────
 
@@ -117,7 +109,7 @@ public sealed class TrayIconManager : IDisposable
 
             if (mouseEvent == NativeMethods.WM_RBUTTONUP)
             {
-                ShowContextMenu();
+                RightClickRequested?.Invoke();
                 return IntPtr.Zero;
             }
 
@@ -132,64 +124,6 @@ public sealed class TrayIconManager : IDisposable
         }
 
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
-    }
-
-    // ── Menu contextuel natif ─────────────────────────────────────────────────
-
-    private void ShowContextMenu()
-    {
-        IntPtr hMenu = NativeMethods.CreatePopupMenu();
-        if (hMenu == IntPtr.Zero) return;
-
-        // Ambient flag read at menu-open time so the checkmark reflects
-        // the latest persisted state without any subscription on this
-        // class — single source of truth stays in AmbientSettings.
-        bool ambientOn = IsAmbientOn?.Invoke() ?? false;
-        uint ambientFlags = NativeMethods.MF_STRING
-                          | (ambientOn ? NativeMethods.MF_CHECKED : 0);
-
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING,    CMD_LOGS,            "Logs");
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING,    CMD_SETTINGS,        "Settings");
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING,    CMD_PLAYGROUND,      "Playground");
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_SEPARATOR, 0,                   null);
-        NativeMethods.AppendMenu(hMenu, ambientFlags,               CMD_AMBIENT_TOGGLE,  "Ambient Light");
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_SEPARATOR, 0,                   null);
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING,    CMD_RESTART,         "Restart");
-        NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING,    CMD_QUIT,            "Quit");
-
-        NativeMethods.GetCursorPos(out POINT pt);
-
-        // Windowing — popup tray. TrackPopupMenu rend un menu Win32
-        // natif dont l'app n'a pas le HWND ; pos/size effectifs du menu
-        // sont inaccessibles côté code. On émet PopupAnchored avec ce
-        // qu'on sait du déclencheur : le cursor sert d'ancrage (l'API
-        // TrackPopupMenu prend pt.X/pt.Y en argument), donc parent_rect
-        // = (cursor_x, cursor_y, 0, 0) — un rect dégénéré qui dit « le
-        // menu est ancré sur ce point », pas sur un rect de contrôle.
-        // Pas d'émission de WindowPositioned faute de HWND owned. Cf.
-        // doc DeckleWindowingSource.PopupAnchored §popups system-owned.
-        WindowingProbe.EmitPopupAnchored(IntPtr.Zero, "tray-popup", pt.X, pt.Y, 0, 0);
-
-        // SetForegroundWindow est requis avant TrackPopupMenu pour que le menu
-        // se ferme correctement quand l'utilisateur clique ailleurs.
-        NativeMethods.SetForegroundWindow(_hwnd);
-
-        uint cmd = NativeMethods.TrackPopupMenu(
-            hMenu,
-            NativeMethods.TPM_LEFTBUTTON | NativeMethods.TPM_RETURNCMD | NativeMethods.TPM_BOTTOMALIGN,
-            pt.X, pt.Y, 0, _hwnd, IntPtr.Zero);
-
-        NativeMethods.DestroyMenu(hMenu);
-
-        switch (cmd)
-        {
-            case CMD_LOGS:            OnShowLogs?.Invoke();        break;
-            case CMD_SETTINGS:        OnShowSettings?.Invoke();    break;
-            case CMD_PLAYGROUND:      OnShowPlayground?.Invoke();  break;
-            case CMD_AMBIENT_TOGGLE:  OnToggleAmbient?.Invoke();   break;
-            case CMD_RESTART:         OnRestart?.Invoke();         break;
-            case CMD_QUIT:            OnQuit?.Invoke();            break;
-        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
