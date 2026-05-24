@@ -220,8 +220,14 @@ def compute_phase_peaks(
 ) -> dict[str, dict[str, Any] | None]:
     """Calcule les peaks sur trois phases stratégiques :
 
-      - ``idle_baseline`` : du premier sample monitor jusqu'au
-        ``bench_start`` (ou ``model_load_start`` si présent et antérieur).
+      - ``idle_baseline`` : entre ``bench_start`` et ``model_load_start``.
+        Cette fenêtre correspond à la pause que le bench insère
+        volontairement entre les deux events précisément pour laisser
+        au monitor le temps de capturer des samples avant que le
+        chargement du modèle ne pousse la VRAM. Si ``model_load_start``
+        est absent (vieux run sans instrumentation source), on tombe en
+        rabattement sur ``bench_start`` comme borne haute — la fenêtre
+        est alors vide.
       - ``model_load`` : entre ``model_load_start`` et ``model_load_end``,
         instrumenté par le bench autour de ``_build_source``.
       - ``global_run`` : entre ``bench_start`` et ``bench_end``.
@@ -247,8 +253,14 @@ def compute_phase_peaks(
     }
 
     if samples and bench_start is not None:
-        idle_end = load_start if (load_start is not None and load_start < bench_start) else bench_start
-        idle_start = samples[0].ts
+        # Idle = avant le début du chargement du modèle. Le bench émet
+        # bench_start puis attend 10 s avant model_load_start, fenêtre
+        # dans laquelle le monitor capte le baseline. Sans
+        # model_load_start (rétrocompat) on retombe sur bench_start
+        # comme borne haute — la fenêtre sera vide, ce que
+        # `if idle_start < idle_end` gère.
+        idle_end = load_start if load_start is not None else bench_start
+        idle_start = max(samples[0].ts, bench_start)
         if idle_start < idle_end:
             phases["idle_baseline"] = _peak_dict(peaks_in_window(samples, idle_start, idle_end))
 
