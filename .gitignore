@@ -157,6 +157,9 @@ benchmark/logs/
 benchmark/results.tsv
 benchmark/runs/
 benchmark/corpus/
+benchmark/external/
+benchmark/models-cache/
+benchmark/config/voxtral_paths.toml
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (benchmark/ + ad hoc scripts)
