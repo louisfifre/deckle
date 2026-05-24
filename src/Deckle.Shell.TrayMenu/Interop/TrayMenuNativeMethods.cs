@@ -68,4 +68,22 @@ internal static class TrayMenuNativeMethods
     // le MenuFlyout ne dismiss pas correctement au click-outside.
 
     public const int SW_SHOWNORMAL = 1;
+
+    // ── DPI per-monitor ───────────────────────────────────────────────────────
+    //
+    // Le scale appliqué au flyout doit refléter le DPI du moniteur sous le
+    // curseur, pas celui où la fenêtre porteuse vit (elle est cachée au boot
+    // sur le moniteur primaire). `XamlRoot.RasterizationScale` du frame
+    // retourne le scale de ce moniteur primaire, donc faux en multi-monitor
+    // ou si l'écran primaire n'est pas à 100 %. On résout proprement avec
+    // MonitorFromPoint(curseur) + GetDpiForMonitor.
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
+
+    [DllImport("shcore.dll")]
+    public static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
+
+    public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    public const int MDT_EFFECTIVE_DPI = 0;
 }

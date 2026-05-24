@@ -47,7 +47,7 @@ public sealed class TrayContextMenuHost : IDisposable
 
     // Bordures internes ajoutées au calcul de taille du flyout (équivalent au
     // padding de la card MenuFlyout). 4 px top + 4 px bottom + 4 px gauche +
-    // 4 px droite, scalés par le RasterizationScale du XamlRoot.
+    // 4 px droite, scalés par le DPI du moniteur sous le curseur.
     private const double FlyoutFrameMargin = 4.0;
 
     private readonly IntPtr _ownerHwnd;
@@ -188,11 +188,7 @@ public sealed class TrayContextMenuHost : IDisposable
             _ambientItem.IsChecked = IsAmbientOn();
 
         NativeMethods.GetCursorPos(out POINT cursor);
-
-        var (width, height) = MeasureFlyout();
         var anchor = cursor;
-        var size = new TrayMenuNativeMethods.SIZE { cx = width, cy = height };
-
         NativeMethods.RECT exclude = new()
         {
             left   = cursor.X - CursorExcludeHalfExtent,
@@ -200,6 +196,19 @@ public sealed class TrayContextMenuHost : IDisposable
             right  = cursor.X + CursorExcludeHalfExtent,
             bottom = cursor.Y + CursorExcludeHalfExtent,
         };
+
+        // DPI réel du moniteur sous le point d'ancrage. RasterizationScale du
+        // XamlRoot refléterait le DPI du moniteur où la fenêtre porteuse est
+        // cachée (typiquement primaire), pas où le tray vit — mismatch sur
+        // setup multi-monitor ou écran primaire à 150 %.
+        IntPtr monitor = TrayMenuNativeMethods.MonitorFromPoint(
+            anchor, TrayMenuNativeMethods.MONITOR_DEFAULTTONEAREST);
+        TrayMenuNativeMethods.GetDpiForMonitor(
+            monitor, TrayMenuNativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
+        double scale = dpiX / 96.0;
+
+        var (width, height) = MeasureFlyout(scale);
+        var size = new TrayMenuNativeMethods.SIZE { cx = width, cy = height };
 
         NativeMethods.RECT popup = default;
         TrayMenuNativeMethods.CalculatePopupWindowPosition(
@@ -278,10 +287,10 @@ public sealed class TrayContextMenuHost : IDisposable
     // Itère les items du flyout, force une hauteur et un padding canonique
     // (compense le défaut de mesure WinUI documenté en microsoft-ui-xaml#7374),
     // mesure chacun et somme les dimensions. Convertit en pixels physiques via
-    // RasterizationScale du XamlRoot. Le surplus FlyoutFrameMargin × 2 couvre
-    // la card du MenuFlyout (border + padding interne).
+    // le scale du moniteur sous le point d'ancrage. Le surplus FlyoutFrameMargin
+    // × 2 couvre la card du MenuFlyout (border + padding interne).
 
-    private (int width, int height) MeasureFlyout()
+    private (int width, int height) MeasureFlyout(double scale)
     {
         if (_flyout is null) return (0, 0);
 
@@ -296,7 +305,6 @@ public sealed class TrayContextMenuHost : IDisposable
             height += item.DesiredSize.Height;
         }
 
-        double scale = _flyout.XamlRoot?.RasterizationScale ?? 1.0;
         return (
             (int)((width  + FlyoutFrameMargin * 2) * scale),
             (int)((height + FlyoutFrameMargin * 2) * scale));
