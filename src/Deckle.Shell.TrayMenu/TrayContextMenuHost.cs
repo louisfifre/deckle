@@ -163,7 +163,17 @@ public sealed class TrayContextMenuHost : IDisposable
         // pour Louis (allumer/éteindre les LEDs sans naviguer dans Settings).
         // Les commandes d'ouverture de fenêtre viennent ensuite, séparées des
         // commandes de cycle de vie (Restart, Quit) par un séparateur final.
-        _ambientItem = new ToggleMenuFlyoutItem { Text = Loc.Get("TrayMenu_AmbientLight") };
+        // Style custom ToggleSwitchMenuItemStyle (Themes/TrayMenu.xaml, mergé
+        // dans App.xaml) : remplace le checkmark canonique à gauche par un
+        // ToggleSwitch Win11 à droite — pillule visible d'un coup d'œil pour
+        // un toggle d'état applicatif. Le ToggleSwitch est IsHitTestVisible=
+        // False (indicateur visuel pur), l'interaction passe par le Click de
+        // l'item parent qui flippe IsChecked nativement.
+        _ambientItem = new ToggleMenuFlyoutItem
+        {
+            Text = Loc.Get("TrayMenu_AmbientLight"),
+            Style = (Style)Application.Current.Resources["ToggleSwitchMenuItemStyle"],
+        };
         _ambientItem.Click += (_, _) => { Hide(); OnToggleAmbient?.Invoke(); };
         _flyout.Items.Add(_ambientItem);
 
