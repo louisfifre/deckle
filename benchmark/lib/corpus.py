@@ -1,232 +1,93 @@
-"""Reader for the Deckle corpus JSONL files.
+"""Lecture des corpora pour le bench (layout v2).
 
-Deckle writes one line per transcription into
-``benchmark/telemetry/<profile-slug>/corpus.jsonl``. Each line is a
-TelemetryEvent envelope:
+Un corpus est un dossier sous ``benchmark/corpora/<slug>/`` qui contient :
 
-    {
-      "timestamp": "2026-04-21T14:32:11.482+02:00",
-      "kind":      "Corpus",
-      "session":   "2026-04-21-a7c3",
-      "payload": {
-        "profile":          "Restructuration",
-        "profile_id":       "restructuration",
-        "slug":             "restructuration",
-        "duration_seconds": 45.3,
-        "whisper": {
-          "model":          "ggml-large-v3.bin",
-          "language":       "fr",
-          "elapsed_ms":     1234,
-          "initial_prompt": "…"
-        },
-        "raw":     { "text": "…", "word_count": 42, "char_count": 320 },
-        "metrics": { "words_per_second": 2.8 },
-        "audio_file": "…"
-      }
-    }
+  - ``corpus.jsonl`` : une ligne par sample, schéma payload Deckle telemetry
+    (cf. corpus_asr dans Deckle.Diagnostics.Telemetry). Champs obligatoires
+    utilisés ici : ``transcription_id``, ``audio_file``, ``text`` (réf
+    Whisper large-v3), ``duration_seconds``, ``tier``.
+  - ``<audio_file>`` : un WAV par sample, nom exact référencé dans
+    ``payload.audio_file``.
 
-Consumers want the raw Whisper text plus enough metadata to slice by
-duration and group by initial prompt. Anything else stays accessible via
-``Sample.envelope``.
+Les corpora sont **gitignorés** : chaque utilisateur du bench amène ses
+propres samples (typiquement extraits de ``%LOCALAPPDATA%\\Deckle\\telemetry\\``).
+On ne distribue pas d'audio privé via Git.
 
-Audio duration brackets
------------------------
-For Whisper-side benchmarks we segment the corpus into four named
-brackets, each describing the *level of cleanup* the rewrite step is
-allowed to perform on the resulting text. The brackets are derived from
-``payload.duration_seconds`` at read time — nothing is stored on disk.
-See the plan file for the full naming rationale.
+Le corpus est traité en lecture seule par les benches — on ne touche
+jamais aux fichiers sources, seulement aux résultats sous
+``benchmark/runs/<run-id>/``.
 
-    Slug          | Audio duration       | Allowed cleanup
-    relecture     | ≤ 60 s               | surface fixes
-    lissage       | 60 s < d ≤ 300 s     | flow, transitions
-    affinage      | 300 s < d ≤ 600 s    | precise detail work
-    arrangement   | 600 s < d ≤ 1200 s   | regroup duplicates with same nuance
-
-Samples beyond the 1200 s cap (matching ``MaxRecordingDurationSeconds``
-on the app side) bucket to ``None`` and are dropped from grouping.
+Pourquoi un module séparé : ce loader est appelé par tous les benches
+(voxtral-poc, whisper-stability futur, etc.) donc il vit en lib/ — pas
+en duplication dans chaque bench.
 """
 
 from __future__ import annotations
 
-import glob as _glob
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
-BRACKETS: list[tuple[str, float]] = [
-    ("relecture",     60.0),
-    ("lissage",      300.0),
-    ("affinage",     600.0),
-    ("arrangement", 1200.0),
-]
-"""Ordered (slug, upper_bound_inclusive_seconds) pairs.
-
-Order matters: ``bracket_of`` walks the list left-to-right and returns
-the first slug whose upper bound covers the sample's duration. The
-cap (1200 s) mirrors the app's ``MaxRecordingDurationSeconds``.
-"""
-
-BRACKET_SLUGS: tuple[str, ...] = tuple(slug for slug, _ in BRACKETS)
+BENCHMARK_DIR = Path(__file__).resolve().parent.parent
+CORPORA_DIR = BENCHMARK_DIR / "corpora"
 
 
-def bracket_of(duration_seconds: float) -> str | None:
-    """Return the bracket slug for ``duration_seconds`` or ``None`` if past the cap."""
-    for slug, upper in BRACKETS:
-        if duration_seconds <= upper:
-            return slug
-    return None
-
-
-@dataclass(slots=True)
+@dataclass(frozen=True)
 class Sample:
-    source_file:      str
-    line_no:          int
-    timestamp:        str
-    session:          str
-    profile:          str
-    slug:             str
-    duration_seconds: float
-    raw_text:         str
-    initial_prompt:   str | None
-    whisper_model:    str
-    audio_file:       str | None
-    envelope:         dict = field(repr=False)
-
-    @property
-    def id(self) -> str:
-        """Stable per-sample identifier across runs.
-
-        After the telemetry refonte every profile's corpus lives in
-        ``<profile-slug>/corpus.jsonl``, so the file stem alone ("corpus")
-        no longer disambiguates. The slug is the profile identity and is
-        unique across the tree — use it as the per-sample prefix.
-        """
-        prefix = self.slug or Path(self.source_file).parent.name or "corpus"
-        return f"{prefix}:{self.line_no}"
+    """Un sample du corpus, prêt à être consommé par une Source."""
+    id: str
+    audio_path: Path
+    duration_s: float
+    tier: str
+    reference_text: str
+    reference_words: int
 
 
-def _parse_envelope(envelope: dict, source_file: str, line_no: int) -> Sample | None:
-    kind = str(envelope.get("kind", "")).lower()
-    if kind != "corpus":
-        return None
-    payload = envelope.get("payload") or {}
-    raw     = payload.get("raw") or {}
-    whisper = payload.get("whisper") or {}
-
-    text = raw.get("text") or ""
-    if not text.strip():
-        return None
-
-    return Sample(
-        source_file      = source_file,
-        line_no          = line_no,
-        timestamp        = str(envelope.get("timestamp", "")),
-        session          = str(envelope.get("session", "")),
-        profile          = str(payload.get("profile", "")),
-        slug             = str(payload.get("slug", "")),
-        duration_seconds = float(payload.get("duration_seconds", 0.0)),
-        raw_text         = text,
-        initial_prompt   = whisper.get("initial_prompt") or None,
-        whisper_model    = str(whisper.get("model", "")),
-        audio_file       = payload.get("audio_file") or None,
-        envelope         = envelope,
-    )
+def available() -> list[str]:
+    """Liste les slugs de corpora dispo sur la machine. Pratique pour
+    l'erreur ``corpus introuvable`` ou un menu CLI."""
+    if not CORPORA_DIR.exists():
+        return []
+    return sorted(p.name for p in CORPORA_DIR.iterdir()
+                  if p.is_dir() and (p / "corpus.jsonl").exists())
 
 
-def load_corpus(
-    patterns: list[str] | str,
-    *,
-    duration_min: float | None = None,
-    duration_max: float | None = None,
-    initial_prompt: str | None = None,
-    slug:           str | None = None,
-    bracket:        str | None = None,
-) -> list[Sample]:
-    """Load every JSONL matching ``patterns`` and return the kept samples.
+def load(slug: str) -> list[Sample]:
+    """Charge un corpus depuis ``corpora/<slug>/corpus.jsonl``.
 
-    Patterns may be absolute or relative — relative paths are resolved
-    against the current working directory (callers that pin the layout
-    should resolve against ``benchmark/`` themselves).
-
-    Filters:
-        - ``duration_min`` / ``duration_max``: inclusive bounds in seconds.
-        - ``initial_prompt``: exact match on ``whisper.initial_prompt``.
-          Use the literal empty string ``""`` to keep only entries with
-          no initial prompt set.
-        - ``slug``: exact match on the payload slug (profile folder, e.g.
-          ``nettoyage-69b8e91208d4``).
-        - ``bracket``: keep only samples whose duration falls into the
-          named audio bracket (``relecture``/``lissage``/``affinage``/
-          ``arrangement``). Composes with ``duration_min``/``duration_max``.
+    Trie par durée croissante (utile pour le bench : on commence par les
+    petits samples, le pipeline se réchauffe avant les longs). Filtre
+    silencieusement les samples dont l'audio est introuvable — un corpus
+    peut être partiel (ex. user a supprimé un WAV pour tester).
     """
-    if isinstance(patterns, str):
-        patterns = [patterns]
-
-    if bracket is not None and bracket not in BRACKET_SLUGS:
-        raise ValueError(
-            f"Unknown bracket {bracket!r}; expected one of {BRACKET_SLUGS}"
+    corpus_dir = CORPORA_DIR / slug
+    jsonl_path = corpus_dir / "corpus.jsonl"
+    if not jsonl_path.exists():
+        raise FileNotFoundError(
+            f"corpus {slug!r} introuvable : attendu {jsonl_path}\n"
+            f"  Corpora disponibles sur cette machine : {available() or '<aucun>'}\n"
+            f"  Les corpora ne sont PAS versionnés (gitignored). Tu dois "
+            f"déposer tes propres samples sous {CORPORA_DIR}\\<slug>\\."
         )
 
-    paths: list[str] = []
-    for pattern in patterns:
-        paths.extend(sorted(_glob.glob(pattern)))
-    if not paths:
-        return []
-
     samples: list[Sample] = []
-    for path in paths:
-        with open(path, "r", encoding="utf-8") as f:
-            for line_no, line in enumerate(f, start=1):
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    envelope = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                sample = _parse_envelope(envelope, path, line_no)
-                if sample is None:
-                    continue
-                if duration_min is not None and sample.duration_seconds < duration_min:
-                    continue
-                if duration_max is not None and sample.duration_seconds > duration_max:
-                    continue
-                if initial_prompt is not None and (sample.initial_prompt or "") != initial_prompt:
-                    continue
-                if slug is not None and sample.slug != slug:
-                    continue
-                if bracket is not None and bracket_of(sample.duration_seconds) != bracket:
-                    continue
-                samples.append(sample)
-    return samples
-
-
-def group_by_initial_prompt(samples: list[Sample]) -> dict[str, list[Sample]]:
-    """Bucket samples by ``whisper.initial_prompt`` value.
-
-    Useful when comparing the impact of a prompt change: each bucket is a
-    subset of the corpus recorded under the same Whisper primer.
-    """
-    buckets: dict[str, list[Sample]] = {}
-    for s in samples:
-        buckets.setdefault(s.initial_prompt or "", []).append(s)
-    return buckets
-
-
-def group_by_bracket(samples: list[Sample]) -> dict[str, list[Sample]]:
-    """Bucket samples by audio duration bracket.
-
-    Returns a dict keyed by the four bracket slugs in canonical order
-    (``relecture``, ``lissage``, ``affinage``, ``arrangement``). Samples
-    past the 1200 s cap are dropped silently — they should not have been
-    recorded in the first place since the app enforces the same cap.
-    """
-    buckets: dict[str, list[Sample]] = {slug: [] for slug, _ in BRACKETS}
-    for s in samples:
-        slug = bracket_of(s.duration_seconds)
-        if slug is None:
+    for line in jsonl_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
             continue
-        buckets[slug].append(s)
-    return buckets
+        entry = json.loads(line)
+        payload = entry["payload"]
+        wav_path = corpus_dir / payload["audio_file"]
+        if not wav_path.exists():
+            continue
+        samples.append(Sample(
+            id=str(payload["transcription_id"]),
+            audio_path=wav_path,
+            duration_s=float(payload["duration_seconds"]),
+            tier=str(payload["tier"]),
+            reference_text=str(payload["text"]),
+            reference_words=int(payload["text_words"]),
+        ))
+    samples.sort(key=lambda s: s.duration_s)
+    return samples

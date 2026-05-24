@@ -1,6 +1,9 @@
-"""Shared helpers for the benchmark scripts.
+"""Briques réutilisables pour les benches sous ``benches/``.
 
-Keeps Ollama/Anthropic plumbing, corpus loading and rule metrics in one
-place so benchmark.py and autoresearch.py stay focused on their own
-orchestration.
+Sous-packages :
+  - ``corpus``   : lecture des corpora curated sous ``corpora/<slug>/``
+  - ``sources``  : drivers de transcription (Whisper, Voxtral, futurs)
+  - ``judges``   : juges de qualité (Claude API, Ollama legacy)
+  - ``metrics``  : règles objectives (WER, looping, leak patterns)
+  - ``monitor``  : observabilité ressources (script PowerShell GPU/RAM)
 """
