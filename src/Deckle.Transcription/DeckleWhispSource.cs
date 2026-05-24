@@ -8,9 +8,10 @@ namespace Deckle.Transcription;
 // paresseux, idle unload), le warmup boot, la transcription elle-même
 // (params, prompt, segments, complétion), le clipboard, le paste, la
 // redirection des logs whisper.cpp, et les heartbeats structurés de
-// fin de pipeline (LatencyRecorded, CorpusRecorded). La persistance
-// settings du module passe par les quatre events Settings*
-// transitoires (entorse documentée — voir DeckleAudioSource).
+// fin de pipeline (LatencyRecorded, CorpusAsrRecorded,
+// CorpusRewriteRecorded). La persistance settings du module passe par
+// les quatre events Settings* transitoires (entorse documentée — voir
+// DeckleAudioSource).
 //
 // Choix de design — entorses notables :
 //
@@ -145,6 +146,8 @@ public sealed class DeckleWhispSource : DeckleEventSource
     public const int EvtWhisperModelLoadParsed           = 102;
     public const int EvtWhisperBackendInitParsed         = 103;
     public const int EvtWhisperInitStateParsed           = 104;
+    public const int EvtCorpusAsrRecorded                = 105;
+    public const int EvtCorpusRewriteRecorded            = 106;
 
     // ── Warmup clip ──────────────────────────────────────────────────────
 
@@ -888,12 +891,34 @@ public sealed class DeckleWhispSource : DeckleEventSource
 
     // ── Heartbeats structurés — JSONL canoniques ────────────────────────
     //
-    // LatencyRecorded et CorpusRecorded sont les events que
-    // JsonlEventListener filtre pour écrire latency.jsonl et
-    // corpus.jsonl. Le format Message est un récap mono-ligne pour
-    // LogWindow ; le payload complet (24 champs pour Latency, 13 pour
-    // Corpus) est sérialisé par EtwSelfDescribingEventFormat avec les
-    // noms snake_case devenant les clés JSON.
+    // LatencyRecorded, CorpusAsrRecorded et CorpusRewriteRecorded sont
+    // les events que JsonlEventListener (et RoutedJsonlEventListener pour
+    // les deux corpus) filtrent pour écrire latency.jsonl et les
+    // corpus.jsonl bucketés. Le format Message est un récap mono-ligne
+    // pour LogWindow ; le payload complet est sérialisé par
+    // EtwSelfDescribingEventFormat avec les noms snake_case devenant
+    // les clés JSON.
+    //
+    // CorpusAsrRecorded capture la sortie ASR (Whisper, plus tard
+    // Voxtral). Routée vers corpus/<bucket>/<tier>/corpus.jsonl
+    // (bucket=raw en mode mot-pour-mot, bucket=voxtral-<instruction>
+    // quand le mode instruction-nommée Voxtral sera branché). Les
+    // cinq tiers de longueur — very-short / short / medium / long /
+    // very-long — découpent le dataset par charge ASR pour l'analyse.
+    //
+    // CorpusRewriteRecorded capture la sortie réécriture LLM. Routée
+    // vers corpus/rewrite-<name>-<id>/corpus.jsonl (plat — pas de tier
+    // sur le rewrite, voir ADR-0011). Le rewrite_profile_id sert de
+    // jointure avec le profil ; le prompt_template_hash invalide les
+    // analyses si le template change sans rename d'ID.
+    //
+    // Quand un rewrite tourne, les deux events partent avec le même
+    // transcription_id — c'est la clé qui joint les lignes au WAV
+    // (audio/<transcription_id>.wav).
+    //
+    // L'ancien event CorpusRecorded est conservé temporairement le temps
+    // de la transition pour ne pas casser un éventuel consommateur. Sera
+    // retiré en fin de chantier — voir ADR-0011 section Conséquences.
 
     [Event(EvtLatencyRecorded,
            Level = EventLevel.Verbose,
@@ -934,6 +959,10 @@ public sealed class DeckleWhispSource : DeckleEventSource
             strategy, n_segments, text_chars, text_words, profile, pasted, outcome);
     }
 
+    [System.Obsolete(
+        "Remplacé par CorpusAsrRecorded + CorpusRewriteRecorded (ADR-0011). " +
+        "Conservé temporairement pour cohabiter avec le listener legacy " +
+        "corpus.jsonl pendant la transition — sera retiré en fin de chantier.")]
     [Event(EvtCorpusRecorded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
@@ -958,6 +987,60 @@ public sealed class DeckleWhispSource : DeckleEventSource
             profile, profile_id, slug, duration_seconds,
             model, language, elapsed_ms, initial_prompt,
             raw_text, raw_words, raw_chars, words_per_second, audio_file);
+    }
+
+    [Event(EvtCorpusAsrRecorded,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "asr | bucket={2} | tier={3} | words={9} | wps={12:F1}")]
+    public void CorpusAsrRecorded(
+        string transcription_id,
+        string audio_file,
+        string bucket,
+        string tier,
+        string backend,
+        string model,
+        string language,
+        string prompt_or_instruction,
+        string text,
+        int    text_words,
+        int    text_chars,
+        double duration_seconds,
+        double words_per_second,
+        long   elapsed_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtCorpusAsrRecorded,
+            transcription_id, audio_file, bucket, tier,
+            backend, model, language, prompt_or_instruction,
+            text, text_words, text_chars, duration_seconds,
+            words_per_second, elapsed_ms);
+    }
+
+    [Event(EvtCorpusRewriteRecorded,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "rewrite | bucket={2} | profile={4} | words={9} | elapsed_ms={11}")]
+    public void CorpusRewriteRecorded(
+        string transcription_id,
+        string audio_file,
+        string bucket,
+        string rewrite_profile_id,
+        string rewrite_profile_name,
+        string ollama_endpoint,
+        string ollama_model,
+        string prompt_template_hash,
+        string text,
+        int    text_words,
+        int    text_chars,
+        long   elapsed_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtCorpusRewriteRecorded,
+            transcription_id, audio_file, bucket,
+            rewrite_profile_id, rewrite_profile_name,
+            ollama_endpoint, ollama_model, prompt_template_hash,
+            text, text_words, text_chars, elapsed_ms);
     }
 
     // ── UserFeedback ────────────────────────────────────────────────────
