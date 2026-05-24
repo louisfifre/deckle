@@ -41,6 +41,12 @@ profile — `deckle.ps1` is purely additive.
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
 | [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`. **Not an entry point.** |
 
+## Hooks git — TREE.md auto-update
+
+Un hook `pre-commit` régénère [`TREE.md`](../TREE.md) à la racine avant chaque commit et le stage automatiquement, pour que le repo porte toujours une vue à jour de son arborescence tracée. Source dans [`hooks/pre-commit`](hooks/pre-commit), installation locale via [`install-hooks.ps1`](install-hooks.ps1) à lancer une seule fois après un clone — les hooks vivent sous `.git/hooks/` et ne sont pas versionnés par git.
+
+Le hook délègue à [`update-tree.ps1`](update-tree.ps1), qui reconstruit `TREE.md` depuis `git ls-files` (vue plate, zéro fichier gitignored, aucune annotation). Peut aussi se lancer à la main pour rafraîchir hors commit : `pwsh scripts/update-tree.ps1`.
+
 ## Native runtime — three sourcing modes
 
 `lib/setup-assets.ps1` provisions the 8 native DLLs (5 whisper.cpp
