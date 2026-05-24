@@ -134,17 +134,25 @@ def main() -> int:
               n_samples=len(samples), max_new_tokens=args.max_new_tokens)
 
     # ── Source (chargement modèle, instrumenté pour mesure VRAM) ───────
-    # Brève pause pour laisser le monitor capter quelques échantillons
-    # idle baseline avant qu'on attaque le load ; sans ça la fenêtre
-    # [monitor_start, model_load_start] est sub-50 ms et l'helper de
-    # jointure ne peut pas calculer un baseline propre.
+    # Pauses larges pour que le monitor PowerShell (Get-Counter à 500 ms,
+    # ~1-2 s de latence au démarrage) capte des échantillons stables sur
+    # chaque phase. Sans ces marges les peaks par phase étaient noyés
+    # dans le bruit de transition (cf. mini-run : 1-3 samples par row,
+    # peak idle inexistant). 10 s = ~18-20 samples par phase de pause,
+    # largement suffisant pour un baseline propre.
     if monitor_proc:
-        time.sleep(0.8)
+        time.sleep(10.0)
     log.event("model_load_start", source=args.source, dtype=args.dtype)
     source = _build_source(args)
     log.event("model_load_end", source=args.source, source_label=source.label,
               n_params=getattr(source, "n_params", None))
     print(f"  source ready : {source.label}")
+    # Settle post-load : laisse DirectML stabiliser sa VRAM après l'alloc
+    # initiale, et donne au monitor une fenêtre propre pour mesurer la
+    # baseline post-load (avant que la 1re row ne déclenche les buffers
+    # de génération qui inflent les peaks).
+    if monitor_proc:
+        time.sleep(10.0)
 
     # ── Loop ───────────────────────────────────────────────────────────
     # Import lazy : cleanup_gpu n'a de sens que pour les sources Voxtral.
