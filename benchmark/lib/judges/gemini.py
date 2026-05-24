@@ -95,7 +95,7 @@ class GeminiJudge(Judge):
         row_system_prompt:   str,
         row_model:           str = DEFAULT_ROW_MODEL,
         max_audio_inline_mb: float = 18.0,
-        max_tokens_row:      int = 4096,
+        max_tokens_row:      int = 512,
         temperature:         float = 0.0,
     ) -> None:
         try:
@@ -125,15 +125,11 @@ class GeminiJudge(Judge):
         # de cette taille on lève — le code Files API n'est pas câblé
         # (corpus actuel : 252 s × 16 kHz mono 16 bit ≈ 8 MB max).
         self.max_audio_inline_mb = max_audio_inline_mb
-        # 4096 plutôt qu'une valeur calée sur la longueur du JSON visible
-        # (~110 tokens en pratique) : sur Gemini 2.5/3.5 Flash, le budget
-        # max_output_tokens est partagé entre les tokens de raisonnement
-        # interne ("thinking") et l'output émis. Sur les audios longs
-        # (38 s et plus), le thinking consomme l'essentiel d'un budget
-        # 1024 et il ne reste que ~30 tokens pour le JSON, qui ressort
-        # alors tronqué en plein milieu d'une clé. Mesuré sur le run v4
-        # 25 samples : 6/25 rows parse_ok=false, toutes sur audios >= 38 s,
-        # toutes coupées à 27-30 output tokens.
+        # 512 suffit largement : le thinking est désactivé (cf.
+        # _call_with_retry) et l'output visible mesuré sur les rows OK
+        # tient en 98-115 tokens. La marge x4 absorbe les verdicts longs
+        # sans laisser de place à un dérapage si jamais le modèle
+        # halluciné des axes supplémentaires.
         self.max_tokens_row = max_tokens_row
         self.temperature = temperature
 
@@ -219,6 +215,19 @@ class GeminiJudge(Judge):
                         response_schema=_JUDGE_SCHEMA,
                         temperature=self.temperature,
                         max_output_tokens=self.max_tokens_row,
+                        # Thinking désactivé : la tâche du juge est très
+                        # contrainte par le response_schema (4 axes
+                        # numériques + 1 booléen + verdict court), donc
+                        # aucun chain-of-thought à dérouler. Mesuré sur
+                        # 6 rows : ~4 fois plus rapide et -23 % de tokens
+                        # totaux vs thinking on. Effet de bord observé
+                        # sur le drift : OFF score ~7 pts plus haut sur
+                        # fidelite_signal et ~3 pts plus haut sur
+                        # proprete, uniformément ; les axes binaires
+                        # absence_hallucination et regime_respecte sont
+                        # inchangés. Le drift est unidirectionnel donc
+                        # préserve l'ordre relatif entre régimes/sources.
+                        thinking_config=self._types.ThinkingConfig(thinking_budget=0),
                     ),
                 )
             except Exception as exc:
