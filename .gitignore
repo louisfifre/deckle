@@ -20,6 +20,8 @@ docs/archives/
 # .NET build output.
 src/**/bin/
 src/**/obj/
+tests/**/bin/
+tests/**/obj/
 
 # Deployment output — rebuildable via dotnet publish.
 publish/
