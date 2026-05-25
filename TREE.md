@@ -91,7 +91,8 @@ _Mise à jour : 2026-05-25 09:54 — source : `git ls-files`_
 │   └── research/
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
-│       └── research--hyperhdr-interpolators--2026-05-15.md
+│       ├── research--hyperhdr-interpolators--2026-05-15.md
+│       └── research--inventaire-observabilite-eventsource--2026-05-24.md
 ├── scripts/
 │   ├── hooks/
 │   │   └── pre-commit
