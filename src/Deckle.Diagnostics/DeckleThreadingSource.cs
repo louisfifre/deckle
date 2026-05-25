@@ -31,12 +31,24 @@ namespace Deckle.Diagnostics;
 //
 // Vocabulaire fermé `operation` (à étendre ici si un nouveau site
 // significatif émerge — pas d'opération ad-hoc côté call site) :
-//   "ui-update"        — mise à jour d'un contrôle XAML depuis un
-//                        thread non-UI
-//   "window-show"      — affichage d'une fenêtre depuis un thread non-UI
-//   "feedback-display" — affichage HUD ou overlay depuis un thread non-UI
-//   "log-append"       — append d'une entrée dans la LogWindow
-//   "settings-reload"  — rechargement des settings UI suite à un Changed
+//   "ui-update"         — mise à jour d'un contrôle XAML depuis un
+//                         thread non-UI, ou tweak d'un template part
+//                         différé Low après matérialisation
+//   "window-show"       — affichage d'une fenêtre depuis un thread non-UI
+//   "feedback-display"  — affichage HUD ou overlay depuis un thread non-UI
+//   "log-append"        — append d'une entrée dans la LogWindow
+//   "settings-reload"   — rechargement des settings UI suite à un Changed
+//   "init-flag-clear"   — clear d'un flag `_initializing` après hydratation
+//                         des contrôles XAML par le constructeur de page,
+//                         différé Low pour attendre la fin du batch de
+//                         layout (pattern Settings/Playground pages)
+//   "engine-state-sync" — synchronisation UI suite à un événement engine
+//                         (état de pipeline, transition recording,
+//                         arrêt screen capture)
+//   "warm-pass-tail"    — transition d'état HUD différée Low après le
+//                         premier rendu pour absorber les cold-path costs
+//                         de DComp/font shaping invisiblement (warm pass
+//                         layered alpha=0)
 //
 // Convention `caller` : nom court du site logique
 // ("transcription-engine", "ambient-pipeline", "hue-driver", "hud-window",

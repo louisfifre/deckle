@@ -80,9 +80,11 @@ public sealed partial class SettingsWindow : Window
         // flips. No-op if the template part name changes upstream.
         Nav.Loaded += (_, _) =>
         {
-            DispatcherQueue.TryEnqueue(
-                Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-                () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"));
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "ui-update", caller: "settings-window-nav",
+                callback: () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"),
+                rejectSource: "SETTINGS", rejectWhat: "nav tooltip override",
+                priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
         };
         Nav.PaneOpened += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
         Nav.PaneClosed += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
