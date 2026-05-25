@@ -183,6 +183,16 @@ public sealed partial class HudOverlayWindow : Window
     // both the fade and the proximity arming are complete.
     public void FadeIn(Action? onComplete = null)
     {
+        // Axe 2 — FadeInStarted (scope="overlay"). Le from_alpha vient du
+        // ctor qui pose alpha=0 via SetLayeredWindowAttributes ; on lit
+        // _fade?.CurrentAlpha pour rester exact si un FadeIn subséquent
+        // est déclenché (le manager actuel ne le fait pas mais une future
+        // évolution pourrait). Durée 150 ms = LayeredAlphaAnimator.Duration
+        // privé du WindowSlideAnimator (Duration constante, mirror du
+        // FADE_IN_MS de HudWindow).
+        byte fromAlpha = _fade?.CurrentAlpha ?? 0;
+        DeckleHudSource.Log.FadeInStarted("overlay", 150, fromAlpha, MAX_ALPHA);
+
         _fade?.FadeTo(MAX_ALPHA, onComplete: () =>
         {
             _proximityAlpha = MAX_ALPHA;
