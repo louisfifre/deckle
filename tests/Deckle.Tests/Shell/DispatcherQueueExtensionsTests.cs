@@ -137,6 +137,49 @@ public class DispatcherQueueExtensionsTests
         }
     }
 
+    // Miroir de TryEnqueueObservedHonorsPriorityParameter pour le wrapper
+    // historique TryEnqueueOrLog. Étendu à la priority dans la même vague
+    // que TryEnqueueObserved parce que le cold path de TryEnqueueObserved
+    // y délègue, et que perdre la priority sur le cold path casserait la
+    // coordination UI des Settings pages quand le verbose n'est pas écouté.
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task TryEnqueueOrLogHonorsPriorityParameter()
+    {
+        var controller = DispatcherQueueController.CreateOnDedicatedThread();
+        var queue = controller.DispatcherQueue;
+        try
+        {
+            var order = new ConcurrentQueue<string>();
+            var allDone = new CountdownEvent(3);
+            using var gate = new ManualResetEventSlim(false);
+            var testCt = TestContext.Current.CancellationToken;
+
+            queue.TryEnqueue(() => gate.Wait(TimeSpan.FromSeconds(5), testCt));
+
+            queue.TryEnqueueOrLog(
+                () => { order.Enqueue("low"); allDone.Signal(); },
+                "TEST", "low", DispatcherQueuePriority.Low);
+            queue.TryEnqueueOrLog(
+                () => { order.Enqueue("normal"); allDone.Signal(); },
+                "TEST", "normal");
+            queue.TryEnqueueOrLog(
+                () => { order.Enqueue("high"); allDone.Signal(); },
+                "TEST", "high", DispatcherQueuePriority.High);
+
+            gate.Set();
+            Assert.True(allDone.Wait(TimeSpan.FromSeconds(5), testCt));
+
+            Assert.Equal(
+                new[] { "high", "normal", "low" },
+                order.ToArray());
+        }
+        finally
+        {
+            await controller.ShutdownQueueAsync();
+        }
+    }
+
     // EventListener réentrant — observe `Deckle.Diagnostics.Threading` et
     // re-appelle `queue.TryEnqueueObserved` à chaque `MarshalQueued` reçu.
     // C'est exactement le pattern qui a déclenché la récursion en prod :
