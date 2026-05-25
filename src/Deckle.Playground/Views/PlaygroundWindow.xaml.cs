@@ -105,9 +105,11 @@ public sealed partial class PlaygroundWindow : Window
         // priority dispatch), re-applied on PaneOpened / PaneClosed.
         Nav.Loaded += (_, _) =>
         {
-            DispatcherQueue.TryEnqueue(
-                Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-                () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"));
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "ui-update", caller: "playground-window-nav",
+                callback: () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"),
+                rejectSource: "PLAYGROUND", rejectWhat: "nav tooltip override",
+                priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
         };
         Nav.PaneOpened += (_, _) =>
             OverrideNavPaneToggleTooltip(Nav, "Open navigation");
@@ -164,7 +166,10 @@ public sealed partial class PlaygroundWindow : Window
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
-        else DispatcherQueue.TryEnqueue(() => ApplyRecordingState(isRecording));
+        else DispatcherQueue.TryEnqueueObserved(
+            operation: "engine-state-sync", caller: "playground-window",
+            callback: () => ApplyRecordingState(isRecording),
+            rejectSource: "PLAYGROUND", rejectWhat: "recording state sync");
     }
 
     private void ApplyRecordingState(bool isRecording)
