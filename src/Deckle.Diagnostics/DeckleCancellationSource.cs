@@ -29,6 +29,9 @@ namespace Deckle.Diagnostics;
 //                        attente prolongée
 //   "llm-models"       — annulation pendant une opération admin sur la
 //                        liste de modèles (delete, refresh)
+//   "ambient-pipeline" — annulation de la boucle de push ambient
+//                        (Stop user, capture lost upstream, external
+//                        Hue interference, DisposeAsync shutdown)
 //
 // Vocabulaire fermé `reason` :
 //   "user"           — l'utilisateur a déclenché l'annulation (Hide,

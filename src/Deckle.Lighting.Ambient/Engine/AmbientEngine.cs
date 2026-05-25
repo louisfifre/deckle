@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Deckle.Composition;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Lighting;
 using Deckle.Lighting.Hue;
@@ -919,6 +920,24 @@ public sealed class AmbientEngine : IAsyncDisposable
         catch (OperationCanceledException)
         {
             // Expected when Stop / DisposeAsync cancels the token.
+            // Sub-provider transverse Cancellation — map _stopReason
+            // (vocabulaire engine local) sur la vocabulaire fermé du
+            // sub-provider : "user" reste tel quel, les arrêts pilotés
+            // par un événement amont (capture lost, external Hue
+            // interference) sont des "upstream". L'âge est calculé à
+            // partir du Stopwatch armé au start de la pipeline.
+            string reason = _stopReason switch
+            {
+                "user"         => "user",
+                "capture_lost" => "upstream",
+                "external"     => "upstream",
+                _              => "user",
+            };
+            long ageMs = _startTimestamp != 0
+                ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
+                : -1;
+            DeckleCancellationSource.Log.OperationCancelled(
+                "ambient-pipeline", reason, (int)ageMs);
         }
         catch (Exception ex)
         {
