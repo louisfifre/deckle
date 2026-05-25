@@ -364,9 +364,11 @@ public sealed partial class HudWindow : Window
         // Low priority fires after the next render pass — by the time it
         // runs the first frame has been presented and the cold-path costs
         // are paid.
-        DispatcherQueue.TryEnqueue(
-            Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-            () => SetState(HudState.Hidden, reason: "warm_pass"));
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "warm-pass-tail", caller: "hud-window",
+            callback: () => SetState(HudState.Hidden, reason: "warm_pass"),
+            rejectSource: "HUD", rejectWhat: "warm pass tail",
+            priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
     }
 
     // Forward mic RMS samples (20 Hz, engine recording thread) to the chrono
