@@ -34,10 +34,14 @@ from typing import Any
 from ._base import Judge, JudgeScore
 
 
-# Quota tier gratuit constaté empiriquement sur gemini-3.5-flash :
-# 5 requêtes/minute. La doc Google ne publie plus de chiffres figés mais
-# l'erreur 429 le confirme (``quotaValue: '5'``). 12 s = 60/5 c'est le
-# fallback safe si l'API ne renvoie pas de retryDelay parseable.
+# Fallback utilisé uniquement si l'API ne renvoie pas (ou si on n'arrive
+# pas à parser) un ``retryDelay`` exploitable — la voie primaire reste
+# toujours la valeur fournie dans le payload de l'erreur 429.
+# 12 s = 60/5, dimensionné sur le pire cas free tier (5 RPM constaté
+# historiquement sur gemini-3.5-flash). En billing tier 1 le quota est
+# bien plus large, donc ce fallback est sur-protecteur mais sûr — il
+# n'introduit pas de risque de hot-loop, juste un excédent de latence
+# rare quand le parsing structuré échoue.
 _RATE_LIMIT_FALLBACK_DELAY_S = 12.0
 _RATE_LIMIT_MARGIN_S = 1.0
 _RATE_LIMIT_MAX_RETRIES = 3
@@ -195,13 +199,15 @@ class GeminiJudge(Judge):
 
         Le SDK ``google-genai`` ne respecte pas tout seul le ``retryDelay``
         renvoyé dans le payload d'erreur. On le parse et on sleep d'autant
-        — sans ça les rows courtes burn le quota free tier (5 RPM) en
-        moins d'une minute et la moitié des juges remontent en erreur.
+        — historiquement, sur free tier (5 RPM), les rows courtes
+        burnaient le quota en moins d'une minute et la moitié des juges
+        remontaient en erreur sans ce retry.
 
         Stratégie : retryDelay extrait du payload + 1 s de marge. Si on ne
-        sait pas le parser, fallback 12 s (60/5 = 1 call max par 12 s).
-        Plafond de 3 tentatives — au-delà c'est probablement un problème
-        de plan ou de clé et on laisse remonter.
+        sait pas le parser, fallback dimensionné pour le pire cas free
+        tier (cf. ``_RATE_LIMIT_FALLBACK_DELAY_S``). Plafond de 3
+        tentatives — au-delà c'est probablement un problème de plan ou
+        de clé et on laisse remonter.
         """
         last_exc: Exception | None = None
         for attempt in range(_RATE_LIMIT_MAX_RETRIES):
