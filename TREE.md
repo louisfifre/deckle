@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 10:05 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 10:12 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -130,7 +130,8 @@ _Mise à jour : 2026-05-25 10:05 — source : `git ls-files`_
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── LogEntry.cs
-│   │   │   └── LogEntryTemplateSelector.cs
+│   │   │   ├── LogEntryTemplateSelector.cs
+│   │   │   └── NetworkStatusEmitter.cs
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
@@ -204,6 +205,7 @@ _Mise à jour : 2026-05-25 10:05 — source : `git ls-files`_
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleEventSource.cs
+│   │   ├── DeckleNetworkSource.cs
 │   │   ├── EventEntry.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogWindowSink.cs

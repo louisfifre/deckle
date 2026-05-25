@@ -185,6 +185,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         // (Audio) emits genuine events.
         Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted("wave 1 boot");
 
+        // Sub-provider transverse Network — capter les transitions
+        // d'état réseau de la machine pour corréler les échecs HTTP
+        // métier (Hue REST, Ollama) avec une coupure ou bascule au
+        // niveau OS. Émetteur unique, idempotent ; un event initial est
+        // émis à `Start()` pour capter l'état au boot, puis sur chaque
+        // broadcast `NetworkInformation.NetworkStatusChanged`.
+        NetworkStatusEmitter.Start();
+
         // Resolved paths logged once at boot — useful for support: tells us
         // where the app is looking for settings, models, native DLLs, and
         // telemetry. Touching any AppPaths member triggers the static ctor
