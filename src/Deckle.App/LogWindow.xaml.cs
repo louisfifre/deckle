@@ -240,6 +240,14 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // called from a tray callback. SetForegroundWindow from the same
         // process is allowed (the message-only tray host is same-process).
         NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Windowing — émis post-Show pour capturer le rect effectif
+        // après que DWM ait positionné la fenêtre. L'ancrage est
+        // "Center" : LogWindow fait un AppWindow.Resize (960×1440) au
+        // ctor, Windows applique le centrage initial. Émis à chaque
+        // ShowAndActivate parce qu'un drag utilisateur entre deux
+        // ouvertures change le rect.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "log", "Center");
     }
 
     // ── Implementation ─────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Hud;
@@ -163,6 +164,16 @@ public sealed partial class HudOverlayWindow : Window
             _hwnd, NativeMethods.HWND_TOP,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+
+        // Windowing — tronc commun émis ici après le MoveAndResize.
+        // L'ancrage est "absolute" : la position est calculée par
+        // HudOverlayManager.ComputeSlotPositionPx en fonction du HUD
+        // principal + slot, mais ce calcul est invisible côté window —
+        // on capture la position effective sans inventer un anchor
+        // logique qui appartient au manager. La spécialisation
+        // OverlaySlotAssigned (qui porte le slot) est émise côté
+        // manager où l'index slot est connu.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "hud-overlay", "absolute");
     }
 
     // Used for instant repositioning (reduced-motion path, or to bypass the

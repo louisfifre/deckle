@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.UI.Dispatching;
 using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 using Deckle.Settings;
 using Deckle.Shell;
 
@@ -73,6 +74,15 @@ public sealed class HudOverlayManager : IDisposable
 
         window.ApplyPayload(severity, title, body);
         window.ShowAt(xPx, yPx);
+
+        // Windowing — spécialisation overlay émise après le ShowAt (qui
+        // émet déjà le tronc commun avec window="hud-overlay"). Le slot
+        // n'est connu qu'ici dans le manager, pas dans la window elle-
+        // même. Émis aussi à chaque réassignation de slot dans
+        // Recompact ci-dessous quand un overlay change de position
+        // suite à l'expiration d'un voisin ou la (dés)apparition du
+        // HUD principal.
+        WindowingProbe.EmitOverlaySlotAssigned(hwnd, newSlot);
 
         var slide = new WindowSlideAnimator(hwnd, _dispatcher, xPx, yPx);
 
@@ -150,8 +160,21 @@ public sealed class HudOverlayManager : IDisposable
                 entry.Slide.CurrentX != xPx ||
                 entry.Slide.CurrentY != yPx)
             {
+                bool slotChanged = entry.SlotIndex != newSlot;
                 entry.SlotIndex = newSlot;
                 entry.Slide.SlideTo(xPx, yPx);
+
+                // Windowing — réassignation de slot. Émis seulement
+                // quand le slot change (pas sur un simple repositionnement
+                // intra-slot dû à un changement de DPI ou de work area).
+                // Le rect post-slide est asynchrone côté animator ; on
+                // capture le rect courant qui reflète la position pré-
+                // animation — la trace renseigne « slot N assigné à
+                // cette fenêtre », pas « animation terminée ».
+                if (slotChanged)
+                {
+                    WindowingProbe.EmitOverlaySlotAssigned(entry.Window.Hwnd, newSlot);
+                }
             }
         }
     }

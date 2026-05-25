@@ -9,6 +9,7 @@ using Windows.Graphics;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.Setup;
@@ -130,6 +131,14 @@ public sealed partial class SetupWindow : Window
                 int x = area.WorkArea.X + (area.WorkArea.Width  - w) / 2;
                 int y = area.WorkArea.Y + (area.WorkArea.Height - h) / 2;
                 appWindow.MoveAndResize(new RectInt32(x, y, w, h));
+
+                // Windowing — émis post-MoveAndResize. SetupWindow se
+                // centre explicitement sur la work area du moniteur
+                // courant (calcul ci-dessus), donc l'ancrage logique
+                // est "Center" — distinct du "Center" implicite
+                // Windows-managed des Settings/Log qui sont juste
+                // Resize sans Move.
+                WindowingProbe.EmitWindowPositioned(hwnd, "setup", "Center");
             }
 
             if (appWindow.TitleBar is { } titleBar)

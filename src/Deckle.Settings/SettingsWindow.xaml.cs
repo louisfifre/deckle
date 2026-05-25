@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Settings;
@@ -142,6 +143,15 @@ public sealed partial class SettingsWindow : Window
         AppWindow.Show();
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Windowing — émis post-Show pour capturer le rect effectif
+        // après que DWM ait positionné la fenêtre. L'ancrage est
+        // "Center" : SettingsWindow ne fait qu'un AppWindow.Resize
+        // (960×1440) au ctor, le centrage initial est fait par
+        // Windows. Émis à chaque ShowAndActivate parce qu'un drag
+        // utilisateur entre deux ouvertures change le rect — la
+        // dernière trace reste la vérité courante.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "settings", "Center");
     }
 
     // ── NavigationView : marge contenu selon le DisplayMode ──────────────

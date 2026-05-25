@@ -578,6 +578,16 @@ public sealed partial class HudWindow : Window
             _hwnd, NativeMethods.HWND_TOP,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+
+        // Windowing — émis après le MoveAndResize + ShowWindow pour
+        // capturer le rect effectif post-DWM. `anchor` reflète le réglage
+        // Settings.Overlay.Position (BottomCenter default, TopCenter
+        // alternative) ; l'enroulement DPI/work area/centrage horizontal
+        // vit dans GetRectPx mais on capture le résultat plutôt que
+        // l'intention pour permettre la reverse via dpi.
+        string position = Settings.SettingsService.Instance.Current.Overlay.Position ?? "";
+        string anchor = position.StartsWith("Top") ? "TopCenter" : "BottomCenter";
+        WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);
     }
 
     // ── Subclass: WM_NCCALCSIZE (no-frame) + WM_INPUT (proximity) ─────────────
