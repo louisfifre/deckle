@@ -73,7 +73,7 @@ The **closed `LogSource` vocabulary** remains relevant even when the underlying 
 
 ## Renaming and progressive hygiene
 
-A non-trivial renaming is a contract change — it is done when responsibility has actually moved or when a past drift is consciously corrected. **Module by module at the moment the module is touched**, never in a giant centralized pass. This discipline joins that of comments (`deckle-docs`).
+A non-trivial renaming is a contract change — it is done when responsibility has actually moved or when a past drift is consciously corrected. **Module by module at the moment the module is touched**, never in a giant centralized pass. This discipline joins that of comments (see `deckle-workflow` section *Code comments*).
 
 Three signals invite reconsidering an existing name. The name **describes implementation** rather than responsibility. The name carries a **fuzzy suffix** when the responsibility is precise and nameable otherwise. Two names **resemble each other to the point of being confused** (case of `HudWindow` and `HudOverlayWindow` which share the essentials — either factor out, or rename to make the role difference explicit).
 
@@ -84,5 +84,5 @@ A traced renaming leaves an **entry in the journal of the relevant module** with
 - **`taxonomie.md`** in this skill — tabulated detail of suffixes, x:Uid patterns, EventSource structure with keywords and tasks, commented good and bad examples. Loaded on demand.
 - **`deckle-logging`** — `LogSource` vocabulary, write levels, procedure to decide what to observe.
 - **`deckle-modularite`** — where a module ends, when to break out into a sub-project.
-- **`deckle-docs`** — documentation convention and comment hygiene; a non-trivial renaming leaves a trace in the module journal.
+- **`save-context`** — when a non-trivial renaming decision deserves a permanent record, route it through the cascade.
 - **`personal-conventions`** — cross-project conventions (language, wording, git, worktrees). `deckle-nomenclature` applies these conventions for the .NET / WinUI 3 context.

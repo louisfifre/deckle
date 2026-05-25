@@ -59,6 +59,5 @@ The log window and any diagnostic surface follow the same principles — sensibl
 
 ## Pointers
 
-- **`deckle-refonte`** — orchestrator skill that points to this skill when a workstream touches the UX volet.
-- **`deckle-docs`** — when a non-trivial UX decision is taken, it deserves an entry in the journal of the concerned module.
+- **`save-context`** — when a non-trivial UX decision is taken, route it through the cascade for a durable trace.
 - The canonical sources (NN/g on progressive disclosure and customization, Microsoft doctrine on Windows app settings) are to be consulted outside of this skill when a case exceeds the perimeter covered here.

@@ -132,8 +132,9 @@ en référence.
   `Transcription(ok=False, error="...")`, **pas** une exception. Le
   bench écrit la row et continue. Une exception remonte le crash entier.
 - **Docstrings** : style FR, prose en paragraphes courts, le **pourquoi**
-  domine sur le **quoi**. Cohérent avec la doctrine `deckle-docs` du
-  repo parent. Pas de docstring-cv ("This function does X.").
+  domine sur le **quoi**. Cohérent avec la doctrine `deckle-workflow`
+  (section *Code comments*) du repo parent. Pas de docstring-cv
+  ("This function does X.").
 
 ## Environnements Python
 

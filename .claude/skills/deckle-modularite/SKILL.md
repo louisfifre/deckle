@@ -83,6 +83,5 @@ Finally, **after each extraction, validate that the code compiles and behaves as
 
 ## Pointers
 
-- **`deckle-refonte`** — orchestrator skill that points to this skill when a workstream touches the modularity strand.
-- **`deckle-docs`** — when a non-trivial split decision is made (notably the extraction of a notion into a new module), it deserves an entry in the relevant module's journal.
+- **`save-context`** — when a non-trivial split decision is made (notably the extraction of a notion into a new module), route it through the cascade to leave a durable trace.
 - **`deckle-logging`** — observability of a well-split module is clearer; when splitting, take the opportunity to verify that observation sites follow the new boundary.

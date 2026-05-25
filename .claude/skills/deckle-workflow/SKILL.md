@@ -85,6 +85,20 @@ The version bump and the annotated tag `vX.Y.Z` are rare acts — reserved for p
 
 The release workflow is: edit `<Version>` in `Deckle.App.csproj` (single source), commit `chore(release): vX.Y.Z`, annotated tag `git tag -a vX.Y.Z -m "Release vX.Y.Z"`, then push branch then push tag. The native bundle `native-vX.Y.Z` follows its own version cycle, independent of the app.
 
+## Code comments
+
+LLM agents read comments as if they were true. A wrong or stale comment is more harmful than no comment — it pollutes the reasoning every time the file is read. Four hard rules.
+
+**Why, not what.** The code already says the what. A comment that paraphrases the function name or the value of a constant is noise. A comment that explains *why* a decision was taken deserves to exist — typically because the decision is counter-intuitive or non-local. If the why fits in one sentence, comment above. If the why deserves a paragraph, it MUST become an ADR, and the comment points to it (`// See ADR-0004 on lazy windows`).
+
+**Current truth.** A comment that was true at one time but no longer is today MUST be removed or corrected. When touching code with surrounding comments, verify they are still accurate — otherwise update or remove.
+
+**Marker discipline.** A debt marker (TODO, HACK, FIXME) without context becomes a fossil. Either remove it by doing the work, or decide it is no longer relevant, or give it a minimal format that makes it trackable. An assumed debt marker deserves an ADR; the comment points to it.
+
+**Prefer the name.** An explanatory comment is often the symptom of a poorly chosen name or a too-long function. Before writing a comment, ask whether renaming a variable or extracting a sub-function would address the need. Code reads better and better; the comment stays frozen.
+
+Cleanup of comments happens **module by module when working on that module**, never as a giant centralized pass. When a module enters a refactor, walk its files, scan significant comments, confront each assertion against the surrounding current code, flag what is stale or potentially false. Promote to ADR what tells a why that deserves a historical trace.
+
 ## Essential UI doctrine
 
 Three rules that apply to every Deckle XAML surface, in addition to the doctrine of each module.
@@ -106,5 +120,5 @@ A toggle or a `ToggleSwitch` never shows a label that changes with state. The la
 - **`personal-conventions`** — git, branches, worktrees, code and UI language, cross-project conventional commits, documentary nomenclature.
 - **`deckle-commits`** — project commit doctrine (scope vocabulary, grain, author identity, merge commits).
 - **`deckle-logging`** — observability (centralization, level separation, maximum coverage).
-- **`deckle-docs`** — documentary convention (atemporal `CLAUDE.md`, immutable ADRs, versioned sheets, comment hygiene).
-- **`deckle-modularite`**, **`deckle-nomenclature`**, **`deckle-settings-ux`**, **`deckle-refonte`** — specialized technical doctrines.
+- **`deckle-modularite`**, **`deckle-nomenclature`**, **`deckle-settings-ux`** — specialized technical doctrines.
+- **`save-context`** — routing cascade for durable-value information (ADR, module `CLAUDE.md`, dated research, external reference, project `CONTEXT.md`, memory as fallback). Replaces the documentary architecture half of the former `deckle-docs`.
