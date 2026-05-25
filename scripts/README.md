@@ -1,3 +1,10 @@
+---
+name: readme-scripts
+description: "Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts under lib/, the TREE.md pre-commit hook, and the three native-runtime sourcing modes. Read before running, modifying, or extending a script under scripts/."
+type: module-readme
+module: scripts
+---
+
 # `scripts/` — Deckle dev workflows
 
 All scripts target PowerShell 7+. The single entry point lives at
@@ -41,11 +48,11 @@ profile — `deckle.ps1` is purely additive.
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
 | [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`. **Not an entry point.** |
 
-## Hooks git — TREE.md auto-update
+## Git hooks — TREE.md auto-update
 
-Un hook `pre-commit` régénère [`TREE.md`](../TREE.md) à la racine avant chaque commit et le stage automatiquement, pour que le repo porte toujours une vue à jour de son arborescence tracée. Source dans [`hooks/pre-commit`](hooks/pre-commit), installation locale via [`install-hooks.ps1`](install-hooks.ps1) à lancer une seule fois après un clone — les hooks vivent sous `.git/hooks/` et ne sont pas versionnés par git.
+A `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before every commit and stages it automatically, so the repo always carries an up-to-date view of its tracked tree. Source in [`hooks/pre-commit`](hooks/pre-commit), local install via [`install-hooks.ps1`](install-hooks.ps1) to run once after a clone — hooks live under `.git/hooks/` and are not versioned by git.
 
-Le hook délègue à [`update-tree.ps1`](update-tree.ps1), qui reconstruit `TREE.md` depuis `git ls-files` (vue plate, zéro fichier gitignored, aucune annotation). Peut aussi se lancer à la main pour rafraîchir hors commit : `pwsh scripts/update-tree.ps1`.
+The hook delegates to [`update-tree.ps1`](update-tree.ps1), which rebuilds `TREE.md` from `git ls-files` (flat view, zero gitignored file, no annotation). It can also run by hand to refresh outside a commit: `pwsh scripts/update-tree.ps1`.
 
 ## Native runtime — three sourcing modes
 
