@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Deckle.Diagnostics;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -149,6 +150,10 @@ public class LlmService
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
             sw.Stop();
+            // Sub-provider transverse Cancellation — REWRITE_HARD_CAP a
+            // tiré, c'est un timeout franc.
+            DeckleCancellationSource.Log.OperationCancelled(
+                "llm-rewrite", "timeout", (int)sw.ElapsedMilliseconds);
             DeckleLlmSource.Log.RewriteTimeout(REWRITE_HARD_CAP.TotalMinutes, profile.Name, profile.Model);
             // severity 1 = Warning, role 1 = Overlay.
             DeckleLlmSource.Log.UserFeedbackEmitted(
@@ -245,6 +250,11 @@ public class LlmService
         catch (OperationCanceledException)
         {
             // Expected: the caller cancels pollDone as soon as the main request returns.
+            // Sub-provider transverse Cancellation — propagation amont attendue
+            // depuis le finally du Rewrite (`pollDone.Cancel()`). age_ms reflète
+            // le temps écoulé du Rewrite parent au moment où le poll s'arrête.
+            DeckleCancellationSource.Log.OperationCancelled(
+                "llm-warmup", "upstream", (int)requestElapsed.ElapsedMilliseconds);
         }
     }
 

@@ -4,6 +4,7 @@ using Deckle.Audio.Telemetry;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription.Corpus;
@@ -155,6 +156,16 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
+            // Sub-provider transverse Cancellation — un OCE arrivé jusqu'ici
+            // signifie que le token de pipeline (Stop user, hotkey, shutdown)
+            // a fire pendant whisper_full(). Trace l'annulation avant que le
+            // comportement legacy ne reclasse l'évent en TranscribeFailed.
+            // Comportement existant préservé tel quel — refacto hors scope.
+            if (ex is OperationCanceledException)
+            {
+                DeckleCancellationSource.Log.OperationCancelled(
+                    "whisp-transcribe", "upstream", -1);
+            }
             DeckleWhispSource.Log.TranscribeFailed(-1);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),

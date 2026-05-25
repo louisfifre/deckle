@@ -317,7 +317,16 @@ public sealed class ScreenCaptureService : IDisposable
         try { loopTask?.Wait(TimeSpan.FromSeconds(2)); }
         catch (AggregateException ex) when (ex.InnerExceptions.All(e => e is OperationCanceledException))
         {
-            // Expected — cooperative cancellation.
+            // Expected — cooperative cancellation. Trace l'OCE attendu sur le
+            // sub-provider transverse Cancellation : Stop() a explicitement
+            // demandé l'arrêt, la boucle a propagé. `age_ms` reflète la durée
+            // entière de la session de capture car le worker a tourné de Start
+            // jusqu'au moment du cancel.
+            long ageMs = _startTimestamp != 0
+                ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
+                : -1;
+            DeckleCancellationSource.Log.OperationCancelled(
+                "vision-capture", "upstream", (int)ageMs);
         }
         catch (Exception ex)
         {
@@ -458,7 +467,18 @@ public sealed class ScreenCaptureService : IDisposable
                 // off). All transient — sleep 500 ms and retry.
                 DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (desktopResourcePtr != 0) Marshal.Release(desktopResourcePtr);
-                try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); } catch (OperationCanceledException) { break; }
+                try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); }
+                catch (OperationCanceledException)
+                {
+                    // Stop() a cancel le ct pendant le backoff transient —
+                    // sub-provider Cancellation, age_ms relatif à la session.
+                    long ageMs = _startTimestamp != 0
+                        ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
+                        : -1;
+                    DeckleCancellationSource.Log.OperationCancelled(
+                        "vision-capture", "upstream", (int)ageMs);
+                    break;
+                }
                 continue;
             }
 
@@ -707,7 +727,18 @@ public sealed class ScreenCaptureService : IDisposable
                 DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
                     attempt, ex.GetType().Name, ex.Message);
                 try { Task.Delay(RecreateBackoffMs, ct).Wait(ct); }
-                catch (OperationCanceledException) { return; }
+                catch (OperationCanceledException)
+                {
+                    // Stop() a cancel pendant qu'on attendait le prochain
+                    // essai de recreate. age_ms relatif à la session — on
+                    // n'a pas d'ancre dédiée à TryRecreateDuplication.
+                    long ageMs = _startTimestamp != 0
+                        ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
+                        : -1;
+                    DeckleCancellationSource.Log.OperationCancelled(
+                        "vision-capture", "upstream", (int)ageMs);
+                    return;
+                }
             }
         }
     }
