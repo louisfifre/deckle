@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 19:41 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -103,9 +103,6 @@ _Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 │   │   ├── 0011-corpus-normalise-comme-dataset-ml.md
 │   │   ├── 0011-poc-evaluation-voxtral.md
 │   │   └── 0012-adoption-de-dotnet-build-et-dotnet-test.md
-│   ├── reference/
-│   │   ├── reference--eventsource-convention--1.0.md
-│   │   └── reference--eventsource-convention--1.1.md
 │   └── research/
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
@@ -218,7 +215,7 @@ _Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 │   │   │   ├── JsonlEventListener.cs
 │   │   │   ├── LogWindowEventListener.cs
 │   │   │   └── RoutedJsonlEventListener.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics, the observability foundation module. Read befo…
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleEventSource.cs
 │   │   ├── EventEntry.cs

@@ -107,5 +107,4 @@ Le projet de tests démarre minimaliste. L'ajout d'une dimension (catégorie nou
 - **`deckle-nomenclature`** — règles de nommage transverses (PascalCase, suffixes admis) ; ce skill applique ces règles au contexte testing.
 - **`deckle-workflow`** — doctrine quotidienne de build (`dotnet build`, scripts d'orchestration) que cette doctrine recoupe.
 - **`deckle-docs`** — où vivent les traces écrites du projet ; un changement structurel du testing laisse trace ici ou en ADR selon le poids.
-- **`docs/reference/reference--eventsource-convention--1.0.md`** — convention transverse EventSource consommée par les tests d'observabilité.
-- **`src/Deckle.Diagnostics/CLAUDE.md`** — détaille le pattern test côté provider (motivation, exemple, lien ADR-0005).
+- **`src/Deckle.Diagnostics/CLAUDE.md`** — convention transverse EventSource (providers, listeners, schéma JSONL, classes d'observables canoniques) et pattern test côté provider (motivation, exemple, lien ADR-0005).

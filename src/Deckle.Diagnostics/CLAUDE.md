@@ -1,6 +1,13 @@
+---
+name: claude-deckle-diagnostics
+description: "Doctrine for Deckle.Diagnostics, the observability foundation module. Read before authoring or modifying an EventSource provider, an EventListener, an instrumentation site, or a sink contract."
+type: agent-instructions
+module: Deckle.Diagnostics
+---
+
 # CLAUDE.md — Deckle.Diagnostics
 
-Module fondation du nouveau pilier observabilité. Porte la plomberie technique partagée par tous les `Deckle.*EventSource` du projet et par les EventListeners qui consomment leurs émissions. Ne contient aucun provider concret — chaque module métier qui émet des événements déclare son propre EventSource héritant de `DeckleEventSource` et l'expose en singleton statique.
+Module fondation du pilier observabilité. Porte la plomberie technique partagée par tous les `Deckle.*EventSource` du projet et par les EventListeners qui consomment leurs émissions. Ne contient aucun provider concret — chaque module métier qui émet des événements déclare son propre EventSource héritant de `DeckleEventSource` et l'expose en singleton statique.
 
 Le module ne dépend que de la BCL (`System.Diagnostics.Tracing`). En particulier, **aucune dépendance vers `Deckle.Core`** — la diagnostics est sous toutes les autres briques techniques, y compris les chemins applicatifs. Les destinations concrètes (chemins de fichiers JSONL, accès au LogWindow XAML, branchement HUD) sont fournies par les modules consommateurs au moment du boot via les interfaces sink exposées ici.
 
@@ -69,6 +76,50 @@ Le `if (IsEnabled())` simple suffit pour les events sans paramètre. Le gate par
 
 Les payloads structurés (latency, microphone, corpus) ont leurs propres labels (`"latency"`, `"microphone"`, `"corpus"`) ; le canal général garde `"log"` comme legacy.
 
+## Schéma JSONL — contrat machine
+
+Le schéma émis par `JsonlEventListener` est figé. Une ligne JSON par event, séparateur `\n`, encodage UTF-8 sans BOM. Structure d'enveloppe :
+
+```json
+{
+  "timestamp": "<ISO 8601 avec offset local>",
+  "kind": "<label de canal>",
+  "session": "YYYY-MM-DD-XXXX",
+  "payload": { "<paramètre snake_case>": <valeur typée>, … }
+}
+```
+
+Sérialisation des valeurs primitives par leur type natif (`int` → JSON number sans guillemets, `string` → JSON string, `bool` → `true`/`false`). Les `DateTime` et `DateTimeOffset` passent par leur représentation `"o"` (round-trip ISO 8601). Les `Guid` passent par leur représentation `"D"` (segments uppercase, dashes). Tout autre type est stringifié — en pratique ce cas ne survient pas, EventSource interdisant les types complexes en paramètres `[Event]`.
+
+Le `kind` prend les valeurs `"log"` (canal général, dans `app.jsonl`), `"latency"` (canal latency, dans `latency.jsonl`), `"microphone"` (canal microphone, dans `microphone.jsonl`), `"corpus"` (canal corpus, dans `corpus.jsonl` ou `<profile>/corpus.jsonl` selon le contexte). Le label `"log"` est conservé tel quel pour la compatibilité avec les outils de benchmark existants.
+
+## Inventaire des providers et pipeline d'écoute
+
+Treize providers EventSource concrets actifs au boot, plus la base class `DeckleEventSource` non instanciable. Chaque module qui émet déclare son propre `Deckle<Module>Source.cs` héritant de `DeckleEventSource`. Liste par ordre alphabétique du Name ETW, avec le module hôte et le tag LogWindow correspondant entre parenthèses :
+
+- `Deckle.Ambient` (`Deckle.Lighting.Ambient`, tag `AMBIENT`) — orchestrateur ambient lighting, pairing Hue consumer, heartbeat agrégé.
+- `Deckle.App` (`Deckle.App`, tag `APP`) — host applicatif, crashes, boot, status transitions, restart, hotkey orchestration.
+- `Deckle.Audio` (`Deckle.Audio`, tag `AUDIO`) — capture micro, anomalies waveIn, récap télémétrie `MicrophoneTelemetryRecorded`.
+- `Deckle.Chrono` (`Deckle.Chrono`, tag `CHRONO`) — pilote historique de la vague 1, étoffé quand le module aura des jalons à émettre.
+- `Deckle.Hud` (`Deckle.Hud`, tag `HUD`) — actuellement un seul `HudWarning(string)`, sous-instrumenté.
+- `Deckle.Lighting` (`Deckle.Lighting`, tag `LIGHTING`) — driver Hue REST CLIP v1/v2, discovery, pairing, color push à 10-15 Hz.
+- `Deckle.Llm` (`Deckle.Llm`, tag `LLM`) — réécriture Ollama, polling `/api/ps`, surface Settings → LLM.
+- `Deckle.Playground` (`Deckle.Playground`, tag `PLAYGROUND`) — surface dev-only, events génériques per-canal.
+- `Deckle.Settings` (`Deckle.Settings`, tag `SETTINGS`) — migration legacy → per-module, backup/restore, folder pickers, navigation NavView, setters ViewModels.
+- `Deckle.Setup` (`Deckle.Setup`, tag `SETUP`) — wizard first-run, trois events génériques (`SetupInfo`/`Warning`/`Error`).
+- `Deckle.Shell` (`Deckle.Shell`, tag `SHELL`) — message-only host, hotkeys, autostart HKCU\Run, dispatcher.
+- `Deckle.Vision` (`Deckle.Vision`, tag `VISION`) — capture écran DXGI, FrameSampler, anomalies de la boucle d'acquisition.
+- `Deckle.Whisp` (`Deckle.Transcription`, tag `WHISP`) — moteur de transcription, état du modèle natif, paste, clipboard. Le symbole `DeckleWhispSource` est resté tel quel après la refonte modulaire qui a renommé `Deckle.Whisp` en `Deckle.Transcription` — le Name ETW reste `Deckle.Whisp` pour préserver le tag LogWindow et la compat des outils de benchmark.
+
+`Deckle.Core` et `Deckle.Composition` restent silencieux par doctrine — aucun site d'appel ne justifie un provider.
+
+Six listeners instanciés au boot dans `AppDiagnosticsBootstrap`, persistent pour la vie du process. Quatre `JsonlEventListener`, un par fichier de destination (`app.jsonl`, `latency.jsonl`, `microphone.jsonl`, `corpus.jsonl`). Chacun reçoit un prédicat qui sélectionne les events à écrire dans son fichier — sélection par nom d'event canonique pour les heartbeats structurés (`LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusRecorded`), sélection par keyword pour le canal général. Un `LogWindowEventListener` avec buffer ring de capacité 5000 et multi-sink `AttachSink` / `DetachSink` — le LogWindow s'attache à sa première ouverture lazy et reçoit l'historique boot en replay. Un `HudFeedbackEventListener` qui filtre exclusivement sur le nom d'event `UserFeedbackEmitted` et route vers le sink concret du host.
+
+Sources de configuration utilisateur :
+
+- `Deckle.Diagnostics.Logging.LoggingSettingsService` → `<UserDataRoot>/modules/logging/settings.json` → toggle `LogAmbientCaptureActivity`, plus la gate volatile `AmbientCaptureGate` que `AmbientEngine` met à `true` autour de sa boucle pour drop les Verbose pendant la capture.
+- `Deckle.Diagnostics.Telemetry.TelemetrySettingsService` → `<UserDataRoot>/modules/telemetry/settings.json` → gates `LatencyEnabled`, `MicrophoneTelemetry`, `CorpusEnabled`, `RecordAudioCorpus`, `ApplicationLogToDisk`, `StorageDirectory`. Le délégué injecté dans `TelemetryListenerBootstrap.ConfigureGates` est consulté à chaque émission par les `JsonlEventListener`.
+
 ## Session id
 
 Une seule `SessionId` au format `YYYY-MM-DD-XXXX` est générée la première fois qu'un provider émet, et partagée par tous les providers `Deckle.*` pour la durée du process. Stockée comme propriété statique sur `DeckleEventSource`. Reproduit exactement le comportement du legacy `TelemetryService.SessionId` pour que les benchmarks puissent continuer à grouper par session pendant et après la migration.
@@ -128,6 +179,94 @@ Verbose  MODEL       load complete | load_ms=420 | backend=Vulkan
 ```
 
 **Texte brut** (segment transcrit, contenu clipboard, prompt utilisateur) conserve sa casse native, ne subit pas la règle Capital. C'est du contenu, pas un message.
+
+## Classes d'observables canoniques
+
+Quand on instrumente un bout de code, quels paramètres viser par défaut. Les sections précédentes répondent *où* et *comment* écrire l'event (provider, niveau, keyword, format, vocabulaire de mesures). Cette section couvre *quoi* émettre selon la classe de situation rencontrée. Neuf classes suffisent à couvrir le code Deckle existant et futur ; un site peut relever de deux classes simultanément.
+
+### Classe 1 — Lifecycle et boot
+
+Démarrage process, init paths, warmup ressources, chargement module, transitions d'état d'app (`idle → recording → transcribing → done`), shutdown amorcé, restart post-build, crash safety nets. Opérations uniques par cycle, jalons attendus en `Informational` avec keyword `Lifecycle`, miroirs en `Verbose` quand des paramètres techniques justifient un détail séparé.
+
+**Set canonique** — nom de l'étape, durée `<name>_ms`, outcome (`succeeded` / `skipped` / `failed`), backend ou variant actif quand pertinent (`backend=Vulkan`, `model=ggml-large-v3.bin`), version du composant si charge réseau ou disque, motif de transition pour les state changes (`reason=hotkey`, `reason=tray`, `reason=auto-shutdown`).
+
+**État actuel** — très bien instrumenté côté `Deckle.App` (boot, status transitions, shutdown/restart), `Deckle.Transcription` (warmup boot, model load via `DeckleWhispSource`), `Deckle.Audio` (capture lifecycle), `Deckle.Vision` (`ScreenCaptureStarted`/`Stopped`). Pattern `PathsInitialized` + `PathsDetail` (jalon Info + miroir Verbose) est l'archétype propre.
+
+### Classe 2 — Pipeline batch
+
+Transcription d'un blob audio, réécriture LLM, calibration appareil, push ambient sur un frame complet. Opération discrète début → fin → résultat. Cadres dominants RED et Four Golden Signals.
+
+**Set canonique** — identifiant d'opération (`transcription_id` si pertinent), durée totale et par phase clé (`hotkey_to_capture_ms`, `record_drain_ms`, `whisper_init_ms`, `whisper_ms`, `llm_ms`, …), métriques d'entrée (`audio_sec`, `text_chars`, `prompt_tok`), métriques de sortie (`n_segments`, `text_words`, `tok_s`), outcome enum (`outcome=ok|repetition_loop|llm_failed|user_cancelled`), profil ou stratégie active (`strategy=`, `profile=`), flag binaire d'effet de bord (`pasted=true`).
+
+**État actuel** — `LatencyRecorded` à 24 champs (`DeckleWhispSource`) est l'exemple canonique réussi, *canonical log line* au sens industrie qui colocalise toutes les mesures clés en une ligne par invocation. `CorpusAsrRecorded` (14 champs) et `CorpusRewriteRecorded` (12 champs) suivent le même pattern pour la persistance dataset (cf. [ADR-0011](../../docs/adr/0011-corpus-normalise-comme-dataset-ml.md)). Le pattern est mature côté transcription, pas systématisé ailleurs.
+
+### Classe 3 — Boucle temps réel haute fréquence
+
+Capture audio polling 50 ms, capture écran DXGI à ~15 Hz, push lumière à 10-15 Hz, raw input curseur ~125 Hz pour fade proximité HUD. Opérations nombreuses, brèves, l'enjeu est la stabilité du débit. Cadres dominants USE et Four Golden Signals côté flux sortant.
+
+**Set canonique** — sur fenêtre glissante (1 s typique) : `fps` ou `ticks/s` observés, `drops` (frames acquis mais non traités), latence intra-tick `p50_ms` / `p95_ms`, saturation de file (`queue_depth` ou `pending_frames`), erreurs intra-fenêtre (`acquire_fail=N`). Pattern dit *rollup* — une ligne périodique qui résume N ticks, plutôt qu'une ligne par tick qui noierait l'observation.
+
+**État actuel** — la `Heartbeat` de `DeckleAmbientSource` est l'incarnation actuelle du pattern (7 champs, périodique). `DeckleVisionSource` n'a pas d'équivalent — la boucle de capture émet par incident (anomalies, recovery) mais pas une trace régulière du débit. `DeckleAudioSource` émet le RMS tick sur un event UI direct (alimentation HUD), explicitement *non* loggué selon la règle « heartbeats haute fréquence < 1 s ne sont pas loggués ». Le récap distributif `MicrophoneTelemetryRecorded` à 14 champs en fin de session compense.
+
+### Classe 4 — Driver matériel et intégration externe
+
+Pilote micro (WASAPI), client HTTP Hue REST, client HTTP Ollama, EventStream SSE, P/Invoke whisper.cpp natif. Frontière entre code interne et système externe sur lequel on a peu de contrôle. Cadres dominants RED (durée aller-retour, taux d'erreur, taux d'appel) plus USE sur ressources internes consommées.
+
+**Set canonique** — événements de cycle de vie de la connexion (`discovery`, `pairing`, `session_opened`, `session_closed`, `signal_lost`, `reconnected`) ; codes de retour natifs avec notation canonique stable (`hr=0x{hex}` HRESULT, `result=<int>` mmsys, `status=<int>` HTTP, `mmsys=<int>` waveIn) ; identifiants tronqués ou masqués pour les secrets (`username=eDOvxk-...`, `clientkey=[redacted]`) ; latence aller-retour (`rtt_ms`) ; ressources consommées (`http_clients`, `socket_pool`).
+
+**État actuel** — `DeckleLightingSource` (40 events) couvre bien tout le cycle Hue : discovery, pairing, control, EventStream, identify, color push. La discipline de masquage des secrets (clientkey jamais en clair, username tronqué) est tenue. `DeckleLlmSource` instrumente les états Ollama (`OllamaBusy`, polling `/api/ps`). `DeckleAudioSource` couvre les anomalies waveIn par codes `mmsys`. Une normalisation transverse manque — il n'y a pas de pattern uniforme `HttpRequestCompleted(verb, endpoint, status, rtt_ms, retry_count)` réutilisable.
+
+### Classe 5 — Surface UI et navigation
+
+Page settings ouverte, dialog confirmé, formulaire validé, navigation NavView, ViewModel setter qui change une valeur, page chargée prête, page failed to init. Cadres dominants Four Golden Signals adaptés (latence perçue, taux d'actions par session, erreurs visibles) plus RED sur opérations déclenchées utilisateur.
+
+**Set canonique** — transitions d'état UI en jalons concis (`Page loaded`, `Dialog opened`, `Form validated`) ; détails techniques en Verbose miroir (`page=Llm | duration_ms=120 | items=5`) ; UserFeedback adressé à l'utilisateur via le canal canonique séparé `UserFeedbackEmitted` au contrat strict `(severity, title, body, role)`.
+
+**État actuel** — `DeckleSettingsSource` est l'exemple riche, 46 events couvrant navigation NavView, ViewModel setters, backup/restore, folder picker, setup wizard. L'event générique paramétré `SettingChanged(string, string, string)` est l'entorse acceptée à la discipline strict-typed — un setter générique du MVVM ne sait pas distinguer 30 setters distincts au site d'appel.
+
+### Classe 6 — Windowing
+
+Positionnement et dimensionnement de toute fenêtre WinUI 3 ou Win32 — `HudWindow` (320×64 bas-centre), `HudOverlayWindow`, `HudMessage` hybrid bleed (400×160 puis retract 272×78), `SettingsWindow`, `LogWindow`, `SetupWindow`, popup tray menu, popup folder picker. Tous ces sites calculent à la main une position en DIP, multiplient par `GetDpiForWindow(hwnd) / 96.0`, choisissent un `DisplayArea` ou un `MonitorFromPoint`, gèrent le multi-écran.
+
+**Set canonique** :
+
+- `hmon=0x{hex}` — handle moniteur retourné par `MonitorFromPoint` ou `GetMonitorInfo`.
+- `dpi=192` — entier, résultat `GetDpiForWindow`.
+- `scale=2.0` — une décimale, dérivé `dpi/96`.
+- `work_area=2560,40,2520,1392` — rect en pixels écran absolus (x, y, w, h).
+- `cursor=1240,860` — pixels écran absolus, retour `GetCursorPos`.
+- `anchor=BottomCenter` — ancrage choisi côté settings.
+- `pos=1100,820 size=320,64` — rect calculé en pixels écran absolus (convention fixée par cette doctrine pour permettre la reverse via `dpi`).
+- Pour les overlays empilés : `slot=0` ou `slot=1`.
+- Pour les popups : `parent_rect=x,y,w,h` du contrôle ancré.
+
+Convention de coordonnées — pixels écran absolus partout. Les calculs internes peuvent partir de DIP, mais les events émis pour observation portent les valeurs en pixels, cohérent avec ce que retournent `GetCursorPos`, `GetWindowRect`, `GetMonitorInfo`, et permet de reverse vers DIP via `dpi`.
+
+**État actuel** — non observé. Le HUD a un seul `HudWarning(string)` paramétré par message libre. `SettingsWindow`, `LogWindow`, `SetupWindow` n'émettent rien sur leur positionnement. `TrayIconManager` ne loggue ni position icône ni position popup. Classe à câbler progressivement sur les sites de positionnement existants — chantier suivi en mémoire roadmap.
+
+### Classe 7 — Activité utilisateur
+
+Hotkey pressé, entrée tray cliquée, toggle settings changé, page settings ouverte manuellement. Cadre dominant RED sur opérations déclenchées.
+
+**Set canonique** — déclencheur (`trigger=hotkey:WinTilde | tray:Quit | settings:OllamaModel`), résultat (`outcome=triggered|ignored:busy|ignored:not-configured`), valeur avant et après pour un toggle (`before=true after=false`).
+
+**État actuel** — `DeckleShellSource` couvre les hotkeys (`HotkeyRegistered`, `HotkeyToggleIgnored`). `DeckleAppSource` couvre `HotkeyStart`, `HotkeyStop`, `HotkeyNoProfile`. `DeckleSettingsSource` couvre les setters via `SettingChanged` générique. Cohérent mais éclaté entre trois providers — Shell pour la primitive, App pour l'orchestration, Settings pour la modification de valeur. Correct doctrinairement (« l'observation s'attache au module qui contient l'opération »), un peu lourd à recoller mentalement quand on lit la LogWindow.
+
+### Classe 8 — Persistance settings per-module
+
+Chaque module qui a des settings (`Audio`, `Transcription`, `Llm`, `Lighting.Ambient`, …) charge et persiste via `JsonSettingsStore<T>` sous `<UserDataRoot>/modules/<name>/settings.json`. Quatre events transitoires partagent le pattern : `SettingsLoaded`, `SettingsLoadComplete`, `SettingsLoadWarning`, `SettingsLoadError`, tous paramétrés par message string libre.
+
+**Set canonique cible** — `module=<name>`, `path=<abs>`, `outcome=loaded|defaulted|migrated|failed`, `size_bytes=<n>`, `version=<schema>`, durée `load_ms=<n>`, raison si échec (`reason=missing|corrupt|migration_failed`).
+
+**État actuel** — entorse documentée. Le delegate `Action<string>` de `JsonSettingsStore` ne sait pas distinguer au site d'appel entre « Settings loaded », « Settings initialized (defaults) » et « Settings reloaded from disk ». La discipline strict-typed est temporairement échangée contre un typage par niveau et keyword. Refonte propre quand `SettingsHost` / `JsonSettingsStore` basculeront eux-mêmes sur un contrat EventSource direct.
+
+### Classe 9 — Crash et safety nets
+
+`Application.UnhandledException`, `AppDomain.UnhandledException`, `TaskScheduler.UnobservedTaskException`. Trois filets posés au constructeur de `App`. Capture exception type, message, stack trace, contexte (handler invoqué, thread).
+
+**Set canonique** — `source=app|appdomain|task-scheduler`, `ex_type=System.Foo.Bar`, `ex_message=<short>`, `stack=<multi-line ou indiqué via event séparé>`, `thread_id=<n>`, `terminating=true|false` (pour AppDomain).
+
+**État actuel** — `DeckleAppSource` porte les 4 events `CrashUnhandled`, `CrashAppDomain`, `CrashTaskScheduler`, `CrashStackTrace`. Pattern bien tenu — la stack trace est sur un event séparé pour ne pas exploser la signature primaire.
 
 ## Règles d'application durables
 

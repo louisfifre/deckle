@@ -16,7 +16,7 @@ Test qui exerce une frontière avec un service local mockable. Le partenaire est
 _Avoid_ : end-to-end, e2e (recouvrent des choses différentes ailleurs).
 
 **observability** :
-Test qui exerce une séquence d'événements EventSource via un `TestEventListener` interne. Vérifie que le code émet les bons providers, les bons noms d'event, les bons niveaux et keywords, et porte les payloads attendus. Catégorie native à Deckle vu le poids de la pipeline EventSource (voir `docs/reference/reference--eventsource-convention--1.0.md`).
+Test qui exerce une séquence d'événements EventSource via un `TestEventListener` interne. Vérifie que le code émet les bons providers, les bons noms d'event, les bons niveaux et keywords, et porte les payloads attendus. Catégorie native à Deckle vu le poids de la pipeline EventSource (voir `src/Deckle.Diagnostics/CLAUDE.md`).
 _Avoid_ : log assertion, telemetry test.
 
 **regression** :
