@@ -7,15 +7,15 @@ module: Deckle.Diagnostics
 
 # CLAUDE.md — Deckle.Diagnostics
 
-Module fondation du pilier observabilité. Porte la plomberie technique partagée par tous les `Deckle.*EventSource` du projet et par les EventListeners qui consomment leurs émissions. Ne contient aucun provider concret — chaque module métier qui émet des événements déclare son propre EventSource héritant de `DeckleEventSource` et l'expose en singleton statique.
+Foundation module of the observability pillar. Carries the technical plumbing shared by every `Deckle.*EventSource` in the project and by the EventListeners that consume their emissions. Holds no concrete provider — each business module that emits events declares its own EventSource inheriting from `DeckleEventSource` and exposes it as a static singleton.
 
-Le module ne dépend que de la BCL (`System.Diagnostics.Tracing`). En particulier, **aucune dépendance vers `Deckle.Core`** — la diagnostics est sous toutes les autres briques techniques, y compris les chemins applicatifs. Les destinations concrètes (chemins de fichiers JSONL, accès au LogWindow XAML, branchement HUD) sont fournies par les modules consommateurs au moment du boot via les interfaces sink exposées ici.
+The module depends only on the BCL (`System.Diagnostics.Tracing`). In particular, **no dependency on `Deckle.Core`** — diagnostics sits underneath every other technical brick, including application paths. Concrete destinations (JSONL file paths, XAML LogWindow access, HUD wiring) are provided by consumer modules at boot time through the sink interfaces exposed here.
 
-## Convention de provider
+## Provider convention
 
-Un EventSource concret par module qui émet. Nom de classe `Deckle<Module>Source`, nom ETW `[EventSource(Name = "Deckle.<Module>")]`. Le `.` dans le nom ETW est canonique pour les noms hiérarchiques. Singleton statique `public static readonly Log = new()`, type `sealed`, hérite de `DeckleEventSource` (qui hérite lui-même de `EventSource`). Les keywords transverses (`Keywords.Lifecycle`, `Keywords.Capture`, `Keywords.Pipeline`, `Keywords.Push`, `Keywords.Heartbeat`) occupent les bits 0 à 4 ; les bits 5 et au-dessus appartiennent au provider et restent locaux au module.
+One concrete EventSource per emitting module. Class name `Deckle<Module>Source`, ETW name `[EventSource(Name = "Deckle.<Module>")]`. The `.` in the ETW name is canonical for hierarchical names. Static singleton `public static readonly Log = new()`, `sealed` type, inherits from `DeckleEventSource` (which itself inherits from `EventSource`). Cross-cutting keywords (`Keywords.Lifecycle`, `Keywords.Capture`, `Keywords.Pipeline`, `Keywords.Push`, `Keywords.Heartbeat`) occupy bits 0 to 4; bits 5 and above belong to the provider and stay local to the module.
 
-Exemple canonique de squelette de provider :
+Canonical provider skeleton:
 
 ```csharp
 [EventSource(Name = "Deckle.Chrono")]
@@ -32,25 +32,25 @@ public sealed class DeckleChronoSource : DeckleEventSource
 }
 ```
 
-## Discipline des méthodes typées
+## Typed methods discipline
 
-Une méthode `[Event(...)]` par opération distincte au site d'appel. Pas de méthode `Log(string, EventLevel)` générique sur la base, pas d'event qui prend un payload typé en argument. Les events triviaux sans paramètre sont des méthodes parameter-less typées (`WarmingUp()`), pas une utilisation d'un canal générique.
+One `[Event(...)]` method per distinct operation at the call site. No generic `Log(string, EventLevel)` method on the base, no event that takes a typed payload as argument. Trivial parameter-less events are typed parameter-less methods (`WarmingUp()`), not uses of a generic channel.
 
-Les paramètres d'event sont en `snake_case` parce qu'ils deviennent directement les clés JSON dans la sortie JSONL. C'est une dérogation explicite aux Framework Design Guidelines, justifiée par le contrat machine de la persistance — un consommateur tiers (PerfView, dotnet-trace, scripts de benchmark) trouve les mêmes noms côté ETW manifest et côté fichier. Le warning `IDE1006` est supprimé au csproj du module Diagnostics et des modules qui émettent.
+Event parameters are in `snake_case` because they become directly the JSON keys in the JSONL output. This is an explicit derogation from the Framework Design Guidelines, justified by the machine contract of persistence — a third-party consumer (PerfView, dotnet-trace, benchmark scripts) finds the same names in the ETW manifest and in the file. The `IDE1006` warning is suppressed in the csproj of the Diagnostics module and of the emitting modules.
 
-Cinq `EventLevel` natifs uniquement.
+Five native `EventLevel` values only.
 
-- **`Critical`** — défaillance bloquante, l'app ne peut plus servir sa fonction principale. Crash, première-impossibilité dépendance, état corrompu.
-- **`Error`** — défaillance ciblée d'une opération, autres opérations peuvent continuer. Transcription échouée, hotkey unavailable, bridge Hue inaccessible.
-- **`Warning`** — situation anormale sans casse. Buffer vide, dépendance lente, état dégradé qui se rétablit.
-- **`Informational`** — jalon de progression en phrase Capital courte (« Loading model », « Recording start »). C'est l'équivalent du legacy Info **et** Success — la sémantique de réussite se porte par le message, plus par un niveau dédié.
-- **`Verbose`** — détails techniques structurés, machine-greppables. Mesures, identifiants, payloads structurés. C'est le niveau qui porte les `LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusAsrRecorded`, `CorpusRewriteRecorded` et leurs paramètres détaillés.
+- **`Critical`** — blocking failure, the app can no longer fulfill its main function. Crash, first-impossibility dependency, corrupted state.
+- **`Error`** — targeted failure of an operation, other operations can continue. Failed transcription, hotkey unavailable, Hue bridge unreachable.
+- **`Warning`** — abnormal situation without breakage. Empty buffer, slow dependency, degraded state that recovers.
+- **`Informational`** — progress milestone as a short Capital sentence ("Loading model", "Recording start"). It is the equivalent of legacy Info **and** Success — success semantics is carried by the message, no longer by a dedicated level.
+- **`Verbose`** — structured technical details, machine-greppable. Measures, identifiers, structured payloads. This is the level that carries `LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusAsrRecorded`, `CorpusRewriteRecorded` and their detailed parameters.
 
-Le legacy `Narrative` est abandonné. Si un texte UX adressé à l'utilisateur est nécessaire, il passe par `UserFeedbackEmitted` (HUD) ou par une string `.resw` (surface UI).
+Legacy `Narrative` is dropped. If a UX text addressed to the user is needed, it goes through `UserFeedbackEmitted` (HUD) or through a `.resw` string (UI surface).
 
-## Performance — gate avant payload
+## Performance — gate before payload
 
-Toute méthode `[Event(...)]` testée par `IsEnabled()` ou mieux `IsEnabled(level, keywords)` avant la moindre construction de payload. Le brief verrouille ce point : `IsEnabled(level, keywords)` côté provider avant toute construction de payload, pour zéro alloc quand aucun listener n'écoute. Quand l'event a des paramètres, le pattern est :
+Every `[Event(...)]` method is gated by `IsEnabled()` or better `IsEnabled(level, keywords)` before any payload construction. The brief locks this point: `IsEnabled(level, keywords)` on the provider side before any payload construction, for zero allocation when no listener is listening. When the event has parameters, the pattern is:
 
 ```csharp
 public void LatencyRecorded(double audio_sec, long whisper_ms, /* … */)
@@ -60,116 +60,116 @@ public void LatencyRecorded(double audio_sec, long whisper_ms, /* … */)
 }
 ```
 
-Le `if (IsEnabled())` simple suffit pour les events sans paramètre. Le gate paramétré n'a de sens que quand on évite une construction (allocation de string, tableau, calcul).
+A plain `if (IsEnabled())` is enough for parameter-less events. The parameterized gate only makes sense when it avoids a construction (string allocation, array, computation).
 
-## Contrats des trois consumers
+## Three consumer contracts
 
-**HUD via `UserFeedbackEmitted`.** Un event canonique du même nom (`UserFeedbackEmitted`) exposé par chaque provider qui peut en émettre. Signature contrat : `(int severity, string title, string body, int role)`. Le `HudFeedbackEventListener` filtre exclusivement sur ce nom d'event et ignore tout le reste. Severity et role passent en `int` parce que EventSource n'accepte pas les enums utilisateur ; l'App ré-encode vers ses propres `UserFeedbackSeverity` et `UserFeedbackRole` côté sink. Un site qui veut un feedback utilisateur appelle l'event de jalon **et** `UserFeedbackEmitted` — pas de substitution.
+**HUD via `UserFeedbackEmitted`.** A canonical event of the same name (`UserFeedbackEmitted`) exposed by every provider that may emit one. Contract signature: `(int severity, string title, string body, int role)`. The `HudFeedbackEventListener` filters exclusively on this event name and ignores everything else. Severity and role pass as `int` because EventSource does not accept user enums; the App re-encodes to its own `UserFeedbackSeverity` and `UserFeedbackRole` on the sink side. A site that wants user feedback calls the milestone event **and** `UserFeedbackEmitted` — no substitution.
 
-**LogWindow live.** Le `LogWindowEventListener` écoute tous les events de la famille `Deckle.*`, y compris les télémétries structurées, sans masquage à l'émission. Le filtrage utilisateur (par niveau et par module via la SelectorBar) se fait côté sink dans le viewer.
+**Live LogWindow.** The `LogWindowEventListener` listens to every event of the `Deckle.*` family, including structured telemetry, with no masking at emission. User filtering (by level and by module via the SelectorBar) happens on the sink side in the viewer.
 
-**Routage JSONL.** Une instance de `JsonlEventListener` par fichier de destination. Chaque listener reçoit un prédicat qui sélectionne les events à écrire dans son fichier. Le wiring concret (chemins de fichiers, gates utilisateur) vit dans `Deckle.Diagnostics.Telemetry`. Le schéma JSON reproduit le legacy à la clé près :
+**JSONL routing.** One `JsonlEventListener` instance per destination file. Each listener receives a predicate that selects the events to write to its file. The concrete wiring (file paths, user gates) lives in `Deckle.Diagnostics.Telemetry`. The JSON schema reproduces the legacy key for key:
 
 ```json
 {"timestamp":"<ISO 8601>","kind":"<label>","session":"YYYY-MM-DD-XXXX","payload":{<flat snake_case>}}
 ```
 
-Les payloads structurés (latency, microphone, corpus) ont leurs propres labels (`"latency"`, `"microphone"`, `"corpus"`) ; le canal général garde `"log"` comme legacy.
+Structured payloads (latency, microphone, corpus) have their own labels (`"latency"`, `"microphone"`, `"corpus"`); the general channel keeps `"log"` as legacy.
 
-## Schéma JSONL — contrat machine
+## JSONL schema — machine contract
 
-Le schéma émis par `JsonlEventListener` est figé. Une ligne JSON par event, séparateur `\n`, encodage UTF-8 sans BOM. Structure d'enveloppe :
+The schema emitted by `JsonlEventListener` is frozen. One JSON line per event, `\n` separator, UTF-8 encoding without BOM. Envelope structure:
 
 ```json
 {
-  "timestamp": "<ISO 8601 avec offset local>",
-  "kind": "<label de canal>",
+  "timestamp": "<ISO 8601 with local offset>",
+  "kind": "<channel label>",
   "session": "YYYY-MM-DD-XXXX",
-  "payload": { "<paramètre snake_case>": <valeur typée>, … }
+  "payload": { "<snake_case parameter>": <typed value>, … }
 }
 ```
 
-Sérialisation des valeurs primitives par leur type natif (`int` → JSON number sans guillemets, `string` → JSON string, `bool` → `true`/`false`). Les `DateTime` et `DateTimeOffset` passent par leur représentation `"o"` (round-trip ISO 8601). Les `Guid` passent par leur représentation `"D"` (segments uppercase, dashes). Tout autre type est stringifié — en pratique ce cas ne survient pas, EventSource interdisant les types complexes en paramètres `[Event]`.
+Primitive values are serialized by their native type (`int` → JSON number without quotes, `string` → JSON string, `bool` → `true`/`false`). `DateTime` and `DateTimeOffset` go through their `"o"` representation (round-trip ISO 8601). `Guid` values go through their `"D"` representation (uppercase segments, dashes). Any other type is stringified — in practice this case does not occur, EventSource forbidding complex types in `[Event]` parameters.
 
-Le `kind` prend les valeurs `"log"` (canal général, dans `app.jsonl`), `"latency"` (canal latency, dans `latency.jsonl`), `"microphone"` (canal microphone, dans `microphone.jsonl`), `"corpus"` (canal corpus, dans `corpus.jsonl` ou `<profile>/corpus.jsonl` selon le contexte). Le label `"log"` est conservé tel quel pour la compatibilité avec les outils de benchmark existants.
+`kind` takes the values `"log"` (general channel, in `app.jsonl`), `"latency"` (latency channel, in `latency.jsonl`), `"microphone"` (microphone channel, in `microphone.jsonl`), `"corpus"` (corpus channel, in `corpus.jsonl` or `<profile>/corpus.jsonl` depending on context). The `"log"` label is kept as-is for compatibility with existing benchmark tools.
 
-## Inventaire des providers et pipeline d'écoute
+## Provider inventory and listening pipeline
 
-Treize providers EventSource concrets actifs au boot, plus la base class `DeckleEventSource` non instanciable. Chaque module qui émet déclare son propre `Deckle<Module>Source.cs` héritant de `DeckleEventSource`. Liste par ordre alphabétique du Name ETW, avec le module hôte et le tag LogWindow correspondant entre parenthèses :
+Thirteen concrete EventSource providers active at boot, plus the non-instantiable `DeckleEventSource` base class. Each emitting module declares its own `Deckle<Module>Source.cs` inheriting from `DeckleEventSource`. List in alphabetical order of the ETW Name, with the host module and the corresponding LogWindow tag in parentheses:
 
-- `Deckle.Ambient` (`Deckle.Lighting.Ambient`, tag `AMBIENT`) — orchestrateur ambient lighting, pairing Hue consumer, heartbeat agrégé.
-- `Deckle.App` (`Deckle.App`, tag `APP`) — host applicatif, crashes, boot, status transitions, restart, hotkey orchestration.
-- `Deckle.Audio` (`Deckle.Audio`, tag `AUDIO`) — capture micro, anomalies waveIn, récap télémétrie `MicrophoneTelemetryRecorded`.
-- `Deckle.Chrono` (`Deckle.Chrono`, tag `CHRONO`) — pilote historique de la vague 1, étoffé quand le module aura des jalons à émettre.
-- `Deckle.Hud` (`Deckle.Hud`, tag `HUD`) — actuellement un seul `HudWarning(string)`, sous-instrumenté.
-- `Deckle.Lighting` (`Deckle.Lighting`, tag `LIGHTING`) — driver Hue REST CLIP v1/v2, discovery, pairing, color push à 10-15 Hz.
-- `Deckle.Llm` (`Deckle.Llm`, tag `LLM`) — réécriture Ollama, polling `/api/ps`, surface Settings → LLM.
-- `Deckle.Playground` (`Deckle.Playground`, tag `PLAYGROUND`) — surface dev-only, events génériques per-canal.
-- `Deckle.Settings` (`Deckle.Settings`, tag `SETTINGS`) — migration legacy → per-module, backup/restore, folder pickers, navigation NavView, setters ViewModels.
-- `Deckle.Setup` (`Deckle.Setup`, tag `SETUP`) — wizard first-run, trois events génériques (`SetupInfo`/`Warning`/`Error`).
-- `Deckle.Shell` (`Deckle.Shell`, tag `SHELL`) — message-only host, hotkeys, autostart HKCU\Run, dispatcher.
-- `Deckle.Vision` (`Deckle.Vision`, tag `VISION`) — capture écran DXGI, FrameSampler, anomalies de la boucle d'acquisition.
-- `Deckle.Whisp` (`Deckle.Transcription`, tag `WHISP`) — moteur de transcription, état du modèle natif, paste, clipboard. Le symbole `DeckleWhispSource` est resté tel quel après la refonte modulaire qui a renommé `Deckle.Whisp` en `Deckle.Transcription` — le Name ETW reste `Deckle.Whisp` pour préserver le tag LogWindow et la compat des outils de benchmark.
+- `Deckle.Ambient` (`Deckle.Lighting.Ambient`, tag `AMBIENT`) — ambient lighting orchestrator, Hue pairing consumer, aggregated heartbeat.
+- `Deckle.App` (`Deckle.App`, tag `APP`) — application host, crashes, boot, status transitions, restart, hotkey orchestration.
+- `Deckle.Audio` (`Deckle.Audio`, tag `AUDIO`) — microphone capture, waveIn anomalies, `MicrophoneTelemetryRecorded` telemetry rollup.
+- `Deckle.Chrono` (`Deckle.Chrono`, tag `CHRONO`) — historical wave 1 pilot, fleshed out once the module has milestones to emit.
+- `Deckle.Hud` (`Deckle.Hud`, tag `HUD`) — currently a single `HudWarning(string)`, under-instrumented.
+- `Deckle.Lighting` (`Deckle.Lighting`, tag `LIGHTING`) — Hue REST CLIP v1/v2 driver, discovery, pairing, color push at 10-15 Hz.
+- `Deckle.Llm` (`Deckle.Llm`, tag `LLM`) — Ollama rewriting, `/api/ps` polling, Settings → LLM surface.
+- `Deckle.Playground` (`Deckle.Playground`, tag `PLAYGROUND`) — dev-only surface, generic per-channel events.
+- `Deckle.Settings` (`Deckle.Settings`, tag `SETTINGS`) — legacy → per-module migration, backup/restore, folder pickers, NavView navigation, ViewModel setters.
+- `Deckle.Setup` (`Deckle.Setup`, tag `SETUP`) — first-run wizard, three generic events (`SetupInfo`/`Warning`/`Error`).
+- `Deckle.Shell` (`Deckle.Shell`, tag `SHELL`) — message-only host, hotkeys, HKCU\Run autostart, dispatcher.
+- `Deckle.Vision` (`Deckle.Vision`, tag `VISION`) — DXGI screen capture, FrameSampler, acquisition loop anomalies.
+- `Deckle.Whisp` (`Deckle.Transcription`, tag `WHISP`) — transcription engine, native model state, paste, clipboard. The `DeckleWhispSource` symbol was kept as-is after the modular refactor that renamed `Deckle.Whisp` to `Deckle.Transcription` — the ETW Name stays `Deckle.Whisp` to preserve the LogWindow tag and the benchmark tooling compat.
 
-`Deckle.Core` et `Deckle.Composition` restent silencieux par doctrine — aucun site d'appel ne justifie un provider.
+`Deckle.Core` and `Deckle.Composition` stay silent by doctrine — no call site justifies a provider.
 
-Six listeners instanciés au boot dans `AppDiagnosticsBootstrap`, persistent pour la vie du process. Quatre `JsonlEventListener`, un par fichier de destination (`app.jsonl`, `latency.jsonl`, `microphone.jsonl`, `corpus.jsonl`). Chacun reçoit un prédicat qui sélectionne les events à écrire dans son fichier — sélection par nom d'event canonique pour les heartbeats structurés (`LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusRecorded`), sélection par keyword pour le canal général. Un `LogWindowEventListener` avec buffer ring de capacité 5000 et multi-sink `AttachSink` / `DetachSink` — le LogWindow s'attache à sa première ouverture lazy et reçoit l'historique boot en replay. Un `HudFeedbackEventListener` qui filtre exclusivement sur le nom d'event `UserFeedbackEmitted` et route vers le sink concret du host.
+Six listeners instantiated at boot in `AppDiagnosticsBootstrap`, persist for the lifetime of the process. Four `JsonlEventListener`, one per destination file (`app.jsonl`, `latency.jsonl`, `microphone.jsonl`, `corpus.jsonl`). Each receives a predicate that selects the events to write to its file — selection by canonical event name for structured heartbeats (`LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusRecorded`), selection by keyword for the general channel. One `LogWindowEventListener` with a ring buffer of capacity 5000 and multi-sink `AttachSink` / `DetachSink` — the LogWindow attaches on its first lazy open and receives the boot history in replay. One `HudFeedbackEventListener` that filters exclusively on the `UserFeedbackEmitted` event name and routes to the concrete sink of the host.
 
-Sources de configuration utilisateur :
+User configuration sources:
 
-- `Deckle.Diagnostics.Logging.LoggingSettingsService` → `<UserDataRoot>/modules/logging/settings.json` → toggle `LogAmbientCaptureActivity`, plus la gate volatile `AmbientCaptureGate` que `AmbientEngine` met à `true` autour de sa boucle pour drop les Verbose pendant la capture.
-- `Deckle.Diagnostics.Telemetry.TelemetrySettingsService` → `<UserDataRoot>/modules/telemetry/settings.json` → gates `LatencyEnabled`, `MicrophoneTelemetry`, `CorpusEnabled`, `RecordAudioCorpus`, `ApplicationLogToDisk`, `StorageDirectory`. Le délégué injecté dans `TelemetryListenerBootstrap.ConfigureGates` est consulté à chaque émission par les `JsonlEventListener`.
+- `Deckle.Diagnostics.Logging.LoggingSettingsService` → `<UserDataRoot>/modules/logging/settings.json` → `LogAmbientCaptureActivity` toggle, plus the volatile `AmbientCaptureGate` that `AmbientEngine` sets to `true` around its loop to drop Verbose during capture.
+- `Deckle.Diagnostics.Telemetry.TelemetrySettingsService` → `<UserDataRoot>/modules/telemetry/settings.json` → gates `LatencyEnabled`, `MicrophoneTelemetry`, `CorpusEnabled`, `RecordAudioCorpus`, `ApplicationLogToDisk`, `StorageDirectory`. The delegate injected into `TelemetryListenerBootstrap.ConfigureGates` is consulted on every emission by the `JsonlEventListener` instances.
 
 ## Session id
 
-Une seule `SessionId` au format `YYYY-MM-DD-XXXX` est générée la première fois qu'un provider émet, et partagée par tous les providers `Deckle.*` pour la durée du process. Stockée comme propriété statique sur `DeckleEventSource`. Reproduit exactement le comportement du legacy `TelemetryService.SessionId` pour que les benchmarks puissent continuer à grouper par session pendant et après la migration.
+A single `SessionId` in the format `YYYY-MM-DD-XXXX` is generated the first time a provider emits, and shared by all `Deckle.*` providers for the lifetime of the process. Stored as a static property on `DeckleEventSource`. Reproduces exactly the behavior of legacy `TelemetryService.SessionId` so that benchmarks can keep grouping by session during and after the migration.
 
-## Coexistence pendant la migration
+## Coexistence during migration
 
-Le legacy `Deckle.Logging` coexiste jusqu'à la vague 6. Conséquence opérationnelle : pendant la migration, un module migré appelle **uniquement** son EventSource, un module non migré continue d'appeler `TelemetryService`. Pas de double émission, pas de chemin bridge cross-pipeline. Les EventListeners ici déclarés sont inscrits au boot dans `App.OnLaunched` **à côté** des sinks legacy, et écrivent dans des fichiers parallèles le temps de la validation schéma. Le swap final se fait en vague 6 quand le legacy disparaît.
+Legacy `Deckle.Logging` coexists until wave 6. Operational consequence: during the migration, a migrated module calls **only** its EventSource, a non-migrated module keeps calling `TelemetryService`. No double emission, no cross-pipeline bridge path. The EventListeners declared here are registered at boot in `App.OnLaunched` **alongside** the legacy sinks, and write to parallel files for the duration of schema validation. The final swap happens in wave 6 when legacy disappears.
 
-## Vocabulaire de mesures
+## Measurement vocabulary
 
-Chaque mesure exposée comme paramètre d'event a un format canonique. Le **nom du paramètre** sert de clé JSON, **l'unité**, **la précision** et le **suffixe** suivent les tables ci-dessous pour qu'un humain qui grep une mesure dans la LogWindow ou dans un JSONL retrouve la même chose partout. Toute apparition d'une mesure dans un nouvel event doit suivre ce contrat — si une unité manque, l'ajouter ici avant de l'utiliser.
+Every measure exposed as an event parameter has a canonical format. The **parameter name** serves as the JSON key, the **unit**, **precision**, and **suffix** follow the tables below so that a human grepping a measure in the LogWindow or in a JSONL finds the same thing everywhere. Any appearance of a measure in a new event must follow this contract — if a unit is missing, add it here before using it.
 
-**Temps** — durées courtes `<name>_ms` entier (`load_ms=420`, source `Stopwatch`), durées longues `<name>_sec` 1 décimale (`audio_sec=12.3`, calcul `samples / 16000`), timing segment whisper `t0` / `t1` / `dur` 1 décimale (`t0=1.2 t1=3.4 dur=2.2`).
+**Time** — short durations `<name>_ms` integer (`load_ms=420`, source `Stopwatch`), long durations `<name>_sec` 1 decimal (`audio_sec=12.3`, computed `samples / 16000`), whisper segment timing `t0` / `t1` / `dur` 1 decimal (`t0=1.2 t1=3.4 dur=2.2`).
 
-**Audio** — RMS linéaire `rms` 4 décimales sur `[0,1]` (`rms=0.0123`, `sqrt(Σv²/n)` avec `v = pcm16/32768`), niveau `dbfs` 1 décimale (`dbfs=-38.2`, `20 * log10(rms)`), fréquence en `kHz` entier (toujours `16` dans Deckle), canaux toujours `mono`, échantillons `samples` entier, taille buffer `bytes` entier.
+**Audio** — linear RMS `rms` 4 decimals on `[0,1]` (`rms=0.0123`, `sqrt(Σv²/n)` with `v = pcm16/32768`), level `dbfs` 1 decimal (`dbfs=-38.2`, `20 * log10(rms)`), frequency in `kHz` integer (always `16` in Deckle), channels always `mono`, samples `samples` integer, buffer size `bytes` integer.
 
-**Texte** — longueur caractères `text_chars`, longueur mots `text_words`, longueur tokens `prompt_tok` ou `tok` (`text_chars=142`, `prompt_tok=512`).
+**Text** — character length `text_chars`, word length `text_words`, token length `prompt_tok` or `tok` (`text_chars=142`, `prompt_tok=512`).
 
-**Compute** — `n_seg` entier (segments), `tok_s` 1 décimale (tokens/s), pourcentage `<name>_pct` 1 décimale (`reduction_pct=62.4`), confiance `p̄` / `min` 2 décimales sur `[0,1]`, probabilité `<name>_pct` entier (`nsp=12`).
+**Compute** — `n_seg` integer (segments), `tok_s` 1 decimal (tokens/s), percentage `<name>_pct` 1 decimal (`reduction_pct=62.4`), confidence `p̄` / `min` 2 decimals on `[0,1]`, probability `<name>_pct` integer (`nsp=12`).
 
-**Image / capture vidéo** — frames par seconde `fps` 1 décimale (mesuré sur fenêtre glissante 1 s), compte de frames `frames` entier (depuis Start de la session), résolution `size=WxH` entier (`Direct3D11CaptureFrame.ContentSize`), format pixel `format=<enum DirectXPixelFormat>`, buffers pool `bufs` entier (typiquement 2), handle moniteur `hmon=0x{hex}` (retour `MonitorFromPoint`).
+**Image / video capture** — frames per second `fps` 1 decimal (measured on a 1 s sliding window), frame count `frames` integer (since the Start of the session), resolution `size=WxH` integer (`Direct3D11CaptureFrame.ContentSize`), pixel format `format=<DirectXPixelFormat enum>`, pool buffers `bufs` integer (typically 2), monitor handle `hmon=0x{hex}` (`MonitorFromPoint` return).
 
-**Retours d'appel natifs** — code natif `result=<int>` ou `mmsys=<int>`, HRESULT `hr=0x{hex}`, outcome enum `outcome=<value>`, pointeur natif `ctx=0x{hex}`.
+**Native call returns** — native code `result=<int>` or `mmsys=<int>`, HRESULT `hr=0x{hex}`, outcome enum `outcome=<value>`, native pointer `ctx=0x{hex}`.
 
-**Réseau et drivers LED** — IPv4 `bridge_ip=192.168.1.5`, Hue serial number `bridge_id=001788FFFE3A2C18` (hex16), application key `username=eDOvxk-...` (tronqué à 8 chars + `...`), pre-shared key `clientkey=[redacted]` (PSK DTLS jamais loggée en clair), group ID `group_id=3` (CLIP v1 entier, v2 UUID), HTTP status `hr=200` / `hr=401`, couleur CIE `xy=0.4521,0.3895` 4 décimales, luminance `bri=200` entier 0–254, RGB `rgb=180,60,240` 3 octets.
+**Network and LED drivers** — IPv4 `bridge_ip=192.168.1.5`, Hue serial number `bridge_id=001788FFFE3A2C18` (hex16), application key `username=eDOvxk-...` (truncated to 8 chars + `...`), pre-shared key `clientkey=[redacted]` (DTLS PSK never logged in clear), group ID `group_id=3` (CLIP v1 integer, v2 UUID), HTTP status `hr=200` / `hr=401`, CIE color `xy=0.4521,0.3895` 4 decimals, luminance `bri=200` integer 0–254, RGB `rgb=180,60,240` 3 bytes.
 
-## Doctrine de séparation Verbose ↔ Info
+## Verbose ↔ Info separation doctrine
 
-**Les identifiants opaques et le format `k=v` sont Verbose-only.** Un `Message` `[Event]` de niveau `Informational`, `Warning`, `Error` ou `Critical` est une phrase Capital courte, lisible par un humain qui n'a aucune connaissance de l'implémentation. Si le `Message` contient un ID (light id Hue, group id, file path, hash, line index, opaque token quelconque) ou des séparateurs `|`, alors par définition c'est un event Verbose, pas un event sémantique. Un Info qui contient un ID est une erreur de niveau, pas une variante stylistique.
+**Opaque identifiers and the `k=v` format are Verbose-only.** A `Message` `[Event]` of level `Informational`, `Warning`, `Error` or `Critical` is a short Capital sentence, readable by a human with no knowledge of the implementation. If the `Message` contains an ID (Hue light id, group id, file path, hash, line index, any opaque token) or `|` separators, then by definition it is a Verbose event, not a semantic event. An Info that contains an ID is a level mistake, not a stylistic variant.
 
-Lorsqu'une action mérite à la fois une signalisation sémantique pour l'utilisateur ET un détail technique pour le diag, on émet **deux events** : un Info Capital sans IDs, et son miroir Verbose avec les IDs en paramètres typés snake_case. Aucun chevauchement.
+When an action deserves both a semantic signal for the user AND a technical detail for diagnostics, we emit **two events**: a Capital Info without IDs, and its Verbose mirror with the IDs as typed snake_case parameters. No overlap.
 
-| ❌ Mauvais (mélange) | ✅ Bon (séparation) |
+| ❌ Bad (mixed) | ✅ Good (separated) |
 |---|---|
 | `Info AMBIENT zone assign \| id=42 \| zone=Top` | `Info AMBIENT Zone Top assigned to Falcon` |
 | | `Verbose AMBIENT zone assign \| id=42 \| zone=Top` |
 | `Info AMBIENT settings update \| key=UseMultiLight \| value=true` | `Info AMBIENT Pipeline mode set to per-zone` |
 | | `Verbose AMBIENT settings update \| key=UseMultiLight \| value=true` |
 
-Le miroir Verbose **suit toujours** l'Info Capital quand il y a un détail technique à acter. Ce n'est pas optionnel — c'est le contrat qui rend les logs greppables.
+The Verbose mirror **always follows** the Capital Info when there is a technical detail to record. It is not optional — it is the contract that makes logs greppable.
 
-## Format par niveau — deux registres distincts
+## Format by level — two distinct registers
 
-**Informational et niveau jalon ré-réussi** — phrase Capital courte, lue comme un jalon dans la vue Activity de la LogWindow. Pas de `k=v`, pas d'unités techniques. Un détail court entre parenthèses reste admis quand il porte l'essentiel du jalon (backend, durée perçue, outcome). Exemples : `MODEL Loading model`, `MODEL Model loaded (Vulkan)`, `CAPTURE Recording start`, `CAPTURE Recording complete (12.3 s)`, `TRANSCRIBE Transcribing`, `TRANSCRIBE Transcription complete (5 seg)`, `LLM Rewriting (Short)`, `LLM Rewrite complete`, `CLIPBOARD Copied to clipboard`, `PASTE Pasted`, `DONE Done (Pasted)`.
+**Informational and milestone-level success** — short Capital sentence, read as a milestone in the LogWindow Activity view. No `k=v`, no technical units. A short parenthetical remains acceptable when it carries the gist of the milestone (backend, perceived duration, outcome). Examples: `MODEL Loading model`, `MODEL Model loaded (Vulkan)`, `CAPTURE Recording start`, `CAPTURE Recording complete (12.3 s)`, `TRANSCRIBE Transcribing`, `TRANSCRIBE Transcription complete (5 seg)`, `LLM Rewriting (Short)`, `LLM Rewrite complete`, `CLIPBOARD Copied to clipboard`, `PASTE Pasted`, `DONE Done (Pasted)`.
 
-**Warning et Error** — phrase Capital riche. Quand l'alerte nécessite des détails (endpoint, code d'erreur, durée), les exprimer en prose (`Ollama busy — model X resident (2.1 GB). Waited 60s so far…`). Pas de `k=v` dans la prose Warning / Error visible, même si un event Verbose miroir peut exposer les champs machine-greppables en parallèle.
+**Warning and Error** — rich Capital sentence. When the alert needs details (endpoint, error code, duration), express them in prose (`Ollama busy — model X resident (2.1 GB). Waited 60s so far…`). No `k=v` in visible Warning / Error prose, even if a mirror Verbose event may expose the machine-greppable fields in parallel.
 
-**Verbose** — détail technique machine-greppable. Le `Message` template suit le format `<action ou état> | <mesure1>=<val1> | <mesure2>=<val2> ...`. Préfixe court (verbe ou état) en tête, mesures séparées par ` | `, premier mot en minuscule, une seule ligne. Ne jamais répéter le module dans le message — le tag de source (`CAPTURE`, `LLM`, etc.) le porte déjà.
+**Verbose** — machine-greppable technical detail. The `Message` template follows the format `<action or state> | <measure1>=<val1> | <measure2>=<val2> ...`. Short prefix (verb or state) at the head, measures separated by ` | `, first word lowercase, single line. Never repeat the module in the message — the source tag (`CAPTURE`, `LLM`, etc.) already carries it.
 
-Exemples miroir :
+Mirror examples:
 
 ```
 Info     MODEL       Loading model
@@ -178,106 +178,106 @@ Info     MODEL       Model loaded (Vulkan)
 Verbose  MODEL       load complete | load_ms=420 | backend=Vulkan
 ```
 
-**Texte brut** (segment transcrit, contenu clipboard, prompt utilisateur) conserve sa casse native, ne subit pas la règle Capital. C'est du contenu, pas un message.
+**Raw text** (transcribed segment, clipboard content, user prompt) keeps its native casing, does not undergo the Capital rule. It is content, not a message.
 
-## Classes d'observables canoniques
+## Canonical observable classes
 
-Quand on instrumente un bout de code, quels paramètres viser par défaut. Les sections précédentes répondent *où* et *comment* écrire l'event (provider, niveau, keyword, format, vocabulaire de mesures). Cette section couvre *quoi* émettre selon la classe de situation rencontrée. Neuf classes suffisent à couvrir le code Deckle existant et futur ; un site peut relever de deux classes simultanément.
+When instrumenting a piece of code, which parameters to target by default. The previous sections answer *where* and *how* to write the event (provider, level, keyword, format, measurement vocabulary). This section covers *what* to emit depending on the class of situation encountered. Nine classes are enough to cover existing and future Deckle code; a site may belong to two classes simultaneously.
 
-### Classe 1 — Lifecycle et boot
+### Class 1 — Lifecycle and boot
 
-Démarrage process, init paths, warmup ressources, chargement module, transitions d'état d'app (`idle → recording → transcribing → done`), shutdown amorcé, restart post-build, crash safety nets. Opérations uniques par cycle, jalons attendus en `Informational` avec keyword `Lifecycle`, miroirs en `Verbose` quand des paramètres techniques justifient un détail séparé.
+Process start, path init, resource warmup, module loading, app state transitions (`idle → recording → transcribing → done`), shutdown initiated, post-build restart, crash safety nets. One-off operations per cycle, milestones expected as `Informational` with the `Lifecycle` keyword, mirrors as `Verbose` when technical parameters justify a separate detail.
 
-**Set canonique** — nom de l'étape, durée `<name>_ms`, outcome (`succeeded` / `skipped` / `failed`), backend ou variant actif quand pertinent (`backend=Vulkan`, `model=ggml-large-v3.bin`), version du composant si charge réseau ou disque, motif de transition pour les state changes (`reason=hotkey`, `reason=tray`, `reason=auto-shutdown`).
+**Canonical set** — name of the step, duration `<name>_ms`, outcome (`succeeded` / `skipped` / `failed`), active backend or variant when relevant (`backend=Vulkan`, `model=ggml-large-v3.bin`), component version if network or disk load, transition reason for state changes (`reason=hotkey`, `reason=tray`, `reason=auto-shutdown`).
 
-**État actuel** — très bien instrumenté côté `Deckle.App` (boot, status transitions, shutdown/restart), `Deckle.Transcription` (warmup boot, model load via `DeckleWhispSource`), `Deckle.Audio` (capture lifecycle), `Deckle.Vision` (`ScreenCaptureStarted`/`Stopped`). Pattern `PathsInitialized` + `PathsDetail` (jalon Info + miroir Verbose) est l'archétype propre.
+**Current state** — very well instrumented in `Deckle.App` (boot, status transitions, shutdown/restart), `Deckle.Transcription` (boot warmup, model load via `DeckleWhispSource`), `Deckle.Audio` (capture lifecycle), `Deckle.Vision` (`ScreenCaptureStarted`/`Stopped`). The `PathsInitialized` + `PathsDetail` pattern (Info milestone + Verbose mirror) is the clean archetype.
 
-### Classe 2 — Pipeline batch
+### Class 2 — Batch pipeline
 
-Transcription d'un blob audio, réécriture LLM, calibration appareil, push ambient sur un frame complet. Opération discrète début → fin → résultat. Cadres dominants RED et Four Golden Signals.
+Transcription of an audio blob, LLM rewriting, device calibration, ambient push on a full frame. Discrete operation start → end → result. Dominant frames RED and Four Golden Signals.
 
-**Set canonique** — identifiant d'opération (`transcription_id` si pertinent), durée totale et par phase clé (`hotkey_to_capture_ms`, `record_drain_ms`, `whisper_init_ms`, `whisper_ms`, `llm_ms`, …), métriques d'entrée (`audio_sec`, `text_chars`, `prompt_tok`), métriques de sortie (`n_segments`, `text_words`, `tok_s`), outcome enum (`outcome=ok|repetition_loop|llm_failed|user_cancelled`), profil ou stratégie active (`strategy=`, `profile=`), flag binaire d'effet de bord (`pasted=true`).
+**Canonical set** — operation identifier (`transcription_id` if relevant), total duration and per key phase (`hotkey_to_capture_ms`, `record_drain_ms`, `whisper_init_ms`, `whisper_ms`, `llm_ms`, …), input metrics (`audio_sec`, `text_chars`, `prompt_tok`), output metrics (`n_segments`, `text_words`, `tok_s`), outcome enum (`outcome=ok|repetition_loop|llm_failed|user_cancelled`), active profile or strategy (`strategy=`, `profile=`), binary side-effect flag (`pasted=true`).
 
-**État actuel** — `LatencyRecorded` à 24 champs (`DeckleWhispSource`) est l'exemple canonique réussi, *canonical log line* au sens industrie qui colocalise toutes les mesures clés en une ligne par invocation. `CorpusAsrRecorded` (14 champs) et `CorpusRewriteRecorded` (12 champs) suivent le même pattern pour la persistance dataset (cf. [ADR-0011](../../docs/adr/0011-corpus-normalise-comme-dataset-ml.md)). Le pattern est mature côté transcription, pas systématisé ailleurs.
+**Current state** — `LatencyRecorded` with 24 fields (`DeckleWhispSource`) is the canonical successful example, *canonical log line* in the industry sense that colocates all key measures in one line per invocation. `CorpusAsrRecorded` (14 fields) and `CorpusRewriteRecorded` (12 fields) follow the same pattern for dataset persistence (cf. [ADR-0011](../../docs/adr/0011-corpus-normalise-comme-dataset-ml.md)). The pattern is mature on the transcription side, not systematized elsewhere.
 
-### Classe 3 — Boucle temps réel haute fréquence
+### Class 3 — High-frequency real-time loop
 
-Capture audio polling 50 ms, capture écran DXGI à ~15 Hz, push lumière à 10-15 Hz, raw input curseur ~125 Hz pour fade proximité HUD. Opérations nombreuses, brèves, l'enjeu est la stabilité du débit. Cadres dominants USE et Four Golden Signals côté flux sortant.
+Audio capture polling at 50 ms, DXGI screen capture at ~15 Hz, light push at 10-15 Hz, raw cursor input at ~125 Hz for HUD proximity fade. Operations numerous, brief; the stake is throughput stability. Dominant frames USE and Four Golden Signals on the outgoing flow side.
 
-**Set canonique** — sur fenêtre glissante (1 s typique) : `fps` ou `ticks/s` observés, `drops` (frames acquis mais non traités), latence intra-tick `p50_ms` / `p95_ms`, saturation de file (`queue_depth` ou `pending_frames`), erreurs intra-fenêtre (`acquire_fail=N`). Pattern dit *rollup* — une ligne périodique qui résume N ticks, plutôt qu'une ligne par tick qui noierait l'observation.
+**Canonical set** — on a sliding window (typically 1 s): observed `fps` or `ticks/s`, `drops` (frames acquired but not processed), intra-tick latency `p50_ms` / `p95_ms`, queue saturation (`queue_depth` or `pending_frames`), intra-window errors (`acquire_fail=N`). Pattern called *rollup* — a periodic line that summarizes N ticks, rather than one line per tick which would drown the observation.
 
-**État actuel** — la `Heartbeat` de `DeckleAmbientSource` est l'incarnation actuelle du pattern (7 champs, périodique). `DeckleVisionSource` n'a pas d'équivalent — la boucle de capture émet par incident (anomalies, recovery) mais pas une trace régulière du débit. `DeckleAudioSource` émet le RMS tick sur un event UI direct (alimentation HUD), explicitement *non* loggué selon la règle « heartbeats haute fréquence < 1 s ne sont pas loggués ». Le récap distributif `MicrophoneTelemetryRecorded` à 14 champs en fin de session compense.
+**Current state** — the `Heartbeat` of `DeckleAmbientSource` is the current incarnation of the pattern (7 fields, periodic). `DeckleVisionSource` has no equivalent — the capture loop emits on incident (anomalies, recovery) but no regular trace of throughput. `DeckleAudioSource` emits the RMS tick on a direct UI event (HUD feed), explicitly *not* logged per the rule "high-frequency heartbeats < 1 s are not logged". The distributive rollup `MicrophoneTelemetryRecorded` with 14 fields at session end compensates.
 
-### Classe 4 — Driver matériel et intégration externe
+### Class 4 — Hardware driver and external integration
 
-Pilote micro (WASAPI), client HTTP Hue REST, client HTTP Ollama, EventStream SSE, P/Invoke whisper.cpp natif. Frontière entre code interne et système externe sur lequel on a peu de contrôle. Cadres dominants RED (durée aller-retour, taux d'erreur, taux d'appel) plus USE sur ressources internes consommées.
+Microphone driver (WASAPI), Hue REST HTTP client, Ollama HTTP client, SSE EventStream, native whisper.cpp P/Invoke. Boundary between internal code and an external system over which we have little control. Dominant frames RED (round-trip duration, error rate, call rate) plus USE on internal resources consumed.
 
-**Set canonique** — événements de cycle de vie de la connexion (`discovery`, `pairing`, `session_opened`, `session_closed`, `signal_lost`, `reconnected`) ; codes de retour natifs avec notation canonique stable (`hr=0x{hex}` HRESULT, `result=<int>` mmsys, `status=<int>` HTTP, `mmsys=<int>` waveIn) ; identifiants tronqués ou masqués pour les secrets (`username=eDOvxk-...`, `clientkey=[redacted]`) ; latence aller-retour (`rtt_ms`) ; ressources consommées (`http_clients`, `socket_pool`).
+**Canonical set** — connection lifecycle events (`discovery`, `pairing`, `session_opened`, `session_closed`, `signal_lost`, `reconnected`); native return codes with a stable canonical notation (`hr=0x{hex}` HRESULT, `result=<int>` mmsys, `status=<int>` HTTP, `mmsys=<int>` waveIn); truncated or masked identifiers for secrets (`username=eDOvxk-...`, `clientkey=[redacted]`); round-trip latency (`rtt_ms`); consumed resources (`http_clients`, `socket_pool`).
 
-**État actuel** — `DeckleLightingSource` (40 events) couvre bien tout le cycle Hue : discovery, pairing, control, EventStream, identify, color push. La discipline de masquage des secrets (clientkey jamais en clair, username tronqué) est tenue. `DeckleLlmSource` instrumente les états Ollama (`OllamaBusy`, polling `/api/ps`). `DeckleAudioSource` couvre les anomalies waveIn par codes `mmsys`. Une normalisation transverse manque — il n'y a pas de pattern uniforme `HttpRequestCompleted(verb, endpoint, status, rtt_ms, retry_count)` réutilisable.
+**Current state** — `DeckleLightingSource` (40 events) covers the whole Hue cycle well: discovery, pairing, control, EventStream, identify, color push. The secret-masking discipline (clientkey never in clear, username truncated) holds. `DeckleLlmSource` instruments Ollama states (`OllamaBusy`, `/api/ps` polling). `DeckleAudioSource` covers waveIn anomalies via `mmsys` codes. A cross-cutting normalization is missing — there is no uniform reusable `HttpRequestCompleted(verb, endpoint, status, rtt_ms, retry_count)` pattern.
 
-### Classe 5 — Surface UI et navigation
+### Class 5 — UI surface and navigation
 
-Page settings ouverte, dialog confirmé, formulaire validé, navigation NavView, ViewModel setter qui change une valeur, page chargée prête, page failed to init. Cadres dominants Four Golden Signals adaptés (latence perçue, taux d'actions par session, erreurs visibles) plus RED sur opérations déclenchées utilisateur.
+Settings page opened, dialog confirmed, form validated, NavView navigation, ViewModel setter changing a value, page loaded ready, page failed to init. Dominant frames Four Golden Signals adapted (perceived latency, actions-per-session rate, visible errors) plus RED on user-triggered operations.
 
-**Set canonique** — transitions d'état UI en jalons concis (`Page loaded`, `Dialog opened`, `Form validated`) ; détails techniques en Verbose miroir (`page=Llm | duration_ms=120 | items=5`) ; UserFeedback adressé à l'utilisateur via le canal canonique séparé `UserFeedbackEmitted` au contrat strict `(severity, title, body, role)`.
+**Canonical set** — UI state transitions as concise milestones (`Page loaded`, `Dialog opened`, `Form validated`); technical details in Verbose mirror (`page=Llm | duration_ms=120 | items=5`); user-addressed UserFeedback via the canonical separate channel `UserFeedbackEmitted` with the strict contract `(severity, title, body, role)`.
 
-**État actuel** — `DeckleSettingsSource` est l'exemple riche, 46 events couvrant navigation NavView, ViewModel setters, backup/restore, folder picker, setup wizard. L'event générique paramétré `SettingChanged(string, string, string)` est l'entorse acceptée à la discipline strict-typed — un setter générique du MVVM ne sait pas distinguer 30 setters distincts au site d'appel.
+**Current state** — `DeckleSettingsSource` is the rich example, 46 events covering NavView navigation, ViewModel setters, backup/restore, folder picker, setup wizard. The parameterized generic event `SettingChanged(string, string, string)` is the accepted exception to the strict-typed discipline — a generic MVVM setter cannot distinguish 30 different setters at the call site.
 
-### Classe 6 — Windowing
+### Class 6 — Windowing
 
-Positionnement et dimensionnement de toute fenêtre WinUI 3 ou Win32 — `HudWindow` (320×64 bas-centre), `HudOverlayWindow`, `HudMessage` hybrid bleed (400×160 puis retract 272×78), `SettingsWindow`, `LogWindow`, `SetupWindow`, popup tray menu, popup folder picker. Tous ces sites calculent à la main une position en DIP, multiplient par `GetDpiForWindow(hwnd) / 96.0`, choisissent un `DisplayArea` ou un `MonitorFromPoint`, gèrent le multi-écran.
+Positioning and sizing of every WinUI 3 or Win32 window — `HudWindow` (320×64 bottom-center), `HudOverlayWindow`, `HudMessage` hybrid bleed (400×160 then retract 272×78), `SettingsWindow`, `LogWindow`, `SetupWindow`, tray menu popup, folder picker popup. All these sites compute a position by hand in DIP, multiply by `GetDpiForWindow(hwnd) / 96.0`, choose a `DisplayArea` or a `MonitorFromPoint`, manage multi-screen.
 
-**Set canonique** :
+**Canonical set**:
 
-- `hmon=0x{hex}` — handle moniteur retourné par `MonitorFromPoint` ou `GetMonitorInfo`.
-- `dpi=192` — entier, résultat `GetDpiForWindow`.
-- `scale=2.0` — une décimale, dérivé `dpi/96`.
-- `work_area=2560,40,2520,1392` — rect en pixels écran absolus (x, y, w, h).
-- `cursor=1240,860` — pixels écran absolus, retour `GetCursorPos`.
-- `anchor=BottomCenter` — ancrage choisi côté settings.
-- `pos=1100,820 size=320,64` — rect calculé en pixels écran absolus (convention fixée par cette doctrine pour permettre la reverse via `dpi`).
-- Pour les overlays empilés : `slot=0` ou `slot=1`.
-- Pour les popups : `parent_rect=x,y,w,h` du contrôle ancré.
+- `hmon=0x{hex}` — monitor handle returned by `MonitorFromPoint` or `GetMonitorInfo`.
+- `dpi=192` — integer, result of `GetDpiForWindow`.
+- `scale=2.0` — one decimal, derived `dpi/96`.
+- `work_area=2560,40,2520,1392` — rect in absolute screen pixels (x, y, w, h).
+- `cursor=1240,860` — absolute screen pixels, return of `GetCursorPos`.
+- `anchor=BottomCenter` — anchoring chosen on the settings side.
+- `pos=1100,820 size=320,64` — rect computed in absolute screen pixels (convention fixed by this doctrine to allow the reverse via `dpi`).
+- For stacked overlays: `slot=0` or `slot=1`.
+- For popups: `parent_rect=x,y,w,h` of the anchored control.
 
-Convention de coordonnées — pixels écran absolus partout. Les calculs internes peuvent partir de DIP, mais les events émis pour observation portent les valeurs en pixels, cohérent avec ce que retournent `GetCursorPos`, `GetWindowRect`, `GetMonitorInfo`, et permet de reverse vers DIP via `dpi`.
+Coordinate convention — absolute screen pixels everywhere. Internal computations may start from DIP, but events emitted for observation carry values in pixels, consistent with what `GetCursorPos`, `GetWindowRect`, `GetMonitorInfo` return, and allow reversing to DIP via `dpi`.
 
-**État actuel** — non observé. Le HUD a un seul `HudWarning(string)` paramétré par message libre. `SettingsWindow`, `LogWindow`, `SetupWindow` n'émettent rien sur leur positionnement. `TrayIconManager` ne loggue ni position icône ni position popup. Classe à câbler progressivement sur les sites de positionnement existants — chantier suivi en mémoire roadmap.
+**Current state** — not observed. The HUD has a single `HudWarning(string)` parameterized by free message. `SettingsWindow`, `LogWindow`, `SetupWindow` emit nothing about their positioning. `TrayIconManager` logs neither icon position nor popup position. Class to wire progressively on existing positioning sites — workstream tracked in the roadmap memory.
 
-### Classe 7 — Activité utilisateur
+### Class 7 — User activity
 
-Hotkey pressé, entrée tray cliquée, toggle settings changé, page settings ouverte manuellement. Cadre dominant RED sur opérations déclenchées.
+Hotkey pressed, tray entry clicked, settings toggle changed, settings page opened manually. Dominant frame RED on triggered operations.
 
-**Set canonique** — déclencheur (`trigger=hotkey:WinTilde | tray:Quit | settings:OllamaModel`), résultat (`outcome=triggered|ignored:busy|ignored:not-configured`), valeur avant et après pour un toggle (`before=true after=false`).
+**Canonical set** — trigger (`trigger=hotkey:WinTilde | tray:Quit | settings:OllamaModel`), result (`outcome=triggered|ignored:busy|ignored:not-configured`), value before and after for a toggle (`before=true after=false`).
 
-**État actuel** — `DeckleShellSource` couvre les hotkeys (`HotkeyRegistered`, `HotkeyToggleIgnored`). `DeckleAppSource` couvre `HotkeyStart`, `HotkeyStop`, `HotkeyNoProfile`. `DeckleSettingsSource` couvre les setters via `SettingChanged` générique. Cohérent mais éclaté entre trois providers — Shell pour la primitive, App pour l'orchestration, Settings pour la modification de valeur. Correct doctrinairement (« l'observation s'attache au module qui contient l'opération »), un peu lourd à recoller mentalement quand on lit la LogWindow.
+**Current state** — `DeckleShellSource` covers hotkeys (`HotkeyRegistered`, `HotkeyToggleIgnored`). `DeckleAppSource` covers `HotkeyStart`, `HotkeyStop`, `HotkeyNoProfile`. `DeckleSettingsSource` covers setters via generic `SettingChanged`. Coherent but scattered across three providers — Shell for the primitive, App for the orchestration, Settings for the value change. Doctrinally correct ("observation attaches to the module that contains the operation"), a bit heavy to mentally piece together when reading the LogWindow.
 
-### Classe 8 — Persistance settings per-module
+### Class 8 — Per-module settings persistence
 
-Chaque module qui a des settings (`Audio`, `Transcription`, `Llm`, `Lighting.Ambient`, …) charge et persiste via `JsonSettingsStore<T>` sous `<UserDataRoot>/modules/<name>/settings.json`. Quatre events transitoires partagent le pattern : `SettingsLoaded`, `SettingsLoadComplete`, `SettingsLoadWarning`, `SettingsLoadError`, tous paramétrés par message string libre.
+Each module that has settings (`Audio`, `Transcription`, `Llm`, `Lighting.Ambient`, …) loads and persists via `JsonSettingsStore<T>` under `<UserDataRoot>/modules/<name>/settings.json`. Four transient events share the pattern: `SettingsLoaded`, `SettingsLoadComplete`, `SettingsLoadWarning`, `SettingsLoadError`, all parameterized by a free string message.
 
-**Set canonique cible** — `module=<name>`, `path=<abs>`, `outcome=loaded|defaulted|migrated|failed`, `size_bytes=<n>`, `version=<schema>`, durée `load_ms=<n>`, raison si échec (`reason=missing|corrupt|migration_failed`).
+**Target canonical set** — `module=<name>`, `path=<abs>`, `outcome=loaded|defaulted|migrated|failed`, `size_bytes=<n>`, `version=<schema>`, duration `load_ms=<n>`, reason on failure (`reason=missing|corrupt|migration_failed`).
 
-**État actuel** — entorse documentée. Le delegate `Action<string>` de `JsonSettingsStore` ne sait pas distinguer au site d'appel entre « Settings loaded », « Settings initialized (defaults) » et « Settings reloaded from disk ». La discipline strict-typed est temporairement échangée contre un typage par niveau et keyword. Refonte propre quand `SettingsHost` / `JsonSettingsStore` basculeront eux-mêmes sur un contrat EventSource direct.
+**Current state** — documented exception. The `Action<string>` delegate of `JsonSettingsStore` cannot distinguish at the call site between "Settings loaded", "Settings initialized (defaults)" and "Settings reloaded from disk". The strict-typed discipline is temporarily traded for typing by level and keyword. A clean refactor lands when `SettingsHost` / `JsonSettingsStore` themselves switch to a direct EventSource contract.
 
-### Classe 9 — Crash et safety nets
+### Class 9 — Crash and safety nets
 
-`Application.UnhandledException`, `AppDomain.UnhandledException`, `TaskScheduler.UnobservedTaskException`. Trois filets posés au constructeur de `App`. Capture exception type, message, stack trace, contexte (handler invoqué, thread).
+`Application.UnhandledException`, `AppDomain.UnhandledException`, `TaskScheduler.UnobservedTaskException`. Three nets set in the `App` constructor. Captures exception type, message, stack trace, context (handler invoked, thread).
 
-**Set canonique** — `source=app|appdomain|task-scheduler`, `ex_type=System.Foo.Bar`, `ex_message=<short>`, `stack=<multi-line ou indiqué via event séparé>`, `thread_id=<n>`, `terminating=true|false` (pour AppDomain).
+**Canonical set** — `source=app|appdomain|task-scheduler`, `ex_type=System.Foo.Bar`, `ex_message=<short>`, `stack=<multi-line or pointed to via a separate event>`, `thread_id=<n>`, `terminating=true|false` (for AppDomain).
 
-**État actuel** — `DeckleAppSource` porte les 4 events `CrashUnhandled`, `CrashAppDomain`, `CrashTaskScheduler`, `CrashStackTrace`. Pattern bien tenu — la stack trace est sur un event séparé pour ne pas exploser la signature primaire.
+**Current state** — `DeckleAppSource` carries the 4 events `CrashUnhandled`, `CrashAppDomain`, `CrashTaskScheduler`, `CrashStackTrace`. Pattern well held — the stack trace is on a separate event to avoid blowing up the primary signature.
 
-## Règles d'application durables
+## Durable application rules
 
-- **Une étape = un Info de début, un Info de fin.** Entre les deux, du Verbose si nécessaire. Pas d'Info répétés au milieu d'une étape.
-- **Les heartbeats haute fréquence (< 1 s) ne sont pas loggués.** Ils alimentent les events UI (`AudioLevel` → HUD, RMS au tick) mais pas la LogWindow. La LogWindow porte des étapes, pas des frames.
-- **Les mesures suivent le vocabulaire ci-dessus.** Si une unité manque, l'ajouter dans cette doctrine avant de l'utiliser. Pas de mesure ad-hoc.
-- **Logs en anglais d'emblée**, Info techniques comme jalons sémantiques. Pas de français dans les events.
-- **Un `UserFeedbackEmitted` est toujours doublé d'un event** du même niveau. L'event reste pour diagnostic, le HUD est pour l'utilisateur.
-- **Jamais d'event multi-ligne.** Une émission = une ligne dans le viewer.
-- **La source porte le contexte.** Ne pas écrire `CAPTURE: started recording` dans le `Message` — la colonne Source de la LogWindow affiche déjà `CAPTURE`.
+- **One step = one start Info, one end Info.** Between them, Verbose if necessary. No repeated Infos in the middle of a step.
+- **High-frequency heartbeats (< 1 s) are not logged.** They feed UI events (`AudioLevel` → HUD, RMS per tick) but not the LogWindow. The LogWindow carries steps, not frames.
+- **Measures follow the vocabulary above.** If a unit is missing, add it to this doctrine before using it. No ad-hoc measure.
+- **Logs in English from the start**, technical Infos as semantic milestones. No French in events.
+- **A `UserFeedbackEmitted` is always doubled by an event** of the same level. The event stays for diagnostics, the HUD is for the user.
+- **Never a multi-line event.** One emission = one line in the viewer.
+- **The source carries the context.** Do not write `CAPTURE: started recording` in the `Message` — the LogWindow Source column already shows `CAPTURE`.
 
 ## Tests
 
-EventSource est conçu pour être testable via un EventListener custom branché dans le test. Pattern canonique : instancier le provider via `[EventSource(Name = "Deckle.Foo")]` (le test peut aussi enregistrer manuellement un nouveau provider via `EventSource.SendCommand` sur une instance existante), brancher un `TestEventListener` qui collecte les `EventEntry`, exécuter le code, assert sur la séquence collectée. C'est cette propriété de testabilité native qui motive en partie le choix EventSource — voir [ADR-0005](../../docs/adr/0005-adoption-eventsource-pour-l-observabilite.md).
+EventSource is designed to be testable via a custom EventListener wired in the test. Canonical pattern: instantiate the provider via `[EventSource(Name = "Deckle.Foo")]` (the test may also manually register a new provider via `EventSource.SendCommand` on an existing instance), attach a `TestEventListener` that collects `EventEntry` items, run the code, assert on the collected sequence. It is this native testability property that partly motivates the EventSource choice — see [ADR-0005](../../docs/adr/0005-adoption-eventsource-pour-l-observabilite.md).
