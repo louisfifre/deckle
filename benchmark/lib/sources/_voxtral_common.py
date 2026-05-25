@@ -4,7 +4,7 @@ défensive (cleanup_gpu, retry-on-OOM) parce que DirectML accumule
 des allocations entre rows et finit par OOM sur les longs.
 
 Voxtral expose deux modes d'invocation distincts côté transformers
-(cf. recherche doc Mistral 2026-05-24, ADR-0011 §pivot stack) :
+(cf. recherche doc Mistral 2026-05-24, ADR-0014 §pivot stack) :
 
   - **Transcription mode** : ``processor.apply_transcription_request(audio,
     model_id, language)`` produit le format prompt de transcription
