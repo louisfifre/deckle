@@ -26,17 +26,25 @@ namespace Deckle.Diagnostics.Telemetry;
 // AppTelemetryGates plutôt que sur le futur TelemetrySettingsService).
 //
 // Destinations canoniques :
-//   app.jsonl        ← milestones (Level <= Informational) excluding
-//                      dedicated structured telemetries
-//   latency.jsonl    ← LatencyRecorded events
-//   microphone.jsonl ← MicrophoneTelemetryRecorded events
-//   corpus.jsonl     ← CorpusRecorded events
+//   app.jsonl                                      ← milestones
+//                                                    (Level <= Informational)
+//                                                    excluant les télémétries
+//                                                    structurées dédiées
+//   latency.jsonl                                  ← LatencyRecorded events
+//   microphone.jsonl                               ← MicrophoneTelemetryRecorded
+//                                                    events
+//   corpus/<bucket>/<tier>/corpus.jsonl            ← CorpusAsrRecorded events
+//                                                    (routés)
+//   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
+//                                                    events (routés, pas de
+//                                                    tier — voir ADR-0011)
 //
 // Sémantique des gates utilisateur :
-//   app.jsonl        ← ApplicationLogToDisk == true
-//   latency.jsonl    ← LatencyEnabled == true
-//   microphone.jsonl ← MicrophoneTelemetry == true
-//   corpus.jsonl     ← CorpusEnabled == true
+//   app.jsonl              ← ApplicationLogToDisk == true
+//   latency.jsonl          ← LatencyEnabled == true
+//   microphone.jsonl       ← MicrophoneTelemetry == true
+//   corpus/raw/…,
+//   corpus/rewrite-…/      ← CorpusEnabled == true
 //
 // Posture par défaut : gates closes (false). Tant que ConfigureGates
 // n'a pas été appelée, aucune ligne ne touche disque — fail-safe
@@ -94,10 +102,36 @@ public static class TelemetryListenerBootstrap
             predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
-        _listeners.Add(new JsonlEventListener(
-            filePath:  Path.Combine(rootDirectory, "corpus.jsonl"),
-            kindLabel: "corpus",
-            predicate: e => e.EventName == "CorpusRecorded"
+        // Corpus normalisé — voir ADR-0011. Deux listeners routés qui
+        // pulvérisent CorpusAsr/RewriteRecorded sur une arborescence
+        // bucketée. Le predicate des deux gate sur CorpusEnabled et le
+        // resolver compose le path à partir du payload de l'event.
+        string corpusRoot = Path.Combine(rootDirectory, "corpus");
+
+        _listeners.Add(new RoutedJsonlEventListener(
+            pathResolver: e =>
+            {
+                // Le producer garantit la présence et la sanitation des
+                // composants ; un payload mal formé laisse le path vide
+                // et l'event est silencieusement skipé.
+                string bucket = e.Payload.TryGetValue("bucket", out var b) ? b?.ToString() ?? "" : "";
+                string tier   = e.Payload.TryGetValue("tier",   out var t) ? t?.ToString() ?? "" : "";
+                if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(tier)) return "";
+                return Path.Combine(corpusRoot, bucket, tier, "corpus.jsonl");
+            },
+            kindLabel: "corpus_asr",
+            predicate: e => e.EventName == "CorpusAsrRecorded"
+                         && ReadGate("CorpusEnabled")));
+
+        _listeners.Add(new RoutedJsonlEventListener(
+            pathResolver: e =>
+            {
+                string bucket = e.Payload.TryGetValue("bucket", out var b) ? b?.ToString() ?? "" : "";
+                if (string.IsNullOrEmpty(bucket)) return "";
+                return Path.Combine(corpusRoot, bucket, "corpus.jsonl");
+            },
+            kindLabel: "corpus_rewrite",
+            predicate: e => e.EventName == "CorpusRewriteRecorded"
                          && ReadGate("CorpusEnabled")));
     }
 

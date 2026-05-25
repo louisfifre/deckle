@@ -33,13 +33,19 @@ profile — `deckle.ps1` is purely additive.
 
 | File | Purpose | Common switches |
 |---|---|---|
-| [`lib/build-run.ps1`](lib/build-run.ps1) | Resolve MSBuild (via `-MsBuild`, `$env:DECKLE_MSBUILD`, or `vswhere`), kill running `Deckle.exe`, build via VS MSBuild Framework runtime (works around the `dotnet build` XamlCompiler MSB3073 bug), and launch the freshly built exe through `cmd /c start`. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-MsBuild <path>`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
+| [`lib/build-run.ps1`](lib/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` (see [ADR-0012](../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md) for the move off the historical MSBuild VS workaround), and launch the freshly built exe through `cmd /c start`. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
 | [`lib/clean.ps1`](lib/clean.ps1) | Remove every `bin/` and `obj/` directory directly under `src/<module>/`. Guards against symlinks / junctions (won't recurse into a reparse point and risk nuking its target). Reports total freed bytes. | `-Target <worktree>`, `-Pick` |
 | [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/` and tally file counts (`.cs` / `.xaml` / `.xaml.cs` / `.resw`) plus LOC. Excludes `bin/obj/.vs/Properties` and generated files (`*.g.cs`, `*.g.i.cs`, `*.xaml.g.cs`). | `-Target <worktree>`, `-Pick`, `-Detailed`, `-Json <path>` |
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
 | [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Calls `setup-assets.ps1` in the final step. | `-DryRun`, `-Full`, `-Yes`, `-SkipAssets`, `-AssetsRelease X.Y.Z` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
 | [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`. **Not an entry point.** |
+
+## Hooks git — TREE.md auto-update
+
+Un hook `pre-commit` régénère [`TREE.md`](../TREE.md) à la racine avant chaque commit et le stage automatiquement, pour que le repo porte toujours une vue à jour de son arborescence tracée. Source dans [`hooks/pre-commit`](hooks/pre-commit), installation locale via [`install-hooks.ps1`](install-hooks.ps1) à lancer une seule fois après un clone — les hooks vivent sous `.git/hooks/` et ne sont pas versionnés par git.
+
+Le hook délègue à [`update-tree.ps1`](update-tree.ps1), qui reconstruit `TREE.md` depuis `git ls-files` (vue plate, zéro fichier gitignored, aucune annotation). Peut aussi se lancer à la main pour rafraîchir hors commit : `pwsh scripts/update-tree.ps1`.
 
 ## Native runtime — three sourcing modes
 

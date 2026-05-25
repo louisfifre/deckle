@@ -85,21 +85,6 @@ function Test-Command([string]$exe) {
     } catch { return $null }
 }
 
-# vswhere lives at a fixed installer path (kept under (x86) even when VS
-# itself goes 64-bit). Returns the MSBuild path if found, else $null.
-function Find-MsBuild {
-    if ($env:DECKLE_MSBUILD -and (Test-Path $env:DECKLE_MSBUILD)) {
-        return $env:DECKLE_MSBUILD
-    }
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (-not (Test-Path $vswhere)) { return $null }
-    $found = & $vswhere -latest -prerelease -products * `
-        -requires Microsoft.Component.MSBuild `
-        -find 'MSBuild\**\Bin\amd64\MSBuild.exe' 2>$null | Select-Object -First 1
-    if ($found -and (Test-Path $found)) { return $found }
-    return $null
-}
-
 # Returns the JSON metadata of the latest VS install (installation path,
 # version, installed packages), or $null if no VS detected. Used by the
 # component verification path.
@@ -183,7 +168,6 @@ $state = [ordered]@{
     Git         = Test-Command 'git'
     Gh          = Test-Command 'gh'
     Dotnet      = Test-Command 'dotnet'
-    MsBuild     = Find-MsBuild
     Scoop       = Test-Command 'scoop'
     Gcc         = Test-Command 'gcc'
     Cmake       = Test-Command 'cmake'
@@ -253,13 +237,13 @@ if (-not $state.Dotnet) {
     }
 }
 
-if (-not $state.MsBuild) {
+if (-not (Get-VsInfo)) {
     # Fresh install: winget pulls VS 2026 Community AND every required
     # component in one shot via --override. VS 2026 dropped the year suffix
     # from its winget ID (was Microsoft.VisualStudio.2022.Community, now
     # just .Community).
     Add-Plan 'Visual Studio 2026 Community + WinUI components' `
-        'MSBuild Framework + .NET desktop + WinAppSDK + MSVC tools (needed: dotnet build CLI hits XamlCompiler MSB3073, see CLAUDE.md)' {
+        'Windows SDK + .NET desktop + WinAppSDK + MSVC tools (needed by the WinUI 3 templates and native module work; build itself runs through dotnet build)' {
         # Build --override from $RequiredVsComponents so the install path
         # and the verification path share a single source of truth. Only
         # the Workload accepts ;includeRecommended; component groups and
@@ -401,18 +385,6 @@ if ($plan.Count -gt 0) {
 
 Write-Section "Environment variables"
 
-# DECKLE_MSBUILD — short-circuits the vswhere lookup in build-run.ps1. Set
-# it whenever vswhere now resolves an MSBuild, even if it wasn't set before.
-$msb = Find-MsBuild
-if ($msb -and ($env:DECKLE_MSBUILD -ne $msb)) {
-    [Environment]::SetEnvironmentVariable('DECKLE_MSBUILD', $msb, 'User')
-    Write-Good "DECKLE_MSBUILD = $msb (User)"
-} elseif ($msb) {
-    Write-Skip "DECKLE_MSBUILD already set to current MSBuild"
-} else {
-    Write-Skip "DECKLE_MSBUILD — no MSBuild detected yet (VS install pending?)"
-}
-
 # VULKAN_SDK — scoop's vulkan package does not always set this. Find the
 # install root and pin it. Only touch if -Full was requested.
 if ($Full -and -not $env:VULKAN_SDK) {
@@ -452,7 +424,6 @@ if (-not $SkipAssets) {
 $finalState = [ordered]@{
     Gh        = Test-Command 'gh'
     Dotnet    = Test-Command 'dotnet'
-    MsBuild   = Find-MsBuild
     Scoop     = Test-Command 'scoop'
     Gcc       = Test-Command 'gcc'
     Cmake     = Test-Command 'cmake'
@@ -504,8 +475,8 @@ if ($plan.Count -gt 0) {
 
 Write-Section "Next steps"
 
-Write-Host "  1. Open a new PowerShell terminal so DECKLE_MSBUILD / VULKAN_SDK" -ForegroundColor White
-Write-Host "     and any freshly-installed tool become visible." -ForegroundColor White
+Write-Host "  1. Open a new PowerShell terminal so VULKAN_SDK and any" -ForegroundColor White
+Write-Host "     freshly-installed tool become visible." -ForegroundColor White
 Write-Host ""
 Write-Host "  2. Verify nothing is missing:" -ForegroundColor White
 Write-Host "       scripts\lib\bootstrap-dev-env.ps1 -DryRun" -ForegroundColor DarkGray

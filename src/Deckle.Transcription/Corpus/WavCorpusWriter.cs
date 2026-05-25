@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using Deckle.Core;
 
@@ -6,30 +5,31 @@ namespace Deckle.Transcription.Corpus;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //
-// Binary side of corpus capture. Writes the raw 16 kHz mono PCM audio fed
-// to whisper_full as a 16-bit signed WAV, one file per transcription,
-// under `<telemetry-root>/<slug>/audio/<timestamp>.wav`. The slug is the
-// profile identity; the audio folder lives inside it, next to the paired
-// `corpus.jsonl`.
+// Pure passe-plat audio du corpus normalisé (ADR-0011). Écrit le 16 kHz
+// mono PCM fourni à whisper_full comme un WAV 16-bit signé, un fichier
+// par transcription, sous `<telemetry-root>/audio/<transcription_id>.wav`.
+// Plat — pas de slug, pas de sous-dossier par profil. L'audio est
+// universel et dédupliqué ; les lignes JSONL ASR et rewrite réfèrent
+// au même WAV via leur champ `audio_file` (basename relatif au dossier
+// `audio/`).
 //
-// Why 16-bit int PCM and not 32-bit float: the engine hands us float
-// [-1, 1] samples (the exact input whisper.cpp consumed). Quantizing to
-// int16 keeps the file listen-able in any WAV viewer and roughly halves
-// disk footprint — offline re-transcription accepts either just fine.
+// Quantization int16 (pas float32) : la moitié du disque, la lecture
+// reste universelle dans n'importe quel viewer WAV, et la re-
+// transcription offline accepte les deux. Le pipeline fournit du
+// float [-1, 1] (l'exact buffer que whisper.cpp consomme), clampé à
+// l'écriture pour défendre contre une éventuelle valeur hors plage.
 //
-// Called as a helper (not a sink) because the output path needs to feed
-// back into the `CorpusRecorded` event's `audio_file` slot on the paired
-// JSONL line. Returns the relative path (`audio/<stamp>.wav`) on success
-// so the corpus line stays portable — consumers resolve it against the
-// profile directory that holds `corpus.jsonl`. Null on any failure —
-// callers surface "no audio file" in the payload instead of crashing.
+// Retourne le basename relatif (`<id>.wav`) en succès — c'est ce que
+// les events corpus stampent dans `audio_file`. Null en cas d'échec,
+// pour que l'émetteur surface une string vide dans le payload plutôt
+// que de propager une exception qui casserait la transcription.
 //
 // Carry-over de la vague 6 : ce helper vivait jadis dans `Deckle.Logging`
 // aux côtés de `CorpusPaths`. Relocalisé ici parce que son unique
-// consommateur métier est `TranscriptionEngine` ; `CorpusPaths` reste dans
-// `Deckle.Core` parce qu'il est aussi consommé par les dialogs de
-// consentement côté `Deckle.Settings` (qui ne peut pas dépendre de
-// `Deckle.Whisp` sans introduire un cycle).
+// consommateur métier est `TranscriptionEngine` ; `CorpusPaths` reste
+// dans `Deckle.Core` parce qu'il est aussi consommé par les dialogs
+// de consentement côté `Deckle.Settings` (qui ne peut pas dépendre de
+// `Deckle.Transcription` sans introduire un cycle).
 public static class WavCorpusWriter
 {
     private const int    SampleRate     = 16_000;
@@ -37,34 +37,34 @@ public static class WavCorpusWriter
     private const short  NumChannels    = 1;
     private const string AudioSubfolder = "audio";
 
-    public static string? Write(string slugPrefix, float[] audio, DateTimeOffset timestamp)
+    public static string? Write(string transcriptionId, float[] audio)
     {
         if (audio is null || audio.Length == 0) return null;
-        if (string.IsNullOrWhiteSpace(slugPrefix)) return null;
+        if (string.IsNullOrWhiteSpace(transcriptionId)) return null;
 
         string root = CorpusPaths.GetDirectoryPath();
 
         try
         {
-            string profileDir = Path.Combine(root, CorpusPaths.Sanitize(slugPrefix), AudioSubfolder);
-            Directory.CreateDirectory(profileDir);
+            string audioDir = Path.Combine(root, AudioSubfolder);
+            Directory.CreateDirectory(audioDir);
 
-            // Millisecond-precision stamp in the filename: back-to-back
-            // transcriptions stay ordered unambiguously and the name can
-            // be joined directly to the paired corpus line timestamp.
-            string stamp = timestamp.ToLocalTime().ToString("yyyyMMdd-HHmmss-fff");
-            string fileName = stamp + ".wav";
-            string path = Path.Combine(profileDir, fileName);
+            // transcriptionId est un Guid "N" (32 hex sans tirets) émis
+            // par TranscriptionEngine — c'est déjà filesystem-safe. Pas
+            // de Sanitize ici par principe : si un jour l'ID change de
+            // format, le contrat doit rester un identifiant sûr.
+            string fileName = transcriptionId + ".wav";
+            string path = Path.Combine(audioDir, fileName);
             WritePcm16(path, audio);
 
-            // Relative to <telemetry>/<slug>/ so the corpus.jsonl line
-            // documents its own neighbourhood without leaking absolute
-            // paths that would break when the benchmark root moves.
-            return $"{AudioSubfolder}/{fileName}";
+            // Basename relatif à `audio/` — c'est ce que les events
+            // corpus mettent dans `audio_file` pour qu'un outil offline
+            // résolve le WAV en joignant `<telemetry>/audio/` + basename.
+            return fileName;
         }
         catch
         {
-            // Capture must never break the transcription.
+            // L'écriture ne doit jamais casser la transcription.
             return null;
         }
     }

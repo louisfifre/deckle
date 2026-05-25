@@ -219,6 +219,13 @@ public sealed partial class TranscriptionEngine : IDisposable
     // consumed at the end of Transcribe().
     private string?         _manualProfileName = null;
 
+    // Stable identifier for the current pipeline invocation. Regenerated
+    // at the top of Transcribe() ; stamped on every corpus event emitted
+    // for this transcription and on the WAV file basename so the JSONL
+    // lines and the audio file join unambiguously. 32 hex chars (Guid
+    // "N" format) — voir ADR-0011.
+    private string          _transcriptionId   = "";
+
     // Model lifecycle: lazy load on first hotkey, unload after idle timeout.
     // The "pipeline running, don't unload" guard reads _state directly
     // (anything other than Idle / Disposed means a pipeline is in flight).

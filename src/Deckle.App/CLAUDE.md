@@ -6,20 +6,17 @@ Avant tout test runtime, tuer toute instance déjà en cours (Deckle ou prototyp
 
 ## Build
 
-`dotnet build` est cassé sur ce projet à cause du bug `XamlCompiler.exe` MSB3073 — détail et contournement documentés dans le CLAUDE.md racine. Le build passe par `MSBuild.exe` de Visual Studio 2026 (MSBuild Framework, `MSBuildRuntimeType=Full`).
-
-Depuis `src/Deckle.App/`, PowerShell sans admin, remplacer `<msbuild-path>` par le chemin local du `MSBuild.exe` Framework livré avec Visual Studio 2026 (par défaut sous `<vs-install>\MSBuild\Current\Bin\amd64\MSBuild.exe`) :
+Le build se fait via `dotnet build`. Depuis `src/Deckle.App/`, PowerShell sans admin :
 
 ```
-& "<msbuild-path>" `
-    -t:Restore,Build -p:Configuration=Release -p:Platform=x64
+dotnet build -c Release -p:Platform=x64
 ```
 
-Sortie : `bin\x64\Release\net10.0-windows10.0.26100.0\Deckle.exe` (self-contained).
+Sortie : `bin\x64\Release\net10.0-windows10.0.26100.0\Deckle.exe` (self-contained). Le restore est implicite (phase séparée avant Build), pas besoin de target Restore explicite. Le contournement historique via `MSBuild.exe` de Visual Studio est conservé en mémoire dans [ADR-0012](../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md) — réactivable si le bug `XamlCompiler.exe` MSB3073 réapparaît un jour.
 
 Points de vigilance côté csproj. `Microsoft.WindowsAppSDK` est épinglé à `1.8.260317003` (stable officielle). `global.json` épingle SDK `10.0.104` — à conserver. `<EnableMsixTooling>true</EnableMsixTooling>` force le pipeline Publish à générer `Deckle.pri` dans `PublishDir` ; sans ça, en WindowsAppSDK 1.8 unpackaged, les `.xbf` embarqués dans le `.pri` sont injoignables et l'app démarre sans fenêtre (voir [microsoft/WindowsAppSDK#3451](https://github.com/microsoft/WindowsAppSDK/issues/3451)).
 
-Les scripts d'orchestration vivent sous `scripts/`. Le menu interactif `scripts/deckle.ps1` est le point d'entrée quotidien ; les scripts feuilles vivent sous `scripts/lib/` et restent invoquables en CLI direct. `scripts/lib/build-run.ps1` tue Deckle s'il tourne, build via MSBuild VS, lance l'exe — switches `-Restore`, `-NoRun`, `-Wait`, `-Configuration`, `-MsBuild`, `-NoAutoRestart`. MSBuild résolu via `-MsBuild`, puis `$env:DECKLE_MSBUILD`, puis `vswhere`. Pour court-circuiter `vswhere` (et accélérer le démarrage du script), définir une fois pour toutes la variable d'environnement utilisateur `DECKLE_MSBUILD` avec `setx DECKLE_MSBUILD "<msbuild-path>"`.
+Les scripts d'orchestration vivent sous `scripts/`. Le menu interactif `scripts/deckle.ps1` est le point d'entrée quotidien ; les scripts feuilles vivent sous `scripts/lib/` et restent invoquables en CLI direct. `scripts/lib/build-run.ps1` tue Deckle s'il tourne, build via `dotnet build`, lance l'exe — switches `-NoRun`, `-Wait`, `-Configuration`, `-Target`, `-Pick`, `-NoAutoRestart`.
 
 ## Pièges WinUI 3 transverses
 
