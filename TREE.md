@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 19:42 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 19:43 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -102,7 +102,8 @@ _Mise à jour : 2026-05-25 19:42 — source : `git ls-files`_
 │   │   ├── 0010-backend-asr-pluggable-via-iasrbackend.md
 │   │   ├── 0011-corpus-normalise-comme-dataset-ml.md
 │   │   ├── 0011-poc-evaluation-voxtral.md
-│   │   └── 0012-adoption-de-dotnet-build-et-dotnet-test.md
+│   │   ├── 0012-adoption-de-dotnet-build-et-dotnet-test.md
+│   │   └── 0013-format-canonique-des-artefacts-agents.md  — [adr] Acte le format normatif des artefacts agents Deckle : langue anglaise par défau…
 │   └── research/
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
