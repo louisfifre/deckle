@@ -15,7 +15,9 @@ L'helper produit deux artefacts :
     ajoutant une clé ``system`` à chaque row.
 
   - **Phase peaks** — peaks aux trois moments stratégiques du run :
-    ``idle_baseline`` (avant ``bench_start``), ``model_load`` (entre
+    ``idle_baseline`` (entre ``bench_start`` et ``model_load_start``,
+    fenêtre que le bench laisse intentionnellement vide pour capter
+    l'état au repos avant chargement du modèle), ``model_load`` (entre
     ``model_load_start`` et ``model_load_end``, instrumenté côté bench),
     ``global_run`` (entre ``bench_start`` et ``bench_end``). Posés
     comme un nouvel event ``bench_summary`` à la fin de
@@ -35,17 +37,32 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
+# Cadence effective du monitor — dominée par le sample interval de
+# Get-Counter (1 s minimum côté Windows perfcounter API). Utilisé pour
+# calculer le ``coverage_ratio`` théorique des fenêtres ; si le PS
+# accumule du jitter (charge système, GC pwsh), la cadence réelle peut
+# glisser à 1.1-1.6 s. Ancienne valeur 0.5 s pré-batching gardée en
+# mémoire dans le commit qui a basculé le monitor en batch.
+_MONITOR_SAMPLE_INTERVAL_S = 1.0
+
+
 @dataclass(frozen=True)
 class MonitorSample:
     """Un échantillon système issu de gpu_monitor.ps1.
 
-    Tous les champs en mégaoctets pour la VRAM/RAM et en pourcentage
-    pour le GPU compute. ``ts`` est un datetime — parsé une fois au
-    chargement pour éviter de reparser à chaque comparaison.
+    Convention d'unités : mégaoctets pour la mémoire (RAM/VRAM),
+    pourcentage pour les utilizations (CPU/GPU/RAM), MB/s pour les
+    débits disque, length brute (file d'attente moyenne instantanée)
+    pour ``disk_queue_length``. ``ts`` est un datetime — parsé une fois
+    au chargement pour éviter de reparser à chaque comparaison.
     """
     ts:                datetime
     ram_used_mb:       float
     ram_pct:           float
+    cpu_pct:           float
+    disk_read_mb_s:    float
+    disk_write_mb_s:   float
+    disk_queue_length: float
     vram_dedicated_mb: float
     vram_shared_mb:    float
     gpu_compute_pct:   float
@@ -59,6 +76,10 @@ class PeakStats:
     peak_gpu_compute_pct:   float
     peak_ram_used_mb:       float
     peak_ram_pct:           float
+    peak_cpu_pct:           float
+    peak_disk_read_mb_s:    float
+    peak_disk_write_mb_s:   float
+    peak_disk_queue_length: float
     samples_count:          int
     coverage_ratio:         float = 1.0   # fraction d'intervalle couverte
 
@@ -90,10 +111,18 @@ def load_monitor_samples(path: Path) -> list[MonitorSample]:
             except json.JSONDecodeError:
                 continue
             try:
+                # Les champs cpu/disk sont arrivés en 2026-05-25 — les
+                # runs antérieurs n'ont pas ces clés, le ``or 0.0`` les
+                # rétro-comble silencieusement (pas de KeyError, juste
+                # des peaks à 0 pour ces axes).
                 samples.append(MonitorSample(
                     ts=_parse_ts(obj["ts"]),
                     ram_used_mb=float(obj.get("ram_used_mb", 0.0) or 0.0),
                     ram_pct=float(obj.get("ram_pct", 0.0) or 0.0),
+                    cpu_pct=float(obj.get("cpu_pct", 0.0) or 0.0),
+                    disk_read_mb_s=float(obj.get("disk_read_mb_s", 0.0) or 0.0),
+                    disk_write_mb_s=float(obj.get("disk_write_mb_s", 0.0) or 0.0),
+                    disk_queue_length=float(obj.get("disk_queue_length", 0.0) or 0.0),
                     vram_dedicated_mb=float(obj.get("vram_dedicated_mb", 0.0) or 0.0),
                     vram_shared_mb=float(obj.get("vram_shared_mb", 0.0) or 0.0),
                     gpu_compute_pct=float(obj.get("gpu_compute_pct", 0.0) or 0.0),
@@ -139,10 +168,11 @@ def peaks_in_window(
         return None
 
     duration = (end_ts - start_ts).total_seconds()
-    # Le monitor sample à 500 ms. Si la fenêtre dure < 500 ms et qu'on a
-    # zéro échantillon, on est revenu None plus haut. Sinon coverage =
-    # nombre d'échantillons × 0.5 / durée, capé à 1.0.
-    expected = max(1.0, duration / 0.5)
+    # Cadence nominale du monitor : ``_MONITOR_SAMPLE_INTERVAL_S``. Si la
+    # fenêtre dure moins qu'un sample et qu'on a zéro échantillon, on est
+    # revenu None plus haut. Sinon coverage = nombre d'échantillons ×
+    # interval / durée, capé à 1.0.
+    expected = max(1.0, duration / _MONITOR_SAMPLE_INTERVAL_S)
     coverage = min(1.0, len(in_window) / expected)
 
     return PeakStats(
@@ -151,6 +181,10 @@ def peaks_in_window(
         peak_gpu_compute_pct=max(s.gpu_compute_pct for s in in_window),
         peak_ram_used_mb=max(s.ram_used_mb for s in in_window),
         peak_ram_pct=max(s.ram_pct for s in in_window),
+        peak_cpu_pct=max(s.cpu_pct for s in in_window),
+        peak_disk_read_mb_s=max(s.disk_read_mb_s for s in in_window),
+        peak_disk_write_mb_s=max(s.disk_write_mb_s for s in in_window),
+        peak_disk_queue_length=max(s.disk_queue_length for s in in_window),
         samples_count=len(in_window),
         coverage_ratio=round(coverage, 3),
     )
@@ -166,6 +200,10 @@ def _peak_dict(p: PeakStats | None) -> dict[str, Any] | None:
         "peak_gpu_compute_pct":   p.peak_gpu_compute_pct,
         "peak_ram_used_mb":       p.peak_ram_used_mb,
         "peak_ram_pct":           p.peak_ram_pct,
+        "peak_cpu_pct":           p.peak_cpu_pct,
+        "peak_disk_read_mb_s":    p.peak_disk_read_mb_s,
+        "peak_disk_write_mb_s":   p.peak_disk_write_mb_s,
+        "peak_disk_queue_length": p.peak_disk_queue_length,
         "samples_count":          p.samples_count,
         "coverage_ratio":         p.coverage_ratio,
     }
@@ -334,7 +372,10 @@ def enrich_run(run_dir: Path) -> dict[str, Any]:
 
 
 def format_summary_console(summary: dict[str, Any]) -> str:
-    """Met en forme le summary pour affichage en fin de bench."""
+    """Met en forme le summary pour affichage en fin de bench. Deux
+    lignes par phase : la première rassemble les peaks GPU+RAM (les
+    axes critiques pour Voxtral), la seconde les peaks CPU+disk
+    (utiles surtout pour les tests de pression I/O ou multi-process)."""
     lines = ["=== system summary ==="]
     phases = summary.get("phases") or {}
     for name in ("idle_baseline", "model_load", "global_run"):
@@ -347,7 +388,16 @@ def format_summary_console(summary: dict[str, Any]) -> str:
             f"VRAM ded {p['peak_vram_dedicated_mb']:>7.0f} MB, "
             f"GPU {p['peak_gpu_compute_pct']:>5.1f}%, "
             f"RAM {p['peak_ram_pct']:>4.1f}% "
-            f"({p['samples_count']} samples)"
+            f"({p['samples_count']} samples, cov {p.get('coverage_ratio', 0):.2f})"
+        )
+        # Champs cpu/disk peuvent manquer sur d'anciens runs — get avec
+        # défaut 0.0 pour ne pas crasher sur les artefacts pré-2026-05-25.
+        lines.append(
+            f"  {'':<14}   "
+            f"CPU {p.get('peak_cpu_pct', 0.0):>5.1f}%, "
+            f"disk R/W {p.get('peak_disk_read_mb_s', 0.0):>5.1f}/"
+            f"{p.get('peak_disk_write_mb_s', 0.0):<5.1f} MB/s, "
+            f"queue {p.get('peak_disk_queue_length', 0.0):>4.1f}"
         )
     lines.append(f"  monitor samples lus : {summary.get('samples_count', 0)}")
     return "\n".join(lines)
