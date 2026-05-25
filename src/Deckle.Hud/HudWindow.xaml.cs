@@ -77,23 +77,17 @@ public sealed partial class HudWindow : Window
     // Lue par SetState pour émettre WarmPassCompleted une seule fois.
     private System.Diagnostics.Stopwatch? _warmPassStopwatch;
 
-    // Proximity rollup — fenêtre glissante 1 s sur les samples calculés
-    // dans UpdateProximity (WM_INPUT, ~125 Hz). Le gate IsEnabled est
-    // testé une fois par seconde côté timer pour court-circuiter aussi
-    // la collecte quand aucun listener n'écoute. Stockage des distances
-    // en DIP entier pour rester en stackalloc-friendly et permettre un
-    // p50/p95 simple par tri.
-    private const int PROXIMITY_ROLLUP_PERIOD_MS = 1000;
-    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _proximityRollupTimer;
-    // Cap dimensionné pour ~125 Hz × 1 s = ~125 samples ; on prend une
-    // marge à 256 pour absorber un raw input plus rapide (gaming mouse
-    // 1000 Hz) sans perdre de samples au dernier batch. Au-delà, on
-    // écrase le plus ancien — la fenêtre reste représentative.
-    private const int PROXIMITY_ROLLUP_CAPACITY = 256;
-    private readonly int[] _proximityDistances = new int[PROXIMITY_ROLLUP_CAPACITY];
-    private readonly byte[] _proximityAlphas = new byte[PROXIMITY_ROLLUP_CAPACITY];
-    private int _proximitySampleCount;
+    // Proximity rollup — collecte sample-par-sample via UpdateProximity
+    // (WM_INPUT, ~125 Hz) pendant toute la fenêtre de visibilité du HUD.
+    // Récapitulatif émis une seule fois au passage shown → hidden via
+    // EndProximitySessionAndFlush. Le gate IsEnabled est testé deux fois :
+    // au début de session (pour décider si on collecte) et au flush (pour
+    // confirmer qu'un listener est toujours là). L'aggregator est isolé
+    // pour être testable unit ; HudWindow ne fait que wire le cycle de
+    // vie. Stopwatch fournit duration_ms réelle de la session.
+    private readonly ProximityRollupAggregator _proximityRollup = new();
     private bool _proximityRollupEnabled;
+    private System.Diagnostics.Stopwatch? _proximitySessionStopwatch;
 
     // Fade-in on first show (Hidden → visible), 150ms cubic ease-out matching
     // LayeredAlphaAnimator. Proximity update is suspended during the fade and
@@ -461,16 +455,15 @@ public sealed partial class HudWindow : Window
         if (wasShown != isShown)
             MainHudVisibilityChanged?.Invoke(this, isShown);
 
-        // Proximity rollup timer — démarre quand le HUD devient visible et
-        // que la proximity peut être active (un sample ne sera enregistré
-        // que dans UpdateProximity quand _proximityActive est vrai). Arrêt
-        // sur passage à Hidden pour libérer le timer et éviter d'émettre
-        // des rollups vides. La logique d'émission elle-même gate sur le
-        // count de samples > 0.
+        // Proximity rollup — Begin au passage à visible (initialise le
+        // gate IsEnabled et arme le stopwatch de session), End au passage
+        // à Hidden (flush le récap unique de la fenêtre de visibilité).
+        // Aucune émission entre les deux — le rollup est strictement
+        // per-session, pas périodique.
         if (isShown && !wasShown)
-            StartProximityRollupTimer();
+            BeginProximitySession();
         else if (!isShown && wasShown)
-            StopProximityRollupTimer();
+            EndProximitySessionAndFlush();
 
         switch (next)
         {
@@ -705,94 +698,77 @@ public sealed partial class HudWindow : Window
         // _proximityRollupEnabled court-circuite la collecte quand aucun
         // listener n'écoute Verbose+Heartbeat sur Deckle.Hud — c'est la
         // gate strict que la doctrine deckle-logging exige pour les
-        // boucles haute fréquence WM_INPUT (~125 Hz). Réévalué une fois
-        // par tick rollup pour absorber une bascule live d'un listener.
+        // boucles haute fréquence WM_INPUT (~125 Hz). Réévalué au début
+        // de chaque session de visibilité pour absorber une bascule live
+        // d'un listener entre deux shows.
         if (_proximityRollupEnabled)
         {
             int distDip = (int)Math.Round(distancePx / scale);
-            int idx = _proximitySampleCount < PROXIMITY_ROLLUP_CAPACITY
-                ? _proximitySampleCount
-                : PROXIMITY_ROLLUP_CAPACITY - 1; // ring tail si overflow
-            _proximityDistances[idx] = distDip;
-            _proximityAlphas[idx] = alpha;
-            if (_proximitySampleCount < PROXIMITY_ROLLUP_CAPACITY)
-                _proximitySampleCount++;
+            _proximityRollup.Add(distDip, alpha);
         }
     }
 
-    // ── Proximity rollup — pattern temps réel haute fréquence ──────────
+    // ── Proximity rollup — récap per-session de la visibilité HUD ──────
     //
-    // WM_INPUT arrive à ~125 Hz quand la souris bouge ; le contrat
-    // doctrinal de deckle-logging interdit d'émettre un event par tick.
-    // On accumule sur fenêtre glissante 1 s et on émet un récapitulatif
-    // périodique (samples, min/max alpha, p50/p95 distance) seulement
-    // si la collecte a réellement eu lieu, et seulement si un listener
-    // écoute Verbose+Heartbeat.
+    // WM_INPUT arrive à ~125 Hz quand la souris bouge ; la doctrine
+    // deckle-logging interdit d'émettre un event par tick. Une variante
+    // périodique 1 s a précédé ce design — elle produisait jusqu'à ~10
+    // events par session HUD (50 sessions × ~10 s/jour = ~500 events/jour
+    // en LogWindow) sans valeur diagnostique sur les sessions où la
+    // souris ne s'approchait pas. Le pattern actuel agrège toute la
+    // fenêtre de visibilité (shown → hidden) et émet un récap unique
+    // sous deux conditions cumulatives : au moins un sample collecté ET
+    // min_alpha != max_alpha (sinon le smoothstep est resté plat et
+    // aucune trajectoire de proximité n'existe à diagnostiquer).
 
-    private void StartProximityRollupTimer()
+    private void BeginProximitySession()
     {
-        // Réévalue la gate à chaque démarrage — le listener peut s'être
-        // attaché entre deux shows de HUD. Quand la gate est fermée, le
-        // timer ne démarre pas du tout, zéro overhead côté UpdateProximity
-        // (le test _proximityRollupEnabled court-circuite la collecte).
+        // Évalue la gate au début de session — quand fermée, la collecte
+        // est court-circuitée dans UpdateProximity (test
+        // _proximityRollupEnabled). Si un listener s'attache pendant la
+        // session, rien n'est enregistré tardivement ; le prochain show
+        // captera la nouvelle gate.
         _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
         if (!_proximityRollupEnabled) return;
 
-        _proximitySampleCount = 0;
-        _proximityRollupTimer ??= DispatcherQueue.CreateTimer();
-        _proximityRollupTimer.Stop();
-        _proximityRollupTimer.Interval = TimeSpan.FromMilliseconds(PROXIMITY_ROLLUP_PERIOD_MS);
-        _proximityRollupTimer.IsRepeating = true;
-        _proximityRollupTimer.Tick -= OnProximityRollupTick;
-        _proximityRollupTimer.Tick += OnProximityRollupTick;
-        _proximityRollupTimer.Start();
+        _proximityRollup.Reset();
+        _proximitySessionStopwatch = System.Diagnostics.Stopwatch.StartNew();
     }
 
-    private void StopProximityRollupTimer()
+    private void EndProximitySessionAndFlush()
     {
-        _proximityRollupTimer?.Stop();
+        if (!_proximityRollupEnabled) return;
+
+        var sw = _proximitySessionStopwatch;
+        _proximitySessionStopwatch = null;
         _proximityRollupEnabled = false;
-        _proximitySampleCount = 0;
-    }
 
-    private void OnProximityRollupTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
-    {
-        // Re-test la gate à chaque tick (un listener peut s'être détaché
-        // pendant la durée du show) et flushe immédiatement la fenêtre
-        // courante. Si aucun sample, on saute l'émission — pas de bruit
-        // périodique quand la souris ne bouge pas.
-        _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
-            EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
-        if (!_proximityRollupEnabled) { sender.Stop(); _proximitySampleCount = 0; return; }
+        int samples = _proximityRollup.TotalSamples;
+        if (samples == 0) return;
 
-        int count = _proximitySampleCount;
-        if (count == 0) return;
+        byte minAlpha = _proximityRollup.MinAlpha;
+        byte maxAlpha = _proximityRollup.MaxAlpha;
 
-        // Copie locale + sort pour percentiles. count ≤ CAPACITY (256),
-        // donc l'allocation est petite et bornée. Le tri en place sur la
-        // copie évite de muter les buffers de collecte qui peuvent être
-        // ré-écrits par UpdateProximity sur WM_INPUT concurrent (raw
-        // input est marshalé sur le UI thread via subclass donc même
-        // thread, mais on garde la sémantique snapshot par sûreté).
-        var distances = new int[count];
-        Array.Copy(_proximityDistances, distances, count);
-        Array.Sort(distances);
-        byte minAlpha = 255, maxAlpha = 0;
-        for (int i = 0; i < count; i++)
-        {
-            byte a = _proximityAlphas[i];
-            if (a < minAlpha) minAlpha = a;
-            if (a > maxAlpha) maxAlpha = a;
-        }
-        int p50 = distances[count / 2];
-        int p95Idx = (int)Math.Min(count - 1, Math.Floor(count * 0.95));
-        int p95 = distances[p95Idx];
+        // Skip si min == max — la souris n'est pas rentrée dans le rayon
+        // proximity, le smoothstep est resté plat, aucune trajectoire à
+        // diagnostiquer. La doctrine "toute émission porte une valeur
+        // diagnostique" exige ce gate, sinon la LogWindow est noyée de
+        // récaps "rien ne s'est passé" sur les sessions HUD typiques où
+        // l'utilisateur ne s'approche pas du HUD.
+        if (minAlpha == maxAlpha) return;
+
+        // Re-test gate au flush — un listener a pu se détacher pendant
+        // la session. Match la sémantique du double-test du design
+        // périodique précédent.
+        if (!DeckleHudSource.Log.IsEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+
+        int durationMs = sw is null ? 0 : (int)sw.ElapsedMilliseconds;
+        var (p50, p95) = _proximityRollup.ComputePercentiles();
 
         DeckleHudSource.Log.ProximityRollup(
-            PROXIMITY_ROLLUP_PERIOD_MS, count, minAlpha, maxAlpha, p50, p95);
-
-        _proximitySampleCount = 0;
+            durationMs, samples, minAlpha, maxAlpha, p50, p95);
     }
 
     private void SetAlphaImmediate(byte alpha)

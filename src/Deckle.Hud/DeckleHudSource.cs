@@ -113,25 +113,31 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtWarmPassCompleted, took_ms);
     }
 
-    // ─── Axe 5 — Proximity smoothstep (rollup périodique 1 s) ──────────
+    // ─── Axe 5 — Proximity smoothstep (rollup per-session) ─────────────
     //
     // Pattern rollup canonique (cf. classe d'observables n°3 "Boucle temps
     // réel haute fréquence" de la fiche `reference--eventsource-
     // convention--1.2.md` §*Classes d'observables canoniques*) : la
     // proximité s'évalue à ~125 Hz sur WM_INPUT, fréquence trop chaude
     // pour la LogWindow selon la doctrine "heartbeats < 1 s ne sont pas
-    // loggués". HudWindow accumule sur fenêtre glissante 1 s et émet ce
-    // récapitulatif chaque seconde si au moins un sample a été collecté.
+    // loggués". HudWindow accumule pendant toute la fenêtre de visibilité
+    // (shown → hidden) et émet un récapitulatif unique au passage hidden,
+    // sous deux conditions cumulatives : au moins un sample collecté ET
+    // min_alpha != max_alpha (sinon la souris n'est pas rentrée dans le
+    // rayon proximity, smoothstep est resté plat, aucune matière diag).
+    // Une variante périodique 1 s a précédé ce design — elle inondait la
+    // LogWindow d'events sans valeur sur les sessions où rien ne bougeait.
     // Le gate strict évite toute allocation quand aucun listener n'écoute,
     // y compris côté collecte (cf. _proximityRollupEnabled dans
-    // HudWindow).
+    // HudWindow). `duration_ms` est la durée réelle de la session de
+    // visibilité, pas une période fixe.
     [Event(EvtProximityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "proximity rollup | period_ms={0} | samples={1} | min_alpha={2} | max_alpha={3} | p50_cursor_dist_dip={4} | p95_cursor_dist_dip={5}")]
-    public void ProximityRollup(int period_ms, int samples, byte min_alpha, byte max_alpha, int p50_cursor_dist_dip, int p95_cursor_dist_dip)
+           Message = "proximity rollup | duration_ms={0} | samples={1} | min_alpha={2} | max_alpha={3} | p50_cursor_dist_dip={4} | p95_cursor_dist_dip={5}")]
+    public void ProximityRollup(int duration_ms, int samples, byte min_alpha, byte max_alpha, int p50_cursor_dist_dip, int p95_cursor_dist_dip)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtProximityRollup, period_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
+        WriteEvent(EvtProximityRollup, duration_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
     }
 }
