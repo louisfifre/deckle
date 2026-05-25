@@ -1,23 +1,30 @@
+---
+name: claude-deckle-diagnostics-logging
+description: "Doctrine for Deckle.Diagnostics.Logging (live logging settings and AmbientCaptureGate). Read before touching the LogWindow surface settings or the ambient capture noise gate."
+type: agent-instructions
+module: Deckle.Diagnostics.Logging
+---
+
 # CLAUDE.md — Deckle.Diagnostics.Logging
 
-Module enfant de `Deckle.Diagnostics` qui porte la **surface LogWindow** — la fenêtre de visualisation des événements live, ses filtres utilisateur, et la persistance disque optionnelle du journal applicatif. Le viewer XAML lui-même sera porté depuis `src/Deckle/Ui/LogWindow*` (mouvement E de la passe modulaire) ; en vague 1 ce module contient uniquement les settings et un bridge sink pour que le LogWindow legacy reçoive les événements émis par les nouveaux EventSources.
+Child module of `Deckle.Diagnostics` that owns the **LogWindow surface** — the live event viewer window, its user filters, and the optional disk persistence of the application journal. The XAML viewer itself will be ported from `src/Deckle/Ui/LogWindow*` (movement E of the modular pass); in wave 1 this module only contains the settings and a bridge sink so the legacy LogWindow receives events emitted by the new EventSources.
 
-Le module dépend de `Deckle.Diagnostics` (interfaces sink, EventEntry) et `Deckle.Core` (AppPaths pour le fichier de settings per-module). Aucune dépendance vers `Deckle.Logging` legacy.
+The module depends on `Deckle.Diagnostics` (sink interfaces, EventEntry) and `Deckle.Core` (AppPaths for the per-module settings file). No dependency on the legacy `Deckle.Logging`.
 
-## Responsabilités actuelles
+## Current responsibilities
 
-`LoggingSettings` porte les choix utilisateur sur le journal live :
+`LoggingSettings` carries user choices for the live journal:
 
-- **Filtres SelectorBar** — sélection par niveau (Critical, Error, Warning, Informational, Verbose) et par module pour le viewer.
-- **Gate persistance** — `ApplicationLogToDisk` (bool), gate qui contrôle si le `JsonlEventListener` du canal général écrit dans `app.jsonl`. Off par défaut en preview, on assumé en debug local.
-- **Capture loop noise** — `LogAmbientCaptureActivity` (bool) ; quand off et qu'une capture loop est active, les events `Verbose` des providers ambient (vision, lighting) sont droppés avant émission. Reproduit la posture du legacy `TelemetryService._captureActive` mais portée comme filtre côté listener plutôt que côté hub.
+- **SelectorBar filters** — selection by level (Critical, Error, Warning, Informational, Verbose) and by module for the viewer.
+- **Persistence gate** — `ApplicationLogToDisk` (bool), gate that controls whether the general channel's `JsonlEventListener` writes to `app.jsonl`. Off by default in preview, assumed on in local debug.
+- **Capture loop noise** — `LogAmbientCaptureActivity` (bool); when off and a capture loop is active, `Verbose` events from ambient providers (vision, lighting) are dropped before emission. Mirrors the posture of the legacy `TelemetryService._captureActive` but carried as a listener-side filter rather than hub-side.
 
-`LoggingSettingsService` est le singleton de persistance par-module qui charge / sauvegarde le POCO sous `<UserDataRoot>/modules/diagnostics-logging/settings.json`. Pattern aligné sur les autres `*SettingsService` du projet.
+`LoggingSettingsService` is the per-module persistence singleton that loads and saves the POCO under `<UserDataRoot>/modules/diagnostics-logging/settings.json`. Pattern aligned with the other `*SettingsService` of the project.
 
-## Frontière avec `Deckle.Diagnostics.Telemetry`
+## Boundary with `Deckle.Diagnostics.Telemetry`
 
-Le partage est par **consumer humain vs machine**. Tout ce qui touche au viewer interactif (filtres SelectorBar, mise en forme texte, gate journal applicatif) vit ici. Tout ce qui touche aux fichiers de télémétrie structurée (latency, microphone, corpus, dialogs de consentement) vit dans `Deckle.Diagnostics.Telemetry`. Les deux modules dépendent indépendamment de `Deckle.Diagnostics` ; ils ne se référencent pas entre eux.
+The split is by **human vs machine consumer**. Everything that touches the interactive viewer (SelectorBar filters, text formatting, application journal gate) lives here. Everything that touches structured telemetry files (latency, microphone, corpus, consent dialogs) lives in `Deckle.Diagnostics.Telemetry`. Both modules depend independently on `Deckle.Diagnostics`; they do not reference each other.
 
-## Migration progressive du LogWindow
+## Progressive migration of the LogWindow
 
-En vague 1 le module n'expose pas encore de fenêtre XAML — seulement `LoggingSettings` + l'implémentation concrète d'`ILogWindowSink` qui forwards vers le LogWindow legacy installé par l'App. Quand le LogWindow lui-même sera porté ici (vague de surface, palier modulaire ultérieur), le sink concret deviendra une méthode directe sur le ViewModel de la fenêtre, et le bridge legacy disparaîtra.
+In wave 1 the module does not yet expose a XAML window — only `LoggingSettings` and the concrete implementation of `ILogWindowSink` that forwards to the legacy LogWindow installed by the App. When the LogWindow itself is ported here (surface wave, later modular milestone), the concrete sink will become a direct method on the window's ViewModel, and the legacy bridge will disappear.

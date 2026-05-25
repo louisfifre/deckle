@@ -1,37 +1,44 @@
+---
+name: claude-deckle-shell
+description: "Doctrine for Deckle.Shell, the system shell module (message-only host, tray, global hotkeys, autostart). Read before touching any of the four shell primitives or wiring them from the host app."
+type: agent-instructions
+module: Deckle.Shell
+---
+
 # CLAUDE.md — Deckle.Shell
 
-Module shell système. Couvre les interactions avec le système d'exploitation qui n'appartiennent à aucun pipeline métier : hotkeys globaux Win32, tray icon, autostart HKCU, message-only window invisible servant de point d'attache au tray et aux hotkeys, et un wrapper `DispatcherQueueExtensions` pour signaler les enqueues UI rejetés. Le module est intentionnellement bas-niveau : aucune connaissance applicative au-delà de ces quatre primitives. Les actions concrètes derrière chaque entrée du menu tray ou chaque hotkey sont branchées par l'app hôte avant `Register` — pas d'auto-binding, pas de service locator, pas de couplage vers les modules métier.
+System shell module. Covers interactions with the operating system that don't belong to any business pipeline: Win32 global hotkeys, tray icon, HKCU autostart, an invisible message-only window serving as the attachment point for the tray and the hotkeys, and a `DispatcherQueueExtensions` wrapper that signals rejected UI enqueues. The module is intentionally low-level: no application knowledge beyond these four primitives. The concrete actions behind each tray menu entry or each hotkey are wired by the host app before `Register` — no auto-binding, no service locator, no coupling to business modules.
 
 ## Message-only host
 
-Le tray et les hotkeys globaux ne peuvent pas être hébergés par une `Microsoft.UI.Xaml.Window` : le sous-classage Win32 nécessaire (`SetWindowSubclass`) est incompatible. La solution canonique est une message-only window Win32 (`MessageOnlyHost`, parent `HWND_MESSAGE`) créée dans `App.OnLaunched`. Invisible par construction — pas de flash possible, pas de trick off-screen. `TrayIconManager.Register(hwnd)` et `HotkeyManager` s'attachent dessus. L'ordre des branchements compte : créer le `MessageOnlyHost` avant de tenter `RegisterHotKey`, et brancher les callbacks tray avant `TrayIconManager.Register`.
+The tray and the global hotkeys cannot be hosted by a `Microsoft.UI.Xaml.Window`: the required Win32 subclassing (`SetWindowSubclass`) is incompatible. The canonical solution is a Win32 message-only window (`MessageOnlyHost`, parent `HWND_MESSAGE`) created in `App.OnLaunched`. Invisible by construction — no flash possible, no off-screen trick. `TrayIconManager.Register(hwnd)` and `HotkeyManager` attach to it. The wiring order matters: create the `MessageOnlyHost` before attempting `RegisterHotKey`, and wire the tray callbacks before `TrayIconManager.Register`.
 
-Piège technique récurrent : le délégué `SubclassProc` Win32 doit être un champ d'instance, jamais une lambda locale. Sinon le GC le collecte et le subclass crash quand Windows essaie de l'invoquer. Le pattern est en place dans `MessageOnlyHost`.
+Recurring technical pitfall: the Win32 `SubclassProc` delegate MUST be an instance field, never a local lambda. Otherwise the GC collects it and the subclass crashes when Windows tries to invoke it. The pattern is in place in `MessageOnlyHost`.
 
 ## Hotkeys
 
-Trois hotkeys globaux par défaut : `Win+\`` (transcription), `Shift+Win+\`` (rewrite primary), `Ctrl+Win+\`` (rewrite secondary). Tous enregistrés via `RegisterHotKey` Win32 sur le `MessageOnlyHost`. Avant tout test runtime, tuer toute instance déjà en cours — deux processus qui appellent `RegisterHotKey` sur la même combinaison se collisionnent avec `err 1409`.
+Three default global hotkeys: `Win+\`` (transcription), `Shift+Win+\`` (rewrite primary), `Ctrl+Win+\`` (rewrite secondary). All registered via Win32 `RegisterHotKey` on the `MessageOnlyHost`. Before any runtime test, kill any already-running instance — two processes that call `RegisterHotKey` on the same combination collide with `err 1409`.
 
-Le `HotkeyManager` écoute aussi les changements de layout clavier (`WM_INPUTLANGCHANGE`) et re-résout les VKs depuis les scancodes pour préserver la combinaison sur un autre layout. Si le re-register échoue (rare), passe en `Warning` sans bloquer — l'utilisateur garde une UI fonctionnelle même si le hotkey tombe momentanément.
+The `HotkeyManager` also listens for keyboard layout changes (`WM_INPUTLANGCHANGE`) and re-resolves the VKs from the scancodes to preserve the combination on another layout. If the re-register fails (rare), it falls back to `Warning` without blocking — the user keeps a functional UI even if the hotkey momentarily drops.
 
 ## Tray
 
-`TrayIconManager` enregistre une icône Shell_NotifyIcon avec menu contextuel. Les callbacks (start recording, open settings, open logs, quit) sont fournis par l'app hôte avant `Register`. L'icône peut basculer entre état idle et état recording (rouge) via `SetState` — c'est le pipeline de transcription qui pousse l'état au démarrage et à la fin de session.
+`TrayIconManager` registers a Shell_NotifyIcon icon with a context menu. The callbacks (start recording, open settings, open logs, quit) are supplied by the host app before `Register`. The icon can toggle between idle state and recording state (red) via `SetState` — it's the transcription pipeline that pushes the state at session start and end.
 
 ## Autostart
 
-`AutostartService` gère l'entrée HKCU `Software\Microsoft\Windows\CurrentVersion\Run`. La valeur écrite cible `Environment.ProcessPath` (chemin absolu de l'exe courant). Le `Disable` ne touche pas une entrée qui pointe vers un autre install — utile quand l'utilisateur a lancé Deckle depuis un build dev pendant qu'une release est installée ailleurs. Les états et erreurs sont remontés en `Lifecycle`. Pas de MSIX StartupTask — décision actée par [ADR-0002](../../docs/adr/0002-reporter-msix-rester-unpackaged.md).
+`AutostartService` manages the HKCU entry `Software\Microsoft\Windows\CurrentVersion\Run`. The written value targets `Environment.ProcessPath` (absolute path of the current exe). `Disable` does not touch an entry that points to another install — useful when the user has launched Deckle from a dev build while a release is installed elsewhere. States and errors are reported under `Lifecycle`. No MSIX StartupTask — decision recorded in [ADR-0002](../../docs/adr/0002-reporter-msix-rester-unpackaged.md).
 
 ## DispatcherQueueExtensions
 
-Wrapper `TryEnqueue` qui logge en `Warning` quand le dispatch UI est rejeté (queue shut down). Le caller passe une source label libre (`"HUD"`, `"LOGWIN"`, etc.) qui est préfixée dans le message ETW — le payload structuré garde uniquement le `what` (description de l'event perdu). Utile pour repérer les fenêtres qui essaient de marshaler après leur fermeture.
+`TryEnqueue` wrapper that logs at `Warning` when the UI dispatch is rejected (queue shut down). The caller passes a free-form source label (`"HUD"`, `"LOGWIN"`, etc.) that is prefixed in the ETW message — the structured payload keeps only the `what` (description of the lost event). Useful for spotting windows that try to marshal after their closure.
 
-## Observabilité
+## Observability
 
-Toutes les émissions passent par `DeckleShellSource.Log` — provider `Deckle.Shell` (ETW name) exposé en singleton statique. La doctrine « l'observation s'attache au module qui contient l'opération » fait converger plusieurs sources legacy (`LogSource.Hotkey`, `LogSource.MsgHost`, `LogSource.Settings` pour la branche autostart, plus le paramètre `source` libre de `DispatcherQueueExtensions`) vers un seul provider — tag SHELL dans la LogWindow. Les keywords distinguent les sous-domaines internes (`Lifecycle` pour host/autostart, `Capture` pour les hotkeys).
+All emissions go through `DeckleShellSource.Log` — provider `Deckle.Shell` (ETW name) exposed as a static singleton. The doctrine "observation attaches to the module that contains the operation" converges several legacy sources (`LogSource.Hotkey`, `LogSource.MsgHost`, `LogSource.Settings` for the autostart branch, plus the free-form `source` parameter of `DispatcherQueueExtensions`) onto a single provider — SHELL tag in the LogWindow. Keywords distinguish the internal sub-domains (`Lifecycle` for host/autostart, `Capture` for the hotkeys).
 
-## Pointeurs
+## Pointers
 
-- [src/Deckle.App/CLAUDE.md](../Deckle.App/CLAUDE.md) — lifetime de l'app hôte, ordre des branchements (`MessageOnlyHost` avant `RegisterHotKey`, callbacks tray avant `TrayIconManager.Register`).
-- [src/Deckle.Transcription/CLAUDE.md](../Deckle.Transcription/CLAUDE.md) — pipeline qui consomme le hotkey de transcription et qui porte la doctrine paste (le paste n'est pas une primitive shell : c'est une politique métier de la transcription).
-- [src/Deckle.Core/Interop/UIAutomation.cs](../Deckle.Core/Interop/UIAutomation.cs) — wrapper `IUIAutomation` consommé par la transcription pour le probe focus.
+- [src/Deckle.App/CLAUDE.md](../Deckle.App/CLAUDE.md) — host app lifetime, wiring order (`MessageOnlyHost` before `RegisterHotKey`, tray callbacks before `TrayIconManager.Register`).
+- [src/Deckle.Transcription/CLAUDE.md](../Deckle.Transcription/CLAUDE.md) — pipeline that consumes the transcription hotkey and that carries the paste doctrine (paste is not a shell primitive: it's a business policy of the transcription).
+- [src/Deckle.Core/Interop/UIAutomation.cs](../Deckle.Core/Interop/UIAutomation.cs) — `IUIAutomation` wrapper consumed by the transcription for the focus probe.

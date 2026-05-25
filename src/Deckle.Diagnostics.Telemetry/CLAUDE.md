@@ -1,26 +1,33 @@
+---
+name: claude-deckle-diagnostics-telemetry
+description: "Doctrine for Deckle.Diagnostics.Telemetry (JSONL telemetry listeners and user gates). Read before wiring a new telemetry channel, adding a consent toggle, or touching listener configuration at boot."
+type: agent-instructions
+module: Deckle.Diagnostics.Telemetry
+---
+
 # CLAUDE.md — Deckle.Diagnostics.Telemetry
 
-Module enfant de `Deckle.Diagnostics` qui porte la **persistance structurée** des télémétries Deckle. Configure au boot les `JsonlEventListener` du parent avec leurs chemins de fichier et leurs prédicats de filtrage, et expose les settings utilisateur de consentement qui gardent ces listeners (latency, microphone, corpus, application log).
+Child module of `Deckle.Diagnostics` that carries the **structured persistence** of Deckle telemetry. At boot it configures the parent's `JsonlEventListener` instances with their destination file paths and filter predicates, and exposes the user consent settings that gate those listeners (latency, microphone, corpus, application log).
 
-Le module dépend de `Deckle.Diagnostics` (interfaces + JsonlEventListener) et `Deckle.Core` (AppPaths pour les chemins de fichier). Aucune dépendance vers `Deckle.Logging` legacy.
+The module depends on `Deckle.Diagnostics` (interfaces + JsonlEventListener) and `Deckle.Core` (AppPaths for file paths). No dependency on legacy `Deckle.Logging`.
 
-## Responsabilités
+## Responsibilities
 
-`TelemetrySettings` porte les toggles de consentement utilisateur. Les valeurs par défaut sont prudentes — la posture est fermée tant que l'utilisateur n'a pas opt-in.
+`TelemetrySettings` carries the user consent toggles. Defaults are cautious — the posture stays closed until the user opts in.
 
-- **`LatencyEnabled`** — bool, on par défaut sur installation dev, off en preview release. Gate l'écriture de `latency.jsonl`.
-- **`MicrophoneTelemetry`** — bool, off par défaut (RGPD : un récap RMS du micro n'est pas du contenu vocal mais reste une mesure du micro de l'utilisateur).
-- **`CorpusEnabled`** — bool, off par défaut. Gate l'écriture des deux événements normalisés du corpus (`CorpusAsrRecorded` vers `<UserDataRoot>/telemetry/corpus/<bucket>/<tier>/corpus.jsonl`, `CorpusRewriteRecorded` vers `<UserDataRoot>/telemetry/corpus/<bucket>/corpus.jsonl`). Schéma posé par ADR-0011 : la couche ASR est tier-bucketée par longueur (`raw/very-short/`, `raw/short/`, …) et le rewrite est plat-bucketé par profil (`rewrite-<name>-<id>/`).
-- **`RecordAudioCorpus`** — bool, off par défaut. Gate l'écriture du WAV brut sous `<UserDataRoot>/telemetry/audio/<transcription_id>.wav`, dossier plat dédupliqué par invocation (le même WAV est référencé par les deux lignes JSONL ASR et rewrite). Coût disque non négligeable, consentement à demander.
+- **`LatencyEnabled`** — bool, on by default on a dev install, off in preview release. Gates the write of `latency.jsonl`.
+- **`MicrophoneTelemetry`** — bool, off by default (GDPR: a microphone RMS summary is not voice content but remains a measurement of the user's microphone).
+- **`CorpusEnabled`** — bool, off by default. Gates the write of the two normalized corpus events (`CorpusAsrRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/<tier>/corpus.jsonl`, `CorpusRewriteRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/corpus.jsonl`). Schema set by ADR-0011: the ASR layer is tier-bucketed by length (`raw/very-short/`, `raw/short/`, …) and rewrite is flat-bucketed by profile (`rewrite-<name>-<id>/`).
+- **`RecordAudioCorpus`** — bool, off by default. Gates the write of the raw WAV under `<UserDataRoot>/telemetry/audio/<transcription_id>.wav`, a flat directory deduplicated by invocation (the same WAV is referenced by both JSONL lines, ASR and rewrite). Non-trivial disk cost, consent to request.
 
-`TelemetrySettingsService` est le singleton de persistance per-module. Stockage sous `<UserDataRoot>/modules/diagnostics-telemetry/settings.json`. Pattern aligné sur les autres `*SettingsService`.
+`TelemetrySettingsService` is the per-module persistence singleton. Storage under `<UserDataRoot>/modules/diagnostics-telemetry/settings.json`. Pattern aligned with the other `*SettingsService` instances.
 
-`TelemetryListenerBootstrap` est l'API d'inscription des listeners. L'App appelle `TelemetryListenerBootstrap.Configure(...)` au boot après `TelemetrySettingsService.Instance` ; le bootstrap instancie un `JsonlEventListener` par fichier de destination (un général pour `app.jsonl`, trois spécialisés pour latency / microphone / corpus) avec le bon prédicat sur l'event name canonique. Chaque listener vérifie sa gate via `TelemetrySettingsService.Instance.Current` à chaque émission — un changement de toggle propage immédiatement sans redémarrage.
+`TelemetryListenerBootstrap` is the listener registration API. The App calls `TelemetryListenerBootstrap.Configure(...)` at boot after `TelemetrySettingsService.Instance`; the bootstrap instantiates one `JsonlEventListener` per destination file (one general for `app.jsonl`, three specialized for latency / microphone / corpus) with the right predicate on the canonical event name. Each listener checks its gate via `TelemetrySettingsService.Instance.Current` on every emission — a toggle change propagates immediately without restart.
 
-## Dialogs de consentement
+## Consent dialogs
 
-Les dialogs de demande de consentement (« Activer la télémétrie de latence ? », « Enregistrer le corpus benchmark ? ») vivent ici. Surface XAML standard ContentDialog, ouverte depuis la page Settings concernée. Le pattern reproduit ce que `Deckle.Settings` faisait pour la persistance legacy ; la migration est progressive, les nouveaux dialogs côtoient les anciens jusqu'à la vague 6.
+The consent request dialogs ("Enable latency telemetry?", "Record the benchmark corpus?") live here. Standard XAML ContentDialog surface, opened from the relevant Settings page. The pattern reproduces what `Deckle.Settings` did for legacy persistence; migration is progressive, the new dialogs coexist with the old ones until wave 6.
 
-## Frontière avec `Deckle.Diagnostics.Logging`
+## Boundary with `Deckle.Diagnostics.Logging`
 
-Le journal applicatif live (LogWindow + filtres SelectorBar + gate `ApplicationLogToDisk`) vit dans `Deckle.Diagnostics.Logging`. Les télémétries structurées vivent ici. Les deux modules dépendent indépendamment du parent ; ils ne se référencent pas entre eux. Le canal `app.jsonl` est nominalement un *journal applicatif* (donc côté Logging) mais sa **persistance** passe par un `JsonlEventListener` — d'où sa configuration côté Telemetry. La frontière propre est : Logging décide *si* on écrit (gate), Telemetry configure *comment* on écrit (path + listener).
+The live application journal (LogWindow + SelectorBar filters + `ApplicationLogToDisk` gate) lives in `Deckle.Diagnostics.Logging`. Structured telemetry lives here. Both modules depend independently on the parent; they do not reference each other. The `app.jsonl` channel is nominally an *application journal* (so on the Logging side) but its **persistence** goes through a `JsonlEventListener` — hence its configuration on the Telemetry side. The clean boundary is: Logging decides *whether* to write (gate), Telemetry configures *how* to write (path + listener).

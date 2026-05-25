@@ -1,79 +1,86 @@
+---
+name: claude-deckle-catalog
+description: "Doctrine for Deckle.Catalog, the UI resource catalog module (localized strings via ResourceLoader / x:Uid, Segoe Fluent Icons glyphs). Read before adding or modifying a localized string or a glyph key."
+type: agent-instructions
+module: Deckle.Catalog
+---
+
 # CLAUDE.md — Deckle.Catalog
 
-Référentiel des ressources UI nommées par clé sémantique. Couvre deux familles. La **localisation** via la façade `Loc` au-dessus du `ResourceLoader` Windows App SDK, consommée en code et en XAML (`x:Uid`) par tous les modules WinUI. Les **glyphes** Segoe Fluent Icons centralisés dans `Themes/Icons.xaml` (consommé en XAML via `{StaticResource Icon.X}`) et `Glyphs.cs` (consommé en code-behind via `Glyphs.X`), ~51 clés sémantiques organisées en groupes thématiques (génériques, actions, Whisper, Diagnostics, Ambient, badges HUD, transport).
+Catalog of UI resources named by semantic key. Covers two families. **Localization** through the `Loc` facade on top of the Windows App SDK `ResourceLoader`, consumed in code and in XAML (`x:Uid`) by all WinUI modules. **Glyphs** from Segoe Fluent Icons centralized in `Themes/Icons.xaml` (consumed in XAML via `{StaticResource Icon.X}`) and `Glyphs.cs` (consumed in code-behind via `Glyphs.X`), ~51 semantic keys organized into thematic groups (generic, actions, Whisper, Diagnostics, Ambient, HUD badges, transport).
 
-Aujourd'hui ~51 glyphes et ~200 strings sur 15 surfaces user-facing. L'app reste user-facing **anglais d'emblée** (cf. CLAUDE.md projet). Cette itération produit uniquement le fichier `en-US`. Pas de FR, pas de dropdown de sélection de langue dans Settings — le runtime résout sur la langue d'affichage Windows et tombe sur `en-US` par défaut.
+Today ~51 glyphs and ~200 strings across 15 user-facing surfaces. The app stays user-facing **English from day one** (see project CLAUDE.md). This iteration produces only the `en-US` file. No FR, no language selection dropdown in Settings — the runtime resolves on the Windows display language and falls back on `en-US` by default.
 
 ## Architecture localization
 
-Trois pièces reliées par convention de fichiers et de noms.
+Three pieces tied together by file and naming convention.
 
-**Fichier source des strings**. Chaque module qui ship du XAML avec `x:Uid` porte son propre `Strings/en-US/Resources.resw` (XML, format hérité ResX). Une entrée par clé. Pattern multi-assembly PRI : `<EnableMsixTooling>true</EnableMsixTooling>` dans le csproj du module génère un `.pri` à côté de la DLL au build, et `MakePri` peut être appelé pour pré-compiler les ressources. Au runtime, `ResourceLoader` du module résout sur sa propre instance. Modules concernés à ce jour : `Deckle.Settings`, `Deckle.Transcription`, `Deckle.Llm.Rewrite`, `Deckle.Lighting.Ambient`, `Deckle.Setup`, `Deckle.Playground`, plus l'app hôte `Deckle.App`.
+**String source file**. Each module that ships XAML with `x:Uid` carries its own `Strings/en-US/Resources.resw` (XML, legacy ResX format). One entry per key. Multi-assembly PRI pattern: `<EnableMsixTooling>true</EnableMsixTooling>` in the module csproj generates a `.pri` next to the DLL at build time, and `MakePri` can be invoked to pre-compile the resources. At runtime, the module `ResourceLoader` resolves on its own instance. Modules concerned today: `Deckle.Settings`, `Deckle.Transcription`, `Deckle.Llm.Rewrite`, `Deckle.Lighting.Ambient`, `Deckle.Setup`, `Deckle.Playground`, plus the host app `Deckle.App`.
 
-**Langue neutre**. `<DefaultLanguage>en-US</DefaultLanguage>` dans chaque csproj qui porte du `.resw`. Sans cette balise, le résolveur MRT trouve bien le fichier mais aucune langue n'est déclarée comme fallback ; les `x:Uid` peuvent rester vides quand la langue système diverge. La balise verrouille `en-US` comme fallback inconditionnel.
+**Neutral language**. `<DefaultLanguage>en-US</DefaultLanguage>` in every csproj that carries `.resw`. Without this tag, the MRT resolver does find the file but no language is declared as fallback; `x:Uid` values can stay empty when the system language diverges. The tag locks `en-US` as unconditional fallback.
 
-**Consommation**. Deux modes côte à côte. `x:Uid="MyKey"` en XAML résout automatiquement les propriétés `MyKey.Text`, `MyKey.Header`, `MyKey.Description`, `MyKey.Title`, `MyKey.Content`, `MyKey.PlaceholderText`, `MyKey.ToolTipService.ToolTip`. Le résolveur XAML lit `Strings/<lang>/Resources.resw` au runtime et applique les valeurs trouvées à l'élément, zero-code côté XAML. `Loc.Get("Key")` et `Loc.Format("Key", args...)` en code, façade statique dans ce module. Utilisé pour tout ce qui est construit programmatiquement : `ConsentDialog`s, status moteur, HUD, tray, status dynamiques du setup wizard.
+**Consumption**. Two modes side by side. `x:Uid="MyKey"` in XAML automatically resolves the `MyKey.Text`, `MyKey.Header`, `MyKey.Description`, `MyKey.Title`, `MyKey.Content`, `MyKey.PlaceholderText`, `MyKey.ToolTipService.ToolTip` properties. The XAML resolver reads `Strings/<lang>/Resources.resw` at runtime and applies the found values to the element, zero-code on the XAML side. `Loc.Get("Key")` and `Loc.Format("Key", args...)` in code, a static facade in this module. Used for everything built programmatically: `ConsentDialog`s, engine status, HUD, tray, dynamic statuses of the setup wizard.
 
-L'API utilisée est `Microsoft.Windows.ApplicationModel.Resources.ResourceLoader` (Windows App SDK), **pas** l'ancien `Windows.ApplicationModel.Resources.ResourceLoader` (UWP). Les deux existent dans `Microsoft.WindowsAppSDK 1.8` mais seul le premier fonctionne en unpackaged.
+The API used is `Microsoft.Windows.ApplicationModel.Resources.ResourceLoader` (Windows App SDK), **not** the legacy `Windows.ApplicationModel.Resources.ResourceLoader` (UWP). Both exist in `Microsoft.WindowsAppSDK 1.8` but only the former works unpackaged.
 
-## Convention de clés
+## Key convention
 
-Un seul fichier `Resources.resw` par module. Les préfixes structurent la lecture humaine.
+A single `Resources.resw` file per module. Prefixes structure the human reading.
 
-**`x:Uid` en XAML** — pattern `<UidValue>.<Property>` où `UidValue` est libre (à choisir clair en `CamelCase`, sans underscore ni séparateur) et `<Property>` est résolu automatiquement. Une même `UidValue` peut porter plusieurs propriétés. Convention : `<Surface><ElementRole>` en `CamelCase` (`LogWindowSearchBox`, `GeneralPageTranscribeCard`, `LlmEnableCard`, `SetupChoicesInstallLocation`).
+**`x:Uid` in XAML** — pattern `<UidValue>.<Property>` where `UidValue` is free (pick something clear in `CamelCase`, no underscore, no separator) and `<Property>` is resolved automatically. The same `UidValue` can carry multiple properties. Convention: `<Surface><ElementRole>` in `CamelCase` (`LogWindowSearchBox`, `GeneralPageTranscribeCard`, `LlmEnableCard`, `SetupChoicesInstallLocation`).
 
-**Lookup direct en code** — pattern `<Surface>_<Purpose>` pour les strings consommées via `Loc.Get`. `CamelCase` pour `Surface`, underscore comme séparateur, `CamelCase` ou minuscule pour `Purpose`. Exemples : `CorpusConsent_Title`, `CorpusConsent_Body_Intro`, `CorpusConsent_PrimaryButton`, `Setup_StepTitle_Choices`.
+**Direct lookup in code** — pattern `<Surface>_<Purpose>` for strings consumed via `Loc.Get`. `CamelCase` for `Surface`, underscore as separator, `CamelCase` or lowercase for `Purpose`. Examples: `CorpusConsent_Title`, `CorpusConsent_Body_Intro`, `CorpusConsent_PrimaryButton`, `Setup_StepTitle_Choices`.
 
-**Strings paramétrées** — suffixe `_Format` obligatoire et visible dans le code consommateur. Placeholders composite-format `{0}`, `{1}`, … consommés par `Loc.Format`. Exemples : `Status_Rewriting_Format = "Rewriting ({0})…"`, `Tray_Tooltip_Format = "Deckle — {0}"`, `Llm_StartOllama_Format = "Start Ollama or check the endpoint setting ({0})."`.
+**Parameterized strings** — mandatory `_Format` suffix, visible at the call site. Composite-format placeholders `{0}`, `{1}`, … consumed by `Loc.Format`. Examples: `Status_Rewriting_Format = "Rewriting ({0})…"`, `Tray_Tooltip_Format = "Deckle — {0}"`, `Llm_StartOllama_Format = "Start Ollama or check the endpoint setting ({0})."`.
 
-**Strings réutilisables** — préfixe `Common_` pour les boutons et statuts génériques qui apparaissent sur plusieurs surfaces. Avant de créer une clé spécifique de surface, vérifier qu'il n'existe pas déjà un `Common_*`. Exemples : `Common_Cancel`, `Common_Back`, `Common_Next`, `Common_Enable`, `Common_Reset`, `Common_Remove`, `Common_Keep`, `Common_Browse`. Une clé `Common_*` ne contient jamais de paramètre. Les variantes contextuelles (`Cancel install`, `Reset all`) gardent leur clé spécifique de surface — `Common_*` reste l'expression courte canonique.
+**Reusable strings** — `Common_` prefix for generic buttons and statuses that appear across multiple surfaces. Before creating a surface-specific key, check that a `Common_*` does not already exist. Examples: `Common_Cancel`, `Common_Back`, `Common_Next`, `Common_Enable`, `Common_Reset`, `Common_Remove`, `Common_Keep`, `Common_Browse`. A `Common_*` key never contains a parameter. Contextual variants (`Cancel install`, `Reset all`) keep their surface-specific key — `Common_*` stays the canonical short form.
 
-## Strings techniques non traduites
+## Technical strings not translated
 
-Liste fermée des chaînes qui restent **hardcodées** dans le code et ne passent jamais par le `.resw` ni par `Loc`. Toute addition à cette liste demande une justification documentée ici.
+Closed list of strings that stay **hardcoded** in code and never go through `.resw` nor `Loc`. Any addition to this list requires a justification documented here.
 
-- **Noms de fichiers et extensions** — `app.jsonl`, `latency.jsonl`, `microphone.jsonl`, `corpus.jsonl`, `settings.json`, `Deckle.pri`, `Deckle.exe`. Les noms sont des contrats avec le filesystem et avec les outils de diagnostic ; les traduire casse les scripts et la télémétrie.
-- **URLs et endpoints** — `http://localhost:11434/api/chat` (Ollama default), URLs de redist GitHub, schémas `ms-resource://`. Identifiants techniques.
-- **Noms de produits et marques** — `Deckle`, `Ollama`, `Silero VAD`, `whisper.cpp`. Identité produit ; pas de traduction possible ni souhaitable.
-- **Noms de modèles Whisper** — `base`, `small`, `medium`, `large-v3`, `tiny`. Tag d'identification du modèle, exposé tel quel dans l'UI.
-- **Noms d'EventSource providers et de tags log** (`Deckle.Audio`, `Deckle.Whisp`, etc., et leurs labels courts `AUDIO`, `WHISP`, …). Vocabulaire interne, lu par les développeurs dans la LogWindow et le JSONL, pas par les utilisateurs au sens UX du terme.
+- **File names and extensions** — `app.jsonl`, `latency.jsonl`, `microphone.jsonl`, `corpus.jsonl`, `settings.json`, `Deckle.pri`, `Deckle.exe`. The names are contracts with the filesystem and with diagnostic tooling; translating them breaks scripts and telemetry.
+- **URLs and endpoints** — `http://localhost:11434/api/chat` (Ollama default), GitHub redist URLs, `ms-resource://` schemes. Technical identifiers.
+- **Product and brand names** — `Deckle`, `Ollama`, `Silero VAD`, `whisper.cpp`. Product identity; translation is neither possible nor desirable.
+- **Whisper model names** — `base`, `small`, `medium`, `large-v3`, `tiny`. Model identification tag, surfaced as-is in the UI.
+- **EventSource provider names and log tags** (`Deckle.Audio`, `Deckle.Whisp`, etc., and their short labels `AUDIO`, `WHISP`, …). Internal vocabulary, read by developers in the LogWindow and in the JSONL, not by users in the UX sense of the term.
 
-Tout autre texte visible par l'utilisateur passe par le `.resw`.
+Any other text visible to the user goes through `.resw`.
 
-## Ajouter une nouvelle string
+## Adding a new string
 
-1. Choisir le pattern qui correspond. Si la string apparaît dans un attribut XAML statique, viser `x:Uid`. Si elle est construite en code, viser `Loc.Get` ou `Loc.Format`.
-2. Avant d'inventer une clé spécifique, vérifier qu'un `Common_*` ne couvre pas déjà le besoin.
-3. Ajouter l'entrée dans le `Strings/en-US/Resources.resw` du module qui possède la surface. L'ordre dans le fichier suit les sections — Common, puis par surface. Garder le fichier groupé pour faciliter la relecture humaine.
-4. Côté code consommateur : en XAML, ajouter `x:Uid="<UidValue>"` sur l'élément et retirer la valeur littérale de l'attribut concerné ; en code, remplacer le littéral par `Loc.Get("<key>")` ou `Loc.Format("<key>_Format", args...)` (importer `Deckle.Catalog`).
-5. Builder via `dotnet build`. Vérifier au runtime que la string s'affiche bien ; en DEBUG une clé manquante apparaît comme `[!key]` à l'écran (assez voyant pour être détecté en quelques secondes).
+1. Pick the pattern that fits. If the string appears in a static XAML attribute, aim for `x:Uid`. If it is built in code, aim for `Loc.Get` or `Loc.Format`.
+2. Before inventing a specific key, check that a `Common_*` does not already cover the need.
+3. Add the entry in the `Strings/en-US/Resources.resw` of the module that owns the surface. The order in the file follows the sections — Common, then per surface. Keep the file grouped to make human review easy.
+4. On the consumer side: in XAML, add `x:Uid="<UidValue>"` on the element and remove the literal value from the relevant attribute; in code, replace the literal with `Loc.Get("<key>")` or `Loc.Format("<key>_Format", args...)` (import `Deckle.Catalog`).
+5. Build via `dotnet build`. Check at runtime that the string displays correctly; in DEBUG a missing key appears as `[!key]` on screen (loud enough to be caught in seconds).
 
-## Ajouter une langue future
+## Adding a future language
 
-Quand le moment vient (FR, ES, …), créer `Strings/<lang>/Resources.resw` à côté du `en-US` du module concerné, en copiant le fichier puis en traduisant chaque `<value>`. Garder les clés strictement identiques. Ne pas toucher aux strings techniques de la liste plus haut. Pour les strings paramétrées `_Format`, garder le même nombre de placeholders `{0}`, `{1}` — la grammaire de la langue cible peut imposer un autre ordre, `string.Format` accepte les placeholders dans n'importe quel ordre dans la chaîne, c'est exactement à ça qu'ils servent.
+When the time comes (FR, ES, …), create `Strings/<lang>/Resources.resw` next to the `en-US` of the relevant module, by copying the file and translating each `<value>`. Keep the keys strictly identical. Do not touch the technical strings in the list above. For `_Format` parameterized strings, keep the same number of placeholders `{0}`, `{1}` — the grammar of the target language may require a different order, `string.Format` accepts placeholders in any order in the string, which is exactly what they are for.
 
-Au runtime, MRT résout sur la langue d'affichage Windows. Pour exposer une sélection manuelle dans Settings (override), introduire un `ResourceContext` avec `QualifierValues["Language"] = "<lang>"` ou `Languages = new[] { "<lang>" }` et le câbler à un setting persistant. Hors scope V1.
+At runtime, MRT resolves on the Windows display language. To expose a manual selection in Settings (override), introduce a `ResourceContext` with `QualifierValues["Language"] = "<lang>"` or `Languages = new[] { "<lang>" }` and wire it to a persisted setting. Out of scope for V1.
 
-## Pièges et notes opérationnelles
+## Pitfalls and operational notes
 
-- **API à utiliser** : `Microsoft.Windows.ApplicationModel.Resources.ResourceLoader` (Windows App SDK). L'ancien `Windows.ApplicationModel.Resources.ResourceLoader` UWP est encore référencé dans certains résultats de recherche obsolètes — il ne marche pas en unpackaged.
-- **Création du `ResourceLoader`** : se fait après l'init runtime Windows App SDK (auto-bootstrap via `<WindowsPackageType>None</WindowsPackageType>` qui appelle l'API bootstrapper). Le `_loader` de `Loc` est paresseux pour garantir cette contrainte temporelle ; n'utiliser `Loc.Get` qu'à partir du moment où `App.OnLaunched` a démarré.
-- **Clé manquante** : `ResourceLoader.GetString` retourne **string vide** par contrat WindowsAppSDK, sans exception. En DEBUG, `Loc.Get` substitue `[!key]` pour rendre la régression visible. En RELEASE le comportement par défaut est conservé.
-- **Inspection de la PRI** : `MakePri.exe dump <chemin>.pri` (SDK Windows 10) liste les ressources embarquées et leurs clés. Utile pour vérifier que le pipeline build a bien embarqué un `.resw` après modification.
-- **`x:Uid` invalide en XAML** : génère un avertissement `WMC*` au build mais n'empêche pas la compilation. Surveiller la sortie MSBuild pour rattraper les Uids cassés tôt.
-- **Partage d'`x:Uid` entre éléments hétérogènes** — pas un avertissement build, **plante au runtime** dans `InitializeComponent` avec `XamlParseException: Unable to resolve property '<Prop>' while processing properties for Uid '<Uid>'`. Cause : MRT applique chaque propriété déclarée dans la `.resw` à **chaque** élément qui porte cet `x:Uid`. Si l'un des éléments n'expose pas la propriété (un `Button` n'a pas de `.Text`, il a `.Content`), tout le chargement XAML de la page tombe. Pattern correct : un `x:Uid` distinct par type d'élément, suffixe de rôle explicite (`*Button` pour le conteneur interactif, `*Label` pour le `TextBlock` interne). Cas toléré : plusieurs éléments du **même type** partageant un même Uid (par exemple huit `HyperlinkButton x:Uid="Settings_SectionResetLink"` dans les sections Settings, tous résolus sur `.Content` et `.ToolTipService.ToolTip` — aucun n'a de propriété manquante).
-- **`<data name name>` value OR scope, pas les deux** — une même `name` ne peut pas servir à la fois de valeur (`<data name="X"><value>...</value></data>`) et de scope pour des sous-clés (`X.SubKey`). Au build, l'erreur `PRI175` ou `PRI278` apparaît. Toujours utiliser deux clés distinctes (`X_Label` + `X.SubKey`).
-- **Commentaire XML** : `--` est interdit dans un commentaire `.resw` (`MSB4025`). Échapper en `--` espacé ou réécrire sans le double tiret.
+- **API to use**: `Microsoft.Windows.ApplicationModel.Resources.ResourceLoader` (Windows App SDK). The legacy UWP `Windows.ApplicationModel.Resources.ResourceLoader` is still referenced in some stale search results — it does not work unpackaged.
+- **Creating the `ResourceLoader`**: must happen after the Windows App SDK runtime init (auto-bootstrap via `<WindowsPackageType>None</WindowsPackageType>` which calls the bootstrapper API). The `_loader` in `Loc` is lazy to guarantee this temporal constraint; only use `Loc.Get` once `App.OnLaunched` has started.
+- **Missing key**: `ResourceLoader.GetString` returns an **empty string** per WindowsAppSDK contract, with no exception. In DEBUG, `Loc.Get` substitutes `[!key]` to make the regression visible. In RELEASE the default behavior is kept.
+- **Inspecting the PRI**: `MakePri.exe dump <path>.pri` (Windows 10 SDK) lists the embedded resources and their keys. Useful to verify that the build pipeline did embed a `.resw` after a change.
+- **Invalid `x:Uid` in XAML**: emits a `WMC*` build warning but does not block compilation. Watch the MSBuild output to catch broken Uids early.
+- **Sharing an `x:Uid` across heterogeneous elements** — not a build warning, **crashes at runtime** in `InitializeComponent` with `XamlParseException: Unable to resolve property '<Prop>' while processing properties for Uid '<Uid>'`. Cause: MRT applies every property declared in the `.resw` to **each** element that carries this `x:Uid`. If one of the elements does not expose the property (a `Button` has no `.Text`, it has `.Content`), the entire XAML load of the page collapses. Correct pattern: a distinct `x:Uid` per element type, with an explicit role suffix (`*Button` for the interactive container, `*Label` for the inner `TextBlock`). Tolerated case: several elements of the **same type** sharing one Uid (for example eight `HyperlinkButton x:Uid="Settings_SectionResetLink"` in the Settings sections, all resolved on `.Content` and `.ToolTipService.ToolTip` — none has a missing property).
+- **`<data name name>` value OR scope, not both** — the same `name` cannot serve both as a value (`<data name="X"><value>...</value></data>`) and as a scope for sub-keys (`X.SubKey`). At build time, error `PRI175` or `PRI278` shows up. Always use two distinct keys (`X_Label` + `X.SubKey`).
+- **XML comment**: `--` is forbidden inside a `.resw` comment (`MSB4025`). Escape as `- -` spaced or rewrite without the double dash.
 
-## Glyphes Segoe Fluent Icons
+## Segoe Fluent Icons glyphs
 
-`Themes/Icons.xaml` est un `ResourceDictionary` qui mappe ~51 clés sémantiques (`Icon.Transcribe`, `Icon.Rewrite`, `Icon.Save`, `Icon.Pin`, etc.) vers les hex Segoe Fluent. Consommé en XAML via `{StaticResource Icon.X}` sur un `FontIcon.Glyph` ou un `PathIcon`. Le dictionnaire est référencé une fois dans chaque module qui utilise des icônes via `<ResourceDictionary Source="ms-appx:///Deckle.Catalog/Themes/Icons.xaml" />` dans les ressources du module.
+`Themes/Icons.xaml` is a `ResourceDictionary` that maps ~51 semantic keys (`Icon.Transcribe`, `Icon.Rewrite`, `Icon.Save`, `Icon.Pin`, etc.) to Segoe Fluent hex codes. Consumed in XAML via `{StaticResource Icon.X}` on a `FontIcon.Glyph` or a `PathIcon`. The dictionary is referenced once in each module that uses icons via `<ResourceDictionary Source="ms-appx:///Deckle.Catalog/Themes/Icons.xaml" />` in the module resources.
 
-`Glyphs.cs` est la version code-side : une classe statique avec les mêmes clés sémantiques exposées comme `const string` (par exemple `Glyphs.Transcribe = ""`). Consommée par tous les sites qui construisent un `FontIcon` programmatiquement (typiquement le tray, les badges HUD, certains items générés à la volée).
+`Glyphs.cs` is the code-side version: a static class with the same semantic keys exposed as `const string` (for example `Glyphs.Transcribe = ""`). Consumed by every call site that builds a `FontIcon` programmatically (typically the tray, the HUD badges, some items generated on the fly).
 
-Les deux fichiers sont synchronisés par convention de nommage — chaque clé sémantique existe dans les deux. Le pattern est documenté en commentaire de tête dans les deux fichiers. Modifier le glyphe d'une clé met à jour les deux entrées en même temps. Ajouter une clé suit le même principe et choisit son groupe thématique (génériques, actions, Whisper, Diagnostics, Ambient, badges HUD, transport).
+The two files are kept in sync by naming convention — each semantic key exists in both. The pattern is documented in a header comment in both files. Changing the glyph of a key updates both entries at the same time. Adding a key follows the same principle and picks its thematic group (generic, actions, Whisper, Diagnostics, Ambient, HUD badges, transport).
 
-## Pointeurs
+## Pointers
 
-- [Microsoft Learn — Resource files (.resw)](https://learn.microsoft.com/en-us/windows/uwp/app-resources/localize-strings-ui-manifest) — base ResourceLoader/MRT.
-- [Microsoft Learn — Segoe Fluent Icons](https://learn.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font) — catalogue Segoe Fluent.
+- [Microsoft Learn — Resource files (.resw)](https://learn.microsoft.com/en-us/windows/uwp/app-resources/localize-strings-ui-manifest) — ResourceLoader/MRT basics.
+- [Microsoft Learn — Segoe Fluent Icons](https://learn.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font) — Segoe Fluent catalog.
