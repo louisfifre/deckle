@@ -5,17 +5,22 @@ namespace Deckle.Shell;
 
 // Shell module provider. Couvre les capacités du shell système :
 // message-only Win32 host (tray callback + global hotkeys), autostart
-// HKCU\Run, gestion des hotkeys (registration + WM_INPUTLANGCHANGE),
-// et l'utilitaire DispatcherQueueExtensions (warning quand une enqueue
-// UI échoue).
+// HKCU\Run, gestion des hotkeys (registration + WM_INPUTLANGCHANGE).
 //
 // La doctrine "l'observation s'attache au module qui contient
 // l'opération" fait converger plusieurs sources legacy
 // (`LogSource.Hotkey`, `LogSource.MsgHost`, `LogSource.Settings` pour
-// la branche autostart, plus le paramètre `source` libre de
-// DispatcherQueueExtensions) vers un seul provider `Deckle.Shell` →
-// tag SHELL dans la LogWindow. Léger renommage côté UX, attendu pour
-// la migration ; les keywords distinguent les sous-domaines internes.
+// la branche autostart) vers un seul provider `Deckle.Shell` → tag SHELL
+// dans la LogWindow. Léger renommage côté UX, attendu pour la
+// migration ; les keywords distinguent les sous-domaines internes.
+//
+// L'event historique `DispatcherEnqueueRejected` (anciennement id 15
+// ici) a été migré sur `DeckleThreadingSource` dans la vague
+// d'instrumentation transverse — il ne décrivait pas une opération
+// shell, il décrivait un rejet de dispatcher transverse à tout module
+// qui marshale vers le UI thread. L'id 15 reste un trou intentionnel
+// ici pour préserver la stabilité des ids des events Shell restants
+// (les listeners qui filtreraient par id n'ont rien à mettre à jour).
 [EventSource(Name = "Deckle.Shell")]
 public sealed class DeckleShellSource : DeckleEventSource
 {
@@ -37,7 +42,8 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtHotkeyRegistered            = 12;
     public const int EvtHotkeyLayoutChange          = 13;
     public const int EvtHotkeyReregisterFailed      = 14;
-    public const int EvtDispatcherEnqueueRejected   = 15;
+    // Id 15 (DispatcherEnqueueRejected) migré sur DeckleThreadingSource —
+    // trou intentionnel pour ne pas renuméroter les ids restants.
 
     // ── Message-only host ───────────────────────────────────────────────
 
@@ -171,19 +177,8 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed, message);
     }
 
-    // ── DispatcherQueueExtensions ───────────────────────────────────────
-    //
-    // L'extension reçoit en paramètre une source label libre que le
-    // caller fournit (ex. "HUD", "LOGWIN"). Pour ne pas porter ce string
-    // libre dans le manifest ETW comme un champ structuré supplémentaire,
-    // on le préfixe dans le message text — le payload ETW garde uniquement
-    // le `what` (description de l'event perdu).
-    [Event(EvtDispatcherEnqueueRejected,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "[{0}] DispatcherQueue.TryEnqueue rejected ({1}) — UI event dropped")]
-    public void DispatcherEnqueueRejected(string caller_source, string what)
-    {
-        if (IsEnabled()) WriteEvent(EvtDispatcherEnqueueRejected, caller_source, what);
-    }
+    // DispatcherEnqueueRejected vit désormais sur DeckleThreadingSource.
+    // Les callers passent par DispatcherQueueExtensions.TryEnqueueOrLog
+    // (qui repointe en interne) ou directement via la voie EventSource
+    // du provider Threading.
 }

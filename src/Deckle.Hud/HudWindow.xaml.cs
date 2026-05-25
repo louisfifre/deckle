@@ -355,10 +355,17 @@ public sealed partial class HudWindow : Window
     {
         if (DispatcherQueue.HasThreadAccess) { SetState(HudState.Hidden, reason: "hide_sync"); return; }
         var done = new ManualResetEventSlim();
-        bool enqueued = DispatcherQueue.TryEnqueueOrLog(() =>
-        {
-            try { SetState(HudState.Hidden, reason: "hide_sync"); } finally { done.Set(); }
-        }, "HUD", "HideSync");
+        // Threading — site cross-thread real et critique (rendezvous
+        // transcribe thread → UI juste avant SendInput Ctrl+V). Un
+        // wait_ms anormal ici signale un UI thread bloqué qui va
+        // déclencher le timeout défensif et propager une race au paste.
+        bool enqueued = DispatcherQueue.TryEnqueueObserved(
+            "window-show", "hud-window-hide-sync",
+            () =>
+            {
+                try { SetState(HudState.Hidden, reason: "hide_sync"); } finally { done.Set(); }
+            },
+            "HUD", "HideSync");
 
         // Si l'enqueue a échoué (queue fermée pendant teardown), on évite
         // le Wait infini en libérant immédiatement. Le HUD ne sera pas
@@ -536,7 +543,19 @@ public sealed partial class HudWindow : Window
     private void EnqueueUI(Action a)
     {
         if (DispatcherQueue.HasThreadAccess) a();
-        else DispatcherQueue.TryEnqueueOrLog(() => a(), "HUD", "ui action");
+        else
+        {
+            // Threading — point central des marshallings cross-thread du
+            // HUD (engine StatusChanged depuis worker, callbacks composition
+            // hors UI). TryEnqueueObserved instrumente MarshalQueued →
+            // wait_ms/run_ms → MarshalCompleted ; rejet via
+            // DispatcherEnqueueRejected sur DeckleThreadingSource si queue
+            // fermée.
+            DispatcherQueue.TryEnqueueObserved(
+                "ui-update", "hud-window",
+                () => a(),
+                "HUD", "ui action");
+        }
     }
 
     // Pixel rect the HUD would occupy at the current DPI + work area +

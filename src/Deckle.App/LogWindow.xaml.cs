@@ -162,7 +162,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // formatage répété pendant la virtualisation ListView).
         var le = new LogEntry(entry);
         if (DispatcherQueue.HasThreadAccess) AddEntrySafe(le);
-        else DispatcherQueue.TryEnqueueOrLog(() => AddEntrySafe(le), "LOGWIN", "log entry");
+        else
+        {
+            // Threading — site cross-thread real (listener EventSource
+            // depuis un thread arbitraire vers UI). TryEnqueueObserved
+            // émet MarshalQueued → wait_ms/run_ms → MarshalCompleted en
+            // sus du rejet historique (DispatcherEnqueueRejected sur
+            // DeckleThreadingSource depuis la migration).
+            DispatcherQueue.TryEnqueueObserved(
+                "log-append", "log-window",
+                () => AddEntrySafe(le),
+                "LOGWIN", "log entry");
+        }
     }
 
     // Pas exposé sur l'interface — ILogWindowSink est un canal write-only.
@@ -179,7 +190,15 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
-        else DispatcherQueue.TryEnqueueOrLog(() => ApplyRecordingState(isRecording), "LOGWIN", "recording state");
+        else
+        {
+            // Threading — site cross-thread real (engine worker thread
+            // via StatusChanged vers UI). Même pattern que Write.
+            DispatcherQueue.TryEnqueueObserved(
+                "ui-update", "log-window",
+                () => ApplyRecordingState(isRecording),
+                "LOGWIN", "recording state");
+        }
     }
 
     private void ApplyRecordingState(bool isRecording)

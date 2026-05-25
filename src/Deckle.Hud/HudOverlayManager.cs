@@ -55,7 +55,15 @@ public sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => Enqueue(severity, title, body), "HUD", "overlay enqueue");
+            // Threading — overlay enqueue depuis un thread non-UI
+            // (HudFeedbackEventListener côté Diagnostics, ou tout
+            // émetteur UserFeedbackEmitted depuis un worker engine).
+            // wait_ms anormal ici signale un UI thread saturé qui
+            // retarde l'affichage des overlays.
+            _dispatcher.TryEnqueueObserved(
+                "feedback-display", "overlay-manager",
+                () => Enqueue(severity, title, body),
+                "HUD", "overlay enqueue");
             return;
         }
 
@@ -112,7 +120,14 @@ public sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => OnMainHudVisibilityChanged(sender, visible), "HUD", "main HUD visibility change");
+            // Threading — propagation de l'event visibilité HUD principal
+            // vers la stack overlay. Cross-thread quand HudWindow émet
+            // depuis un chemin non-UI (rare en pratique mais le path est
+            // câblé). Instrumentation identique aux autres sites overlay.
+            _dispatcher.TryEnqueueObserved(
+                "ui-update", "overlay-manager",
+                () => OnMainHudVisibilityChanged(sender, visible),
+                "HUD", "main HUD visibility change");
             return;
         }
 
