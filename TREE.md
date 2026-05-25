@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-24 16:23 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 09:54 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -85,11 +85,16 @@ _Mise à jour : 2026-05-24 16:23 — source : `git ls-files`_
 │   │   ├── 0010-backend-asr-pluggable-via-iasrbackend.md
 │   │   ├── 0011-corpus-normalise-comme-dataset-ml.md
 │   │   └── 0012-adoption-de-dotnet-build-et-dotnet-test.md
+│   ├── reference/
+│   │   ├── reference--eventsource-convention--1.0.md
+│   │   └── reference--eventsource-convention--1.1.md
 │   └── research/
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
 │       └── research--hyperhdr-interpolators--2026-05-15.md
 ├── scripts/
+│   ├── hooks/
+│   │   └── pre-commit
 │   ├── lib/
 │   │   ├── _menu.psm1
 │   │   ├── bootstrap-dev-env.ps1
@@ -99,7 +104,9 @@ _Mise à jour : 2026-05-24 16:23 — source : `git ls-files`_
 │   │   ├── setup-assets.ps1
 │   │   └── stats.ps1
 │   ├── deckle.ps1
-│   └── README.md
+│   ├── install-hooks.ps1
+│   ├── README.md
+│   └── update-tree.ps1
 ├── src/
 │   ├── Deckle.App/
 │   │   ├── Assets/
@@ -453,5 +460,6 @@ _Mise à jour : 2026-05-24 16:23 — source : `git ls-files`_
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
-└── SECURITY.md
+├── SECURITY.md
+└── TREE.md
 ```
