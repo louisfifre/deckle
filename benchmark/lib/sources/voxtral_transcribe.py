@@ -121,12 +121,19 @@ class VoxtralTranscribeSource(Source):
         last_err = ""
         while attempts < 2:
             try:
-                return self._run_once(
+                result = self._run_once(
                     audio_path=audio_path,
                     audio_s=audio_s,
                     max_new_tokens=current_tokens,
                     attempt=attempts,
                 )
+                # Cleanup VRAM systématique après chaque row réussie.
+                # Sans ça la VRAM DirectML plateaute (observé : 18 GB
+                # stable sur 8 min de run). Le sleep=0 n'ajoute pas de
+                # latence — l'inter-row-sleep du bench (0.5 s par défaut)
+                # couvre déjà le temps réel que DirectML met à libérer.
+                cleanup_gpu(sleep_s=0.0, on_event=on_event)
+                return result
             except Exception as e:
                 last_err = f"{type(e).__name__}: {e}"
                 if not is_oom_error(e):
@@ -174,11 +181,23 @@ class VoxtralTranscribeSource(Source):
         dt_prep = time.perf_counter() - t_prep
 
         t_gen = time.perf_counter()
+        # ``no_grad`` plutôt qu'``inference_mode`` : ce dernier est plus
+        # strict mais incompatible avec certains in-place updates que
+        # ``processor.apply_transcription_request`` et l'audio encoder
+        # Voxtral effectuent (échec ``Cannot set version_counter for
+        # inference tensor`` observé 2026-05-25). Le gain mémoire de
+        # ``inference_mode`` est marginal de toute façon.
         with b.torch.no_grad():
             generated_ids = b.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=False,
+                # Greedy explicite : sans cet override, transformers peut
+                # hériter d'un ``num_beams`` du generation_config du modèle
+                # et multiplier le KV-cache par autant — gaspillage sur
+                # un bench où on veut le mode déterministe le moins lourd.
+                num_beams=1,
+                use_cache=True,
             )
         dt_gen = time.perf_counter() - t_gen
 

@@ -109,6 +109,12 @@ def load_voxtral(
             f"VoxtralForConditionalGeneration.from_pretrained."
         )
     model = model.to(device)
+    # Bascule en eval mode après transfert sur device. HuggingFace charge
+    # par défaut en mode train(), qui garde des tensors intermediaires
+    # pour le backward (BatchNorm running stats, dropout masks) — inutile
+    # en inférence pure et coûteux en VRAM sur un 3B + audio encoder.
+    # Un seul appel suffit, c'est idempotent.
+    model.eval()
 
     return VoxtralBackend(
         torch=torch,

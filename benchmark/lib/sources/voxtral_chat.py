@@ -101,13 +101,17 @@ class VoxtralChatSource(Source):
         last_err = ""
         while attempts < 2:
             try:
-                return self._run_once(
+                result = self._run_once(
                     audio_path=audio_path,
                     audio_s=audio_s,
                     instruction=instruction,
                     max_new_tokens=current_tokens,
                     attempt=attempts,
                 )
+                # Cleanup VRAM systématique après chaque row réussie.
+                # Cf. justif dans voxtral_transcribe.py._run_with_retry.
+                cleanup_gpu(sleep_s=0.0, on_event=on_event)
+                return result
             except Exception as e:
                 last_err = f"{type(e).__name__}: {e}"
                 if not is_oom_error(e):
@@ -155,11 +159,17 @@ class VoxtralChatSource(Source):
         dt_prep = time.perf_counter() - t_prep
 
         t_gen = time.perf_counter()
+        # ``no_grad`` (pas ``inference_mode`` qui plante l'audio encoder)
+        # + ``num_beams=1`` explicite pour éviter d'hériter d'un beam
+        # search du generation_config qui multiplierait le KV-cache.
+        # Cf. justif détaillée dans voxtral_transcribe.py._run_once.
         with b.torch.no_grad():
             generated_ids = b.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=False,
+                num_beams=1,
+                use_cache=True,
             )
         dt_gen = time.perf_counter() - t_gen
 
