@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 10:26 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 10:35 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -206,6 +206,7 @@ _Mise à jour : 2026-05-25 10:26 — source : `git ls-files`_
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleEventSource.cs
 │   │   ├── DeckleNetworkSource.cs
+│   │   ├── DeckleResourceSource.cs
 │   │   ├── EventEntry.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogWindowSink.cs

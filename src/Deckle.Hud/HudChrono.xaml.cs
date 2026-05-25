@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -7,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Deckle.Audio;
 using Deckle.Chrono;
 using Deckle.Composition;
+using Deckle.Diagnostics;
 
 namespace Deckle.Hud;
 
@@ -329,6 +332,14 @@ public sealed partial class HudChrono : UserControl
     private HudComposition.ProcessingStroke? _processingStroke;
     private ProcessingVariant? _currentVariant;
 
+    // Acquire timestamp + handle gel pour le ProcessingStroke courant —
+    // capturés à AttachProcessingVisual, lus à Dispose pour calculer
+    // age_ms côté DeckleResourceSource. Le handle managé reste valide
+    // après dispose pour identifier l'event releasé (le stroke lui-même
+    // a été remplacé par null).
+    private long _processingStrokeAcquiredTicks;
+    private long _processingStrokeHandle;
+
     // HudPlayground-only: config override consumed (and cleared) by the
     // next stroke creation inside AttachProcessingVisual. Lets the
     // playground bring up a state with a caller-supplied config in a
@@ -384,6 +395,12 @@ public sealed partial class HudChrono : UserControl
         if (crossingBoundary)
         {
             ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
+            // Sub-provider transverse Resource — release du stroke au
+            // moment du dispose boundary-crossing (Recording ↔ Processing).
+            int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
+                                       * 1000L / Stopwatch.Frequency);
+            DeckleResourceSource.Log.ResourceReleased(
+                "composition-visual", _processingStrokeHandle, ageMsBoundary, "hud-chrono-stroke");
             _processingStroke!.Dispose();
             _processingStroke = null;
         }
@@ -408,6 +425,17 @@ public sealed partial class HudChrono : UserControl
                 : HudComposition.CreateProcessingStroke(compositor, size, cfg);
             ElementCompositionPreview.SetElementChildVisual(
                 ProcessingSurfaceHost, _processingStroke.Visual);
+
+            // Sub-provider transverse Resource — acquire du stroke.
+            // Handle = RuntimeHelpers.GetHashCode du Visual managé (stable
+            // pour la durée de vie de l'objet). size_bytes=0 — la taille
+            // mémoire d'un Visual Composition n'est pas mesurable côté
+            // managé sans introspection coûteuse, conformément à la
+            // convention du provider.
+            _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
+            _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
+            DeckleResourceSource.Log.ResourceAcquired(
+                "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
         }
 
         // Reset the EMA accumulator on every Recording entry so leftover
@@ -431,6 +459,12 @@ public sealed partial class HudChrono : UserControl
         if (_processingStroke == null) return;
 
         ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
+        // Sub-provider transverse Resource — release du stroke au moment
+        // du teardown final (Hidden state).
+        int ageMs = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
+                           * 1000L / Stopwatch.Frequency);
+        DeckleResourceSource.Log.ResourceReleased(
+            "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
         _processingStroke.Dispose();
         _processingStroke = null;
         _currentVariant   = null;
@@ -512,6 +546,15 @@ public sealed partial class HudChrono : UserControl
             ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
             log?.Invoke("REBUILD", "detached old visual from host");
 
+            // Sub-provider transverse Resource — release du stroke avant
+            // dispose dans le path Playground RebuildStroke.
+            if (_processingStroke != null)
+            {
+                int ageMsRebuild = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
+                                          * 1000L / Stopwatch.Frequency);
+                DeckleResourceSource.Log.ResourceReleased(
+                    "composition-visual", _processingStrokeHandle, ageMsRebuild, "hud-chrono-stroke");
+            }
             _processingStroke?.Dispose();
             _processingStroke = null;
             log?.Invoke("REBUILD", "disposed old ProcessingStroke");
@@ -540,6 +583,13 @@ public sealed partial class HudChrono : UserControl
             ElementCompositionPreview.SetElementChildVisual(
                 ProcessingSurfaceHost, _processingStroke.Visual);
             log?.Invoke("REBUILD", "attached new visual to host");
+
+            // Sub-provider transverse Resource — acquire du nouveau stroke
+            // dans le path Playground RebuildStroke.
+            _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
+            _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
+            DeckleResourceSource.Log.ResourceAcquired(
+                "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
 
             bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
             _processingStroke.ApplyVariant(variant, isDark);

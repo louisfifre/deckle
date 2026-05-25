@@ -129,6 +129,11 @@ public sealed class ScreenCaptureService : IDisposable
     private long _frameCount;
     private long _startTimestamp;
 
+    // Acquire timestamp du _duplicationPtr courant, lu au moment du
+    // release pour calculer age_ms dans DeckleResourceSource. Réécrit
+    // à chaque (re)création de la duplication.
+    private long _duplicationAcquiredTicks;
+
     /// <summary>True when a capture session is currently running.</summary>
     public bool IsRunning { get; private set; }
 
@@ -234,6 +239,13 @@ public sealed class ScreenCaptureService : IDisposable
                 _activeFormat = _activeDxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT
                     ? DirectXPixelFormat.R16G16B16A16Float
                     : DirectXPixelFormat.B8G8R8A8UIntNormalized;
+
+                // Sub-provider transverse Resource — acquire de la duplication
+                // output. size_bytes=0 parce que c'est un handle de
+                // synchronisation, pas une allocation mémoire mesurable.
+                _duplicationAcquiredTicks = Stopwatch.GetTimestamp();
+                DeckleResourceSource.Log.ResourceAcquired(
+                    "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
 
                 _frameCount = 0;
                 _startTimestamp = Stopwatch.GetTimestamp();
@@ -394,8 +406,13 @@ public sealed class ScreenCaptureService : IDisposable
                 DeckleVisionSource.Log.AccessLostRecovering();
                 if (_duplicationPtr != 0)
                 {
+                    long releasedHandle = (long)_duplicationPtr;
+                    int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
+                                       * 1000L / Stopwatch.Frequency);
                     Marshal.Release(_duplicationPtr);
                     _duplicationPtr = 0;
+                    DeckleResourceSource.Log.ResourceReleased(
+                        "duplication-output", releasedHandle, ageMs, "capture-loop");
                 }
                 continue;
             }
@@ -411,8 +428,13 @@ public sealed class ScreenCaptureService : IDisposable
                 DeckleVisionSource.Log.SecureDesktopRecovering(hr);
                 if (_duplicationPtr != 0)
                 {
+                    long releasedHandle = (long)_duplicationPtr;
+                    int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
+                                       * 1000L / Stopwatch.Frequency);
                     Marshal.Release(_duplicationPtr);
                     _duplicationPtr = 0;
+                    DeckleResourceSource.Log.ResourceReleased(
+                        "duplication-output", releasedHandle, ageMs, "capture-loop");
                 }
                 continue;
             }
@@ -479,6 +501,21 @@ public sealed class ScreenCaptureService : IDisposable
                     continue;
                 }
 
+                // Sub-provider transverse Resource — acquire de la
+                // texture frame. Boucle haute fréquence (~15 Hz cible)
+                // gated par IsEnabled(Verbose, Resource) côté provider :
+                // zéro alloc et zéro WriteEvent quand aucun listener
+                // n'écoute. La capture du timestamp est faite ici parce
+                // que la release est dans le finally en aval ; on
+                // accepte le test gate double (ici + dans le release)
+                // pour garder le code linéaire sans state local
+                // per-iteration. bytes_per_pixel = 4 (BGRA8) ou 8 (FP16).
+                int bytesPerPixel = _activeDxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 4;
+                int textureSizeBytes = _lastSize.Width * _lastSize.Height * bytesPerPixel;
+                long textureAcquiredTicks = Stopwatch.GetTimestamp();
+                DeckleResourceSource.Log.ResourceAcquired(
+                    "d3d11-texture", (long)texturePtr, textureSizeBytes, "capture-loop");
+
                 try
                 {
                     Interlocked.Increment(ref _frameCount);
@@ -508,7 +545,15 @@ public sealed class ScreenCaptureService : IDisposable
                 }
                 finally
                 {
-                    if (texturePtr != 0) Marshal.Release(texturePtr);
+                    if (texturePtr != 0)
+                    {
+                        long releasedTextureHandle = (long)texturePtr;
+                        int textureAgeMs = (int)((Stopwatch.GetTimestamp() - textureAcquiredTicks)
+                                                  * 1000L / Stopwatch.Frequency);
+                        Marshal.Release(texturePtr);
+                        DeckleResourceSource.Log.ResourceReleased(
+                            "d3d11-texture", releasedTextureHandle, textureAgeMs, "capture-loop");
+                    }
                 }
             }
             finally
@@ -642,6 +687,17 @@ public sealed class ScreenCaptureService : IDisposable
                     _lastSize = newSize;
                 }
 
+                // Sub-provider transverse Resource — re-acquire d'une
+                // nouvelle duplication après invalidation. Le handle
+                // diffère du précédent (Marshal.Release a déjà été
+                // appelé en amont sur l'ancienne valeur, l'event
+                // ResourceReleased correspondant a été émis dans le
+                // bras ACCESS_LOST / SECURE_DESKTOP de CaptureLoop ou
+                // par le finalizer d'attempt précédent ratée).
+                _duplicationAcquiredTicks = Stopwatch.GetTimestamp();
+                DeckleResourceSource.Log.ResourceAcquired(
+                    "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
+
                 DeckleVisionSource.Log.DuplicationRecreated(
                     attempt, _lastSize.Width, _lastSize.Height);
                 return;
@@ -660,6 +716,15 @@ public sealed class ScreenCaptureService : IDisposable
     {
         if (_duplicationPtr != 0)
         {
+            // Sub-provider transverse Resource — release de la duplication
+            // sur Stop / Dispose. age calculé depuis le dernier acquire
+            // (Start ou TryRecreateDuplication). Émis avant le Release
+            // pour ne pas perdre l'event si le Release lève.
+            long releasedHandle = (long)_duplicationPtr;
+            int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
+                               * 1000L / Stopwatch.Frequency);
+            DeckleResourceSource.Log.ResourceReleased(
+                "duplication-output", releasedHandle, ageMs, "capture-loop");
             try { Marshal.Release(_duplicationPtr); } catch { /* best effort */ }
             _duplicationPtr = 0;
         }
