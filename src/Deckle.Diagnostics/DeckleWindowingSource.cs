@@ -35,6 +35,7 @@ namespace Deckle.Diagnostics;
 //   "settings"      — SettingsWindow
 //   "log"           — LogWindow
 //   "setup"         — SetupWindow first-run wizard
+//   "playground"    — PlaygroundWindow (shell de tuning Hud + Ambient)
 //   "tray-popup"    — popup contextuel du tray icon
 //   "folder-picker" — picker FolderPicker système ouvert depuis Settings
 // Toute nouvelle fenêtre ajoutée au projet doit étendre ce vocabulaire

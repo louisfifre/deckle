@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Playground;
@@ -149,6 +150,15 @@ public sealed partial class PlaygroundWindow : Window
         AppWindow.Show();
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Windowing — émis post-Show pour capturer le rect effectif après
+        // que DWM ait positionné la fenêtre. Ancrage "Center" parce que le
+        // ctor ne fait qu'un AppWindow.Resize (1800×1440) sans Move
+        // explicite, le centrage initial est laissé à Windows. Émis à
+        // chaque ShowAndActivate parce qu'un drag utilisateur entre deux
+        // ouvertures change le rect — la dernière trace reste la vérité
+        // courante.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "playground", "Center");
     }
 
     public void SetRecordingState(bool isRecording)
