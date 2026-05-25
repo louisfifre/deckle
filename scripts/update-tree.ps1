@@ -14,6 +14,64 @@ $outputFile = Join-Path $repoRoot 'TREE.md'
 
 $files = git -C $repoRoot ls-files | Where-Object { $_ -ne '' }
 
+# ── Frontmatter ───────────────────────────────────────────────────────────
+
+function Get-Frontmatter {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+
+    $lines = Get-Content -LiteralPath $Path -TotalCount 30 -Encoding UTF8 -ErrorAction SilentlyContinue
+    if (-not $lines -or $lines.Count -lt 2) { return $null }
+    if ($lines[0].Trim() -ne '---') { return $null }
+
+    $fields = @{}
+    for ($i = 1; $i -lt $lines.Count; $i++) {
+        $line = $lines[$i]
+        if ($line.Trim() -eq '---') {
+            if ($fields.Count -eq 0) { return $null }
+            return $fields
+        }
+        if ($line -match '^\s*([A-Za-z0-9_-]+)\s*:\s*(.*)$') {
+            $key = $Matches[1].ToLowerInvariant()
+            $value = $Matches[2].Trim()
+            # Strip surrounding quotes if present
+            if (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+                ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+                if ($value.Length -ge 2) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+            }
+            $fields[$key] = $value
+        }
+    }
+    # Closing --- never found
+    return $null
+}
+
+function Format-MarkdownSuffix {
+    param([string]$AbsolutePath)
+
+    $fm = Get-Frontmatter -Path $AbsolutePath
+    if (-not $fm) { return '' }
+
+    $type = $fm['type']
+    $description = $fm['description']
+    if (-not $fm.ContainsKey('name') -and -not $type -and -not $description) { return '' }
+    if (-not $type -and -not $description) { return '' }
+
+    if ($description -and $description.Length -gt 80) {
+        $description = $description.Substring(0, 79).TrimEnd() + '…'
+    }
+
+    $typePart = if ($type) { "[$type]" } else { '' }
+    $descPart = if ($description) { $description } else { '' }
+
+    $tail = ($typePart, $descPart | Where-Object { $_ }) -join ' '
+    if (-not $tail) { return '' }
+    return "  — $tail"
+}
+
 # ── Construction de l'arbre ───────────────────────────────────────────────
 
 function New-Node {
@@ -46,7 +104,7 @@ foreach ($f in $files) {
 $lines = [System.Collections.Generic.List[string]]::new()
 
 function Render-Node {
-    param($Node, [string]$Prefix)
+    param($Node, [string]$Prefix, [string]$RelDir)
 
     $sortedDirs  = $Node.Dirs.Keys | Sort-Object
     $sortedFiles = $Node.Files | Sort-Object
@@ -64,14 +122,21 @@ function Render-Node {
 
         if ($e.IsDir) {
             $script:lines.Add("$Prefix$conn$($e.Name)/")
-            Render-Node $Node.Dirs[$e.Name] "$Prefix$indent"
+            $childRel = if ($RelDir) { "$RelDir/$($e.Name)" } else { $e.Name }
+            Render-Node $Node.Dirs[$e.Name] "$Prefix$indent" $childRel
         } else {
-            $script:lines.Add("$Prefix$conn$($e.Name)")
+            $suffix = ''
+            if ($e.Name -like '*.md') {
+                $rel = if ($RelDir) { "$RelDir/$($e.Name)" } else { $e.Name }
+                $abs = Join-Path $repoRoot $rel
+                $suffix = Format-MarkdownSuffix -AbsolutePath $abs
+            }
+            $script:lines.Add("$Prefix$conn$($e.Name)$suffix")
         }
     }
 }
 
-Render-Node $root ''
+Render-Node $root '' ''
 
 # ── Écriture ──────────────────────────────────────────────────────────────
 
