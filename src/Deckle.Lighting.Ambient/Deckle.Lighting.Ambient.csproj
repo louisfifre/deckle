@@ -36,5 +36,10 @@
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
+    <!-- Shell porte les extensions DispatcherQueue.TryEnqueueObserved
+         consommées par AmbientPage pour instrumenter le marshalling UI
+         sur le sub-provider Threading. Dépendance directe explicitée
+         plutôt que transitive via Settings. -->
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
 </Project>

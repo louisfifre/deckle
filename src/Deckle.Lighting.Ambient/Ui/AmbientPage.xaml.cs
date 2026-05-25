@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Deckle.Lighting.Hue;
 using Deckle.Catalog;
+using Deckle.Shell;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -133,12 +134,18 @@ public sealed partial class AmbientPage : Page
 
     private void OnSettingsChanged()
     {
-        DispatcherQueue.TryEnqueue(ResyncFromSettings);
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "settings-reload", caller: "ambient-page",
+            callback: ResyncFromSettings,
+            rejectSource: "AMBIENT", rejectWhat: "settings reload");
     }
 
     private void OnEngineStateChanged(AmbientEngineState state)
     {
-        DispatcherQueue.TryEnqueue(() => ApplyEngineState(state));
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "engine-state-sync", caller: "ambient-page",
+            callback: () => ApplyEngineState(state),
+            rejectSource: "AMBIENT", rejectWhat: "engine state sync");
     }
 
     // Surfaces the engine's transition state on the page. The previous
@@ -216,7 +223,10 @@ public sealed partial class AmbientPage : Page
         // task, Forget is direct from UI thread). Marshal to the UI
         // thread because the sync touches XAML elements.
         if (DispatcherQueue.HasThreadAccess) SyncHueBridgeUi();
-        else                                 DispatcherQueue.TryEnqueue(SyncHueBridgeUi);
+        else                                 DispatcherQueue.TryEnqueueObserved(
+            operation: "ui-update", caller: "ambient-page-hue",
+            callback: SyncHueBridgeUi,
+            rejectSource: "AMBIENT", rejectWhat: "hue bridge sync");
     }
 
     // Project HuePairingService state into the Hue expander visuals.
