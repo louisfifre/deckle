@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
+using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
@@ -75,6 +77,12 @@ public sealed class ScreenCaptureService : IDisposable
     // for as long as the engine is running, exiting only on a fatal
     // device error or cancellation. Mirrors Hyperion.NG DDA grabber.
     private const int RecreateBackoffMs = 2_000;
+
+    // Heartbeat rollup cadence — one DeckleVisionSource.Log.Heartbeat
+    // emission per window summarising throughput + latency percentiles.
+    // 1 s gives a stable fps figure at our ~15 Hz target without flooding
+    // the log. Mirrors the pattern in DeckleAmbientSource.Heartbeat.
+    private const int HeartbeatIntervalMs = 1_000;
 
     // Format priorities passed to DuplicateOutput1. The first format
     // the OS can honour wins. HDR sessions prefer FP16 scRGB ; SDR
@@ -328,6 +336,18 @@ public sealed class ScreenCaptureService : IDisposable
         long lastDeliveredTicks = 0;
         long throttleTicks = Stopwatch.Frequency * ThrottleIntervalMs / 1000;
 
+        // Heartbeat rollup accumulators — reset every HeartbeatIntervalMs
+        // by EmitHeartbeatIfDue. Allocated lazily (capacity 64 covers a
+        // 1 s window at ~15 Hz target with margin) and only populated
+        // when the Verbose|Heartbeat gate is open. The collection itself
+        // is bypassed when the gate is closed — zero alloc on the hot
+        // path of a typical session with no listener attached.
+        long heartbeatWindowStartTicks = Stopwatch.GetTimestamp();
+        int hbAcquired = 0;
+        int hbDropped = 0;
+        var hbAcquireDurationsUs = new List<long>(64);
+        var hbSampleDurationsUs = new List<long>(64);
+
         while (!ct.IsCancellationRequested)
         {
             // AcquireNextFrame blocks up to AcquireTimeoutMs. The duplication
@@ -342,6 +362,16 @@ public sealed class ScreenCaptureService : IDisposable
                 if (ct.IsCancellationRequested) break;
                 if (_duplicationPtr == 0) continue;
             }
+
+            // Heartbeat gate evaluated once per iteration. When closed,
+            // skip the per-tick latency Stopwatch and all per-window
+            // collection — the only residual cost is the IsEnabled
+            // probe itself plus the throttle/timestamp arithmetic that
+            // the loop already does.
+            bool heartbeatGateOpen = DeckleVisionSource.Log.IsEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
+
+            long acquireStartTicks = heartbeatGateOpen ? Stopwatch.GetTimestamp() : 0;
 
             int hr = ScreenCaptureInterop.AcquireNextFrame(
                 _duplicationPtr,
@@ -410,6 +440,14 @@ public sealed class ScreenCaptureService : IDisposable
                 continue;
             }
 
+            // Heartbeat — acquire path completed successfully. Track
+            // the frame regardless of whether it gets delivered to a
+            // sampler (throttle-skipped frames and consumer failures
+            // still count as "acquired" because the bridge round-trip
+            // happened). delivered=true marks the subset that ran the
+            // sample path.
+            bool delivered = false;
+            long sampleDurationUs = 0;
             try
             {
                 long now = Stopwatch.GetTimestamp();
@@ -420,6 +458,8 @@ public sealed class ScreenCaptureService : IDisposable
                 {
                     // Honour the cadence cap : release the GPU buffer
                     // without copying it into the consumer's grid.
+                    // Counted as dropped in the heartbeat — frame was
+                    // acquired but not processed.
                     continue;
                 }
 
@@ -450,13 +490,20 @@ public sealed class ScreenCaptureService : IDisposable
                         height:         _lastSize.Height,
                         timestampTicks: now);
 
+                    long sampleStartTicks = heartbeatGateOpen ? Stopwatch.GetTimestamp() : 0;
                     try
                     {
                         FrameArrived?.Invoke(capturedFrame);
+                        delivered = true;
                     }
                     catch (Exception ex)
                     {
                         DeckleVisionSource.Log.FrameConsumerThrew(ex.GetType().Name, ex.Message);
+                    }
+                    if (heartbeatGateOpen)
+                    {
+                        long sampleEndTicks = Stopwatch.GetTimestamp();
+                        sampleDurationUs = (sampleEndTicks - sampleStartTicks) * 1_000_000L / Stopwatch.Frequency;
                     }
                 }
                 finally
@@ -472,6 +519,35 @@ public sealed class ScreenCaptureService : IDisposable
                 {
                     DeckleVisionSource.Log.ReleaseFrameNonZero(releaseHr);
                 }
+
+                if (heartbeatGateOpen)
+                {
+                    long acquireEndTicks = Stopwatch.GetTimestamp();
+                    long acquireDurationUs = (acquireEndTicks - acquireStartTicks) * 1_000_000L / Stopwatch.Frequency;
+                    hbAcquireDurationsUs.Add(acquireDurationUs);
+                    if (delivered)
+                    {
+                        hbSampleDurationsUs.Add(sampleDurationUs);
+                    }
+                    hbAcquired++;
+                    if (!delivered) hbDropped++;
+
+                    EmitHeartbeatIfDue(
+                        ref heartbeatWindowStartTicks, ref hbAcquired, ref hbDropped,
+                        hbAcquireDurationsUs, hbSampleDurationsUs);
+                }
+                else if (hbAcquired > 0 || hbDropped > 0
+                      || hbAcquireDurationsUs.Count > 0 || hbSampleDurationsUs.Count > 0)
+                {
+                    // Gate flipped off mid-window — discard the partial
+                    // accumulation so we don't emit a stale fragment on
+                    // the next time it flips back on.
+                    hbAcquired = 0;
+                    hbDropped = 0;
+                    hbAcquireDurationsUs.Clear();
+                    hbSampleDurationsUs.Clear();
+                    heartbeatWindowStartTicks = Stopwatch.GetTimestamp();
+                }
             }
         }
 
@@ -483,6 +559,54 @@ public sealed class ScreenCaptureService : IDisposable
             IsRunning = false;
             Stopped?.Invoke();
         }
+    }
+
+    // Rollup emitter — emits one DeckleVisionSource.Log.Heartbeat per
+    // HeartbeatIntervalMs window and resets the accumulators. Called at
+    // the tail of every loop iteration when the Verbose|Heartbeat gate
+    // is open ; the gate is re-checked here for safety but the bulk of
+    // the cost (sample collection) is already gated upstream. Sorts
+    // both duration buffers in place to pick percentiles — buffer
+    // capacity is bounded by the per-window frame count (~15 at the
+    // engine push cadence) so the sort cost is negligible.
+    private static void EmitHeartbeatIfDue(
+        ref long windowStartTicks,
+        ref int acquired,
+        ref int dropped,
+        List<long> acquireDurationsUs,
+        List<long> sampleDurationsUs)
+    {
+        long now = Stopwatch.GetTimestamp();
+        long elapsedMs = (now - windowStartTicks) * 1000L / Stopwatch.Frequency;
+        if (elapsedMs < HeartbeatIntervalMs) return;
+
+        long p50Acquire = 0, p95Acquire = 0;
+        if (acquireDurationsUs.Count > 0)
+        {
+            acquireDurationsUs.Sort();
+            int count = acquireDurationsUs.Count;
+            p50Acquire = acquireDurationsUs[count / 2];
+            p95Acquire = acquireDurationsUs[(int)(0.95 * count)];
+        }
+
+        long p50Sample = 0, p95Sample = 0;
+        if (sampleDurationsUs.Count > 0)
+        {
+            sampleDurationsUs.Sort();
+            int count = sampleDurationsUs.Count;
+            p50Sample = sampleDurationsUs[count / 2];
+            p95Sample = sampleDurationsUs[(int)(0.95 * count)];
+        }
+
+        DeckleVisionSource.Log.Heartbeat(
+            (int)elapsedMs, acquired, dropped,
+            p50Acquire, p95Acquire, p50Sample, p95Sample);
+
+        windowStartTicks = now;
+        acquired = 0;
+        dropped = 0;
+        acquireDurationsUs.Clear();
+        sampleDurationsUs.Clear();
     }
 
     // Reopen the duplication after it was invalidated (ACCESS_LOST,

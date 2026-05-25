@@ -83,7 +83,7 @@ Le legacy `Deckle.Logging` coexiste jusqu'à la vague 6. Conséquence opération
 
 Chaque mesure exposée comme paramètre d'event a un format canonique. Le **nom du paramètre** sert de clé JSON, **l'unité**, **la précision** et le **suffixe** suivent les tables ci-dessous pour qu'un humain qui grep une mesure dans la LogWindow ou dans un JSONL retrouve la même chose partout. Toute apparition d'une mesure dans un nouvel event doit suivre ce contrat — si une unité manque, l'ajouter ici avant de l'utiliser.
 
-**Temps** — durées courtes `<name>_ms` entier (`load_ms=420`, source `Stopwatch`), durées longues `<name>_sec` 1 décimale (`audio_sec=12.3`, calcul `samples / 16000`), timing segment whisper `t0` / `t1` / `dur` 1 décimale (`t0=1.2 t1=3.4 dur=2.2`).
+**Temps** — durées courtes `<name>_ms` entier (`load_ms=420`, source `Stopwatch`), durées longues `<name>_sec` 1 décimale (`audio_sec=12.3`, calcul `samples / 16000`), durées sub-milliseconde `<name>_us` entier (microsecondes, `Stopwatch.ElapsedTicks * 1_000_000 / Stopwatch.Frequency`), timing segment whisper `t0` / `t1` / `dur` 1 décimale (`t0=1.2 t1=3.4 dur=2.2`).
 
 **Audio** — RMS linéaire `rms` 4 décimales sur `[0,1]` (`rms=0.0123`, `sqrt(Σv²/n)` avec `v = pcm16/32768`), niveau `dbfs` 1 décimale (`dbfs=-38.2`, `20 * log10(rms)`), fréquence en `kHz` entier (toujours `16` dans Deckle), canaux toujours `mono`, échantillons `samples` entier, taille buffer `bytes` entier.
 
