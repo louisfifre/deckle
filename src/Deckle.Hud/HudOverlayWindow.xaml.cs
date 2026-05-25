@@ -119,6 +119,30 @@ public sealed partial class HudOverlayWindow : Window
         // FadeTo updates (no animation overhead — we're already driving frames
         // at 60 Hz from the proximity timer).
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
+
+        // Theme — câble ActualThemeChanged pour les overlays transient.
+        // Une overlay vit 2-8 s ; un changement de thème pendant son
+        // affichage est rare mais possible (l'utilisateur fait le swap
+        // pendant qu'une notification flotte). L'event reste utile pour
+        // corréler un glitch de stroke colorée avec une transition.
+        if (Content is Microsoft.UI.Xaml.FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private Microsoft.UI.Xaml.ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(Microsoft.UI.Xaml.FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "hud-overlay", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     public IntPtr Hwnd => _hwnd;

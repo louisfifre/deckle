@@ -188,12 +188,43 @@ public sealed partial class HudWindow : Window
 
         RegisterMouseRawInput();
 
+        // Theme — câble ActualThemeChanged sur la racine XAML pour
+        // tracer light/dark/HC transitions. `RequestedTheme` posé par
+        // App.ApplyTheme via Push("user"/"app-init") sur la probe ;
+        // changement système (Personalization) tombe sans pending et
+        // est étiqueté "system". Le HUD ne porte pas de re-application
+        // manuelle de brushes au theme change (HudChrono le fait pour
+        // son chrono — cf. son propre site d'abonnement), donc cet
+        // event est purement observationnel ici.
+        if (Content is Microsoft.UI.Xaml.FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+
         // Never destroyed — only path out is the tray Quit menu.
         AppWindow.Closing += (_, args) =>
         {
             args.Cancel = true;
             Hide();
         };
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    //
+    // Mémorise la dernière valeur connue d'ActualTheme pour fabriquer le
+    // couple (from, to) attendu par DeckleThemeSource.ThemeChanged. Initialisée
+    // au ctor depuis Content.ActualTheme et mise à jour à chaque event.
+    private Microsoft.UI.Xaml.ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(Microsoft.UI.Xaml.FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "hud", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     private void RegisterMouseRawInput()

@@ -150,6 +150,31 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
         // Responsive TitleBar search (Task Manager pattern).
         SizeChanged += OnWindowSizeChanged;
+
+        // Theme — câble ActualThemeChanged sur la racine XAML. LogWindow
+        // est en thème système par défaut (pas de RequestedTheme forcé)
+        // mais reçoit le broadcast App.ApplyTheme via ApplyThemeToSingle
+        // au moment de sa création lazy, donc on observe à la fois les
+        // poses "app-init" du boot et les bascules system live (l'OS qui
+        // change Personalization pendant que la fenêtre est ouverte).
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private Microsoft.UI.Xaml.ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "log", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     // ── ILogWindowSink (events from LogWindowEventListener) ────────────────────

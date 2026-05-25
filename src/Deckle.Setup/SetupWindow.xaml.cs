@@ -78,6 +78,30 @@ public sealed partial class SetupWindow : Window
 
         Closed += OnWindowClosed;
         DeckleSetupSource.Log.SetupInfo("setup window opened");
+
+        // Theme — câble ActualThemeChanged sur la racine XAML. Le setup
+        // wizard est une fenêtre transient (vit le temps du first-run ou
+        // d'une session de re-setup depuis Settings) mais une bascule
+        // de thème pendant son affichage reste possible — utile pour
+        // diagnostiquer un glitch d'InfoBar ou de ProgressBar corrélé.
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "setup", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     // ── Public surface for pages ───────────────────────────────────────────

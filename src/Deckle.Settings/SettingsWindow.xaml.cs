@@ -116,6 +116,32 @@ public sealed partial class SettingsWindow : Window
             var hwnd = WindowNative.GetWindowHandle(this);
             NativeMethods.ShowWindow(hwnd, NativeMethods.SW_HIDE);
         };
+
+        // Theme — câble ActualThemeChanged sur la racine XAML pour
+        // tracer les transitions light/dark/HC. SettingsWindow est le
+        // déclencheur côté UI de toute bascule "user" (combo Appearance
+        // dans GeneralPage qui pousse via SettingsHost.ApplyTheme →
+        // App.ApplyTheme), donc cet event est particulièrement utile
+        // ici pour confirmer que la bascule a effectivement été reçue
+        // par la fenêtre qui l'a déclenchée.
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "settings", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     public void ShowAndActivate(string? pageTag = null)

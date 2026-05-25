@@ -53,6 +53,14 @@ public partial class App : Microsoft.UI.Xaml.Application
     private static Microsoft.UI.Windowing.TitleBarTheme _currentTitleBarTheme =
         Microsoft.UI.Windowing.TitleBarTheme.UseDefaultAppMode;
 
+    // Distingue le premier ApplyTheme (depuis OnLaunched, source "app-init")
+    // des suivants (déclenchés par GeneralPage/ViewModel via SettingsHost,
+    // source "user"). Posté à true à la fin du premier appel à ApplyTheme.
+    // Lu par Push du ThemeRequestSourceProbe juste avant chaque écriture
+    // de RequestedTheme, pour que le handler ActualThemeChanged câblé sur
+    // les fenêtres puisse étiqueter la transition correctement.
+    private static bool _firstThemeApplyDone;
+
     public App()
     {
         InitializeComponent();
@@ -606,6 +614,21 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         if (Current is not App app) return;
 
+        // Theme — marque la source de la prochaine bascule observable
+        // pour que le handler ActualThemeChanged câblé sur chaque
+        // fenêtre puisse étiqueter la transition. Premier appel (depuis
+        // OnLaunched) = "app-init", appels suivants (depuis GeneralPage
+        // ou GeneralViewModel via SettingsHost.ApplyTheme) = "user".
+        // Posté avant le broadcast sur les fenêtres : un seul Push
+        // suffit pour la rafale d'ActualThemeChanged que le framework
+        // émet en réaction aux écritures de RequestedTheme — la probe
+        // ne fait pas la queue, le dernier Push gagne et c'est ce qu'on
+        // veut puisque tous les ActualThemeChanged de ce batch ont la
+        // même origine sémantique.
+        string source = _firstThemeApplyDone ? "user" : "app-init";
+        Deckle.Diagnostics.ThemeRequestSourceProbe.Push(source);
+        _firstThemeApplyDone = true;
+
         foreach (var window in new Microsoft.UI.Xaml.Window?[]
                      { app._settingsWindow, app._playgroundWindow, app._logWindow, app._hudWindow })
         {
@@ -620,6 +643,13 @@ public partial class App : Microsoft.UI.Xaml.Application
     private static void ApplyThemeToSingle(Microsoft.UI.Xaml.Window? window)
     {
         if (window is null) return;
+        // Theme — si on est appelé hors boucle ApplyTheme (depuis un
+        // ShowXxxLazy qui vient de créer une fenêtre), la probe est
+        // vide. Pose un "app-init" par défaut, qui colle au cas
+        // sémantique : la fenêtre est en train de prendre le thème
+        // courant pour son premier render — c'est de l'initialisation
+        // côté surface, distincte d'une bascule user en cours.
+        Deckle.Diagnostics.ThemeRequestSourceProbe.Push("app-init");
         if (window.Content is Microsoft.UI.Xaml.FrameworkElement fe)
             fe.RequestedTheme = _currentTheme;
         if (window.AppWindow?.TitleBar is { } tb)
