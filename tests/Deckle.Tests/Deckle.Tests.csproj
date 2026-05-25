@@ -16,6 +16,13 @@
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+
+    <!-- Win2D arrive transitivement via Deckle.Composition / Deckle.Vision
+         et émet WIN2D0001 quand le projet est buildé AnyCPU. Le projet de
+         tests ne consomme aucune API Win2D et le warning n'a aucune
+         conséquence runtime — la dll Canvas n'est jamais chargée. Désactivé
+         localement pour garder la sortie test propre. -->
+    <Win2DWarnNoPlatform>false</Win2DWarnNoPlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,5 +40,12 @@
          s'ajouteront au fil de l'extension de la couverture. -->
     <ProjectReference Include="..\..\src\Deckle.Chrono\Deckle.Chrono.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Vision pour DeckleVisionSourceTests (heartbeat capture). Tire
+         WindowsAppSDK + Composition transitively. -->
+    <ProjectReference Include="..\..\src\Deckle.Vision\Deckle.Vision.csproj" />
+    <!-- Shell pour DispatcherQueueExtensionsTests (régression sur la
+         garde anti-récursion _emittingMarshal). Tire WindowsAppSDK pour
+         DispatcherQueue / DispatcherQueueController.CreateOnDedicatedThread. -->
+    <ProjectReference Include="..\..\src\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
 </Project>

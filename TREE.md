@@ -458,8 +458,21 @@ _Mise à jour : 2026-05-25 19:52 — source : `git ls-files`_
 │       ├── Chrono/
 │       │   ├── ChronoFormatterTests.cs
 │       │   └── DeckleChronoSourceTests.cs
+│       ├── Diagnostics/
+│       │   ├── DeckleCancellationSourceTests.cs
+│       │   ├── DeckleNetworkSourceTests.cs
+│       │   ├── DeckleResourceSourceTests.cs
+│       │   ├── DeckleThemeSourceTests.cs
+│       │   ├── DeckleThreadingSourceTests.cs
+│       │   └── DeckleWindowingSourceTests.cs
 │       ├── Shared/
-│       │   └── TestEventListener.cs
+│       │   ├── EventArgsExtensions.cs
+│       │   ├── TestEventListener.cs
+│       │   └── WindowsAppSdkBootstrap.cs
+│       ├── Shell/
+│       │   └── DispatcherQueueExtensionsTests.cs
+│       ├── Vision/
+│       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
 ├── .gitattributes
 ├── .gitignore
