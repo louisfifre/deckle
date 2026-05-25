@@ -78,13 +78,15 @@ public static class DispatcherQueueExtensions
     /// <param name="callback">Le delegate à exécuter sur le UI thread.</param>
     /// <param name="source">Identifiant libre de l'émetteur (ex. "HUD", "LOGWIN"). Passé en champ payload de l'event.</param>
     /// <param name="what">Description courte de l'event perdu (ex. "log entry", "recording state").</param>
+    /// <param name="priority">Priority d'ordonnancement de la dispatcher queue. Défaut Normal. Passer Low pour différer le callback après le batch de layout courant (pattern de coordination utilisé par les Settings pages pour clearer `_initializing` après hydratation des contrôles).</param>
     public static bool TryEnqueueOrLog(
         this DispatcherQueue queue,
         DispatcherQueueHandler callback,
         string source,
-        string what)
+        string what,
+        DispatcherQueuePriority priority = DispatcherQueuePriority.Normal)
     {
-        bool ok = queue.TryEnqueue(callback);
+        bool ok = queue.TryEnqueue(priority, callback);
         if (!ok && !_logging)
         {
             _logging = true;
@@ -113,13 +115,15 @@ public static class DispatcherQueueExtensions
     /// <param name="callback">Le delegate à exécuter sur le UI thread.</param>
     /// <param name="rejectSource">Identifiant libre passé à DispatcherEnqueueRejected si l'enqueue échoue (ex. "HUD", "LOGWIN").</param>
     /// <param name="rejectWhat">Description courte de l'event perdu (ex. "log entry", "overlay enqueue").</param>
+    /// <param name="priority">Priority d'ordonnancement de la dispatcher queue, propagée au TryEnqueue sous-jacent. Défaut Normal. Passer Low pour différer le callback après le batch de layout courant — pattern de coordination utilisé par les Settings pages pour clearer `_initializing` après hydratation des contrôles et par HudWindow pour le warm pass différé d'une frame.</param>
     public static bool TryEnqueueObserved(
         this DispatcherQueue queue,
         string operation,
         string caller,
         DispatcherQueueHandler callback,
         string rejectSource,
-        string rejectWhat)
+        string rejectWhat,
+        DispatcherQueuePriority priority = DispatcherQueuePriority.Normal)
     {
         bool verboseEnabled = DeckleThreadingSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Threading);
@@ -133,7 +137,7 @@ public static class DispatcherQueueExtensions
         // listener → Write → TryEnqueueObserved.
         if (!verboseEnabled || _emittingMarshal)
         {
-            return queue.TryEnqueueOrLog(callback, rejectSource, rejectWhat);
+            return queue.TryEnqueueOrLog(callback, rejectSource, rejectWhat, priority);
         }
 
         // Path chaud — instrumentation complète. Stopwatch capturé en
@@ -148,7 +152,7 @@ public static class DispatcherQueueExtensions
             var sw = Stopwatch.StartNew();
             DeckleThreadingSource.Log.MarshalQueued(operation, caller, queue_depth: -1);
 
-            bool ok = queue.TryEnqueue(() =>
+            bool ok = queue.TryEnqueue(priority, () =>
             {
                 int wait_ms = (int)sw.ElapsedMilliseconds;
                 sw.Restart();

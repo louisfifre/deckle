@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,6 +64,72 @@ public class DispatcherQueueExtensionsTests
             // listener.MarshalQueuedCount == maxReentry (50).
             Assert.Equal(1, listener.MarshalQueuedCount);
             Assert.False(listener.HitMaxReentry);
+        }
+        finally
+        {
+            await controller.ShutdownQueueAsync();
+        }
+    }
+
+    // Propriété : le paramètre `priority` exposé par TryEnqueueObserved
+    // (et par TryEnqueueOrLog en miroir) doit être propagé au
+    // `DispatcherQueue.TryEnqueue(priority, callback)` sous-jacent.
+    // L'API DispatcherQueue ne permet pas d'inspecter directement à
+    // quelle priority un callback a été enqueueé — on observe la
+    // propriété indirectement par l'ordre d'exécution : queue 4
+    // callbacks avec priorities Low, Low, Normal, High pendant que le
+    // UI thread est bloqué sur une gate, puis libère la gate. La queue
+    // doit dispatcher dans l'ordre High → Normal → Low (FIFO intra-
+    // niveau). Si priority est ignoré (tout posté en Normal), l'ordre
+    // serait celui d'arrivée Low, Low, Normal, High.
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task TryEnqueueObservedHonorsPriorityParameter()
+    {
+        var controller = DispatcherQueueController.CreateOnDedicatedThread();
+        var queue = controller.DispatcherQueue;
+        try
+        {
+            var order = new ConcurrentQueue<string>();
+            var allDone = new CountdownEvent(4);
+            using var gate = new ManualResetEventSlim(false);
+            var testCt = TestContext.Current.CancellationToken;
+
+            // Bloque le UI thread avant l'enqueue des 4 callbacks à
+            // tester. Sans ça, le premier enqueueé pourrait s'exécuter
+            // avant que les suivants soient en queue, et la dispatcher
+            // n'aurait jamais à arbitrer entre niveaux de priority.
+            queue.TryEnqueue(() => gate.Wait(TimeSpan.FromSeconds(5), testCt));
+
+            queue.TryEnqueueObserved(
+                operation: "priority-test", caller: "test-low-1",
+                callback: () => { order.Enqueue("low-1"); allDone.Signal(); },
+                rejectSource: "TEST", rejectWhat: "low 1",
+                priority: DispatcherQueuePriority.Low);
+
+            queue.TryEnqueueObserved(
+                operation: "priority-test", caller: "test-low-2",
+                callback: () => { order.Enqueue("low-2"); allDone.Signal(); },
+                rejectSource: "TEST", rejectWhat: "low 2",
+                priority: DispatcherQueuePriority.Low);
+
+            queue.TryEnqueueObserved(
+                operation: "priority-test", caller: "test-normal",
+                callback: () => { order.Enqueue("normal"); allDone.Signal(); },
+                rejectSource: "TEST", rejectWhat: "normal");
+
+            queue.TryEnqueueObserved(
+                operation: "priority-test", caller: "test-high",
+                callback: () => { order.Enqueue("high"); allDone.Signal(); },
+                rejectSource: "TEST", rejectWhat: "high",
+                priority: DispatcherQueuePriority.High);
+
+            gate.Set();
+            Assert.True(allDone.Wait(TimeSpan.FromSeconds(5), testCt));
+
+            Assert.Equal(
+                new[] { "high", "normal", "low-1", "low-2" },
+                order.ToArray());
         }
         finally
         {
