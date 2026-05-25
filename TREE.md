@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 21:24 — source : `git ls-files`_
+_Mise à jour : 2026-05-26 00:56 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -46,7 +46,7 @@ _Mise à jour : 2026-05-25 21:24 — source : `git ls-files`_
 │   ├── benches/
 │   │   └── voxtral-poc/
 │   │       ├── bench.py
-│   │       └── README.md
+│   │       └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
 │   ├── lib/
 │   │   ├── judges/
 │   │   │   ├── __init__.py
@@ -82,8 +82,8 @@ _Mise à jour : 2026-05-25 21:24 — source : `git ls-files`_
 │   │   │   ├── voxtral_chat.toml
 │   │   │   └── voxtral_transcribe.toml
 │   │   └── whisper_initial.txt
-│   ├── CLAUDE.md
-│   └── README.md
+│   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
+│   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-record-architecture-decisions.md
@@ -118,7 +118,7 @@ _Mise à jour : 2026-05-25 21:24 — source : `git ls-files`_
 │   │   └── stats.ps1
 │   ├── deckle.ps1
 │   ├── install-hooks.ps1
-│   ├── README.md
+│   ├── README.md  — [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
 │   └── update-tree.ps1
 ├── src/
 │   ├── Deckle.App/

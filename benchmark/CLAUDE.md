@@ -1,155 +1,130 @@
+---
+name: claude-benchmark
+description: "Doctrine for the benchmark/ suite — an autonomous box that measures quality and performance of ASR backends (Whisper, Voxtral, future) on private corpora. Read before adding a source, a judge, a corpus, or a bench scenario, and before changing the lib/ contracts or the runs/ output schema."
+type: agent-instructions
+module: benchmark
+---
+
 # CLAUDE.md — `benchmark/`
 
-Instructions pour agent travaillant sur le banc de mesure Voxtral / Whisper / futurs.
+Instructions for any agent working on the Voxtral / Whisper / future ASR benchmark.
 
-## Identité du dossier
+## Folder identity
 
-Le `benchmark/` est une **boîte autonome** dédiée à mesurer la qualité
-et les performances de différents backends ASR (Whisper, Voxtral, à
-venir) sur des corpora privés. Il sera extrait dans son propre repo
-plus tard ; en attendant il vit dans le repo Deckle pour rester proche
-des données de télémétrie qui alimentent les corpora.
+The `benchmark/` directory is an **autonomous box** dedicated to measuring quality and performance of ASR backends (Whisper, Voxtral, future) on private corpora. It will be extracted into its own repo later; for now it lives inside the Deckle repo to stay close to the telemetry data that feeds the corpora.
 
-Trois objectifs guident chaque choix ici :
+Three principles guide every choice here.
 
-- **Lisibilité par agent avant lisibilité par humain.** L'utilisateur
-  n'ira pas fouiller dans les fichiers — c'est un agent qui orchestre.
-  Donc docstrings riches, headers explicites, vocabulaire stable.
-- **Réutilisabilité par concept** (sources, juges, corpora, prompts,
-  métriques). Ajouter un nouveau backend = ajouter un fichier dans
-  `lib/sources/` qui implémente le contrat. Pas de duplication.
-- **Privacy** : les corpora contiennent de l'audio utilisateur, **jamais
-  versionnés**. Chaque machine amène ses propres samples.
+- **Agent readability before human readability.** The user does not browse files directly — an agent orchestrates. So rich docstrings, explicit headers, stable vocabulary.
+- **Reuse by concept** (sources, judges, corpora, prompts, metrics). Adding a new backend MUST mean adding a file under `lib/sources/` that implements the contract. No duplication.
+- **Privacy.** Corpora contain user audio and MUST NEVER be versioned. Each machine brings its own samples.
 
-## Organisation
+## Layout
 
 ```
 benchmark/
-├── CLAUDE.md             # ce fichier
-├── README.md             # vue humaine, plus court
-├── .env.example          # template clé Anthropic (le .env est gitignored)
+├── CLAUDE.md             # this file (agent-facing doctrine)
+├── README.md             # human-facing summary
+├── .env.example          # template for the Anthropic key (.env is gitignored)
 │
-├── lib/                  # briques réutilisables, transverses aux benches
-│   ├── corpus.py         #   loader corpus.jsonl → list[Sample]
-│   ├── env.py            #   load_dotenv() minimal sans dépendance
-│   ├── _base_compat.py   #   utilitaires (force stdout UTF-8 sur Windows)
-│   ├── sources/          #   drivers ASR (un fichier = un backend)
-│   │   ├── _base.py      #     contrat Source.transcribe() → Transcription
-│   │   ├── voxtral_dml.py    #   Voxtral Transformers + torch-directml
-│   │   └── whisper_cpp.py    #   Whisper.cpp via whisper-cli.exe
-│   ├── judges/           #   évaluateurs LLM
-│   │   ├── _base.py      #     contrat Judge.score_row() / score_macro()
-│   │   └── claude.py     #     API Anthropic, Haiku per-row + Opus macro
-│   ├── metrics/          #   règles objectives, pas d'appel LLM
+├── lib/                  # reusable building blocks, shared across benches
+│   ├── corpus.py         #   corpus.jsonl → list[Sample] loader
+│   ├── env.py            #   minimal load_dotenv() without external dep
+│   ├── event_log.py      #   structured event logger shared by all benches
+│   ├── _base_compat.py   #   utilities (force UTF-8 stdout on Windows)
+│   ├── sources/          #   ASR drivers (one file = one backend variant)
+│   │   ├── _base.py             #   Source.transcribe() → Transcription contract
+│   │   ├── _voxtral_common.py   #   shared model loading + DML setup
+│   │   ├── voxtral_chat.py      #   Voxtral chat-mode variant (ablation baseline)
+│   │   ├── voxtral_transcribe.py #  Voxtral via apply_transcription_request (Phase 3)
+│   │   └── whisper_cpp.py       #   Whisper.cpp via whisper-cli.exe
+│   ├── judges/           #   LLM evaluators
+│   │   ├── _base.py      #     Judge.score_row() / score_macro() contract
+│   │   ├── claude.py     #     Anthropic API, Haiku per-row + Opus macro
+│   │   └── gemini.py     #     Gemini API, per-row alternative
+│   ├── metrics/          #   objective rules, no LLM call
 │   │   ├── wer.py        #     WER + CER via jiwer
-│   │   ├── looping.py    #     détection bouclage n-gram
-│   │   └── leak.py       #     hallucinations connues + leak custom
+│   │   ├── looping.py    #     n-gram looping detection
+│   │   └── leak.py       #     known hallucinations + custom leaks
 │   └── monitor/
-│       └── gpu_monitor.ps1   # script PowerShell GPU/RAM (lancement manuel)
+│       ├── gpu_monitor.ps1   # PowerShell GPU/RAM sampler (manual launch)
+│       └── joiner.py         # joins gpu_monitor output with a bench run
 │
-├── corpora/              # GITIGNORED — chacun ses samples
-│   └── voxtral-poc/      #   exemple : corpus.jsonl + *.wav
+├── corpora/              # GITIGNORED — each machine brings its own
+│   └── voxtral-poc/      #   example: corpus.jsonl + *.wav
 │
-├── prompts/              # versionnés, immuables
-│   ├── transcription/    #   prompts à passer aux sources
-│   │   └── voxtral_regimes.toml   # V1..V5
-│   ├── judges/           #   system prompts pour les juges
-│   │   └── claude_per_row.md
-│   └── whisper_initial.txt        # initial prompt Whisper Deckle
+├── prompts/              # versioned, immutable
+│   ├── transcription/    #   prompts passed to sources, one TOML per variant
+│   │   ├── voxtral_chat.toml         # regimes for voxtral_chat
+│   │   └── voxtral_transcribe.toml   # regimes for voxtral_transcribe (V1..V5)
+│   ├── judges/           #   system prompts for judges
+│   │   ├── claude_per_row.md
+│   │   ├── gemini_per_row.md
+│   │   └── legacy_ollama_judge.md
+│   └── whisper_initial.txt           # Deckle Whisper initial prompt
 │
-├── benches/              # un sous-dossier = un scénario benché
+├── benches/              # one subfolder = one benched scenario
 │   └── voxtral-poc/
-│       ├── bench.py      #     orchestrateur
-│       └── README.md     #     description du scénario
+│       ├── bench.py      #     orchestrator
+│       └── README.md     #     scenario description
 │
-├── runs/                 # GITIGNORED — outputs jetables
-└── models-cache/         # GITIGNORED — GGUF, safetensors locaux
+├── runs/                 # GITIGNORED — disposable outputs
+└── models-cache/         # GITIGNORED — local GGUF, safetensors
 ```
 
 ## Concepts
 
 ### Source
 
-Une **source** est un backend de transcription. Elle expose
-`transcribe(audio_path, prompt, max_new_tokens) → Transcription`. Le
-contrat est minimal pour qu'un bench puisse swap d'une source à l'autre.
+A **source** is a transcription backend. It exposes `transcribe(audio_path, prompt, max_new_tokens) → Transcription`. The contract is minimal so a bench can swap sources freely.
 
-Pour ajouter une source :
+To add a source:
 
-1. Créer `lib/sources/<name>.py` qui définit une classe héritant
-   (implicitement, duck-typing OK) de `lib.sources._base.Source`.
-2. La classe instancie le modèle dans `__init__` (chargement coûteux,
-   payé une fois). `transcribe()` est appelé en boucle, doit être rapide.
-3. Mettre à jour le `--source` dans les benches qui veulent l'utiliser.
+1. Create `lib/sources/<name>.py` defining a class that implements (duck-typed OK) `lib.sources._base.Source`.
+2. The class loads the model in `__init__` (costly load, paid once). `transcribe()` is called in a loop and MUST stay fast.
+3. Update the `--source` flag of any bench that should expose it.
 
 ### Judge
 
-Un **juge** note des transcriptions. Deux modes :
+A **judge** scores transcriptions. Two modes.
 
-- `score_row(hypothesis, reference, regime, source) → JudgeScore` :
-  per-row, modèle léger (Claude Haiku), appelé dans la boucle.
-- `score_macro(run_summary, examples) → JudgeScore` : macro, modèle
-  gros (Claude Opus), appelé une fois en fin de run avec un résumé
-  curaté + exemples sélectionnés par le per-row.
+- `score_row(hypothesis, reference, regime, source) → JudgeScore` — per-row, light model (Claude Haiku), called in the loop.
+- `score_macro(run_summary, examples) → JudgeScore` — macro, heavyweight model (Claude Opus), called once at the end of a run with a curated summary plus examples selected by the per-row pass.
 
-Pour ajouter un juge : créer `lib/judges/<name>.py`, implémenter au
-moins `score_row`.
+To add a judge: create `lib/judges/<name>.py` and implement at least `score_row`.
 
 ### Corpus
 
-Un corpus vit sous `corpora/<slug>/` avec :
-- `corpus.jsonl` : une ligne par sample, payload Deckle telemetry
-  (`transcription_id`, `audio_file`, `text` = réf Whisper large-v3,
-  `duration_seconds`, `tier`).
-- `<audio_file>` : les WAV référencés dans corpus.jsonl.
+A corpus lives under `corpora/<slug>/` with:
 
-**Les corpora ne sont jamais versionnés.** Pour en avoir un sur ta
-machine, soit tu extrais depuis `%LOCALAPPDATA%\Deckle\telemetry\`,
-soit tu en captures un nouveau via Deckle en mode télémétrie.
+- `corpus.jsonl` — one line per sample, Deckle telemetry payload (`transcription_id`, `audio_file`, `text` = Whisper large-v3 reference, `duration_seconds`, `tier`).
+- `<audio_file>` — the WAVs referenced in `corpus.jsonl`.
+
+**Corpora MUST NEVER be versioned.** To get one on your machine, either extract from `%LOCALAPPDATA%\Deckle\telemetry\`, or capture a fresh one via Deckle in telemetry mode.
 
 ### Bench
 
-Un **bench** est un scénario concret sous `benches/<scenario>/bench.py`.
-Il assemble : un corpus, une ou plusieurs sources, des régimes de prompt,
-des métriques, un juge. Sortie : `runs/<run-id>/results.jsonl`.
+A **bench** is a concrete scenario under `benches/<scenario>/bench.py`. It assembles a corpus, one or more sources, prompt regimes, metrics, a judge. Output: `runs/<run-id>/results.jsonl`.
 
-Pour ajouter un bench : créer `benches/<name>/` avec `bench.py` qui
-importe les briques `lib/*` et orchestre. Voir `benches/voxtral-poc/`
-en référence.
+To add a bench: create `benches/<name>/` with a `bench.py` that imports the `lib/*` blocks and orchestrates them. See `benches/voxtral-poc/` as the canonical reference.
 
-## Conventions de code
+## Code conventions
 
-- **Encoding stdout** : forcer UTF-8 en début de script via
-  `lib._base_compat._ensure_stdout_utf8()`. PowerShell est cp1252 par
-  défaut, sinon les accents et box drawing chars (`─`) plantent avec
-  `UnicodeEncodeError`.
-- **Lazy imports** des dépendances lourdes (torch, anthropic, etc.) à
-  l'instanciation, pas au top-level. Permet à un bench d'instancier
-  une source A sans payer le coût d'import de la lib de la source B.
-- **Sérialisation JSONL** : une ligne par row, écrite + flushed au fil.
-  Si le bench crash, on a les rows déjà passés. Pas de buffering global.
-- **Erreurs vs exceptions** : une transcription qui échoue renvoie un
-  `Transcription(ok=False, error="...")`, **pas** une exception. Le
-  bench écrit la row et continue. Une exception remonte le crash entier.
-- **Docstrings** : style FR, prose en paragraphes courts, le **pourquoi**
-  domine sur le **quoi**. Cohérent avec la doctrine `deckle-workflow`
-  (section *Code comments*) du repo parent. Pas de docstring-cv
-  ("This function does X.").
+- **stdout encoding.** Force UTF-8 at the start of every script via `lib._base_compat._ensure_stdout_utf8()`. PowerShell is cp1252 by default; without this, accents and box drawing chars (`─`) crash with `UnicodeEncodeError`.
+- **Lazy imports** of heavy dependencies (torch, anthropic, …) at instantiation, not at top-level. Lets a bench instantiate source A without paying the import cost of source B's library.
+- **JSONL serialization.** One line per row, written and flushed on the fly. If the bench crashes, the rows already processed are persisted. No global buffering.
+- **Errors vs exceptions.** A failed transcription returns `Transcription(ok=False, error="...")`, **not** an exception. The bench writes the row and continues. An exception bubbles up the whole crash.
+- **Docstrings.** Prose in short paragraphs, the *why* dominates the *what*. Consistent with the `deckle-workflow` doctrine (*Code comments* section) of the parent repo. No docstring-CV ("This function does X.").
 
-## Environnements Python
+## Python environments
 
-- `.venv-voxtral-dml/` : venv principal pour Voxtral via Transformers
-  + torch-directml. `python312 -m venv .venv-voxtral-dml` puis
-  `pip install torch torch-directml "transformers>=4.55,<5.0" mistral-common[audio] soundfile librosa jiwer anthropic`.
-- `.venv-voxtral/` : ancien venv pour la stack llama.cpp (Phase 1/2),
-  archivable.
+- `.venv-voxtral-dml/` — primary venv for Voxtral via Transformers + torch-directml. Bootstrap: `python312 -m venv .venv-voxtral-dml` then `pip install torch torch-directml "transformers>=4.55,<5.0" mistral-common[audio] soundfile librosa jiwer anthropic`.
+- `.venv-voxtral/` — legacy venv for the llama.cpp stack (Phase 1/2), archivable.
 
-Les deux sont gitignored (pattern `.venv*/`).
+Both are gitignored (pattern `.venv*/`).
 
-## Sécurité
+## Security
 
-- `benchmark/.env` contient `ANTHROPIC_API_KEY=...`. **Jamais commité**
-  (pattern `*.env` dans .gitignore racine).
-- Pour copier la clé sur ton portable : USB ou password manager, pas Git.
-- En cas de fuite : révoquer via https://console.anthropic.com/settings/keys
-  et en générer une nouvelle.
+- `benchmark/.env` carries `ANTHROPIC_API_KEY=...`. **Never commit it** (pattern `*.env` in the root .gitignore).
+- To copy the key onto a portable machine: USB drive or password manager, never Git.
+- On leak: revoke via https://console.anthropic.com/settings/keys and generate a new one.
