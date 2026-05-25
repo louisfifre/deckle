@@ -26,6 +26,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Expose les types internal au projet de tests — ProximityRollupAggregator
+         est internal sealed (concern strictement local au module) mais testé
+         unit isolément depuis Deckle.Tests. Pattern .NET 5+ via attribut MSBuild,
+         qui génère un [InternalsVisibleTo] côté Roslyn au build. -->
+    <InternalsVisibleTo Include="Deckle.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />

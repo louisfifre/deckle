@@ -262,6 +262,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   ├── HudWindow.xaml
 │   │   ├── HudWindow.xaml.cs
 │   │   ├── MessageKind.cs
+│   │   ├── ProximityRollupAggregator.cs
 │   │   └── WindowSlideAnimator.cs
 │   ├── Deckle.Lighting/
 │   │   ├── Hue/
@@ -483,6 +484,9 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │       │   ├── DeckleThemeSourceTests.cs
 │       │   ├── DeckleThreadingSourceTests.cs
 │       │   └── DeckleWindowingSourceTests.cs
+│       ├── Hud/
+│       │   ├── DeckleHudSourceTests.cs
+│       │   └── ProximityRollupAggregatorTests.cs
 │       ├── Shared/
 │       │   ├── EventArgsExtensions.cs
 │       │   ├── TestEventListener.cs

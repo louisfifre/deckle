@@ -47,5 +47,10 @@
          garde anti-récursion _emittingMarshal). Tire WindowsAppSDK pour
          DispatcherQueue / DispatcherQueueController.CreateOnDedicatedThread. -->
     <ProjectReference Include="..\..\src\Deckle.Shell\Deckle.Shell.csproj" />
+    <!-- Hud pour ProximityRollupAggregatorTests (unit) et
+         DeckleHudSourceTests (observability — signature ProximityRollup
+         post-bascule per-session). Tire WindowsAppSDK + Composition
+         transitively comme Vision. -->
+    <ProjectReference Include="..\..\src\Deckle.Hud\Deckle.Hud.csproj" />
   </ItemGroup>
 </Project>
