@@ -1,44 +1,49 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 10:40 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 
 ```
 ├── .claude/
 │   ├── agents/
-│   │   ├── expert-dotnet-software-engineer.agent.md
-│   │   ├── plan.agent.md
-│   │   └── winui3-expert.agent.md
+│   │   ├── expert-dotnet-software-engineer.agent.md  — Provide expert .NET software engineering guidance using modern software design…
+│   │   ├── plan.agent.md  — Strategic planning and architecture assistant focused on thoughtful analysis be…
+│   │   └── winui3-expert.agent.md  — Expert agent for WinUI 3 and Windows App SDK development. Prevents common UWP-t…
 │   └── skills/
 │       ├── deckle-commits/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Doctrine de commits pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte le…
 │       ├── deckle-docs/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Convention documentaire pour le projet Deckle (Windows .NET 10 / WinUI 3). Défi…
 │       ├── deckle-logging/
-│       │   ├── SKILL.md
+│       │   ├── SKILL.md  — Doctrine d'observabilité pour le projet Deckle (Windows .NET 10 / WinUI 3). Por…
 │       │   └── taxonomy.md
 │       ├── deckle-modularite/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Doctrine de modularité et de découpage pour le projet Deckle (Windows .NET 10 /…
 │       ├── deckle-nomenclature/
-│       │   ├── SKILL.md
+│       │   ├── SKILL.md  — Doctrine de nomenclature pour le projet Deckle (Windows .NET 10 / WinUI 3). Por…
 │       │   └── taxonomie.md
 │       ├── deckle-refonte/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Panoramic refonte coordination skill for the Deckle project (Windows .NET 10 /…
 │       ├── deckle-settings-ux/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Doctrine d'expérience utilisateur pour les surfaces de paramétrage du projet De…
 │       ├── deckle-testing/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Doctrine de testing pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte la…
 │       ├── deckle-workflow/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Doctrine de workflow pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte l…
 │       ├── microsoft-docs/
-│       │   └── SKILL.md
+│       │   └── SKILL.md  — Query official Microsoft documentation to find concepts, tutorials, and code ex…
+│       ├── save-context/
+│       │   ├── format.md
+│       │   └── SKILL.md  — [skill] When in-session information has durable value (a tranched decision, learned tec…
+│       ├── spawn-tasks/
+│       │   └── SKILL.md  — [skill] When Louis invokes you to spin off parallel topics that surfaced in conversatio…
 │       ├── tdd/
 │       │   ├── deep-modules.md
 │       │   ├── interface-design.md
 │       │   ├── mocking.md
 │       │   ├── refactoring.md
-│       │   ├── SKILL.md
+│       │   ├── SKILL.md  — Test-driven development with red-green-refactor loop. Use when user wants to bu…
 │       │   └── tests.md
 │       └── write-a-skill/
-│           └── SKILL.md
+│           └── SKILL.md  — Create new agent skills with proper structure, progressive disclosure, and bund…
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
