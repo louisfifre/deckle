@@ -131,6 +131,33 @@ public sealed partial class PlaygroundWindow : Window
         Nav.SelectedItem = Nav.MenuItems[0];
 
         this.Closed += OnWindowClosed;
+
+        // Theme — câble ActualThemeChanged sur la racine XAML. Le
+        // Playground est singleton-hidden (vit toute la session app
+        // une fois ouvert) donc voit toutes les bascules thème via
+        // ThemeRequestSourceProbe ("settings" depuis ThemeCombo
+        // user, "system" depuis colorPrevalence) ou directes (le
+        // root suit le système quand aucun RequestedTheme n'est posé).
+        // Trace utile pour corréler un glitch sliders / live preview
+        // avec une bascule thème pendant que la fenêtre était active.
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "playground", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     // ── Lifecycle surface (called by App) ───────────────────────────────────
