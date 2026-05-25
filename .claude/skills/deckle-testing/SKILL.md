@@ -1,81 +1,81 @@
 ---
 name: deckle-testing
-description: Doctrine de testing pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte la façon dont le testing est conçu et exécuté — strates en scope automatique (unit, integration, observability, regression) versus hors scope automatique (system, interactive), stack technique (xUnit v3 + Microsoft Testing Platform, Assert natif, pas de mock framework), placement (tests/Deckle.Tests sibling de src/, mirror par dossier), conventions de nommage et trait Category, pattern TestEventListener pour les tests d'observabilité, stratégie leaf-first face au bug XamlCompiler MSB3073. S'invoque avant d'écrire un test, avant d'ajouter un module à la couverture, avant de décider d'une stratégie de fake ou d'isolation, et avant de modifier la structure du projet de tests. Triggers on phrases like deckle testing, tests deckle, xunit deckle, test unitaire deckle, test observabilité deckle, test integration deckle, ajouter test deckle, couverture deckle, TestEventListener, deckle-testing.
+description: Testing doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries the way testing is designed and executed — layers in automatic scope (unit, integration, observability, regression) versus outside automatic scope (system, interactive), technical stack (xUnit v3 + Microsoft Testing Platform, native Assert, no mock framework), placement (tests/Deckle.Tests sibling of src/, mirror per folder), naming conventions and Category trait, TestEventListener pattern for observability tests, leaf-first strategy facing the XamlCompiler MSB3073 bug. Invoked before writing a test, before adding a module to coverage, before deciding on a fake or isolation strategy, and before modifying the test project structure. Triggers on phrases like deckle testing, deckle tests, deckle xunit, deckle unit test, deckle observability test, deckle integration test, add deckle test, deckle coverage, TestEventListener, deckle-testing.
 ---
 
-# Deckle — Doctrine de testing
+# Deckle — Testing doctrine
 
-## Rôle
+## Role
 
-Skill projet-spécifique qui répond à la question récurrente « comment Deckle teste son code ». S'invoque avant d'écrire un test, avant d'ajouter un module à la couverture, avant de décider d'une stratégie de fake ou d'isolation, et chaque fois qu'une décision touche à la structure du projet de tests.
+Project-specific skill that answers the recurring question "how does Deckle test its code". Invoked before writing a test, before adding a module to coverage, before deciding on a fake or isolation strategy, and every time a decision touches the structure of the test project.
 
-Ne duplique pas le skill cross-projet `tdd` (philosophie générale et techniques) ni `deckle-nomenclature` (règles de nommage transverses). Capte le résidu Deckle-spécifique — stack technique gelée, frontières des strates, placement physique, pattern d'observabilité, posture face au bug historique XamlCompiler (cf. ADR-0012).
+Does not duplicate the cross-project skill `tdd` (general philosophy and techniques) or `deckle-nomenclature` (cross-cutting naming rules). Captures the Deckle-specific residue — frozen technical stack, layer boundaries, physical placement, observability pattern, posture facing the historic XamlCompiler bug (see ADR-0012).
 
-## Philosophie
+## Philosophy
 
-Le code est conçu pour être testé, mais le test ne doit pas déformer l'interface publique. La dérive à éviter est le « code testable mais inutilisable » — sur-abstraction d'interfaces, injection de dépendances pour le plaisir, fakes partout là où une fonction pure suffit. Une couture (`seam`) ne se crée que quand le test en a besoin et que le besoin est réel — pas par anticipation.
+Code is designed to be testable, but the test must not deform the public interface. The drift to avoid is "testable but unusable code" — over-abstraction of interfaces, dependency injection for its own sake, fakes everywhere when a pure function would suffice. A seam is created only when the test needs it and the need is real — not by anticipation.
 
-On démarre simple — tests unitaires sur les modules-feuilles purs — et on étend strate par strate. Chaque strate ajoutée est une décision tracée, pas une migration de fond. La couverture progresse au rythme des chantiers ; on n'écrit pas de tests pour le passé, on en écrit pour ce qu'on touche.
+We start simple — unit tests on pure leaf modules — and extend layer by layer. Each added layer is a tracked decision, not a wholesale migration. Coverage progresses at the pace of workstreams; we don't write tests for the past, we write them for what we touch.
 
-## Strates en scope automatique
+## Layers in automatic scope
 
-Quatre strates sont exécutées sans intervention humaine — `dotnet test` les invoque, un agent LLM les pilote, le CI éventuel les valide.
+Four layers run without human intervention — `dotnet test` invokes them, an LLM agent drives them, eventual CI validates them.
 
-**Unit** — fonctions et types isolés, sans dépendance externe. Déterministe, rapide (millisecondes), pas de I/O, pas d'horloge, pas de threading visible. Catégorie : `[Trait("Category", "unit")]`. Exemple canonique : `ChronoFormatter` (décomposition `TimeSpan`, format `MM:SS.cc`).
+**Unit** — isolated functions and types, with no external dependency. Deterministic, fast (milliseconds), no I/O, no clock, no visible threading. Category: `[Trait("Category", "unit")]`. Canonical example: `ChronoFormatter` (`TimeSpan` decomposition, `MM:SS.cc` format).
 
-**Observability** — exerce la chaîne EventSource depuis l'émission jusqu'à la collecte. Le provider est un singleton process-wide ; le listener s'abonne par nom ETW (`Deckle.<Module>`), naturellement isolé par `using`. Catégorie : `[Trait("Category", "observability")]`. Pattern canonique documenté dans `TestEventListener` (voir section dédiée).
+**Observability** — exercises the EventSource chain from emission to collection. The provider is a process-wide singleton; the listener subscribes by ETW name (`Deckle.<Module>`), naturally isolated by `using`. Category: `[Trait("Category", "observability")]`. Canonical pattern documented in `TestEventListener` (see dedicated section).
 
-**Integration** — exerce plusieurs unités ensemble derrière une frontière publique. Reste dans le process, pas de réseau, pas d'UI. Catégorie : `[Trait("Category", "integration")]`. À introduire au cas par cas, quand une responsabilité orchestrée mérite une vérification end-to-end interne.
+**Integration** — exercises several units together behind a public boundary. Stays in-process, no network, no UI. Category: `[Trait("Category", "integration")]`. To be introduced case by case, when an orchestrated responsibility deserves an internal end-to-end check.
 
-**Regression** — test écrit en réaction à un bug corrigé, pour empêcher qu'il revienne. Catégorie : `[Trait("Category", "regression")]`. Le nom du test mentionne le symptôme reproduit. Toute correction de bug non-trivial s'accompagne idéalement d'un test de cette strate.
+**Regression** — test written in reaction to a fixed bug, to prevent it from coming back. Category: `[Trait("Category", "regression")]`. The test name mentions the reproduced symptom. Any non-trivial bug fix is ideally accompanied by a test of this layer.
 
-## Strates hors scope automatique
+## Layers outside automatic scope
 
-Deux strates restent manuelles — l'agent ne les déclenche pas, Louis les conduit.
+Two layers remain manual — the agent does not trigger them, Louis drives them.
 
-**System** — vérification de l'app intégrée en conditions réelles (binaire publié, dépendances natives en place, hotkey enregistré, tray actif). Conduit par Louis, scriptable ponctuellement mais pas automatisé.
+**System** — verification of the integrated app under real conditions (published binary, native dependencies in place, hotkey registered, tray active). Driven by Louis, occasionally scriptable but not automated.
 
-**Interactive** — vérification visuelle et sensorielle (HUD, animations, contraste, lisibilité, response time perçu). Reste l'apanage de Louis ; aucune automatisation crédible à ce stade.
+**Interactive** — visual and sensory verification (HUD, animations, contrast, readability, perceived response time). Stays Louis's prerogative; no credible automation at this stage.
 
-## Stack technique
+## Technical stack
 
-**xUnit v3 (3.2.2)** — recommandation officielle de l'équipe xUnit pour tout nouveau projet en 2026 (Brad Wilson). Le projet de tests est un exécutable autonome (`OutputType=Exe`) sous Microsoft Testing Platform, compatible aussi avec VSTest via `xunit.runner.visualstudio` pour le Test Explorer de Visual Studio.
+**xUnit v3 (3.2.2)** — official recommendation from the xUnit team for any new project in 2026 (Brad Wilson). The test project is a standalone executable (`OutputType=Exe`) under Microsoft Testing Platform, also compatible with VSTest via `xunit.runner.visualstudio` for Visual Studio's Test Explorer.
 
-**Microsoft.NET.Test.Sdk + xunit.runner.visualstudio** — orchestration VSTest pour découverte par `dotnet test` et Test Explorer. Versions gelées : `Microsoft.NET.Test.Sdk 17.13.0`, `xunit.v3 3.2.2`, `xunit.runner.visualstudio 3.1.5`.
+**Microsoft.NET.Test.Sdk + xunit.runner.visualstudio** — VSTest orchestration for discovery by `dotnet test` and Test Explorer. Frozen versions: `Microsoft.NET.Test.Sdk 17.13.0`, `xunit.v3 3.2.2`, `xunit.runner.visualstudio 3.1.5`.
 
-**Assert natif xUnit** — `Assert.Equal`, `Assert.Single`, `Assert.IsType`, etc. Pas de FluentAssertions (v8 commercial, hors-cadre du projet). Pas de Shouldly ni équivalent — l'assertion native est suffisamment lisible et n'ajoute pas de dépendance.
+**Native xUnit Assert** — `Assert.Equal`, `Assert.Single`, `Assert.IsType`, etc. No FluentAssertions (v8 commercial, out of scope for the project). No Shouldly or equivalent — the native assertion is readable enough and adds no dependency.
 
-**Pas de framework de mock** — Moq, NSubstitute, FakeItEasy ne sont pas introduits. Quand une couture est nécessaire, le fake est écrit à la main (classe `Fake<Interface>` dans `tests/.../Shared/`). Cette discipline maintient la simplicité de l'interface réelle et oblige à se demander si la couture est légitime.
+**No mock framework** — Moq, NSubstitute, FakeItEasy are not introduced. When a seam is necessary, the fake is written by hand (`Fake<Interface>` class under `tests/.../Shared/`). This discipline keeps the real interface simple and forces the question of whether the seam is legitimate.
 
-**`dotnet test` direct** — l'agent invoque la commande sans script intermédiaire (`dotnet test tests/Deckle.Tests/Deckle.Tests.csproj`). Les filtres par catégorie marchent nativement (`--filter "Category=unit"`). L'intégration au menu `scripts/deckle.ps1` est un confort humain optionnel, pas une dépendance.
+**Direct `dotnet test`** — the agent invokes the command without an intermediate script (`dotnet test tests/Deckle.Tests/Deckle.Tests.csproj`). Category filters work natively (`--filter "Category=unit"`). Integration into the `scripts/deckle.ps1` menu is optional human comfort, not a dependency.
 
-## Placement et structure
+## Placement and structure
 
-**Un seul projet de tests** — `tests/Deckle.Tests/` sibling de `src/`. Pas un projet par module — la fragmentation viendra si et seulement si elle se justifie par une frontière de cycle de build ou de plateforme.
+**A single test project** — `tests/Deckle.Tests/` sibling of `src/`. Not one project per module — fragmentation will come if and only if justified by a build cycle or platform boundary.
 
-**Suffixe `.Tests` permanent** — `Deckle.Tests` n'est pas un nom transitoire en attente de « promotion » vers `src/`. Le projet vit parallèlement aux modules testés, indéfiniment.
+**Permanent `.Tests` suffix** — `Deckle.Tests` is not a transitional name awaiting "promotion" to `src/`. The project lives alongside the tested modules, indefinitely.
 
-**Mirror par dossier** — la structure interne calque celle de `src/`. Tests du module `Deckle.Chrono` sous `tests/Deckle.Tests/Chrono/`, tests du module `Deckle.Diagnostics` sous `tests/Deckle.Tests/Diagnostics/`. Le namespace suit (`Deckle.Tests.Chrono`).
+**Mirror per folder** — the internal structure mirrors that of `src/`. Tests for the `Deckle.Chrono` module under `tests/Deckle.Tests/Chrono/`, tests for the `Deckle.Diagnostics` module under `tests/Deckle.Tests/Diagnostics/`. The namespace follows (`Deckle.Tests.Chrono`).
 
-**Helpers partagés sous `Shared/`** — `tests/Deckle.Tests/Shared/` héberge les utilitaires réutilisables entre modules testés (`TestEventListener`, fakes communs, builders de fixtures). `internal sealed` par défaut — visibilité minimale, surface contrôlée.
+**Shared helpers under `Shared/`** — `tests/Deckle.Tests/Shared/` hosts utilities reusable across tested modules (`TestEventListener`, common fakes, fixture builders). `internal sealed` by default — minimal visibility, controlled surface.
 
-**`ProjectReference` à la demande** — le csproj référence uniquement les modules effectivement testés. Chaque ajout de module à la couverture ajoute une `ProjectReference`.
+**`ProjectReference` on demand** — the csproj references only the modules actually tested. Each module added to coverage adds a `ProjectReference`.
 
-## Conventions de nommage
+## Naming conventions
 
-**Classe de test** : `<TypeTesté>Tests`. Exemple : `ChronoFormatterTests`, `DeckleChronoSourceTests`. Une classe par type ou par responsabilité testée.
+**Test class**: `<TestedType>Tests`. Example: `ChronoFormatterTests`, `DeckleChronoSourceTests`. One class per tested type or responsibility.
 
-**Méthode de test** : PascalCase, phrase complète sans underscore, décrit le comportement attendu. Exemples : `DecomposeReturnsZeroForTimeSpanZero`, `PilotEmittedCarriesTheNoteAsFirstPayload`. La forme `Methode_Etat_Resultat` avec underscores (style Microsoft historique) n'est pas adoptée — elle entre en friction avec `deckle-nomenclature` (PascalCase strict, pas d'underscore dans les identifiants publics).
+**Test method**: PascalCase, complete sentence without underscore, describes the expected behavior. Examples: `DecomposeReturnsZeroForTimeSpanZero`, `PilotEmittedCarriesTheNoteAsFirstPayload`. The `Method_State_Result` form with underscores (historical Microsoft style) is not adopted — it conflicts with `deckle-nomenclature` (strict PascalCase, no underscore in public identifiers).
 
-**Trait Category** : appliqué au niveau classe quand toutes les méthodes de la classe relèvent de la même strate. Au niveau méthode si une classe mélange unit et observability (cas rare, signal de scission).
+**Category trait**: applied at the class level when all methods in the class belong to the same layer. At the method level if a class mixes unit and observability (rare case, signal for splitting).
 
-**Arrange / Act / Assert** : séquence visible, séparée par lignes vides, sans commentaires `// Arrange` redondants. Un test = un fait. Si l'assert demande plusieurs vérifications corrélées (par exemple : un event a bien le bon ID et le bon niveau), elles tiennent ensemble dans une seule méthode ; sinon, scinder.
+**Arrange / Act / Assert**: visible sequence, separated by blank lines, without redundant `// Arrange` comments. One test = one fact. If the assert demands several correlated checks (for example: an event has the right ID and the right level), they hold together in a single method; otherwise, split.
 
-## Pattern TestEventListener
+## TestEventListener pattern
 
-Le testing d'observabilité Deckle s'appuie sur un `EventListener` instrumenté — `tests/Deckle.Tests/Shared/TestEventListener.cs`. Le pattern est canonique pour tout futur provider `Deckle.<Module>`.
+Deckle's observability testing relies on an instrumented `EventListener` — `tests/Deckle.Tests/Shared/TestEventListener.cs`. The pattern is canonical for any future `Deckle.<Module>` provider.
 
-Utilisation typique dans un test :
+Typical usage in a test:
 
 ```csharp
 using var listener = new TestEventListener("Deckle.Chrono");
@@ -85,26 +85,26 @@ var ev = Assert.Single(listener.Events);
 Assert.Equal(DeckleChronoSource.EvtPilotEmitted, ev.EventId);
 ```
 
-Deux pièges natifs à connaître. `OnEventSourceCreated` est invoqué pour les sources préexistantes pendant le constructeur de la classe de base `EventListener`, avant que les champs de la classe dérivée soient assignés — d'où le re-scan explicite via `EventSource.GetSources()` après assignment du nom dans le constructeur du listener. Et `OnEventWritten` peut recevoir des events système non-Deckle (`RuntimeEventSource`) selon les `EnableEvents` passifs — d'où le filtre défensif par nom de provider à l'entrée de `OnEventWritten`.
+Two native pitfalls to know. `OnEventSourceCreated` is invoked for preexisting sources during the base class `EventListener` constructor, before the derived class's fields are assigned — hence the explicit re-scan via `EventSource.GetSources()` after assigning the name in the listener's constructor. And `OnEventWritten` can receive non-Deckle system events (`RuntimeEventSource`) depending on passive `EnableEvents` — hence the defensive filter by provider name at the entry of `OnEventWritten`.
 
-Le `using` est important : `Dispose` désinscrit le listener, sinon il continue de capter les émissions des tests suivants.
+The `using` is important: `Dispose` unsubscribes the listener, otherwise it keeps capturing emissions from subsequent tests.
 
-## Progression de la couverture
+## Coverage progression
 
-`dotnet test` est utilisable sur n'importe quel module Deckle, y compris ceux qui tirent transitivement `Microsoft.WindowsAppSDK`. Le bug `MSB3073 XamlCompiler.exe exited with code 1` qui avait motivé une stratégie « leaf-first » historique (cf. `CLAUDE.md` racine et [microsoft-ui-xaml#8871](https://github.com/microsoft/microsoft-ui-xaml/issues/8871)) ne se reproduit plus dans la combinaison actuelle. Décision actée par [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md).
+`dotnet test` is usable on any Deckle module, including those that transitively pull `Microsoft.WindowsAppSDK`. The `MSB3073 XamlCompiler.exe exited with code 1` bug that had motivated a historic "leaf-first" strategy (see root `CLAUDE.md` and [microsoft-ui-xaml#8871](https://github.com/microsoft/microsoft-ui-xaml/issues/8871)) no longer reproduces in the current combination. Decision recorded by [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md).
 
-L'ordre de progression « modules purs avant modules à WinAppSDK » reste une **préférence pédagogique** raisonnable — démarrer par `Deckle.Chrono` puis `Deckle.Core` puis les parties pures de `Deckle.Composition` permet d'isoler la mécanique testing avant de croiser des dépendances plateforme. Mais ce n'est plus une **contrainte technique**. Quand un chantier touche un module à WinAppSDK (`Deckle.Catalog`, `Deckle.Hud`, `Deckle.Settings`, `Deckle.Transcription`, etc.), la couverture peut s'y étendre directement.
+The "pure modules before WinAppSDK modules" progression order remains a reasonable **pedagogical preference** — starting with `Deckle.Chrono` then `Deckle.Core` then the pure parts of `Deckle.Composition` isolates the testing mechanics before crossing platform dependencies. But it is no longer a **technical constraint**. When a workstream touches a WinAppSDK module (`Deckle.Catalog`, `Deckle.Hud`, `Deckle.Settings`, `Deckle.Transcription`, etc.), coverage can extend there directly.
 
-Si le bug réapparaît (signal : `MSB3073` sur `dotnet build` ou `dotnet test`, log enrichi par le fix WindowsAppSDK 1.8.8 qui rendra l'erreur lisible, échec sur un environnement CI/CD éventuel), réintroduire le contournement MSBuild VS — la recette technique est tracée dans [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md), réapplicable.
+If the bug reappears (signal: `MSB3073` on `dotnet build` or `dotnet test`, log enriched by the WindowsAppSDK 1.8.8 fix that will make the error readable, failure on an eventual CI/CD environment), reintroduce the MSBuild VS workaround — the technical recipe is tracked in [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md), reapplicable.
 
-## Évolution
+## Evolution
 
-Le projet de tests démarre minimaliste. L'ajout d'une dimension (catégorie nouvelle, dépendance NuGet de test, structure de dossier qui dévie du mirror, helper partagé qui change de forme) est une décision tracée, pas un automatisme — quand le besoin se présente, il se discute avant de s'écrire. Les choix gelés ci-dessus (xUnit v3, Assert natif, pas de mock framework, `.Tests` sibling, mirror par dossier) ne se remettent en cause que sur dérive observée et discutée explicitement.
+The test project starts minimalist. Adding a dimension (new category, test NuGet dependency, folder structure that deviates from the mirror, shared helper that changes shape) is a tracked decision, not an automatism — when the need arises, it gets discussed before being written. The frozen choices above (xUnit v3, native Assert, no mock framework, `.Tests` sibling, mirror per folder) are only revisited on observed and explicitly discussed drift.
 
-## Pointeurs
+## Pointers
 
-- **`tdd`** — philosophie générale du TDD, techniques de design pour la testabilité (deep modules, interface design, mocking, refactoring). Lu en complément quand une question de conception émerge.
-- **`deckle-nomenclature`** — règles de nommage transverses (PascalCase, suffixes admis) ; ce skill applique ces règles au contexte testing.
-- **`deckle-workflow`** — doctrine quotidienne de build (`dotnet build`, scripts d'orchestration) que cette doctrine recoupe.
-- **`deckle-docs`** — où vivent les traces écrites du projet ; un changement structurel du testing laisse trace ici ou en ADR selon le poids.
-- **`src/Deckle.Diagnostics/CLAUDE.md`** — convention transverse EventSource (providers, listeners, schéma JSONL, classes d'observables canoniques) et pattern test côté provider (motivation, exemple, lien ADR-0005).
+- **`tdd`** — general TDD philosophy, design techniques for testability (deep modules, interface design, mocking, refactoring). Read as a complement when a design question emerges.
+- **`deckle-nomenclature`** — cross-cutting naming rules (PascalCase, allowed suffixes); this skill applies these rules to the testing context.
+- **`deckle-workflow`** — daily build doctrine (`dotnet build`, orchestration scripts) that this doctrine overlaps with.
+- **`deckle-docs`** — where the project's written traces live; a structural change to testing leaves a trace here or in an ADR depending on weight.
+- **`src/Deckle.Diagnostics/CLAUDE.md`** — cross-cutting EventSource convention (providers, listeners, JSONL schema, canonical observable classes) and provider-side test pattern (motivation, example, ADR-0005 link).

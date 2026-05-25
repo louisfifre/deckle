@@ -1,88 +1,88 @@
 ---
 name: deckle-nomenclature
-description: Doctrine de nomenclature pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte les règles de casing et de préfixes alignées sur les Framework Design Guidelines, la position assumée du projet sur les suffixes admis versus les suffixes flous à proscrire, la convention de namespaces miroir des dossiers, les patterns x:Uid et theme resources WinUI, et la discipline de renommage progressive. La taxonomie détaillée (suffixes tabulés, patterns x:Uid, structure EventSource, exemples commentés) vit dans le fichier compagnon taxonomie.md chargé à la demande. Triggers on phrases like nomenclature deckle, comment je nomme deckle, renommer deckle, convention nommage deckle, suffixe deckle, namespace deckle, audit nomenclature deckle, x:Uid deckle, EventSource provider deckle, ambiguïté Service Manager deckle.
+description: Naming doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries casing and prefix rules aligned with the Framework Design Guidelines, the project's assumed stance on accepted suffixes versus fuzzy suffixes to avoid, the convention of namespaces mirroring folders, WinUI x:Uid and theme resource patterns, and progressive renaming discipline. The detailed taxonomy (tabulated suffixes, x:Uid patterns, EventSource structure, commented examples) lives in the companion file taxonomie.md loaded on demand. Triggers on phrases like deckle naming, how do I name deckle, rename deckle, naming convention deckle, suffix deckle, namespace deckle, naming audit deckle, x:Uid deckle, EventSource provider deckle, Service Manager ambiguity deckle.
 ---
 
-# Deckle — Doctrine de nomenclature
+# Deckle — Naming doctrine
 
-## Rôle
+## Role
 
-Skill projet-spécifique qui répond à une question récurrente : **quel nom mérite ce symbole, ce fichier, ce dossier, cette ressource, ce provider**. S'invoque avant d'introduire un nouveau type ou une nouvelle ressource, avant un renommage non trivial, et au moment d'auditer une zone du dépôt dont la nomenclature a dérivé.
+Project-specific skill that answers a recurring question: **what name does this symbol, file, folder, resource, provider deserve**. Invoked before introducing a new type or resource, before a non-trivial renaming, and when auditing an area of the repo whose naming has drifted.
 
-La doctrine couvre toutes les surfaces nommées du projet — modules, namespaces, classes, méthodes, propriétés, champs, événements, paramètres, dossiers, fichiers, clés `.resw` et `x:Uid`, theme resources WinUI, providers et événements `EventSource`, vocabulaire `LogSource`. Elle ne décrit pas la structure des modules — cela relève de `deckle-modularite` — ni la rédaction des écritures lisibles de logging — cela relève de `deckle-logging`. Ici on s'occupe uniquement du choix des noms. L'objectif est qu'un agent qui découvre un fichier puisse reconstruire la responsabilité à partir des noms seuls, et qu'une décision de nommage soit prise en référence à une doctrine, pas par mimétisme du code voisin qui peut être de la dette.
+The doctrine covers every named surface of the project — modules, namespaces, classes, methods, properties, fields, events, parameters, folders, files, `.resw` and `x:Uid` keys, WinUI theme resources, `EventSource` providers and events, `LogSource` vocabulary. It does not describe module structure — that belongs to `deckle-modularite` — nor the drafting of human-readable logging writes — that belongs to `deckle-logging`. Here we only deal with name choices. The goal is that an agent discovering a file can reconstruct responsibility from names alone, and that a naming decision is taken with reference to a doctrine, not by mimicking neighboring code that may itself be debt.
 
-## Le nom décrit la responsabilité, pas l'implémentation
+## The name describes responsibility, not implementation
 
-Un nom dit **ce que le symbole est responsable de faire ou de représenter**, jamais comment il le fait. `ScreenCaptureService` est légitime parce que la responsabilité — fournir des frames d'écran à la demande — est nommée ; `WaveInPollingLoopRunner` serait au contraire un nom qui se périme au prochain changement de backend. Quand un nom porte un détail d'implémentation (framework, pattern d'appel, mécanisme interne), c'est un signal qu'il faut remonter d'un cran. Conséquence sur les renommages : une implémentation invisible aux consommateurs ne force pas un renommage ; un changement de responsabilité publique en exige un — c'est ce qui a justifié `Deckle.Capture → Deckle.Audio` et `Deckle.Localization → Deckle.Catalog`.
+A name says **what the symbol is responsible for doing or representing**, never how it does it. `ScreenCaptureService` is legitimate because the responsibility — providing screen frames on demand — is named; `WaveInPollingLoopRunner` would, on the contrary, be a name that expires at the next backend change. When a name carries an implementation detail (framework, call pattern, internal mechanism), it is a signal to step up one level. Consequence for renamings: an implementation invisible to consumers does not force a rename; a change in public responsibility requires one — that is what justified `Deckle.Capture → Deckle.Audio` and `Deckle.Localization → Deckle.Catalog`.
 
-## Vocabulaire fermé par dimension
+## Closed vocabulary per dimension
 
-Plusieurs dimensions portent un vocabulaire **fermé** dont les éléments sont décidés une fois et réutilisés à l'identique : sources d'observation `LogSource.*`, suffixes admis pour les classes, préfixes booléens, noms de modules et namespaces. Dans une dimension fermée, on choisit dans le vocabulaire existant ou on l'étend par décision tracée — pas d'invention ad hoc. Un cas réel qui ne tient pas dans l'existant est l'occasion d'étendre proprement ou de reformuler la responsabilité pour qu'elle entre dans une catégorie déjà nommée.
+Several dimensions carry a **closed** vocabulary whose elements are decided once and reused identically: `LogSource.*` observation sources, accepted class suffixes, boolean prefixes, module and namespace names. In a closed dimension, you pick from the existing vocabulary or extend it by a traced decision — no ad hoc invention. A real case that does not fit the existing set is the opportunity to extend cleanly or to reformulate the responsibility so it falls into an already-named category.
 
-## Casing et préfixes
+## Casing and prefixes
 
-Les règles de casing suivent les [Framework Design Guidelines](https://learn.microsoft.com/dotnet/standard/design-guidelines/capitalization-conventions) et le guide [C# identifier naming rules](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/identifier-names). **PascalCase** pour tout ce qui est visible (namespaces, types, méthodes, propriétés, événements, champs publics, constantes, valeurs d'énum, paramètres positionnels de records). **camelCase** pour paramètres et locals, et pour les paramètres positionnels de classes et structs. Aucune notation hongroise, aucun tiret ni underscore dans les identifiants publics.
+Casing rules follow the [Framework Design Guidelines](https://learn.microsoft.com/dotnet/standard/design-guidelines/capitalization-conventions) and the [C# identifier naming rules](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/identifier-names) guide. **PascalCase** for everything visible (namespaces, types, methods, properties, events, public fields, constants, enum values, positional parameters of records). **camelCase** for parameters and locals, and for positional parameters of classes and structs. No Hungarian notation, no dash or underscore in public identifiers.
 
-Pour les **champs privés**, la convention adoptée est celle du [.NET Runtime coding style](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md) — `_camelCase` pour l'instance, `s_camelCase` pour le statique privé, `t_camelCase` pour `[ThreadStatic]`. Ce n'est pas dans les Framework Design Guidelines historiques mais c'est la pratique vivante de Microsoft sur son propre runtime, et Deckle l'adopte pour aligner et signaler visuellement la portée.
+For **private fields**, the adopted convention is that of the [.NET Runtime coding style](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md) — `_camelCase` for instance, `s_camelCase` for private static, `t_camelCase` for `[ThreadStatic]`. This is not in the historical Framework Design Guidelines but it is the living practice of Microsoft on its own runtime, and Deckle adopts it to align and visually signal scope.
 
-Acronymes de deux lettres en majuscules (`IOStream`, `DbContext`), trois lettres et plus en PascalCase (`Xml`, `Json`, `Html`). Conséquence Deckle : `Llm`, `Hud`, `Vad` dans le code — la forme majuscule familière reste valide en commentaires et en logs lisibles. Interfaces préfixées `I`, génériques préfixés `T` (règle [CA1715](https://learn.microsoft.com/visualstudio/code-quality/ca1715)), méthodes asynchrones suffixées `Async` sans exception.
+Two-letter acronyms in uppercase (`IOStream`, `DbContext`), three letters and more in PascalCase (`Xml`, `Json`, `Html`). Consequence for Deckle: `Llm`, `Hud`, `Vad` in code — the familiar uppercase form remains valid in comments and human-readable logs. Interfaces prefixed `I`, generics prefixed `T` (rule [CA1715](https://learn.microsoft.com/visualstudio/code-quality/ca1715)), async methods suffixed `Async` without exception.
 
-## Suffixes — admis et à éviter
+## Suffixes — accepted and to avoid
 
-Le détail tabulé vit dans `taxonomie.md` avec leur sémantique précise et exemples. Trois familles à retenir au niveau doctrine.
+The tabulated detail lives in `taxonomie.md` with precise semantics and examples. Three families to retain at the doctrine level.
 
-**Suffixes canoniques admis** — `Attribute`, `EventArgs`, `Exception`, `Stream`, `Reader`, `Writer`, `Collection`, `Builder`, `Factory`, `Service`, `Provider`, `Repository`, `Store`, `Strategy`, `Visitor`. Tous portent une sémantique reconnue de la BCL ou des patterns GoF.
+**Canonical accepted suffixes** — `Attribute`, `EventArgs`, `Exception`, `Stream`, `Reader`, `Writer`, `Collection`, `Builder`, `Factory`, `Service`, `Provider`, `Repository`, `Store`, `Strategy`, `Visitor`. All carry semantics recognized from the BCL or GoF patterns.
 
-**Suffixes Deckle-spécifiques stabilisés** — `Engine` pour un pipeline métier complexe avec cycle de vie, `Host` pour un adapter qui pontifie une frontière (interop, isolement), `Mapper` pour une transformation pure `(In) → Out`, `Calculator` pour un calcul stateless agrégatif, `Detector` pour un classifieur binaire d'une condition. Ajouter un nouveau suffixe au vocabulaire fermé suppose une responsabilité nommable en une phrase et une décision tracée.
+**Stabilized Deckle-specific suffixes** — `Engine` for a complex business pipeline with a lifecycle, `Host` for an adapter that bridges a boundary (interop, isolation), `Mapper` for a pure `(In) → Out` transformation, `Calculator` for a stateless aggregative computation, `Detector` for a binary classifier of a condition. Adding a new suffix to the closed vocabulary assumes a responsibility nameable in one sentence and a traced decision.
 
-**Suffixes à éviter dans le code applicatif neuf** — `Manager`, `Helper`, `Utility`/`Util`/`Utils`, `Wrapper` générique, `Handler` sans contexte pipeline. La position est documentée côté communauté .NET (voir [Name Smells](https://daedtech.com/name-smells/)). `Helper` indique que le type principal n'est pas autosuffisant ; `Manager` signale typiquement un débordement non refactoré ; `Utils` est le réceptacle des fonctions sans foyer. Pour Deckle, `TrayIconManager` et `HotkeyManager` sont des cas hérités d'interop Windows admis par dérogation explicite — tout nouveau code préfère le rôle précis (`Registry`, `Store + Reader`, `Coordinator`).
+**Suffixes to avoid in new applicative code** — `Manager`, `Helper`, `Utility`/`Util`/`Utils`, generic `Wrapper`, `Handler` without pipeline context. The stance is documented on the .NET community side (see [Name Smells](https://daedtech.com/name-smells/)). `Helper` indicates that the main type is not self-sufficient; `Manager` typically signals an unrefactored overflow; `Utils` is the receptacle for functions without a home. For Deckle, `TrayIconManager` and `HotkeyManager` are legacy Windows interop cases admitted by explicit derogation — any new code prefers the precise role (`Registry`, `Store + Reader`, `Coordinator`).
 
-**Désambiguïsation Service / Provider / Engine / Host**. Un `Service` orchestre ; un `Provider` répond passivement ; un `Engine` orchestre un pipeline lourd avec cycle de vie propre ; un `Host` adapte ou ponte une frontière. Quand deux suffixes paraissent applicables au même type, c'est généralement qu'il porte deux responsabilités — décomposer.
+**Service / Provider / Engine / Host disambiguation**. A `Service` orchestrates; a `Provider` answers passively; an `Engine` orchestrates a heavy pipeline with its own lifecycle; a `Host` adapts or bridges a boundary. When two suffixes seem applicable to the same type, it is usually because it carries two responsibilities — decompose.
 
-## Booléens, collections, événements
+## Booleans, collections, events
 
-Booléens préfixés par un verbe d'état ou de capacité — `Is*`, `Has*`, `Can*`, `Should*`, `Are*`, `Supports*`, `Allows*`. Le préfixe est requis dans Deckle pour lever l'ambiguïté avec un type ou une méthode du même nom (la position « optionnel » des Framework Design Guidelines est durcie ici). Négations dans le nom proscrites — `CanSeek`, pas `CantSeek` ; pas de double négation. Booléens sans verbe (`Flag`, `Status`, `Mode`) n'indiquent rien — nommer ce qui est vrai.
+Booleans prefixed by a verb of state or capability — `Is*`, `Has*`, `Can*`, `Should*`, `Are*`, `Supports*`, `Allows*`. The prefix is required in Deckle to remove ambiguity with a type or method of the same name (the "optional" stance of the Framework Design Guidelines is hardened here). Negations in the name are forbidden — `CanSeek`, not `CantSeek`; no double negation. Booleans without a verb (`Flag`, `Status`, `Mode`) indicate nothing — name what is true.
 
-Collections au pluriel (`Items`, `Subscribers`, `Sinks`), élément unique au singulier. Énumérations non-flags au singulier, flags au pluriel. Namespaces au pluriel quand sémantiquement juste (`Strings`, `Controls`, `Converters`, `ViewModels`), au singulier pour les agrégats fonctionnels (`Engine`, `Setup`, `Telemetry`).
+Collections plural (`Items`, `Subscribers`, `Sinks`), single element singular. Non-flag enumerations singular, flags plural. Namespaces plural when semantically correct (`Strings`, `Controls`, `Converters`, `ViewModels`), singular for functional aggregates (`Engine`, `Setup`, `Telemetry`).
 
-Événements au passé pour le fait accompli (`Changed`, `Stopped`, `FrameArrived`, `TranscriptionFinished`), au participe présent pour la preview cancelable (`Changing`, `Closing`). La règle [CA1713](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1713) proscrit `Before*` et `After*`. La méthode raise associée porte le préfixe `On` (pattern protected virtual canonique) ; ce préfixe est **réservé à la méthode raise sur l'émetteur** — un handler côté abonné est nommé par son intention, pas par `On*`.
+Events in the past tense for the accomplished fact (`Changed`, `Stopped`, `FrameArrived`, `TranscriptionFinished`), in the present participle for the cancelable preview (`Changing`, `Closing`). The [CA1713](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1713) rule forbids `Before*` and `After*`. The associated raise method carries the `On` prefix (canonical protected virtual pattern); this prefix is **reserved for the raise method on the emitter** — a handler on the subscriber side is named by its intent, not by `On*`.
 
-## Namespaces et frontières de modules
+## Namespaces and module boundaries
 
-Le namespace **miroite la hiérarchie des dossiers** — un fichier sous `Engine/` déclare `<Module>.Engine`. La doc [Program organization](https://learn.microsoft.com/dotnet/csharp/fundamentals/program-structure/program-organization) appelle violer cette convention « actively confusing ». L'organisation à l'intérieur d'un module se fait par feature, pas par stéréotype technique, sauf quand le module est petit et que le stéréotype reste lisible (`Controls`, `Converters`, `Strings`, `Themes`).
+The namespace **mirrors the folder hierarchy** — a file under `Engine/` declares `<Module>.Engine`. The [Program organization](https://learn.microsoft.com/dotnet/csharp/fundamentals/program-structure/program-organization) doc calls violating this convention "actively confusing". Organization inside a module is done by feature, not by technical stereotype, except when the module is small and the stereotype stays readable (`Controls`, `Converters`, `Strings`, `Themes`).
 
-Les namespaces génériques flous sont à éviter — `Common`, `Shared`, `Utilities`, `Helpers`, `Misc`. Le projet préfère nommer la capability réelle. Cas particulier de `Deckle.Core` : admissible **tant que** sa responsabilité reste « fondations cross-module sans dépendance applicative » et que sa surface publique reste étroite — sinon scinder ou renommer.
+Fuzzy generic namespaces are to avoid — `Common`, `Shared`, `Utilities`, `Helpers`, `Misc`. The project prefers naming the real capability. Special case of `Deckle.Core`: admissible **as long as** its responsibility stays "cross-module foundations without applicative dependency" and its public surface stays narrow — otherwise split or rename.
 
-Le choix sous-namespace versus sous-projet suit `deckle-modularite`. La règle synthétique : un sous-namespace tant que le cycle de déploiement et le graphe de dépendance restent simples ; un sous-projet quand une frontière acyclique, un cycle de test isolé, ou un volume problématique le justifient. Le nom du sous-projet reflète la capability métier (`Deckle.Lighting.Ambient`), pas le stéréotype.
+The sub-namespace versus sub-project choice follows `deckle-modularite`. The synthetic rule: a sub-namespace as long as the deployment cycle and the dependency graph stay simple; a sub-project when an acyclic boundary, an isolated test cycle, or a problematic volume justifies it. The sub-project name reflects the business capability (`Deckle.Lighting.Ambient`), not the stereotype.
 
-## Ressources WinUI et localisation
+## WinUI resources and localization
 
-Trois directives XAML ne se confondent jamais. `x:Name` identifie un élément pour le code-behind (PascalCase, unique par namescope). `x:Key` est la clé d'un `ResourceDictionary`. `x:Uid` est la clé de **localisation** côté PRI — distincte du XAML namescope.
+Three XAML directives must never be confused. `x:Name` identifies an element for code-behind (PascalCase, unique per namescope). `x:Key` is the key of a `ResourceDictionary`. `x:Uid` is the **localization** key on the PRI side — distinct from the XAML namescope.
 
-Les clés `.resw` suivent le pattern `<Scope>_<Element>.<Property>` ou `<Scope>.<Property>`, avec scope par page ou par dialog (`WhisperPage_HeaderText.Text`, `CorpusConsent_Title`, `Common_Cancel`). Un `Resources.resw` unique par module sous `Strings/en-US/`. Une clé envoyée en traduction ne change plus — un renommage déclenche un cycle de retraduction et se traite comme un changement de contrat. Voir `taxonomie.md` pour les exemples détaillés.
+`.resw` keys follow the pattern `<Scope>_<Element>.<Property>` or `<Scope>.<Property>`, with scope per page or per dialog (`WhisperPage_HeaderText.Text`, `CorpusConsent_Title`, `Common_Cancel`). A single `Resources.resw` per module under `Strings/en-US/`. A key sent for translation no longer changes — a rename triggers a retranslation cycle and is treated as a contract change. See `taxonomie.md` for detailed examples.
 
-Les **theme resources** WinUI sont nommées par leur sémantique fonctionnelle, jamais par valeur — `LayerFillColorDefaultBrush`, `CardStrokeColorDefaultBrush`, `OverlayCornerRadius`, `ControlCornerRadius`. Toute valeur littérale dans le XAML qui devrait suivre le thème est un signal de mauvaise primitive (voir doctrine racine). Pour les theme resources Deckle locales, convention `<Domain>.<Descriptor>.<Variant>` avec suffixe de type (`Hud.Glow.BrushDefault`), domaine reconnaissable, vivant sous `Themes/<Domain>.xaml` du module concerné.
+WinUI **theme resources** are named by their functional semantics, never by value — `LayerFillColorDefaultBrush`, `CardStrokeColorDefaultBrush`, `OverlayCornerRadius`, `ControlCornerRadius`. Any literal value in XAML that should follow the theme is a signal of the wrong primitive (see root doctrine). For local Deckle theme resources, convention `<Domain>.<Descriptor>.<Variant>` with type suffix (`Hud.Glow.BrushDefault`), recognizable domain, living under `Themes/<Domain>.xaml` of the relevant module.
 
-## Observabilité typée et providers
+## Typed observability and providers
 
-Quand Deckle bascule sur EventSource (chantier suivi par `deckle-logging`), le **nom de provider** suit `Deckle-<Composant>` avec `-` comme séparateur (jamais point — collision ETW). Le nom est défini via `[EventSource(Name = "...")]`, pas hérité du nom C#. Le singleton `public static readonly Log = new()`, type `sealed` héritant directement de `EventSource`.
+When Deckle switches to EventSource (workstream tracked by `deckle-logging`), the **provider name** follows `Deckle-<Component>` with `-` as separator (never dot — ETW collision). The name is defined via `[EventSource(Name = "...")]`, not inherited from the C# name. The singleton is `public static readonly Log = new()`, type `sealed` inheriting directly from `EventSource`.
 
-Événements au passé pour les faits accomplis (`ModelLoaded`, `AppStarted`), paires `XStart`/`XStop` adjacentes avec IDs consécutifs pour les unités de travail mesurées. Keywords nommés par domaine fonctionnel (`Lifecycle`, `Transcription`, `Capture`), pas par module ni par technique. Structure canonique complète avec code de référence dans `taxonomie.md`.
+Events in the past tense for accomplished facts (`ModelLoaded`, `AppStarted`), adjacent `XStart`/`XStop` pairs with consecutive IDs for measured units of work. Keywords named by functional domain (`Lifecycle`, `Transcription`, `Capture`), not by module or technique. Complete canonical structure with reference code in `taxonomie.md`.
 
-Le **vocabulaire fermé `LogSource`** reste pertinent même quand le moteur sous-jacent bascule sur EventSource — c'est la dimension « catégorie d'événement » exposée côté UI. Le mapping `LogSource ↔ Keywords` doit être explicite et tracé. Les sources hiérarchiques (`SET.WHISPER`, `SET.GENERAL`) utilisent le point comme séparateur de niveau, distinct du format de nom de provider.
+The **closed `LogSource` vocabulary** remains relevant even when the underlying engine switches to EventSource — it is the "event category" dimension exposed on the UI side. The `LogSource ↔ Keywords` mapping must be explicit and traced. Hierarchical sources (`SET.WHISPER`, `SET.GENERAL`) use the dot as level separator, distinct from the provider name format.
 
-## Renommage et hygiène progressive
+## Renaming and progressive hygiene
 
-Un renommage non trivial est un changement de contrat — il se fait quand la responsabilité a effectivement bougé ou quand une dérive passée est consciemment corrigée. **Module par module au moment où le module est touché**, jamais en passe géante centralisée. Cette discipline rejoint celle des commentaires (`deckle-docs`).
+A non-trivial renaming is a contract change — it is done when responsibility has actually moved or when a past drift is consciously corrected. **Module by module at the moment the module is touched**, never in a giant centralized pass. This discipline joins that of comments (`deckle-docs`).
 
-Trois signaux invitent à reconsidérer un nom existant. Le nom **décrit l'implémentation** plutôt que la responsabilité. Le nom porte un **suffixe flou** alors que la responsabilité est précise et nommable autrement. Deux noms **se ressemblent au point d'être confondus** (cas `HudWindow` et `HudOverlayWindow` qui partagent l'essentiel — soit factoriser, soit renommer pour expliciter la différence de rôle).
+Three signals invite reconsidering an existing name. The name **describes implementation** rather than responsibility. The name carries a **fuzzy suffix** when the responsibility is precise and nameable otherwise. Two names **resemble each other to the point of being confused** (case of `HudWindow` and `HudOverlayWindow` which share the essentials — either factor out, or rename to make the role difference explicit).
 
-Un renommage tracé laisse une **entrée dans le journal du module** concerné avec l'ancien nom, le nouveau, ce qui a déclenché le changement. Les renommages historiques (`Deckle.Capture → Deckle.Audio`, `Deckle.Localization → Deckle.Catalog`) sont les exemples canoniques.
+A traced renaming leaves an **entry in the journal of the relevant module** with the old name, the new one, what triggered the change. The historical renamings (`Deckle.Capture → Deckle.Audio`, `Deckle.Localization → Deckle.Catalog`) are the canonical examples.
 
-## Pointeurs
+## Pointers
 
-- **`taxonomie.md`** dans ce skill — détail tabulé des suffixes, patterns x:Uid, structure EventSource avec keywords et tasks, exemples bons et mauvais commentés. Chargé à la demande.
-- **`deckle-logging`** — vocabulaire `LogSource`, niveaux d'écriture, procédure pour décider quoi observer.
-- **`deckle-modularite`** — où s'arrête un module, quand éclater en sous-projet.
-- **`deckle-docs`** — convention documentaire et hygiène des commentaires ; un renommage non trivial laisse trace dans le journal du module.
-- **`personal-conventions`** — conventions cross-projet (langue, wording, git, worktrees). `deckle-nomenclature` applique ces conventions pour le contexte .NET / WinUI 3.
+- **`taxonomie.md`** in this skill — tabulated detail of suffixes, x:Uid patterns, EventSource structure with keywords and tasks, commented good and bad examples. Loaded on demand.
+- **`deckle-logging`** — `LogSource` vocabulary, write levels, procedure to decide what to observe.
+- **`deckle-modularite`** — where a module ends, when to break out into a sub-project.
+- **`deckle-docs`** — documentation convention and comment hygiene; a non-trivial renaming leaves a trace in the module journal.
+- **`personal-conventions`** — cross-project conventions (language, wording, git, worktrees). `deckle-nomenclature` applies these conventions for the .NET / WinUI 3 context.

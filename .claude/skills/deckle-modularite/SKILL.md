@@ -1,88 +1,88 @@
 ---
 name: deckle-modularite
-description: Doctrine de modularité et de découpage pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte les critères qui guident où s'arrête un module, quand un fichier devient trop gros, quels signaux indiquent un découpage à revoir, et comment scinder une surface UI devenue monolithique. Triggers on phrases like deckle modularité, scinder fichier deckle, scinder module deckle, refonte modulaire deckle, fichier trop gros deckle, responsabilité module deckle, dépendances modules deckle, découpage page deckle.
+description: Modularity and splitting doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries the criteria that guide where a module ends, when a file gets too big, what signals indicate that splitting should be reconsidered, and how to split a UI surface that has become monolithic. Triggers on phrases like deckle modularity, split deckle file, split deckle module, deckle modular refactor, deckle oversized file, deckle module responsibility, deckle module dependencies, deckle page splitting.
 ---
 
-# Deckle — Doctrine de modularité
+# Deckle — Modularity doctrine
 
-## Rôle
+## Role
 
-Skill projet-spécifique qui répond à deux questions : **où s'arrête un module**, et **quand un fichier devient trop gros pour rester confortable**. S'invoque avant d'ajouter du code substantiel à un module, avant de décider qu'un nouveau module est nécessaire, et avant de scinder un fichier devenu monolithique.
+Project-specific skill that answers two questions: **where a module ends**, and **when a file gets too big to remain comfortable**. Invoked before adding substantial code to a module, before deciding that a new module is needed, and before splitting a file that has become monolithic.
 
-La doctrine cible deux objectifs joints. Faciliter le travail avec un agent LLM, qui repère plus facilement quel fichier est concerné quand l'arborescence est lisible et que les fichiers restent à taille humaine. Et faciliter la relecture par Louis a posteriori, étape par étape, sans avoir à charger en mémoire des fichiers de plusieurs milliers de lignes.
+The doctrine targets two joint objectives. Make work with an LLM agent easier — it spots more readily which file is concerned when the tree is legible and files stay at a human size. And make later re-reading by Louis easier, step by step, without having to load files of several thousand lines into memory.
 
-## Taxonomie en quatre catégories
+## Four-category taxonomy
 
-Avant de raisonner sur un module — où il s'arrête, ce qu'il doit exposer, qui peut le référencer — identifier d'abord à quelle **catégorie structurelle** il appartient. Le repo se range en quatre, et les règles d'une catégorie ne sont pas celles des autres.
+Before reasoning about a module — where it ends, what it must expose, who can reference it — first identify which **structural category** it belongs to. The repo sorts into four, and the rules of one category are not those of the others.
 
-**Librairie support** porte du code passif sans état runtime propre. Code statique, structs, primitives, ressources nommées par clé sémantique. Référencée largement, ne référence quasi-rien. Pas de singleton actif, pas de boucle, pas d'écoute d'événements Windows. C'est l'étage le plus bas du graphe. Modules concernés à ce jour : `Deckle.Core`, `Deckle.Catalog`, `Deckle.Composition`, `Deckle.Chrono`.
+**Support library** carries passive code with no runtime state of its own. Static code, structs, primitives, resources named by semantic key. Referenced widely, references almost nothing. No active singleton, no loop, no listening to Windows events. It is the lowest tier of the graph. Modules in this category today: `Deckle.Core`, `Deckle.Catalog`, `Deckle.Composition`, `Deckle.Chrono`.
 
-**Module métier** porte un domaine, un état runtime actif, et souvent un store Settings + une page Settings. Singleton actif qui tient un état pendant la vie de l'app et agit sur le système — il écoute des events Windows, lit un device, mute le clipboard, tient un buffer, pilote une boucle. La plupart des modules `Deckle.*` qui font quelque chose sont des modules métier.
+**Domain module** carries a domain, an active runtime state, and often a Settings store + a Settings page. Active singleton that holds state across the app's lifetime and acts on the system — it listens to Windows events, reads a device, mutates the clipboard, holds a buffer, drives a loop. Most `Deckle.*` modules that do something are domain modules.
 
-**Shell** est une coquille de présentation qui reçoit et n'expose rien aux modules métier. Ne référence pas les domaines, agrège dynamiquement via registry de delegates ou résolution par nom. `Deckle.Settings` est aujourd'hui le seul du genre : sa `NavigationView` charge les pages possédées par les modules métier via `Type.GetType(tag)` depuis le `Tag` du `NavigationViewItem`.
+**Shell** is a presentation shell that receives and exposes nothing to domain modules. Does not reference domains, aggregates dynamically via a delegate registry or name-based resolution. `Deckle.Settings` is the only one of its kind today: its `NavigationView` loads pages owned by domain modules via `Type.GetType(tag)` from the `Tag` of the `NavigationViewItem`.
 
-**Host** référence largement, agrège, sert un usage différencié. `Deckle.App` est le host de production (point d'entrée EXE, composition root qui voit tous les modules). `Deckle.Setup` est le host first-run wizard (transient, ouvrable depuis Settings pour ré-exécution). `Deckle.Playground` est le host dev/tuning (persistant, exposé via le tray). **Les hosts sont explicitement exemptés de la doctrine de modularité** — leur rôle *est* d'agréger. `Playground` n'est pas une exception ad-hoc qu'on tolère ; c'est une instance d'une catégorie nommée qui inclut aussi `App` et `Setup`.
+**Host** references widely, aggregates, serves a differentiated use. `Deckle.App` is the production host (EXE entry point, composition root that sees every module). `Deckle.Setup` is the first-run wizard host (transient, openable from Settings for re-execution). `Deckle.Playground` is the dev/tuning host (persistent, exposed via the tray). **Hosts are explicitly exempt from the modularity doctrine** — their role *is* to aggregate. `Playground` is not an ad-hoc exception that gets tolerated; it is an instance of a named category that also includes `App` and `Setup`.
 
-## Critère discriminant librairie support vs module métier (K3)
+## Discriminating criterion: support library vs domain module (K3)
 
-Quand un module est candidat entre librairie support et module métier, le test : **porte-t-il un singleton actif qui tient un état pendant la vie de l'app et agit sur le système** ? Si oui, module métier. Sinon, librairie support. Ce critère est stable structurellement — il ne dépend pas de l'apparition future d'un Settings POCO ou d'une page UI, il capture la vraie différence entre passif utilitaire et actif agissant.
+When a module is a candidate between support library and domain module, the test: **does it carry an active singleton that holds state across the app's lifetime and acts on the system**? If yes, domain module. Otherwise, support library. This criterion is structurally stable — it does not depend on the future appearance of a Settings POCO or a UI page, it captures the real difference between passive utility and active actor.
 
-L'apparition d'un état runtime dans un ancien support l'élève en module métier ; c'est un changement structurel qui mérite d'être nommé. À l'inverse, retirer le dernier état runtime d'un module métier le redescend en support — c'est aussi un changement structurel.
+The appearance of runtime state in a former support raises it to a domain module; this is a structural change worth naming. Conversely, removing the last runtime state from a domain module drops it back to support — that too is a structural change.
 
-## Doctrine de modularité Settings
+## Settings modularity doctrine
 
-**La page Settings qui configure un domaine vit dans le module qui possède ce domaine, et son service de persistance aussi.** Conséquence directe : `WhisperPage` dans `Deckle.Transcription`, `LlmPage` dans `Deckle.Llm.Rewrite`, `AmbientPage` dans `Deckle.Lighting.Ambient`. Les pages encore mal placées (typiquement `RecordingPage` côté capture audio, `DiagnosticsPage` côté observabilité) sont des résidus historiques à migrer.
+**The Settings page that configures a domain lives in the module that owns that domain, and its persistence service too.** Direct consequence: `WhisperPage` in `Deckle.Transcription`, `LlmPage` in `Deckle.Llm.Rewrite`, `AmbientPage` in `Deckle.Lighting.Ambient`. Pages still misplaced (typically `RecordingPage` on the audio capture side, `DiagnosticsPage` on the observability side) are historical residues to migrate.
 
-Le `Deckle.Settings` shell ne référence aucun module métier — c'est `Deckle.App`, en tant que composition root, qui voit tout le monde et qui câble. Le shell agrège dynamiquement les pages des modules métier via un mécanisme de registry (aujourd'hui `Type.GetType(tag)` ; évolution prévue vers un registry statique `SettingsHost.Register(SettingsPageDescriptor)` pushé par `App.OnLaunched` pour garantir le compile-time check).
+The `Deckle.Settings` shell references no domain module — it is `Deckle.App`, as composition root, that sees everyone and wires them up. The shell aggregates pages from domain modules dynamically via a registry mechanism (today `Type.GetType(tag)`; planned evolution toward a static registry `SettingsHost.Register(SettingsPageDescriptor)` pushed by `App.OnLaunched` to guarantee the compile-time check).
 
-## Une responsabilité par module
+## One responsibility per module
 
-Un module Deckle porte **une responsabilité claire et nommable en une phrase**. Si on a besoin de plus d'une phrase pour décrire ce que fait un module, c'est probablement qu'il en porte plusieurs et qu'il mérite d'être scindé en sous-modules. La responsabilité s'exprime en termes métier ou fonctionnels (« la capture audio depuis le microphone », « la transcription d'un blob audio en texte », « le pilotage des lampes externes »), pas en termes d'architecture (« le service », « le manager », « les helpers »).
+A Deckle module carries **one clear responsibility nameable in a single sentence**. If more than one sentence is needed to describe what a module does, it probably carries several and deserves to be split into sub-modules. Responsibility is expressed in domain or functional terms ("microphone audio capture", "transcribing an audio blob into text", "driving external lamps"), not in architectural terms ("the service", "the manager", "the helpers").
 
-Un module bien découpé a une **API publique étroite** vers le reste de l'app. Le détail de son implémentation peut être riche en interne, mais ce qu'il expose se compte. Quand un module a des dizaines de symboles publics, soit il porte plusieurs responsabilités, soit son API publique est sous-réfléchie.
+A well-split module has a **narrow public API** toward the rest of the app. Its implementation detail can be rich internally, but what it exposes is countable. When a module has dozens of public symbols, either it carries several responsibilities, or its public API is under-thought.
 
-## Dépendances acycliques entre modules
+## Acyclic dependencies between modules
 
-Les dépendances forment un **graphe orienté acyclique** : un module dépend de modules plus bas dans la hiérarchie (plus fondamentaux), jamais de modules au même niveau ou au-dessus. Quand un cycle apparaît, c'est un signal qu'il y a une mauvaise séparation de responsabilité — soit une notion partagée devrait remonter dans un module fondamental commun, soit deux modules devraient être fusionnés parce qu'ils sont en réalité une seule chose.
+Dependencies form a **directed acyclic graph**: a module depends on modules lower in the hierarchy (more fundamental), never on modules at the same level or above. When a cycle appears, it is a signal of poor responsibility separation — either a shared notion should rise into a common fundamental module, or two modules should be merged because they are in reality a single thing.
 
-L'ordre des modules dans le graphe (des feuilles fondamentales vers l'app hôte) reflète aussi l'ordre logique pour les travailler — les feuilles d'abord, ce qui en dépend ensuite.
+The order of modules in the graph (from the fundamental leaves toward the host app) also reflects the logical order in which to work on them — leaves first, what depends on them next.
 
-## Seuil de scission de fichier
+## File-splitting threshold
 
-Au-delà d'environ cinq cents lignes, un fichier mérite d'être examiné. Ce n'est pas une règle dure — un record de configuration immuable peut avoir mille lignes sans poser de problème, un fichier de glue peut être inconfortable à deux cents. C'est un seuil de **vigilance** : passé ce point, regarder si le fichier porte une seule responsabilité ou si plusieurs blocs sémantiques cohabitent.
+Beyond roughly five hundred lines, a file deserves to be examined. This is not a hard rule — an immutable configuration record can have a thousand lines without posing a problem, a glue file can be uncomfortable at two hundred. It is a **vigilance** threshold: past this point, look at whether the file carries a single responsibility or whether several semantic blocks cohabit.
 
-Quand plusieurs blocs sémantiques cohabitent, les extraire dans des fichiers séparés du même module est presque toujours bénéfique. L'agent LLM repère plus facilement quel fichier est concerné par sa tâche, Louis voit dans la liste des fichiers touchés une trace plus précise de ce qui a changé, et la relecture devient gérable.
+When several semantic blocks cohabit, extracting them into separate files of the same module is almost always beneficial. The LLM agent spots more easily which file is concerned by its task, Louis sees in the list of touched files a more precise trace of what changed, and re-reading becomes manageable.
 
-L'extraction se fait en suivant la responsabilité, pas par découpage arbitraire en quartiers. Un fichier de mille cinq cents lignes qu'on coupe en deux fichiers de sept cent cinquante lignes chacun sans rapport à la sémantique n'apporte rien. Un fichier de deux mille lignes qu'on éclate en quatre fichiers de cinq cents qui portent chacun un sous-rôle clair (l'état machine, les callbacks, l'instrumentation, la disposition propre) apporte beaucoup.
+Extraction follows responsibility, not arbitrary quartering. A fifteen-hundred-line file split into two seven-hundred-and-fifty-line files unrelated to semantics adds nothing. A two-thousand-line file shattered into four five-hundred-line files each carrying a clear sub-role (the state machine, the callbacks, the instrumentation, the clean disposal) adds a great deal.
 
-## La testabilité comme signal
+## Testability as a signal
 
-Un module qu'on peut tester en isolation, sans dépendre de l'environnement d'exécution complet (fenêtre WinUI réelle, matériel physique, service externe), est probablement bien découpé. La logique métier vit dans des classes pures qui ne dépendent que d'interfaces ; les implémentations qui touchent au monde réel sont injectées et peuvent être remplacées par des doubles en test.
+A module that can be tested in isolation, without depending on the full execution environment (a real WinUI window, physical hardware, an external service), is probably well split. The domain logic lives in pure classes that depend only on interfaces; the implementations that touch the real world are injected and can be replaced by doubles in tests.
 
-À l'inverse, quand on n'arrive pas à tester un module sans démarrer l'app entière, c'est un signal que les responsabilités sont mélangées — la logique pure est mêlée à du couplage de plateforme. La refonte consiste à extraire la logique pure vers un module fondamental qui ne dépend pas de la plateforme, et à laisser la couche de plateforme comme une fine façade.
+Conversely, when a module cannot be tested without booting the entire app, this is a signal that responsibilities are mixed — pure logic is entangled with platform coupling. The refactor consists in extracting the pure logic into a fundamental module that does not depend on the platform, and leaving the platform layer as a thin facade.
 
-## Découpage par sous-pages pour les fenêtres qui grossissent
+## Splitting into sub-pages for windows that grow
 
-Quand une fenêtre ou une page accumule des modes différents (un mode d'accueil, un mode de calibration, un mode de monitoring, un mode de configuration avancée), le code-behind unique devient inconfortable. Le pattern naturel est de **scinder en sous-pages navigables** — chaque mode devient une page autonome, la fenêtre devient un cadre de navigation qui sélectionne la page active. C'est ce que font les surfaces canoniques Windows pour les fenêtres riches.
+When a window or a page accumulates different modes (a home mode, a calibration mode, a monitoring mode, an advanced configuration mode), the single code-behind becomes uncomfortable. The natural pattern is to **split into navigable sub-pages** — each mode becomes an autonomous page, the window becomes a navigation frame that selects the active page. This is what canonical Windows surfaces do for rich windows.
 
-Le découpage par sous-pages a un effet de bord positif : il rend chaque mode testable en isolation, parce que la sous-page peut être instanciée sans la fenêtre hôte. Et il sort la doctrine de modularité du domaine du code pur pour l'appliquer aux surfaces UI.
+Splitting by sub-pages has a positive side effect: it makes each mode testable in isolation, because the sub-page can be instantiated without the host window. And it takes the modularity doctrine out of the pure-code domain and applies it to UI surfaces.
 
-## Distinction logique versus présentation
+## Logic versus presentation distinction
 
-Dans un module qui porte à la fois de la logique et une surface UI, **séparer les deux côtés**. Le code-behind d'une page ne doit pas porter de logique métier — il fait du wiring entre la surface visuelle et un objet métier (un view-model ou un service) qui porte la logique. Cette discipline rend la logique testable et rend la page UI mince. Quand on trouve de la logique métier dans un fichier `.xaml.cs`, c'est généralement un signe qu'il faut extraire vers un objet dédié.
+In a module that carries both logic and a UI surface, **separate the two sides**. A page's code-behind must not carry domain logic — it does the wiring between the visual surface and a domain object (a view-model or a service) that carries the logic. This discipline makes the logic testable and keeps the UI page thin. When domain logic is found in a `.xaml.cs` file, it is generally a sign that it should be extracted into a dedicated object.
 
-## Comment scinder en pratique
+## How to split in practice
 
-Quand un fichier ou un module mérite d'être scindé, la séquence suivante est efficace.
+When a file or a module deserves to be split, the following sequence is effective.
 
-D'abord, **identifier les blocs sémantiques** présents dans le fichier — les rôles internes que la responsabilité globale recouvre. Un agent peut aider à cette cartographie en lisant le fichier et en sortant un découpage candidat. Il faut au moins trois ou quatre blocs identifiables pour qu'une scission ait du sens.
+First, **identify the semantic blocks** present in the file — the internal roles that the global responsibility covers. An agent can help with this mapping by reading the file and producing a candidate split. At least three or four identifiable blocks are needed for a split to make sense.
 
-Ensuite, **commencer par les blocs les plus indépendants** — ceux qui ont le moins de couplage avec les autres. Un helper statique qui ne lit aucun champ d'instance peut sortir tout seul ; une classe imbriquée qui ne dépend que de son enclosing class à travers une interface peut sortir avec son interface. Les blocs les plus couplés restent en place dans le fichier d'origine jusqu'à ce que leur extraction devienne possible.
+Then, **start with the most independent blocks** — those with the least coupling to the others. A static helper that reads no instance field can leave on its own; a nested class that depends on its enclosing class only through an interface can leave with its interface. The most coupled blocks remain in place in the original file until their extraction becomes possible.
 
-Enfin, **après chaque extraction, valider que le code se compile et se comporte comme avant**. La discipline du build passe à chaque pas, pas seulement à la fin. Une régression introduite par une scission est plus facile à corriger immédiatement qu'après dix scissions cumulées.
+Finally, **after each extraction, validate that the code compiles and behaves as before**. The build discipline passes at each step, not only at the end. A regression introduced by a split is easier to fix immediately than after ten cumulated splits.
 
-## Pointeurs
+## Pointers
 
-- **`deckle-refonte`** — skill orchestrateur qui pointe vers ce skill quand un chantier touche au volet modularité.
-- **`deckle-docs`** — quand une décision de scission non triviale est prise (notamment l'extraction d'une notion dans un nouveau module), elle mérite une entrée dans le journal du module concerné.
-- **`deckle-logging`** — l'observabilité d'un module bien découpé est plus claire ; quand on scinde, profiter de l'occasion pour vérifier que les sites d'observation suivent la nouvelle frontière.
+- **`deckle-refonte`** — orchestrator skill that points to this skill when a workstream touches the modularity strand.
+- **`deckle-docs`** — when a non-trivial split decision is made (notably the extraction of a notion into a new module), it deserves an entry in the relevant module's journal.
+- **`deckle-logging`** — observability of a well-split module is clearer; when splitting, take the opportunity to verify that observation sites follow the new boundary.

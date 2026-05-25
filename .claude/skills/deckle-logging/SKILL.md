@@ -1,63 +1,63 @@
 ---
 name: deckle-logging
-description: Doctrine d'observabilité pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte la centralisation de l'émission, la séparation des niveaux (détails techniques structurés versus phrases concises lisibles), et la procédure de décision pour savoir quoi observer dans un bout de code que l'on instrumente. La taxonomie détaillée des observables (cadres canoniques USE, RED, Four Golden Signals appliqués au profil Deckle) vit dans le fichier compagnon taxonomy.md chargé à la demande. Triggers on phrases like deckle logging, observabilité deckle, qu'est-ce que je logue ici deckle, niveau de log deckle, instrumentation deckle, télémétrie deckle, observer du code deckle, logger un événement deckle.
+description: Observability doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries emission centralization, level separation (structured technical detail versus concise readable sentences), and the decision procedure for what to observe in a piece of code being instrumented. The detailed taxonomy of observables (canonical frames USE, RED, Four Golden Signals applied to the Deckle profile) lives in the companion file taxonomy.md loaded on demand. Triggers on phrases like deckle logging, deckle observability, what do I log here deckle, log level deckle, deckle instrumentation, deckle telemetry, observe code deckle, log an event deckle.
 ---
 
-# Deckle — Doctrine d'observabilité
+# Deckle — Observability doctrine
 
-## Rôle
+## Role
 
-Skill projet-spécifique qui répond à deux questions : **quoi observer dans un bout de code qu'on instrumente**, et **comment l'écrire pour que ce soit lisible et exploitable**. S'invoque avant d'ajouter un point d'observation, de modifier un niveau, ou de réorganiser ce qui est émis quelque part.
+Project-specific skill that answers two questions: **what to observe in a piece of code being instrumented**, and **how to write it so that it is readable and actionable**. Invoked before adding an observation point, changing a level, or reorganizing what is emitted somewhere.
 
-L'aide à la décision en amont (« qu'est-ce qui mérite d'être observé ici ? ») est le cœur du skill. La norme d'écriture (« comment je formule cet événement ? ») en est la seconde face. La doctrine est invariante au moteur technique sous-jacent — elle reste vraie quel que soit le système d'émission choisi.
+Upstream decision support ("what deserves to be observed here?") is the heart of the skill. The writing standard ("how do I formulate this event?") is its second face. The doctrine is invariant to the underlying technical engine — it stays true regardless of the emission system chosen.
 
-## Doctrine de centralisation
+## Centralization doctrine
 
-Toute observation runtime passe par **une source d'émission unique**. Pas de chemin parallèle dans le code applicatif — pas d'écriture fichier ad hoc, pas de sortie console, pas de logger dupliqué. Si une observation mérite d'exister, elle passe par la source canonique ; si on a besoin qu'elle atterrisse à un nouvel endroit, c'est un sink supplémentaire enregistré auprès de la source canonique, pas un nouveau chemin d'émission.
+Every runtime observation goes through **a single emission source**. No parallel path in application code — no ad hoc file write, no console output, no duplicated logger. If an observation deserves to exist, it goes through the canonical source; if it needs to land in a new place, that's an additional sink registered with the canonical source, not a new emission path.
 
-La règle existe parce que maintenir deux ou trois chemins parallèles fait inévitablement diverger les formats, la nomenclature, les niveaux et les oublis. Le système central existe précisément pour ne pas avoir à gérer deux systèmes séparés.
+The rule exists because maintaining two or three parallel paths inevitably causes formats, nomenclature, levels, and gaps to diverge. The central system exists precisely so that two separate systems don't have to be managed.
 
-Signal de dérive à reconnaître chez soi : dès qu'apparaît une intention de « créer un logger pour X » ou « écrire dans un fichier dédié pour Y », poser la question préalable — est-ce que la source canonique ne couvre pas déjà ce besoin via un sink ou un canal supplémentaire ? Dans la quasi-totalité des cas, oui.
+Drift signal to recognize in oneself: as soon as an intent appears to "create a logger for X" or "write to a dedicated file for Y", ask the prior question — doesn't the canonical source already cover this need via a sink or an additional channel? In nearly all cases, yes.
 
-**Exception unique et subordonnée** : le crash natif non rattrapable qui tue le process avant que les sinks aient pu écrire. Pattern d'instrumentation ad hoc fichier-écrit-direct, **temporaire**, jamais commité en l'état. Pour tout le reste, la règle de centralisation tient.
+**Single subordinated exception**: the unrecoverable native crash that kills the process before sinks have had a chance to write. Ad hoc instrumentation pattern with direct file write, **temporary**, never committed as-is. For everything else, the centralization rule holds.
 
-## Doctrine de séparation des niveaux
+## Level separation doctrine
 
-Deux familles distinctes coexistent et ne se mélangent jamais.
+Two distinct families coexist and never mix.
 
-**La famille concise lisible** — informations, succès, avertissements, erreurs, critiques. Phrases courtes, techniques mais simples, lues comme des jalons par un humain qui suit le déroulé. Pas de notation `clé=valeur`, pas d'identifiants techniques en clair, pas de mesures chiffrées à l'intérieur du texte. Le contenu décrit ce qui se passe à l'étape : « Chargement du modèle », « Enregistrement terminé », « Connexion impossible au service », etc. La concision est essentielle — pas de phrases élaborées, pas de fioriture, juste le jalon.
+**The concise readable family** — informations, successes, warnings, errors, criticals. Short sentences, technical but simple, read as milestones by a human following the flow. No `key=value` notation, no technical identifiers in plain text, no numeric measurements inside the text. The content describes what happens at the step: "Loading the model", "Recording finished", "Cannot connect to service", etc. Conciseness is essential — no elaborate sentences, no embellishment, just the milestone.
 
-**La famille détail structurée** — le niveau verbose. Reçoit les mesures, identifiants, paramètres techniques, latences, dimensions, codes de retour. Format structuré machine-greppable, plusieurs lignes possibles si on veut grouper sémantiquement, premier mot en minuscule pour bien distinguer visuellement des jalons de la famille précédente. Quand on instrumente une opération, on capte tout ce qu'elle expose d'observable, on le groupe en 3-4 lignes verbose par opération, pas une ligne par variable. La couverture maximale est privilégiée — le tri par niveau et par filtre se fait côté affichage ou côté requête, pas à l'émission.
+**The structured detail family** — the verbose level. Receives measurements, identifiers, technical parameters, latencies, dimensions, return codes. Machine-greppable structured format, multiple lines possible if grouping semantically is desired, first word in lowercase to visually distinguish from the milestones of the previous family. When instrumenting an operation, capture everything observable it exposes, group it into 3-4 verbose lines per operation, not one line per variable. Maximum coverage is preferred — sorting by level and by filter happens on the display side or the query side, not at emission.
 
-**Articulation des deux familles.** Selon la séquence du code, le détail verbose précède ou suit le jalon concis. Quand le verbose capte les paramètres qui mènent à une décision (par exemple détecter une condition d'erreur), il précède le jalon d'information ou d'alerte qui en découle. Quand le verbose détaille les mesures associées à un jalon (par exemple les durées d'une opération qui vient de se terminer), il suit le jalon. Cette articulation rend la séquence narrative naturelle à lire dans la fenêtre live.
+**Articulation of the two families.** Depending on the code sequence, the verbose detail precedes or follows the concise milestone. When verbose captures parameters that lead to a decision (for example detecting an error condition), it precedes the information or alert milestone that follows. When verbose details the measurements associated with a milestone (for example the durations of an operation that just finished), it follows the milestone. This articulation makes the narrative sequence natural to read in the live window.
 
-**Trois pièges récurrents à éviter** : mettre du `clé=valeur` dans une phrase de la famille concise (signe qu'on devrait sortir un verbose miroir) ; multiplier les jalons de la famille concise pour une même opération (signe qu'on devrait fusionner en un seul jalon avec un verbose détaillé) ; oublier d'instrumenter en verbose une étape qu'on a annoncée en jalon (signe qu'on perd la matière diagnostique).
+**Three recurring pitfalls to avoid**: putting `key=value` in a sentence of the concise family (sign that a mirror verbose should be emitted); multiplying milestones of the concise family for a single operation (sign that they should be merged into a single milestone with a detailed verbose); forgetting to instrument in verbose a step announced as a milestone (sign that diagnostic material is being lost).
 
-## Doctrine de couverture maximale
+## Maximum coverage doctrine
 
-Le maintainer veut **beaucoup de logs, bien triés**. Quand on instrumente une étape, exposer toutes les mesures observables, pas juste le minimum. Le tri par niveau, par catégorie, par filtre se fait à la lecture ou côté UI. Sous-instrumenter aujourd'hui pour économiser un peu de bruit revient à devoir réinstrumenter demain quand le diagnostic d'un bug arrive. Sur-instrumenter coûte peu si le filtrage est correct.
+The maintainer wants **a lot of logs, well sorted**. When instrumenting a step, expose all observable measurements, not just the minimum. Sorting by level, by category, by filter happens at read time or on the UI side. Under-instrumenting today to save a bit of noise means having to re-instrument tomorrow when diagnosing a bug. Over-instrumenting costs little if filtering is correct.
 
-Cette doctrine se conjugue avec la possibilité d'activer ou désactiver des familles entières d'observation à chaud — un toggle général, plus quelques toggles par sous-système particulièrement bavard (capture haute fréquence, télémétrie microphone, corpus utilisateur). Tout est instrumenté ; on choisit ensuite ce qu'on regarde et ce qu'on persiste.
+This doctrine pairs with the ability to enable or disable entire families of observation at runtime — a general toggle, plus a few toggles for particularly chatty subsystems (high-frequency capture, microphone telemetry, user corpus). Everything is instrumented; one then chooses what to look at and what to persist.
 
-## Procédure de décision
+## Decision procedure
 
-Quand on s'apprête à instrumenter un bout de code, quatre questions dans l'ordre.
+When about to instrument a piece of code, four questions in order.
 
-**Quel module est concerné.** L'observation s'attache au module qui contient l'opération, pas au module qui appelle. Cette attribution conditionne où l'événement apparaît dans la cartographie d'ensemble.
+**Which module is concerned.** The observation attaches to the module that contains the operation, not the module that calls. This attribution conditions where the event appears in the overall map.
 
-**Quelle catégorie de code est en train d'être instrumentée.** Boucle temps réel haute fréquence ? Pipeline ponctuel ou batch ? Driver de matériel ou intégration externe ? Surface d'interface utilisateur ? Cycle de vie d'application ? La catégorie détermine quels cadres canoniques s'appliquent et quels observables sont pertinents.
+**What category of code is being instrumented.** High-frequency real-time loop? One-shot or batch pipeline? Hardware driver or external integration? User interface surface? Application lifecycle? The category determines which canonical frames apply and which observables are relevant.
 
-**Quels observables sont pertinents pour cette catégorie.** C'est là que la référence `taxonomy.md` est chargée et consultée : elle donne les cadres canoniques de l'industrie (utilisation, saturation, erreurs pour les ressources ; taux, erreurs, durée pour les pipelines ; latence, trafic, erreurs, saturation pour les surfaces qui servent) et leur application au profil Deckle, avec les sous-natures d'observables et des exemples.
+**Which observables are relevant for this category.** This is where the `taxonomy.md` reference is loaded and consulted: it gives the industry canonical frames (utilization, saturation, errors for resources; rate, errors, duration for pipelines; latency, traffic, errors, saturation for surfaces that serve) and their application to the Deckle profile, with the sub-natures of observables and examples.
 
-**Quels événements typés en sortir.** Pour chaque observable pertinent, décider du niveau et de la formulation. Les détails techniques structurés en verbose, les jalons concis en information ou avertissement ou erreur. Si l'opération a un récapitulatif de fin (une ligne par opération avec tous ses champs colocalisés), c'est ce récapitulatif qui porte la vraie matière diagnostique — les jalons intermédiaires en jalonnent la lecture mais ne dupliquent pas son contenu.
+**Which typed events to emit from it.** For each relevant observable, decide on the level and the wording. Structured technical details in verbose, concise milestones in information or warning or error. If the operation has an end-of-operation rollup (one line per operation with all its fields colocated), this rollup carries the real diagnostic material — the intermediate milestones mark its reading but do not duplicate its content.
 
-## Vocabulaire fermé
+## Closed vocabulary
 
-Les sources d'observation, les unités de mesure, les noms d'opération sont des vocabulaires fermés — pas de création ad hoc, pas de variation orthographique. Si une unité manque (parce qu'on observe une grandeur jamais observée jusqu'ici), l'ajouter au vocabulaire canonique avant utilisation, pas à l'intérieur du nouvel événement seulement. La discipline du vocabulaire fermé garantit qu'un humain ou un agent qui filtre sur un terme retrouve exactement la même chose partout.
+Observation sources, units of measurement, operation names are closed vocabularies — no ad hoc creation, no spelling variation. If a unit is missing (because a magnitude never observed until now is being observed), add it to the canonical vocabulary before use, not just inside the new event. The discipline of closed vocabulary guarantees that a human or an agent filtering on a term finds exactly the same thing everywhere.
 
-## Pointeurs
+## Pointers
 
-- **`taxonomy.md`** dans ce skill — cadres canoniques d'observabilité et mapping vers les catégories de code rencontrées dans Deckle. Chargé à la demande quand la procédure de décision atteint l'étape « quels observables ».
-- **`deckle-docs`** — doctrine documentaire et hygiène des commentaires. Quand une décision d'instrumentation est non triviale, elle mérite une entrée dans le journal du module concerné.
-- **`deckle-refonte`** — skill orchestrateur qui pointe vers ce skill quand un chantier touche au volet observabilité.
-- **`personal-conventions`** — convention transverse de centralisation du logging (source unique, sinks interchangeables). `deckle-logging` applique cette convention au projet Deckle et la précise.
+- **`taxonomy.md`** in this skill — canonical observability frames and mapping to the categories of code encountered in Deckle. Loaded on demand when the decision procedure reaches the "which observables" step.
+- **`deckle-docs`** — documentation doctrine and comment hygiene. When an instrumentation decision is non trivial, it deserves an entry in the journal of the concerned module.
+- **`deckle-refonte`** — orchestrator skill that points to this skill when a workstream touches the observability volet.
+- **`personal-conventions`** — cross-project convention of logging centralization (single source, interchangeable sinks). `deckle-logging` applies this convention to the Deckle project and refines it.
