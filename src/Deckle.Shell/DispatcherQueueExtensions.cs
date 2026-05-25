@@ -34,13 +34,27 @@ namespace Deckle.Shell;
 // passe ultérieure qui détectera les callbacks restés trop longtemps en
 // queue via un watchdog dédié.
 //
-// Garde anti-récursion : si LogWindow appelle l'un de ces wrappers et
-// que sa propre queue est fermée, le Warning loggé route à nouveau vers
-// LogWindow → re-TryEnqueue → re-fail → boucle. Un flag thread-static
-// court-circuite la deuxième tentative. La garde reste pertinente après
-// la migration EventSource : `LogWindowEventListener` reçoit toujours
-// l'event Warning et le repousse dans la même `DispatcherQueue` côté
-// LogWindow.
+// Garde anti-récursion `_logging` (warning path). Si LogWindow appelle
+// l'un de ces wrappers et que sa propre queue est fermée, le Warning
+// loggé route à nouveau vers LogWindow → re-TryEnqueue → re-fail →
+// boucle. Un flag thread-static court-circuite la deuxième tentative.
+// La garde reste pertinente après la migration EventSource :
+// `LogWindowEventListener` reçoit toujours l'event Warning et le
+// repousse dans la même `DispatcherQueue` côté LogWindow.
+//
+// Garde anti-récursion `_emittingMarshal` (verbose path). Même classe
+// de boucle, déclenchée par l'émission *systématique* de `MarshalQueued`
+// dans `TryEnqueueObserved` : un appel à `LogWindow.Write` depuis
+// `LogWindowEventListener.OnEventWritten` (sur worker thread) traverse
+// `TryEnqueueObserved` qui émet `MarshalQueued` synchronement, ce que
+// le listener observe et re-route vers `LogWindow.Write` → nouvelle
+// émission → récursion synchrone → stack overflow. Constaté empiriquement
+// 2026-05-25, signature : tail JSONL inondé de `MarshalQueued
+// operation=log-append caller=log-window` à plusieurs kHz puis crash.
+// Quand la réentrance est détectée, on retombe sur le path froid
+// `TryEnqueueOrLog` qui enqueue le callback sans émission — l'event
+// utile (celui qui a déclenché la chaîne) atterrit bien dans la queue
+// UI, seule l'observation du marshalling imbriqué est skippée.
 //
 // Pourquoi pas un simple `if (!queue.TryEnqueue(...)) _log.Warning(...)`
 // inline à chaque site ? Centraliser réduit la duplication (8 sites
@@ -51,6 +65,9 @@ public static class DispatcherQueueExtensions
 {
     [System.ThreadStatic]
     private static bool _logging;
+
+    [System.ThreadStatic]
+    private static bool _emittingMarshal;
 
     /// <summary>
     /// Enqueue le callback sur la dispatcher queue. Si l'enqueue échoue
@@ -107,47 +124,58 @@ public static class DispatcherQueueExtensions
         bool verboseEnabled = DeckleThreadingSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Threading);
 
-        if (!verboseEnabled)
+        // Path froid — pas d'instrumentation Queued/Completed, juste
+        // l'enqueue brut + la voie de rejet historique. La gate
+        // Warning sur DispatcherEnqueueRejected reste ouverte
+        // indépendamment du Verbose. Path emprunté aussi en réentrance
+        // (cf. note `_emittingMarshal` en tête de fichier) : on enqueue
+        // sans émission pour ne pas re-déclencher la chaîne synchrone
+        // listener → Write → TryEnqueueObserved.
+        if (!verboseEnabled || _emittingMarshal)
         {
-            // Path froid — pas d'instrumentation Queued/Completed, juste
-            // l'enqueue brut + la voie de rejet historique. La gate
-            // Warning sur DispatcherEnqueueRejected reste ouverte
-            // indépendamment du Verbose.
             return queue.TryEnqueueOrLog(callback, rejectSource, rejectWhat);
         }
 
         // Path chaud — instrumentation complète. Stopwatch capturé en
         // closure pour mesurer wait_ms (queue → début callback) et
-        // run_ms (durée callback).
-        var sw = Stopwatch.StartNew();
-        DeckleThreadingSource.Log.MarshalQueued(operation, caller, queue_depth: -1);
-
-        bool ok = queue.TryEnqueue(() =>
+        // run_ms (durée callback). Gardé par `_emittingMarshal` thread-
+        // static : toute émission MarshalQueued/Completed qui ré-entre
+        // synchronement dans ce wrapper sur le même thread voit la garde
+        // posée et bascule sur le path froid au lieu de ré-émettre.
+        _emittingMarshal = true;
+        try
         {
-            int wait_ms = (int)sw.ElapsedMilliseconds;
-            sw.Restart();
-            try
-            {
-                callback();
-            }
-            finally
-            {
-                int run_ms = (int)sw.ElapsedMilliseconds;
-                DeckleThreadingSource.Log.MarshalCompleted(
-                    operation, caller, wait_ms, run_ms);
-            }
-        });
+            var sw = Stopwatch.StartNew();
+            DeckleThreadingSource.Log.MarshalQueued(operation, caller, queue_depth: -1);
 
-        if (!ok && !_logging)
-        {
-            _logging = true;
-            try
+            bool ok = queue.TryEnqueue(() =>
             {
-                DeckleThreadingSource.Log.DispatcherEnqueueRejected(
-                    rejectSource, rejectWhat);
+                int wait_ms = (int)sw.ElapsedMilliseconds;
+                sw.Restart();
+                try
+                {
+                    callback();
+                }
+                finally
+                {
+                    int run_ms = (int)sw.ElapsedMilliseconds;
+                    DeckleThreadingSource.Log.MarshalCompleted(
+                        operation, caller, wait_ms, run_ms);
+                }
+            });
+
+            if (!ok && !_logging)
+            {
+                _logging = true;
+                try
+                {
+                    DeckleThreadingSource.Log.DispatcherEnqueueRejected(
+                        rejectSource, rejectWhat);
+                }
+                finally { _logging = false; }
             }
-            finally { _logging = false; }
+            return ok;
         }
-        return ok;
+        finally { _emittingMarshal = false; }
     }
 }
