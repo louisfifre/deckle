@@ -157,6 +157,20 @@ benchmark/telemetry/
 benchmark/reports/
 benchmark/logs/
 benchmark/results.tsv
+benchmark/runs/
+# Ancien layout, conservé pour rétrocompat.
+benchmark/corpus/
+# Nouveau layout : chacun amène ses propres samples, jamais sur Git
+# (audio privé, transcriptions Whisper de l'utilisateur).
+benchmark/corpora/
+benchmark/external/
+benchmark/models-cache/
+# Artefacts d'anciennes itérations, conservés en local comme matière
+# première mais jamais publiés.
+benchmark/_archive/
+benchmark/config/voxtral_paths.toml
+# Relais transitoire entre sessions Claude, pas de la doctrine pérenne.
+benchmark/HANDOFF.md
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (benchmark/ + ad hoc scripts)
@@ -172,7 +186,7 @@ benchmark/results.tsv
 .tox/
 *.egg-info/
 venv/
-.venv/
+.venv*/
 env/
 ENV/
 

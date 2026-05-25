@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 09:54 — source : `git ls-files`_
+_Mise à jour : 2026-05-25 10:40 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -42,35 +42,47 @@ _Mise à jour : 2026-05-25 09:54 — source : `git ls-files`_
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
-│   ├── config/
-│   │   ├── prompts/
-│   │   │   ├── affinage_system_prompt.txt
-│   │   │   ├── arrangement_system_prompt.txt
-│   │   │   ├── judge_system_prompt.txt
-│   │   │   ├── lissage_system_prompt.txt
-│   │   │   ├── relecture_system_prompt.txt
-│   │   │   ├── system_prompt.txt
-│   │   │   └── whisper_initial_prompt.txt
-│   │   └── config.ini
+│   ├── benches/
+│   │   └── voxtral-poc/
+│   │       ├── bench.py
+│   │       └── README.md
 │   ├── lib/
+│   │   ├── judges/
+│   │   │   ├── __init__.py
+│   │   │   ├── _base.py
+│   │   │   ├── claude.py
+│   │   │   └── gemini.py
+│   │   ├── metrics/
+│   │   │   ├── __init__.py
+│   │   │   ├── leak.py
+│   │   │   ├── looping.py
+│   │   │   └── wer.py
+│   │   ├── monitor/
+│   │   │   ├── gpu_monitor.ps1
+│   │   │   └── joiner.py
+│   │   ├── sources/
+│   │   │   ├── __init__.py
+│   │   │   ├── _base.py
+│   │   │   ├── _voxtral_common.py
+│   │   │   ├── voxtral_chat.py
+│   │   │   ├── voxtral_transcribe.py
+│   │   │   └── whisper_cpp.py
 │   │   ├── __init__.py
+│   │   ├── _base_compat.py
 │   │   ├── corpus.py
-│   │   ├── judge_claude.py
-│   │   ├── judge_ollama.py
-│   │   ├── judge.py
-│   │   ├── metrics.py
-│   │   └── ollama.py
-│   ├── _template_bench.py
-│   ├── autoresearch.py
-│   ├── benchmark.py
-│   ├── compare_runs.py
-│   ├── launch.ps1
-│   ├── README.md
-│   ├── refresh_corpus.py
-│   ├── rewrite_bench.py
-│   ├── segment_corpus.py
-│   ├── whisper_bench.py
-│   └── wpm_stats.py
+│   │   ├── env.py
+│   │   └── event_log.py
+│   ├── prompts/
+│   │   ├── judges/
+│   │   │   ├── claude_per_row.md
+│   │   │   ├── gemini_per_row.md
+│   │   │   └── legacy_ollama_judge.md
+│   │   ├── transcription/
+│   │   │   ├── voxtral_chat.toml
+│   │   │   └── voxtral_transcribe.toml
+│   │   └── whisper_initial.txt
+│   ├── CLAUDE.md
+│   └── README.md
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-record-architecture-decisions.md
@@ -84,6 +96,7 @@ _Mise à jour : 2026-05-25 09:54 — source : `git ls-files`_
 │   │   ├── 0009-assets-resolus-via-userdataroot.md
 │   │   ├── 0010-backend-asr-pluggable-via-iasrbackend.md
 │   │   ├── 0011-corpus-normalise-comme-dataset-ml.md
+│   │   ├── 0011-poc-evaluation-voxtral.md
 │   │   └── 0012-adoption-de-dotnet-build-et-dotnet-test.md
 │   ├── reference/
 │   │   ├── reference--eventsource-convention--1.0.md
