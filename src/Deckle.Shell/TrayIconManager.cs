@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 
 namespace Deckle.Shell;
 
@@ -157,6 +158,17 @@ public sealed class TrayIconManager : IDisposable
         NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING,    CMD_QUIT,            "Quit");
 
         NativeMethods.GetCursorPos(out POINT pt);
+
+        // Windowing — popup tray. TrackPopupMenu rend un menu Win32
+        // natif dont l'app n'a pas le HWND ; pos/size effectifs du menu
+        // sont inaccessibles côté code. On émet PopupAnchored avec ce
+        // qu'on sait du déclencheur : le cursor sert d'ancrage (l'API
+        // TrackPopupMenu prend pt.X/pt.Y en argument), donc parent_rect
+        // = (cursor_x, cursor_y, 0, 0) — un rect dégénéré qui dit « le
+        // menu est ancré sur ce point », pas sur un rect de contrôle.
+        // Pas d'émission de WindowPositioned faute de HWND owned. Cf.
+        // doc DeckleWindowingSource.PopupAnchored §popups system-owned.
+        WindowingProbe.EmitPopupAnchored(IntPtr.Zero, "tray-popup", pt.X, pt.Y, 0, 0);
 
         // SetForegroundWindow est requis avant TrackPopupMenu pour que le menu
         // se ferme correctement quand l'utilisateur clique ailleurs.

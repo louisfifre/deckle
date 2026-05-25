@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
 using Deckle.Lighting.Ambient;
+using Deckle.Shell;
 using Deckle.Vision;
 
 namespace Deckle.Playground;
@@ -103,7 +104,10 @@ public sealed partial class AmbientPage
         // display disconnected, signed-out, etc.). Marshal back to the
         // UI thread to update the button + status, then run the same
         // teardown as a user-driven Stop.
-        DispatcherQueue.TryEnqueue(() => StopScreenCaptureIfRunning());
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "engine-state-sync", caller: "playground-ambient-page-capture",
+            callback: () => StopScreenCaptureIfRunning(),
+            rejectSource: "PLAYGROUND", rejectWhat: "screen capture stop");
     }
 
     private void OnScreenCaptureFpsTick(object? sender, object e)

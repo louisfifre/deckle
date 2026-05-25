@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
 using Deckle.Settings.ViewModels;
+using Deckle.Shell;
 
 namespace Deckle.Settings;
 
@@ -41,8 +42,11 @@ public sealed partial class RecordingPage : Page
         _initializing = true;
         ViewModel.Load();
         PopulateAudioInputDevices();
-        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
-            () => _initializing = false);
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "init-flag-clear", caller: "recording-page",
+            callback: () => _initializing = false,
+            rejectSource: "SETTINGS", rejectWhat: "init flag",
+            priority: DispatcherQueuePriority.Low);
     }
 
     // ── Audio input ──────────────────────────────────────────────────────────

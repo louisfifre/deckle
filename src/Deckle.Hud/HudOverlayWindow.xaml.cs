@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Hud;
@@ -118,6 +119,30 @@ public sealed partial class HudOverlayWindow : Window
         // FadeTo updates (no animation overhead — we're already driving frames
         // at 60 Hz from the proximity timer).
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
+
+        // Theme — câble ActualThemeChanged pour les overlays transient.
+        // Une overlay vit 2-8 s ; un changement de thème pendant son
+        // affichage est rare mais possible (l'utilisateur fait le swap
+        // pendant qu'une notification flotte). L'event reste utile pour
+        // corréler un glitch de stroke colorée avec une transition.
+        if (Content is Microsoft.UI.Xaml.FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private Microsoft.UI.Xaml.ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(Microsoft.UI.Xaml.FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "hud-overlay", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     public IntPtr Hwnd => _hwnd;
@@ -163,6 +188,16 @@ public sealed partial class HudOverlayWindow : Window
             _hwnd, NativeMethods.HWND_TOP,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+
+        // Windowing — tronc commun émis ici après le MoveAndResize.
+        // L'ancrage est "absolute" : la position est calculée par
+        // HudOverlayManager.ComputeSlotPositionPx en fonction du HUD
+        // principal + slot, mais ce calcul est invisible côté window —
+        // on capture la position effective sans inventer un anchor
+        // logique qui appartient au manager. La spécialisation
+        // OverlaySlotAssigned (qui porte le slot) est émise côté
+        // manager où l'index slot est connu.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "hud-overlay", "absolute");
     }
 
     // Used for instant repositioning (reduced-motion path, or to bypass the
@@ -183,6 +218,16 @@ public sealed partial class HudOverlayWindow : Window
     // both the fade and the proximity arming are complete.
     public void FadeIn(Action? onComplete = null)
     {
+        // Axe 2 — FadeInStarted (scope="overlay"). Le from_alpha vient du
+        // ctor qui pose alpha=0 via SetLayeredWindowAttributes ; on lit
+        // _fade?.CurrentAlpha pour rester exact si un FadeIn subséquent
+        // est déclenché (le manager actuel ne le fait pas mais une future
+        // évolution pourrait). Durée 150 ms = LayeredAlphaAnimator.Duration
+        // privé du WindowSlideAnimator (Duration constante, mirror du
+        // FADE_IN_MS de HudWindow).
+        byte fromAlpha = _fade?.CurrentAlpha ?? 0;
+        DeckleHudSource.Log.FadeInStarted("overlay", 150, fromAlpha, MAX_ALPHA);
+
         _fade?.FadeTo(MAX_ALPHA, onComplete: () =>
         {
             _proximityAlpha = MAX_ALPHA;

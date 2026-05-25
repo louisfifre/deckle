@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Settings;
@@ -79,9 +80,11 @@ public sealed partial class SettingsWindow : Window
         // flips. No-op if the template part name changes upstream.
         Nav.Loaded += (_, _) =>
         {
-            DispatcherQueue.TryEnqueue(
-                Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-                () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"));
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "ui-update", caller: "settings-window-nav",
+                callback: () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"),
+                rejectSource: "SETTINGS", rejectWhat: "nav tooltip override",
+                priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
         };
         Nav.PaneOpened += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
         Nav.PaneClosed += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
@@ -115,6 +118,32 @@ public sealed partial class SettingsWindow : Window
             var hwnd = WindowNative.GetWindowHandle(this);
             NativeMethods.ShowWindow(hwnd, NativeMethods.SW_HIDE);
         };
+
+        // Theme — câble ActualThemeChanged sur la racine XAML pour
+        // tracer les transitions light/dark/HC. SettingsWindow est le
+        // déclencheur côté UI de toute bascule "user" (combo Appearance
+        // dans GeneralPage qui pousse via SettingsHost.ApplyTheme →
+        // App.ApplyTheme), donc cet event est particulièrement utile
+        // ici pour confirmer que la bascule a effectivement été reçue
+        // par la fenêtre qui l'a déclenchée.
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "settings", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     public void ShowAndActivate(string? pageTag = null)
@@ -142,6 +171,15 @@ public sealed partial class SettingsWindow : Window
         AppWindow.Show();
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Windowing — émis post-Show pour capturer le rect effectif
+        // après que DWM ait positionné la fenêtre. L'ancrage est
+        // "Center" : SettingsWindow ne fait qu'un AppWindow.Resize
+        // (960×1440) au ctor, le centrage initial est fait par
+        // Windows. Émis à chaque ShowAndActivate parce qu'un drag
+        // utilisateur entre deux ouvertures change le rect — la
+        // dernière trace reste la vérité courante.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "settings", "Center");
     }
 
     // ── NavigationView : marge contenu selon le DisplayMode ──────────────

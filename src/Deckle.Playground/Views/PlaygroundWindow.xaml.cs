@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Playground;
@@ -104,9 +105,11 @@ public sealed partial class PlaygroundWindow : Window
         // priority dispatch), re-applied on PaneOpened / PaneClosed.
         Nav.Loaded += (_, _) =>
         {
-            DispatcherQueue.TryEnqueue(
-                Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-                () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"));
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "ui-update", caller: "playground-window-nav",
+                callback: () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"),
+                rejectSource: "PLAYGROUND", rejectWhat: "nav tooltip override",
+                priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
         };
         Nav.PaneOpened += (_, _) =>
             OverrideNavPaneToggleTooltip(Nav, "Open navigation");
@@ -128,6 +131,33 @@ public sealed partial class PlaygroundWindow : Window
         Nav.SelectedItem = Nav.MenuItems[0];
 
         this.Closed += OnWindowClosed;
+
+        // Theme — câble ActualThemeChanged sur la racine XAML. Le
+        // Playground est singleton-hidden (vit toute la session app
+        // une fois ouvert) donc voit toutes les bascules thème via
+        // ThemeRequestSourceProbe ("settings" depuis ThemeCombo
+        // user, "system" depuis colorPrevalence) ou directes (le
+        // root suit le système quand aucun RequestedTheme n'est posé).
+        // Trace utile pour corréler un glitch sliders / live preview
+        // avec une bascule thème pendant que la fenêtre était active.
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "playground", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     // ── Lifecycle surface (called by App) ───────────────────────────────────
@@ -149,12 +179,24 @@ public sealed partial class PlaygroundWindow : Window
         AppWindow.Show();
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Windowing — émis post-Show pour capturer le rect effectif après
+        // que DWM ait positionné la fenêtre. Ancrage "Center" parce que le
+        // ctor ne fait qu'un AppWindow.Resize (1800×1440) sans Move
+        // explicite, le centrage initial est laissé à Windows. Émis à
+        // chaque ShowAndActivate parce qu'un drag utilisateur entre deux
+        // ouvertures change le rect — la dernière trace reste la vérité
+        // courante.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "playground", "Center");
     }
 
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
-        else DispatcherQueue.TryEnqueue(() => ApplyRecordingState(isRecording));
+        else DispatcherQueue.TryEnqueueObserved(
+            operation: "engine-state-sync", caller: "playground-window",
+            callback: () => ApplyRecordingState(isRecording),
+            rejectSource: "PLAYGROUND", rejectWhat: "recording state sync");
     }
 
     private void ApplyRecordingState(bool isRecording)

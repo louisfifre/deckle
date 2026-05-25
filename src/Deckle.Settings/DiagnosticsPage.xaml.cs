@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Settings.ViewModels;
 using Deckle.Core;
+using Deckle.Shell;
 
 namespace Deckle.Settings;
 
@@ -47,8 +48,11 @@ public sealed partial class DiagnosticsPage : Page
         _initializing = true;
         ViewModel.Load();
         SyncFolderPickerDefault();
-        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
-            () => _initializing = false);
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "init-flag-clear", caller: "diagnostics-page",
+            callback: () => _initializing = false,
+            rejectSource: "SETTINGS", rejectWhat: "init flag",
+            priority: DispatcherQueuePriority.Low);
     }
 
     // FolderPickerCard.DefaultPath drives the read-only display when

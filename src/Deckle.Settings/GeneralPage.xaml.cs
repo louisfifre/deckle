@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Settings.ViewModels;
 using Deckle.Core;
+using Deckle.Shell;
 
 namespace Deckle.Settings;
 
@@ -52,8 +53,11 @@ public sealed partial class GeneralPage : Page
         SyncOverlayPositionCombo();
         SyncFolderPickerDefaults();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
-        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
-            () => _initializing = false);
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "init-flag-clear", caller: "general-page",
+            callback: () => _initializing = false,
+            rejectSource: "SETTINGS", rejectWhat: "init flag",
+            priority: DispatcherQueuePriority.Low);
     }
 
     // ── Theme ────────────────────────────────────────────────────────────────

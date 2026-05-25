@@ -3,6 +3,7 @@ using System.Threading;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Deckle.Diagnostics;
 using Deckle.Llm;
 using Deckle.Catalog;
 
@@ -144,6 +145,10 @@ public sealed partial class LlmModelsSection : UserControl
                     {
                         // Section unloaded pendant la suppression — silencieux,
                         // l'utilisateur a fermé Settings, pas la peine de surfer.
+                        // Sub-provider transverse Cancellation — l'utilisateur
+                        // a fermé la surface, pas de Stopwatch dédié ici.
+                        DeckleCancellationSource.Log.OperationCancelled(
+                            "llm-models", "user", -1);
                     }
                     catch (Exception ex)
                     {

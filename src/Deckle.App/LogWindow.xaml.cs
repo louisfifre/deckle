@@ -150,6 +150,31 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
         // Responsive TitleBar search (Task Manager pattern).
         SizeChanged += OnWindowSizeChanged;
+
+        // Theme — câble ActualThemeChanged sur la racine XAML. LogWindow
+        // est en thème système par défaut (pas de RequestedTheme forcé)
+        // mais reçoit le broadcast App.ApplyTheme via ApplyThemeToSingle
+        // au moment de sa création lazy, donc on observe à la fois les
+        // poses "app-init" du boot et les bascules system live (l'OS qui
+        // change Personalization pendant que la fenêtre est ouverte).
+        if (Content is FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    private Microsoft.UI.Xaml.ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "log", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     // ── ILogWindowSink (events from LogWindowEventListener) ────────────────────
@@ -162,7 +187,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // formatage répété pendant la virtualisation ListView).
         var le = new LogEntry(entry);
         if (DispatcherQueue.HasThreadAccess) AddEntrySafe(le);
-        else DispatcherQueue.TryEnqueueOrLog(() => AddEntrySafe(le), "LOGWIN", "log entry");
+        else
+        {
+            // Threading — site cross-thread real (listener EventSource
+            // depuis un thread arbitraire vers UI). TryEnqueueObserved
+            // émet MarshalQueued → wait_ms/run_ms → MarshalCompleted en
+            // sus du rejet historique (DispatcherEnqueueRejected sur
+            // DeckleThreadingSource depuis la migration).
+            DispatcherQueue.TryEnqueueObserved(
+                "log-append", "log-window",
+                () => AddEntrySafe(le),
+                "LOGWIN", "log entry");
+        }
     }
 
     // Pas exposé sur l'interface — ILogWindowSink est un canal write-only.
@@ -179,7 +215,15 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
-        else DispatcherQueue.TryEnqueueOrLog(() => ApplyRecordingState(isRecording), "LOGWIN", "recording state");
+        else
+        {
+            // Threading — site cross-thread real (engine worker thread
+            // via StatusChanged vers UI). Même pattern que Write.
+            DispatcherQueue.TryEnqueueObserved(
+                "ui-update", "log-window",
+                () => ApplyRecordingState(isRecording),
+                "LOGWIN", "recording state");
+        }
     }
 
     private void ApplyRecordingState(bool isRecording)
@@ -240,6 +284,14 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // called from a tray callback. SetForegroundWindow from the same
         // process is allowed (the message-only tray host is same-process).
         NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Windowing — émis post-Show pour capturer le rect effectif
+        // après que DWM ait positionné la fenêtre. L'ancrage est
+        // "Center" : LogWindow fait un AppWindow.Resize (960×1440) au
+        // ctor, Windows applique le centrage initial. Émis à chaque
+        // ShowAndActivate parce qu'un drag utilisateur entre deux
+        // ouvertures change le rect.
+        WindowingProbe.EmitWindowPositioned(_hwnd, "log", "Center");
     }
 
     // ── Implementation ─────────────────────────────────────────────────────────

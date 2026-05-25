@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
+using Deckle.Shell;
 using Deckle.Vision;
 
 namespace Deckle.Playground;
@@ -172,8 +173,11 @@ public sealed partial class AmbientPage
         // the parent-fallback that lands the rects in the right place).
         if (show)
         {
-            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
-                LayoutLightZonesOverlayFromViewbox);
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "ui-update", caller: "playground-ambient-page-preview",
+                callback: LayoutLightZonesOverlayFromViewbox,
+                rejectSource: "PLAYGROUND", rejectWhat: "overlay layout",
+                priority: DispatcherQueuePriority.Low);
         }
     }
 

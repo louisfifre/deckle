@@ -3,6 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using WinRT.Interop;
+using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -79,6 +82,16 @@ public sealed partial class FolderPickerCard : UserControl
             var window = SettingsHost.GetSettingsWindow?.Invoke()
                 ?? throw new InvalidOperationException("Settings window not initialized");
 
+            // Windowing — picker système. Microsoft.Windows.Storage.Pickers
+            // ouvre un dialog COM Win32 dont l'app n'a pas le HWND
+            // (l'API ne l'expose pas) ; pos/size effectifs du dialog
+            // sont inaccessibles côté code. On émet PopupAnchored avec
+            // le rect du bouton qui a déclenché le picker (intention
+            // d'ancrage côté UI Settings), pos/size du dialog à zéro.
+            // parent_rect en pixels écran absolus calculé via
+            // TransformToVisual(null) + AppWindow.Position + scale DPI.
+            EmitFolderPickerAnchor(sender as FrameworkElement, window);
+
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)
             {
                 SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
@@ -94,6 +107,29 @@ public sealed partial class FolderPickerCard : UserControl
         {
             DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
         }
+    }
+
+    // Calcule le rect du bouton trigger en pixels écran absolus à partir
+    // du TransformToVisual(null) (position du bouton dans la window en
+    // DIP) + AppWindow.Position (top-left de la window en pixels écran)
+    // + scale DPI. Réutilisé par les deux variants de FolderPicker.
+    internal static void EmitFolderPickerAnchor(FrameworkElement? trigger, Microsoft.UI.Xaml.Window window)
+    {
+        if (trigger is null) { WindowingProbe.EmitPopupAnchored(IntPtr.Zero, "folder-picker", 0, 0, 0, 0); return; }
+
+        IntPtr hwnd = WindowNative.GetWindowHandle(window);
+        double scale = NativeMethods.GetDpiForWindow(hwnd) / 96.0;
+        var transform = trigger.TransformToVisual(null);
+        var pt = transform.TransformPoint(default);
+
+        int parent_x = window.AppWindow.Position.X + (int)Math.Round(pt.X * scale);
+        int parent_y = window.AppWindow.Position.Y + (int)Math.Round(pt.Y * scale);
+        int parent_w = (int)Math.Round(trigger.ActualWidth  * scale);
+        int parent_h = (int)Math.Round(trigger.ActualHeight * scale);
+
+        WindowingProbe.EmitPopupAnchored(
+            IntPtr.Zero, "folder-picker",
+            parent_x, parent_y, parent_w, parent_h);
     }
 
     // Open the effective path in Explorer. We open the fallback DefaultPath

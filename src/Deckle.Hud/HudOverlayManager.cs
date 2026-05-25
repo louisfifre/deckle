@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.UI.Dispatching;
 using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 using Deckle.Settings;
 using Deckle.Shell;
 
@@ -54,7 +55,15 @@ public sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => Enqueue(severity, title, body), "HUD", "overlay enqueue");
+            // Threading — overlay enqueue depuis un thread non-UI
+            // (HudFeedbackEventListener côté Diagnostics, ou tout
+            // émetteur UserFeedbackEmitted depuis un worker engine).
+            // wait_ms anormal ici signale un UI thread saturé qui
+            // retarde l'affichage des overlays.
+            _dispatcher.TryEnqueueObserved(
+                "feedback-display", "overlay-manager",
+                () => Enqueue(severity, title, body),
+                "HUD", "overlay enqueue");
             return;
         }
 
@@ -73,6 +82,15 @@ public sealed class HudOverlayManager : IDisposable
 
         window.ApplyPayload(severity, title, body);
         window.ShowAt(xPx, yPx);
+
+        // Windowing — spécialisation overlay émise après le ShowAt (qui
+        // émet déjà le tronc commun avec window="hud-overlay"). Le slot
+        // n'est connu qu'ici dans le manager, pas dans la window elle-
+        // même. Émis aussi à chaque réassignation de slot dans
+        // Recompact ci-dessous quand un overlay change de position
+        // suite à l'expiration d'un voisin ou la (dés)apparition du
+        // HUD principal.
+        WindowingProbe.EmitOverlaySlotAssigned(hwnd, newSlot);
 
         var slide = new WindowSlideAnimator(hwnd, _dispatcher, xPx, yPx);
 
@@ -102,7 +120,14 @@ public sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            _dispatcher.TryEnqueueOrLog(() => OnMainHudVisibilityChanged(sender, visible), "HUD", "main HUD visibility change");
+            // Threading — propagation de l'event visibilité HUD principal
+            // vers la stack overlay. Cross-thread quand HudWindow émet
+            // depuis un chemin non-UI (rare en pratique mais le path est
+            // câblé). Instrumentation identique aux autres sites overlay.
+            _dispatcher.TryEnqueueObserved(
+                "ui-update", "overlay-manager",
+                () => OnMainHudVisibilityChanged(sender, visible),
+                "HUD", "main HUD visibility change");
             return;
         }
 
@@ -150,8 +175,21 @@ public sealed class HudOverlayManager : IDisposable
                 entry.Slide.CurrentX != xPx ||
                 entry.Slide.CurrentY != yPx)
             {
+                bool slotChanged = entry.SlotIndex != newSlot;
                 entry.SlotIndex = newSlot;
                 entry.Slide.SlideTo(xPx, yPx);
+
+                // Windowing — réassignation de slot. Émis seulement
+                // quand le slot change (pas sur un simple repositionnement
+                // intra-slot dû à un changement de DPI ou de work area).
+                // Le rect post-slide est asynchrone côté animator ; on
+                // capture le rect courant qui reflète la position pré-
+                // animation — la trace renseigne « slot N assigné à
+                // cette fenêtre », pas « animation terminée ».
+                if (slotChanged)
+                {
+                    WindowingProbe.EmitOverlaySlotAssigned(entry.Window.Hwnd, newSlot);
+                }
             }
         }
     }

@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.UI.Windowing;
@@ -5,6 +6,7 @@ using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
 namespace Deckle.Hud;
@@ -68,6 +70,30 @@ public sealed partial class HudWindow : Window
 
     private HudState _state = HudState.Hidden;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _messageHideTimer;
+
+    // Warm pass stopwatch — démarré par PrimeAndHide, arrêté quand la
+    // bascule SetState(Hidden) du dispatch Low priority retombe, ce qui
+    // est le moment où la première frame a effectivement été composée.
+    // Lue par SetState pour émettre WarmPassCompleted une seule fois.
+    private System.Diagnostics.Stopwatch? _warmPassStopwatch;
+
+    // Proximity rollup — fenêtre glissante 1 s sur les samples calculés
+    // dans UpdateProximity (WM_INPUT, ~125 Hz). Le gate IsEnabled est
+    // testé une fois par seconde côté timer pour court-circuiter aussi
+    // la collecte quand aucun listener n'écoute. Stockage des distances
+    // en DIP entier pour rester en stackalloc-friendly et permettre un
+    // p50/p95 simple par tri.
+    private const int PROXIMITY_ROLLUP_PERIOD_MS = 1000;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _proximityRollupTimer;
+    // Cap dimensionné pour ~125 Hz × 1 s = ~125 samples ; on prend une
+    // marge à 256 pour absorber un raw input plus rapide (gaming mouse
+    // 1000 Hz) sans perdre de samples au dernier batch. Au-delà, on
+    // écrase le plus ancien — la fenêtre reste représentative.
+    private const int PROXIMITY_ROLLUP_CAPACITY = 256;
+    private readonly int[] _proximityDistances = new int[PROXIMITY_ROLLUP_CAPACITY];
+    private readonly byte[] _proximityAlphas = new byte[PROXIMITY_ROLLUP_CAPACITY];
+    private int _proximitySampleCount;
+    private bool _proximityRollupEnabled;
 
     // Fade-in on first show (Hidden → visible), 150ms cubic ease-out matching
     // LayeredAlphaAnimator. Proximity update is suspended during the fade and
@@ -162,12 +188,43 @@ public sealed partial class HudWindow : Window
 
         RegisterMouseRawInput();
 
+        // Theme — câble ActualThemeChanged sur la racine XAML pour
+        // tracer light/dark/HC transitions. `RequestedTheme` posé par
+        // App.ApplyTheme via Push("user"/"app-init") sur la probe ;
+        // changement système (Personalization) tombe sans pending et
+        // est étiqueté "system". Le HUD ne porte pas de re-application
+        // manuelle de brushes au theme change (HudChrono le fait pour
+        // son chrono — cf. son propre site d'abonnement), donc cet
+        // event est purement observationnel ici.
+        if (Content is Microsoft.UI.Xaml.FrameworkElement root)
+        {
+            _lastTheme = root.ActualTheme;
+            root.ActualThemeChanged += OnRootActualThemeChanged;
+        }
+
         // Never destroyed — only path out is the tray Quit menu.
         AppWindow.Closing += (_, args) =>
         {
             args.Cancel = true;
             Hide();
         };
+    }
+
+    // ── Theme tracing ────────────────────────────────────────────────────────
+    //
+    // Mémorise la dernière valeur connue d'ActualTheme pour fabriquer le
+    // couple (from, to) attendu par DeckleThemeSource.ThemeChanged. Initialisée
+    // au ctor depuis Content.ActualTheme et mise à jour à chaque event.
+    private Microsoft.UI.Xaml.ElementTheme _lastTheme;
+
+    private void OnRootActualThemeChanged(Microsoft.UI.Xaml.FrameworkElement sender, object args)
+    {
+        var to = sender.ActualTheme;
+        if (to == _lastTheme) return;
+        string source = ThemeRequestSourceProbe.Consume() ?? "system";
+        DeckleThemeSource.Log.ThemeChanged(
+            "hud", _lastTheme.ToString(), to.ToString(), source);
+        _lastTheme = to;
     }
 
     private void RegisterMouseRawInput()
@@ -188,10 +245,10 @@ public sealed partial class HudWindow : Window
 
     // ── Public API (thread-safe) ──────────────────────────────────────────────
 
-    public void ShowPreparing()        => EnqueueUI(() => SetState(HudState.Charging));
-    public void ShowRecording()        => EnqueueUI(() => SetState(HudState.Recording));
-    public void SwitchToTranscribing() => EnqueueUI(() => SetState(HudState.Transcribing));
-    public void SwitchToRewriting()    => EnqueueUI(() => SetState(HudState.Rewriting));
+    public void ShowPreparing()        => EnqueueUI(() => SetState(HudState.Charging,    reason: "show_preparing"));
+    public void ShowRecording()        => EnqueueUI(() => SetState(HudState.Recording,   reason: "show_recording"));
+    public void SwitchToTranscribing() => EnqueueUI(() => SetState(HudState.Transcribing, reason: "switch_transcribing"));
+    public void SwitchToRewriting()    => EnqueueUI(() => SetState(HudState.Rewriting,    reason: "switch_rewriting"));
 
     // Durations are severity-driven (see FeedbackDuration / SuccessDuration
     // below). Success and Informational clear fast, warnings and errors
@@ -199,12 +256,14 @@ public sealed partial class HudWindow : Window
 
     public void ShowError(string title, string body) =>
         EnqueueUI(() => SetState(HudState.Message,
-            new MessagePayload(MessageKind.Critical, title, body, FeedbackDuration(2))));
+            new MessagePayload(MessageKind.Critical, title, body, FeedbackDuration(2)),
+            reason: "show_error"));
 
     public void ShowPasted() =>
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Success, Loc.Get("Hud_Pasted_Title"), string.Empty,
-                SuccessDuration)));
+                SuccessDuration),
+            reason: "show_pasted"));
 
     // "Copied to clipboard" is a *success* outcome — the transcription
     // landed on the clipboard, which is the default flow when
@@ -215,7 +274,8 @@ public sealed partial class HudWindow : Window
         EnqueueUI(() => SetState(HudState.Message,
             new MessagePayload(MessageKind.Success,
                 Loc.Get("Hud_Copied_Title"), Loc.Get("Hud_Copied_Hint"),
-                SuccessDuration)));
+                SuccessDuration),
+            reason: "show_copied"));
 
     // ─── Feedback routing ───────────────────────────────────────────────────
     //
@@ -238,7 +298,8 @@ public sealed partial class HudWindow : Window
             _ => MessageKind.Critical,
         };
         EnqueueUI(() => SetState(HudState.Message,
-            new MessagePayload(kind, title, body, FeedbackDuration(severity))));
+            new MessagePayload(kind, title, body, FeedbackDuration(severity)),
+            reason: "user_feedback"));
     }
 
     // ─── Feedback durations ─────────────────────────────────────────────────
@@ -256,7 +317,7 @@ public sealed partial class HudWindow : Window
         _ => TimeSpan.FromSeconds(8),  // Error
     };
 
-    public void Hide() => EnqueueUI(() => SetState(HudState.Hidden));
+    public void Hide() => EnqueueUI(() => SetState(HudState.Hidden, reason: "hide"));
 
     // Boot-time warm pass. Drives a transient Charging → Hidden cycle through
     // the canonical SetState path so the first composition (swap chain DComp
@@ -291,14 +352,23 @@ public sealed partial class HudWindow : Window
             return;
         }
 
-        SetState(HudState.Charging, bypassGate: true, alphaOverride: 0);
+        // Stopwatch armed BEFORE the first SetState so it englobe la
+        // composition complète (Charging show + dispatch tail Low + Hidden
+        // teardown). Lue dans SetState(Hidden) ci-dessous quand le
+        // _warmPassStopwatch est non-null pour émettre WarmPassCompleted
+        // une fois et le clear.
+        _warmPassStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        SetState(HudState.Charging, bypassGate: true, alphaOverride: 0, reason: "warm_pass");
 
         // Low priority fires after the next render pass — by the time it
         // runs the first frame has been presented and the cold-path costs
         // are paid.
-        DispatcherQueue.TryEnqueue(
-            Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
-            () => SetState(HudState.Hidden));
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "warm-pass-tail", caller: "hud-window",
+            callback: () => SetState(HudState.Hidden, reason: "warm_pass"),
+            rejectSource: "HUD", rejectWhat: "warm pass tail",
+            priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
     }
 
     // Forward mic RMS samples (20 Hz, engine recording thread) to the chrono
@@ -316,12 +386,19 @@ public sealed partial class HudWindow : Window
     // and the paste lands in the wrong target.
     public void HideSync()
     {
-        if (DispatcherQueue.HasThreadAccess) { SetState(HudState.Hidden); return; }
+        if (DispatcherQueue.HasThreadAccess) { SetState(HudState.Hidden, reason: "hide_sync"); return; }
         var done = new ManualResetEventSlim();
-        bool enqueued = DispatcherQueue.TryEnqueueOrLog(() =>
-        {
-            try { SetState(HudState.Hidden); } finally { done.Set(); }
-        }, "HUD", "HideSync");
+        // Threading — site cross-thread real et critique (rendezvous
+        // transcribe thread → UI juste avant SendInput Ctrl+V). Un
+        // wait_ms anormal ici signale un UI thread bloqué qui va
+        // déclencher le timeout défensif et propager une race au paste.
+        bool enqueued = DispatcherQueue.TryEnqueueObserved(
+            "window-show", "hud-window-hide-sync",
+            () =>
+            {
+                try { SetState(HudState.Hidden, reason: "hide_sync"); } finally { done.Set(); }
+            },
+            "HUD", "HideSync");
 
         // Si l'enqueue a échoué (queue fermée pendant teardown), on évite
         // le Wait infini en libérant immédiatement. Le HUD ne sera pas
@@ -349,8 +426,12 @@ public sealed partial class HudWindow : Window
 
     // alphaOverride lets the warm pass force alpha=0 so the boot composition
     // pass is invisible to the user (PrimeAndHide). Real shows leave it null
-    // and use MAX_ALPHA, exactly like before.
-    private void SetState(HudState next, MessagePayload? msg = null, bool bypassGate = false, byte? alphaOverride = null)
+    // and use MAX_ALPHA, exactly like before. `reason` est une étiquette
+    // sémantique du déclencheur, propagée à DeckleHudSource.StateChanged
+    // pour différencier "warm_pass", "hide_sync", "message_timeout",
+    // "show_recording", etc. — sans cette info, lire la trace LogWindow
+    // reviendrait à deviner pourquoi le HUD vient de changer d'état.
+    private void SetState(HudState next, MessagePayload? msg = null, bool bypassGate = false, byte? alphaOverride = null, string reason = "unspecified")
     {
         // Overlay disabled in Settings → no-op for any *visible* state. Hidden
         // still runs so an in-flight HUD gets cleared if the user toggles.
@@ -362,14 +443,34 @@ public sealed partial class HudWindow : Window
             return;
         }
 
+        HudState from = _state;
         bool wasShown = _state != HudState.Hidden;
         _state = next;
         bool isShown = _state != HudState.Hidden;
 
         _messageHideTimer?.Stop();
 
+        // Axe 1 — StateChanged. Émis avant le dispatch concret pour que la
+        // séquence dans la LogWindow lise la transition en tête de chaque
+        // change. alpha lue avant ApplyShowAlpha (donc l'alpha "courant"
+        // pré-transition) ; dpi recalculée via GetDpiForWindow pour suivre
+        // un changement DPI runtime entre deux shows.
+        int dpiNow = (int)NativeMethods.GetDpiForWindow(_hwnd);
+        DeckleHudSource.Log.StateChanged(from.ToString(), next.ToString(), reason, _currentAlpha, dpiNow);
+
         if (wasShown != isShown)
             MainHudVisibilityChanged?.Invoke(this, isShown);
+
+        // Proximity rollup timer — démarre quand le HUD devient visible et
+        // que la proximity peut être active (un sample ne sera enregistré
+        // que dans UpdateProximity quand _proximityActive est vrai). Arrêt
+        // sur passage à Hidden pour libérer le timer et éviter d'émettre
+        // des rollups vides. La logique d'émission elle-même gate sur le
+        // count de samples > 0.
+        if (isShown && !wasShown)
+            StartProximityRollupTimer();
+        else if (!isShown && wasShown)
+            StopProximityRollupTimer();
 
         switch (next)
         {
@@ -382,6 +483,19 @@ public sealed partial class HudWindow : Window
                 SetAlphaImmediate(MAX_ALPHA);
                 IconAssets.ApplyToWindow(AppWindow, recording: false);
                 NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE);
+
+                // Axe 4 — WarmPassCompleted. Le warm pass est terminé quand
+                // le SetState(Hidden) de fin de PrimeAndHide retombe (Low
+                // priority, après la première frame composée). On émet une
+                // seule fois et on clear le stopwatch pour qu'un Hide
+                // utilisateur ultérieur ne déclenche pas un faux warm
+                // event.
+                if (_warmPassStopwatch is { } sw)
+                {
+                    sw.Stop();
+                    _warmPassStopwatch = null;
+                    DeckleHudSource.Log.WarmPassCompleted((int)sw.ElapsedMilliseconds);
+                }
                 return;
 
             case HudState.Message:
@@ -454,7 +568,7 @@ public sealed partial class HudWindow : Window
     private void OnMessageHideTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
     {
         sender.Stop();
-        SetState(HudState.Hidden);
+        SetState(HudState.Hidden, reason: "message_timeout");
     }
 
     // ── Implementation ────────────────────────────────────────────────────────
@@ -462,7 +576,19 @@ public sealed partial class HudWindow : Window
     private void EnqueueUI(Action a)
     {
         if (DispatcherQueue.HasThreadAccess) a();
-        else DispatcherQueue.TryEnqueueOrLog(() => a(), "HUD", "ui action");
+        else
+        {
+            // Threading — point central des marshallings cross-thread du
+            // HUD (engine StatusChanged depuis worker, callbacks composition
+            // hors UI). TryEnqueueObserved instrumente MarshalQueued →
+            // wait_ms/run_ms → MarshalCompleted ; rejet via
+            // DispatcherEnqueueRejected sur DeckleThreadingSource si queue
+            // fermée.
+            DispatcherQueue.TryEnqueueObserved(
+                "ui-update", "hud-window",
+                () => a(),
+                "HUD", "ui action");
+        }
     }
 
     // Pixel rect the HUD would occupy at the current DPI + work area +
@@ -504,6 +630,16 @@ public sealed partial class HudWindow : Window
             _hwnd, NativeMethods.HWND_TOP,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+
+        // Windowing — émis après le MoveAndResize + ShowWindow pour
+        // capturer le rect effectif post-DWM. `anchor` reflète le réglage
+        // Settings.Overlay.Position (BottomCenter default, TopCenter
+        // alternative) ; l'enroulement DPI/work area/centrage horizontal
+        // vit dans GetRectPx mais on capture le résultat plutôt que
+        // l'intention pour permettre la reverse via dpi.
+        string position = Settings.SettingsService.Instance.Current.Overlay.Position ?? "";
+        string anchor = position.StartsWith("Top") ? "TopCenter" : "BottomCenter";
+        WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);
     }
 
     // ── Subclass: WM_NCCALCSIZE (no-frame) + WM_INPUT (proximity) ─────────────
@@ -564,6 +700,99 @@ public sealed partial class HudWindow : Window
 
         byte alpha = (byte)Math.Round(MIN_ALPHA + eased * (MAX_ALPHA - MIN_ALPHA));
         if (alpha != _currentAlpha) SetAlphaImmediate(alpha);
+
+        // Axe 5 — Collecte sample pour ProximityRollup. Le flag
+        // _proximityRollupEnabled court-circuite la collecte quand aucun
+        // listener n'écoute Verbose+Heartbeat sur Deckle.Hud — c'est la
+        // gate strict que la doctrine deckle-logging exige pour les
+        // boucles haute fréquence WM_INPUT (~125 Hz). Réévalué une fois
+        // par tick rollup pour absorber une bascule live d'un listener.
+        if (_proximityRollupEnabled)
+        {
+            int distDip = (int)Math.Round(distancePx / scale);
+            int idx = _proximitySampleCount < PROXIMITY_ROLLUP_CAPACITY
+                ? _proximitySampleCount
+                : PROXIMITY_ROLLUP_CAPACITY - 1; // ring tail si overflow
+            _proximityDistances[idx] = distDip;
+            _proximityAlphas[idx] = alpha;
+            if (_proximitySampleCount < PROXIMITY_ROLLUP_CAPACITY)
+                _proximitySampleCount++;
+        }
+    }
+
+    // ── Proximity rollup — pattern temps réel haute fréquence ──────────
+    //
+    // WM_INPUT arrive à ~125 Hz quand la souris bouge ; le contrat
+    // doctrinal de deckle-logging interdit d'émettre un event par tick.
+    // On accumule sur fenêtre glissante 1 s et on émet un récapitulatif
+    // périodique (samples, min/max alpha, p50/p95 distance) seulement
+    // si la collecte a réellement eu lieu, et seulement si un listener
+    // écoute Verbose+Heartbeat.
+
+    private void StartProximityRollupTimer()
+    {
+        // Réévalue la gate à chaque démarrage — le listener peut s'être
+        // attaché entre deux shows de HUD. Quand la gate est fermée, le
+        // timer ne démarre pas du tout, zéro overhead côté UpdateProximity
+        // (le test _proximityRollupEnabled court-circuite la collecte).
+        _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
+            EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
+        if (!_proximityRollupEnabled) return;
+
+        _proximitySampleCount = 0;
+        _proximityRollupTimer ??= DispatcherQueue.CreateTimer();
+        _proximityRollupTimer.Stop();
+        _proximityRollupTimer.Interval = TimeSpan.FromMilliseconds(PROXIMITY_ROLLUP_PERIOD_MS);
+        _proximityRollupTimer.IsRepeating = true;
+        _proximityRollupTimer.Tick -= OnProximityRollupTick;
+        _proximityRollupTimer.Tick += OnProximityRollupTick;
+        _proximityRollupTimer.Start();
+    }
+
+    private void StopProximityRollupTimer()
+    {
+        _proximityRollupTimer?.Stop();
+        _proximityRollupEnabled = false;
+        _proximitySampleCount = 0;
+    }
+
+    private void OnProximityRollupTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
+    {
+        // Re-test la gate à chaque tick (un listener peut s'être détaché
+        // pendant la durée du show) et flushe immédiatement la fenêtre
+        // courante. Si aucun sample, on saute l'émission — pas de bruit
+        // périodique quand la souris ne bouge pas.
+        _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
+            EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
+        if (!_proximityRollupEnabled) { sender.Stop(); _proximitySampleCount = 0; return; }
+
+        int count = _proximitySampleCount;
+        if (count == 0) return;
+
+        // Copie locale + sort pour percentiles. count ≤ CAPACITY (256),
+        // donc l'allocation est petite et bornée. Le tri en place sur la
+        // copie évite de muter les buffers de collecte qui peuvent être
+        // ré-écrits par UpdateProximity sur WM_INPUT concurrent (raw
+        // input est marshalé sur le UI thread via subclass donc même
+        // thread, mais on garde la sémantique snapshot par sûreté).
+        var distances = new int[count];
+        Array.Copy(_proximityDistances, distances, count);
+        Array.Sort(distances);
+        byte minAlpha = 255, maxAlpha = 0;
+        for (int i = 0; i < count; i++)
+        {
+            byte a = _proximityAlphas[i];
+            if (a < minAlpha) minAlpha = a;
+            if (a > maxAlpha) maxAlpha = a;
+        }
+        int p50 = distances[count / 2];
+        int p95Idx = (int)Math.Min(count - 1, Math.Floor(count * 0.95));
+        int p95 = distances[p95Idx];
+
+        DeckleHudSource.Log.ProximityRollup(
+            PROXIMITY_ROLLUP_PERIOD_MS, count, minAlpha, maxAlpha, p50, p95);
+
+        _proximitySampleCount = 0;
     }
 
     private void SetAlphaImmediate(byte alpha)
@@ -583,6 +812,7 @@ public sealed partial class HudWindow : Window
     {
         _fadeInTimer?.Stop();
         _proximityActive = false;
+        byte fromAlpha = _currentAlpha;
         SetAlphaImmediate(0);
         _fadeInTarget = target;
         _fadeInActivateProximityOnComplete = activateProximityOnComplete;
@@ -593,6 +823,13 @@ public sealed partial class HudWindow : Window
         _fadeInTimer.Tick -= OnFadeInTick;
         _fadeInTimer.Tick += OnFadeInTick;
         _fadeInTimer.Start();
+
+        // Axe 2 — FadeInStarted. scope="hud" parce que c'est le fade-in
+        // de la fenêtre principale (HudOverlayWindow a son propre site
+        // d'émission avec scope="overlay"). fromAlpha capturé avant le
+        // reset à 0 pour tracer une éventuelle transition depuis un
+        // alpha proximity en cours.
+        DeckleHudSource.Log.FadeInStarted("hud", FADE_IN_MS, fromAlpha, target);
     }
 
     private void OnFadeInTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)

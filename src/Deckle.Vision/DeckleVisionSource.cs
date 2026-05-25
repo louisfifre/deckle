@@ -43,6 +43,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtSamplerMapFailed                = 22;
     public const int EvtSamplerProcessFailed            = 23;
     public const int EvtSecureDesktopRecovering         = 24;
+    public const int EvtHeartbeat                       = 25;
 
     // ── Capture session lifecycle ───────────────────────────────────────
 
@@ -257,5 +258,34 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public void SamplerProcessFailed(string ex_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtSamplerProcessFailed, ex_type, message);
+    }
+
+    // ── Heartbeat — rolling capture telemetry ──────────────────────────
+    //
+    // Periodic rollup of the DXGI Output Duplication loop. One line per
+    // window (period_ms ≈ 1000) summarising frame throughput and intra-
+    // tick latency distribution. Acquire latency covers the AcquireNext-
+    // Frame → ReleaseFrame round-trip ; sample latency covers the
+    // FrameSampler downscale + map path. Both in microseconds because
+    // the acquire path is typically sub-millisecond — _us gives enough
+    // resolution to surface jitter that _ms would round away.
+    //
+    // Strictly Verbose | Keywords.Heartbeat gated so the per-sample
+    // collection itself collapses to a single IsEnabled check when no
+    // listener is attached. Caller responsibility : check IsEnabled
+    // before collecting samples (zero alloc on the rolling buffer when
+    // off), and emit through this method which gates a second time
+    // before WriteEvent.
+    [Event(EvtHeartbeat,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "capture heartbeat | period_ms={0} | acquired={1} | dropped={2} | acquire_p50_us={3} acquire_p95_us={4} | sample_p50_us={5} sample_p95_us={6}")]
+    public void Heartbeat(int period_ms, int frames_acquired, int frames_dropped,
+        long p50_acquire_us, long p95_acquire_us,
+        long p50_sample_us, long p95_sample_us)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtHeartbeat, period_ms, frames_acquired, frames_dropped,
+            p50_acquire_us, p95_acquire_us, p50_sample_us, p95_sample_us);
     }
 }

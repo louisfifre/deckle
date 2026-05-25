@@ -11,6 +11,7 @@ using Deckle.Lighting.Ambient;
 using Deckle.Lighting.Hue;
 using Deckle.Catalog;
 using Deckle.Playground.ViewModels;
+using Deckle.Shell;
 using Deckle.Vision;
 
 namespace Deckle.Playground;
@@ -160,8 +161,11 @@ public sealed partial class AmbientPage : Page
         }
         finally
         {
-            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
-                () => _initializing = false);
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "init-flag-clear", caller: "playground-ambient-page",
+                callback: () => _initializing = false,
+                rejectSource: "PLAYGROUND", rejectWhat: "init flag",
+                priority: DispatcherQueuePriority.Low);
         }
     }
 
@@ -234,36 +238,42 @@ public sealed partial class AmbientPage : Page
         }
         else
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                SyncHueUiFromService();
-                ApplyPipelineReadiness();
-            });
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "ui-update", caller: "playground-ambient-page-hue",
+                callback: () =>
+                {
+                    SyncHueUiFromService();
+                    ApplyPipelineReadiness();
+                },
+                rejectSource: "PLAYGROUND", rejectWhat: "hue bridge sync");
         }
     }
 
     private void OnAmbientSettingsChanged()
     {
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            bool prev = _initializing;
-            _initializing = true;
-            try
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "settings-reload", caller: "playground-ambient-page",
+            callback: () =>
             {
-                ViewModel.Load();
-                PushViewModelToControls();
-                SyncPipelineUiFromViewModel();
-                ApplyPipelineReadiness();
-                // BorderDepth landed in the store — repaint the zone
-                // overlay rectangles so a slider drag in the Settings
-                // AmbientPage shows here without a window resize.
-                LayoutLightZonesOverlayFromViewbox();
-            }
-            finally
-            {
-                _initializing = prev;
-            }
-        });
+                bool prev = _initializing;
+                _initializing = true;
+                try
+                {
+                    ViewModel.Load();
+                    PushViewModelToControls();
+                    SyncPipelineUiFromViewModel();
+                    ApplyPipelineReadiness();
+                    // BorderDepth landed in the store — repaint the zone
+                    // overlay rectangles so a slider drag in the Settings
+                    // AmbientPage shows here without a window resize.
+                    LayoutLightZonesOverlayFromViewbox();
+                }
+                finally
+                {
+                    _initializing = prev;
+                }
+            },
+            rejectSource: "PLAYGROUND", rejectWhat: "settings reload");
     }
 
     private void OnAmbientEngineStateChanged(AmbientEngineState state)
@@ -281,7 +291,10 @@ public sealed partial class AmbientPage : Page
         }
         else
         {
-            DispatcherQueue.TryEnqueue(EvaluatePreviewTimerState);
+            DispatcherQueue.TryEnqueueObserved(
+                operation: "engine-state-sync", caller: "playground-ambient-page",
+                callback: EvaluatePreviewTimerState,
+                rejectSource: "PLAYGROUND", rejectWhat: "preview timer eval");
         }
     }
 

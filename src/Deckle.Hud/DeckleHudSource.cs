@@ -12,15 +12,27 @@ namespace Deckle.Hud;
 // commande qu'un module qui émet possède son provider — c'est ce que
 // fait ce fichier, en suivant le pattern des autres providers Deckle.*.
 //
-// Pour l'instant ce provider porte uniquement le timeout warning du
-// HideSync rendezvous (cas pathologique sur paste avec UI thread bloqué).
-// Si plus d'événements Hud-internes émergent, ils s'ajoutent ici.
+// Initialement le provider portait uniquement le timeout warning du
+// HideSync rendezvous. La vague d'instrumentation observabilité transverse
+// (mai 2026) l'étend avec cinq axes d'observation interne — transitions
+// de state machine, fade-in, retract message, warm pass boot, rollup
+// proximity — pour rendre la mécanique HUD diagnostiquable depuis la
+// LogWindow et les JSONL plutôt que via File.AppendAllText ad hoc. Voir
+// la fiche `reference--eventsource-convention--1.2.md` §*HUD interne
+// sous-instrumenté* (lacune 1.1) qui motive l'extension, et CLAUDE.md
+// du module §*Instrumentation interne* pour la doctrine de câblage.
 [EventSource(Name = "Deckle.Hud")]
 public sealed class DeckleHudSource : DeckleEventSource
 {
     public static readonly DeckleHudSource Log = new();
 
-    public const int EvtHudWarning = 1;
+    // ── EventIds ────────────────────────────────────────────────────────
+    public const int EvtHudWarning          = 1;
+    public const int EvtStateChanged        = 2;
+    public const int EvtFadeInStarted       = 3;
+    public const int EvtMessageRetracted    = 4;
+    public const int EvtWarmPassCompleted   = 5;
+    public const int EvtProximityRollup     = 6;
 
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
@@ -29,5 +41,97 @@ public sealed class DeckleHudSource : DeckleEventSource
     public void HudWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtHudWarning, message);
+    }
+
+    // ─── Axe 1 — Transitions de state machine 6 états ──────────────────
+    //
+    // Émis par HudWindow.SetState à chaque transition (Hidden, Charging,
+    // Recording, Transcribing, Rewriting, Message). `reason` capture le
+    // déclencheur sémantique côté appelant (hotkey, paste, message_hide,
+    // warm_pass, etc.). `alpha` et `dpi` sont les paramètres techniques
+    // du window manager au moment de la transition — un mauvais alpha ou
+    // un dpi inattendu signalent souvent un bug de fade-in ou de DPI-
+    // aware resizing.
+    [Event(EvtStateChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "state changed | from={0} | to={1} | reason={2} | alpha={3} | dpi={4}")]
+    public void StateChanged(string from, string to, string reason, byte alpha, int dpi)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtStateChanged, from, to, reason, alpha, dpi);
+    }
+
+    // ─── Axe 2 — Fade-in 150 ms cubic ease-out ─────────────────────────
+    //
+    // Émis au début de chaque fade-in. `scope` distingue les surfaces qui
+    // ont leur propre animator alpha — "hud" pour HudWindow (raw input
+    // proximity), "overlay" pour HudOverlayWindow (60 Hz polling). Une
+    // future surface "message" séparée (retract hybrid bleed décrit dans
+    // CLAUDE.md mais non implémenté) viendrait s'ajouter ici.
+    [Event(EvtFadeInStarted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "fade in start | scope={0} | duration_ms={1} | from={2} | to={3}")]
+    public void FadeInStarted(string scope, int duration_ms, byte from_alpha, byte to_alpha)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtFadeInStarted, scope, duration_ms, from_alpha, to_alpha);
+    }
+
+    // ─── Axe 3 — Message retract 400×160 → 272×78 ──────────────────────
+    //
+    // Émis au début du retract (hybrid bleed → carte standalone). Pas de
+    // site d'appel actif dans le code courant — la mécanique de retract
+    // est décrite dans CLAUDE.md comme architecture cible mais HudMessage
+    // est aujourd'hui fixe 272×78. L'event est déclaré pour figer la
+    // signature ; il s'activera quand la mécanique de retract sera câblée.
+    [Event(EvtMessageRetracted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "message retract | from={0}x{1} | to={2}x{3} | duration_ms={4}")]
+    public void MessageRetracted(int from_w, int from_h, int to_w, int to_h, int duration_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtMessageRetracted, from_w, from_h, to_w, to_h, duration_ms);
+    }
+
+    // ─── Axe 4 — Warm pass au boot ─────────────────────────────────────
+    //
+    // Émis à la fin du warm pass invisible (PrimeAndHide). Le coût payé
+    // au boot évite la première frame partielle sur le premier hotkey
+    // réel. Une valeur `took_ms` qui dérive vers le haut signale une
+    // régression de cold-path composition (DComp swap chain, font shaping
+    // Bitcount, visual tree DWM).
+    [Event(EvtWarmPassCompleted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "warm pass complete | took_ms={0}")]
+    public void WarmPassCompleted(int took_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtWarmPassCompleted, took_ms);
+    }
+
+    // ─── Axe 5 — Proximity smoothstep (rollup périodique 1 s) ──────────
+    //
+    // Pattern rollup canonique (cf. classe d'observables n°3 "Boucle temps
+    // réel haute fréquence" de la fiche `reference--eventsource-
+    // convention--1.2.md` §*Classes d'observables canoniques*) : la
+    // proximité s'évalue à ~125 Hz sur WM_INPUT, fréquence trop chaude
+    // pour la LogWindow selon la doctrine "heartbeats < 1 s ne sont pas
+    // loggués". HudWindow accumule sur fenêtre glissante 1 s et émet ce
+    // récapitulatif chaque seconde si au moins un sample a été collecté.
+    // Le gate strict évite toute allocation quand aucun listener n'écoute,
+    // y compris côté collecte (cf. _proximityRollupEnabled dans
+    // HudWindow).
+    [Event(EvtProximityRollup,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "proximity rollup | period_ms={0} | samples={1} | min_alpha={2} | max_alpha={3} | p50_cursor_dist_dip={4} | p95_cursor_dist_dip={5}")]
+    public void ProximityRollup(int period_ms, int samples, byte min_alpha, byte max_alpha, int p50_cursor_dist_dip, int p95_cursor_dist_dip)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtProximityRollup, period_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
     }
 }

@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
+_Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -105,7 +105,8 @@ _Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 │   │   └── 0012-adoption-de-dotnet-build-et-dotnet-test.md
 │   ├── reference/
 │   │   ├── reference--eventsource-convention--1.0.md
-│   │   └── reference--eventsource-convention--1.1.md
+│   │   ├── reference--eventsource-convention--1.1.md
+│   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
@@ -147,7 +148,8 @@ _Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── LogEntry.cs
-│   │   │   └── LogEntryTemplateSelector.cs
+│   │   │   ├── LogEntryTemplateSelector.cs
+│   │   │   └── NetworkStatusEmitter.cs
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
@@ -220,11 +222,18 @@ _Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 │   │   │   └── RoutedJsonlEventListener.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.csproj
+│   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
+│   │   ├── DeckleNetworkSource.cs
+│   │   ├── DeckleResourceSource.cs
+│   │   ├── DeckleThemeSource.cs
+│   │   ├── DeckleThreadingSource.cs
+│   │   ├── DeckleWindowingSource.cs
 │   │   ├── EventEntry.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogWindowSink.cs
-│   │   └── Keywords.cs
+│   │   ├── Keywords.cs
+│   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── CLAUDE.md
@@ -467,8 +476,21 @@ _Mise à jour : 2026-05-25 18:12 — source : `git ls-files`_
 │       ├── Chrono/
 │       │   ├── ChronoFormatterTests.cs
 │       │   └── DeckleChronoSourceTests.cs
+│       ├── Diagnostics/
+│       │   ├── DeckleCancellationSourceTests.cs
+│       │   ├── DeckleNetworkSourceTests.cs
+│       │   ├── DeckleResourceSourceTests.cs
+│       │   ├── DeckleThemeSourceTests.cs
+│       │   ├── DeckleThreadingSourceTests.cs
+│       │   └── DeckleWindowingSourceTests.cs
 │       ├── Shared/
-│       │   └── TestEventListener.cs
+│       │   ├── EventArgsExtensions.cs
+│       │   ├── TestEventListener.cs
+│       │   └── WindowsAppSdkBootstrap.cs
+│       ├── Shell/
+│       │   └── DispatcherQueueExtensionsTests.cs
+│       ├── Vision/
+│       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
 ├── .gitattributes
 ├── .gitignore
