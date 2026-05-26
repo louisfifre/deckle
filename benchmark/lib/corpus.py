@@ -35,13 +35,23 @@ CORPORA_DIR = BENCHMARK_DIR / "corpora"
 
 @dataclass(frozen=True)
 class Sample:
-    """Un sample du corpus, prêt à être consommé par une Source."""
+    """Un sample du corpus, prêt à être consommé par une Source.
+
+    ``reference_text`` reste la référence par défaut (Whisper large-v3
+    quand le corpus vient de la télémétrie Deckle), pour rétrocompat.
+    ``reference_text_gemini`` est optionnel — vide si le corpus n'a pas
+    été enrichi par une passe ground-truth Gemini. Les benches qui
+    veulent comparer contre Gemini lisent ce champ et tombent en erreur
+    explicite si vide, plutôt que de retomber silencieusement sur la
+    référence Whisper.
+    """
     id: str
     audio_path: Path
     duration_s: float
     tier: str
     reference_text: str
     reference_words: int
+    reference_text_gemini: str = ""
 
 
 def available() -> list[str]:
@@ -88,6 +98,7 @@ def load(slug: str) -> list[Sample]:
             tier=str(payload["tier"]),
             reference_text=str(payload["text"]),
             reference_words=int(payload["text_words"]),
+            reference_text_gemini=str(payload.get("reference_text_gemini", "")),
         ))
     samples.sort(key=lambda s: s.duration_s)
     return samples
