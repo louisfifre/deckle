@@ -1,0 +1,93 @@
+# Régimes pour la source ``voxtral-llamacpp`` (mode Vulkan via
+# llama-mtmd-cli). Six régimes cartographiés en session 2026-05-26 sur
+# Voxtral-Small 24B Q4_K_M ; tous fonctionnels, validés en sortie.
+#
+# Convention TOML pour cette source : la clé ``prompt`` porte
+# l'instruction utilisateur (transmise via ``--prompt``), la clé
+# ``system_prompt`` est optionnelle et porte le système Mistral V7
+# (transmise via ``--system-prompt`` quand présente).
+#
+# Diffère de ``voxtral_chat.toml`` qui emploie historiquement
+# ``system_prompt`` comme alias pour le prompt utilisateur (convention
+# du POC voxtral-poc). Ici on sépare proprement les deux rôles.
+
+# ───────────────────────────────────────────────────────────────────────
+# T1 — Baseline transcribe
+# ───────────────────────────────────────────────────────────────────────
+[T1_baseline]
+label = "Baseline — transcribe FR direct"
+description = """
+Instruction utilisateur unique, pas de système prompt. Voxtral produit
+une transcription en français avec ponctuation et accents propres. La
+sortie est légèrement lissée par défaut (Voxtral supprime
+spontanément les hésitations 'euh' si elles n'ont pas été
+explicitement demandées). Référence de comparaison la plus proche de
+ce que Whisper produit aujourd'hui.
+"""
+prompt = "Transcris cet audio en français."
+
+# ───────────────────────────────────────────────────────────────────────
+# T2 — Verbatim avec hésitations
+# ───────────────────────────────────────────────────────────────────────
+[T2_verbatim]
+label = "Verbatim — préserver hésitations"
+description = """
+Demande explicite de conserver les hésitations ('euh', 'ben'),
+répétitions et faux départs. Voxtral suit l'instruction quand l'audio
+contient effectivement ces marqueurs ; sur les audios fluides, la
+sortie reste lissée (pas de bruit ajouté artificiellement).
+"""
+prompt = "Transcris cet audio en français, mot pour mot, en conservant les hésitations comme « euh » ou « ben » et les répétitions si présentes."
+
+# ───────────────────────────────────────────────────────────────────────
+# T3 — Traduction directe FR → EN
+# ───────────────────────────────────────────────────────────────────────
+[T3_translate]
+label = "Traduction directe FR → EN"
+description = """
+Voxtral traduit l'audio français directement en anglais fluent, sans
+étape de transcription intermédiaire. Cas d'usage produit potentiel :
+dictée FR → notes EN en un seul appel. Mesure secondaire (pas un
+remplaçant Whisper direct mais une capacité native du modèle).
+"""
+prompt = "Translate this French audio to natural English. Output only the translation, no preamble."
+
+# ───────────────────────────────────────────────────────────────────────
+# T4 — Résumé une phrase
+# ───────────────────────────────────────────────────────────────────────
+[T4_summary]
+label = "Résumé une phrase"
+description = """
+Voxtral résume le contenu de l'audio en une phrase courte. Test des
+capacités de compréhension sémantique (au-delà du simple ASR). N'a
+pas vocation à remplacer une transcription mais documente ce que
+Voxtral sait faire en plus de transcrire.
+"""
+prompt = "Résume en une phrase courte ce que dit la personne dans cet audio."
+
+# ───────────────────────────────────────────────────────────────────────
+# T5 — Q&A sur le registre
+# ───────────────────────────────────────────────────────────────────────
+[T5_qa_register]
+label = "Q&A — décrire le registre"
+description = """
+Voxtral décrit le ton et le registre du locuteur sans transcrire.
+Capacité paralinguistique pure (formel/informel, hésitant, assertif,
+…). Mesure de la richesse multimodale du modèle.
+"""
+prompt = "Décris le ton et le registre de cette personne en une phrase courte (formel, informel, hésitant, ...). Ne transcris pas."
+
+# ───────────────────────────────────────────────────────────────────────
+# T6 — System prompt + transcribe avec annotation ton
+# ───────────────────────────────────────────────────────────────────────
+[T6_sys_prompt]
+label = "Système prompt + transcribe avec étiquette ton"
+description = """
+Système prompt Mistral V7 jinja qui définit le rôle de l'assistant +
+instruction utilisateur courte. Combine transcription verbatim et
+annotation paralinguistique. Documente que la fonctionnalité système
+prompt fonctionne via le template jinja Mistral V7 (hors-doc Mistral
+SDK officiel, à ne pas exposer en production sans validation).
+"""
+system_prompt = "Tu es un assistant de transcription pour des dictées en français. Tu rends toujours la transcription verbatim suivie, sur une nouvelle ligne, d'une étiquette entre crochets indiquant le ton détecté."
+prompt = "Transcris cet audio."
