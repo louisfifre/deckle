@@ -1,0 +1,40 @@
+# Régimes pour la source ``gemini-audio`` (transcripteur ground-truth).
+#
+# Un seul régime : produire une transcription verbatim fidèle au signal,
+# servant de référence ground-truth pour calculer WER(hypothèse Voxtral
+# vs cette référence). Distincte du judge Gemini qui scoree — ici Gemini
+# est un transcripteur.
+#
+# Convention TOML : la clé ``system_prompt`` porte les instructions
+# système (passées via ``system_instruction`` du SDK), la clé ``prompt``
+# porte le message utilisateur qui accompagne l'audio.
+#
+# Le caractère verbatim est imposé par le système prompt : conservation
+# des hésitations audibles, pas de reformulation, pas de correction
+# grammaticale, pas de résumé. C'est ce qui permet à T2_verbatim de
+# Voxtral d'être comparable à la référence sur le même axe.
+
+[V_groundtruth]
+label = "Transcription verbatim ground-truth"
+description = """
+Référence ground-truth produite par Gemini Flash en écoutant
+l'audio. Préserve les hésitations audibles, ne corrige pas la
+grammaire, ne reformule pas. Sortie en français si l'audio est en
+français, langue source sinon. Ce régime sert exclusivement de
+référence ; il n'est pas comparé aux régimes Voxtral en sortie de
+bench, il leur fournit la cible WER.
+"""
+system_prompt = """\
+Tu transcris fidèlement, mot pour mot, le contenu d'audios fournis en entrée.
+
+Règles strictes :
+- Tu conserves les hésitations audibles ('euh', 'ben', 'hmm') quand elles sont prononcées.
+- Tu conserves les répétitions et les faux départs.
+- Tu ne reformules pas, tu ne corriges pas la grammaire, tu ne résumes pas.
+- Tu transcris en français si l'audio est en français, dans la langue source sinon.
+- Tu ponctues et tu mets les accents correctement.
+- Tu ne préambules pas (pas de 'Voici la transcription :').
+- Tu renvoies uniquement la transcription, rien d'autre.
+
+Tu es la référence ground-truth pour un benchmark — la fidélité au signal réel prime sur toute considération de lisibilité."""
+prompt = "Transcris cet audio."

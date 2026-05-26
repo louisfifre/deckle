@@ -65,6 +65,7 @@ _Mise à jour : 2026-05-26 20:00 — source : `git ls-files`_
 │   │   │   ├── __init__.py
 │   │   │   ├── _base.py
 │   │   │   ├── _voxtral_common.py
+│   │   │   ├── gemini_audio.py
 │   │   │   ├── voxtral_chat.py
 │   │   │   ├── voxtral_llamacpp.py
 │   │   │   ├── voxtral_transcribe.py
@@ -88,12 +89,14 @@ _Mise à jour : 2026-05-26 20:00 — source : `git ls-files`_
 │   │   │   ├── gemini_per_row.md
 │   │   │   └── legacy_ollama_judge.md
 │   │   ├── transcription/
+│   │   │   ├── gemini_audio.toml
 │   │   │   ├── voxtral_chat.toml
 │   │   │   ├── voxtral_llamacpp.toml
 │   │   │   └── voxtral_transcribe.toml
 │   │   └── whisper_initial.txt
 │   ├── build_corpus_voxtral_val_30.py
 │   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
+│   ├── pregenerate_groundtruth_gemini.py
 │   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
 ├── docs/
 │   ├── adr/
