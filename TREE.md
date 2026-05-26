@@ -49,6 +49,7 @@ _Mise à jour : 2026-05-26 21:59 — source : `git ls-files`_
 │   │   │   └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
 │   │   └── voxtral-validation/
 │   │       ├── bench.py
+│   │       ├── build_comparison_html.py
 │   │       └── README.md  — [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
 │   ├── lib/
 │   │   ├── judges/
