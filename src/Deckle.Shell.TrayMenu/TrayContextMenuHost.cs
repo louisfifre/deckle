@@ -1,8 +1,11 @@
 using System;
+using System.Diagnostics;
 using Deckle.Catalog;
 using Deckle.Core.Interop;
+using Deckle.Diagnostics;
 using Deckle.Shell.TrayMenu.Interop;
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -24,13 +27,19 @@ namespace Deckle.Shell.TrayMenu;
 // La fenêtre porteuse est invisible : WS_EX_LAYERED + SetLayeredWindowAttributes
 // avec alpha=0. Le MenuFlyout est rendu par WinUI dans son propre popup (HWND
 // enfant détaché), donc reste pleinement visible. Le rendu Win11 (mica, coins
-// arrondis, ombre Fluent, animations natives, ToggleMenuFlyoutItem avec
-// checkmark canonique) vient gratuitement avec le contrôle.
+// arrondis, ombre Fluent, animations natives) vient gratuitement avec le
+// contrôle.
 //
 // Dismiss : Window.Activated → Deactivated couvre le click-outside et la
 // perte de focus globale ; le Click de chaque item ferme explicitement. Pas
 // d'animation de close pour éviter le hack ré-ouverture-pendant-fermeture
 // que H.NotifyIcon doit faire (AreOpenCloseAnimationsEnabled = false).
+//
+// Observabilité : les événements de positionnement (anchor, monitor, popup
+// position, move-and-resize) sont émis via WindowingProbe sur le sub-provider
+// transverse DeckleWindowingSource — pas de duplication sur le provider local
+// du module. Le sub-provider local Deckle.Shell.TrayMenu trace uniquement ce
+// qui est tray-menu-spécifique : prime cycle, mesure des items, dismiss reason.
 
 public sealed class TrayContextMenuHost : IDisposable
 {
@@ -50,18 +59,33 @@ public sealed class TrayContextMenuHost : IDisposable
     // 4 px droite, scalés par le DPI du moniteur sous le curseur.
     private const double FlyoutFrameMargin = 4.0;
 
+    // Hauteur fixe (DIP) appliquée à chaque MenuFlyoutItem du tray menu pour
+    // matcher la DesiredSize naturelle Win11 au tout premier show et empêcher
+    // la compression défectueuse du MenuFlyoutPresenter (qui rabote les items
+    // à MinHeight=32 DIP à partir du 2e/3e show sans re-centrer le texte). 40
+    // DIP correspond à la valeur visuelle correcte observée immédiatement
+    // après restart de l'app (avant que la compression kick in).
+    private const double NativeMenuItemHeight = 40.0;
+
     private readonly IntPtr _ownerHwnd;
 
     private Window? _window;
     private Frame? _frame;
     private MenuFlyout? _flyout;
-    private ToggleMenuFlyoutItem? _ambientItem;
+    private MenuFlyoutItem? _ambientItem;
+    private ToggleSwitch? _ambientSwitch;
     private IntPtr _hwnd;
     private AppWindow? _appWindow;
 
     private bool _isVisible;
     private bool _primed;
     private bool _disposed;
+
+    // Trackers pour l'event ShowRequested — calcul du delta inter-ouverture
+    // utile pour corréler le pipeline de mesure avec une éventuelle inactivité
+    // prolongée du visual tree amorcé entre deux ouvertures.
+    private long _lastShowTickMs;
+    private int _showCount;
 
     public Action? OnShowLogs        { get; set; }
     public Action? OnShowSettings    { get; set; }
@@ -85,6 +109,8 @@ public sealed class TrayContextMenuHost : IDisposable
         _ownerHwnd = ownerHwnd;
         BuildWindow();
         BuildFlyout();
+
+        DeckleShellTrayMenuSource.Log.HostConstructed(ownerHwnd.ToInt64());
     }
 
     // ── Build window ──────────────────────────────────────────────────────────
@@ -163,18 +189,25 @@ public sealed class TrayContextMenuHost : IDisposable
         // pour Louis (allumer/éteindre les LEDs sans naviguer dans Settings).
         // Les commandes d'ouverture de fenêtre viennent ensuite, séparées des
         // commandes de cycle de vie (Restart, Quit) par un séparateur final.
-        // Style custom ToggleSwitchMenuItemStyle (Themes/TrayMenu.xaml, mergé
-        // dans App.xaml) : remplace le checkmark canonique à gauche par un
-        // ToggleSwitch Win11 à droite — pillule visible d'un coup d'œil pour
-        // un toggle d'état applicatif. Le ToggleSwitch est IsHitTestVisible=
-        // False (indicateur visuel pur), l'interaction passe par le Click de
-        // l'item parent qui flippe IsChecked nativement.
-        _ambientItem = new ToggleMenuFlyoutItem
+        //
+        // MenuFlyoutItem (pas ToggleMenuFlyoutItem) : on évite la sémantique
+        // checkmark native qui ferait réserver une colonne à gauche dans le
+        // MenuFlyoutPresenter et décalerait tous les autres items du flyout.
+        // Le toggle visuel est porté par un ToggleSwitch greffé à droite via
+        // ToggleSwitchMenuItemStyle (Themes/TrayMenu.xaml). L'état IsOn du
+        // switch est piloté manuellement depuis Show() (cf. plus bas).
+        _ambientItem = new MenuFlyoutItem
         {
             Text = Loc.Get("TrayMenu_AmbientLight"),
             Style = (Style)Application.Current.Resources["ToggleSwitchMenuItemStyle"],
+            Height = NativeMenuItemHeight,
         };
-        _ambientItem.Click += (_, _) => { Hide(); OnToggleAmbient?.Invoke(); };
+        _ambientItem.Click += (_, _) =>
+        {
+            DeckleShellTrayMenuSource.Log.ItemClicked(_ambientItem.Text);
+            Hide("item_click:Ambient");
+            OnToggleAmbient?.Invoke();
+        };
         _flyout.Items.Add(_ambientItem);
 
         _flyout.Items.Add(new MenuFlyoutSeparator());
@@ -187,12 +220,31 @@ public sealed class TrayContextMenuHost : IDisposable
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Quit"),    () => OnQuit?.Invoke()));
 
         _flyout.Closed += OnFlyoutClosed;
+
+        DeckleShellTrayMenuSource.Log.FlyoutBuilt(_flyout.Items.Count);
     }
 
     private MenuFlyoutItem CreateItem(string text, Action action)
     {
-        var item = new MenuFlyoutItem { Text = text };
-        item.Click += (_, _) => { Hide(); action(); };
+        // MenuFlyoutItem natif pur — aucun Style ni Template override. Le
+        // framework gère hover, radius, inset, padding, foreground et DPI
+        // scaling intégralement. Le seul item retemplaté du tray menu est
+        // l'Ambient Light, faute de slot natif pour greffer un switch à
+        // droite (cf. ToggleSwitchMenuItemStyle dans Themes/TrayMenu.xaml).
+        //
+        // Height = NativeMenuItemHeight (40 DIP) : matche la DesiredSize
+        // naturelle du MenuFlyoutItem Win11 au tout premier show. Sans Height
+        // explicite, le MenuFlyoutPresenter compresse les items à
+        // MinHeight (32 DIP) à partir du 2e ou 3e show sans re-centrer
+        // verticalement le texte — rendu visuel décalé vers le top. Forcer
+        // 40 DIP empêche cette compression défectueuse à la source.
+        var item = new MenuFlyoutItem { Text = text, Height = NativeMenuItemHeight };
+        item.Click += (_, _) =>
+        {
+            DeckleShellTrayMenuSource.Log.ItemClicked(text);
+            Hide($"item_click:{text}");
+            action();
+        };
         return item;
     }
 
@@ -203,8 +255,25 @@ public sealed class TrayContextMenuHost : IDisposable
         if (_disposed || _window is null || _frame is null || _flyout is null || _appWindow is null)
             return;
 
+        long nowTickMs = Environment.TickCount64;
+        double msSinceLastShow = _showCount == 0 ? 0 : (nowTickMs - _lastShowTickMs);
+        _showCount++;
+        _lastShowTickMs = nowTickMs;
+        DeckleShellTrayMenuSource.Log.ShowRequested(msSinceLastShow, _showCount);
+
         if (_ambientItem is not null && IsAmbientOn is not null)
-            _ambientItem.IsChecked = IsAmbientOn();
+        {
+            bool ambientOn = IsAmbientOn();
+            // Résolution paresseuse du ToggleSwitch interne au template. Le
+            // visual tree est constructible une fois le prime cycle exécuté
+            // (cf. OnFrameLoaded plus bas) ; au premier Show() le cache est
+            // null, on walk le visual tree de l'item pour trouver le switch
+            // nommé "StateSwitch", puis on cache la ref pour les Show()
+            // suivants. Plus de TemplateBinding IsChecked fragile.
+            var sw = _ambientSwitch ??= FindDescendantByName(_ambientItem, "StateSwitch") as ToggleSwitch;
+            if (sw is not null) sw.IsOn = ambientOn;
+            DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
+        }
 
         // Anchor + exclude : on préfère le rect réel de l'icône tray (API
         // Shell_NotifyIconGetRect). Cela rend la position automatiquement
@@ -216,10 +285,15 @@ public sealed class TrayContextMenuHost : IDisposable
         NativeMethods.RECT? iconRect = GetIconRect?.Invoke();
         POINT anchor;
         NativeMethods.RECT exclude;
+        int parentRectX, parentRectY, parentRectW, parentRectH;
         if (iconRect is { } icon)
         {
             anchor = new POINT { X = (icon.left + icon.right) / 2, Y = (icon.top + icon.bottom) / 2 };
             exclude = icon;
+            parentRectX = icon.left;
+            parentRectY = icon.top;
+            parentRectW = icon.right - icon.left;
+            parentRectH = icon.bottom - icon.top;
         }
         else
         {
@@ -232,6 +306,13 @@ public sealed class TrayContextMenuHost : IDisposable
                 right  = cursor.X + CursorExcludeHalfExtent,
                 bottom = cursor.Y + CursorExcludeHalfExtent,
             };
+            // Rect parent dégénéré (0×0 au point d'ancrage) — convention
+            // documentée sur DeckleWindowingSource.PopupAnchored pour les
+            // popups dont l'app n'a pas de contrôle parent identifié.
+            parentRectX = cursor.X;
+            parentRectY = cursor.Y;
+            parentRectW = 0;
+            parentRectH = 0;
         }
 
         // DPI réel du moniteur sous le point d'ancrage. RasterizationScale du
@@ -265,6 +346,15 @@ public sealed class TrayContextMenuHost : IDisposable
         NativeMethods.ShowWindow(_hwnd, TrayMenuNativeMethods.SW_SHOWNORMAL);
         NativeMethods.SetForegroundWindow(_hwnd);
 
+        // Émission Windowing canonique : tronc commun WindowPositioned (état
+        // effectif du HWND post-MoveAndResize + ShowWindow + SetForegroundWindow)
+        // et spécialisé PopupAnchored (rect parent = icône tray ou rect
+        // dégénéré au curseur).
+        WindowingProbe.EmitWindowPositioned(_hwnd, "tray-popup", "CursorRelative");
+        WindowingProbe.EmitPopupAnchored(
+            _hwnd, "tray-popup",
+            parentRectX, parentRectY, parentRectW, parentRectH);
+
         // FlyoutPlacementMode.Full : ouvre le menu à l'emplacement exact du
         // target (notre frame). Sans Full, le mode Auto par défaut place le
         // popup adjacent au target (typiquement au-dessus du frame), ce qui
@@ -277,14 +367,20 @@ public sealed class TrayContextMenuHost : IDisposable
             ShowMode = FlyoutShowMode.Transient,
             Placement = FlyoutPlacementMode.Full,
         });
+        DeckleShellTrayMenuSource.Log.FlyoutShownAt();
     }
 
     // ── Hide ──────────────────────────────────────────────────────────────────
 
-    private void Hide()
+    // Le paramètre `reason` qualifie l'origine du dismiss côté call site —
+    // "deactivated" (perte d'activation), "flyout_closed" (Flyout.Closed),
+    // "item_click:<libellé>" (sélection d'item). Tracé sur l'event Hidden pour
+    // distinguer les chemins de fermeture dans le JSONL.
+    private void Hide(string reason)
     {
         if (!_isVisible) return;
         _isVisible = false;
+        DeckleShellTrayMenuSource.Log.Hidden(reason);
         _flyout?.Hide();
         if (_hwnd != IntPtr.Zero)
             NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE);
@@ -294,6 +390,8 @@ public sealed class TrayContextMenuHost : IDisposable
 
     private void OnFrameLoaded(object sender, RoutedEventArgs e)
     {
+        DeckleShellTrayMenuSource.Log.FrameLoaded(_primed);
+
         if (_primed || _flyout is null || _frame is null) return;
         _primed = true;
 
@@ -301,30 +399,61 @@ public sealed class TrayContextMenuHost : IDisposable
         // d'OverlappedPresenter même quand SetBorderAndTitleBar(false, false)
         // a été appelé. Sans ça, le HWND garde un WS_CAPTION résiduel visible
         // au DWM, ce qui interfère avec le rendu rounded corners.
+        IntPtr styleBefore = NativeMethods.GetWindowLongPtr(_hwnd, NativeMethods.GWL_STYLE);
         IntPtr newStyle = new((long)TrayMenuNativeMethods.WS_POPUPWINDOW);
         NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWL_STYLE, newStyle);
         NativeMethods.SetWindowPos(
             _hwnd, IntPtr.Zero, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE
                 | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_FRAMECHANGED);
+        DeckleShellTrayMenuSource.Log.PrimeCycleStarted(
+            styleBefore.ToInt64(), newStyle.ToInt64());
 
-        // Prime measure : le premier ShowAt mesure mal les items
-        // (microsoft-ui-xaml#7374 — 40 px observés au lieu de 32 px). Un
-        // cycle ShowAt/Hide invisible amorce le visual tree pour que les
-        // mesures subséquentes soient correctes dès la première vraie ouverture.
+        // Prime measure : amorcer le visual tree pour que les MenuFlyoutItem
+        // natifs aient leur ControlTemplate appliqué et leur DesiredSize
+        // mesurable au premier vrai Show(). Un cycle ShowAt + Hide synchrone
+        // est insuffisant — observation app.jsonl du 2026-05-25 : show_count=1
+        // mesure desired_w/h=0 pour tous les items natifs. Cause : le Hide
+        // synchrone immédiat coupe l'amorce avant que le layout pass de WinUI
+        // ait tourné sur les items du MenuFlyoutPresenter. Fix : différer le
+        // Hide via DispatcherQueue.TryEnqueue(Low) — le priority Low insère le
+        // callback après que le layout pass et le render frame initial du popup
+        // aient eu lieu. À ce moment-là chaque item a son DesiredSize correct,
+        // le visual tree reste "réchauffé" pour la durée de vie du process.
+        //
+        // **Note sur la convergence presenter** : le MenuFlyoutPresenter natif
+        // a une compression défectueuse qui kick in à partir du 2e ou 3e show —
+        // il rend les MenuFlyoutItem natifs à MinHeight (32 DIP) au lieu de
+        // leur DesiredSize naturelle (40 DIP), sans re-centrer le texte
+        // verticalement, ce qui donne un rendu visuellement compressé. La
+        // parade adoptée vit côté création des items (Height="40" forcée dans
+        // BuildFlyout), pas dans le prime cycle — empêcher la compression à la
+        // source est plus robuste que d'essayer de la pré-déclencher.
+        var sw = Stopwatch.StartNew();
         _flyout.ShowAt(_frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
-        _flyout.Hide();
+
+        _frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            _flyout?.Hide();
+            sw.Stop();
+            DeckleShellTrayMenuSource.Log.PrimeCycleCompleted(sw.Elapsed.TotalMilliseconds);
+        });
     }
 
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
     {
+        DeckleShellTrayMenuSource.Log.WindowActivated(
+            args.WindowActivationState.ToString(), _isVisible);
+
         if (args.WindowActivationState == WindowActivationState.Deactivated && _isVisible)
-            Hide();
+            Hide("deactivated");
     }
 
     private void OnFlyoutClosed(object? sender, object e)
     {
-        if (_isVisible) Hide();
+        DeckleShellTrayMenuSource.Log.FlyoutClosed(_isVisible);
+
+        if (_isVisible) Hide("flyout_closed");
     }
 
     // ── Measure ───────────────────────────────────────────────────────────────
@@ -342,6 +471,11 @@ public sealed class TrayContextMenuHost : IDisposable
     // menu colle au contenu pour rester compact. Surplus FlyoutFrameMargin
     // × 2 couvre la card du MenuFlyout. Conversion en pixels physiques via
     // le scale du moniteur sous le point d'ancrage.
+    //
+    // L'event ItemMeasured trace la DesiredSize de chaque item — si on observe
+    // desired_w/h=0 sur un ou plusieurs items, c'est le signal direct que
+    // Measure tourne hors visual tree amorcé. L'event FlyoutMeasured trace
+    // les agrégats avant et après conversion physique.
 
     private (int width, int height) MeasureFlyout(double scale)
     {
@@ -349,16 +483,56 @@ public sealed class TrayContextMenuHost : IDisposable
 
         double width = 0;
         double height = 0;
+        int idx = 0;
         foreach (var item in _flyout.Items)
         {
             item.Measure(new Windows.Foundation.Size(10_000, 10_000));
             width = Math.Max(width, item.DesiredSize.Width);
             height += item.DesiredSize.Height;
+
+            string itemText = item switch
+            {
+                MenuFlyoutItem mi => mi.Text,
+                MenuFlyoutSeparator => "<separator>",
+                _ => "<unknown>",
+            };
+            DeckleShellTrayMenuSource.Log.ItemMeasured(
+                idx, itemText, item.GetType().Name,
+                item.DesiredSize.Width, item.DesiredSize.Height);
+            idx++;
         }
 
-        return (
-            (int)((width  + FlyoutFrameMargin * 2) * scale),
-            (int)((height + FlyoutFrameMargin * 2) * scale));
+        double dipW = width + FlyoutFrameMargin * 2;
+        double dipH = height + FlyoutFrameMargin * 2;
+        int physW = (int)(dipW * scale);
+        int physH = (int)(dipH * scale);
+
+        DeckleShellTrayMenuSource.Log.FlyoutMeasured(dipW, dipH, physW, physH, scale);
+
+        return (physW, physH);
+    }
+
+    // ── Visual tree helpers ───────────────────────────────────────────────────
+
+    // Walk récursif du visual tree pour récupérer un descendant par son x:Name.
+    // Utilisé pour résoudre le ToggleSwitch interne au template Ambient depuis
+    // le code C# — un FrameworkElement nommé dans un ControlTemplate est isolé
+    // dans le scope du template, FindName() sur le parent ne le trouve pas.
+    // VisualTreeHelper traverse récursivement et reste indépendant du scope.
+    // Retourne null si le template n'a pas encore été appliqué (item pas dans
+    // le visual tree) ou si le nom n'existe pas.
+    private static DependencyObject? FindDescendantByName(DependencyObject parent, string name)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is FrameworkElement fe && fe.Name == name)
+                return child;
+            var found = FindDescendantByName(child, name);
+            if (found is not null) return found;
+        }
+        return null;
     }
 
     // ── Dispose ───────────────────────────────────────────────────────────────
@@ -377,5 +551,7 @@ public sealed class TrayContextMenuHost : IDisposable
                 _flyout.Closed -= OnFlyoutClosed;
             _window.Close();
         }
+
+        DeckleShellTrayMenuSource.Log.Disposed();
     }
 }

@@ -3,80 +3,143 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-    Custom ControlTemplate pour ToggleMenuFlyoutItem dans le tray menu.
-    Remplace le checkmark canonique à gauche par un ToggleSwitch Win11 à
-    droite — pillule visible d'un coup d'œil pour l'item Ambient Light.
+    Un seul Style custom : ToggleSwitchMenuItemStyle, appliqué uniquement
+    à l'item Ambient Light, qui reste un MenuFlyoutItem natif (pas un
+    ToggleMenuFlyoutItem — ce dernier ferait réserver une colonne
+    checkmark dans le MenuFlyoutPresenter, ce qui décalerait tous les
+    autres items du flyout vers la droite).
 
-    Le ToggleSwitch est en IsHitTestVisible=False : c'est un indicateur
-    visuel pur, l'interaction passe par le Click de l'item parent
-    (handler dans TrayContextMenuHost.BuildFlyout). IsOn={TemplateBinding
-    IsChecked} pour refléter l'état persisté sans binding bidirectionnel.
+    Justification du retemplate : pas de slot natif sur un
+    MenuFlyoutItem pour greffer un widget à droite du libellé. C'est
+    le seul item retemplaté du tray menu ; Logs, Settings, Playground,
+    Restart, Quit sont des MenuFlyoutItem natifs purs.
 
-    Visual states minimaux nécessaires pour le rendu Win11 standard du
-    hover, pressed, disabled. Les brushes viennent des theme resources
-    natives MenuFlyoutItemBackground* qui suivent automatiquement
-    light/dark mode et accent system.
+    Layout responsive : Grid à 3 colonnes Auto / * MinWidth=24 / Auto.
+    Le spacer * pousse le switch à droite quand le flyout est élargi
+    par un autre item plus large (Playground, par ex.), et garantit
+    24 epx minimum entre le libellé et le switch dans tous les cas.
+    Pas de pixel-par-pixel, pas de Width forcée sur le contenu —
+    s'adapte naturellement si on ajoute un autre item à switch.
+
+    Calibration : Padding 11,0 pour matcher le padding natif typique
+    du MenuFlyoutItem WinUI 3. HoverBase interne (Border Margin 5,3
+    CornerRadius 3) reproduit le rendu hover/pressed inset arrondi
+    natif, brushes pointés sur les ThemeResources MenuFlyoutItem*
+    (suivent light/dark/contrast/accent automatiquement).
+
+    L'état IsOn du switch est piloté côté code : TrayContextMenuHost
+    résout le ToggleSwitch via le visual tree après le prime cycle et
+    set IsOn directement depuis le callback IsAmbientOn() à chaque
+    Show(). Le switch est IsHitTestVisible=False (indicateur visuel
+    pur), l'interaction passe par le Click de l'item parent.
     -->
-    <Style x:Key="ToggleSwitchMenuItemStyle" TargetType="ToggleMenuFlyoutItem">
-        <Setter Property="Padding" Value="11,0,11,0"/>
+
+    <Style x:Key="ToggleSwitchMenuItemStyle" TargetType="MenuFlyoutItem">
+        <!-- Padding lu depuis le theme resource natif Win11
+             (MenuFlyoutItemThemePadding = 11,8,11,9 dans generic.xaml du
+             WindowsAppSDK). Valeur asymétrique top/bottom qui décale
+             légèrement le contenu vers le bas — exactement le calage visuel
+             des MenuFlyoutItem natifs. Mon précédent Padding="11,0,11,0"
+             centrait le texte dans la zone complète au lieu de la zone
+             post-padding, ce qui le plaçait visuellement plus bas que les
+             items natifs. Theme resource = on suit Win11 automatiquement. -->
+        <Setter Property="Padding" Value="{ThemeResource MenuFlyoutItemThemePadding}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}"/>
         <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}"/>
         <Setter Property="FontFamily" Value="{ThemeResource ContentControlThemeFontFamily}"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="MinHeight" Value="32"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="ToggleMenuFlyoutItem">
+                <ControlTemplate TargetType="MenuFlyoutItem">
                     <Grid x:Name="LayoutRoot"
                           Background="{TemplateBinding Background}"
-                          Padding="{TemplateBinding Padding}"
                           BorderBrush="{TemplateBinding BorderBrush}"
-                          BorderThickness="{TemplateBinding BorderThickness}"
-                          MinHeight="{TemplateBinding MinHeight}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                          BorderThickness="{TemplateBinding BorderThickness}">
 
-                        <TextBlock Grid.Column="0"
-                                   x:Name="TextLabel"
-                                   Text="{TemplateBinding Text}"
-                                   Foreground="{TemplateBinding Foreground}"
-                                   FontFamily="{TemplateBinding FontFamily}"
-                                   FontSize="{TemplateBinding FontSize}"
-                                   FontWeight="{TemplateBinding FontWeight}"
-                                   VerticalAlignment="Center"/>
+                        <!-- HoverBase aligné sur le hover natif Win11 du
+                             MenuFlyoutItem : Margin et CornerRadius lus
+                             directement depuis les theme resources WinUI 3
+                             (MenuFlyoutItemMargin = 4,2 et ControlCornerRadius
+                             = 4 dans generic.xaml du WindowsAppSDK). Pas de
+                             magic value — si Microsoft ajuste un jour ces
+                             valeurs côté theme, on suit automatiquement.
 
-                        <ToggleSwitch Grid.Column="1"
-                                      x:Name="StateSwitch"
-                                      IsOn="{TemplateBinding IsChecked}"
-                                      IsHitTestVisible="False"
-                                      MinWidth="0"
-                                      OnContent=""
-                                      OffContent=""
-                                      Margin="16,0,0,0"
-                                      VerticalAlignment="Center"/>
+                             **Le contenu (TextBlock + Border switch) est ENFANT
+                             du HoverBase**, pas un sibling — fidèle au template
+                             natif du MenuFlyoutItem dans generic.xaml où le
+                             LayoutRoot porte à la fois le hover background ET
+                             le contenu. Sinon contenu centré dans 40 DIP et
+                             hover centré dans 36 DIP (= 40 - 2 - 2) → contenu
+                             dépasse le hover en haut/bas. Le Padding du Style
+                             est porté par le Border HoverBase, donc s'applique
+                             au Grid de contenu intérieur. -->
+                        <Border x:Name="HoverBase"
+                                Margin="{ThemeResource MenuFlyoutItemMargin}"
+                                CornerRadius="{ThemeResource ControlCornerRadius}"
+                                Background="Transparent"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*" MinWidth="24"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           x:Name="TextLabel"
+                                           Text="{TemplateBinding Text}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           FontWeight="{TemplateBinding FontWeight}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Left"/>
+
+                                <!-- Wrapper Border Width="44" Height="32" : contraintes
+                                     dures sur la DesiredSize du contrôle (le ToggleSwitch
+                                     natif ignore Width/MaxWidth/Height côté DesiredSize
+                                     publique, mais le Border les respecte). Width 44 = 40
+                                     pillule canonique + ~4 DIP de margin externe natif.
+                                     Height 32 = MenuFlyoutThemeMinHeight natif Win11 — la
+                                     pillule de 20 DIP s'inscrit centred avec 6 DIP de marge
+                                     top/bottom, le hit-target interne du ToggleSwitch ne
+                                     déborde plus du HoverBase (qui fait 36 DIP de haut une
+                                     fois l'item contraint à 40 DIP avec Margin 4,2), donc
+                                     plus de troncation visible au bas de l'item Ambient
+                                     (constat sur screenshot post-restructure HoverBase). -->
+                                <Border Grid.Column="2"
+                                        Width="44"
+                                        Height="32">
+                                    <ToggleSwitch x:Name="StateSwitch"
+                                                  IsHitTestVisible="False"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  Margin="0"
+                                                  VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}"/>
+                                        <Setter Target="HoverBase.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}"/>
                                         <Setter Target="TextLabel.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}"/>
+                                        <Setter Target="HoverBase.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}"/>
                                         <Setter Target="TextLabel.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <VisualState.Setters>
-                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundDisabled}"/>
+                                        <Setter Target="HoverBase.Background" Value="{ThemeResource MenuFlyoutItemBackgroundDisabled}"/>
                                         <Setter Target="TextLabel.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}"/>
                                     </VisualState.Setters>
                                 </VisualState>
