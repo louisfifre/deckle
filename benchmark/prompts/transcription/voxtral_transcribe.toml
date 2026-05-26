@@ -6,7 +6,7 @@
 # l'uniformité avec voxtral-chat — mais ici un seul régime "canonical"
 # qui documente le comportement par défaut Voxtral.
 #
-# Référence : ADR-0011 + recherche doc Mistral 2026-05-24.
+# Référence : ADR-0014 + recherche doc Mistral 2026-05-24.
 
 [V_canonical]
 label = "Transcription canonique Voxtral (mode apply_transcription_request)"

@@ -24,7 +24,7 @@ Usage typique :
     python bench.py --skip-judge                 # quick metrics only
     python bench.py --limit 3                    # 3 premiers samples par durée
 
-Référence : ADR-0011 (POC évaluation Voxtral).
+Référence : ADR-0014 (POC évaluation Voxtral).
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-# ADR-0011 — POC d'évaluation Voxtral comme moteur de transcription
+# ADR-0014 — POC d'évaluation Voxtral comme moteur de transcription
 
 **Status** — proposed le 2026-05-23 — révisé le 2026-05-24 (pivot stack, voir dernière section)
 

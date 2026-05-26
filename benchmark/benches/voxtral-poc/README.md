@@ -1,56 +1,55 @@
+---
+name: readme-bench-voxtral-poc
+description: "Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckle transcription pipeline. Read before running, modifying, or extending this bench, or before extracting its results."
+type: module-readme
+module: benchmark/benches/voxtral-poc
+---
+
 # bench voxtral-poc
 
-Bench du POC d'évaluation Voxtral Mini 3B comme alternative à Whisper
-dans le pipeline de transcription Deckle.
+POC bench evaluating Voxtral Mini 3B as a Whisper alternative inside the Deckle transcription pipeline.
 
-## Quoi
+## What
 
-Pour chaque sample du corpus `corpora/voxtral-poc/` et chaque régime de
-prompt (`V1_raw` à `V5_traduit_en`), le bench :
+For each sample of the `corpora/voxtral-poc/` corpus and each prompt regime (`V1_raw` through `V5_traduit_en`), the bench:
 
-1. Transcrit via la source choisie (par défaut Voxtral DML).
-2. Calcule WER + CER vs la référence Whisper du corpus.
-3. Calcule des métriques objectives (looping, hallucinations).
-4. Demande à Claude Haiku de noter sur 4 axes (fidélité, propreté,
-   hallucinations, respect du régime) + flag `whisper_ref_suspecte`.
-5. Écrit une ligne JSON par expérience dans `runs/<run-id>/results.jsonl`.
+1. Transcribes via the chosen source (default: Voxtral DML).
+2. Computes WER + CER against the corpus Whisper reference.
+3. Computes objective metrics (looping, hallucinations).
+4. Asks Claude Haiku to score on 4 axes (faithfulness, cleanness, hallucinations, regime compliance) plus a `whisper_ref_suspecte` flag.
+5. Writes one JSON line per experiment into `runs/<run-id>/results.jsonl`.
 
-## Pourquoi
+## Why
 
-- Phase 1/2 (llama.cpp + chat template Jinja) montraient des résultats
-  catastrophiques parce que la stack poussait Voxtral en mode chat
-  conversationnel — il paraphrasait au lieu de transcrire.
-- Phase 3 (Transformers + `apply_transcription_request`) a corrigé ça
-  sur un smoke. Ce bench généralise sur tout le corpus × 5 régimes pour
-  quantifier vraiment.
+- Phase 1/2 (llama.cpp + Jinja chat template) produced catastrophic results because the stack pushed Voxtral into conversational chat mode — it paraphrased instead of transcribing.
+- Phase 3 (Transformers + `apply_transcription_request`) fixed that on a smoke test. This bench generalizes across the full corpus × 5 regimes to actually quantify it.
 
-## Comment
+## How
 
 ```pwsh
-# 1. Avoir un .env à la racine du benchmark/ avec ANTHROPIC_API_KEY
-#    (voir benchmark/.env.example).
+# 1. Have a .env at the benchmark/ root with ANTHROPIC_API_KEY
+#    (see benchmark/.env.example).
 
-# 2. Avoir un corpus voxtral-poc sous corpora/voxtral-poc/ avec :
-#    - corpus.jsonl (lignes payload Deckle telemetry)
-#    - *.wav (référencés dans corpus.jsonl payload.audio_file)
-#    Les corpora ne sont pas versionnés — chaque utilisateur amène les siens.
+# 2. Have a voxtral-poc corpus under corpora/voxtral-poc/ with:
+#    - corpus.jsonl (Deckle telemetry payload lines)
+#    - *.wav (referenced in corpus.jsonl payload.audio_file)
+#    Corpora are not versioned — each user brings their own.
 
-# 3. Avoir le venv .venv-voxtral-dml prêt (cf. benchmark/CLAUDE.md).
+# 3. Have the .venv-voxtral-dml venv ready (see benchmark/CLAUDE.md).
 
-# 4. Lancer :
+# 4. Run:
 .venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py
 
-# Variantes :
+# Variants:
 .venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --limit 3
 .venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --regimes V1_raw
 .venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --skip-judge
 .venv-voxtral-dml\Scripts\python.exe benches\voxtral-poc\bench.py --source whisper-cpp
 ```
 
-## Sortie
+## Output
 
-`runs/voxtral-poc-<timestamp>/results.jsonl` — une ligne par expérience,
-schéma stable :
+`runs/voxtral-poc-<timestamp>/results.jsonl` — one line per experiment, stable schema:
 
 ```json
 {
@@ -72,11 +71,8 @@ schéma stable :
 }
 ```
 
-## Limitations actuelles
+## Current limitations
 
-- Sources : `voxtral-dml` validé, `whisper-cpp` câblé mais non testé en
-  v2 (à valider sur un sample).
-- Juge : per-row Haiku seulement. Le mode macro Opus (curation Haiku
-  → résumé Opus) est dans `lib/judges/claude.py` mais pas branché ici.
-- Pas de fallback automatique fp16 → fp32. Si DML râle, relancer avec
-  `--dtype float32`.
+- Sources: `voxtral-dml` validated, `whisper-cpp` wired but not retested in v2 (validate on a sample).
+- Judge: per-row Haiku only. The macro Opus mode (Haiku curation → Opus summary) lives in `lib/judges/claude.py` but is not wired here yet.
+- No automatic fp16 → fp32 fallback. If DML complains, relaunch with `--dtype float32`.

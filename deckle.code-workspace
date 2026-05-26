@@ -7,5 +7,7 @@
 			"path": "../../../worktrees/deckle"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"powershell.cwd": "deckle"
+	}
 }

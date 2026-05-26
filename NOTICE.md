@@ -1,6 +1,6 @@
 # Third-party notices
 
-whisp-ui depends on the following third-party components. License texts
+Deckle depends on the following third-party components. License texts
 are reproduced from the upstream projects.
 
 ## Native dependencies

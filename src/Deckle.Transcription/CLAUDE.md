@@ -1,65 +1,72 @@
+---
+name: claude-deckle-transcription
+description: "Doctrine for Deckle.Transcription, the backend-agnostic transcription orchestrator (IAsrBackend, state machine, UIA paste, capture coordination). Read before touching the pipeline, the backend contract, or the paste path."
+type: agent-instructions
+module: Deckle.Transcription
+---
+
 # CLAUDE.md — Deckle.Transcription
 
-Orchestrateur de transcription vocale. Couvre tout le pipeline du hotkey à l'écriture clipboard final : capture audio (déléguée à `Deckle.Audio`), invocation d'un backend ASR via l'interface `IAsrBackend`, filtrage des résultats, optionnellement réécriture LLM (déléguée à `Deckle.Llm.Rewrite` pour le moteur de réécriture et à `Deckle.Llm` pour la disponibilité Ollama), écriture clipboard, paste optionnel. Le module possède aussi son UI Settings (`WhisperPage.xaml`).
+Voice transcription orchestrator. Covers the whole pipeline from hotkey to final clipboard write: audio capture (delegated to `Deckle.Audio`), invocation of an ASR backend through the `IAsrBackend` interface, result filtering, optional LLM rewriting (delegated to `Deckle.Llm.Rewrite` for the rewriting engine and to `Deckle.Llm` for Ollama availability), clipboard write, optional paste. The module also owns its Settings UI (`WhisperPage.xaml`).
 
-Le module est **backend-agnostique**. L'implémentation ASR vit dans un module enfant (`Deckle.Transcription.Whisper` aujourd'hui ; `Deckle.Transcription.Voxtral` planifié). Le pattern suit celui établi par `Deckle.Diagnostics` → `Deckle.Diagnostics.Logging` + `Deckle.Diagnostics.Telemetry` : le parent porte les contrats et l'orchestration, les enfants portent les implémentations spécifiques. La décision est tracée dans [ADR 0010](../../docs/adr/0010-backend-asr-pluggable-via-iasrbackend.md).
+The module is **backend-agnostic**. The ASR implementation lives in a child module (`Deckle.Transcription.Whisper` today; `Deckle.Transcription.Voxtral` planned). The pattern mirrors the one established by `Deckle.Diagnostics` → `Deckle.Diagnostics.Logging` + `Deckle.Diagnostics.Telemetry`: the parent owns the contracts and the orchestration, the children own the specific implementations. The decision is recorded in [ADR 0010](../../docs/adr/0010-backend-asr-pluggable-via-iasrbackend.md).
 
-Le contrat avec l'app hôte passe par `ITranscriptionEngineHost` — interface bridge qui expose les settings utiles côté engine sans coupler `Deckle.Transcription` à `Deckle.Settings`. L'app implémente `AppTranscriptionEngineHost` dans `src/Deckle.App/Engine/`, et compose le moteur avec un `IAsrBackend` concret (`WhisperBackend` aujourd'hui). La transcription est invoquée via `_engine.RequestToggle(...)` depuis le handler de hotkey.
+The contract with the host app goes through `ITranscriptionEngineHost` — a bridge interface that exposes the settings useful on the engine side without coupling `Deckle.Transcription` to `Deckle.Settings`. The app implements `AppTranscriptionEngineHost` in `src/Deckle.App/Engine/`, and composes the engine with a concrete `IAsrBackend` (`WhisperBackend` today). Transcription is invoked through `_engine.RequestToggle(...)` from the hotkey handler.
 
-## Contrat IAsrBackend
+## IAsrBackend contract
 
-`IAsrBackend` est l'interface que tout backend ASR implémente. Quatre méthodes : `LoadModelAsync`, `UnloadModel`, `TranscribeAsync`, `Dispose`. Trois propriétés : `Name` (identifiant stable pour la télémétrie), `IsModelLoaded`, `DetectedAccelerator` (vocabulaire backend-défini : `CPU`, `Vulkan`, `CUDA`, `Metal`, etc.).
+`IAsrBackend` is the interface every ASR backend implements. Four methods: `LoadModelAsync`, `UnloadModel`, `TranscribeAsync`, `Dispose`. Three properties: `Name` (stable identifier for telemetry), `IsModelLoaded`, `DetectedAccelerator` (backend-defined vocabulary: `CPU`, `Vulkan`, `CUDA`, `Metal`, etc.).
 
-`TranscribeAsync(pcmSamples, segmentSink, ct)` prend un buffer PCM mono 16 kHz, un callback synchrone pour streamer les segments au fil de l'inférence (le HUD/LogWindow s'y abonnent via `TranscriptionEngine.NewSegment`), un token de cancellation. Retourne un `TranscriptionResult` qui agrège les segments produits, le texte assemblé, et les timings phase-par-phase (init pré-VAD, VAD, total). Le suffixe `Backend` n'est pas dans le vocabulaire fermé Deckle mais c'est l'idiome établi dans le monde ML/AI (llama.cpp, whisper.cpp, transformers parlent tous de "backends") — extension du vocabulaire actée par ADR 0010.
+`TranscribeAsync(pcmSamples, segmentSink, ct)` takes a mono 16 kHz PCM buffer, a synchronous callback to stream segments as inference progresses (HUD/LogWindow subscribe through `TranscriptionEngine.NewSegment`), and a cancellation token. Returns a `TranscriptionResult` that aggregates the produced segments, the assembled text, and the phase-by-phase timings (pre-VAD init, VAD, total). The `Backend` suffix is not in the closed Deckle vocabulary but it is the established idiom in the ML/AI world (llama.cpp, whisper.cpp, transformers all talk about "backends") — vocabulary extension ratified by ADR 0010.
 
-L'orchestrateur ne touche jamais P/Invoke, native callbacks, ou structs C — toute cette mécanique vit dans le backend. Conséquence : ajouter un second backend (Voxtral via Python+Transformers, par exemple) est un nouveau module enfant qui implémente `IAsrBackend` ; l'orchestrateur reste inchangé, l'app injecte le bon backend selon un setting `Engine = Whisper | Voxtral`.
+The orchestrator never touches P/Invoke, native callbacks, or C structs — that whole machinery lives in the backend. Consequence: adding a second backend (Voxtral via Python+Transformers, for example) is a new child module that implements `IAsrBackend`; the orchestrator stays unchanged, the app injects the right backend based on an `Engine = Whisper | Voxtral` setting.
 
-## Pipeline transcription monobloc
+## Monolithic transcription pipeline
 
-Le pipeline tourne en un seul appel `_backend.TranscribeAsync(...)` qui retourne dès que le backend a fini. Pour Whisper aujourd'hui c'est un wrapper synchrone autour de `whisper_full()` ; pour un backend HTTP (Voxtral), ce serait un vrai `await`. Pas de chunking externe : le backend gère sa fenêtre interne (30 s + seek dynamique chez Whisper, équivalent côté Voxtral), le VAD coupe les silences en amont, et les segments arrivent au fil de l'eau via le `segmentSink`.
+The pipeline runs in a single `_backend.TranscribeAsync(...)` call that returns as soon as the backend is done. For Whisper today it is a synchronous wrapper around `whisper_full()`; for an HTTP backend (Voxtral), it would be a real `await`. No external chunking: the backend manages its internal window (30 s + dynamic seek in Whisper, equivalent on the Voxtral side), the VAD cuts silences upstream, and segments arrive as they come through the `segmentSink`.
 
-`Record()` accumule tout l'audio capturé dans un unique `List<byte>` et retourne un `float[]` au Stop ; `Transcribe(float[])` fait un seul appel `_backend.TranscribeAsync(...)` et le backend gère la propagation de contexte inter-fenêtres en interne. Le texte final assemblé arrive dans `TranscriptionResult.FullText`.
+`Record()` accumulates all captured audio into a single `List<byte>` and returns a `float[]` on Stop; `Transcribe(float[])` makes a single `_backend.TranscribeAsync(...)` call and the backend handles inter-window context propagation internally. The final assembled text lands in `TranscriptionResult.FullText`.
 
-### Initial prompt Whisper
+### Whisper initial prompt
 
-Whisper n'est pas instruction-tuned. L'`initial_prompt` (champ `TranscriptionSettings.Engine.InitialPrompt`, lu par le backend Whisper) est un **échantillon stylistique à imiter**, pas une consigne. Les phrases méta (« voici une transcription », « avec ponctuation soignée ») sont au mieux neutres, au pire polluantes et favorisent le leak du prompt dans la sortie (cf. [openai/whisper#1150](https://github.com/openai/whisper/discussions/1150)). Cible de prompt : prose continue 80-150 mots, registre neutre, vocabulaire personnel ancré, ponctuation française correcte, zéro artefact oral, un seul bloc sans structure. Le prompt doit être dérivé d'un corpus réel, pas deviné.
+Whisper is not instruction-tuned. The `initial_prompt` (`TranscriptionSettings.Engine.InitialPrompt` field, read by the Whisper backend) is a **stylistic sample to imitate**, not an instruction. Meta phrases ("here is a transcription", "with careful punctuation") are at best neutral, at worst polluting and encourage prompt leakage into the output (cf. [openai/whisper#1150](https://github.com/openai/whisper/discussions/1150)). Prompt target: continuous prose of 80-150 words, neutral register, anchored personal vocabulary, correct French punctuation, zero oral artifacts, a single block with no structure. The prompt must be derived from a real corpus, not guessed.
 
-Avant toute retouche du prompt, vérifier les paramètres connexes : `language` forcé à `fr` côté `TranscriptionSettings.Engine.Language`, `condition_on_previous_text` au défaut, `suppress_tokens` (peut supprimer les caractères typo français `« » — '` si mal réglé), `prepend_punctuations` / `append_punctuations`, et la limite de 224 tokens du prompt. Ne **jamais** mettre d'exemple `oral brut → propre` dans le prompt : Whisper produit un seul texte, le prompt montre à quoi ressemble une sortie propre. La correction d'oralité brute est du ressort du LLM aval, pas de Whisper.
+Before any prompt tweak, check the related parameters: `language` forced to `fr` on the `TranscriptionSettings.Engine.Language` side, `condition_on_previous_text` at its default, `suppress_tokens` (can remove French typographic characters `« » — '` if mis-tuned), `prepend_punctuations` / `append_punctuations`, and the 224-token prompt limit. **Never** put a `raw oral → clean` example in the prompt: Whisper produces a single text, the prompt shows what a clean output looks like. Raw oral correction is the LLM's job downstream, not Whisper's.
 
-### Defaults whisper.cpp et piège `entropy_thold`
+### whisper.cpp defaults and the `entropy_thold` trap
 
-Le fallback natif whisper.cpp est désormais actif : `temperature=0,0 / temperature_inc=0,2 / logprob_thold=-1,0 / entropy_thold=2,4`. Le décodeur re-décode automatiquement les segments ratés à température croissante jusqu'à ≤ 1,0.
+The native whisper.cpp fallback is now active: `temperature=0,0 / temperature_inc=0,2 / logprob_thold=-1,0 / entropy_thold=2,4`. The decoder automatically re-decodes failed segments at increasing temperature up to ≤ 1,0.
 
-**`entropy_thold` est contre-intuitif** : le test interne est `entropy < seuil`, donc seuil HAUT = STRICT (déclenche fallback plus souvent), seuil BAS = PERMISSIF. Documenté en commentaire dans le mapper côté backend Whisper. Toute proposition de retoucher les seuils doit relire ce paragraphe avant de toucher au code.
+**`entropy_thold` is counter-intuitive**: the internal test is `entropy < threshold`, so HIGH threshold = STRICT (triggers fallback more often), LOW threshold = PERMISSIVE. Documented as a comment in the mapper on the Whisper backend side. Any proposal to tweak the thresholds must re-read this paragraph before touching the code.
 
-### Hot-reload via SettingsService
+### Hot-reload through SettingsService
 
-Le backend reconstruit ses params à chaque appel de `TranscribeAsync` — snapshot `TranscriptionSettingsService.Instance.Current` lu en début d'appel pour hot-reload gratuit, sans re-init modèle.
+The backend rebuilds its params on every `TranscribeAsync` call — `TranscriptionSettingsService.Instance.Current` snapshot read at the start of the call for free hot-reload, no model re-init.
 
-## Règles UX non négociables
+## Non-negotiable UX rules
 
-### Clipboard — 2 états maximum par transcription
+### Clipboard — 2 states max per transcription
 
-Le clipboard porte au plus deux contenus successifs sur la durée d'une transcription : la transcription brute, puis le texte réécrit par le LLM si un profil est actif. **Jamais d'accumulation token par token, jamais d'incréments mot par mot.** L'historique du presse-papier système doit rester propre. Conséquence pour un éventuel streaming LLM : on remplace l'objet clipboard en place, pas d'append. La granularité acceptable est la phrase entière (sur détection de point) ou un intervalle régulier d'environ 5 s, jamais token par token.
+The clipboard carries at most two successive contents over the duration of a transcription: the raw transcription, then the LLM-rewritten text if a profile is active. **Never accumulate token by token, never increment word by word.** The system clipboard history must stay clean. Consequence for any future LLM streaming: we replace the clipboard object in place, no append. The acceptable granularity is the full sentence (on period detection) or a regular interval of about 5 s, never token by token.
 
-## Paste — doctrine UI Automation au Stop
+## Paste — UI Automation doctrine at Stop
 
-Le paste automatique est désactivé par défaut côté settings — le HUD montre toujours `Copied to clipboard` en fallback quand l'utilisateur n'a pas explicitement opté pour le paste. Quand le paste est activé, la politique est **clipboard sûr par défaut, paste seulement si UIA confirme un champ texte**. Plus rien n'est capté au Start : pas de cible HWND, pas de focus volatile. On fait confiance à l'état du système au moment du Stop — l'utilisateur a eu tout le temps de l'enregistrement + transcription + réécriture pour placer son curseur.
+Automatic paste is disabled by default on the settings side — the HUD always shows `Copied to clipboard` as a fallback when the user has not explicitly opted into paste. When paste is enabled, the policy is **clipboard safe by default, paste only if UIA confirms a text field**. Nothing is captured on Start anymore: no HWND target, no volatile focus. We trust the system state at the moment of Stop — the user had the whole recording + transcription + rewriting window to place their cursor.
 
-`PasteFromClipboard` applique quatre checks ordonnés. Tous refusent en clipboard-seul si faux. (1) `GetForegroundWindow()` ≠ 0. (2) Le foreground n'appartient pas au process Deckle. (3) `UIAutomation.IsFocusedElementTextEditable(out diag)` renvoie `true` — la probe lit `CUIAutomation.GetFocusedElement()` puis `IUIAutomationElement.GetCurrentPropertyValue(UIA_ControlTypePropertyId)` et ne valide que `Edit` (50004) ou `Document` (50030). (4) `SendInput` complet (4 events : `VK_CONTROL↓ VK_V↓ VK_V↑ VK_CONTROL↑`).
+`PasteFromClipboard` applies four ordered checks. All refuse to clipboard-only if false. (1) `GetForegroundWindow()` ≠ 0. (2) The foreground does not belong to the Deckle process. (3) `UIAutomation.IsFocusedElementTextEditable(out diag)` returns `true` — the probe reads `CUIAutomation.GetFocusedElement()` then `IUIAutomationElement.GetCurrentPropertyValue(UIA_ControlTypePropertyId)` and only validates `Edit` (50004) or `Document` (50030). (4) Full `SendInput` (4 events: `VK_CONTROL↓ VK_V↓ VK_V↑ VK_CONTROL↑`).
 
-UIA est l'API canonique d'accessibilité Windows et répond à la bonne question : *cet élément accepte-t-il de la saisie ?* Elle fonctionne à travers Win32 classique, WinForms, WPF, WinUI, Chromium (`input` HTML, `contenteditable`), Qt, Electron, UWP. Un match sur `class name` rate les frameworks modernes — toute proposition de revenir à un match `class name` est à refuser.
+UIA is the canonical Windows accessibility API and answers the right question: *does this element accept input?* It works through classic Win32, WinForms, WPF, WinUI, Chromium (HTML `input`, `contenteditable`), Qt, Electron, UWP. A `class name` match misses modern frameworks — any proposal to go back to a `class name` match is to be refused.
 
-Juste avant `PasteFromClipboard`, `OnReadyToPaste` est invoqué synchronement et câblé à `HudWindow.HideSync()`. Le HUD est caché de façon bloquante (marshal `DispatcherQueue` + `ManualResetEventSlim`) avant que `SendInput` parte.
+Just before `PasteFromClipboard`, `OnReadyToPaste` is invoked synchronously and wired to `HudWindow.HideSync()`. The HUD is hidden in a blocking way (`DispatcherQueue` marshal + `ManualResetEventSlim`) before `SendInput` fires.
 
-## Persistance settings
+## Settings persistence
 
-`TranscriptionSettingsService` charge et persiste sous `<UserDataRoot>/modules/transcription/settings.json` via `JsonSettingsStore<T>`.
+`TranscriptionSettingsService` loads and persists under `<UserDataRoot>/modules/transcription/settings.json` through `JsonSettingsStore<T>`.
 
-## Structure interne
+## Internal structure
 
-`TranscriptionSettings.cs` est le POCO racine du module (sept sections imbriquées : engine, speech detection, confidence, output filters, decoding, context, models directory). La classe interne `EngineSettings` porte les paramètres de bootstrap du backend (model, useGpu, language, initialPrompt) — son nom évite la collision avec le nom du module et reflète le rôle (config du moteur ASR actif).
+`TranscriptionSettings.cs` is the module's root POCO (seven nested sections: engine, speech detection, confidence, output filters, decoding, context, models directory). The internal `EngineSettings` class carries the backend bootstrap parameters (model, useGpu, language, initialPrompt) — its name avoids collision with the module name and reflects the role (config of the active ASR engine).
 
-`TranscriptionSettingsService.cs` est le singleton lazy qui charge et persiste les settings + opère la migration disque. `ITranscriptionEngineHost.cs` est l'interface bridge exposée aux consommateurs (l'app implémente `AppTranscriptionEngineHost`). `WhisperPage.xaml(.cs)` et `ViewModels/WhisperViewModel.cs` portent l'UI Settings du module aujourd'hui — la page est encore whisper-centrée (model picker, VAD settings, beam search) ; une page agnostique générique avec un sélecteur de backend viendra quand un second backend sera prêt.
+`TranscriptionSettingsService.cs` is the lazy singleton that loads and persists the settings + operates the on-disk migration. `ITranscriptionEngineHost.cs` is the bridge interface exposed to consumers (the app implements `AppTranscriptionEngineHost`). `WhisperPage.xaml(.cs)` and `ViewModels/WhisperViewModel.cs` carry the module's Settings UI today — the page is still whisper-centric (model picker, VAD settings, beam search); a generic agnostic page with a backend selector will come when a second backend is ready.
 
-Le dossier `Engine/` héberge l'orchestrateur (`TranscriptionEngine.cs`) et ses helpers backend-agnostiques (`TextMetrics.cs`). Le contrat `IAsrBackend.cs` et le DTO `TranscriptionResult.cs` y vivent aussi — surface publique consommée par les modules enfants. Le dossier `Setup/` ne porte plus que les éléments génériques (`Downloader.cs`, `ModelEntry.cs`) ; les catalogues whisper-spécifiques (`SpeechModels`, `NativeRuntime`) ont migré vers `Deckle.Transcription.Whisper.Setup`. Le dossier `Strings/en-US/` porte les ressources `.resw` pour les `x:Uid` de `WhisperPage`. Le provider EventSource `DeckleWhispSource` reste dans le parent — son nom ETW `Deckle.Whisp` est conservé pour ne pas casser les listeners JSONL existants.
+The `Engine/` folder hosts the orchestrator (`TranscriptionEngine.cs`) and its backend-agnostic helpers (`TextMetrics.cs`). The `IAsrBackend.cs` contract and the `TranscriptionResult.cs` DTO live there too — public surface consumed by the child modules. The `Setup/` folder now only carries the generic items (`Downloader.cs`, `ModelEntry.cs`); the whisper-specific catalogs (`SpeechModels`, `NativeRuntime`) have migrated to `Deckle.Transcription.Whisper.Setup`. The `Strings/en-US/` folder carries the `.resw` resources for the `x:Uid`s of `WhisperPage`. The `DeckleWhispSource` EventSource provider stays in the parent — its ETW name `Deckle.Whisp` is preserved so existing JSONL listeners don't break.

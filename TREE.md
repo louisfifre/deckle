@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
+_Mise à jour : 2026-05-26 10:59 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -9,25 +9,21 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   └── winui3-expert.agent.md  — Expert agent for WinUI 3 and Windows App SDK development. Prevents common UWP-t…
 │   └── skills/
 │       ├── deckle-commits/
-│       │   └── SKILL.md  — Doctrine de commits pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte le…
-│       ├── deckle-docs/
-│       │   └── SKILL.md  — Convention documentaire pour le projet Deckle (Windows .NET 10 / WinUI 3). Défi…
+│       │   └── SKILL.md  — Commit doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries the…
 │       ├── deckle-logging/
-│       │   ├── SKILL.md  — Doctrine d'observabilité pour le projet Deckle (Windows .NET 10 / WinUI 3). Por…
+│       │   ├── SKILL.md  — Observability doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carr…
 │       │   └── taxonomy.md
 │       ├── deckle-modularite/
-│       │   └── SKILL.md  — Doctrine de modularité et de découpage pour le projet Deckle (Windows .NET 10 /…
+│       │   └── SKILL.md  — Modularity and splitting doctrine for the Deckle project (Windows .NET 10 / Win…
 │       ├── deckle-nomenclature/
-│       │   ├── SKILL.md  — Doctrine de nomenclature pour le projet Deckle (Windows .NET 10 / WinUI 3). Por…
+│       │   ├── SKILL.md  — Naming doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries cas…
 │       │   └── taxonomie.md
-│       ├── deckle-refonte/
-│       │   └── SKILL.md  — Panoramic refonte coordination skill for the Deckle project (Windows .NET 10 /…
 │       ├── deckle-settings-ux/
-│       │   └── SKILL.md  — Doctrine d'expérience utilisateur pour les surfaces de paramétrage du projet De…
+│       │   └── SKILL.md  — User experience doctrine for the settings surfaces of the Deckle project (Windo…
 │       ├── deckle-testing/
-│       │   └── SKILL.md  — Doctrine de testing pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte la…
+│       │   └── SKILL.md  — Testing doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries th…
 │       ├── deckle-workflow/
-│       │   └── SKILL.md  — Doctrine de workflow pour le projet Deckle (Windows .NET 10 / WinUI 3). Porte l…
+│       │   └── SKILL.md  — Workflow doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries h…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — Query official Microsoft documentation to find concepts, tutorials, and code ex…
 │       ├── save-context/
@@ -50,7 +46,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   ├── benches/
 │   │   └── voxtral-poc/
 │   │       ├── bench.py
-│   │       └── README.md
+│   │       └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
 │   ├── lib/
 │   │   ├── judges/
 │   │   │   ├── __init__.py
@@ -86,8 +82,8 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   │   ├── voxtral_chat.toml
 │   │   │   └── voxtral_transcribe.toml
 │   │   └── whisper_initial.txt
-│   ├── CLAUDE.md
-│   └── README.md
+│   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
+│   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-record-architecture-decisions.md
@@ -101,11 +97,10 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   ├── 0009-assets-resolus-via-userdataroot.md
 │   │   ├── 0010-backend-asr-pluggable-via-iasrbackend.md
 │   │   ├── 0011-corpus-normalise-comme-dataset-ml.md
-│   │   ├── 0011-poc-evaluation-voxtral.md
-│   │   └── 0012-adoption-de-dotnet-build-et-dotnet-test.md
+│   │   ├── 0012-adoption-de-dotnet-build-et-dotnet-test.md
+│   │   ├── 0013-format-canonique-des-artefacts-agents.md  — [adr] Acte le format normatif des artefacts agents Deckle : langue anglaise par défau…
+│   │   └── 0014-poc-evaluation-voxtral.md
 │   ├── reference/
-│   │   ├── reference--eventsource-convention--1.0.md
-│   │   ├── reference--eventsource-convention--1.1.md
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
 │       ├── research--hdr-graphics-capture--2026-05-15.md
@@ -125,7 +120,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   └── stats.ps1
 │   ├── deckle.ps1
 │   ├── install-hooks.ps1
-│   ├── README.md
+│   ├── README.md  — [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
 │   └── update-tree.ps1
 ├── src/
 │   ├── Deckle.App/
@@ -159,7 +154,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   ├── app.manifest
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.App, the WinUI 3 host module that composes all Deckle.* mod…
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
 │   │   ├── LogWindow.xaml
@@ -176,7 +171,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Audio, the microphone capture and audio telemetry module. R…
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
@@ -185,7 +180,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   ├── Deckle.Catalog/
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Catalog, the UI resource catalog module (localized strings…
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
 │   │   └── Loc.cs
@@ -220,7 +215,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   │   ├── JsonlEventListener.cs
 │   │   │   ├── LogWindowEventListener.cs
 │   │   │   └── RoutedJsonlEventListener.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics, the observability foundation module. Read befo…
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -236,18 +231,18 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── AmbientCaptureGate.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics.Logging (live logging settings and AmbientCaptu…
 │   │   ├── Deckle.Diagnostics.Logging.csproj
 │   │   ├── LoggingSettings.cs
 │   │   └── LoggingSettingsService.cs
 │   ├── Deckle.Diagnostics.Telemetry/
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics.Telemetry (JSONL telemetry listeners and user g…
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
 │   │   ├── TelemetryListenerBootstrap.cs
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Hud, the HUD window, overlay manager, and composite shadow…
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
 │   │   ├── HudChrono.xaml
@@ -275,7 +270,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   └── HueRestLightOutput.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Lighting, the Philips Hue driver (REST CLIP v1/v2) and colo…
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── ILightOutput.cs
@@ -358,7 +353,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   │   ├── HudPage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
 │   │   │   └── PlaygroundWindow.xaml.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Playground, the dev-only tuning and diagnostics sandbox sur…
 │   │   ├── Deckle.Playground.csproj
 │   │   ├── DecklePlaygroundSource.cs
 │   │   └── PlaygroundShell.cs
@@ -373,7 +368,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   ├── ApplicationLogConsentDialog.cs
 │   │   ├── AppSettings.cs
 │   │   ├── AudioCorpusConsentDialog.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Settings, the settings UI shell and per-module persistence…
 │   │   ├── CorpusConsentDialog.cs
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
@@ -400,7 +395,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   │       └── Resources.resw
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Setup, the first-run wizard and provisioning primitives (na…
 │   │   ├── Deckle.Setup.csproj
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── InstallingPage.xaml
@@ -412,7 +407,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   └── SummaryPage.xaml.cs
 │   ├── Deckle.Shell/
 │   │   ├── AutostartService.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Shell, the system shell module (message-only host, tray, gl…
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs
@@ -440,7 +435,7 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   └── WhisperViewModel.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Transcription, the backend-agnostic transcription orchestra…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── ITranscriptionEngineHost.cs
@@ -457,13 +452,13 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │   │   ├── Setup/
 │   │   │   ├── NativeRuntime.cs
 │   │   │   └── SpeechModels.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Transcription.Whisper, the IAsrBackend implementation via w…
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── RepetitionDetector.cs
 │   │   └── WhisperBackend.cs
 │   └── Deckle.Vision/
 │       ├── CapturedFrame.cs
-│       ├── CLAUDE.md
+│       ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Vision, the screen capture and frame analysis module (Windo…
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
@@ -498,8 +493,8 @@ _Mise à jour : 2026-05-26 00:42 — source : `git ls-files`_
 │       └── Deckle.Tests.csproj
 ├── .gitattributes
 ├── .gitignore
-├── CLAUDE.md
-├── CONTEXT.md
+├── CLAUDE.md  — [agent-instructions] Master agent-instructions for the Deckle project (Windows utility, .NET 10 / Wi…
+├── CONTEXT.md  — [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
 ├── LICENSE

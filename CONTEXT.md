@@ -1,40 +1,46 @@
-# Deckle — Contexte
+---
+name: context-deckle
+description: "Project glossary for Deckle — shared vocabulary, term-of-art definitions, naming distinctions. Read when a project-specific term needs disambiguation."
+type: agent-instructions
+---
 
-Glossaire des termes du projet Deckle. Définit le vocabulaire partagé entre Louis et les agents LLM qui interviennent sur le code. Ce fichier capture les distinctions qui ont une réalité concrète chez Deckle ; les concepts génériques de programmation n'y figurent pas, sauf quand Deckle leur donne une nuance interne propre.
+# Deckle — Context
 
-## Testing — strates et catégories
+Glossary of Deckle project terms. Defines the shared vocabulary between Louis and the LLM agents that work on the code. This file captures distinctions that have a concrete reality at Deckle; generic programming concepts do not appear here, unless Deckle gives them a proper internal nuance.
 
-Quatre catégories sont dans le périmètre des tests automatiques, lançables par un agent ou par Louis via `dotnet test` sans interaction humaine. Deux catégories sont hors périmètre automatique : elles existent et sont utiles, mais s'exécutent à la main avec le skill `verify`.
+## Testing — layers and categories
 
-### Dans le périmètre automatique
+Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Two categories are outside the automatic scope: they exist and are useful, but are executed by hand via the `verify` skill.
+
+### In the automatic scope
 
 **unit** :
-Test qui exerce un type ou une fonction en isolation, sans toucher au système de fichiers, au réseau, à un thread UI, ni à une dépendance native. Cible naturelle : les modules-feuilles purs comme `Deckle.Composition` (ColorSpace, easing, animateurs), `Deckle.Chrono` (ChronoFormatter), et la logique pure de `Deckle.Core`. C'est la strate la plus volumineuse et la plus rapide.
+Test that exercises a type or a function in isolation, without touching the file system, the network, a UI thread, or a native dependency. Natural target: pure leaf modules such as `Deckle.Composition` (ColorSpace, easing, animators), `Deckle.Chrono` (ChronoFormatter), and the pure logic of `Deckle.Core`. This is the largest and fastest layer.
 
 **integration** :
-Test qui exerce une frontière avec un service local mockable. Le partenaire est simulé par un substitut léger contrôlé par le test (serveur HTTP de test pour Ollama, file system temporaire pour `JsonSettingsStore`, simulateur de source audio pour la fonction qui appelle le micro). Le seam d'isolation doit être *naturel* — déjà présent dans l'architecture ou évident sans contorsion. Un seam parasite créé uniquement pour le test relève de la dérive « code testable mais inutilisable » et n'est pas accepté.
-_Avoid_ : end-to-end, e2e (recouvrent des choses différentes ailleurs).
+Test that exercises a boundary with a mockable local service. The partner is simulated by a lightweight substitute controlled by the test (test HTTP server for Ollama, temporary file system for `JsonSettingsStore`, audio source simulator for the function that calls the mic). The isolation seam must be *natural* — already present in the architecture or obvious without contortion. A parasitic seam created solely for the test belongs to the "testable but unusable code" drift and is not accepted.
+_Avoid_ : end-to-end, e2e (they cover different things elsewhere).
 
 **observability** :
-Test qui exerce une séquence d'événements EventSource via un `TestEventListener` interne. Vérifie que le code émet les bons providers, les bons noms d'event, les bons niveaux et keywords, et porte les payloads attendus. Catégorie native à Deckle vu le poids de la pipeline EventSource (voir `docs/reference/reference--eventsource-convention--1.0.md`).
+Test that exercises a sequence of EventSource events via an internal `TestEventListener`. Verifies that the code emits the right providers, the right event names, the right levels and keywords, and carries the expected payloads. Category native to Deckle given the weight of the EventSource pipeline (see `src/Deckle.Diagnostics/CLAUDE.md`).
 _Avoid_ : log assertion, telemetry test.
 
 **regression** :
-Test ajouté en réaction à un bug spécifique déjà corrigé. Reproduit les conditions du bug ; passe parce que la fix tient ; échouera si la fix saute. Sa raison d'être est la pin du fix dans le temps, pas la couverture d'un comportement nominal. Un test de régression est typiquement écrit en miroir d'un commit `fix(scope): …`.
+Test added in reaction to a specific bug already fixed. Reproduces the conditions of the bug; passes because the fix holds; will fail if the fix is dropped. Its reason for being is to pin the fix in time, not to cover a nominal behavior. A regression test is typically written as a mirror of a `fix(scope): …` commit.
 
-### Hors périmètre automatique
+### Outside the automatic scope
 
 **system** :
-Test qui exerce un runtime natif lourd dans une condition réaliste — chargement d'un modèle Whisper de 1 Go, transcription d'un fichier audio de référence stocké dans le repo de test, lecture d'un payload Hue Entertainment sur un vrai bridge. Possible à automatiser localement, mais lent, gourmand, et conditionné à la disponibilité des artefacts natifs et matériels. Reste à la main de Louis ou d'un poste dédié.
+Test that exercises a heavy native runtime in a realistic condition — loading a 1 GB Whisper model, transcribing a reference audio file stored in the test repo, reading a Hue Entertainment payload on a real bridge. Possible to automate locally, but slow, demanding, and conditional on the availability of native artifacts and hardware. Stays in the hands of Louis or a dedicated workstation.
 
 **interactive** :
-Test qui exige un poste Windows interactif et un humain ou un faux humain capable de présenter au système des conditions réelles — un vrai micro qui capte du son, un hotkey global qui ne rentre pas en conflit avec une autre app, une fenêtre cible UIAutomation pour valider le paste, un display physique pour DXGI Output Duplication. Hors automatisable par un agent. Validé via le skill `verify`.
+Test that requires an interactive Windows workstation and a human or a fake human capable of presenting real conditions to the system — a real mic that picks up sound, a global hotkey that does not conflict with another app, a UIAutomation target window to validate the paste, a physical display for DXGI Output Duplication. Not automatable by an agent. Validated via the `verify` skill.
 
-### Distinction clé entre integration et system
+### Key distinction between integration and system
 
-La frontière entre `integration` et `system` se joue sur *le poids de la dépendance et son substituabilité*. La fonction `Deckle.Audio.MicrophoneCapture.Probe` qui interroge le device audio pour ses capacités relève d'`integration` si on substitue une fake source audio derrière le seam WASAPI. Un test qui enregistre 3 secondes de voix réelle dans une boucle complète relève d'`interactive`. Un test qui drive Whisper sur un wav stocké dans le repo de test relève de `system`.
+The boundary between `integration` and `system` plays out on *the weight of the dependency and its substitutability*. The `Deckle.Audio.MicrophoneCapture.Probe` function that queries the audio device for its capabilities falls under `integration` if a fake audio source is substituted behind the WASAPI seam. A test that records 3 seconds of real voice in a complete loop falls under `interactive`. A test that drives Whisper on a wav stored in the test repo falls under `system`.
 
-## Exemple de conversation
+## Example conversation
 
 > — Le bug d'hier sur le clipboard Win32, on le couvre comment ?
 > — Test de regression. Le `OpenClipboard` retournait `false` quand un autre process tenait la session ; la fix retry trois fois ; le test simule trois échecs puis un succès et vérifie qu'on a bien copié.
