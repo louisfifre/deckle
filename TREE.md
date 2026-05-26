@@ -90,6 +90,7 @@ _Mise à jour : 2026-05-26 19:59 — source : `git ls-files`_
 │   │   │   ├── voxtral_chat.toml
 │   │   │   └── voxtral_transcribe.toml
 │   │   └── whisper_initial.txt
+│   ├── build_corpus_voxtral_val_30.py
 │   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
 │   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
 ├── docs/
