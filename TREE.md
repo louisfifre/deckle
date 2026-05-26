@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-26 10:59 — source : `git ls-files`_
+_Mise à jour : 2026-05-26 19:59 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -73,6 +73,14 @@ _Mise à jour : 2026-05-26 10:59 — source : `git ls-files`_
 │   │   ├── corpus.py
 │   │   ├── env.py
 │   │   └── event_log.py
+│   ├── perf-cap/
+│   │   ├── download-models.ps1
+│   │   ├── parse_vulkan_log.py
+│   │   ├── profile-config.ps1
+│   │   ├── profile-server-text.ps1
+│   │   ├── run-all.ps1
+│   │   ├── session-2026-05-26-prompts.ps1
+│   │   └── session-2026-05-26-reruns.ps1
 │   ├── prompts/
 │   │   ├── judges/
 │   │   │   ├── claude_per_row.md
