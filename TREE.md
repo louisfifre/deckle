@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 17:50 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 17:51 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -38,15 +38,14 @@ _Mise à jour : 2026-05-27 17:50 — source : `git ls-files`_
 │       ├── ux-copy/
 │       │   └── SKILL.md  — Write or review UX copy — microcopy, error messages, empty states, CTAs. Trigge…
 │       ├── ux-designer/
-│       │   └── ux-designer/
-│       │       ├── rules/
-│       │       │   ├── accessibility.md
-│       │       │   ├── information-architecture.md
-│       │       │   ├── interaction-design.md
-│       │       │   ├── research.md
-│       │       │   └── visual-design.md
-│       │       ├── AGENTS.md
-│       │       └── SKILL.md  — |
+│       │   ├── rules/
+│       │   │   ├── accessibility.md
+│       │   │   ├── information-architecture.md
+│       │   │   ├── interaction-design.md
+│       │   │   ├── research.md
+│       │   │   └── visual-design.md
+│       │   ├── AGENTS.md
+│       │   └── SKILL.md  — |
 │       └── write-a-skill/
 │           └── SKILL.md  — Create new agent skills with proper structure, progressive disclosure, and bund…
 ├── .vscode/
