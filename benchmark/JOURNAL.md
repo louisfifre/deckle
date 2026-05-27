@@ -18,6 +18,38 @@ Les entrées récentes sont en haut. À chaque nouvelle, ajouter au sommet, pas 
 
 ---
 
+## 2026-05-27 (suite 3) — Grille Q8_0 livrée, voie BF16 confirmée, bug judge désynchro révélé
+
+Bench `voxtral-llamacpp-mini3b-q8-validation-0001` exécuté sur les 30 samples × 6 régimes avec judge Gemini activé. Run archivé sous `%LOCALAPPDATA%\Deckle\benchmark\runs\voxtral-llamacpp-mini3b-q8-validation-0001\`. Objectif : construire la grille à trois niveaux qualité/perf (BF16 Mini 3B / Q8_0 Mini 3B / Q4_K_M Small 24B) pour répondre à la question « est-ce qu'avec des bons prompts on peut avoir une qualité correcte sur un modèle plus petit ou plus quantizé ».
+
+**Tableau T1_baseline cross-runs** (30 samples communs) :
+
+| Run | WER médian | WER moyenne | stdev |
+|---|---|---|---|
+| BF16 Mini 3B (transformers, run-0001) | 0.257 | 0.308 | 0.21 |
+| Q4_K_M Small 24B (voxtral-poc-0001) | 0.447 | 1.821 | 5.06 |
+| Q8_0 Mini 3B (llamacpp, run-0001) | 0.451 | 1.329 | 3.15 |
+
+Deux lectures convergent. À **modèle constant** (Mini 3B), passer de BF16 à Q8_0 perd ~0.19 de WER médian — quantization mesurable. À **quant comparable** (Q4_K_M Small 24B vs Q8_0 Mini 3B), résultats équivalents en médiane (0.45 vs 0.45) avec stdev plus basse côté Mini 3B Q8_0 (3.15 vs 5.06) — le 3B compense la taille par la fidélité de quantization.
+
+**Pollution du signal Q8_0 par la pathologie chat-mode `llama-mtmd-cli`**. Sur 180 rows Q8_0, 17 dégénèrent (WER > 2.0), concentrés sur **4 samples courts** ≤ 2.3s. Cas le plus net : `dcad692a` (1.7s, « et toujours douter un peu. ») — Q8_0 sort une dissertation philosophique de 200+ mots (« Critique et Scepticisme », « Prudence »), tandis que BF16 sur le même sample était match parfait. C'est la signature documentée dans le finding 2026-05-27 du [CLAUDE.md du module](./CLAUDE.md) : `llama-mtmd-cli` n'injecte pas `[TRANSCRIBE]`, le Mini 3B est plus sensible que le Small 24B sur les courts, le modèle paraphrase ou commente. Cette pathologie est **structurelle au runtime**, pas à la quantization. Le BF16 via Transformers n'en souffre pas parce que `processor.apply_transcription_request` injecte le token implicitement.
+
+**Conséquence : Q8_0 Mini 3B via `llama-mtmd-cli` non-déployable tel quel**. Les 4 samples courts contaminés (13% du corpus) tirent la moyenne et la stdev vers le haut. La perte « pure quantization » du Q8_0 est probablement inférieure à 0.19 — sans pouvoir l'isoler proprement tant que le runtime injecte un chat-mode par défaut. BF16 reste la cible POC.
+
+**Verdict tranché par Louis** : Q8_0 abandonné, BF16 Mini 3B confirmé comme voie POC. La grille à trois niveaux atteint son objectif — confirmer que la dégradation FP16→4-bit prédite par Cohere se reproduit en interne, à la fois en taille (24B Q4 ≈ 3B Q8) et en quant (3B BF16 ≫ 3B Q8). Ouvre le chantier suivant : retrouver, par les prompts, ce que le modèle perd sur le baseline T1, façon initial prompt sticky Whisper.
+
+**Bug judge prompt désynchronisé révélé et corrigé**. Le tableau « Régimes » de [`prompts/judges/gemini_per_row.md`](../prompts/judges/gemini_per_row.md) parlait encore de `V1_raw`, `V2_lisse`, `V3_fidele`, `V4_fidele_annote`, `V5_traduit_en`, `V_canonical`, `W0` — vocabulaire d'une version précédente du bench. Les régimes réels du bench `voxtral-validation` sont `T1_baseline`, `T2_verbatim`, `T3_translate`, `T4_summary`, `T5_qa_register`, `T6_sys_prompt`. Aucun mapping. Le juge Gemini recevait un nom de régime qu'il ne trouvait pas dans sa rubrique et improvisait — d'où les axes incohérents observés (T3_translate à `fidelite_signal` 90 alors que la sortie est en anglais, T4_summary à 100 alors que c'est un résumé, T5_qa_register à 50 alors que le régime ne demande pas de transcription).
+
+Le prompt judge a été corrigé sur trois zones. Le tableau des régimes liste désormais T1-T6 avec ce qui est attendu de chaque sortie. L'axe `fidelite_signal` reçoit une **convention par régime** : pleinement applicable sur les régimes de transcription (T1, T2, T6), interprété en fidélité **sémantique** sur T3_translate et T4_summary, **non applicable et fixé à 100** sur T5_qa_register. Les cas particuliers en bas de fichier sont actualisés (T3_translate qui sort en français → regime_respecte 0 ; T5_qa_register qui transcrit du contenu → regime_respecte 0).
+
+**Conséquence méthodo** : les axes paralinguistiques des runs antérieurs (`voxtral-poc-0001` Q4_K_M 24B, `voxtral-llamacpp-mini3b-q8-validation-0001` Q8_0 3B) sont **rétrospectivement contaminés** sur les régimes T2-T6. Les médianes WER restent valides (métrique objective, indépendante du juge). Pour les axes judge, les chiffres antérieurs sont à considérer comme du bruit calibré — utilisables comme intuition ordonnale (T1 mieux noté que T5), pas comme mesure absolue.
+
+**Direction prochaine session** — à arbitrer par Louis : (a) commencer le chantier prompts BF16 façon initial prompt Whisper, en commençant par T1_baseline qui est le régime de référence pour la dictée ; (b) refaire passer le run BF16 T1 avec le judge corrigé pour avoir une baseline judge propre avant d'optimiser ; (c) instruire le sujet « système de gating amont » pour les fragments trop courts qui contaminent la mesure et qui contamineront aussi la production si on déploie tel quel.
+
+**Apprentissage méthodo — désynchronisation silencieuse documentation/comportement**. Le prompt judge avait été écrit pour des régimes V1-V5 dans une itération précédente, puis le bench a été refondu en T1-T6 sans propagation au prompt. Le juge a continué à produire des réponses qui *avaient l'air* propres (JSON valide, scores cohérents les uns avec les autres) mais qui étaient en réalité de l'improvisation sur des entrées non documentées. La parade applicable : **toute refonte des régimes côté bench déclenche une relecture obligatoire des prompts judge et metric**. À ajouter à la doctrine `benchmark/CLAUDE.md` au moment opportun.
+
+---
+
 ## 2026-05-27 (suite 2) — Résultats bench BF16 et apprentissages méthodo
 
 Stack [ADR-0016](../docs/adr/0016-inference-safetensors-native-pour-voxtral.md) montée et bench T1_baseline exécuté sur les 30 samples du corpus `voxtral-val-30`. Run archivé sous `%LOCALAPPDATA%\Deckle\benchmark\runs\voxtral-transformers-validation-0001\`. Comparaison contre le run de référence Q4_K_M Small 24B (`voxtral-poc-0001`) via le script ad-hoc `benches/voxtral-transformers/compare_bf16_vs_q4.py`.
