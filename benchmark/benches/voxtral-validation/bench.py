@@ -110,8 +110,16 @@ def main() -> int:
     print(f"  judge   : {'skipped' if args.skip_judge else 'gemini (multimodal)'}")
 
     # ── Source ─────────────────────────────────────────────────────────
-    from lib.sources.voxtral_llamacpp import VoxtralLlamacppSource
-    source = VoxtralLlamacppSource()
+    if args.source == "voxtral-transformers":
+        from lib.sources.voxtral_transformers import VoxtralTransformersSource
+        source = VoxtralTransformersSource()
+    elif args.source == "voxtral-llamacpp":
+        from lib.sources.voxtral_llamacpp import VoxtralLlamacppSource
+        source = VoxtralLlamacppSource()
+    else:
+        print(f"FATAL : source inconnue {args.source!r}. Dispo : "
+              f"voxtral-llamacpp, voxtral-transformers", file=sys.stderr)
+        return 2
     print(f"  source ready : {source.label}")
 
     # ── Judge ──────────────────────────────────────────────────────────
@@ -129,7 +137,7 @@ def main() -> int:
         run_dir = paths.RUNS_DIR / args.run_name
         run_dir.mkdir(parents=True, exist_ok=True)
     else:
-        run_dir = paths.make_run_dir(model="voxtral", phase="validation")
+        run_dir = paths.make_run_dir(model=args.source, phase="validation")
     results_path = run_dir / "results.jsonl"
     events_path  = run_dir / "events.jsonl"
     print(f"  run_dir : {run_dir}\n")
@@ -217,6 +225,9 @@ def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--corpus",   default=DEFAULT_CORPUS_SLUG,
                    help=f"Slug du corpus sous corpora/<slug>/ (défaut : {DEFAULT_CORPUS_SLUG}).")
+    p.add_argument("--source",   default="voxtral-llamacpp",
+                   choices=["voxtral-llamacpp", "voxtral-transformers"],
+                   help="Backend de transcription Voxtral à utiliser.")
     p.add_argument("--regimes",  default="all",
                    help="Liste virgulée (ex. T1_baseline,T2_verbatim) ou 'all'.")
     p.add_argument("--limit",    type=int, default=0,

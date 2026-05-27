@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 15:23 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 15:32 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -75,6 +75,7 @@ _Mise à jour : 2026-05-27 15:23 — source : `git ls-files`_
 │   │   │   ├── voxtral_chat.py
 │   │   │   ├── voxtral_llamacpp.py
 │   │   │   ├── voxtral_transcribe.py
+│   │   │   ├── voxtral_transformers.py
 │   │   │   └── whisper_cpp.py
 │   │   ├── __init__.py
 │   │   ├── _base_compat.py
