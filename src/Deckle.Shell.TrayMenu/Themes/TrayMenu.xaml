@@ -14,137 +14,143 @@
     le seul item retemplaté du tray menu ; Logs, Settings, Playground,
     Restart, Quit sont des MenuFlyoutItem natifs purs.
 
-    Layout responsive : Grid à 3 colonnes Auto / * MinWidth=24 / Auto.
-    Le spacer * pousse le switch à droite quand le flyout est élargi
-    par un autre item plus large (Playground, par ex.), et garantit
-    24 epx minimum entre le libellé et le switch dans tous les cas.
-    Pas de pixel-par-pixel, pas de Width forcée sur le contenu —
-    s'adapte naturellement si on ajoute un autre item à switch.
+    Le template colle au pattern natif de DefaultMenuFlyoutItemStyle
+    (generic.xaml du WindowsAppSDK) : un seul Grid LayoutRoot porte
+    Padding, Background, BorderBrush, BorderThickness, Margin et
+    CornerRadius — pas de Border wrapper intermédiaire. Les VisualStates
+    écrivent directement sur LayoutRoot.Background. Cette structure est
+    la garantie que la DesiredSize de l'item Ambient sera identique à
+    celle d'un MenuFlyoutItem natif, donc que le presenter alloue la
+    même hauteur de cellule pour Ambient et pour les autres items.
 
-    Calibration : Padding 11,0 pour matcher le padding natif typique
-    du MenuFlyoutItem WinUI 3. HoverBase interne (Border Margin 5,3
-    CornerRadius 3) reproduit le rendu hover/pressed inset arrondi
-    natif, brushes pointés sur les ThemeResources MenuFlyoutItem*
-    (suivent light/dark/contrast/accent automatiquement).
+    Pillule dessinée à la main, pas de ToggleSwitch natif. Le contrôle
+    ToggleSwitch est conçu pour vivre dans une SettingsCard, dans sa
+    cellule à lui (32 DIP). Greffé dans un MenuFlyoutItem, son template
+    interne (Grid 3-rows, SwitchAreaGrid Margin=0,5, Rectangle OuterBorder
+    ancré au top de Row 1) ne se laisse pas centrer verticalement — la
+    pillule reste alignée en haut quoi qu'on fasse côté wrapper. On
+    abandonne et on dessine la pillule nous-mêmes : Border arrondi (rail
+    40×20) + Ellipse (knob 12×12) pilotés par un VisualStateGroup
+    ToggleStates. Bonus : plus de FindDescendantByName fragile pour
+    résoudre le ToggleSwitch après le prime cycle — l'état est appliqué
+    via VisualStateManager.GoToState directement sur l'item.
 
-    L'état IsOn du switch est piloté côté code : TrayContextMenuHost
-    résout le ToggleSwitch via le visual tree après le prime cycle et
-    set IsOn directement depuis le callback IsAmbientOn() à chaque
-    Show(). Le switch est IsHitTestVisible=False (indicateur visuel
-    pur), l'interaction passe par le Click de l'item parent.
+    Tous les brushes viennent des ThemeResource Win11 du ToggleSwitch
+    (ToggleSwitchFillOn/Off, ToggleSwitchStrokeOn/Off, ToggleSwitchKnobFillOn/Off)
+    pour suivre light/dark/contrast/accent automatiquement.
     -->
 
     <Style x:Key="ToggleSwitchMenuItemStyle" TargetType="MenuFlyoutItem">
-        <!-- Padding lu depuis le theme resource natif Win11
-             (MenuFlyoutItemThemePadding = 11,8,11,9 dans generic.xaml du
-             WindowsAppSDK). Valeur asymétrique top/bottom qui décale
-             légèrement le contenu vers le bas — exactement le calage visuel
-             des MenuFlyoutItem natifs. Mon précédent Padding="11,0,11,0"
-             centrait le texte dans la zone complète au lieu de la zone
-             post-padding, ce qui le plaçait visuellement plus bas que les
-             items natifs. Theme resource = on suit Win11 automatiquement. -->
-        <Setter Property="Padding" Value="{ThemeResource MenuFlyoutItemThemePadding}"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{ThemeResource MenuFlyoutItemBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource MenuFlyoutItemBackgroundBrush}"/>
+        <Setter Property="BorderThickness" Value="{ThemeResource MenuFlyoutItemBorderThickness}"/>
         <Setter Property="Foreground" Value="{ThemeResource MenuFlyoutItemForeground}"/>
+        <Setter Property="Padding" Value="{ThemeResource MenuFlyoutItemThemePadding}"/>
         <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}"/>
         <Setter Property="FontFamily" Value="{ThemeResource ContentControlThemeFontFamily}"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="MenuFlyoutItem">
                     <Grid x:Name="LayoutRoot"
+                          Padding="{TemplateBinding Padding}"
                           Background="{TemplateBinding Background}"
                           BorderBrush="{TemplateBinding BorderBrush}"
-                          BorderThickness="{TemplateBinding BorderThickness}">
-
-                        <!-- HoverBase aligné sur le hover natif Win11 du
-                             MenuFlyoutItem : Margin et CornerRadius lus
-                             directement depuis les theme resources WinUI 3
-                             (MenuFlyoutItemMargin = 4,2 et ControlCornerRadius
-                             = 4 dans generic.xaml du WindowsAppSDK). Pas de
-                             magic value — si Microsoft ajuste un jour ces
-                             valeurs côté theme, on suit automatiquement.
-
-                             **Le contenu (TextBlock + Border switch) est ENFANT
-                             du HoverBase**, pas un sibling — fidèle au template
-                             natif du MenuFlyoutItem dans generic.xaml où le
-                             LayoutRoot porte à la fois le hover background ET
-                             le contenu. Sinon contenu centré dans 40 DIP et
-                             hover centré dans 36 DIP (= 40 - 2 - 2) → contenu
-                             dépasse le hover en haut/bas. Le Padding du Style
-                             est porté par le Border HoverBase, donc s'applique
-                             au Grid de contenu intérieur. -->
-                        <Border x:Name="HoverBase"
-                                Margin="{ThemeResource MenuFlyoutItemMargin}"
-                                CornerRadius="{ThemeResource ControlCornerRadius}"
-                                Background="Transparent"
-                                Padding="{TemplateBinding Padding}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*" MinWidth="24"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0"
-                                           x:Name="TextLabel"
-                                           Text="{TemplateBinding Text}"
-                                           Foreground="{TemplateBinding Foreground}"
-                                           FontFamily="{TemplateBinding FontFamily}"
-                                           FontSize="{TemplateBinding FontSize}"
-                                           FontWeight="{TemplateBinding FontWeight}"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Left"/>
-
-                                <!-- Wrapper Border Width="44" Height="32" : contraintes
-                                     dures sur la DesiredSize du contrôle (le ToggleSwitch
-                                     natif ignore Width/MaxWidth/Height côté DesiredSize
-                                     publique, mais le Border les respecte). Width 44 = 40
-                                     pillule canonique + ~4 DIP de margin externe natif.
-                                     Height 32 = MenuFlyoutThemeMinHeight natif Win11 — la
-                                     pillule de 20 DIP s'inscrit centred avec 6 DIP de marge
-                                     top/bottom, le hit-target interne du ToggleSwitch ne
-                                     déborde plus du HoverBase (qui fait 36 DIP de haut une
-                                     fois l'item contraint à 40 DIP avec Margin 4,2), donc
-                                     plus de troncation visible au bas de l'item Ambient
-                                     (constat sur screenshot post-restructure HoverBase). -->
-                                <Border Grid.Column="2"
-                                        Width="44"
-                                        Height="32">
-                                    <ToggleSwitch x:Name="StateSwitch"
-                                                  IsHitTestVisible="False"
-                                                  OnContent=""
-                                                  OffContent=""
-                                                  Margin="0"
-                                                  VerticalAlignment="Center"/>
-                                </Border>
-                            </Grid>
-                        </Border>
+                          BorderThickness="{TemplateBinding BorderThickness}"
+                          Margin="{ThemeResource MenuFlyoutItemMargin}"
+                          CornerRadius="{TemplateBinding CornerRadius}">
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="HoverBase.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}"/>
+                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPointerOver}"/>
                                         <Setter Target="TextLabel.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPointerOver}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="HoverBase.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}"/>
+                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundPressed}"/>
                                         <Setter Target="TextLabel.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundPressed}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <VisualState.Setters>
-                                        <Setter Target="HoverBase.Background" Value="{ThemeResource MenuFlyoutItemBackgroundDisabled}"/>
+                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource MenuFlyoutItemBackgroundDisabled}"/>
                                         <Setter Target="TextLabel.Foreground" Value="{ThemeResource MenuFlyoutItemForegroundDisabled}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
+
+                            <!-- États On/Off pilotés depuis le code via
+                                 VisualStateManager.GoToState(item, "On"/"Off")
+                                 dans TrayContextMenuHost.Show() à chaque
+                                 ouverture. Pas de transition (useTransitions=false)
+                                 pour rester cohérent avec AreOpenCloseAnimationsEnabled=false
+                                 sur le MenuFlyout. -->
+                            <VisualStateGroup x:Name="ToggleStates">
+                                <VisualState x:Name="Off">
+                                    <VisualState.Setters>
+                                        <Setter Target="SwitchRail.Background" Value="{ThemeResource ToggleSwitchFillOff}"/>
+                                        <Setter Target="SwitchRail.BorderBrush" Value="{ThemeResource ToggleSwitchStrokeOff}"/>
+                                        <Setter Target="SwitchKnob.Fill" Value="{ThemeResource ToggleSwitchKnobFillOff}"/>
+                                        <Setter Target="SwitchKnob.HorizontalAlignment" Value="Left"/>
+                                        <Setter Target="SwitchKnob.Margin" Value="4,0,0,0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="On">
+                                    <VisualState.Setters>
+                                        <Setter Target="SwitchRail.Background" Value="{ThemeResource ToggleSwitchFillOn}"/>
+                                        <Setter Target="SwitchRail.BorderBrush" Value="{ThemeResource ToggleSwitchStrokeOn}"/>
+                                        <Setter Target="SwitchKnob.Fill" Value="{ThemeResource ToggleSwitchKnobFillOn}"/>
+                                        <Setter Target="SwitchKnob.HorizontalAlignment" Value="Right"/>
+                                        <Setter Target="SwitchKnob.Margin" Value="0,0,4,0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   x:Name="TextLabel"
+                                   Text="{TemplateBinding Text}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   FontFamily="{TemplateBinding FontFamily}"
+                                   FontSize="{TemplateBinding FontSize}"
+                                   FontWeight="{TemplateBinding FontWeight}"
+                                   TextTrimming="{ThemeResource MenuFlyoutItemTextTrimming}"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"/>
+
+                        <!-- Pillule custom 40×20 (dimensions visuelles natives
+                             Win11) : Border arrondi pour le rail, Ellipse 12×12
+                             pour le knob, position et brushes pilotés par le
+                             VisualStateGroup ToggleStates. Margin gauche 24
+                             reproduit l'espacement minimal label↔widget du
+                             pattern MenuFlyoutItem natif
+                             (MenuFlyoutItemChevronMargin = 24,0,0,0).
+                             VerticalAlignment=Center sur le Grid wrapper centre
+                             la pillule sur la baseline du texte. -->
+                        <Grid Grid.Column="1"
+                              Margin="24,0,0,0"
+                              Width="40"
+                              Height="20"
+                              VerticalAlignment="Center">
+                            <Border x:Name="SwitchRail"
+                                    CornerRadius="10"
+                                    BorderThickness="1"/>
+                            <Ellipse x:Name="SwitchKnob"
+                                     Width="12"
+                                     Height="12"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

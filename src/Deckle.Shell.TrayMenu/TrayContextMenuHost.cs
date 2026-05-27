@@ -59,21 +59,12 @@ public sealed class TrayContextMenuHost : IDisposable
     // 4 px droite, scalés par le DPI du moniteur sous le curseur.
     private const double FlyoutFrameMargin = 4.0;
 
-    // Hauteur fixe (DIP) appliquée à chaque MenuFlyoutItem du tray menu pour
-    // matcher la DesiredSize naturelle Win11 au tout premier show et empêcher
-    // la compression défectueuse du MenuFlyoutPresenter (qui rabote les items
-    // à MinHeight=32 DIP à partir du 2e/3e show sans re-centrer le texte). 40
-    // DIP correspond à la valeur visuelle correcte observée immédiatement
-    // après restart de l'app (avant que la compression kick in).
-    private const double NativeMenuItemHeight = 40.0;
-
     private readonly IntPtr _ownerHwnd;
 
     private Window? _window;
     private Frame? _frame;
     private MenuFlyout? _flyout;
     private MenuFlyoutItem? _ambientItem;
-    private ToggleSwitch? _ambientSwitch;
     private IntPtr _hwnd;
     private AppWindow? _appWindow;
 
@@ -190,24 +181,21 @@ public sealed class TrayContextMenuHost : IDisposable
         // Les commandes d'ouverture de fenêtre viennent ensuite, séparées des
         // commandes de cycle de vie (Restart, Quit) par un séparateur final.
         //
-        // MenuFlyoutItem (pas ToggleMenuFlyoutItem) : on évite la sémantique
-        // checkmark native qui ferait réserver une colonne à gauche dans le
-        // MenuFlyoutPresenter et décalerait tous les autres items du flyout.
-        // Le toggle visuel est porté par un ToggleSwitch greffé à droite via
-        // ToggleSwitchMenuItemStyle (Themes/TrayMenu.xaml). L'état IsOn du
-        // switch est piloté manuellement depuis Show() (cf. plus bas).
-        _ambientItem = new MenuFlyoutItem
-        {
-            Text = Loc.Get("TrayMenu_AmbientLight"),
-            Style = (Style)Application.Current.Resources["ToggleSwitchMenuItemStyle"],
-            Height = NativeMenuItemHeight,
-        };
-        _ambientItem.Click += (_, _) =>
-        {
-            DeckleShellTrayMenuSource.Log.ItemClicked(_ambientItem.Text);
-            Hide("item_click:Ambient");
-            OnToggleAmbient?.Invoke();
-        };
+        // Item Ambient construit via le helper réutilisable TraySwitchMenuItem
+        // qui applique le Style ToggleSwitchMenuItemStyle (pillule custom
+        // dessinée à la main, cf. Themes/TrayMenu.xaml) et encapsule la
+        // bascule d'état visuel. L'état est synchronisé avant chaque ouverture
+        // dans Show() via TraySwitchMenuItem.SetState. Pour ajouter un autre
+        // item togglable : une seule ligne Create + une seule ligne SetState
+        // dans Show().
+        _ambientItem = TraySwitchMenuItem.Create(
+            Loc.Get("TrayMenu_AmbientLight"),
+            () =>
+            {
+                DeckleShellTrayMenuSource.Log.ItemClicked(_ambientItem!.Text);
+                Hide("item_click:Ambient");
+                OnToggleAmbient?.Invoke();
+            });
         _flyout.Items.Add(_ambientItem);
 
         _flyout.Items.Add(new MenuFlyoutSeparator());
@@ -226,19 +214,13 @@ public sealed class TrayContextMenuHost : IDisposable
 
     private MenuFlyoutItem CreateItem(string text, Action action)
     {
-        // MenuFlyoutItem natif pur — aucun Style ni Template override. Le
-        // framework gère hover, radius, inset, padding, foreground et DPI
-        // scaling intégralement. Le seul item retemplaté du tray menu est
-        // l'Ambient Light, faute de slot natif pour greffer un switch à
+        // MenuFlyoutItem natif pur — aucun Style ni Template override, aucune
+        // Height forcée. Le framework gère hover, radius, inset, padding,
+        // foreground, DPI scaling et hauteur de cellule intégralement à partir
+        // de la DesiredSize naturelle. Le seul item retemplaté du tray menu
+        // est l'Ambient Light, faute de slot natif pour greffer un switch à
         // droite (cf. ToggleSwitchMenuItemStyle dans Themes/TrayMenu.xaml).
-        //
-        // Height = NativeMenuItemHeight (40 DIP) : matche la DesiredSize
-        // naturelle du MenuFlyoutItem Win11 au tout premier show. Sans Height
-        // explicite, le MenuFlyoutPresenter compresse les items à
-        // MinHeight (32 DIP) à partir du 2e ou 3e show sans re-centrer
-        // verticalement le texte — rendu visuel décalé vers le top. Forcer
-        // 40 DIP empêche cette compression défectueuse à la source.
-        var item = new MenuFlyoutItem { Text = text, Height = NativeMenuItemHeight };
+        var item = new MenuFlyoutItem { Text = text };
         item.Click += (_, _) =>
         {
             DeckleShellTrayMenuSource.Log.ItemClicked(text);
@@ -264,14 +246,7 @@ public sealed class TrayContextMenuHost : IDisposable
         if (_ambientItem is not null && IsAmbientOn is not null)
         {
             bool ambientOn = IsAmbientOn();
-            // Résolution paresseuse du ToggleSwitch interne au template. Le
-            // visual tree est constructible une fois le prime cycle exécuté
-            // (cf. OnFrameLoaded plus bas) ; au premier Show() le cache est
-            // null, on walk le visual tree de l'item pour trouver le switch
-            // nommé "StateSwitch", puis on cache la ref pour les Show()
-            // suivants. Plus de TemplateBinding IsChecked fragile.
-            var sw = _ambientSwitch ??= FindDescendantByName(_ambientItem, "StateSwitch") as ToggleSwitch;
-            if (sw is not null) sw.IsOn = ambientOn;
+            TraySwitchMenuItem.SetState(_ambientItem, ambientOn);
             DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
         }
 
@@ -420,15 +395,6 @@ public sealed class TrayContextMenuHost : IDisposable
         // callback après que le layout pass et le render frame initial du popup
         // aient eu lieu. À ce moment-là chaque item a son DesiredSize correct,
         // le visual tree reste "réchauffé" pour la durée de vie du process.
-        //
-        // **Note sur la convergence presenter** : le MenuFlyoutPresenter natif
-        // a une compression défectueuse qui kick in à partir du 2e ou 3e show —
-        // il rend les MenuFlyoutItem natifs à MinHeight (32 DIP) au lieu de
-        // leur DesiredSize naturelle (40 DIP), sans re-centrer le texte
-        // verticalement, ce qui donne un rendu visuellement compressé. La
-        // parade adoptée vit côté création des items (Height="40" forcée dans
-        // BuildFlyout), pas dans le prime cycle — empêcher la compression à la
-        // source est plus robuste que d'essayer de la pré-déclencher.
         var sw = Stopwatch.StartNew();
         _flyout.ShowAt(_frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
 
@@ -510,29 +476,6 @@ public sealed class TrayContextMenuHost : IDisposable
         DeckleShellTrayMenuSource.Log.FlyoutMeasured(dipW, dipH, physW, physH, scale);
 
         return (physW, physH);
-    }
-
-    // ── Visual tree helpers ───────────────────────────────────────────────────
-
-    // Walk récursif du visual tree pour récupérer un descendant par son x:Name.
-    // Utilisé pour résoudre le ToggleSwitch interne au template Ambient depuis
-    // le code C# — un FrameworkElement nommé dans un ControlTemplate est isolé
-    // dans le scope du template, FindName() sur le parent ne le trouve pas.
-    // VisualTreeHelper traverse récursivement et reste indépendant du scope.
-    // Retourne null si le template n'a pas encore été appliqué (item pas dans
-    // le visual tree) ou si le nom n'existe pas.
-    private static DependencyObject? FindDescendantByName(DependencyObject parent, string name)
-    {
-        int count = VisualTreeHelper.GetChildrenCount(parent);
-        for (int i = 0; i < count; i++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is FrameworkElement fe && fe.Name == name)
-                return child;
-            var found = FindDescendantByName(child, name);
-            if (found is not null) return found;
-        }
-        return null;
     }
 
     // ── Dispose ───────────────────────────────────────────────────────────────
