@@ -90,12 +90,19 @@ avec les autres GGUF du dossier parent."""
 
 # ── Helpers ─────────────────────────────────────────────────────────
 
-_RUN_NAME_RE = re.compile(r"^(?P<model>[a-z0-9]+)-(?P<phase>[a-z]+)-(?P<id>\d{4})$")
+_ID_SUFFIX_RE = re.compile(r"^\d{4}$")
 
 
 def next_run_id(model: str, phase: str) -> int:
     """Renvoie le prochain id à 4 chiffres pour un couple (modèle, phase),
-    en scannant ``RUNS_DIR`` pour les runs existants. Démarre à 1."""
+    en scannant ``RUNS_DIR`` pour les runs existants. Démarre à 1.
+
+    Le parse se fait par préfixe ``{model}-{phase}-`` plutôt que par regex
+    global, parce que ``model`` peut légitimement contenir des tirets
+    (ex. ``voxtral-transformers``, ``voxtral-llamacpp-mini3b-q8``). Tout
+    autre schéma de parsing fait collision et fait toujours retourner 1,
+    ce qui écrase silencieusement les runs existants au prochain
+    ``mkdir(exist_ok=True)`` + write en mode ``"w"``."""
     if not RUNS_DIR.exists():
         return 1
     prefix = f"{model}-{phase}-"
@@ -105,9 +112,9 @@ def next_run_id(model: str, phase: str) -> int:
             continue
         if not d.name.startswith(prefix):
             continue
-        m = _RUN_NAME_RE.match(d.name)
-        if m and m["model"] == model and m["phase"] == phase:
-            used.append(int(m["id"]))
+        suffix = d.name[len(prefix):]
+        if _ID_SUFFIX_RE.match(suffix):
+            used.append(int(suffix))
     return (max(used) + 1) if used else 1
 
 
