@@ -80,6 +80,10 @@ _Mise à jour : 2026-05-27 14:27 — source : `git ls-files`_
 │   │   ├── event_log.py
 │   │   └── paths.py
 │   ├── perf-cap/
+│   │   ├── debug-mini-3b-f16-2026-05-27.ps1
+│   │   ├── debug-mini-3b-q8-2026-05-27.ps1
+│   │   ├── debug-samples-difficiles-2026-05-27.ps1
+│   │   ├── debug-transcribe-token-2026-05-27.ps1
 │   │   ├── download-models.ps1
 │   │   ├── parse_vulkan_log.py
 │   │   ├── profile-config.ps1
