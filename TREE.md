@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 19:02 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 19:03 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -52,6 +52,7 @@ _Mise à jour : 2026-05-27 19:02 — source : `git ls-files`_
 │   │   │   ├── perf_rtf.py
 │   │   │   └── sanity_check.py
 │   │   └── voxtral-validation/
+│   │       ├── aggregate_verdicts.py
 │   │       ├── bench.py
 │   │       ├── README.md  — [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
 │   │       └── validate_judge_prompt.py

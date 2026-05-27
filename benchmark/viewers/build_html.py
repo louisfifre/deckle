@@ -234,7 +234,7 @@ def render_judge_block(
         return ""
     headers = "".join(f"<th>{html.escape(ax.replace('_', ' '))}</th>" for ax in axes_seen)
     return (
-        "<details><summary>Verdicts judge (axes + verdict prose)</summary>"
+        "<details open><summary>Verdicts judge (axes + verdict prose)</summary>"
         '<table class="verdicts"><thead><tr>'
         f"<th></th>{headers}<th>verdict</th>"
         "</tr></thead><tbody>"
