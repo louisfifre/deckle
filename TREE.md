@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 20:59 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 21:58 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -120,7 +120,8 @@ _Mise à jour : 2026-05-27 20:59 — source : `git ls-files`_
 │   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
 │   ├── JOURNAL.md  — [module-journal] Journal daté du module benchmark : décisions intermédiaires, hypothèses, learni…
 │   ├── pregenerate_groundtruth_gemini.py
-│   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
+│   ├── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
+│   └── voxtral-val-30-notes.json
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-record-architecture-decisions.md
