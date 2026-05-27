@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 21:03 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 21:08 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -111,10 +111,13 @@ _Mise à jour : 2026-05-27 21:03 — source : `git ls-files`_
 │   ├── reference/
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
+│       ├── research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md  — [research] Comparaison ASR français au 2026-05-27 entre Voxtral Mini 3B / Small 24B, Whisp…
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
 │       ├── research--hyperhdr-interpolators--2026-05-15.md
-│       └── research--inventaire-observabilite-eventsource--2026-05-24.md
+│       ├── research--inventaire-observabilite-eventsource--2026-05-24.md
+│       ├── research--phi-4-multimodal-state-of-the-art--2026-05-27.md  — [research] Synthèse à l'état de l'art (2026-05-27) du modèle Phi-4-Multimodal de Microsoft…
+│       └── research--whisper-alternatives-fine-windowing--2026-05-27.md  — [research] Alternatives à whisper.cpp pour réduire la fenêtre d'inférence Whisper de 30s à…
 ├── scripts/
 │   ├── hooks/
 │   │   └── pre-commit
