@@ -18,6 +18,34 @@ Les entrées récentes sont en haut. À chaque nouvelle, ajouter au sommet, pas 
 
 ---
 
+## 2026-05-27 — État cumulé des voies explorées Voxtral
+
+Synthèse à destination de la prochaine session, pour ne pas redécouvrir ce qui est déjà tranché. Trois colonnes mentales : **cul-de-sacs documentés** (ne pas retenter sans nouvelle info externe), **voies actives** (testées, partiellement utilisables), **pistes ouvertes** (jamais évaluées rigoureusement, à investiguer).
+
+**Cul-de-sacs documentés** :
+
+- **Transformers + PyTorch + ROCm Windows** sur RX 7900 XT. Bloqué dur. Le wheel `torch 2.9.1+rocm7.2.1` officiel AMD pour Windows est compilé avec `USE_DISTRIBUTED=0`. À l'import de `torch`, `torch.distributed.tensor` se charge immédiatement et plante sur le c10d manquant. Transformers ≥ 4.55 (toutes les versions Voxtral-compatibles) importe systématiquement ce sous-module via `AutoProcessor`. Voie patch-Python explorée jusqu'au bout, finit sur un opérateur C++ manquant non patchable. Documenté dans [ADR-0014 section pivot stack 2026-05-24](adr/0014-poc-evaluation-voxtral.md). Conditions de levée : AMD ship un torch ROCm Windows complet — suivi via [ROCm/ROCm#5689](https://github.com/ROCm/ROCm/issues/5689). Tant que cet issue est OPEN, ne pas retenter.
+- **Transformers + torch-DirectML sur Voxtral Small 24B**. VRAM sature, le pipeline charge le modèle deux fois apparemment (mode DML particulier), le poste devient inutilisable. Pas viable sur le 24B. Le commit `bf48948 perf(bench): durcir les sources Voxtral DML contre l'inflation VRAM` a tenté du hardening sans succès sur le 24B.
+- **Voxtral Mini 4B Realtime 2602**. Testé par Louis avant le POC formel via les PRs llama.cpp [#19698](https://github.com/ggml-org/llama.cpp/pull/19698) et [#20625](https://github.com/ggml-org/llama.cpp/pull/20625). Le mode streaming ne donnait pas de qualité satisfaisante. Variante laissée de côté.
+- **`convert_hf_to_gguf.py` standard sur Voxtral safetensors HF** (sans `--mistral-format`). Tokenizer Tekken non lu → `MistralCommonBackend has no attribute vocab`. Probablement régression liée à la version récente de `transformers` qui a refondu la classe wrapper Mistral. Voie possible via downgrade `transformers` à une version pré-1.x mais pas testée.
+- **`convert_hf_to_gguf.py --mistral-format` sur Voxtral consolidated**. Tokenizer OK mais blocage sur `Can not map tensor 'mm_whisper_embeddings.tok_embeddings.weight'` — le mode `--mistral-format` traite les tensors mmproj mélangés au LM, et le mapping n'a pas d'entrée pour eux. Voie possible via patch local du mapper pour filtrer les `mm_*` quand on convertit le LM seul, mais le script fait 3000 lignes et le patch n'est pas trivial.
+- **Token `[TRANSCRIBE]` officiel Voxtral injecté manuellement dans le prompt mtmd-cli**. Testé sur Voxtral 24B Q4_K_M : aucun effet visible sur un sample court avec contenu propre. Notre prompt baseline « Transcris cet audio en français. » contourne déjà efficacement le mode chat sur le 24B (P0 = P1 verbatim parfait). Le token reste **à re-tester sur le 3B** où le mode chat dégénère sur les samples courts — peut-être qu'il aurait un effet là.
+
+**Voies actives, qualité validée ou utilisable** :
+
+- **`llama-mtmd-cli` + Voxtral 24B Q4_K_M + mmproj F16** sur stack Vulkan RX 7900 XT. Perf excellente (RTF 0.05-0.5 sur long-form). Qualité FR insuffisante sur les nuances (pronoms, suffixes, termes techniques EN, registre oral) — confirmé par bench 180 rows + écoute humaine 27 samples + étude Cohere [arXiv 2407.03211] qui chiffre -16.6% perception humaine FR au passage FP16→Q4 (vs -0.3% en métriques automatiques). **Pas adopté pour la dictée.**
+- **`llama-mtmd-cli` + Voxtral Mini 3B Q8_0 + mmproj Q8_0** (officiels ggml-org). Q8_0 ~98-99% qualité FP16 selon la littérature. Testé sur 3 samples ciblés : résout `je→tu` et `0.3.1` préservé sur S1, améliore la grammaire fine sur S2, **dégénère en chat conversationnel sur S0 court** (le 3B est plus sensible au mode chat que le 24B). Résout les patterns critiques de Louis mais introduit le problème chat-court. **Utilisable à creuser**.
+- **Whisper.cpp large-v3 + initial prompt sticky** (stack actuelle Deckle). Stable, ultra-rapide. Limites connues : hallucinations sur quasi-silence (« Sous-titrage ST' 501 », « Sous-titrage Société Radio-Canada »), VAD lent (irritant en interactif), bouclage occasionnel sur dictée longue, traduction faible de certains termes oraux français. **Reste le fallback déployé**.
+
+**Pistes ouvertes à évaluer prochaine session** :
+
+- **`llama-mtmd-cli` + Voxtral Mini 3B FP16** (le saint Graal — hypothèse Cohere prédit qu'il préserve nettement plus de fidélité audio fine que Q8_0). Conversion locale bloquée pour l'instant (deux voies dans les cul-de-sacs ci-dessus, mais chacune potentiellement débloquable avec effort modéré).
+- **Transformers + torch-DirectML sur Voxtral Mini 3B** (le 3B FP16 = 6 GB, le 24B faisait déborder, mais le 3B tient en VRAM avec marge). Jamais essayé sérieusement. Si la conversion GGUF FP16 reste bloquée, c'est la voie de contournement la plus directe.
+- **`llama-mtmd-cli` + Voxtral Small 24B Q5_K_M ou Q6_K**. Perf déjà mesurée en session perf-cap 2026-05-26 (logs sous `runs/voxtral-perf-cap-2026-05-26/`). Qualité jamais évaluée. Cohere suggère que Q5/Q6 sur 24B serait significativement meilleur que Q4 (-1% à -2% perception humaine au lieu de -16.6%) tout en restant en VRAM (16 GB pour Q5_K_M). Test rapide via le bench voxtral-validation actuel avec juste un swap de path modèle.
+- **Gemma 3 multimodal** (Google open source, fenêtre native 30s, chunkable plus petit pour meilleure latence interactive). Aucune mesure faite. Évaluation parallèle valide si Voxtral 3B FP16 ne perce pas. À investiguer : disponibilité GGUF + support mtmd-cli + qualité FR.
+
+---
+
 ## 2026-05-27 — POC Voxtral, verdict provisoire et findings
 
 **Bench voxtral-validation complet livré** sur 30 samples du corpus `voxtral-val-30` × 6 régimes T1-T6 (T1 baseline, T2 verbatim, T3 translate, T4 summary, T5 qa_register, T6 sys_prompt) avec judge Gemini multimodal. Run archivé sous `%LOCALAPPDATA%\Deckle\benchmark\runs\voxtral-poc-0001\`. Premiers résultats : Voxtral 24B Q4_K_M sort des transcriptions techniquement correctes au WER global, mais l'écoute humaine sur 27 samples révèle une perte systématique des nuances françaises — pronoms qui changent (je → tu), suffixes oubliés (« 0.3.1 » → « 0.3 »), termes techniques anglais incompris (`loadwindow` → « low wind », `clear` → « effacer »), réécriture en registre standard de l'oral spontané. L'anglais via T3_translate reste excellent, signe que c'est bien la génération française fine qui flanche, pas l'audio understanding.
