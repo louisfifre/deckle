@@ -14,17 +14,24 @@ Stack actuelle (épinglée par le sanity check 2026-05-27) :
   - accelerate (requis par ``device_map``)
   - librosa (requis par ``load_audio_as``)
 
-Mode supporté à ce stade : **transcription pure** (mode T1 baseline).
-La méthode officielle ``processor.apply_transcription_request`` accepte
-``language`` + ``audio`` + ``model_id`` mais **n'accepte pas de prompt
-utilisateur** : elle injecte un template fixe avec le token spécial
-Voxtral ``[TRANSCRIBE]`` implicite. C'est précisément ce que
-llama-mtmd-cli ne fait pas correctement.
+Deux modes d'invocation, choisis par heuristique sur le prompt fourni :
 
-Pour les régimes T2-T6 (instructions utilisateur + system prompt), il
-faut passer en mode chat via ``apply_chat_template`` — non implémenté
-ici, voir le ``NotImplementedError`` ciblé. Premier run de validation
-mesuré sur T1_baseline seul.
+  - **Canonique** (``processor.apply_transcription_request``) : quand
+    ``prompt`` et ``system_prompt`` sont tous deux vides. La méthode
+    officielle Mistral accepte ``language`` + ``audio`` + ``model_id``
+    et injecte un template fixe avec le token spécial Voxtral
+    ``[TRANSCRIBE]`` implicite. Sortie : transcription pure, lissée par
+    défaut. C'est précisément ce que ``llama-mtmd-cli`` ne fait pas.
+  - **Chat** (``processor.apply_chat_template``) : quand un ``prompt``
+    ou ``system_prompt`` est fourni. Format multimodal officiel Mistral
+    avec un ``role: user`` mixant un bloc ``{"type": "audio"}`` et un
+    bloc ``{"type": "text"}``. Voxtral suit l'instruction (verbatim,
+    traduction, résumé, classification de ton, etc.).
+
+Voxtral ne supporte pas le rôle ``system`` séparément (cf. model card
+Mistral) — quand ``system_prompt`` est fourni, son contenu est
+concaténé devant le ``prompt`` utilisateur dans un seul bloc text avec
+une séparation par double saut de ligne.
 
 Référence : ``mistralai/Voxtral-Mini-3B-2507`` model card et
 ``docs/transformers/model_doc/voxtral``.
@@ -105,17 +112,6 @@ class VoxtralTransformersSource(Source):
         on_event:       Callable[[str, dict], None] | None = None,
         system_prompt:  str | None = None,
     ) -> Transcription:
-        # Cette source ne supporte que le mode transcription pur — qui
-        # ignore prompt utilisateur et system_prompt. Si l'appelant fournit
-        # un system_prompt non-vide, c'est qu'il vise un régime chat (T6)
-        # qui n'est pas implémenté ici : on retourne ok=False clairement.
-        if system_prompt:
-            return _unsupported(
-                audio_path,
-                "regime chat (system_prompt) non implémenté par voxtral-transformers ; "
-                "utiliser voxtral-llamacpp pour les régimes T2-T6.",
-            )
-
         audio_s = _wav_duration_seconds(audio_path)
 
         if max_new_tokens is None:
@@ -126,13 +122,32 @@ class VoxtralTransformersSource(Source):
 
         torch = self._torch
 
+        # Heuristique de routage : prompt et system_prompt tous deux
+        # vides → mode canonique (apply_transcription_request, [TRANSCRIBE]
+        # injecté implicitement). Sinon → mode chat (apply_chat_template).
+        use_chat = bool(prompt) or bool(system_prompt)
+        chat_instruction = _build_chat_instruction(prompt, system_prompt) if use_chat else ""
+
         t0 = time.perf_counter()
         try:
-            inputs = self._processor.apply_transcription_request(
-                language="fr",
-                audio=str(audio_path),
-                model_id=self._hf_repo_id,
-            )
+            if use_chat:
+                conversation = [{
+                    "role": "user",
+                    "content": [
+                        {"type": "audio", "path": str(audio_path)},
+                        {"type": "text",  "text": chat_instruction},
+                    ],
+                }]
+                inputs = self._processor.apply_chat_template(conversation)
+                mode_label = "apply_chat_template"
+            else:
+                inputs = self._processor.apply_transcription_request(
+                    language="fr",
+                    audio=str(audio_path),
+                    model_id=self._hf_repo_id,
+                )
+                mode_label = "apply_transcription_request"
+
             inputs = inputs.to(self._device, dtype=self._dtype)
             input_tokens = inputs.input_ids.shape[1]
 
@@ -174,8 +189,9 @@ class VoxtralTransformersSource(Source):
                 "device":        self._device,
                 "input_tokens":  input_tokens,
                 "max_new_tokens": max_new_tokens,
-                "mode":          "apply_transcription_request",
-                "user_prompt_ignored":   bool(prompt),
+                "mode":          mode_label,
+                "chat_instruction": chat_instruction if use_chat else "",
+                "system_prompt_concatenated": bool(use_chat and system_prompt and prompt),
             },
         )
 
@@ -206,9 +222,16 @@ def _wav_duration_seconds(path: Path) -> float:
         return float(info.duration)
 
 
-def _unsupported(audio_path: Path, reason: str) -> Transcription:
-    audio_s = _wav_duration_seconds(audio_path)
-    return Transcription(
-        text="", elapsed_s=0.0, audio_s=audio_s, rtf=0.0,
-        generated_tokens=-1, ok=False, error=reason,
-    )
+def _build_chat_instruction(prompt: str, system_prompt: str | None) -> str:
+    """Construit le bloc text unique du message user pour le mode chat.
+
+    Voxtral ne supporte pas le rôle ``system`` séparément (cf. model card
+    Mistral et ``voxtral_chat.py``). Quand ``system_prompt`` est fourni,
+    son contenu précède le ``prompt`` utilisateur, séparé par un double
+    saut de ligne — c'est la convention la plus proche d'un vrai rôle
+    system tout en restant dans un message ``role: user``."""
+    sp = (system_prompt or "").strip()
+    up = (prompt or "").strip()
+    if sp and up:
+        return f"{sp}\n\n{up}"
+    return sp or up

@@ -68,7 +68,7 @@ from lib.metrics import leak    as metric_leak
 
 
 DEFAULT_CORPUS_SLUG = "voxtral-val-30"
-REGIMES_PATH        = BENCHMARK_ROOT / "prompts" / "transcription" / "voxtral_llamacpp.toml"
+REGIMES_PATH        = BENCHMARK_ROOT / "prompts" / "transcription" / "voxtral_validation.toml"
 JUDGE_PROMPT_PATH   = BENCHMARK_ROOT / "prompts" / "judges" / "gemini_per_row.md"
 
 
@@ -157,6 +157,23 @@ def main() -> int:
                 tag = f"[{si}/{len(samples)} {regime_name}]"
                 user_prompt   = regime_cfg.get("prompt", "")
                 system_prompt = regime_cfg.get("system_prompt", "") or None
+
+                # Filter very-short × chat-mode : Voxtral en chat dégénère
+                # sur les samples silencieux (réponses templates identiques
+                # cross-samples observées 2026-05-27 sur T4/T5, dérive 128
+                # tokens sur T6). Le mode canonique (prompt ET system_prompt
+                # vides) traverse sans risque — il reste robuste sur ces
+                # samples. La détection chat reproduit l'heuristique de la
+                # source voxtral-transformers.
+                is_chat = bool(user_prompt) or bool(system_prompt)
+                if is_chat and sample.tier == "very-short":
+                    print(f"{tag} {sample.id[:8]}… ({sample.duration_s:>5.1f}s) "
+                          f"SKIP (very-short × chat)", flush=True)
+                    log.event("row_skipped", sample_id=sample.id,
+                              regime=regime_name, tier=sample.tier,
+                              reason="very-short × chat-mode")
+                    continue
+
                 print(f"{tag} {sample.id[:8]}… ({sample.duration_s:>5.1f}s)",
                       end=" ", flush=True)
 

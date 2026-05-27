@@ -1,28 +1,45 @@
-# Régimes pour la source ``voxtral-llamacpp`` (mode Vulkan via
-# llama-mtmd-cli). Six régimes cartographiés en session 2026-05-26 sur
-# Voxtral-Small 24B Q4_K_M ; tous fonctionnels, validés en sortie.
+# Régimes pour le bench voxtral-validation. Source historique : voxtral-
+# llamacpp (Vulkan via llama-mtmd-cli) cartographié 2026-05-26 sur
+# Voxtral Small 24B Q4_K_M. Depuis le verdict 2026-05-27 (Q8_0 abandonné,
+# BF16 confirmé comme voie POC), ce fichier sert principalement à la
+# source voxtral-transformers (Mini 3B BF16 via Transformers ROCm).
 #
-# Convention TOML pour cette source : la clé ``prompt`` porte
-# l'instruction utilisateur (transmise via ``--prompt``), la clé
-# ``system_prompt`` est optionnelle et porte le système Mistral V7
-# (transmise via ``--system-prompt`` quand présente).
-#
-# Diffère de ``voxtral_chat.toml`` qui emploie historiquement
-# ``system_prompt`` comme alias pour le prompt utilisateur (convention
-# du POC voxtral-poc). Ici on sépare proprement les deux rôles.
+# Convention TOML : la clé ``prompt`` porte l'instruction utilisateur,
+# la clé ``system_prompt`` est optionnelle et porte le système. La source
+# voxtral-transformers route par heuristique :
+#   - prompt vide ET system_prompt vide → apply_transcription_request
+#     (mode canonique Mistral, prompt ignoré, [TRANSCRIBE] injecté
+#     implicitement)
+#   - sinon → apply_chat_template (mode chat / instruct)
+# T1_baseline garde ainsi un prompt vide pour rester en mode canonique
+# et préserver la baseline historique. T1bis_chat porte l'ancien prompt
+# T1 et permet de comparer canonical vs chat à instruction constante.
 
 # ───────────────────────────────────────────────────────────────────────
-# T1 — Baseline transcribe
+# T1 — Baseline transcribe (mode canonique apply_transcription_request)
 # ───────────────────────────────────────────────────────────────────────
 [T1_baseline]
-label = "Baseline — transcribe FR direct"
+label = "Baseline — apply_transcription_request (prompt ignoré)"
 description = """
-Instruction utilisateur unique, pas de système prompt. Voxtral produit
-une transcription en français avec ponctuation et accents propres. La
-sortie est légèrement lissée par défaut (Voxtral supprime
-spontanément les hésitations 'euh' si elles n'ont pas été
-explicitement demandées). Référence de comparaison la plus proche de
-ce que Whisper produit aujourd'hui.
+Mode canonique Mistral. La source voxtral-transformers détecte le
+prompt vide et bascule sur apply_transcription_request, qui injecte
+implicitement le token [TRANSCRIBE]. Voxtral produit une transcription
+en français avec ponctuation et accents propres, légèrement lissée par
+défaut. Baseline historique des runs voxtral-transformers-validation-*.
+"""
+prompt = ""
+
+# ───────────────────────────────────────────────────────────────────────
+# T1bis — Même intention que T1 via apply_chat_template (mesure chat vs canonical)
+# ───────────────────────────────────────────────────────────────────────
+[T1bis_chat]
+label = "T1 via apply_chat_template — comparer canonical vs chat à prompt constant"
+description = """
+Même instruction sémantique que T1_baseline (« Transcris cet audio en
+français. ») mais passée en mode chat via apply_chat_template. Isole
+la variable « mode d'invocation » à contenu instructionnel constant.
+Permet de mesurer si le mode chat dégrade ou améliore la qualité par
+rapport au mode canonique sur la transcription pure.
 """
 prompt = "Transcris cet audio en français."
 
@@ -77,17 +94,8 @@ Capacité paralinguistique pure (formel/informel, hésitant, assertif,
 """
 prompt = "Décris le ton et le registre de cette personne en une phrase courte (formel, informel, hésitant, ...). Ne transcris pas."
 
-# ───────────────────────────────────────────────────────────────────────
-# T6 — System prompt + transcribe avec annotation ton
-# ───────────────────────────────────────────────────────────────────────
-[T6_sys_prompt]
-label = "Système prompt + transcribe avec étiquette ton"
-description = """
-Système prompt Mistral V7 jinja qui définit le rôle de l'assistant +
-instruction utilisateur courte. Combine transcription verbatim et
-annotation paralinguistique. Documente que la fonctionnalité système
-prompt fonctionne via le template jinja Mistral V7 (hors-doc Mistral
-SDK officiel, à ne pas exposer en production sans validation).
-"""
-system_prompt = "Tu es un assistant de transcription pour des dictées en français. Tu rends toujours la transcription verbatim suivie, sur une nouvelle ligne, d'une étiquette entre crochets indiquant le ton détecté."
-prompt = "Transcris cet audio."
+# T6_sys_prompt retiré 2026-05-27 : la concaténation system\n\nuser dans
+# un seul bloc user (seule voie offerte par apply_chat_template Voxtral
+# qui ne supporte pas le rôle system séparé) ne reproduit pas un vrai
+# system prompt. Sortie observée sur sample propre : « [?] » au lieu de
+# transcription + étiquette ton. Régime abandonné côté voxtral-transformers.
