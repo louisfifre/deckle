@@ -49,8 +49,11 @@ _Mise à jour : 2026-05-27 19:03 — source : `git ls-files`_
 │   │   │   └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
 │   │   ├── voxtral-transformers/
 │   │   │   ├── compare_bf16_vs_q4.py
+│   │   │   ├── inspect_smoke_palier3.py
 │   │   │   ├── perf_rtf.py
-│   │   │   └── sanity_check.py
+│   │   │   ├── sanity_check.py
+│   │   │   ├── smoke_chat_regimes.py
+│   │   │   └── summary_validation_0001.py
 │   │   └── voxtral-validation/
 │   │       ├── aggregate_verdicts.py
 │   │       ├── bench.py
