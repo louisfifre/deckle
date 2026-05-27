@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 21:59 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 22:21 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -68,6 +68,21 @@ _Mise à jour : 2026-05-27 21:59 — source : `git ls-files`_
 │   │       ├── bench.py
 │   │       ├── README.md  — [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
 │   │       └── validate_judge_prompt.py
+│   ├── cs/
+│   │   └── PhiBench/
+│   │       ├── Models/
+│   │       │   ├── Regime.cs
+│   │       │   ├── Sample.cs
+│   │       │   └── TranscriptionResult.cs
+│   │       ├── CorpusLoader.cs
+│   │       ├── CorpusRunner.cs
+│   │       ├── JsonlWriter.cs
+│   │       ├── Phi4Transcriber.cs
+│   │       ├── PhiBench.csproj
+│   │       ├── Program.cs
+│   │       ├── RegimesLoader.cs
+│   │       ├── SingleRunner.cs
+│   │       └── WavHeader.cs
 │   ├── lib/
 │   │   ├── judges/
 │   │   │   ├── __init__.py
