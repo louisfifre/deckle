@@ -52,6 +52,8 @@ WER moyen global : 0.308 → 0.302. Gain ciblé sur les troncatures, aucune rég
 
 **Direction prochaine session.** (a) Analyser le run 0006 (T1+T3 avec judge corrigé post-fix) pour quantifier la révision du verdict Whisper-vs-Voxtral avec les axes Gemini. (b) Recevoir et traiter le rapport sub-agent Phi-4 — décider si un POC Phi-4 ONNX se justifie comme prochain workstream. (c) Si oui, planifier ce POC sur le même corpus de 30 avec le même judge, pour comparer apple-to-apple Whisper / Voxtral-post-fix / Phi-4. (d) Pistes secondaires à conserver : levier audio-gain boost (TTS normalisé vs voix réelles variables — hypothèse d'amélioration Voxtral non testée), enquête sur le bouclage Whisper après silence long observé en prod par Louis (potentiel défaut back-end, pas modèle), refonte du VAD vers une approche RMS+ZCR plus rapide que le VAD modèle abandonné.
 
+**Addendum — run 0006 (T1+T3 avec Gemini judge post-fix).** Bench `voxtral-transformers-validation-0006` lancé en fin de session sur les 30 audios, T1_baseline + T3_translate, fix max_new appliqué, judge Gemini activé. 49 rows / 0 fail / 398s. T1 post-fix tient sous le judge Gemini : axes typiques 95-98/85-100/100/100 avec quelques outliers ponctuels (audio `3b1e6220` à 85/80/90/85, à inspecter à la reprise). **T3_translate confirme quantitativement le ressenti** — axes ~95-100/95-100/100/95-100 quasi-systématiquement : le judge reconnaît la traduction FR→EN comme propre et fidèle au signal, malgré le WER élevé (0.94-1.00) attendu vu que la référence est française et la sortie anglaise. Analyse détaillée à la reprise.
+
 Commits de la session sur `poc/voxtral-bf16` : `54b9821` (fix max_new), `803de17` (sandbox sampling).
 
 ---
