@@ -69,7 +69,7 @@ class VoxtralTransformersSource(Source):
         device:     str               = "cuda",
         hf_repo_id: str               = HF_REPO_ID,
         max_new_tokens_floor:        int   = 128,
-        max_new_tokens_per_audio_s:  float = 4.0,
+        max_new_tokens_per_audio_s:  float = 8.0,
     ) -> None:
         import torch
         from transformers import AutoProcessor, VoxtralForConditionalGeneration
