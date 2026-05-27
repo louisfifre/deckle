@@ -53,6 +53,7 @@ BENCHMARK_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BENCHMARK_DIR))
 
 from lib._base_compat import _ensure_stdout_utf8
+from lib import paths
 
 
 # ── Sources télémétrie ────────────────────────────────────────────────
@@ -62,7 +63,9 @@ AUDIO_DIR            = DECKLE_TELEMETRY_DIR / "audio"
 CORPUS_RAW_DIR       = DECKLE_TELEMETRY_DIR / "corpus" / "raw"
 
 CORPUS_SLUG = "voxtral-val-30"
-CORPUS_DIR  = BENCHMARK_DIR / "corpora" / CORPUS_SLUG
+# Cible d'écriture : sous %LOCALAPPDATA%\Deckle\benchmark\corpora\<slug>\
+# (cf lib/paths.py) — survit aux worktrees, ne pollue pas le repo.
+CORPUS_DIR  = paths.corpus_dir(CORPUS_SLUG)
 
 
 # ── Schéma de stratification ──────────────────────────────────────────

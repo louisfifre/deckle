@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-26 21:59 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 13:38 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -49,7 +49,6 @@ _Mise à jour : 2026-05-26 21:59 — source : `git ls-files`_
 │   │   │   └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
 │   │   └── voxtral-validation/
 │   │       ├── bench.py
-│   │       ├── build_comparison_html.py
 │   │       └── README.md  — [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
 │   ├── lib/
 │   │   ├── judges/
@@ -78,7 +77,8 @@ _Mise à jour : 2026-05-26 21:59 — source : `git ls-files`_
 │   │   ├── _base_compat.py
 │   │   ├── corpus.py
 │   │   ├── env.py
-│   │   └── event_log.py
+│   │   ├── event_log.py
+│   │   └── paths.py
 │   ├── perf-cap/
 │   │   ├── download-models.ps1
 │   │   ├── parse_vulkan_log.py

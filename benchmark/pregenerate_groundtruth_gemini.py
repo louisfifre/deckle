@@ -38,6 +38,7 @@ BENCHMARK_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BENCHMARK_DIR))
 
 from lib._base_compat import _ensure_stdout_utf8
+from lib import paths
 from lib.env import load_dotenv
 
 
@@ -52,7 +53,10 @@ def main() -> int:
 
     load_dotenv()
 
-    corpus_dir = BENCHMARK_DIR / "corpora" / args.corpus
+    # Corpora vivent sous %LOCALAPPDATA%\Deckle\benchmark\corpora\ (cf
+    # lib/paths.py) pour survivre aux worktrees. Le `corpus.jsonl` enrichi
+    # GT Gemini est précieux.
+    corpus_dir = paths.corpus_dir(args.corpus)
     jsonl_path = corpus_dir / "corpus.jsonl"
     if not jsonl_path.exists():
         print(f"FATAL : corpus {args.corpus!r} introuvable ({jsonl_path}).",
