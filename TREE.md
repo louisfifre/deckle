@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 21:59 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 22:19 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -157,7 +157,8 @@ _Mise à jour : 2026-05-27 21:59 — source : `git ls-files`_
 │       ├── research--hyperhdr-interpolators--2026-05-15.md
 │       ├── research--inventaire-observabilite-eventsource--2026-05-24.md
 │       ├── research--phi-4-multimodal-state-of-the-art--2026-05-27.md  — [research] Synthèse à l'état de l'art (2026-05-27) du modèle Phi-4-Multimodal de Microsoft…
-│       └── research--whisper-alternatives-fine-windowing--2026-05-27.md  — [research] Alternatives à whisper.cpp pour réduire la fenêtre d'inférence Whisper de 30s à…
+│       ├── research--whisper-alternatives-fine-windowing--2026-05-27.md  — [research] Alternatives à whisper.cpp pour réduire la fenêtre d'inférence Whisper de 30s à…
+│       └── voxtral-val-30-notes-louis--2026-05-27.json
 ├── scripts/
 │   ├── hooks/
 │   │   └── pre-commit
