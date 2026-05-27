@@ -18,6 +18,48 @@ Les entrées récentes sont en haut. À chaque nouvelle, ajouter au sommet, pas 
 
 ---
 
+## 2026-05-27 (suite 2) — Résultats bench BF16 et apprentissages méthodo
+
+Stack [ADR-0016](../docs/adr/0016-inference-safetensors-native-pour-voxtral.md) montée et bench T1_baseline exécuté sur les 30 samples du corpus `voxtral-val-30`. Run archivé sous `%LOCALAPPDATA%\Deckle\benchmark\runs\voxtral-transformers-validation-0001\`. Comparaison contre le run de référence Q4_K_M Small 24B (`voxtral-poc-0001`) via le script ad-hoc `benches/voxtral-transformers/compare_bf16_vs_q4.py`.
+
+**Mesures objectives** (T1_baseline, 30 samples communs) :
+
+| Métrique | BF16 Mini 3B | Q4_K_M Small 24B | Δ |
+|---|---|---|---|
+| WER médian | 0.257 | 0.447 | −0.189 |
+| WER moyenne | 0.308 | 1.821 | −1.513 |
+| WER stdev | 0.210 | 5.061 | −4.852 |
+| `word_count_ratio` médian | 0.902 | 0.804 | +0.098 |
+| RTF médian | 0.123 | 0.677 | −0.553 |
+
+La WER moyenne Q4 à 1.82 traduit quelques runs hallucinant long (sortie qui boucle ou paraphrase). La stdev divisée par ~24 est le signal le plus net : BF16 est aussi beaucoup plus **stable**, pas seulement plus juste en médiane.
+
+**Confirmation des patterns critiques annotés Louis** dans `voxtral-val-30-notes.json`. Trois samples mesurés en détail :
+
+- `701ce47a` (29.2s, « VRAM + 8K ») — BF16 capte « RAM **et la VRAM** » et « contextes minimaux, **8K** » ; Q4_K_M dit « à fond **dans la RAM** » (VRAM omis) et omet le 8K.
+- `e6db36e7` (54.2s, « je vs tu + 0.3.1 ») — BF16 dit « si **je t'autorise** explicitement à push » et « avec **0.3.1** » et « **bump de version** » ; Q4_K_M dit « si **tu t'autorises** », « avec **0.3** » (point), et lisse en « une version ».
+- `dcad692a` (1.7s, « Et toujours douter un peu. ») — match parfait dans les deux versions, sample trop court pour discriminer.
+
+L'hypothèse Cohere ([arXiv 2407.03211](https://arxiv.org/abs/2407.03211)) sur -16.6 % perception humaine FR au passage FP16→Q4 est **confirmée par mesure de terrain interne** sur le corpus Louis. Et confirmée avec un Mini 3B BF16 qui bat un Small 24B Q4_K_M, donc à modèle 5× plus petit — c'est exactement le sweet spot que la doctrine `benchmark/CLAUDE.md` finding 2026-05-27 anticipait.
+
+**Pitfall stack actée** — `transformers 5.x` ré-introduit l'import `torch.distributed.tensor` via `transformers.generation.continuous_batching`. Le wheel `torch 2.9.1+rocm7.2.1` AMD pour Windows reste compilé `USE_DISTRIBUTED=0` et plante. Le [PR #40038](https://github.com/huggingface/transformers/pull/40038) qui a guardé l'import en 4.x ne couvre pas ce nouveau code path. Pin obligatoire : `transformers >=4.56, <5.0`. Le bug se manifeste à l'import de `VoxtralForConditionalGeneration` et bloque toute utilisation.
+
+**Apprentissage méthodo n°1 — diagnostic vieillissant**. Le pivot `transformers + torch ROCm Windows` → `torch-directml` daté de fin mai 2026 reposait sur le bug d'import `torch.distributed.tensor`. Ce bug avait été guardé upstream par PR #40038 mergée le **2025-08-12**, soit ~9 mois avant ce pivot. Le diagnostic a vieilli silencieusement sans qu'on s'en aperçoive. La règle écrite en doctrine cross-project du `CLAUDE.md` racine (« Official sources first on a moving tech ») et appliquée par les agents recherche du 2026-05-27 a permis de retomber sur la voie viable.
+
+**Apprentissage méthodo n°2 — agents redondants**. Les 4 agents recherche du 2026-05-27 ont retrouvé en partie ce qui était déjà documenté dans l'entrée « État cumulé » du même jour (Transformers + ROCm Windows comme cul-de-sac, état mistral.rs/candle, etc.). Posture pour la prochaine fois : avant de paralléliser des agents recherche, balayer `benchmark/JOURNAL.md`, `docs/adr/`, les sections finding des `CLAUDE.md` modulaires. La règle est désormais explicite dans la doctrine cross-project du `CLAUDE.md` racine.
+
+**Mises à jour du statut des voies** (par rapport à la photo « État cumulé » plus bas) :
+
+- `Transformers + PyTorch + ROCm Windows` : promu **voie active validée** (sanity check OK, perf RTF OK, bench complet 30 samples OK, qualité confirmée).
+- `Transformers + torch-DirectML` : reste cul-de-sac documenté (maintenance mode officiel Microsoft).
+- `llama-mtmd-cli + Voxtral 24B Q4_K_M` : reste cul-de-sac qualité (verdict Cohere confirmé).
+- `llama-mtmd-cli + Voxtral Mini 3B Q8_0` : reste voie active utilisable comme référence intermédiaire de comparaison.
+- Voies de déblocage GGUF FP16 (patch `convert_hf_to_gguf.py`, downgrade `mistral-common`) : désamorcées en priorité, restent ouvertes pour la phase d'embarquement production.
+
+**Direction prochaine session** — au choix, à arbitrer par Louis : (1) compléter les régimes T2-T6 BF16 via `apply_chat_template` ; (2) lancer le bench Mini 3B Q8_0 30×6 pour avoir la grille à trois niveaux qualité/perf (BF16 / Q8_0 / Q4_K_M 24B) qui répond à la question « est-ce qu'il faut forcément une quantization moins agressive » ; (3) ré-exécuter T1 BF16 avec judge Gemini activé pour valider la mesure objective par une évaluation externe ; (4) commencer à instruire le sujet « comment embarquer Voxtral dans Deckle distribué » (Python lourd, candle pas prêt, mistral.rs ne couvre pas le 3B 2507).
+
+---
+
 ## 2026-05-27 (suite) — Pivot safetensors-natif et reconfiguration des voies après agents recherche
 
 Après l'écoute humaine fine du run `voxtral-poc-0001` (24B Q4_K_M) et le test croisé 3B Q8_0, la cause du verdict décevant est confirmée **structurelle** : llama.cpp impose les quants pré-faits par ggml-org, et la conversion locale `safetensors → GGUF FP16` reste bloquée (tokenizer Tekken non lu par `convert_hf_to_gguf.py` sans `--mistral-format`, tensors mmproj fondus au LM avec `--mistral-format`). Pivot : ne plus dépendre de llama.cpp comme runtime d'évaluation, bâtir un canal d'inférence safetensors-natif via la stack officielle Mistral. Cible directe Voxtral Mini 3B en BF16 source (~9.5 GB VRAM), ouverture sur Gemma 3 multimodal et autres modèles ensuite.
