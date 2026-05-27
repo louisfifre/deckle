@@ -84,5 +84,5 @@ A traced renaming leaves an **entry in the journal of the relevant module** with
 - **`taxonomie.md`** in this skill — tabulated detail of suffixes, x:Uid patterns, EventSource structure with keywords and tasks, commented good and bad examples. Loaded on demand.
 - **`deckle-logging`** — `LogSource` vocabulary, write levels, procedure to decide what to observe.
 - **`deckle-modularite`** — where a module ends, when to break out into a sub-project.
-- **`save-context`** — when a non-trivial renaming decision deserves a permanent record, route it through the cascade.
+- **`session-save-context`** — when a non-trivial renaming decision deserves a permanent record, route it through the cascade.
 - **`personal-conventions`** — cross-project conventions (language, wording, git, worktrees). `deckle-nomenclature` applies these conventions for the .NET / WinUI 3 context.

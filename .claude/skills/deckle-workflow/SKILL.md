@@ -121,4 +121,4 @@ A toggle or a `ToggleSwitch` never shows a label that changes with state. The la
 - **`deckle-commits`** — project commit doctrine (scope vocabulary, grain, author identity, merge commits).
 - **`deckle-logging`** — observability (centralization, level separation, maximum coverage).
 - **`deckle-modularite`**, **`deckle-nomenclature`**, **`deckle-settings-ux`** — specialized technical doctrines.
-- **`save-context`** — routing cascade for durable-value information (ADR, module `CLAUDE.md`, dated research, external reference, project `CONTEXT.md`, memory as fallback). Replaces the documentary architecture half of the former `deckle-docs`.
+- **`session-save-context`** — routing cascade for durable-value information (ADR, module `CLAUDE.md`, dated research, external reference, project `CONTEXT.md`, memory as fallback). Replaces the documentary architecture half of the former `deckle-docs`.

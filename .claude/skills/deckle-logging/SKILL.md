@@ -58,6 +58,6 @@ Observation sources, units of measurement, operation names are closed vocabulari
 ## Pointers
 
 - **`taxonomy.md`** in this skill — canonical observability frames and mapping to the categories of code encountered in Deckle. Loaded on demand when the decision procedure reaches the "which observables" step.
-- **`save-context`** — when an instrumentation decision is non trivial, route it through the cascade for a durable trace.
+- **`session-save-context`** — when an instrumentation decision is non trivial, route it through the cascade for a durable trace.
 - **`deckle-workflow`** (section *Code comments*) — comment hygiene when annotating an instrumentation site.
 - **`personal-conventions`** — cross-project convention of logging centralization (single source, interchangeable sinks). `deckle-logging` applies this convention to the Deckle project and refines it.

@@ -73,7 +73,7 @@ Before executing `git commit`, three review questions that catch the majority of
 
 - **`git-commit`** (global skill) — execution mechanics, diff analysis, generic Conventional Commits format. `deckle-commits` specifies the doctrine for Deckle.
 - **`personal-conventions`** — cross-project rules (language, branch conventions, worktrees). `deckle-commits` applies them to the project.
-- **`save-context`** — routing for durable-value information including ADRs. When a commit enacts a tracked decision, the body mentions `refs ADR-NNNN`.
+- **`session-save-context`** — routing for durable-value information including ADRs. When a commit enacts a tracked decision, the body mentions `refs ADR-NNNN`.
 - **`deckle-modularite`** — module boundaries. Commit scopes mirror this list; a scope that does not figure there is a signal either of an invented scope, or of a missing module to promote.
 - **`deckle-nomenclature`** — naming vocabulary, including the module names that serve as scopes.
 - **[conventionalcommits.org](https://www.conventionalcommits.org/en/v1.0.0/)** — normative reference spec.

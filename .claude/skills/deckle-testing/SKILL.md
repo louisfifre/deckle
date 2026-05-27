@@ -106,5 +106,5 @@ The test project starts minimalist. Adding a dimension (new category, test NuGet
 - **`tdd`** — general TDD philosophy, design techniques for testability (deep modules, interface design, mocking, refactoring). Read as a complement when a design question emerges.
 - **`deckle-nomenclature`** — cross-cutting naming rules (PascalCase, allowed suffixes); this skill applies these rules to the testing context.
 - **`deckle-workflow`** — daily build doctrine (`dotnet build`, orchestration scripts) that this doctrine overlaps with.
-- **`save-context`** — where the project's written traces live; a structural change to testing leaves a trace via the routing cascade.
+- **`session-save-context`** — where the project's written traces live; a structural change to testing leaves a trace via the routing cascade.
 - **`src/Deckle.Diagnostics/CLAUDE.md`** — cross-cutting EventSource convention (providers, listeners, JSONL schema, canonical observable classes) and provider-side test pattern (motivation, example, ADR-0005 link).

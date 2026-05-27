@@ -36,7 +36,7 @@ Multiple entries per day are admitted when multiple milestones close. The date i
 
 **Sensitive content.** Credentials, secrets, internal stakeholder names, financial details, raw drama. The journal is committed to a public GitHub repo. Anything that does not belong on a public commit stays in auto-memory (private, out of repo) or stays unwritten.
 
-**Catch-all session dumps.** « Here's everything I did today » is the antipattern. The journal is selective, not comprehensive. If a piece of work has no closed shape — no milestone reached, no decision tranched, no observation worth a hypothesis tag — it does not get an entry. This is the same antipattern that `save-context` combats at the routing level: no fallback dump, ever.
+**Catch-all session dumps.** « Here's everything I did today » is the antipattern. The journal is selective, not comprehensive. If a piece of work has no closed shape — no milestone reached, no decision tranched, no observation worth a hypothesis tag — it does not get an entry. This is the same antipattern that `session-save-context` combats at the routing level: no fallback dump, ever.
 
 ## Epistemic rigor
 
@@ -90,13 +90,13 @@ type: project-journal | module-journal
 
 `name` follows the slug pattern: `journal-deckle` for the project journal, `journal-<module>` for module journals (`journal-benchmark`, `journal-hud`, etc.).
 
-The closed list of frontmatter types in `save-context/format.md` (global skill under `~/.claude/skills/save-context/`) admits `project-journal` and `module-journal` as legitimate values.
+The closed list of frontmatter types in `session-save-context/format.md` (global skill under `~/.claude/skills/session-save-context/`) admits `project-journal` and `module-journal` as legitimate values.
 
 ## Pointers
 
 - **[`benchmark/JOURNAL.md`](../../../benchmark/JOURNAL.md)** — the reference module-journal, written organically before the doctrine crystallized. Normative form for both scopes.
 - **[`JOURNAL.md`](../../../JOURNAL.md)** at the repo root — the project journal.
-- **`save-context`** — routing cascade for ponctual durable information. The journal is parallel to the cascade rather than inside it: a chronicle is a continuous usage, not a routing destination for one-shot info.
+- **`session-save-context`** — routing cascade for ponctual durable information. The journal is parallel to the cascade rather than inside it: a chronicle is a continuous usage, not a routing destination for one-shot info.
 - **`deckle-commits`** — when a journal entry records a milestone, the corresponding commits SHOULD be pointed to (short SHA + subject).
 - **`personal-conventions`** — the author identity rule that excludes LLM co-signature trailers applies to the journal too: entries go out under the maintainer's voice.
 
@@ -129,7 +129,7 @@ The closed list of frontmatter types in `save-context/format.md` (global skill u
 >
 > Adoption du format canonique unifié pour tous les artefacts agents — `CLAUDE.md`, `SKILL.md`, ADRs, sheets `reference`/`research`, module READMEs. Le frontmatter YAML devient obligatoire (`name`, `description`, `type`), le vocabulaire d'H2 est fermé (Role, Context, Doctrine, Pointers, Boundaries, Examples), la convention RFC 2119 (MUST/SHOULD/MAY) cadre les paragraphes prescriptifs. Migration complète des artefacts existants livrée dans le merge `docs/refonte-format-artefacts-agents` ([c58a303](commit-sha)).
 >
-> Référence : [ADR-0013](docs/adr/0013-format-canonique-des-artefacts-agents.md). Le format normatif vit dans [`save-context/format.md`](.claude/skills/save-context/format.md).
+> Référence : [ADR-0013](docs/adr/0013-format-canonique-des-artefacts-agents.md). Le format normatif vit dans [`session-save-context/format.md`](.claude/skills/session-save-context/format.md).
 
 **Observation in progress (hypothesis).**
 

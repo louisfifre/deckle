@@ -59,5 +59,5 @@ The log window and any diagnostic surface follow the same principles — sensibl
 
 ## Pointers
 
-- **`save-context`** — when a non-trivial UX decision is taken, route it through the cascade for a durable trace.
+- **`session-save-context`** — when a non-trivial UX decision is taken, route it through the cascade for a durable trace.
 - The canonical sources (NN/g on progressive disclosure and customization, Microsoft doctrine on Windows app settings) are to be consulted outside of this skill when a case exceeds the perimeter covered here.
