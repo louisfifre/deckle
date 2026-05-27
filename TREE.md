@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 17:37 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 17:38 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -10,6 +10,8 @@ _Mise à jour : 2026-05-27 17:37 — source : `git ls-files`_
 │   └── skills/
 │       ├── deckle-commits/
 │       │   └── SKILL.md  — Commit doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries the…
+│       ├── deckle-journal/
+│       │   └── SKILL.md  — [skill] Journal doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries th…
 │       ├── deckle-logging/
 │       │   ├── SKILL.md  — Observability doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carr…
 │       │   └── taxonomy.md
@@ -492,6 +494,7 @@ _Mise à jour : 2026-05-27 17:37 — source : `git ls-files`_
 ├── CONTEXT.md  — [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
+├── JOURNAL.md  — [project-journal] Journal daté du projet Deckle : avancées techniques validées, observations en c…
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
