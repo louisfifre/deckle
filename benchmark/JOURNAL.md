@@ -18,6 +18,33 @@ Les entrées récentes sont en haut. À chaque nouvelle, ajouter au sommet, pas 
 
 ---
 
+## 2026-05-27 (suite) — Pivot safetensors-natif et reconfiguration des voies après agents recherche
+
+Après l'écoute humaine fine du run `voxtral-poc-0001` (24B Q4_K_M) et le test croisé 3B Q8_0, la cause du verdict décevant est confirmée **structurelle** : llama.cpp impose les quants pré-faits par ggml-org, et la conversion locale `safetensors → GGUF FP16` reste bloquée (tokenizer Tekken non lu par `convert_hf_to_gguf.py` sans `--mistral-format`, tensors mmproj fondus au LM avec `--mistral-format`). Pivot : ne plus dépendre de llama.cpp comme runtime d'évaluation, bâtir un canal d'inférence safetensors-natif via la stack officielle Mistral. Cible directe Voxtral Mini 3B en BF16 source (~9.5 GB VRAM), ouverture sur Gemma 3 multimodal et autres modèles ensuite.
+
+**Reconfiguration du terrain stack-side par quatre agents recherche.**
+
+Le wheel `torch 2.9.1+rocm7.2.1` officiel AMD pour Windows est **rebloqué viable**. L'issue [ROCm/ROCm#5689](https://github.com/ROCm/ROCm/issues/5689) qui portait le blocage `torch.distributed.tensor` est closed COMPLETED depuis le 2025-12-16 : le fix est venu en amont via [transformers PR #40038](https://github.com/huggingface/transformers/pull/40038), mergé le 2025-08-12, qui guarde l'import problématique. Le wheel reste compilé `USE_DISTRIBUTED=0` mais `transformers ≥ 4.56` ne déclenche plus le code path bloquant. Le pivot DirectML de fin mai n'était plus nécessaire — on a hérité d'un diagnostic d'avant ce merge upstream. Référence install : [rocm.docs.amd.com — install pytorch](https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/windows/install-pytorch.html).
+
+`torch-directml` entre en **cul-de-sac documenté**. Le repo [microsoft/DirectML](https://github.com/microsoft/DirectML) affiche un bandeau *maintenance mode* officiel et renvoie vers Windows ML (Windows 11 24H2+) comme successeur. Dernière release [`0.2.5.dev240914`](https://pypi.org/project/torch-directml/) datée septembre 2024 — gel effectif ≈ 20 mois. Pin torch ~2.3 incompatible avec transformers ≥ 4.55 qui tire torch ≥ 2.4. Bugs VRAM RX 7900 documentés et fermés *not planned* ([microsoft/DirectML#412](https://github.com/microsoft/DirectML/issues/412), [#395](https://github.com/microsoft/DirectML/issues/395)). Voie morte.
+
+**Stack officielle Mistral identifiée.** La [model card Voxtral-Mini-3B-2507](https://huggingface.co/mistralai/Voxtral-Mini-3B-2507) et la [doc transformers Voxtral](https://huggingface.co/docs/transformers/main/en/model_doc/voxtral) recommandent `transformers ≥ 4.54.0` + `mistral-common[audio] ≥ 1.8.1` + chargement BF16 via `VoxtralForConditionalGeneration.from_pretrained(repo, torch_dtype=torch.bfloat16, device_map=device)`. Le `[TRANSCRIBE]` token est **géré implicitement** par `processor.apply_transcription_request(language="fr", audio=path, model_id=repo)` qui délègue au `MistralCommonBackend` — exactement ce que `llama-mtmd-cli` rate. Pipeline audio : 16 kHz mono attendu (héritage `WhisperFeatureExtractor`), max 30 minutes en mode transcription, 32k context en mode understanding. BF16 plutôt que FP16 parce que c'est le dtype d'entraînement natif (cf. `config.json`), et la RX 7900 XT (RDNA3) supporte BF16 nativement.
+
+**Économie disque immédiate disponible.** Le fichier `consolidated.safetensors` (9.35 GB) téléchargé dans `D:\models\llm\voxtral\Voxtral-Mini-3B-2507-safetensors\` est redondant avec les shards `model-00001-of-00002.safetensors` + `model-00002-of-00002.safetensors` (9.36 GB total) — `snapshot_download` télécharge les deux par défaut. Quand on utilise Transformers (qui lit `model.safetensors.index.json` + shards), `consolidated.safetensors` est supprimable sans casse. Il sert au framework `mistral-inference` standalone qui charge le monolithe, qu'on n'utilise pas.
+
+**Pas de runtime natif C++/Rust viable aujourd'hui sur Windows AMD à part llama.cpp.** [mistral.rs](https://github.com/EricLBuehler/mistral.rs) v0.8.0 ne couvre que CUDA/Metal et ne supporte explicitement que Mini 4B Realtime, pas 3B 2507. [candle](https://github.com/huggingface/candle) supporte Voxtral 3B 2507 via [PR #3036](https://github.com/huggingface/candle/pull/3036) mergée août 2025 mais n'a ni Vulkan ni ROCm Windows (PR ROCm [#3424](https://github.com/huggingface/candle/pull/3424) WIP). Donc pour Deckle distribué à terme, on reviendra sur GGUF + llama.cpp Vulkan — mais on aura entre-temps validé proprement la **vérité de terrain Voxtral** via Transformers BF16, ce qui permettra de mesurer ce que les quants perdent vraiment.
+
+**Mise à jour du statut des voies** (par rapport à la photo « État cumulé » plus bas, datée d'avant cette session) :
+
+- `Transformers + PyTorch + ROCm Windows` : sort des cul-de-sacs, devient **piste ouverte à exécuter** dès la prochaine action (sanity check 1 sample en BF16). À promouvoir en voie active sitôt qu'un run termine.
+- `Transformers + torch-directml` : entre dans les cul-de-sacs documentés (maintenance mode, pin torch obsolète, bugs VRAM non corrigés).
+- `llama.cpp + Mini 3B Q8_0` reste utilisable comme référence de comparaison ; pas le runtime cible d'évaluation, mais le point de référence GGUF actuel.
+- Les voies de déblocage GGUF FP16 (downgrade `mistral-common`, patch local du mapper `mm_*`) restent ouvertes mais **désamorcées en priorité** — l'inférence safetensors-native fait disparaître le besoin pour le POC. Elles redeviendront pertinentes au moment d'embarquer Voxtral dans Deckle distribué via llama.cpp.
+
+**Direction prochaine étape concrète.** Setup venv Python 3.12 + wheel torch ROCm Windows officiel + `transformers` récent + `mistral-common[audio]`. Sanity check single-sample BF16. Si OK, intégration d'un backend `voxtral-transformers` dans le bench `voxtral-validation` et run 30×6 en BF16 pour produire la grille comparée Q4_K_M vs Q8_0 vs BF16.
+
+---
+
 ## 2026-05-27 — État cumulé des voies explorées Voxtral
 
 Synthèse à destination de la prochaine session, pour ne pas redécouvrir ce qui est déjà tranché. Trois colonnes mentales : **cul-de-sacs documentés** (ne pas retenter sans nouvelle info externe), **voies actives** (testées, partiellement utilisables), **pistes ouvertes** (jamais évaluées rigoureusement, à investiguer).
