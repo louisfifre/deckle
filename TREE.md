@@ -51,6 +51,7 @@ _Mise à jour : 2026-05-27 20:54 — source : `git ls-files`_
 │   │   │   ├── compare_bf16_vs_q4.py
 │   │   │   ├── inspect_smoke_palier3.py
 │   │   │   ├── perf_rtf.py
+│   │   │   ├── sandbox_sampling.py
 │   │   │   ├── sanity_check.py
 │   │   │   ├── smoke_chat_regimes.py
 │   │   │   └── summary_validation_0001.py
