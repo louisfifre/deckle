@@ -46,6 +46,19 @@ ou ajoute des mots que tu n'entends pas. Tu juges contre le son, pas
 contre la référence. Si la référence est suspecte, ce n'est pas une
 raison pour pénaliser l'hypothèse — c'est la référence qui se trompe.
 
+Application par régime (voir tableau plus bas) :
+
+- Régimes de **transcription** (`T1_baseline`, `T2_verbatim`,
+  `T6_sys_prompt`) : axe pleinement applicable — fidélité verbatim au
+  signal.
+- Régimes de **réécriture sémantique** (`T3_translate`, `T4_summary`) :
+  axe mesure la **fidélité sémantique** au signal (le sens est-il
+  préservé), pas le verbatim. Une traduction fluide et fidèle au sens
+  vaut 100, une qui ajoute/omet du contenu baisse en conséquence.
+- Régime **non-transcription** (`T5_qa_register`) : axe **non
+  applicable** — la sortie n'est pas censée représenter le contenu de
+  l'audio. Mettre **100** par convention, juge le reste.
+
 **proprete** (0-100)
 Qualité d'écriture : ponctuation française correcte, accents placés
 (à, é, è, ç…), capitalisation propre, segmentation en phrases
@@ -68,22 +81,28 @@ Hallucinations typiques :
   transcription… »).
 
 **regime_respecte** (0-100)
-Respect du régime de transcription demandé. Les régimes :
+Respect du régime demandé. Les régimes utilisés dans les benchs
+Voxtral sont les suivants :
 
 | Régime | Attendu |
 |---|---|
-| V1_raw | Transcription brute, instruction minimale. Ponctuation OK mais pas d'enrichissement. |
-| V2_lisse | Ponctuation française correcte, accents propres, lisible. Pas de reformulation du sens. |
-| V3_fidele | Verbatim word-for-word. Conserve les hésitations (« euh »), répétitions, faux départs. Ponctuation minimale. |
-| V4_fidele_annote | V3 + annotations entre crochets pour le paralinguistique : [pause], [rire], [inaudible]. |
-| V5_traduit_en | Sortie en anglais fluent et naturel, sens préservé, pas de mélange FR/EN. |
-| V_canonical | Mode canonique Voxtral. Le prompt est ignoré côté Mistral, sortie lissée par défaut. Mets 100 ici, juge fidélité, propreté, hallucinations. |
+| T1_baseline | Transcription FR avec ponctuation et accents propres. Sortie légèrement lissée OK — Voxtral supprime spontanément les hésitations si elles ne sont pas explicitement demandées. Pas de reformulation du sens. |
+| T2_verbatim | Verbatim word-for-word, conserve les hésitations (« euh », « ben »), répétitions et faux départs **si présents** dans l'audio. Pas d'ajout artificiel si l'audio est fluide. |
+| T3_translate | Sortie en anglais fluent et naturel, sens préservé, pas de mélange FR/EN, pas de préambule type « Here is the translation: ». |
+| T4_summary | Une phrase courte qui résume le contenu de l'audio. Pas une transcription, pas plusieurs phrases. |
+| T5_qa_register | Une phrase courte qui décrit le ton et le registre du locuteur (formel, informel, hésitant, posé, …). **Pas de transcription du contenu.** |
+| T6_sys_prompt | Transcription verbatim FR puis, sur une nouvelle ligne, une étiquette entre crochets indiquant le ton détecté (ex. `[posé]`, `[hésitant]`). |
 | W0 (Whisper baseline) | Pas de régime particulier. Mets 100 ici, juge le reste. |
 
-Pour V1, **ne pénalise pas l'hypothèse si elle met une ponctuation
-propre** : « instruction minimale » ne veut pas dire « obligation de
-sortir une bouillie ». Tu peux écouter l'audio pour vérifier si une
-ponctuation absente serait justifiée par le débit naturel ou non.
+Pour `T1_baseline`, **ne pénalise pas l'hypothèse si elle met une
+ponctuation propre** — une transcription lisible est attendue, pas une
+bouillie. Inversement, pour `T2_verbatim`, ne pénalise pas l'absence
+d'hésitations si l'audio n'en contient pas (l'instruction conditionne
+l'ajout à la présence dans le signal).
+
+Pour `T5_qa_register`, **toute transcription du contenu est une
+violation du régime** — même partielle. Une bonne sortie décrit le ton
+sans répéter les mots.
 
 **whisper_ref_suspecte** (bool)
 `true` si tu entends l'audio et que la référence Whisper ne correspond
@@ -107,9 +126,15 @@ référence. Pas d'emoji, pas de markdown.
   ponctuation) **ET** conforme à ce que tu entends : fidelite_signal et
   regime_respecte à 100, juge le reste sur le texte seul.
 
-- Régime **V5_traduit_en** mais sortie en français : `regime_respecte`
+- Régime **T3_translate** mais sortie en français : `regime_respecte`
   à 0, autres axes selon la qualité française et la fidélité au sens
   de l'audio.
+
+- Régime **T5_qa_register** mais sortie qui contient la transcription
+  du contenu (même bien formulée) : `regime_respecte` à 0,
+  `fidelite_signal` reste à 100 par convention (régime non-
+  transcription), juge `proprete` et `absence_hallucination` sur le
+  texte produit.
 
 - Audio **inaudible ou trop bref** pour juger : tous les axes 0-30
   selon ce que tu perçois, explique dans le verdict.
