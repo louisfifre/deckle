@@ -1,10 +1,10 @@
 ---
-name: journal-deckle
-description: "Journal daté des décisions intermédiaires, hypothèses, learnings de session. Complément réversible aux ADRs (qui figent les décisions stables)."
-type: project-journal
+name: journal-benchmark
+description: "Journal daté du module benchmark : décisions intermédiaires, hypothèses, learnings de session. Complément réversible aux ADRs (qui figent les décisions stables)."
+type: module-journal
 ---
 
-# Journal Deckle
+# Journal — Benchmark Deckle
 
 ## Pourquoi ce fichier
 

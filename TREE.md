@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 14:41 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 14:57 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -107,6 +107,7 @@ _Mise à jour : 2026-05-27 14:41 — source : `git ls-files`_
 │   │   └── build_html.py
 │   ├── build_corpus_voxtral_val_30.py
 │   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
+│   ├── JOURNAL.md  — [module-journal] Journal daté du module benchmark : décisions intermédiaires, hypothèses, learni…
 │   ├── pregenerate_groundtruth_gemini.py
 │   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
 ├── docs/
@@ -128,12 +129,11 @@ _Mise à jour : 2026-05-27 14:41 — source : `git ls-files`_
 │   │   └── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
 │   ├── reference/
 │   │   └── reference--eventsource-convention--1.2.md
-│   ├── research/
-│   │   ├── research--hdr-graphics-capture--2026-05-15.md
-│   │   ├── research--hue-entertainment-v2--2026-05-15.md
-│   │   ├── research--hyperhdr-interpolators--2026-05-15.md
-│   │   └── research--inventaire-observabilite-eventsource--2026-05-24.md
-│   └── journal.md  — [project-journal] Journal daté des décisions intermédiaires, hypothèses, learnings de session. Co…
+│   └── research/
+│       ├── research--hdr-graphics-capture--2026-05-15.md
+│       ├── research--hue-entertainment-v2--2026-05-15.md
+│       ├── research--hyperhdr-interpolators--2026-05-15.md
+│       └── research--inventaire-observabilite-eventsource--2026-05-24.md
 ├── scripts/
 │   ├── hooks/
 │   │   └── pre-commit
