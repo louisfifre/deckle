@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 21:08 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 21:59 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -52,9 +52,22 @@ _Mise à jour : 2026-05-27 21:08 — source : `git ls-files`_
 │   └── launch.json
 ├── benchmark/
 │   ├── benches/
-│   │   └── voxtral-poc/
+│   │   ├── voxtral-poc/
+│   │   │   ├── bench.py
+│   │   │   └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
+│   │   ├── voxtral-transformers/
+│   │   │   ├── compare_bf16_vs_q4.py
+│   │   │   ├── inspect_smoke_palier3.py
+│   │   │   ├── perf_rtf.py
+│   │   │   ├── sandbox_sampling.py
+│   │   │   ├── sanity_check.py
+│   │   │   ├── smoke_chat_regimes.py
+│   │   │   └── summary_validation_0001.py
+│   │   └── voxtral-validation/
+│   │       ├── aggregate_verdicts.py
 │   │       ├── bench.py
-│   │       └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
+│   │       ├── README.md  — [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
+│   │       └── validate_judge_prompt.py
 │   ├── lib/
 │   │   ├── judges/
 │   │   │   ├── __init__.py
@@ -73,25 +86,50 @@ _Mise à jour : 2026-05-27 21:08 — source : `git ls-files`_
 │   │   │   ├── __init__.py
 │   │   │   ├── _base.py
 │   │   │   ├── _voxtral_common.py
+│   │   │   ├── gemini_audio.py
 │   │   │   ├── voxtral_chat.py
+│   │   │   ├── voxtral_llamacpp.py
 │   │   │   ├── voxtral_transcribe.py
+│   │   │   ├── voxtral_transformers.py
 │   │   │   └── whisper_cpp.py
 │   │   ├── __init__.py
 │   │   ├── _base_compat.py
 │   │   ├── corpus.py
 │   │   ├── env.py
-│   │   └── event_log.py
+│   │   ├── event_log.py
+│   │   └── paths.py
+│   ├── perf-cap/
+│   │   ├── debug-mini-3b-f16-2026-05-27.ps1
+│   │   ├── debug-mini-3b-q8-2026-05-27.ps1
+│   │   ├── debug-samples-difficiles-2026-05-27.ps1
+│   │   ├── debug-transcribe-token-2026-05-27.ps1
+│   │   ├── download-models.ps1
+│   │   ├── parse_vulkan_log.py
+│   │   ├── profile-config.ps1
+│   │   ├── profile-server-text.ps1
+│   │   ├── run-all.ps1
+│   │   ├── session-2026-05-26-prompts.ps1
+│   │   └── session-2026-05-26-reruns.ps1
 │   ├── prompts/
 │   │   ├── judges/
 │   │   │   ├── claude_per_row.md
 │   │   │   ├── gemini_per_row.md
 │   │   │   └── legacy_ollama_judge.md
 │   │   ├── transcription/
+│   │   │   ├── gemini_audio.toml
 │   │   │   ├── voxtral_chat.toml
-│   │   │   └── voxtral_transcribe.toml
+│   │   │   ├── voxtral_transcribe.toml
+│   │   │   └── voxtral_validation.toml
 │   │   └── whisper_initial.txt
+│   ├── viewers/
+│   │   ├── __init__.py
+│   │   └── build_html.py
+│   ├── build_corpus_voxtral_val_30.py
 │   ├── CLAUDE.md  — [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
-│   └── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
+│   ├── JOURNAL.md  — [module-journal] Journal daté du module benchmark : décisions intermédiaires, hypothèses, learni…
+│   ├── pregenerate_groundtruth_gemini.py
+│   ├── README.md  — [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
+│   └── voxtral-val-30-notes.json
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-record-architecture-decisions.md
@@ -107,7 +145,9 @@ _Mise à jour : 2026-05-27 21:08 — source : `git ls-files`_
 │   │   ├── 0011-corpus-normalise-comme-dataset-ml.md
 │   │   ├── 0012-adoption-de-dotnet-build-et-dotnet-test.md
 │   │   ├── 0013-format-canonique-des-artefacts-agents.md  — [adr] Acte le format normatif des artefacts agents Deckle : langue anglaise par défau…
-│   │   └── 0014-poc-evaluation-voxtral.md
+│   │   ├── 0014-poc-evaluation-voxtral.md
+│   │   ├── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
+│   │   └── 0016-inference-safetensors-native-pour-voxtral.md  — [adr] Acte l'adoption de l'inférence safetensors-native via Transformers + torch ROCm…
 │   ├── reference/
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/

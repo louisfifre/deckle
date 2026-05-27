@@ -1,0 +1,101 @@
+# Régimes pour le bench voxtral-validation. Source historique : voxtral-
+# llamacpp (Vulkan via llama-mtmd-cli) cartographié 2026-05-26 sur
+# Voxtral Small 24B Q4_K_M. Depuis le verdict 2026-05-27 (Q8_0 abandonné,
+# BF16 confirmé comme voie POC), ce fichier sert principalement à la
+# source voxtral-transformers (Mini 3B BF16 via Transformers ROCm).
+#
+# Convention TOML : la clé ``prompt`` porte l'instruction utilisateur,
+# la clé ``system_prompt`` est optionnelle et porte le système. La source
+# voxtral-transformers route par heuristique :
+#   - prompt vide ET system_prompt vide → apply_transcription_request
+#     (mode canonique Mistral, prompt ignoré, [TRANSCRIBE] injecté
+#     implicitement)
+#   - sinon → apply_chat_template (mode chat / instruct)
+# T1_baseline garde ainsi un prompt vide pour rester en mode canonique
+# et préserver la baseline historique. T1bis_chat porte l'ancien prompt
+# T1 et permet de comparer canonical vs chat à instruction constante.
+
+# ───────────────────────────────────────────────────────────────────────
+# T1 — Baseline transcribe (mode canonique apply_transcription_request)
+# ───────────────────────────────────────────────────────────────────────
+[T1_baseline]
+label = "Baseline — apply_transcription_request (prompt ignoré)"
+description = """
+Mode canonique Mistral. La source voxtral-transformers détecte le
+prompt vide et bascule sur apply_transcription_request, qui injecte
+implicitement le token [TRANSCRIBE]. Voxtral produit une transcription
+en français avec ponctuation et accents propres, légèrement lissée par
+défaut. Baseline historique des runs voxtral-transformers-validation-*.
+"""
+prompt = ""
+
+# ───────────────────────────────────────────────────────────────────────
+# T1bis — Même intention que T1 via apply_chat_template (mesure chat vs canonical)
+# ───────────────────────────────────────────────────────────────────────
+[T1bis_chat]
+label = "T1 via apply_chat_template — comparer canonical vs chat à prompt constant"
+description = """
+Même instruction sémantique que T1_baseline (« Transcris cet audio en
+français. ») mais passée en mode chat via apply_chat_template. Isole
+la variable « mode d'invocation » à contenu instructionnel constant.
+Permet de mesurer si le mode chat dégrade ou améliore la qualité par
+rapport au mode canonique sur la transcription pure.
+"""
+prompt = "Transcris cet audio en français."
+
+# ───────────────────────────────────────────────────────────────────────
+# T2 — Verbatim avec hésitations
+# ───────────────────────────────────────────────────────────────────────
+[T2_verbatim]
+label = "Verbatim — préserver hésitations"
+description = """
+Demande explicite de conserver les hésitations ('euh', 'ben'),
+répétitions et faux départs. Voxtral suit l'instruction quand l'audio
+contient effectivement ces marqueurs ; sur les audios fluides, la
+sortie reste lissée (pas de bruit ajouté artificiellement).
+"""
+prompt = "Transcris cet audio en français, mot pour mot, en conservant les hésitations comme « euh » ou « ben » et les répétitions si présentes."
+
+# ───────────────────────────────────────────────────────────────────────
+# T3 — Traduction directe FR → EN
+# ───────────────────────────────────────────────────────────────────────
+[T3_translate]
+label = "Traduction directe FR → EN"
+description = """
+Voxtral traduit l'audio français directement en anglais fluent, sans
+étape de transcription intermédiaire. Cas d'usage produit potentiel :
+dictée FR → notes EN en un seul appel. Mesure secondaire (pas un
+remplaçant Whisper direct mais une capacité native du modèle).
+"""
+prompt = "Translate this French audio to natural English. Output only the translation, no preamble."
+
+# ───────────────────────────────────────────────────────────────────────
+# T4 — Résumé une phrase
+# ───────────────────────────────────────────────────────────────────────
+[T4_summary]
+label = "Résumé une phrase"
+description = """
+Voxtral résume le contenu de l'audio en une phrase courte. Test des
+capacités de compréhension sémantique (au-delà du simple ASR). N'a
+pas vocation à remplacer une transcription mais documente ce que
+Voxtral sait faire en plus de transcrire.
+"""
+prompt = "Résume en une phrase courte ce que dit la personne dans cet audio."
+
+# ───────────────────────────────────────────────────────────────────────
+# T5 — Q&A sur le registre
+# ───────────────────────────────────────────────────────────────────────
+[T5_qa_register]
+label = "Q&A — décrire le registre"
+description = """
+Voxtral décrit le ton et le registre du locuteur sans transcrire.
+Capacité paralinguistique pure (formel/informel, hésitant, assertif,
+…). Mesure de la richesse multimodale du modèle.
+"""
+prompt = "Décris le ton et le registre de cette personne en une phrase courte (formel, informel, hésitant, ...). Ne transcris pas."
+
+# T6_sys_prompt retiré 2026-05-27 : la concaténation system\n\nuser dans
+# un seul bloc user (seule voie offerte par apply_chat_template Voxtral
+# qui ne supporte pas le rôle system séparé) ne reproduit pas un vrai
+# system prompt. Sortie observée sur sample propre : « [?] » au lieu de
+# transcription + étiquette ton. Régime abandonné côté voxtral-transformers.
