@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-26 10:59 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 17:37 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -26,11 +26,6 @@ _Mise à jour : 2026-05-26 10:59 — source : `git ls-files`_
 │       │   └── SKILL.md  — Workflow doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries h…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — Query official Microsoft documentation to find concepts, tutorials, and code ex…
-│       ├── save-context/
-│       │   ├── format.md
-│       │   └── SKILL.md  — [skill] When in-session information has durable value (a tranched decision, learned tec…
-│       ├── spawn-tasks/
-│       │   └── SKILL.md  — [skill] When Louis invokes you to spin off parallel topics that surfaced in conversatio…
 │       ├── tdd/
 │       │   ├── deep-modules.md
 │       │   ├── interface-design.md
