@@ -67,6 +67,27 @@ RUNS_DIR = BENCHMARK_DATA_DIR / "runs"
 ``<modèle>-<phase>-<NNNN>``."""
 
 
+# ── Modèles GGUF — répertoire central, partagé avec Ollama et autres ─
+
+def _resolve_models_dir() -> Path:
+    override = os.environ.get("DECKLE_MODELS_DIR")
+    if override:
+        return Path(override)
+    # Convention Deckle : tous les GGUF Voxtral/Whisper/etc. vivent
+    # sous ``D:\models\llm\``, à côté du store Ollama. Évite la
+    # duplication entre worktrees.
+    return Path(r"D:\models\llm")
+
+
+MODELS_DIR = _resolve_models_dir()
+"""Répertoire central des modèles GGUF. Partagé avec le store Ollama
+(``blobs/`` et ``manifests/`` du voisinage) et les GGUF tirés à la main."""
+
+VOXTRAL_DIR = MODELS_DIR / "voxtral"
+"""Sous-dossier dédié Voxtral (modèles + mmproj) pour ne pas mélanger
+avec les autres GGUF du dossier parent."""
+
+
 # ── Helpers ─────────────────────────────────────────────────────────
 
 _RUN_NAME_RE = re.compile(r"^(?P<model>[a-z0-9]+)-(?P<phase>[a-z]+)-(?P<id>\d{4})$")

@@ -65,7 +65,7 @@ _UNIX_PATH_MARKERS = (
 )
 
 
-BENCHMARK_DIR = Path(__file__).resolve().parent.parent.parent
+from .. import paths
 
 
 class VoxtralLlamacppSource(Source):
@@ -86,15 +86,18 @@ class VoxtralLlamacppSource(Source):
         n_predict_floor: int = 128,
         n_predict_per_audio_s: float = 4.0,
     ) -> None:
+        # Paths centralisés via lib/paths.py — les GGUF Voxtral vivent
+        # sous D:\models\llm\voxtral\ par défaut (cf paths.VOXTRAL_DIR).
+        # Override par kwarg, sinon par env var, sinon défaut paths.
         self._binary = Path(binary or os.environ.get(
             "DECKLE_LLAMA_MTMD_CLI",
             r"D:\workspace\llama.cpp\build\bin\llama-mtmd-cli.exe"))
         self._model = Path(model or os.environ.get(
             "DECKLE_VOXTRAL_MODEL",
-            str(BENCHMARK_DIR / "models-cache" / "Voxtral-Small-24B-2507-Q4_K_M.gguf")))
+            str(paths.VOXTRAL_DIR / "Voxtral-Small-24B-2507-Q4_K_M.gguf")))
         self._mmproj = Path(mmproj or os.environ.get(
             "DECKLE_VOXTRAL_MMPROJ",
-            str(BENCHMARK_DIR / "models-cache" / "mmproj-Voxtral-Small-24B-2507.gguf")))
+            str(paths.VOXTRAL_DIR / "mmproj-Voxtral-Small-24B-2507.gguf")))
 
         for label, p in (("binary", self._binary), ("model", self._model),
                          ("mmproj", self._mmproj)):
