@@ -128,11 +128,12 @@ _Mise à jour : 2026-05-27 14:27 — source : `git ls-files`_
 │   │   └── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
 │   ├── reference/
 │   │   └── reference--eventsource-convention--1.2.md
-│   └── research/
-│       ├── research--hdr-graphics-capture--2026-05-15.md
-│       ├── research--hue-entertainment-v2--2026-05-15.md
-│       ├── research--hyperhdr-interpolators--2026-05-15.md
-│       └── research--inventaire-observabilite-eventsource--2026-05-24.md
+│   ├── research/
+│   │   ├── research--hdr-graphics-capture--2026-05-15.md
+│   │   ├── research--hue-entertainment-v2--2026-05-15.md
+│   │   ├── research--hyperhdr-interpolators--2026-05-15.md
+│   │   └── research--inventaire-observabilite-eventsource--2026-05-24.md
+│   └── journal.md  — [project-journal] Journal daté des décisions intermédiaires, hypothèses, learnings de session. Co…
 ├── scripts/
 │   ├── hooks/
 │   │   └── pre-commit
