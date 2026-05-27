@@ -61,7 +61,8 @@ benchmark/                          # CODE — worktree, versioned
 │
 ├── benches/              # one subfolder = one benched scenario
 │   ├── voxtral-poc/                #     legacy POC bench (transformers stack)
-│   └── voxtral-validation/         #     current bench (llama-mtmd-cli stack)
+│   ├── voxtral-validation/         #     cross-backend bench (llama-mtmd-cli + transformers)
+│   └── voxtral-transformers/       #     sanity / perf / compare scripts for the safetensors backend
 │
 ├── build_corpus_<slug>.py          # top-level builders pulling from telemetry
 ├── pregenerate_groundtruth_*.py    # ground-truth passes (Gemini, future)
@@ -150,10 +151,37 @@ Override the data root via `DECKLE_BENCHMARK_DIR=path` for testing, sandbox CI, 
 
 ## Python environments
 
-- `.venv-voxtral-dml/` — primary venv for Voxtral via Transformers + torch-directml. Bootstrap: `python312 -m venv .venv-voxtral-dml` then `pip install torch torch-directml "transformers>=4.55,<5.0" mistral-common[audio] soundfile librosa jiwer anthropic`.
+- `.venv-voxtral-rocm/` — **current** venv for Voxtral via Transformers + torch ROCm Windows ([ADR-0016](../docs/adr/0016-inference-safetensors-native-pour-voxtral.md)). Python **3.12 strict** (the ROCm wheel ships `cp312-cp312-win_amd64` only). Bootstrap (two steps, order matters) :
+
+  ```powershell
+  python312 -m venv .venv-voxtral-rocm
+  .venv-voxtral-rocm\Scripts\python.exe -m pip install --upgrade pip wheel setuptools
+
+  # Step 1 — ROCm SDK wheels (https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/)
+  .venv-voxtral-rocm\Scripts\python.exe -m pip install --no-cache-dir `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm_sdk_core-7.2.1-py3-none-win_amd64.whl `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm_sdk_devel-7.2.1-py3-none-win_amd64.whl `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm_sdk_libraries_custom-7.2.1-py3-none-win_amd64.whl `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm-7.2.1.tar.gz
+
+  # Step 2 — PyTorch ROCm wheels
+  .venv-voxtral-rocm\Scripts\python.exe -m pip install --no-cache-dir `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/torch-2.9.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/torchaudio-2.9.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl `
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/torchvision-0.24.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl
+
+  # Step 3 — Voxtral + bench deps
+  .venv-voxtral-rocm\Scripts\python.exe -m pip install "transformers>=4.56,<5.0" "mistral-common[audio]>=1.8.1" accelerate librosa jiwer anthropic google-genai python-dotenv
+  ```
+
+  AMD graphics driver `26.2.2+` required (cf. AMD doc). Sanity check : `python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0), torch.cuda.is_bf16_supported())"`. Under ROCm Windows, `torch.cuda` aliases HIP — no code change vs CUDA. The bench backend `voxtral-transformers` (see `lib/sources/voxtral_transformers.py`) loads Voxtral Mini 3B in BF16 on this stack at ~8.7 GiB VRAM, RTF ~0.11 long-form on RX 7900 XT.
+
+  **`transformers` pin `>=4.56, <5.0`** is non-negotiable. `transformers 5.x` re-introduces the `torch.distributed.tensor` import that the wheel doesn't carry (`USE_DISTRIBUTED=0`), this time via `transformers.generation.continuous_batching` — a new dependency path not covered by [PR #40038](https://github.com/huggingface/transformers/pull/40038) which guarded only `model_debugging_utils.py`. Bumping past `4.57.x` will crash on `VoxtralForConditionalGeneration` import.
+
+- `.venv-voxtral-dml/` — **deprecated** venv from the brief DirectML pivot (May 2026). Acted as cul-de-sac in [ADR-0016](../docs/adr/0016-inference-safetensors-native-pour-voxtral.md) and entry 2026-05-27 of [JOURNAL.md](./JOURNAL.md). May be deleted ; do not re-bootstrap.
 - `.venv-voxtral/` — legacy venv for the llama.cpp stack (Phase 1/2), archivable.
 
-Both are gitignored (pattern `.venv*/`).
+All `.venv-*/` are gitignored (pattern `.venv*/`).
 
 ## Security
 
@@ -163,6 +191,8 @@ Both are gitignored (pattern `.venv*/`).
 - `.env` lives per worktree (gitignored). If a workspace shows both main repo and worktrees side-by-side in VSCodium, the file is easy to create in the wrong folder — check absolute paths if a script complains the key is missing.
 
 ## Voxtral specificity — finding 2026-05-27
+
+**Update 2026-05-27 (session pivot)** — the chat-mode problem documented below is **structural to `llama-mtmd-cli`**, not to Voxtral. The official Mistral inference path (`Transformers` + `processor.apply_transcription_request`) injects `[TRANSCRIBE]` implicitly via `mistral-common`, and the new backend `voxtral-transformers` (see [ADR-0016](../docs/adr/0016-inference-safetensors-native-pour-voxtral.md)) bypasses the issue entirely. Voxtral Mini 3B BF16 measured WER median 0.257 vs 0.447 for 24B Q4_K_M on the same 30-sample corpus T1_baseline — Cohere hypothesis confirmed by terrain measurement. The note below remains accurate for the `voxtral-llamacpp` backend only.
 
 `llama-mtmd-cli` **has no pure transcription mode**. All calls go through the chat template inherited from Devstral (community shortcut in PR #14862, not an official Voxtral format). This pushes Voxtral into conversational chat — the model paraphrases instead of transcribing : pronouns flip (`je` → `tu`), French technical terms get smoothed into standard conversational style, content gets reformulated.
 
@@ -184,4 +214,6 @@ Cohere's quantization study ([arXiv 2407.03211](https://arxiv.org/abs/2407.03211
 - [ADR-0011](../docs/adr/0011-corpus-normalise-comme-dataset-ml.md) — corpus normalisé comme dataset ML.
 - [ADR-0014](../docs/adr/0014-poc-evaluation-voxtral.md) — POC Voxtral, pivot stack transformers → llama.cpp.
 - [ADR-0015](../docs/adr/0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md) — MMVQ Vulkan Q3_K/Q6_K en veille passive.
+- [ADR-0016](../docs/adr/0016-inference-safetensors-native-pour-voxtral.md) — Inférence safetensors-native via Transformers + torch ROCm Windows pour le POC Voxtral.
+- [JOURNAL.md](./JOURNAL.md) — journal daté du module benchmark : décisions intermédiaires, cul-de-sacs, mesures de session.
 - Skill `deckle-commits` — vocabulaire de scopes : `bench` est le scope canonique pour les commits sous `benchmark/`.
