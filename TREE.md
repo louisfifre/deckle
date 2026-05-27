@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 15:35 — source : `git ls-files`_
+_Mise à jour : 2026-05-27 16:05 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -131,7 +131,8 @@ _Mise à jour : 2026-05-27 15:35 — source : `git ls-files`_
 │   │   ├── 0012-adoption-de-dotnet-build-et-dotnet-test.md
 │   │   ├── 0013-format-canonique-des-artefacts-agents.md  — [adr] Acte le format normatif des artefacts agents Deckle : langue anglaise par défau…
 │   │   ├── 0014-poc-evaluation-voxtral.md
-│   │   └── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
+│   │   ├── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
+│   │   └── 0016-inference-safetensors-native-pour-voxtral.md  — [adr] Acte l'adoption de l'inférence safetensors-native via Transformers + torch ROCm…
 │   ├── reference/
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
