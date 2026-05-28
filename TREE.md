@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-28 21:41 — source : `git ls-files`_
+_Mise à jour : 2026-05-28 21:42 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -120,6 +120,10 @@ _Mise à jour : 2026-05-28 21:41 — source : `git ls-files`_
 │   └── schema.md  — [agent-instructions] Canonical schema for Deckle recurring audit reports: frontmatter, section names…
 ├── benchmark/
 │   ├── benches/
+│   │   ├── voxtral-onnx-poc/
+│   │   │   ├── debug_kv.py
+│   │   │   ├── debug_tokens.py
+│   │   │   └── smoke_test.py
 │   │   ├── voxtral-poc/
 │   │   │   ├── bench.py
 │   │   │   └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
@@ -136,6 +140,21 @@ _Mise à jour : 2026-05-28 21:41 — source : `git ls-files`_
 │   │       ├── bench.py
 │   │       ├── README.md  — [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
 │   │       └── validate_judge_prompt.py
+│   ├── cs/
+│   │   └── PhiBench/
+│   │       ├── Models/
+│   │       │   ├── Regime.cs
+│   │       │   ├── Sample.cs
+│   │       │   └── TranscriptionResult.cs
+│   │       ├── CorpusLoader.cs
+│   │       ├── CorpusRunner.cs
+│   │       ├── JsonlWriter.cs
+│   │       ├── Phi4Transcriber.cs
+│   │       ├── PhiBench.csproj
+│   │       ├── Program.cs
+│   │       ├── RegimesLoader.cs
+│   │       ├── SingleRunner.cs
+│   │       └── WavHeader.cs
 │   ├── lib/
 │   │   ├── judges/
 │   │   │   ├── __init__.py
@@ -217,9 +236,12 @@ _Mise à jour : 2026-05-28 21:41 — source : `git ls-files`_
 │   │   ├── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
 │   │   └── 0016-inference-safetensors-native-pour-voxtral.md  — [adr] Acte l'adoption de l'inférence safetensors-native via Transformers + torch ROCm…
 │   ├── reference/
+│   │   ├── reference--build-onnxruntime-genai-amd-windows--1.0.md  — [reference] Recette de build local de Microsoft `onnxruntime-genai` sur Windows AMD avec Vi…
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
+│       ├── phi4-oga-lora-activation--2026-05-28.patch
 │       ├── research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md  — [research] Comparaison ASR français au 2026-05-27 entre Voxtral Mini 3B / Small 24B, Whisp…
+│       ├── research--asr-native-windows-amd-routes--2026-05-28.md  — [research] Cartographie des voies réalistes pour exécuter un modèle ASR multimodal (Phi-4,…
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
 │       ├── research--hyperhdr-interpolators--2026-05-15.md

@@ -9,6 +9,12 @@
 # %LOCALAPPDATA%\Deckle\models\, sourced by the first-run wizard.
 whisper.cpp/
 
+# Vendored upstream Rust source for the voxtral-burn POC — clone of
+# TrevorS/voxtral-mini-realtime-rs landed inside the worktree for
+# convenience, build artifacts and target/ stay local. Model weights
+# live under D:\models\llm\voxtral\, never in the repo.
+benchmark/rs/voxtral-mini-realtime-rs/
+
 # Legacy doc revisions kept locally for reference — superseded versions
 # of docs/*.md moved aside when a new revision lands. Not shipped.
 docs/archives/
@@ -22,6 +28,8 @@ src/**/bin/
 src/**/obj/
 tests/**/bin/
 tests/**/obj/
+benchmark/cs/**/bin/
+benchmark/cs/**/obj/
 
 # Deployment output — rebuildable via dotnet publish.
 publish/

@@ -1,0 +1,89 @@
+From e7d26fc781703dd02912e6791163afa207747318 Mon Sep 17 00:00:00 2001
+From: Louis <git@louisfifre.com>
+Date: Thu, 28 May 2026 13:54:56 +0200
+Subject: [PATCH] fix: activate vision/speech LoRA adapters after num_*_tokens_
+ populated
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The vision and speech LoRA activation block historically lived in the
+MultiModalPipelineState constructor, gated on num_image_tokens_ > 0 and
+num_audio_tokens_ > 0. These members are zero-initialized and only
+populated later by SetExtraInputs(). The gates were therefore structurally
+false at construction time, the adapters never loaded, and the decoder
+ran without the LoRA needed to consume vision/audio embeddings —
+producing safety refusals on Phi-4-multimodal audio prompts and the
+distorted output documented in issue #1383 on image prompts.
+
+Moves the block to the end of SetExtraInputs(), where the token counters
+are valid. Added std::cerr diagnostic lines for verification during a
+local POC; safe to drop or wire to the project logger before upstream
+submission.
+
+Single fix addresses both symptoms (audio refusal, image distortion).
+---
+ src/models/multi_modal.cpp | 33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
+
+diff --git a/src/models/multi_modal.cpp b/src/models/multi_modal.cpp
+index 26d27b6..36525c5 100644
+--- a/src/models/multi_modal.cpp
++++ b/src/models/multi_modal.cpp
+@@ -3,6 +3,7 @@
+ 
+ #include "../generators.h"
+ #include "multi_modal.h"
++#include <iostream>
+ #include <numeric>
+ 
+ namespace Generators {
+@@ -487,15 +488,10 @@ MultiModalPipelineState::MultiModalPipelineState(const MultiModalLanguageModel&
+   embedding_state_ = std::make_unique<EmbeddingState>(model, params);
+   decoder_state_ = std::make_unique<DecoderState>(model_, sequence_lengths, params);
+ 
+-  if (vision_state_ != nullptr && model_.config_->model.vision.adapter_filename.has_value() && num_image_tokens_ > 0) {
+-    const auto lora_adapter = (model_.config_->config_path / fs::path(*model_.config_->model.vision.adapter_filename)).string();
+-    adapters_->LoadAdapter(lora_adapter.c_str(), vision_adapter_name_);
+-    decoder_state_->SetActiveAdapter(adapters_.get(), vision_adapter_name_);
+-  } else if (speech_state_ != nullptr && model_.config_->model.speech.adapter_filename.has_value() && num_audio_tokens_ > 0) {
+-    const auto lora_adapter = (model_.config_->config_path / fs::path(*model_.config_->model.speech.adapter_filename)).string();
+-    adapters_->LoadAdapter(lora_adapter.c_str(), speech_adapter_name_);
+-    decoder_state_->SetActiveAdapter(adapters_.get(), speech_adapter_name_);
+-  }
++  // The vision/speech LoRA activation block that historically lived here was
++  // gated on num_image_tokens_ / num_audio_tokens_ which are zero-initialized
++  // and only populated by SetExtraInputs(). It is now performed at the end of
++  // SetExtraInputs() — see the Deckle POC patch note in the matching block.
+ }
+ 
+ void MultiModalPipelineState::SetExtraInputs(const std::vector<ExtraInput>& extra_inputs) {
+@@ -528,6 +524,25 @@ void MultiModalPipelineState::SetExtraInputs(const std::vector<ExtraInput>& extr
+       qwen_pos_inputs->SetGridTensors(img_grid, vid_grid, sec_grid);
+     }
+   }
++
++  // Activate the vision or speech LoRA adapter once the token counters above
++  // are populated. The block historically lived in the constructor where the
++  // counters were still zero-initialized, so the gates were structurally false
++  // and the adapter never loaded — the decoder then refused multimodal prompts
++  // (see Deckle POC docs/research/research--asr-native-windows-amd-routes--2026-05-28.md).
++  // Idempotency: SetExtraInputs is called once per prompt setup, so a single
++  // LoadAdapter / SetActiveAdapter pair per pipeline lifetime is correct here.
++  if (vision_state_ != nullptr && model_.config_->model.vision.adapter_filename.has_value() && num_image_tokens_ > 0) {
++    const auto lora_adapter = (model_.config_->config_path / fs::path(*model_.config_->model.vision.adapter_filename)).string();
++    adapters_->LoadAdapter(lora_adapter.c_str(), vision_adapter_name_);
++    decoder_state_->SetActiveAdapter(adapters_.get(), vision_adapter_name_);
++    std::cerr << "[deckle-phi4-poc] vision LoRA adapter loaded (num_image_tokens=" << num_image_tokens_ << ")\n";
++  } else if (speech_state_ != nullptr && model_.config_->model.speech.adapter_filename.has_value() && num_audio_tokens_ > 0) {
++    const auto lora_adapter = (model_.config_->config_path / fs::path(*model_.config_->model.speech.adapter_filename)).string();
++    adapters_->LoadAdapter(lora_adapter.c_str(), speech_adapter_name_);
++    decoder_state_->SetActiveAdapter(adapters_.get(), speech_adapter_name_);
++    std::cerr << "[deckle-phi4-poc] speech LoRA adapter loaded (num_audio_tokens=" << num_audio_tokens_ << ")\n";
++  }
+ }
+ 
+ DeviceSpan<float> MultiModalPipelineState::Run(int current_length, DeviceSpan<int32_t>& next_tokens, DeviceSpan<int32_t> next_indices) {
+-- 
+2.54.0.windows.1
+

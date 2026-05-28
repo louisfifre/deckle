@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Deckle.Benchmark.PhiBench</RootNamespace>
+    <AssemblyName>PhiBench</AssemblyName>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- DirectML EP for AMD/NVIDIA/Intel GPUs on Windows via D3D12. -->
+    <!-- 0.14.0 ships with an internal API/ORT mismatch (genai 0.14 wants ORT
+         API 24 but bundles ORT 1.23 → DllNotFoundException on init). 0.13.2 is
+         self-consistent and matches the version pinned by the official sample
+         examples/csharp/ModelMM/ModelMM.csproj. -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.13.0" />
+    <!-- TOML parser for the regimes file (mirrors the Python voxtral_validation.toml). -->
+    <PackageReference Include="Tomlyn" Version="0.19.0" />
+  </ItemGroup>
+
+</Project>
