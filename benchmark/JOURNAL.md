@@ -18,6 +18,39 @@ Les entrées récentes sont en haut. À chaque nouvelle, ajouter au sommet, pas 
 
 ---
 
+## 2026-05-28 — PoC Voxtral ONNX/DirectML (voie 2) — pipeline Python validé, FP16 retenu vs Q4F16
+
+PoC monté sur la voie 2 cartographiée dans la fiche [`research--asr-native-windows-amd-routes--2026-05-28.md`](../docs/research/research--asr-native-windows-amd-routes--2026-05-28.md) — Voxtral Mini 3B 2507 via l'export communautaire [`onnx-community/Voxtral-Mini-3B-2507-ONNX`](https://huggingface.co/onnx-community/Voxtral-Mini-3B-2507-ONNX) (Xenova, HF) sur ONNX Runtime DirectML. Worktree dédié `voxtral-onnx-poc` sur branche `poc/voxtral-onnx`, basée sur `poc/phi4-onnx` pour hériter de la fiche du 28 et du scaffolding C# PhiBench.
+
+Phase de cadrage en Python plutôt qu'en C# direct — la fiche elle-même place « mesurer FP16 et Q4F16 avant de capitaliser » comme palier go/no-go. Le pipeline Python via ORT DirectML répond à la question quantization en ~3 jours, vs 2-4 semaines pour un port C# qui aurait été à jeter si Q4F16 explose. Discipline de validation en paliers (cf. learning méthodo de la suite 4) appliquée.
+
+**Smoke test FP16 — pipeline validé.** Sur audio `dcad692a` (1.4s, « Et toujours douter un peu. »), transcription parfaite au caractère près. Bundle Xenova sain (bug initial `[AUDIO]`/mmproj/NaN documenté dans la discussion #1 corrigé par 4 commits Xenova des 21-22 juillet 2025), IDs Tekken validés (BOS=1, INST=3, BEGIN_AUDIO=25, AUDIO=24, EINST=4, EOS=2, TRANSCRIBE=34), mel Whisper-style 128 bins via librosa direct (n_fft=400, hop=160, log10, normalisation `(x+4)/4`), splice audio embeddings aux positions `[3 : 3+n_audio]`.
+
+**Format de prompt actée.** Le format **transcription canonique** — `<s>[INST][BEGIN_AUDIO][AUDIO]×N[/INST] lang:fr [TRANSCRIBE]` — est la bonne structure (équivalent ONNX de `processor.apply_transcription_request` côté mistral-common Python). À distinguer du `chat_template.jinja` du bundle qui n'utilise **pas** `[BEGIN_AUDIO]` et met l'instruction texte INSIDE le INST block. Le code de référence urroxyz de la discussion #1 mélangeait les deux formats (BEGIN_AUDIO + instruction texte dans INST) — Frankenstein non vu en training, produit du charabia. Confusion observée empiriquement avant identification.
+
+**Comparaison FP16 vs Q4F16 sur 30s spontané FR technique** (audio `e6db36e7` tronqué à 30s, contenu : push, jalons, PogVoxra) :
+
+| Variante | Output (extrait segment dégradé) | Durée decoder (no-KV) | Tokens |
+|---|---|---|---|
+| FP16  | « …je vais faire que **moi qui fais** et on fait pour des petits jalons… »      | 35.9s | 80 |
+| Q4F16 | « …je vais faire que **Yaka moi qui fait** et on fait pour des petits jalons… » | 45.3s | 82 |
+
+Deux dégradations Q4F16 sur ce segment unique : (a) hallucination **visible** — insertion de « Yaka » qui n'existe pas dans le signal ; (b) erreur grammaticale **invisible** — « moi qui fais » (1ère personne, correct) → « moi qui fait » (3ème personne, faux mais plausible). C'est précisément le type d'erreur que la doctrine [`CONTEXT.md`](../CONTEXT.md) section *Transcription — fidelity criteria* refuse explicitement en T1 pour la dictée production. « PogVoxra » identique dans les deux versions (hallucination connue de Voxtral, indépendante de la quantization).
+
+**Verdict sur la quantization, sur un seul échantillon.** La prédiction Cohere [arXiv 2407.03211](https://arxiv.org/abs/2407.03211) de dégradation FR au passage FP16→4-bit (chiffrée à -16.6 % perception humaine vs -0.3 % en métriques automatiques) est **cohérente avec** ce signal — le WER bouge peu, la fidélité fine flanche. Échantillon insuffisant pour trancher quantitativement, mais le pattern observé sur un seul audio suffit à actée que **Q4F16 n'est pas une cible production pour Deckle T1**. FP16 reste la cible. Hypothèse à confirmer si nécessaire : un bench de 30 samples post-fix du KV cache et chunking 30s confirmerait quantitativement ; pas prioritaire vu le verdict empirique cohérent avec la doctrine fidélité.
+
+**Bloqueur perf identifié — KV cache.** La version actuelle tourne en mode **no-KV** (recompute le prompt entier à chaque step). Coût O(N²) — pour 30s d'audio générant 80 tokens, 36s de décodeur. La version KV cache standard a été tentée mais produit du charabia au step 1 : le step 0 prefill sort « Et » correctement, le step 1 decode dégénère immédiatement (top-1 « So » sans espace = comme si nouvelle phrase). Trois fixes ont été éliminés expérimentalement : `.copy()` contre buffer reuse ORT (inopérant), casting `inputs_embeds` en FP16 (réfuté par signature ONNX `tensor(float)` explicite), signal `use_cache_branch` (absent des 63 inputs du décodeur). Piste résiduelle non testée : le code transformers.js de référence calcule `position_ids` via `cumsum_masked_fill(attention_mask)` plutôt qu'un `arange` direct — si les positions de padding silence (357 frames sur 375 pour un audio 1.4s) devaient être masquées via `attention_mask=0`, RoPE produirait des positions non-séquentielles et la transition prefill→decode pourrait casser. Hypothèse à tester dans une session focused.
+
+Le no-KV est acceptable pour valider la voie ; il est rédhibitoire en production (facteur 5-7× sur la latence de dictée, alors que la latence est le sens même de Voxtral vs Whisper). Pas un blocker conceptuel, c'est un blocker perf circumscrit.
+
+**Voies suivantes pour la voie 2.** (a) Débogage KV cache, ~30-60 min de bench sur l'hypothèse attention_mask cumsum. (b) Chunking >30s pour la dictée longue (Voxtral plafonne à 30s comme Whisper, pattern sliding window à instruire). (c) Port C# ORT DirectML — devient un *port d'un pipeline Python validé* plutôt qu'un spike. Le squelette `benchmark/cs/PhiBench/` (hérité de `poc/phi4-onnx`) sert de base ; pas de couche ORT GenAI cassée à utiliser, ORT direct.
+
+**Articulation avec les autres voies.** La voie 1 (patch Phi-4 OGA LoRA, cf. suite 6) reste ouverte mais demande de patcher le natif `onnxruntime-genai` côté C++/ABI — investissement bien plus lourd que la voie 2. La voie 2 valide qu'on n'a **pas besoin de patcher quoi que ce soit** pour avoir un pipeline ASR Native Windows AMD avec qualité FR préservée. Elle devient le candidat naturel à pousser jusqu'au port C# si la doctrine *Native Windows* reste prioritaire.
+
+Commits de la session sur `poc/voxtral-onnx` : `33bd0d6` (smoke_test), `97e0e16` (debug scripts).
+
+---
+
 ## 2026-05-27 (suite 6) — POC Phi-4 ONNX/DirectML, palier 1 révèle un blocage upstream — décision en attente
 
 POC monté sur la direction *Native Windows via ONNX Runtime + DirectML* avec Phi-4-Multimodal comme candidat ASR. Worktree dédié `phi4-onnx-poc` sur branche `poc/phi4-onnx`, scaffolding C# `benchmark/cs/PhiBench/` (net10.0-windows + `Microsoft.ML.OnnxRuntimeGenAI.DirectML` 0.13.0). Architecture validée avec Louis : transcription en C# direct (la chaîne cible production), judge Gemini conservé en Python car déjà écrit (`lib/judges/gemini.py`), JSONL au schéma `_build_row` Python pour réutilisation transparente downstream. Six paliers cadrés en amont — worktree + scaffold, download poids + sanity, bench sans Gemini, passe avec Gemini, comparaison apple-to-apple, verdict.
