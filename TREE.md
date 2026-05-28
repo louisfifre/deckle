@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-28 15:15 — source : `git ls-files`_
+_Mise à jour : 2026-05-28 20:08 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -52,6 +52,8 @@ _Mise à jour : 2026-05-28 15:15 — source : `git ls-files`_
 │   └── launch.json
 ├── benchmark/
 │   ├── benches/
+│   │   ├── voxtral-onnx-poc/
+│   │   │   └── smoke_test.py
 │   │   ├── voxtral-poc/
 │   │   │   ├── bench.py
 │   │   │   └── README.md  — [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
