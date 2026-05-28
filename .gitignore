@@ -81,6 +81,9 @@ $RECYCLE.BIN/
 *.env
 .env
 .env.*
+!.env.example
+!.env.sample
+!.env.template
 .envrc
 
 # Private keys, certificates, secret stores.
@@ -91,7 +94,10 @@ $RECYCLE.BIN/
 *.secret
 *.secrets
 secrets/
-credentials*
+credentials*.json
+credentials*.toml
+credentials*.yaml
+credentials*.yml
 *.credential
 auth.json
 id_rsa*
@@ -139,7 +145,7 @@ crashdumps/
 
 # Ad hoc DebugLog folder used for native crash instrumentation —
 # temporary by doctrine, never committed (see Deckle.Logging/CLAUDE.md).
-logs/
+/logs/
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Benchmark — runtime artifacts, never versioned
@@ -227,3 +233,6 @@ coverage/
 
 # Personal-workflow skills not meant for the public repo.
 .claude/skills/benchmark-loop/
+
+# Agent compatibility façade; canonical project instructions live under .claude/.
+.agent/
