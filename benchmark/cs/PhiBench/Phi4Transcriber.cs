@@ -25,8 +25,10 @@ namespace Deckle.Benchmark.PhiBench;
 /// </summary>
 public sealed class Phi4Transcriber : IDisposable
 {
-    private const string DefaultUserPrompt =
-        "Transcribe this audio in French. Output only the verbatim transcription, with no commentary, no labels, no quotation marks.";
+    // Aligned with the prompt formulation seen in microsoft/Phi-4-multimodal-instruct
+    // examples for speech recognition (paper arXiv 2503.01743, model card snippets).
+    // The instruction stays short so as not to dilute the audio attention budget.
+    private const string DefaultUserPrompt = "Transcribe the audio clip into text in French.";
 
     private readonly Config _config;
     private readonly Model _model;
@@ -68,7 +70,7 @@ public sealed class Phi4Transcriber : IDisposable
     /// </summary>
     public TranscriptionResult Transcribe(
         string audioPath,
-        string userPrompt,
+        string? userPrompt,
         string? systemPrompt,
         int maxNewTokens,
         double? audioSecondsOverride = null)
@@ -78,15 +80,33 @@ public sealed class Phi4Transcriber : IDisposable
 
         try
         {
-            var promptForUser = string.IsNullOrWhiteSpace(userPrompt) ? DefaultUserPrompt : userPrompt;
-            var messages = BuildMessages(promptForUser, systemPrompt);
-            var templated = ApplyChatTemplate(messages);
+            // null userPrompt → fall back to default. Empty string is honored
+            // verbatim — useful for the issue #1455 mitigation where an empty
+            // post-audio prompt is documented to behave differently from a
+            // populated instruction.
+            var promptForUser = userPrompt ?? DefaultUserPrompt;
+            // Hand-build the Phi-4 prompt to bypass any chat-template encoding
+            // surprises (e.g. JSON Unicode-escaping the < and | characters of
+            // the <|audio_1|> token before the template engine sees them).
+            // Format from tokenizer_config.json chat_template:
+            //   <|system|>{sys}<|end|><|user|>{content}<|end|><|assistant|>
+            var templated = BuildRawPhi4Prompt(promptForUser, systemPrompt);
 
             using var audios = Audios.Load(new[] { audioPath });
-            using var inputTensors = _processor.ProcessImagesAndAudios(templated, images: null, audios: audios);
+            // Audio-only path : ProcessAudios is the dedicated overload, distinct
+            // from ProcessImagesAndAudios(prompt, null, audios) which leaves the
+            // images branch in the multimodal pipeline. Empirically the
+            // image-and-audio variant with null images on Phi-4 caused the model
+            // to reply "I cannot transcribe the audio you mentioned" — the audio
+            // embeddings weren't being spliced in at the <|audio_1|> position.
+            using var inputTensors = _processor.ProcessAudios(templated, audios);
 
             using var generatorParams = new GeneratorParams(_model);
-            generatorParams.SetSearchOption("max_length", maxNewTokens + GuessPromptTokenCount(templated));
+            // Phi-4 multimodal expects max_length as total context (input + output).
+            // The Python sample (examples/python/model-mm.py) defaults to 7680.
+            // We set a generous upper bound here and rely on the EOS token to stop
+            // generation — early truncation produces incoherent loops on short audios.
+            generatorParams.SetSearchOption("max_length", Math.Max(2048, maxNewTokens + 1024));
             generatorParams.SetSearchOption("do_sample", false);
 
             using var generator = new Generator(_model, generatorParams);
@@ -162,6 +182,17 @@ public sealed class Phi4Transcriber : IDisposable
     }
 
     // ── Private helpers ─────────────────────────────────────────────────
+
+    private static string BuildRawPhi4Prompt(string userPrompt, string? systemPrompt)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(systemPrompt))
+        {
+            sb.Append("<|system|>").Append(systemPrompt).Append("<|end|>");
+        }
+        sb.Append("<|user|><|audio_1|>").Append(userPrompt).Append("<|end|><|assistant|>");
+        return sb.ToString();
+    }
 
     private static List<Dictionary<string, string>> BuildMessages(string userPrompt, string? systemPrompt)
     {

@@ -15,7 +15,9 @@ public static class SingleRunner
     {
         var modelPath = Require(opts, "model-path");
         var audioPath = Require(opts, "audio");
-        var prompt = opts.GetValueOrDefault("prompt", "");
+        // If the caller passes --prompt explicitly (even empty), respect it.
+        // If --prompt is absent entirely, fall back to the transcriber's default.
+        string? prompt = opts.ContainsKey("prompt") ? opts["prompt"] : null;
         var systemPrompt = opts.GetValueOrDefault("system-prompt", "");
         var maxTokens = int.Parse(opts.GetValueOrDefault("max-new-tokens", "1024"));
         var executionProvider = opts.GetValueOrDefault("execution-provider", "dml");
@@ -27,7 +29,7 @@ public static class SingleRunner
         Console.Error.WriteLine($"  model_path : {modelPath}");
         Console.Error.WriteLine($"  audio      : {audioPath}");
         Console.Error.WriteLine($"  ep         : {executionProvider}");
-        Console.Error.WriteLine($"  prompt     : {(string.IsNullOrEmpty(prompt) ? "<default FR transcription>" : prompt)}");
+        Console.Error.WriteLine($"  prompt     : {(prompt == null ? "<default FR transcription>" : prompt.Length == 0 ? "<empty>" : prompt)}");
 
         using var ogaHandle = new OgaHandle();
         Console.Error.WriteLine($"  loading model...");
