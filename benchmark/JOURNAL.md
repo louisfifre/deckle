@@ -18,6 +18,24 @@ Les entrées récentes sont en haut. À chaque nouvelle, ajouter au sommet, pas 
 
 ---
 
+## 2026-05-27 (suite 6) — POC Phi-4 ONNX/DirectML, palier 1 révèle un blocage upstream — décision en attente
+
+POC monté sur la direction *Native Windows via ONNX Runtime + DirectML* avec Phi-4-Multimodal comme candidat ASR. Worktree dédié `phi4-onnx-poc` sur branche `poc/phi4-onnx`, scaffolding C# `benchmark/cs/PhiBench/` (net10.0-windows + `Microsoft.ML.OnnxRuntimeGenAI.DirectML` 0.13.0). Architecture validée avec Louis : transcription en C# direct (la chaîne cible production), judge Gemini conservé en Python car déjà écrit (`lib/judges/gemini.py`), JSONL au schéma `_build_row` Python pour réutilisation transparente downstream. Six paliers cadrés en amont — worktree + scaffold, download poids + sanity, bench sans Gemini, passe avec Gemini, comparaison apple-to-apple, verdict.
+
+**Palier 1 — la chaîne se monte, l'audio ne passe pas (constat).** Poids téléchargés depuis HuggingFace (`microsoft/Phi-4-multimodal-instruct-onnx`, variante unique `gpu/gpu-int4-rtn-block-32`, 4.9 GiB, 22 fichiers en 44 s). Premier sanity check : tentative avec NuGet 0.14.0 → `DllNotFoundException` parce que le package ship une combinaison incohérente *GenAI API 24 + ORT 1.23.0* (mismatch interne, contourné par downgrade NuGet 0.13.0 utilisée par le sample officiel `examples/csharp/ModelMM/`). Une fois passé ce mismatch, le modèle charge en quelques secondes, session DirectML active, génération produite — mais toutes les sorties testées sont des refus type « *I'm sorry, but I can't transcribe directly the audio you mentioned* ». Le modèle ne voit littéralement aucune donnée audio.
+
+Quatre variantes testées sur deux audios (1.7 s `dcad692a` « Et toujours douter un peu. » et 10.7 s `9bbfc858` contenu technique) : (a) `ProcessImagesAndAudios(prompt, null, audios)` avec template chat tokenizer + prompt FR explicite ; (b) prompt construit à la main pour bypasser un éventuel JSON-escaping du chat template ; (c) `ProcessAudios(prompt, audios)` audio-seul dédié ; (d) prompt verbatim de la doc Microsoft *« Transcribe the audio clip into text. »* sans mention FR. Toutes échouent identiquement avec des refus structurellement similaires.
+
+**Diagnostic — bug upstream `onnxruntime-genai`.** Issue [#1455](https://github.com/microsoft/onnxruntime-genai/issues/1455) ouverte le 2025-10-23, statut OPEN au 2026-05-27, titre explicite « *Phi-4 audio task prompts don't work at all (Apple, onnx, dotnet)* ». Reproduction documentée sur macOS, Linux, Windows, en Python, C#, C++. Un commentaire confirme que la version `transformers + torch` du même modèle fonctionne consistemment — l'hypothèse upstream est que la régression est dans le pipeline OGA qui n'injecte pas les embeddings audio dans le LM : *« My guess it's how OGA embeds the audio speech part of the prompt compared to transformers/torch, which does it after the prompt is processed. »* Le blocage est en amont de tout ce que Deckle peut corriger trivialement.
+
+**Décision en attente.** Quatre options réellement ouvertes — (a) continuer le bench paliers 2-4 pour acquérir le signal formel « 0 % exploitable », (b) tenter un patch local du natif `onnxruntime-genai.dll`, (c) pivoter Phi-4 via Transformers ROCm (perd le bénéfice Native Windows mais permet le comparatif qualité), (d) veille passive sur l'issue + reprise Voxtral. Louis tranchera après une **recherche approfondie multi-agents** lancée 2026-05-27 sur quatre angles distincts : état exact de l'issue #1455 et PRs liés, retours communauté de quiconque a fait marcher Phi-4 audio en production, routes alternatives en .NET (Windows ML, ORT direct sans GenAI, Foundry Local, Ollama, llama.cpp, sub-process Python), et timeline de régression OGA pour identifier une version éventuellement fonctionnelle.
+
+**Palier 1 a fait son travail méthodo.** Le séquencement en six paliers cadré en amont (cf. apprentissage *protocole de validation incrémentale* du journal suite 4) a sauvé plusieurs heures de bench et un budget Gemini non négligeable. Le palier 1 « sanity check single-sample » est resté minimal — quelques audios, quelques variantes de prompt, vérifier que le modèle voit l'audio. Le constat technique est solide ; la décision stratégique sur ce qu'on fait du POC reste à prendre une fois la recherche revenue.
+
+Commits de la session sur `poc/phi4-onnx` : `ba396a7` (scaffolding C#).
+
+---
+
 ## 2026-05-27 (suite 5) — Fix max_new_tokens Voxtral, verdict Whisper vs Voxtral nuancé, pivot ONNX/Phi-4 ouvert
 
 Session pilotée par la question « est-ce que Whisper bat Voxtral sur le corpus de 30 ? ». Trois mouvements convergents : analyse du run 0004 → cartographie qualitative Whisper vs Voxtral via sub-agent → identification d'un bug de bench → fix + validation. En parallèle, ouverture d'une direction stratégique long terme vers ONNX/Phi-4 comme épine dorsale Native Windows.
