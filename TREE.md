@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-27 22:19 — source : `git ls-files`_
+_Mise à jour : 2026-05-28 19:32 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -50,6 +50,19 @@ _Mise à jour : 2026-05-27 22:19 — source : `git ls-files`_
 │           └── SKILL.md  — Create new agent skills with proper structure, progressive disclosure, and bund…
 ├── .vscode/
 │   └── launch.json
+├── audits/
+│   ├── prompts/
+│   │   ├── claude.md  — [agent-instructions] Claude prompt for the weekly Deckle audit routine, emphasizing doctrine, archit…
+│   │   └── codex.md  — [agent-instructions] Codex prompt for the weekly Deckle audit routine, emphasizing implementation ri…
+│   ├── runs/
+│   │   └── 2026/
+│   │       └── .gitkeep
+│   ├── templates/
+│   │   └── weekly-audit.md
+│   ├── CLAUDE.md  — [agent-instructions] Shared instructions for recurring Deckle audits run by Codex, Claude, or future…
+│   ├── index.csv
+│   ├── README.md  — [module-readme] Explains the root audits workspace: recurring agent reviews, shared prompts, sc…
+│   └── schema.md  — [agent-instructions] Canonical schema for Deckle recurring audit reports: frontmatter, section names…
 ├── benchmark/
 │   ├── benches/
 │   │   ├── voxtral-poc/
