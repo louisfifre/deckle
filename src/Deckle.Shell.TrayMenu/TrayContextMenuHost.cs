@@ -78,6 +78,14 @@ public sealed class TrayContextMenuHost : IDisposable
     private long _lastShowTickMs;
     private int _showCount;
 
+    // Cache des DesiredSize capturées pendant le prime cycle, items attachés
+    // au visual tree du popup interne. MeasureFlyout() lit ce cache au lieu
+    // d'appeler item.Measure() détaché, qui retourne une valeur instable
+    // (cf. JOURNAL.md du module — bascule 40 → 32 sur items natifs après un
+    // nombre variable d'ouvertures, parce que le template natif tombe à sa
+    // MinHeight quand mesuré détaché).
+    private readonly System.Collections.Generic.Dictionary<MenuFlyoutItemBase, Windows.Foundation.Size> _primedSizes = new();
+
     public Action? OnShowLogs        { get; set; }
     public Action? OnShowSettings    { get; set; }
     public Action? OnShowPlayground  { get; set; }
@@ -208,8 +216,37 @@ public sealed class TrayContextMenuHost : IDisposable
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Quit"),    () => OnQuit?.Invoke()));
 
         _flyout.Closed += OnFlyoutClosed;
+        _flyout.Opened += OnFlyoutOpened;
 
         DeckleShellTrayMenuSource.Log.FlyoutBuilt(_flyout.Items.Count);
+    }
+
+    // ── Force NarrowPadding à chaque ouverture ────────────────────────────────
+    //
+    // Le state NarrowPadding (densité compacte 32 DIP, cible Win11 mouse-driven)
+    // est appliqué par le framework dès qu'un pointer mouse interagit avec le
+    // menu, mais le state se reset à DefaultPadding (40 DIP) entre deux Hide/Show
+    // du flyout. Conséquence visible : au premier clic après lancement, les
+    // items sont rendus à 40 DIP alors que la fenêtre porteuse est dimensionnée
+    // à 32 DIP/item via le cache _primedSizes — le contenu dépasse, le
+    // MenuFlyoutPresenter active son ScrollViewer interne, l'utilisateur peut
+    // scroller dans un menu qui ne devrait pas l'être. À partir du 2e clic, le
+    // framework restaure NarrowPadding (interaction mouse persistée), tout
+    // s'aligne.
+    //
+    // Fix : forcer NarrowPadding sur tous les items dans le handler Opened, au
+    // moment où le framework les attache au visual tree du popup. C'est l'instant
+    // où GoToState peut effectivement appliquer le state. Aligné avec le pattern
+    // Win11 natif desktop : Sound, Defender, Date/Time, Network — tous rendent
+    // leur tray menu en densité narrow.
+    private void OnFlyoutOpened(object? sender, object e)
+    {
+        if (_flyout is null) return;
+        foreach (var item in _flyout.Items)
+        {
+            if (item is MenuFlyoutItem mfi)
+                VisualStateManager.GoToState(mfi, "NarrowPadding", useTransitions: false);
+        }
     }
 
     private MenuFlyoutItem CreateItem(string text, Action action)
@@ -400,6 +437,34 @@ public sealed class TrayContextMenuHost : IDisposable
 
         _frame.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
+            // Capture des DesiredSize items attachés au visual tree du popup,
+            // après avoir forcé le state NarrowPadding sur chaque item. Le
+            // framework bascule de toute façon en NarrowPadding dès qu'un
+            // pointer mouse/pen/keyboard interagit avec le menu (cf. VisualState
+            // PaddingSizeStates du DefaultMenuFlyoutItemStyle, generic.xaml du
+            // WindowsAppSDK l. 24058) — on précipite ce bascule au prime cycle
+            // pour que le cache reflète la taille finale (≈ 32 DIP/item) plutôt
+            // que la taille initiale DefaultPadding (≈ 40). Sans cette force,
+            // la fenêtre porteuse était dimensionnée à la taille initiale et le
+            // popup interne (qui suit le state NarrowPadding) se rendait plus
+            // compact, créant un trou Mica visible en bas du popup.
+            if (_flyout is not null)
+            {
+                foreach (var item in _flyout.Items)
+                {
+                    if (item is MenuFlyoutItem mfi)
+                        VisualStateManager.GoToState(mfi, "NarrowPadding", useTransitions: false);
+                }
+                // Force layout pass pour que les nouvelles valeurs de Padding
+                // appliquées par le Storyboard du VisualState soient effectives
+                // dans la DesiredSize qu'on s'apprête à capturer.
+                _frame!.UpdateLayout();
+
+                _primedSizes.Clear();
+                foreach (var item in _flyout.Items)
+                    _primedSizes[item] = item.DesiredSize;
+            }
+
             _flyout?.Hide();
             sw.Stop();
             DeckleShellTrayMenuSource.Log.PrimeCycleCompleted(sw.Elapsed.TotalMilliseconds);
@@ -424,24 +489,30 @@ public sealed class TrayContextMenuHost : IDisposable
 
     // ── Measure ───────────────────────────────────────────────────────────────
     //
-    // Itère les items du flyout après amorce du visual tree (cycle ShowAt/Hide
-    // dans OnFrameLoaded — compense microsoft-ui-xaml#7374), mesure chacun et
-    // somme. Pas de Height ni Padding hardcodé : forcer Height=32 réduisait
-    // seulement le ContentRoot des items, mais le MenuFlyoutPresenter
-    // continuait à allouer la hauteur native par cellule — le hover ne
-    // couvrait alors qu'une partie de la cellule et le texte n'était pas
-    // centré dans l'espace alloué. On laisse le rendu natif WinUI 3 Win11
-    // décider de tout, ce qui colle au comportement de la WinUI 3 Gallery
-    // pour ce type de menu. Largeur naturelle, déterminée par le libellé le
-    // plus long plus le ToggleSwitch éventuel — pas de MinWidth forcé, le
-    // menu colle au contenu pour rester compact. Surplus FlyoutFrameMargin
-    // × 2 couvre la card du MenuFlyout. Conversion en pixels physiques via
-    // le scale du moniteur sous le point d'ancrage.
+    // Itère les items du flyout et lit leur DesiredSize depuis le cache
+    // _primedSizes peuplé pendant le prime cycle (OnFrameLoaded, callback Low
+    // priority post-ShowAt — items attachés au visual tree du popup, mesure
+    // stable). Pas d'appel item.Measure() ici : un Measure() appelé depuis
+    // Show() / MeasureFlyout() tourne sur des items détachés du visual tree
+    // (has_visual_parent=false, is_loaded=false, observé sur 100 % des shows),
+    // et le template natif retombe sur sa MinHeight=32 au-delà d'un seuil de
+    // cache aléatoire — ce qui faisait basculer la hauteur des items natifs de
+    // 40 à 32 après un nombre variable d'ouvertures du menu. Cf. JOURNAL.md du
+    // module pour le diagnostic.
     //
-    // L'event ItemMeasured trace la DesiredSize de chaque item — si on observe
-    // desired_w/h=0 sur un ou plusieurs items, c'est le signal direct que
-    // Measure tourne hors visual tree amorcé. L'event FlyoutMeasured trace
-    // les agrégats avant et après conversion physique.
+    // L'item Ambient (template custom) est inclus dans le cache : sa mesure
+    // détachée était spontanément stable (40.8 sur tous les shows), mais on
+    // l'aligne sur le même chemin pour traiter tous les items uniformément.
+    //
+    // Surplus FlyoutFrameMargin × 2 couvre la card du MenuFlyout. Conversion
+    // en pixels physiques via le scale du moniteur sous le point d'ancrage.
+    //
+    // Fallback : si le prime cycle n'a pas encore tourné (Show() avant
+    // Frame.Loaded — ne devrait pas arriver en pratique), un item.Measure()
+    // de secours est appelé pour ne pas afficher un popup de taille zéro.
+    // L'event ItemAttachmentChecked reste actif tant que le fix n'est pas
+    // validé visuellement, pour observer post-fix que la lecture cache prend
+    // bien le pas sur le Measure() détaché.
 
     private (int width, int height) MeasureFlyout(double scale)
     {
@@ -452,19 +523,40 @@ public sealed class TrayContextMenuHost : IDisposable
         int idx = 0;
         foreach (var item in _flyout.Items)
         {
-            item.Measure(new Windows.Foundation.Size(10_000, 10_000));
-            width = Math.Max(width, item.DesiredSize.Width);
-            height += item.DesiredSize.Height;
-
             string itemText = item switch
             {
                 MenuFlyoutItem mi => mi.Text,
                 MenuFlyoutSeparator => "<separator>",
                 _ => "<unknown>",
             };
+
+            // Diagnostic d'attachement gardé actif post-fix pour valider que la
+            // lecture cache prend bien le pas sur le Measure() détaché (cf.
+            // JOURNAL.md du module). Retirable une fois la validation faite.
+            bool hasVisualParent = VisualTreeHelper.GetParent(item) is not null;
+            bool isLoaded = item is FrameworkElement fe && fe.IsLoaded;
+            DeckleShellTrayMenuSource.Log.ItemAttachmentChecked(
+                idx, itemText, hasVisualParent, isLoaded);
+
+            Windows.Foundation.Size desired;
+            if (_primedSizes.TryGetValue(item, out var cached))
+            {
+                desired = cached;
+            }
+            else
+            {
+                // Fallback sécurité — le prime cycle n'a pas encore peuplé le
+                // cache. Mesure détachée acceptée faute de mieux, le popup
+                // affichera au pire la hauteur compressée native.
+                item.Measure(new Windows.Foundation.Size(10_000, 10_000));
+                desired = item.DesiredSize;
+            }
+            width = Math.Max(width, desired.Width);
+            height += desired.Height;
+
             DeckleShellTrayMenuSource.Log.ItemMeasured(
                 idx, itemText, item.GetType().Name,
-                item.DesiredSize.Width, item.DesiredSize.Height);
+                desired.Width, desired.Height);
             idx++;
         }
 
@@ -491,7 +583,10 @@ public sealed class TrayContextMenuHost : IDisposable
             if (_frame is not null)
                 _frame.Loaded -= OnFrameLoaded;
             if (_flyout is not null)
+            {
                 _flyout.Closed -= OnFlyoutClosed;
+                _flyout.Opened -= OnFlyoutOpened;
+            }
             _window.Close();
         }
 
