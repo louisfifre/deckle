@@ -53,6 +53,8 @@ _Mise à jour : 2026-05-28 20:08 — source : `git ls-files`_
 ├── benchmark/
 │   ├── benches/
 │   │   ├── voxtral-onnx-poc/
+│   │   │   ├── debug_kv.py
+│   │   │   ├── debug_tokens.py
 │   │   │   └── smoke_test.py
 │   │   ├── voxtral-poc/
 │   │   │   ├── bench.py
