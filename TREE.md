@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-28 21:37 — source : `git ls-files`_
+_Mise à jour : 2026-05-28 21:38 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -28,6 +28,36 @@ _Mise à jour : 2026-05-28 21:37 — source : `git ls-files`_
 │       │   └── SKILL.md  — Workflow doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries h…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — Query official Microsoft documentation to find concepts, tutorials, and code ex…
+│       ├── senior-architect/
+│       │   ├── references/
+│       │   │   ├── architecture_patterns.md
+│       │   │   ├── system_design_workflows.md
+│       │   │   └── tech_decision_guide.md
+│       │   ├── scripts/
+│       │   │   ├── architecture_diagram_generator.py
+│       │   │   ├── dependency_analyzer.py
+│       │   │   └── project_architect.py
+│       │   └── SKILL.md  — Complete toolkit for senior architect with modern tools and best practices.
+│       ├── senior-frontend/
+│       │   ├── references/
+│       │   │   ├── frontend_best_practices.md
+│       │   │   ├── nextjs_optimization_guide.md
+│       │   │   └── react_patterns.md
+│       │   ├── scripts/
+│       │   │   ├── bundle_analyzer.py
+│       │   │   ├── component_generator.py
+│       │   │   └── frontend_scaffolder.py
+│       │   └── SKILL.md  — Frontend development skill for React, Next.js, TypeScript, and Tailwind CSS app…
+│       ├── senior-fullstack/
+│       │   ├── references/
+│       │   │   ├── architecture_patterns.md
+│       │   │   ├── development_workflows.md
+│       │   │   └── tech_stack_guide.md
+│       │   ├── scripts/
+│       │   │   ├── code_quality_analyzer.py
+│       │   │   ├── fullstack_scaffolder.py
+│       │   │   └── project_scaffolder.py
+│       │   └── SKILL.md  — Complete toolkit for senior fullstack with modern tools and best practices.
 │       ├── tdd/
 │       │   ├── deep-modules.md
 │       │   ├── interface-design.md
@@ -46,6 +76,31 @@ _Mise à jour : 2026-05-28 21:37 — source : `git ls-files`_
 │       │   │   └── visual-design.md
 │       │   ├── AGENTS.md
 │       │   └── SKILL.md  — |
+│       ├── winui-app/
+│       │   ├── agents/
+│       │   │   └── openai.yaml
+│       │   ├── assets/
+│       │   │   └── winui.png
+│       │   ├── references/
+│       │   │   ├── _sections.md
+│       │   │   ├── accessibility-input-and-localization.md
+│       │   │   ├── build-run-and-launch-verification.md
+│       │   │   ├── community-toolkit-controls-and-helpers.md
+│       │   │   ├── controls-layout-and-adaptive-ui.md
+│       │   │   ├── foundation-environment-audit-and-remediation.md
+│       │   │   ├── foundation-setup-and-project-selection.md
+│       │   │   ├── foundation-template-first-recovery.md
+│       │   │   ├── foundation-winui-app-structure.md
+│       │   │   ├── motion-animations-and-polish.md
+│       │   │   ├── performance-diagnostics-and-responsiveness.md
+│       │   │   ├── sample-source-map.md
+│       │   │   ├── shell-navigation-and-windowing.md
+│       │   │   ├── styling-theming-materials-and-icons.md
+│       │   │   ├── testing-debugging-and-review-checklists.md
+│       │   │   └── windows-app-sdk-lifecycle-notifications-and-deployment.md
+│       │   ├── config.yaml
+│       │   ├── LICENSE.txt
+│       │   └── SKILL.md  — Bootstrap, develop, and design modern WinUI 3 desktop applications with C# and…
 │       └── write-a-skill/
 │           └── SKILL.md  — Create new agent skills with proper structure, progressive disclosure, and bund…
 ├── .vscode/
@@ -558,6 +613,7 @@ _Mise à jour : 2026-05-28 21:37 — source : `git ls-files`_
 │       └── Deckle.Tests.csproj
 ├── .gitattributes
 ├── .gitignore
+├── AGENTS.md  — [agent-instructions] Minimal Codex bridge for Deckle. Claude-maintained files remain the source of t…
 ├── CLAUDE.md  — [agent-instructions] Master agent-instructions for the Deckle project (Windows utility, .NET 10 / Wi…
 ├── CONTEXT.md  — [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
