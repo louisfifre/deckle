@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-28 13:24 — source : `git ls-files`_
+_Mise à jour : 2026-05-28 15:15 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -164,8 +164,10 @@ _Mise à jour : 2026-05-28 13:24 — source : `git ls-files`_
 │   │   ├── 0015-attendre-le-merge-mmvq-vulkan-q3-k-q6-k.md
 │   │   └── 0016-inference-safetensors-native-pour-voxtral.md  — [adr] Acte l'adoption de l'inférence safetensors-native via Transformers + torch ROCm…
 │   ├── reference/
+│   │   ├── reference--build-onnxruntime-genai-amd-windows--1.0.md  — [reference] Recette de build local de Microsoft `onnxruntime-genai` sur Windows AMD avec Vi…
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
+│       ├── phi4-oga-lora-activation--2026-05-28.patch
 │       ├── research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md  — [research] Comparaison ASR français au 2026-05-27 entre Voxtral Mini 3B / Small 24B, Whisp…
 │       ├── research--asr-native-windows-amd-routes--2026-05-28.md  — [research] Cartographie des voies réalistes pour exécuter un modèle ASR multimodal (Phi-4,…
 │       ├── research--hdr-graphics-capture--2026-05-15.md

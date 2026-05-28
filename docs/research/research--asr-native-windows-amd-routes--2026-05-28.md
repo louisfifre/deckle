@@ -164,6 +164,102 @@ Test verbatim du sample officiel `microsoft/PhiCookBook/md/04.HOL/dotnet/src/Lab
 
 Conclusion empirique forte : **la chaîne C# Microsoft pour Phi-4 audio est cassée chez Microsoft eux-mêmes, sur leur propre modèle, dans leur propre sample, depuis la première version publiée mars 2025**. Le sample MS pin une version archaïque (0.7.0-rc1) qui crash sur le modèle ONNX actuel (publié juillet 2025) parce que le format INT4 du LoRA adapter a évolué. En CPU mode (config Debug standard), il atteint la génération mais refuse comme tous les autres. Le bug n'est ni notre code, ni notre prompt, ni notre EP. Confirmation indépendante par l'agent A (diff transformers vs OGA) : la cause-racine est l'activation du LoRA jamais déclenchée parce que conditionnée à un compteur structurellement zéro.
 
+# POC palier 2 — patch local appliqué et testé (2026-05-28)
+
+Suite à la fiche ci-dessus, **le patch local OGA a été produit et testé end-to-end sur la machine cible**. Cette section consigne les observations brutes, sans verdict — la matière sert à décider d'une suite et à alimenter éventuellement un retour upstream.
+
+## Patch produit
+
+Branche `fix/phi4-lora-activation-after-extra-inputs` sur le tag `v0.13.0` (commit upstream `2d30e49ff403`) du clone local `D:\workspace\onnxruntime-genai\`. Diff de 33 lignes (+24 / -9) sur un seul fichier `src/models/multi_modal.cpp` :
+
+- Le bloc IF/ELSE IF d'activation LoRA est retiré du constructeur `MultiModalPipelineState` (où `num_image_tokens_` et `num_audio_tokens_` valent zéro par initialisation `{}`)
+- Le bloc est réinjecté à la toute fin de `MultiModalPipelineState::SetExtraInputs`, *après* la population des compteurs par `GetNumImageTokens` / `GetNumAudioTokens`
+- Deux lignes `std::cerr << "[deckle-phi4-poc] {vision|speech} LoRA adapter loaded (num_*_tokens=N)\n"` ajoutées à côté de chaque `LoadAdapter` pour la vérification couche 1
+- Aucun changement de header, aucun changement de signature, aucun nouveau membre — la P/Invoke surface reste identique
+
+Diff archivé sous [`docs/research/phi4-oga-lora-activation--2026-05-28.patch`](phi4-oga-lora-activation--2026-05-28.patch). Commit local `e7d26fc` sur le clone hors-repo.
+
+## 4 risques résiduels — résolus par lecture amont
+
+Avant le test, lecture confirmation des quatre risques posés dans la section *Voie 1 — Risques résiduels* de cette fiche :
+
+1. **Persistance du LoRA pendant la génération autoregressive** — `State::SetActiveAdapter` (lignes 234-244 de `src/models/model.cpp` à `v0.13.0`) ajoute l'adapter à `run_options_->AddActiveLoraAdapter(...)`. Le `run_options_` est un membre persistant de la base class `State`, retransmis à chaque `decoder.Run()`. **Le LoRA reste actif pour tous les tokens autoregressifs**, pas seulement le premier. Risque levé.
+2. **Comportement du graphe embedding (splice audio_features)** — PR upstream [#1701](https://github.com/microsoft/onnxruntime-genai/pull/1701) mergée 2025-08-26 traite déjà l'allocation `audio_features`. Pas de signal de régression observé. Risque levé.
+3. **Tokenization `<|audio_1|>` → `<|endoftext11|>` ID 200011** — confirmé empiriquement dans `tokenizer.json` du bundle `gpu/gpu-int4-rtn-block-32` : entrée `added_tokens` ligne 24-27 (`id=200011`, `content="<|endoftext11|>"`) et entrée `vocab` ligne 200181. La regex sub OGA produit le bon `input_id`. Risque levé.
+4. **Mapping `audio_projection_mode`** — `phi_multimodal_processor.cpp` lignes 41-50 mappe `2 = Speech, language` exactement quand `num_audios > 0 && num_images == 0` — cohérent avec transformers (qui passe la même value 2 à `audio_projection.onnx` même si l'API utilise des strings). Risque levé.
+
+Aucun des quatre risques résiduels n'est un blocage actif. La chaîne logique du fix est saine.
+
+## Build local de `onnxruntime-genai` patché
+
+Réussi après itérations sur la toolchain Windows AMD. Synthèse archivée sous [`docs/reference/reference--build-onnxruntime-genai-amd-windows--1.0.md`](../reference/reference--build-onnxruntime-genai-amd-windows--1.0.md). Trois écueils notables, tous contournés sans toucher au code amont :
+
+- **`Enter-VsDevShell` sur VS 2026** ne setup ni le PATH MSVC bin ni `LIB` correctement (bug observé, à signaler). Le wrapper `build-deckle.ps1` compense manuellement.
+- **MSVC 14.51 émet le nouveau warning C4875** sur le pattern `[[gsl::suppress(int_literal)]]` de la lib GSL bundlée. OGA compile avec `/WX`, le warning devient fatal. Contourné via `$env:CL = '/wd4875'`.
+- **MSVC 14.51 érige `<experimental/coroutine>` en `STL1011` static_assert**. Contourné via `/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` dans la même var d'env.
+
+DLL produit : `D:\workspace\onnxruntime-genai\build\Windows\Release\onnxruntime-genai.dll`, 2330 KB (vs 5922 KB pour le NuGet stock — différence de build flags vraisemblable, à vérifier). Dépendances ORT 1.25.0-dev téléchargées et stagées à côté. Drop-in opéré dans `benchmark/cs/PhiBench/bin/Debug/net10.0-windows/win-x64/`, anciens DLL conservés en `.stock-0.13.0-backup`.
+
+## Vérification couche 1 — LoRA effectivement chargé
+
+`PhiBench single` sur l'audio diagnostique `dcad692a` (1.7 s « Et toujours douter un peu. »), execution provider CPU, modèle `gpu/gpu-int4-rtn-block-32`. Stderr capturé verbatim :
+
+```
+=== PhiBench single ===
+  model_path : D:\models\llm\phi4-multimodal-onnx\gpu\gpu-int4-rtn-block-32
+  ep         : cpu
+  loading model...
+  model ready
+  transcribing...
+[deckle-phi4-poc] speech LoRA adapter loaded (num_audio_tokens=18)
+```
+
+**La ligne diagnostique apparaît, une seule fois, avec `num_audio_tokens=18` cohérent avec 1.4 s d'audio actif (mesure WAV header : 1.408 s).** Le constructeur n'active plus le LoRA. `SetExtraInputs` l'active après population des compteurs. Le contrôle de flow du patch fonctionne tel que prévu.
+
+## Bug différent observé à l'application du LoRA — shape mismatch
+
+Immédiatement après le chargement du LoRA, la première inférence plante :
+
+```
+[E:onnxruntime] Non-zero status code returned while running MatMulNBits node.
+  Name:'/model/layers.0/attn/v_proj/lora_A/MatMul_Q4'
+  Status Message: Input 'quantized_weight' is expected to have shape {256,96,16}, got {320,96,16}
+```
+
+Décodé :
+
+- Le node `lora_A` au `v_proj` de la couche 0 attend un `quantized_weight` de shape `{256, 96, 16}`
+- Le LoRA file fournit `{320, 96, 16}`
+- L'axe qui diffère est la dimension 0 (256 vs 320). En INT4 MatMulNBits avec `block_size=32`, le shape est `[N, K/block_size, block_size/2]`. Avec K=3072 (le `hidden_size` du décodeur) et block_size=32, on a bien `K/block_size = 96` et `block_size/2 = 16` cohérents. La dimension 0 (N) correspond au output dim du LoRA A matrix, qui est le **rang du LoRA**.
+- Le base decoder `phi-4-mm-text.onnx` semble avoir des nodes câblés pour **rank 256**
+- Le LoRA adapter `phi-4-mm-speech.onnx_adapter` semble shipper des weights pour **rank 320**
+
+C'est exactement le crash *« MatMulNBits LoRA Q4 incompat format ONNX récent »* déjà observé dans la table verdict empirique ci-dessus sur le sample MS verbatim. Ce qui change avec notre patch : avant, l'erreur ne se manifestait jamais parce que le LoRA n'était jamais chargé. Maintenant qu'il l'est, le mismatch shape émerge à l'exécution.
+
+## Cause du mismatch — incertaine
+
+**Ce qu'on observe** : deux shapes incompatibles dans le bundle officiel Microsoft `microsoft/Phi-4-multimodal-instruct-onnx`, variante `gpu/gpu-int4-rtn-block-32`, telechargé en local en mai 2026. Le base decoder attend rank 256, le LoRA file fournit rank 320.
+
+**Ce qu'on ne sait pas encore** :
+
+- Pourquoi cette divergence existe-t-elle ? Hypothèses non vérifiées : (a) deux versions du modèle source ont été quantizées et publiées dans le même bundle par erreur ; (b) une transformation runtime devait projeter 320 → 256 mais n'a pas été déclenchée ; (c) un téléchargement partiel ou un fichier corrompu côté local ; (d) la variante `gpu-int4-rtn-block-32` consomme un LoRA différent que la variante CPU et nos chemins se croisent ; (e) le base decoder a été exporté pour un Phi-4-Mini de rank 256 alors que le LoRA speech est entraîné sur un Phi-4-Mini légèrement différent (rank 320) — la docstring originale de la model card mentionne *« LoRA Audio 460 M »* et rank 320 / alpha 640.
+- Est-ce que d'autres variantes du bundle (`cpu-int4-rtn-block-32`, `gpu-fp16`) présentent le même mismatch ? Non testé.
+- Est-ce que la résolution se trouve côté tooling de génération du bundle (Microsoft `mobius`) ou côté runtime OGA (qui pourrait théoriquement projeter le LoRA en runtime) ?
+
+Avant tout verdict, **investigation à mener** :
+
+- Croiser avec les autres variantes du bundle officiel sur HuggingFace (regarder les shapes de leurs `phi-4-mm-speech.onnx_adapter` respectifs).
+- Inspecter `phi-4-mm-text.onnx` pour confirmer le rank attendu sur tous les `lora_A` / `lora_B` nodes.
+- Inspecter le `phi-4-mm-speech.onnx_adapter` (298 MB) pour confirmer la shape de toutes ses entrées.
+- Vérifier les issues GitHub adjacentes : il existe peut-être déjà un report sur le mismatch shape Phi-4-mm OGA, distinct de #1455.
+- Considérer une soumission upstream du patch LoRA activation : il résout proprement #1455 (24 lignes), et le mismatch shape devient alors visible et exploitable comme bug séparé.
+
+## Statut de la voie 1 au 2026-05-28 fin de session
+
+**Pas de verdict.** Le patch a fait ce qu'il était censé faire (LoRA chargé au bon moment, persistance du run_options garantie, control-flow validé bout en bout). Un nouveau bloqueur a émergé en aval, dont la cause-racine n'est pas encore tranchée et dont les voies de résolution n'ont pas été explorées. L'investigation reste ouverte.
+
+Ce qui est acquis : le patch local OGA est **propre, testé empiriquement, et candidat à une PR upstream** pour résoudre #1455 indépendamment du sort du bundle officiel — il bénéficierait aussi à toute personne qui exporte son propre bundle Phi-4-mm avec rank cohérent. Le diagnostic du shape mismatch lui-même est un signal utile qu'on n'avait avant la patch.
+
 # Voies fermées, documentées pour ne pas reperdre
 
 - **llama.cpp mainline Voxtral.** PRs [#19698](https://github.com/ggml-org/llama.cpp/pull/19698) et [#20638](https://github.com/ggml-org/llama.cpp/pull/20638) fermées par ngxson le 23 mars 2026 (*« many model-specific code paths, considered as anti-pattern in libmtmd design »*). Issue de planification [#20914](https://github.com/ggml-org/llama.cpp/issues/20914) ouverte le même jour, stale depuis. Aucun fork actif identifié. À surveiller passivement.
