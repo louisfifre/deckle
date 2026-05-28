@@ -167,6 +167,7 @@ _Mise à jour : 2026-05-28 13:24 — source : `git ls-files`_
 │   │   └── reference--eventsource-convention--1.2.md
 │   └── research/
 │       ├── research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md  — [research] Comparaison ASR français au 2026-05-27 entre Voxtral Mini 3B / Small 24B, Whisp…
+│       ├── research--asr-native-windows-amd-routes--2026-05-28.md  — [research] Cartographie des voies réalistes pour exécuter un modèle ASR multimodal (Phi-4,…
 │       ├── research--hdr-graphics-capture--2026-05-15.md
 │       ├── research--hue-entertainment-v2--2026-05-15.md
 │       ├── research--hyperhdr-interpolators--2026-05-15.md
