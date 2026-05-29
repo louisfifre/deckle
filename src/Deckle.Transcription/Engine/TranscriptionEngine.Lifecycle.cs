@@ -307,7 +307,7 @@ public sealed partial class TranscriptionEngine
                 t_isWarmup = true;
                 try
                 {
-                    Transcribe(warmupBuffer, ct);
+                    TranscribeAsync(warmupBuffer, ct).GetAwaiter().GetResult();
                 }
                 finally
                 {

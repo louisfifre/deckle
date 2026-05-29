@@ -378,7 +378,7 @@ public sealed partial class TranscriptionEngine
             }
 
             RaiseStatus(Loc.Get("Status_Transcribing"));
-            Transcribe(audio);
+            TranscribeAsync(audio).GetAwaiter().GetResult();
             ResetIdleTimer();
         }
         catch (Exception ex)

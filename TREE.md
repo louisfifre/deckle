@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-29 21:58 — source : `git ls-files`_
+_Mise à jour : 2026-05-29 21:59 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -585,6 +585,12 @@ _Mise à jour : 2026-05-29 21:58 — source : `git ls-files`_
 │   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Transcription, the backend-agnostic transcription orchestra…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
+│   │   ├── DeckleWhispSource.Delivery.cs
+│   │   ├── DeckleWhispSource.PipelineCompletion.cs
+│   │   ├── DeckleWhispSource.Telemetry.cs
+│   │   ├── DeckleWhispSource.Transcribe.cs
+│   │   ├── DeckleWhispSource.Ui.cs
+│   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs

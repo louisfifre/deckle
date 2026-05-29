@@ -109,7 +109,7 @@ public sealed partial class TranscriptionEngine
     // segments at the end of the call.
 
 
-    private void Transcribe(float[] audio, CancellationToken ct = default)
+    private async Task TranscribeAsync(float[] audio, CancellationToken ct = default)
     {
         // Identité de cette invocation pipeline. Régénérée à chaque
         // entrée dans Transcribe — le moindre early-return en aval
@@ -149,10 +149,10 @@ public sealed partial class TranscriptionEngine
         TranscriptionResult result;
         try
         {
-            result = _backend.TranscribeAsync(
+            result = await _backend.TranscribeAsync(
                 audio,
                 seg => NewSegment?.Invoke(seg),
-                ct).GetAwaiter().GetResult();
+                ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

@@ -25,7 +25,7 @@ The orchestrator never touches P/Invoke, native callbacks, or C structs — that
 
 The pipeline runs in a single `_backend.TranscribeAsync(...)` call that returns as soon as the backend is done. For Whisper today it is a synchronous wrapper around `whisper_full()`; for an HTTP backend (Voxtral), it would be a real `await`. No external chunking: the backend manages its internal window (30 s + dynamic seek in Whisper, equivalent on the Voxtral side), the VAD cuts silences upstream, and segments arrive as they come through the `segmentSink`.
 
-`Record()` accumulates all captured audio into a single `List<byte>` and returns a `float[]` on Stop; `Transcribe(float[])` makes a single `_backend.TranscribeAsync(...)` call and the backend handles inter-window context propagation internally. The final assembled text lands in `TranscriptionResult.FullText`.
+`Record()` accumulates all captured audio into a single `List<byte>` and returns a `float[]` on Stop; `TranscribeAsync(float[])` makes a single awaited `_backend.TranscribeAsync(...)` call and the backend handles inter-window context propagation internally. The worker thread blocks only at its top-level rendezvous, so a future true async backend can keep its own I/O path asynchronous without the orchestrator immediately forcing `.GetResult()` inside the pipeline. The final assembled text lands in `TranscriptionResult.FullText`.
 
 ### Whisper initial prompt
 
