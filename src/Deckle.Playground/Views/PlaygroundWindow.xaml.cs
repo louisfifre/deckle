@@ -19,7 +19,7 @@ namespace Deckle.Playground;
 // three pages : HomePage, HudPage, AmbientPage — each owning its tuning
 // surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes
-// (SetRecordingState, ShowAndActivate, Closing→Hide, Closed→DisposeResources).
+// (SetRecordingState, ShowAndActivate, Closed→DisposeResources).
 //
 // Pattern : same as SettingsWindow. NavigationViewItem.Tag carries the
 // fully-qualified Page type name, resolved via Type.GetType in
@@ -28,10 +28,9 @@ namespace Deckle.Playground;
 // PlaygroundWindow.Closed disposes the resources owned by each page
 // via the DisposeResources() entry points.
 //
-// Singleton-hidden : Close → Cancel + Hide (App.OnLaunched creates the
-// instance once and reuses it). Closed only fires at QuitApp ; that's
-// where the runtime resources owned by HudPage and AmbientPage are
-// torn down.
+// Real-destruction lifetime : Close tears the window down, disposes
+// HudPage/AmbientPage resources, and App clears its lazy reference so
+// the next open constructs a fresh Playground instance.
 public sealed partial class PlaygroundWindow : Window
 {
     private readonly IntPtr _hwnd;
