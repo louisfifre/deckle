@@ -74,6 +74,7 @@ public sealed partial class AmbientPage : Page
     private CancellationTokenSource? _hueRotationCts;
     private bool _hueGroupComboSuppress;
     private bool _hueGroupsFetchInFlight;
+    private AmbientEngine? _observedEngine;
 
     // ── Preview grid + sampler (J3) — see AmbientPage.Preview.cs ────────────
     private FrameSampler? _frameSampler;
@@ -135,7 +136,8 @@ public sealed partial class AmbientPage : Page
         AmbientSettingsService.Instance.Changed  += OnAmbientSettingsChanged;
         if (AmbientEngine.Current is { } engine)
         {
-            engine.StateChanged += OnAmbientEngineStateChanged;
+            _observedEngine = engine;
+            _observedEngine.StateChanged += OnAmbientEngineStateChanged;
         }
 
         if (this.Content is FrameworkElement root)
@@ -221,9 +223,10 @@ public sealed partial class AmbientPage : Page
 
         HuePairingService.Instance.BridgeChanged -= OnHueBridgeChanged;
         AmbientSettingsService.Instance.Changed  -= OnAmbientSettingsChanged;
-        if (AmbientEngine.Current is { } engine)
+        if (_observedEngine is { } engine)
         {
             engine.StateChanged -= OnAmbientEngineStateChanged;
+            _observedEngine = null;
         }
     }
 

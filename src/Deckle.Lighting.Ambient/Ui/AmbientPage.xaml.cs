@@ -38,6 +38,7 @@ namespace Deckle.Lighting.Ambient;
 public sealed partial class AmbientPage : Page
 {
     private bool _loading = true;
+    private AmbientEngine? _observedEngine;
 
     // Hue pairing local state. The countdown CTS is owned by this page
     // so the Unloaded handler can cancel an in-flight pair if the user
@@ -59,15 +60,18 @@ public sealed partial class AmbientPage : Page
 
     private void AmbientPage_Loaded(object sender, RoutedEventArgs e)
     {
+        var engine = AmbientEngine.Current;
+
         ResyncFromSettings();
         SyncHueBridgeUi();
-        ApplyEngineState(AmbientEngine.Current?.State ?? AmbientEngineState.Off);
+        ApplyEngineState(engine?.State ?? AmbientEngineState.Off);
 
         AmbientSettingsService.Instance.Changed += OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged += OnHueBridgeChanged;
-        if (AmbientEngine.Current is not null)
+        if (engine is not null)
         {
-            AmbientEngine.Current.StateChanged += OnEngineStateChanged;
+            _observedEngine = engine;
+            _observedEngine.StateChanged += OnEngineStateChanged;
         }
 
         _loading = false;
@@ -84,9 +88,10 @@ public sealed partial class AmbientPage : Page
 
         AmbientSettingsService.Instance.Changed -= OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged -= OnHueBridgeChanged;
-        if (AmbientEngine.Current is not null)
+        if (_observedEngine is not null)
         {
-            AmbientEngine.Current.StateChanged -= OnEngineStateChanged;
+            _observedEngine.StateChanged -= OnEngineStateChanged;
+            _observedEngine = null;
         }
         _loading = true;
     }

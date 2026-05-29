@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-28 21:42 — source : `git ls-files`_
+_Mise à jour : 2026-05-29 21:58 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -421,9 +421,13 @@ _Mise à jour : 2026-05-28 21:42 — source : `git ls-files`_
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
 │   │   ├── Engine/
+│   │   │   ├── AmbientColorPipeline.cs
 │   │   │   ├── AmbientEngine.cs
+│   │   │   ├── AmbientEngine.Lifecycle.cs
+│   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientModePresets.cs
+│   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightZone.cs
 │   │   │   └── LightZoneSuggester.cs
