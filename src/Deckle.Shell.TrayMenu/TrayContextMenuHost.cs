@@ -54,9 +54,11 @@ public sealed class TrayContextMenuHost : IDisposable
     // d'exclusion). 36 px = taille typique d'un slot d'icône tray à 100% DPI.
     private const int CursorExcludeHalfExtent = 18;
 
-    // Bordures internes ajoutées au calcul de taille du flyout (équivalent au
-    // padding de la card MenuFlyout). 4 px top + 4 px bottom + 4 px gauche +
-    // 4 px droite, scalés par le DPI du moniteur sous le curseur.
+    // Marge forfaitaire du chemin de fallback de MeasureFlyout (presenter non
+    // capturé au prime cycle). 4 px par côté. Imprécise par nature — elle
+    // sur-estimait le chrome réel du presenter (≈ 4-6 DIP), d'où le trou Mica
+    // quand elle pilotait la mesure ; le chemin nominal lit désormais la
+    // DesiredSize du presenter réel (_primedPresenterSize).
     private const double FlyoutFrameMargin = 4.0;
 
     private readonly IntPtr _ownerHwnd;
@@ -85,6 +87,15 @@ public sealed class TrayContextMenuHost : IDisposable
     // nombre variable d'ouvertures, parce que le template natif tombe à sa
     // MinHeight quand mesuré détaché).
     private readonly System.Collections.Generic.Dictionary<MenuFlyoutItemBase, Windows.Foundation.Size> _primedSizes = new();
+
+    // DesiredSize du MenuFlyoutPresenter réel, capturée au prime cycle. Inclut
+    // le padding et la bordure propres du presenter — c'est la taille exacte
+    // que le popup visible occupe. MeasureFlyout() la préfère à la somme des
+    // items + marge forfaitaire : Full étirant le presenter jusqu'à la fenêtre
+    // porteuse, dimensionner la fenêtre sur cette valeur annule l'étirement et
+    // supprime le trou Mica (cf. CLAUDE.md, section Placement). null tant que le
+    // prime cycle n'a pas tourné, ou si le presenter n'a pas pu être trouvé.
+    private Windows.Foundation.Size? _primedPresenterSize;
 
     public Action? OnShowLogs        { get; set; }
     public Action? OnShowSettings    { get; set; }
@@ -215,6 +226,8 @@ public sealed class TrayContextMenuHost : IDisposable
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Restart"), () => OnRestart?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Quit"),    () => OnQuit?.Invoke()));
 
+        ApplyNarrowPadding();
+
         _flyout.Closed += OnFlyoutClosed;
         _flyout.Opened += OnFlyoutOpened;
 
@@ -265,6 +278,38 @@ public sealed class TrayContextMenuHost : IDisposable
             action();
         };
         return item;
+    }
+
+    // Neutralise le VisualStateGroup PaddingSizeStates en fixant le Padding de
+    // chaque item à la valeur narrow. L'état initial DefaultPadding est un
+    // VisualState vide : il laisse LayoutRoot.Padding à sa valeur de
+    // TemplateBinding, donc à item.Padding. En fixant item.Padding à narrow, le
+    // premier render est déjà compact, sans attendre que le framework bascule en
+    // NarrowPadding (bascule qui n'arrivait qu'après le premier frame, d'où le
+    // scroll au premier clic : items rendus à 40 DIP dans une fenêtre dimensionnée
+    // pour 32). L'état NarrowPadding pose la même valeur — les deux états
+    // deviennent équivalents, densité narrow en permanence.
+    //
+    // Densité narrow assumée comme cible unique : le menu tray s'ouvre au clic
+    // droit souris (la branche touch/DefaultPadding du natif ne s'applique pas en
+    // pratique sur une app desktop), cohérent avec la doctrine densité Win11 du
+    // CLAUDE.md du module.
+    private void ApplyNarrowPadding()
+    {
+        if (_flyout is null) return;
+        if (!Application.Current.Resources.TryGetValue(
+                "MenuFlyoutItemThemePaddingNarrow", out var narrowObj)
+            || narrowObj is not Thickness narrowPadding)
+        {
+            // Resource non résolue depuis le scope app — on laisse le
+            // GoToState(NarrowPadding) du prime cycle et du handler Opened comme
+            // filet (le premier clic peut alors rester en DefaultPadding).
+            return;
+        }
+
+        foreach (var item in _flyout.Items)
+            if (item is MenuFlyoutItem mfi)
+                mfi.Padding = narrowPadding;
     }
 
     // ── Show ──────────────────────────────────────────────────────────────────
@@ -368,12 +413,18 @@ public sealed class TrayContextMenuHost : IDisposable
             parentRectX, parentRectY, parentRectW, parentRectH);
 
         // FlyoutPlacementMode.Full : ouvre le menu à l'emplacement exact du
-        // target (notre frame). Sans Full, le mode Auto par défaut place le
-        // popup adjacent au target (typiquement au-dessus du frame), ce qui
-        // double l'offset déjà calculé par CalculatePopupWindowPosition — le
-        // menu apparaît alors décalé d'environ une hauteur de menu vers le
-        // haut. La fenêtre porteuse étant déjà positionnée à la coordonnée
-        // exacte voulue, Full est le mode qui colle.
+        // target (notre frame). Sans Full, le placement Top par défaut place
+        // le popup au-dessus du frame, ce qui ajoute un offset vertical par-
+        // dessus celui déjà calculé par CalculatePopupWindowPosition — le menu
+        // saute d'environ une hauteur de menu vers le haut. La fenêtre porteuse
+        // étant déjà positionnée à la coordonnée exacte voulue, Full neutralise
+        // cet offset.
+        //
+        // Contrepartie (doc MS + repro 2026-05-31) : Full étire aussi le
+        // presenter jusqu'à remplir la fenêtre porteuse. La taille du menu
+        // visible est donc dictée par MeasureFlyout ; le FlyoutFrameMargin de
+        // 8 DIP qu'on ajoute se voit en trou Mica en bas (presenter étiré qui
+        // ne le consomme pas comme padding). Cf. CLAUDE.md / JOURNAL du module.
         _flyout.ShowAt(_frame, new FlyoutShowOptions
         {
             ShowMode = FlyoutShowMode.Transient,
@@ -463,6 +514,22 @@ public sealed class TrayContextMenuHost : IDisposable
                 _primedSizes.Clear();
                 foreach (var item in _flyout.Items)
                     _primedSizes[item] = item.DesiredSize;
+
+                // Capture la taille du presenter réel (remonte depuis le premier
+                // item, attaché à ce stade). Sa DesiredSize inclut son padding +
+                // sa bordure, donc reflète exactement la card visible — au
+                // contraire de la somme des items, qui les ignore et qu'on
+                // compensait par une marge forfaitaire imprécise.
+                _primedPresenterSize = null;
+                if (_flyout.Items.Count > 0)
+                {
+                    var presenter = FindAncestorPresenter(_flyout.Items[0]);
+                    if (presenter is not null)
+                    {
+                        presenter.UpdateLayout();
+                        _primedPresenterSize = presenter.DesiredSize;
+                    }
+                }
             }
 
             _flyout?.Hide();
@@ -487,32 +554,41 @@ public sealed class TrayContextMenuHost : IDisposable
         if (_isVisible) Hide("flyout_closed");
     }
 
+    // Remonte le visual tree depuis un descendant jusqu'au MenuFlyoutPresenter
+    // qui héberge les items du popup. Retourne null si l'arbre n'est pas encore
+    // monté (presenter absent du tree au moment de l'appel).
+    private static MenuFlyoutPresenter? FindAncestorPresenter(DependencyObject start)
+    {
+        DependencyObject? current = VisualTreeHelper.GetParent(start);
+        while (current is not null)
+        {
+            if (current is MenuFlyoutPresenter presenter)
+                return presenter;
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
     // ── Measure ───────────────────────────────────────────────────────────────
     //
-    // Itère les items du flyout et lit leur DesiredSize depuis le cache
-    // _primedSizes peuplé pendant le prime cycle (OnFrameLoaded, callback Low
-    // priority post-ShowAt — items attachés au visual tree du popup, mesure
-    // stable). Pas d'appel item.Measure() ici : un Measure() appelé depuis
-    // Show() / MeasureFlyout() tourne sur des items détachés du visual tree
-    // (has_visual_parent=false, is_loaded=false, observé sur 100 % des shows),
-    // et le template natif retombe sur sa MinHeight=32 au-delà d'un seuil de
-    // cache aléatoire — ce qui faisait basculer la hauteur des items natifs de
-    // 40 à 32 après un nombre variable d'ouvertures du menu. Cf. JOURNAL.md du
-    // module pour le diagnostic.
+    // Dimensionne la fenêtre porteuse sur la DesiredSize du MenuFlyoutPresenter
+    // réel, capturée au prime cycle (_primedPresenterSize). Cette taille inclut
+    // le padding et la bordure propres du presenter, donc correspond exactement
+    // à la card que le popup peint. Comme Full étire le presenter jusqu'à la
+    // fenêtre porteuse, dimensionner la fenêtre sur cette valeur rend
+    // l'étirement neutre : ni trou Mica (sur-mesure), ni scroll (sous-mesure).
     //
-    // L'item Ambient (template custom) est inclus dans le cache : sa mesure
-    // détachée était spontanément stable (40.8 sur tous les shows), mais on
-    // l'aligne sur le même chemin pour traiter tous les items uniformément.
+    // La boucle ci-dessous reste pour le diagnostic par item (events
+    // ItemAttachmentChecked / ItemMeasured dans le JSONL) et pour alimenter le
+    // fallback. Les DesiredSize y sont lues depuis le cache _primedSizes (items
+    // attachés au prime cycle) plutôt que par un item.Measure() détaché, qui
+    // retourne une valeur instable (cf. JOURNAL.md du module).
     //
-    // Surplus FlyoutFrameMargin × 2 couvre la card du MenuFlyout. Conversion
-    // en pixels physiques via le scale du moniteur sous le point d'ancrage.
-    //
-    // Fallback : si le prime cycle n'a pas encore tourné (Show() avant
-    // Frame.Loaded — ne devrait pas arriver en pratique), un item.Measure()
-    // de secours est appelé pour ne pas afficher un popup de taille zéro.
-    // L'event ItemAttachmentChecked reste actif tant que le fix n'est pas
-    // validé visuellement, pour observer post-fix que la lecture cache prend
-    // bien le pas sur le Measure() détaché.
+    // Fallback (presenter non capturé au prime, ou prime pas encore tourné) :
+    // somme des hauteurs d'items + FlyoutFrameMargin × 2. Chemin historique,
+    // imprécis (la marge forfaitaire de 8 DIP sur-estimait le chrome réel du
+    // presenter ≈ 4-6 DIP, d'où le trou) — conservé comme garde-fou
+    // anti-popup-de-taille-zéro.
 
     private (int width, int height) MeasureFlyout(double scale)
     {
@@ -529,14 +605,6 @@ public sealed class TrayContextMenuHost : IDisposable
                 MenuFlyoutSeparator => "<separator>",
                 _ => "<unknown>",
             };
-
-            // Diagnostic d'attachement gardé actif post-fix pour valider que la
-            // lecture cache prend bien le pas sur le Measure() détaché (cf.
-            // JOURNAL.md du module). Retirable une fois la validation faite.
-            bool hasVisualParent = VisualTreeHelper.GetParent(item) is not null;
-            bool isLoaded = item is FrameworkElement fe && fe.IsLoaded;
-            DeckleShellTrayMenuSource.Log.ItemAttachmentChecked(
-                idx, itemText, hasVisualParent, isLoaded);
 
             Windows.Foundation.Size desired;
             if (_primedSizes.TryGetValue(item, out var cached))
@@ -560,10 +628,27 @@ public sealed class TrayContextMenuHost : IDisposable
             idx++;
         }
 
-        double dipW = width + FlyoutFrameMargin * 2;
-        double dipH = height + FlyoutFrameMargin * 2;
-        int physW = (int)(dipW * scale);
-        int physH = (int)(dipH * scale);
+        double dipW;
+        double dipH;
+        if (_primedPresenterSize is { } presenterSize
+            && presenterSize.Width > 0 && presenterSize.Height > 0)
+        {
+            // Taille exacte du presenter réel — Full n'a plus rien à étirer.
+            dipW = presenterSize.Width;
+            dipH = presenterSize.Height;
+        }
+        else
+        {
+            // Fallback imprécis : somme des items + marge forfaitaire.
+            dipW = width + FlyoutFrameMargin * 2;
+            dipH = height + FlyoutFrameMargin * 2;
+        }
+
+        // Ceiling plutôt que troncature : on préfère un éventuel sub-pixel de
+        // trou (invisible) à une sous-mesure d'un pixel qui réactiverait le
+        // scroll du presenter.
+        int physW = (int)Math.Ceiling(dipW * scale);
+        int physH = (int)Math.Ceiling(dipH * scale);
 
         DeckleShellTrayMenuSource.Log.FlyoutMeasured(dipW, dipH, physW, physH, scale);
 

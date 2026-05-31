@@ -42,7 +42,6 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtFlyoutClosed          = 13;
     public const int EvtItemClicked           = 14;
     public const int EvtDisposed              = 15;
-    public const int EvtItemAttachmentChecked = 16;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -131,16 +130,6 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     }
 
     // ── Mesure du flyout ──────────────────────────────────────────────────────
-
-    [Event(EvtItemAttachmentChecked,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item attachment | idx={0} text=\"{1}\" has_visual_parent={2} is_loaded={3}")]
-    public void ItemAttachmentChecked(int idx, string text, bool has_visual_parent, bool is_loaded)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtItemAttachmentChecked, idx, text, has_visual_parent, is_loaded);
-    }
 
     [Event(EvtItemMeasured,
            Level = EventLevel.Verbose,
