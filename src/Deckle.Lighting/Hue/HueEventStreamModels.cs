@@ -7,7 +7,7 @@ namespace Deckle.Lighting.Hue;
 // caller (typically AmbientEngine) decides whether the change is
 // truly external (a Hue app / Home Assistant / physical button
 // press) or merely the bridge echoing back our own REST PUT, by
-// comparing CreationTime to its own last-push timestamp for the
+// comparing the event payload to its own last-pushed state for the
 // matching v1 id.
 //
 // Fields are nullable because the EventStream sends partial updates

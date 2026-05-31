@@ -165,11 +165,11 @@ public sealed partial class AmbientEngine
                 _pushIntervalMs = 1000 / GroupPushHz;
             }
 
-            // Fetch the v2 ↔ v1 id maps for the EventStream-driven reclaim.
-            // Best effort : if the bridge happens to reject (rare ; older
-            // firmware, weird LAN), we log and continue without reclaim —
-            // the engine still pushes normally, just won't reclaim from
-            // external commands until the next StartAsync.
+            // Fetch the v2 ↔ v1 id maps for EventStream-driven external
+            // change detection. Best effort : if the bridge happens to
+            // reject (rare ; older firmware, weird LAN), we log and
+            // continue without external-change detection — the engine
+            // still pushes normally until the next StartAsync.
             try
             {
                 var maps = await _bridgeClient.FetchV2IdMapsAsync(ct).ConfigureAwait(false);
@@ -178,7 +178,7 @@ public sealed partial class AmbientEngine
             }
             catch (Exception ex)
             {
-                DeckleAmbientSource.Log.ReclaimSetupFailed(ex.GetType().Name, ex.Message);
+                DeckleAmbientSource.Log.EventStreamSetupFailed(ex.GetType().Name, ex.Message);
                 _v2LightMap = null;
                 _v2GroupedLightMap = null;
             }
@@ -197,11 +197,10 @@ public sealed partial class AmbientEngine
 
             // Per-light config dump — surfaces unmapped lights (LightZone.None)
             // and zero-brightness lights at engine start. Both states cause
-            // the push loop to silently skip the light forever, including
-            // during reclaim. Without this log the user would think "ambient
-            // doesn't reclaim that lamp" when it's actually been opted out
-            // by configuration. Info level so it shows even with the capture
-            // gate off.
+            // the push loop to silently skip the light forever. Without
+            // this log the user would think "ambient doesn't drive that
+            // lamp" when it's actually been opted out by configuration.
+            // Info level so it shows even with the capture gate off.
             if (_multiLightActive && _multiLights is not null)
             {
                 var zoneAssignments = _host.Ambient.LightZones;
@@ -229,7 +228,7 @@ public sealed partial class AmbientEngine
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
             _multiSmoothed.Clear();
-            _lastPushAt.Clear();
+            ClearLastHuePushes();
             _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
 
@@ -249,9 +248,9 @@ public sealed partial class AmbientEngine
 
             // Subscribe to the bridge's v2 EventStream so external state
             // changes (Hue app, Home Assistant, physical Dimmer Switch)
-            // trigger an immediate reclaim push on the next tick. Skip
-            // if the v2 maps weren't fetched (FetchV2IdMapsAsync failed
-            // earlier) — without the maps we can't translate events.
+            // stop the pipeline cleanly. Skip if the v2 maps weren't
+            // fetched (FetchV2IdMapsAsync failed earlier) — without the
+            // maps we can't translate events.
             if (_v2LightMap is not null || _v2GroupedLightMap is not null)
             {
                 _eventStreamTask = Task.Run(
@@ -328,7 +327,7 @@ public sealed partial class AmbientEngine
         {
             if (_v2LightMap is null || !_v2LightMap.TryGetValue(ev.V2ResourceId, out v1Id)) return;
             // In group mode we don't drive per-light, so per-light
-            // events shouldn't trigger a group reclaim.
+            // events shouldn't trigger a group stop.
             if (!_multiLightActive) return;
             if (_multiLights is null || !_multiLights.Any(l => l.Id == v1Id)) return;
             scopedKey = "light:" + v1Id;
@@ -338,15 +337,29 @@ public sealed partial class AmbientEngine
             return;
         }
 
-        // Echo discrimination via local-clock timestamp. The bridge's
-        // creationtime is in its own clock domain (potential drift) ;
-        // comparing local UtcNow to our last self-push avoids skew
-        // entirely. EchoWindow is sized to cover the bridge round-trip
-        // plus SSE delivery latency (~100-200 ms observed).
-        if (_lastPushAt.TryGetValue(scopedKey, out var lastPushed))
+        AmbientHuePushedState? lastPushed = null;
+        lock (_hueEchoLock)
         {
-            var sinceLastPush = DateTimeOffset.UtcNow - lastPushed;
-            if (sinceLastPush.Duration() < EchoWindow) return;
+            if (_lastHuePushes.TryGetValue(scopedKey, out var pushed))
+            {
+                lastPushed = pushed;
+            }
+        }
+
+        var decision = AmbientHueEchoClassifier.Classify(ev, lastPushed, DateTimeOffset.UtcNow);
+        if (decision.Kind == AmbientHueEventDecisionKind.Ignore)
+        {
+            return;
+        }
+
+        int ageMs = decision.AgeMs.HasValue
+            ? (int)Math.Round(decision.AgeMs.Value)
+            : -1;
+
+        if (decision.Kind == AmbientHueEventDecisionKind.Echo)
+        {
+            DeckleAmbientSource.Log.EchoIgnored(v1Id, ev.ResourceType, ageMs);
+            return;
         }
 
         // Honest stop on external interference : we don't try to wrestle
@@ -357,8 +370,46 @@ public sealed partial class AmbientEngine
         // simply flips off and the LogWindow shows the reason.
         AbortStartOrStop(
             "external",
-            () => DeckleAmbientSource.Log.ExternalChangeStopped(v1Id, ev.ResourceType));
+            () =>
+            {
+                DeckleAmbientSource.Log.ExternalChangeStopped();
+                DeckleAmbientSource.Log.ExternalChangeStoppedDetail(
+                    v1Id,
+                    ev.ResourceType,
+                    ageMs,
+                    FormatHueEventOn(ev.On),
+                    FormatHueEventBrightness(ev.Brightness),
+                    FormatHueEventXy(ev.Xy));
+            });
     }
+
+    private void RecordHuePush(string scopedKey, LightColor color, DateTimeOffset pushedAt)
+    {
+        var pushed = new AmbientHuePushedState(pushedAt, HueStateProjection.FromLightColor(color));
+        lock (_hueEchoLock)
+        {
+            _lastHuePushes[scopedKey] = pushed;
+        }
+    }
+
+    private void ClearLastHuePushes()
+    {
+        lock (_hueEchoLock)
+        {
+            _lastHuePushes.Clear();
+        }
+    }
+
+    private static string FormatHueEventOn(bool? on)
+        => on.HasValue ? (on.Value ? "true" : "false") : "null";
+
+    private static string FormatHueEventBrightness(int? brightness)
+        => brightness.HasValue ? brightness.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null";
+
+    private static string FormatHueEventXy((float X, float Y)? xy)
+        => xy.HasValue
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{xy.Value.X:F4},{xy.Value.Y:F4}")
+            : "null";
 
     private async Task DisposeOwnedDepsAsync()
     {
@@ -403,7 +454,7 @@ public sealed partial class AmbientEngine
         _v2LightMap = null;
         _v2GroupedLightMap = null;
         _managedGroupId = null;
-        _lastPushAt.Clear();
+        ClearLastHuePushes();
     }
 
     /// <summary>

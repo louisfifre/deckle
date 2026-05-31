@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 16:58 — source : `git ls-files`_
+_Mise à jour : 2026-05-31 17:27 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -412,6 +412,7 @@ _Mise à jour : 2026-05-31 16:58 — source : `git ls-files`_
 │   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
+│   │   │   ├── HueProjectedState.cs
 │   │   │   └── HueRestLightOutput.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Lighting, the Philips Hue driver (REST CLIP v1/v2) and colo…
 │   │   ├── Deckle.Lighting.csproj
@@ -426,6 +427,7 @@ _Mise à jour : 2026-05-31 16:58 — source : `git ls-files`_
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
+│   │   │   ├── AmbientHueEchoClassifier.cs
 │   │   │   ├── AmbientModePresets.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HuePairingService.cs
@@ -636,6 +638,9 @@ _Mise à jour : 2026-05-31 16:58 — source : `git ls-files`_
 │       ├── Hud/
 │       │   ├── DeckleHudSourceTests.cs
 │       │   └── ProximityRollupAggregatorTests.cs
+│       ├── Lighting/
+│       │   ├── AmbientHueEchoClassifierTests.cs
+│       │   └── DeckleAmbientSourceTests.cs
 │       ├── Shared/
 │       │   ├── EventArgsExtensions.cs
 │       │   ├── TestEventListener.cs

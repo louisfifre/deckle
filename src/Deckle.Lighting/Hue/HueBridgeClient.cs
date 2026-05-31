@@ -221,8 +221,8 @@ public sealed class HueBridgeClient : IDisposable
     /// <summary>
     /// Long-running consumer of the bridge's v2 EventStream (SSE). Yields
     /// resource updates as they happen so callers can detect external
-    /// state changes (Hue app, Home Assistant, physical Dimmer Switch)
-    /// and reclaim. The method reconnects with a 2 s backoff on any
+    /// state changes (Hue app, Home Assistant, physical Dimmer Switch).
+    /// The method reconnects with a 2 s backoff on any
     /// network/parsing error ; only cancellation stops the loop.
     /// </summary>
     /// <remarks>
