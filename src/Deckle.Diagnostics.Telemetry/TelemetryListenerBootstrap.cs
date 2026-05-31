@@ -10,9 +10,9 @@ namespace Deckle.Diagnostics.Telemetry;
 //
 // Two static entry points :
 //
-//   - Configure(...) instancie les quatre JsonlEventListeners (un par
-//     destination canonique : app, latency, microphone, corpus). Doit
-//     être appelée une seule fois au boot.
+//   - Configure(...) instancie les listeners JSONL canoniques : app,
+//     latency, microphone, puis deux routes corpus (ASR + rewrite).
+//     Doit être appelée une seule fois au boot.
 //   - ConfigureGates(...) câble le délégué qui lit les toggles
 //     utilisateur côté host. Peut être appelée avant ou après
 //     Configure ; les prédicates lisent la dernière valeur connue à
@@ -30,10 +30,11 @@ namespace Deckle.Diagnostics.Telemetry;
 // AppTelemetryGates plutôt que sur le futur TelemetrySettingsService).
 //
 // Destinations canoniques :
-//   app.jsonl                                      ← milestones
-//                                                    (Level <= Informational)
-//                                                    excluant les télémétries
-//                                                    structurées dédiées
+//   app.jsonl                                      ← journal applicatif
+//                                                    rendu (ligne lisible
+//                                                    + payload), excluant les
+//                                                    télémétries structurées
+//                                                    dédiées
 //   latency.jsonl                                  ← LatencyRecorded events
 //   microphone.jsonl                               ← MicrophoneTelemetryRecorded
 //                                                    events
@@ -93,14 +94,16 @@ public static class TelemetryListenerBootstrap
             predicate: e =>
                    e.EventName != "LatencyRecorded"
                 && e.EventName != "MicrophoneTelemetryRecorded"
-                && e.EventName != "CorpusRecorded"
+                && e.EventName != "CorpusAsrRecorded"
+                && e.EventName != "CorpusRewriteRecorded"
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
             preEntryDropPredicate: ShouldDropApplicationLog,
             // app.jsonl est le miroir persistant du journal live : enveloppe
-            // auto-descriptive (provider/event/level/message) et bornée par
-            // rotation. Les datasets restent en PayloadOnly sans rotation
-            // (contrat figé, ADR-0011). Décision et bornes : ADR-0017.
+            // auto-descriptive (provider/event/level/source/message/line)
+            // et bornée par rotation. Les datasets restent en PayloadOnly
+            // sans rotation (contrat figé, ADR-0011). Décision et bornes :
+            // ADR-0017.
             schema:   JsonlSchema.SelfDescribing,
             rotation: new JsonlRotationPolicy(maxBytes: 5 * 1024 * 1024, maxGenerations: 5)));
 

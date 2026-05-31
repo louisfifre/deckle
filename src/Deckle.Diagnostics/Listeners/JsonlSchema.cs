@@ -11,7 +11,7 @@ public enum JsonlSchema
     // and pinned by ADR-0011 — it never gains envelope fields.
     PayloadOnly,
 
-    // { timestamp, kind, session, provider, event, level, message, payload }.
+    // { timestamp, kind, session, provider, event, level, source, message, line, payload }.
     // The self-describing record used by the general app.jsonl journal so
     // the persisted line carries the same identity the live LogWindow
     // renders. A parameter-less event is no longer an empty blob —

@@ -9,10 +9,11 @@ namespace Deckle.App.Diagnostics;
 // place avant la première emission de tout provider Deckle.*.
 //
 // What we wire here:
-//   1. JsonlEventListener × 4 — via TelemetryListenerBootstrap.
+//   1. JSONL listeners — via TelemetryListenerBootstrap.
 //      Écrit sous `<TelemetryDirectory>/{app,latency,microphone,corpus}
 //      .jsonl` (paths canoniques depuis la sous-vague 6e — le legacy
-//      JsonlFileSink qui les possédait jadis a disparu).
+//      JsonlFileSink qui les possédait jadis a disparu). Le corpus
+//      utilise deux listeners routés pour ASR et rewrite.
 //   2. LogWindowEventListener — buffer ring qui démarre vide au boot
 //      et accepte des sinks ILogWindowSink lazy. Le LogWindow s'y
 //      attache à sa première ouverture via AttachLogWindowSink et

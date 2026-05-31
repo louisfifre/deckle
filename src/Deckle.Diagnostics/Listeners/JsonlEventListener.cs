@@ -23,7 +23,7 @@ namespace Deckle.Diagnostics.Listeners;
 //     { "timestamp", "kind", "session", "payload": {...} }
 //   SelfDescribing (app.jsonl) :
 //     { "timestamp", "kind", "session", "provider", "event", "level",
-//       "message", "payload": {...} }
+//       "source", "message", "line", "payload": {...} }
 // `timestamp` is ISO 8601 with offset to local time. `kind` is the
 // channel label passed at construction. `session` is the process-local
 // DeckleEventSource.SessionId. `payload` is the flat dictionary of
@@ -174,8 +174,10 @@ public sealed class JsonlEventListener : EventListener
                     writer.WriteString("provider", entry.Provider);
                     writer.WriteString("event", entry.EventName);
                     writer.WriteString("level", entry.Level.ToString());
+                    writer.WriteString("source", LogLineFormatter.MapSource(entry.Provider));
                     if (entry.FormattedMessage is null) writer.WriteNull("message");
                     else writer.WriteString("message", entry.FormattedMessage);
+                    writer.WriteString("line", LogLineFormatter.Format(entry));
                 }
                 writer.WritePropertyName("payload");
                 writer.WriteStartObject();

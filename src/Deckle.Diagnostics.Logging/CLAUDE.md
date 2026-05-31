@@ -15,11 +15,11 @@ The module depends on `Deckle.Diagnostics` (sink interfaces, EventEntry) and `De
 
 `LoggingSettings` carries user choices for the live journal:
 
-- **SelectorBar filters** — selection by level (Critical, Error, Warning, Informational, Verbose) and by module for the viewer.
+- **SelectorBar filters** — selection by level family (`All`, `Activity`, `Alerts`) for the viewer. The selected family is persisted in `LoggingSettings.LogWindowVisibilityMode` and reused by the application-journal JSONL predicate so future `app.jsonl` lines follow the same broad visibility mode. Search text remains UI-local and does not gate disk writes.
 - **Persistence gate** — `ApplicationLogToDisk` (bool), gate that controls whether the general channel's `JsonlEventListener` writes to `app.jsonl`. Off by default in preview, assumed on in local debug.
 - **Capture loop noise** — `LogAmbientCaptureActivity` (bool); when off and a capture loop is active, `Verbose` events from the ambient providers (ambient, vision, lighting) and the per-frame `Deckle.Diagnostics.Resource` firehose (D3D11 texture acquire/release, ~2 per frame) are dropped by the live LogWindow listener and by the `app.jsonl` predicate. Resource is a transverse sub-provider, so during capture the HUD's own Composition-visual Resource `Verbose` is silenced too — an accepted trade-off of the provider-level (pre-`BuildEntry`) filter; a future dedicated "firehose" category would gate by `owner` instead. Mirrors the posture of the legacy `TelemetryService._captureActive` but carried as listener-side filters rather than hub-side.
 
-`LoggingSettingsService` is the per-module persistence singleton that loads and saves the POCO under `<UserDataRoot>/modules/diagnostics-logging/settings.json`. Pattern aligned with the other `*SettingsService` of the project.
+`LoggingSettingsService` is the per-module persistence singleton that loads and saves the POCO under `<UserDataRoot>/modules/logging/settings.json`. Pattern aligned with the other `*SettingsService` of the project.
 
 ## Boundary with `Deckle.Diagnostics.Telemetry`
 
