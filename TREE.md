@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 17:27 — source : `git ls-files`_
+_Mise à jour : 2026-05-31 18:37 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -564,6 +564,17 @@ _Mise à jour : 2026-05-31 17:27 — source : `git ls-files`_
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
 │   │   └── TrayIconManager.cs
+│   ├── Deckle.Shell.TrayMenu/
+│   │   ├── Interop/
+│   │   │   └── TrayMenuNativeMethods.cs
+│   │   ├── Themes/
+│   │   │   └── TrayMenu.xaml
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Shell.TrayMenu.csproj
+│   │   ├── DeckleShellTrayMenuSource.cs
+│   │   ├── JOURNAL.md  — [module-journal] Journal daté du module Deckle.Shell.TrayMenu — diagnostics en cours, observatio…
+│   │   ├── TrayContextMenuHost.cs
+│   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
 │   │   │   ├── CorpusTier.cs
