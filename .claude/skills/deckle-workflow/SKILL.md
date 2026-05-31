@@ -72,7 +72,7 @@ Detect ideas raised in passing in the conversation and save them in the project'
 ## Release and GitHub push
 
 <push>
-Claude pushes `main` to GitHub when a coherent state lands locally. The push does not need a tag to be legitimate — `main` is synchronized frequently for backup and external traceability.
+A push to GitHub is bound to a version — never to "a coherent state landed locally" (the former rule, now retired, which wrongly licensed frequent background syncing). The decision to cut a version belongs to Louis; outside one, `main` accumulates merges locally and is not synchronized. Once a version is cut (in the 0.x phase, a `Y` MINOR or `Z` PATCH bump), the push is the legitimate final step of the release workflow and Claude carries it out — branch then annotated tag.
 </push>
 
 <main_releasable>
