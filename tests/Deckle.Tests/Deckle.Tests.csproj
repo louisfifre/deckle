@@ -53,5 +53,8 @@
          post-bascule per-session). Tire WindowsAppSDK + Composition
          transitively comme Vision. -->
     <ProjectReference Include="..\..\src\Deckle.Hud\Deckle.Hud.csproj" />
+    <!-- Lighting.Ambient pour la régression EventStream Hue
+         faux-external-stop + observability DeckleAmbientSource. -->
+    <ProjectReference Include="..\..\src\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
   </ItemGroup>
 </Project>

@@ -141,13 +141,11 @@ public sealed partial class AmbientEngine
             _hbHttpDurationsMs.Add(httpMs);
 
             _lastR = targetR; _lastG = targetG; _lastB = targetB;
-            // Stamp the push timestamp for echo discrimination — the
-            // bridge will emit a grouped_light EventStream update for
-            // this PUT within ~100 ms and OnResourceUpdate compares
-            // local UtcNow against this stamp to filter out our own
-            // echo from a genuine external command.
+            // Stamp the pushed Hue state for echo discrimination — the
+            // bridge emits a grouped_light EventStream update for this
+            // PUT, sometimes later than a pure timing window can cover.
             if (_managedGroupId is not null)
-                _lastPushAt["group:" + _managedGroupId] = DateTimeOffset.UtcNow;
+                RecordHuePush("group:" + _managedGroupId, color, DateTimeOffset.UtcNow);
             _pushedCount++;
             _hbPushed++;
             // Verbose gating is handled by the LogWindow drop filter
@@ -311,12 +309,14 @@ public sealed partial class AmbientEngine
             double httpMs = (Stopwatch.GetTimestamp() - httpStart) * 1000.0 / Stopwatch.Frequency;
             _hbHttpDurationsMs.Add(httpMs);
 
-            // Stamp push timestamps for echo discrimination — the bridge
-            // will emit a light EventStream update for each PUT within
-            // ~100 ms and OnResourceUpdate compares local UtcNow against
-            // these stamps to filter out our own echo.
+            // Stamp pushed Hue states for echo discrimination — the
+            // bridge emits a light EventStream update for each PUT,
+            // sometimes later than a pure timing window can cover.
             var nowUtc = DateTimeOffset.UtcNow;
-            foreach (var id in toPush.Keys) _lastPushAt["light:" + id] = nowUtc;
+            foreach (var (id, pushedColor) in toPush)
+            {
+                RecordHuePush("light:" + id, pushedColor, nowUtc);
+            }
             _pushedCount++;
             _hbPushed++;
             DeckleAmbientSource.Log.PushMulti(toPush.Count, _multiLights.Count, FormatPushedColors(toPush), httpMs);

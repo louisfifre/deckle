@@ -51,8 +51,10 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public const int EvtAmbientSettingsPrefixed       = 26;
     public const int EvtCaptureLost                   = 27;
     public const int EvtExternalChangeStopped         = 28;
-    public const int EvtReclaimSetupFailed            = 29;
+    public const int EvtEventStreamSetupFailed        = 29;
     public const int EvtPipelinePerLightConfig        = 30;
+    public const int EvtExternalChangeStoppedDetail   = 31;
+    public const int EvtEchoIgnored                   = 32;
 
     // ── AmbientEngine — lifecycle ───────────────────────────────────────
 
@@ -113,19 +115,39 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     [Event(EvtExternalChangeStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "External change on {1} {0} — stopping engine to avoid a push war")]
-    public void ExternalChangeStopped(string v1_id, string resource_type)
+           Message = "Ambient pipeline stopped by external light change")]
+    public void ExternalChangeStopped()
     {
-        if (IsEnabled()) WriteEvent(EvtExternalChangeStopped, v1_id, resource_type);
+        if (IsEnabled()) WriteEvent(EvtExternalChangeStopped);
     }
 
-    [Event(EvtReclaimSetupFailed,
+    [Event(EvtEventStreamSetupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Reclaim setup failed — bridge id maps unavailable, external command reclaim disabled this session ({0}: {1})")]
-    public void ReclaimSetupFailed(string ex_type, string ex_message)
+           Message = "Hue EventStream setup failed — external light change detection disabled this session ({0}: {1})")]
+    public void EventStreamSetupFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtReclaimSetupFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtEventStreamSetupFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtExternalChangeStoppedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "external change | v1_id={0} | resource_type={1} | age_ms={2} | on={3} | bri={4} | xy={5}")]
+    public void ExternalChangeStoppedDetail(string v1_id, string resource_type, int age_ms, string on, string bri, string xy)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtExternalChangeStoppedDetail, v1_id, resource_type, age_ms, on, bri, xy);
+    }
+
+    [Event(EvtEchoIgnored,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "echo ignored | v1_id={0} | resource_type={1} | age_ms={2} | match=state")]
+    public void EchoIgnored(string v1_id, string resource_type, int age_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtEchoIgnored, v1_id, resource_type, age_ms);
     }
 
     [Event(EvtPipelinePerLightConfig,

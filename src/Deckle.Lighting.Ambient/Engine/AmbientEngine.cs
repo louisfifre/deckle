@@ -187,10 +187,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private string? _managedGroupId;                                   // v1_group_id we are syncing
 
     // Last successful self-push, per v1 id ("group:<id>" or "light:<id>"
-    // namespaced). Used to discriminate the bridge echoing back our own
-    // REST PUT (within EchoWindow) from a genuine external change.
-    private readonly Dictionary<string, DateTimeOffset> _lastPushAt = new();
-    private static readonly TimeSpan EchoWindow = TimeSpan.FromMilliseconds(300);
+    // namespaced). Stores the Hue state we intended, not just the clock,
+    // because the bridge can echo our own REST PUTs after the old 300 ms
+    // timing window. A late event that still matches the pushed state is
+    // an echo ; a different state is a real external command and stops
+    // the pipeline.
+    private readonly Dictionary<string, AmbientHuePushedState> _lastHuePushes = new();
+    private readonly object _hueEchoLock = new();
 
     // Deferred-cleanup task spun by Stop() so the UI thread that
     // triggered the stop returns immediately while the DXGI duplication
