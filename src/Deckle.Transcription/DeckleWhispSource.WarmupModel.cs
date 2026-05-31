@@ -54,42 +54,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWarmupStart);
     }
 
-    [Event(EvtWarmupCancelledBeforeModel,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup cancelled before model load | total_ms={0}")]
-    public void WarmupCancelledBeforeModel(long total_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupCancelledBeforeModel, total_ms);
-    }
-
-    [Event(EvtWarmupAbortedModelLoad,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup aborted | reason=model_load_failed | total_ms={0} | mic_ok={1} | model_ok=false | ollama_ok=skipped")]
-    public void WarmupAbortedModelLoad(long total_ms, bool mic_ok)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupAbortedModelLoad, total_ms, mic_ok);
-    }
-
-    [Event(EvtWarmupCancelledBeforeTranscribe,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup cancelled before transcribe | total_ms={0}")]
-    public void WarmupCancelledBeforeTranscribe(long total_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupCancelledBeforeTranscribe, total_ms);
-    }
-
-    [Event(EvtWarmupCancelledDuringTranscribe,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup cancelled during transcribe | total_ms={0}")]
-    public void WarmupCancelledDuringTranscribe(long total_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupCancelledDuringTranscribe, total_ms);
-    }
-
     [Event(EvtWarmupComplete,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -97,60 +61,6 @@ public sealed partial class DeckleWhispSource
     public void WarmupComplete()
     {
         if (IsEnabled()) WriteEvent(EvtWarmupComplete);
-    }
-
-    [Event(EvtWarmupCompleteDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup complete | total_ms={0} | mic_ok={1} | model_ok={2} | ollama_ok={3}")]
-    public void WarmupCompleteDetail(long total_ms, bool mic_ok, bool model_ok, bool ollama_ok)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupCompleteDetail, total_ms, mic_ok, model_ok, ollama_ok);
-    }
-
-    [Event(EvtWarmupFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup failed | error={0}: {1}")]
-    public void WarmupFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupFailed, ex_type, ex_message);
-    }
-
-    [Event(EvtWarmupFlagModelKO,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup flag | model_ok=false")]
-    public void WarmupFlagModelKO()
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupFlagModelKO);
-    }
-
-    [Event(EvtWarmupFlagOllamaKO,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup flag | ollama_ok=false (live re-probe also failed)")]
-    public void WarmupFlagOllamaKO()
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupFlagOllamaKO);
-    }
-
-    [Event(EvtWarmupFlagOllamaRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup flag | ollama_ok=false but live re-probe ok — proceeding without warning")]
-    public void WarmupFlagOllamaRecovered()
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupFlagOllamaRecovered);
-    }
-
-    [Event(EvtWarmupFlagMicKO,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup flag | mic_ok=false (live probe below)")]
-    public void WarmupFlagMicKO()
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupFlagMicKO);
     }
 
     // ── Model lifecycle ─────────────────────────────────────────────────
