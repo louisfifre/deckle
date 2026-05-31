@@ -11,10 +11,11 @@
                      {StaticResource Icon.Microphone} etc. The matching
                      constants live in Deckle.Catalog.Glyphs for code-behind. -->
                 <ResourceDictionary Source="ms-appx:///Deckle.Catalog/Themes/Icons.xaml" />
-                <!-- Deckle.Shell.TrayMenu ships a custom Style for
-                     ToggleMenuFlyoutItem that swaps the canonical checkmark
-                     for a ToggleSwitch on the right edge. Applied to the
-                     Ambient Light item in the tray context menu. -->
+                <!-- Deckle.Shell.TrayMenu ships ToggleSwitchMenuItemStyle, a
+                     custom Style for MenuFlyoutItem (not ToggleMenuFlyoutItem)
+                     that draws a hand-made on/off pill on the right edge in
+                     place of the canonical checkmark. Applied to the Ambient
+                     Light item in the tray context menu. -->
                 <ResourceDictionary Source="ms-appx:///Deckle.Shell.TrayMenu/Themes/TrayMenu.xaml" />
             </ResourceDictionary.MergedDictionaries>
 

@@ -10,6 +10,30 @@ Chronique datée du module, complément réversible au [CLAUDE.md](./CLAUDE.md) 
 
 ---
 
+## 2026-05-31 — Tray menu : trou en bas et scroll au premier clic résolus (option A, mesure du presenter réel)
+
+Reprise du workstream tray menu. Les deux symptômes opposés que le module traînait — trou Mica en bas du popup, et scroll interne au premier clic — sont fermés, validés visuellement par Louis et confirmés aux mesures sur ~30 ouvertures. Direction retenue : option A (garder l'architecture SecondWindow + pillule custom, corriger la mesure) ; la refonte native reste consignée comme évolution possible, non engagée.
+
+**Cause racine du trou, établie à la source.** `FlyoutPlacementMode.Full` ne fait pas que positionner le popup : il **étire le presenter jusqu'à remplir la fenêtre porteuse** (doc Microsoft : *« the app stretches the flyout and centers it inside the app window »*). La taille du menu visible était donc dictée par notre mesure manuelle de la fenêtre — et `MeasureFlyout` reconstruisait cette taille en sommant les `DesiredSize` des items + une marge forfaitaire `FlyoutFrameMargin × 2 = 8 DIP`, qui sur-estimait le chrome réel du presenter (padding + bordure ≈ 4-6 DIP). Le surplus se peignait en card Mica vide en bas. Une assertion fausse de l'entrée précédente (« la fenêtre porteuse n'influe pas sur le popup ») avait masqué ce couplage et égaré les fixes vers la seule mesure code-behind — corrigée en place.
+
+**Fix du trou.** `MeasureFlyout` dimensionne désormais la fenêtre sur la `DesiredSize` du `MenuFlyoutPresenter` réel (`_primedPresenterSize`, captée au prime cycle en remontant le visual tree depuis le premier item). Elle inclut le chrome réel du presenter ; `Full` n'a plus rien à étirer.
+
+| | avant (somme + 8) | après (presenter réel) |
+|---|---|---|
+| `dip_w` | 186.4 | 180 |
+| `dip_h` | 206.4 | 204 |
+| physique | 232×258 | 225×255 |
+
+Trou vertical mesuré à 2.4 DIP (≈ 3 px à 125 %), éliminé. Valeurs constantes sur ~30 ouvertures et plusieurs sessions.
+
+**Fix du scroll au premier clic.** Au premier render, les items natifs sont rendus en `DefaultPadding` (40 DIP) alors que la fenêtre est dimensionnée narrow (32) — le `GoToState("NarrowPadding")` du handler `Opened` arrivait trop tard pour le premier frame. `ApplyNarrowPadding()` (au build) fixe `item.Padding` à la valeur narrow sur tous les items : l'état `DefaultPadding` étant un `VisualState` vide, `LayoutRoot.Padding` y retombe sur ce Padding via TemplateBinding, et `NarrowPadding` pose la même valeur. Les deux états deviennent équivalents, le premier render est compact d'emblée. Le `GoToState` du prime cycle et du handler `Opened` devient redondant — gardé comme filet, candidat à suppression.
+
+**Note méthodologique.** Cette fois l'ordre « source canonique d'abord » a été tenu : lecture de la doc `FlyoutPlacementMode.Full` et du `generic.xaml` (chrome du presenter) avant tout patch, puis repro mesurée via la télémétrie JSONL du module, puis fix ciblé. Les sessions précédentes avaient instrumenté avant de lire la source et tourné en rond — learning déjà couvert par la règle « official sources first » du `CLAUDE.md` racine. Au passage, plusieurs assertions de la doctrine de ce module, posées à l'indicatif alors qu'elles étaient des interprétations non testées, ont été corrigées ou passées au conditionnel — discipline épistémique tracée en mémoire.
+
+Livré dans le merge de `fix/tray-menu-measure-flyout` vers `main`.
+
+---
+
 ## 2026-05-27 (suite) — Bug résiduel : scroll au premier clic après changement de focus, et piste de refonte design
 
 Fin de session — le fix `PaddingSizeStates` + cache `_primedSizes` posté plus tôt (entrée précédente) tient sur 90 % des ouvertures. Un cas marginal subsiste : au premier clic après un changement d'application active (perte de focus de la fenêtre porteuse pendant le `SW_HIDE`, puis bascule vers une autre app, puis retour au tray), le menu se rouvre **avec scroll** — items rendus en `DefaultPadding` (40 DIP) alors que la fenêtre porteuse est dimensionnée à 32 DIP/item, donc le contenu dépasse et le `MenuFlyoutPresenter` active son ScrollViewer interne. Aux clics suivants dans la même session, le scroll disparaît et tout s'aligne sur 32 DIP comme attendu.
@@ -49,7 +73,7 @@ Bug observé en fin de workstream sur le menu tray, branche `fix/tray-menu-measu
 
 Commentaire explicite dans le source : `Narrow padding is only applied when flyout was invoked with pen, mouse or keyboard. Default padding is applied for all other cases including touch.` Le framework pilote le state automatiquement — la première ouverture est sur `DefaultPadding` (état initial), dès qu'un pointer mouse/keyboard interagit avec le menu le state bascule à `NarrowPadding`, et le menu étant réutilisé entre ouvertures (instance unique), le state ne se réinitialise plus jamais.
 
-**Vraie cause du déséquilibre visuel.** Le template `ToggleSwitchMenuItemStyle` introduit par les commits WIP `a697fa0` + `a6193c4` (post-rebase `003d4e7` + `8fa649c`) — initiative LLM des sessions précédentes, jamais validée explicitement par Louis — a réécrit complètement le `ControlTemplate` du `MenuFlyoutItem` mais **n'a pas reproduit le `VisualStateGroup PaddingSizeStates`** du natif. L'Ambient reste donc figé sur le `Padding` initial (équivalent `DefaultPadding`) pendant que les natifs basculent vers `NarrowPadding`. Mon premier fix (cache `_primedSizes`) résolvait l'instabilité de la mesure code-behind mais n'avait aucune incidence sur le rendu visuel — la fenêtre porteuse layered alpha=0 n'influe pas sur le popup interne du `MenuFlyout`, qui se rend selon ses propres VisualStates.
+**Vraie cause du déséquilibre visuel.** Le template `ToggleSwitchMenuItemStyle` introduit par les commits WIP `a697fa0` + `a6193c4` (post-rebase `003d4e7` + `8fa649c`) — initiative LLM des sessions précédentes, jamais validée explicitement par Louis — a réécrit complètement le `ControlTemplate` du `MenuFlyoutItem` mais **n'a pas reproduit le `VisualStateGroup PaddingSizeStates`** du natif. L'Ambient reste donc figé sur le `Padding` initial (équivalent `DefaultPadding`) pendant que les natifs basculent vers `NarrowPadding`. Mon premier fix (cache `_primedSizes`) résolvait l'instabilité de la mesure code-behind mais ne fermait pas le bug visuel pour autant. [Correction 2026-05-31, établie par repro : l'affirmation initiale de ce paragraphe — « la fenêtre porteuse layered alpha=0 n'influe pas sur le popup interne du `MenuFlyout` » — était **fausse**. Via `FlyoutPlacementMode.Full`, le presenter est étiré jusqu'à la fenêtre porteuse ; sa taille dicte donc directement celle du popup visible, et le cache `_primedSizes` influence bel et bien le rendu. C'est cette assertion fausse, posée à l'indicatif, qui avait orienté les fixes vers la seule mesure code-behind en croyant le rendu découplé.]
 
 **Voie du fix corrigée.** Ajouter le `VisualStateGroup PaddingSizeStates` dans le template `ToggleSwitchMenuItemStyle` (identique au natif, mêmes setters sur `LayoutRoot.Padding` via le theme resource `MenuFlyoutItemThemePaddingNarrow`). Le framework pilotera le state automatiquement sur l'Ambient comme sur les natifs. Conséquence : l'Ambient bascule lui aussi à 32 DIP en mode mouse, aligné sur les natifs Win11 — cohérent avec la doctrine projet « primitive native d'abord ». Densité narrow (32 DIP) retenue comme cible parce que c'est le rendu Win11 natif en interaction mouse — Settings, Explorer et les context menus système suivent ce pattern.
 
