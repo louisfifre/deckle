@@ -43,6 +43,20 @@ The native whisper.cpp fallback is now active: `temperature=0,0 / temperature_in
 
 The backend rebuilds its params on every `TranscribeAsync` call — `TranscriptionSettingsService.Instance.Current` snapshot read at the start of the call for free hot-reload, no model re-init.
 
+## Model lifecycle — on-demand prime, no boot warmup
+
+The model is **never loaded at boot** — nothing sits in VRAM while the app is idle (a Whisper model is 3 GB+). It is loaded on demand and freed again after an idle timeout (`MODEL_IDLE_TIMEOUT_MS`, 5 min — a tuning knob). The whole lifecycle lives in the orchestrator (`TranscriptionEngine.Lifecycle.cs` + `WorkerRun`), backend-agnostic through `IAsrBackend.LoadModelAsync` / `UnloadModel`.
+
+`EnsurePrimed(ct)` is the readiness gate, called at the top of `WorkerRun` **before** the recording starts. On a warm worker (model resident) it is a no-op. On a cold worker — first hotkey of the session, or the first after an idle unload — it does two things in order: (1) load the model silently on the status channel (`silentStatus: true`, so `LoadModel`'s internal "Loading model… → Ready" never clobbers the HUD), then (2) run a **dummy inference** through the full `TranscribeAsync` path on the embedded clip (`Assets/Sounds/speech.wav`, fallback 1.6 s of silence) so VAD + `whisper_full` + the first-time GPU kernel compile all execute once. This is what guarantees the user's first real transcription is never a cold miss — the heavy cost is paid during the visible prime, not on the dictation.
+
+The HUD `Charging` state IS the prime signal. The App calls `ShowPreparing()` the moment `RequestToggle` returns `Started`; the chrono stays frozen/grey for the whole prime. The chrono and the mic capture start only when the engine raises the `"Recording"` status, which `WorkerRun` emits **after** `EnsurePrimed` returns. MUST keep this ordering — nothing user-visible may imply "recording" until the model is warm.
+
+Robustness: the prime MUST run synchronously on the worker thread, never on a detached background thread. The old boot warmup ran on its own thread and raced a real hotkey transcription over the shared `t_isWarmup` flag, which occasionally leaked priming text to the clipboard. Synchronous-on-worker removes the race structurally. `t_isWarmup` (ThreadStatic) MUST keep gating the user-facing tail of `TranscribeAsync` — clipboard write, LLM rewrite, paste, corpus logging, `StatusChanged`, `TranscriptionFinished` — so the dummy inference stays invisible and never touches the clipboard.
+
+The idle-unload timer MUST be armed from `WorkerRun`'s `finally` whenever the model is resident and the engine reached `Idle`, not only on the transcription success path. This closes the gap where a primed-then-failed run (e.g. a mic error after the prime) would otherwise leave the model in VRAM with no scheduled unload. It is disarmed at the start of every pipeline (`TryStartFromIdle`) and re-armed at the end.
+
+Do not confuse this with the HUD's own composition warm (`PrimeAndHide` in `Deckle.App` / `Deckle.Hud`): that one pays the first-frame DComp / font-shaping cost at boot and touches no model and no VRAM. It stays at boot — only the *model* warmup moved to on-demand.
+
 ## Non-negotiable UX rules
 
 ### Clipboard — 2 states max per transcription
