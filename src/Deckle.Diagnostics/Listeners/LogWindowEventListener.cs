@@ -45,7 +45,7 @@ public sealed class LogWindowEventListener : EventListener
     // toggle LogAmbientCaptureActivity est off (consommé via
     // Deckle.Diagnostics.Logging.AmbientCaptureGate).
     private Func<EventEntry, bool>? _dropFilter;
-    private Func<string, EventLevel, bool>? _providerLevelDropFilter;
+    private Func<string, EventLevel, EventKeywords, bool>? _providerLevelDropFilter;
 
     // We collect EventSources observed before the derived constructor
     // is ready, then enable them in the constructor body. EventListener's
@@ -106,9 +106,14 @@ public sealed class LogWindowEventListener : EventListener
     }
 
     // Filtre de drop précoce, consulté avant BuildEntry. À utiliser
-    // pour les familles bruyantes dont provider + level suffisent à
-    // décider, afin d'éviter les allocations payload / format string.
-    public void ConfigureProviderLevelDropFilter(Func<string, EventLevel, bool> filter)
+    // pour les familles bruyantes dont provider + level + keywords
+    // suffisent à décider, afin d'éviter les allocations payload /
+    // format string. Les keywords sont fournis pour qu'un rollup
+    // périodique (keyword Heartbeat) puisse être exempté d'un drop qui
+    // vise le Verbose par-tick — ETW expose déjà les keywords sur
+    // EventWrittenEventArgs avant tout BuildEntry, donc l'exemption
+    // reste sans allocation.
+    public void ConfigureProviderLevelDropFilter(Func<string, EventLevel, EventKeywords, bool> filter)
     {
         _providerLevelDropFilter = filter;
     }
@@ -137,7 +142,7 @@ public sealed class LogWindowEventListener : EventListener
         var providerLevelDropFilter = _providerLevelDropFilter;
         if (providerLevelDropFilter is not null)
         {
-            try { if (providerLevelDropFilter(provider, eventData.Level)) return; }
+            try { if (providerLevelDropFilter(provider, eventData.Level, eventData.Keywords)) return; }
             catch { /* A filter must never crash the listener. */ }
         }
 

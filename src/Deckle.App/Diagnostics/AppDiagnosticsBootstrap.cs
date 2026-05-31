@@ -85,7 +85,7 @@ internal static class AppDiagnosticsBootstrap
     }
 
     public static void ConfigureLogWindowProviderLevelDropFilter(
-        System.Func<string, System.Diagnostics.Tracing.EventLevel, bool> filter)
+        System.Func<string, System.Diagnostics.Tracing.EventLevel, System.Diagnostics.Tracing.EventKeywords, bool> filter)
     {
         _logWindowListener?.ConfigureProviderLevelDropFilter(filter);
     }

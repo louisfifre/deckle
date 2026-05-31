@@ -18,29 +18,47 @@ namespace Deckle.Diagnostics.Listeners;
 // also reads user gates (telemetry settings) and skips emission
 // entirely when a gate is off.
 //
-// Schema. The JSON line layout reproduces the legacy schema:
-//   { "timestamp": "...", "kind": "...", "session": "...", "payload": {...} }
-// `timestamp` is ISO 8601 with offset to local time, matching legacy
-// JsonlFileSink output. `kind` is derived from the event name (the
-// provider can override via the gate by emitting a dedicated event
-// name). `session` is the process-local DeckleEventSource.SessionId.
-// `payload` is the flat dictionary of [Event] parameters by their
-// snake_case names — identical to legacy JsonPropertyName output.
+// Schema. Two envelope shapes, selected per listener via `JsonlSchema`:
+//   PayloadOnly (datasets) :
+//     { "timestamp", "kind", "session", "payload": {...} }
+//   SelfDescribing (app.jsonl) :
+//     { "timestamp", "kind", "session", "provider", "event", "level",
+//       "message", "payload": {...} }
+// `timestamp` is ISO 8601 with offset to local time. `kind` is the
+// channel label passed at construction. `session` is the process-local
+// DeckleEventSource.SessionId. `payload` is the flat dictionary of
+// [Event] parameters by their snake_case names. The SelfDescribing
+// channel adds the event identity the LogWindow renders, so the file is
+// a faithful, greppable mirror of the live journal rather than an
+// anonymous payload — a parameter-less event keeps its provider/event/
+// level instead of collapsing to an empty blob. See ADR-0017.
+//
+// Rotation. An optional `JsonlRotationPolicy` rolls the file by size
+// (app.jsonl → app.1.jsonl → …) so a long session can't grow it without
+// bound. Datasets pass no policy and stay append-only. See ADR-0017.
 //
 // Threading. Write happens on the emitter thread, guarded by a per-
-// listener lock so concurrent emissions don't tear lines. The
-// StreamWriter is opened in append mode and flushed at every line —
-// same posture as JsonlFileSink, which lets a crash post-write keep
-// the data on disk.
+// listener lock so concurrent emissions don't tear lines and so a roll
+// never races a write. The file is opened in append mode and flushed at
+// every line, which lets a crash post-write keep the data on disk.
 public sealed class JsonlEventListener : EventListener
 {
     private readonly string _filePath;
     private readonly System.Func<EventEntry, bool> _predicate;
     private readonly System.Func<EventWrittenEventArgs, bool>? _preEntryDropPredicate;
     private readonly string _kindLabel;
+    private readonly JsonlSchema _schema;
+    private readonly JsonlRotationPolicy? _rotation;
     private readonly object _writeLock = new();
     private readonly List<EventSource> _earlySources = new();
     private bool _ready;
+
+    // Running size of the active file, maintained under _writeLock so the
+    // rotation check is a counter compare instead of a per-line stat
+    // syscall. Seeded from the file on disk at construction so a restart
+    // doesn't forget what was already written. Only meaningful when
+    // _rotation is non-null.
+    private long _bytesWritten;
 
     private static readonly JsonWriterOptions _jsonOptions = new()
     {
@@ -61,16 +79,32 @@ public sealed class JsonlEventListener : EventListener
     // `predicate` — selects which events land in this file. Receives
     //              the full EventEntry so it can filter on event name,
     //              keywords, or level.
+    // `schema`    — envelope shape. PayloadOnly (default) for the frozen
+    //              dataset channels; SelfDescribing for the app.jsonl
+    //              journal.
+    // `rotation`  — optional size-based roll policy. Null (default) leaves
+    //              the file append-only without bound — correct for the
+    //              datasets, never for the application journal.
     public JsonlEventListener(
         string filePath,
         string kindLabel,
         System.Func<EventEntry, bool> predicate,
-        System.Func<EventWrittenEventArgs, bool>? preEntryDropPredicate = null)
+        System.Func<EventWrittenEventArgs, bool>? preEntryDropPredicate = null,
+        JsonlSchema schema = JsonlSchema.PayloadOnly,
+        JsonlRotationPolicy? rotation = null)
     {
         _filePath = filePath;
         _kindLabel = kindLabel;
         _predicate = predicate;
         _preEntryDropPredicate = preEntryDropPredicate;
+        _schema = schema;
+        _rotation = rotation;
+
+        if (_rotation is not null)
+        {
+            try { _bytesWritten = File.Exists(_filePath) ? new FileInfo(_filePath).Length : 0L; }
+            catch { _bytesWritten = 0L; }
+        }
 
         lock (_earlySources)
         {
@@ -135,6 +169,14 @@ public sealed class JsonlEventListener : EventListener
                 writer.WriteString("timestamp", entry.Timestamp.ToString("o", System.Globalization.CultureInfo.InvariantCulture));
                 writer.WriteString("kind", _kindLabel);
                 writer.WriteString("session", DeckleEventSource.SessionId);
+                if (_schema == JsonlSchema.SelfDescribing)
+                {
+                    writer.WriteString("provider", entry.Provider);
+                    writer.WriteString("event", entry.EventName);
+                    writer.WriteString("level", entry.Level.ToString());
+                    if (entry.FormattedMessage is null) writer.WriteNull("message");
+                    else writer.WriteString("message", entry.FormattedMessage);
+                }
                 writer.WritePropertyName("payload");
                 writer.WriteStartObject();
                 foreach (var kv in entry.Payload)
@@ -146,11 +188,62 @@ public sealed class JsonlEventListener : EventListener
             jsonBytes = ms.ToArray();
         }
 
+        long lineBytes = jsonBytes.Length + 1; // payload + '\n'
         lock (_writeLock)
         {
-            using var fs = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
-            fs.Write(jsonBytes, 0, jsonBytes.Length);
-            fs.WriteByte((byte)'\n');
+            // Roll before writing when this line would push the active
+            // file past the cap — but never roll an empty file, so a
+            // single line larger than MaxBytes still lands somewhere.
+            if (_rotation is not null
+                && _bytesWritten > 0
+                && _bytesWritten + lineBytes > _rotation.MaxBytes)
+            {
+                RollFiles();
+            }
+
+            using (var fs = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.Read))
+            {
+                fs.Write(jsonBytes, 0, jsonBytes.Length);
+                fs.WriteByte((byte)'\n');
+            }
+            _bytesWritten += lineBytes;
+        }
+    }
+
+    // Shifts the generations up by one and turns the active file into
+    // generation 1. Called under _writeLock with no stream open, so the
+    // moves are safe. Best-effort: if a move fails (an archive is held
+    // open by an external reader), the active file is left in place and
+    // the counter is re-synced from disk so the next attempt waits for
+    // another MaxBytes of growth instead of retrying on every line.
+    private void RollFiles()
+    {
+        var rotation = _rotation;
+        if (rotation is null) return;
+
+        try
+        {
+            string dir = Path.GetDirectoryName(_filePath) ?? string.Empty;
+            string name = Path.GetFileNameWithoutExtension(_filePath);
+            string ext = Path.GetExtension(_filePath);
+            string Generation(int n) => Path.Combine(dir, $"{name}.{n}{ext}");
+
+            // Top-down so each destination is vacated before it is
+            // overwritten. The move into the highest slot overwrites the
+            // oldest generation, dropping it.
+            for (int n = rotation.MaxGenerations - 1; n >= 1; n--)
+            {
+                string src = Generation(n);
+                if (File.Exists(src)) File.Move(src, Generation(n + 1), overwrite: true);
+            }
+            if (File.Exists(_filePath)) File.Move(_filePath, Generation(1), overwrite: true);
+
+            _bytesWritten = 0L;
+        }
+        catch
+        {
+            try { _bytesWritten = File.Exists(_filePath) ? new FileInfo(_filePath).Length : 0L; }
+            catch { /* leave the counter as-is; next line retries the check */ }
         }
     }
 

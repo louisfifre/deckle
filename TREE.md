@@ -357,6 +357,8 @@ _Mise à jour : 2026-05-31 21:08 — source : `git ls-files`_
 │   │   ├── Listeners/
 │   │   │   ├── HudFeedbackEventListener.cs
 │   │   │   ├── JsonlEventListener.cs
+│   │   │   ├── JsonlRotationPolicy.cs
+│   │   │   ├── JsonlSchema.cs
 │   │   │   ├── LogWindowEventListener.cs
 │   │   │   └── RoutedJsonlEventListener.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics, the observability foundation module. Read befo…
