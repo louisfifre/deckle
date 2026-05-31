@@ -140,12 +140,16 @@ Render-Node $root '' ''
 
 # ── Écriture ──────────────────────────────────────────────────────────────
 
-$date = Get-Date -Format 'yyyy-MM-dd HH:mm'
 $body = $lines -join "`n"
 
+# No wall-clock timestamp on purpose: it made every regeneration differ even
+# when the tree was identical, so any two branches collided on this line at
+# merge time. Without it, a content-only commit regenerates a byte-identical
+# file (git add is a no-op) and the listing only changes when the file set
+# does. git history already records when TREE.md was last touched.
 $content = @"
 # Arborescence — Deckle
-_Mise à jour : $date — source : ``git ls-files``_
+_Généré depuis ``git ls-files`` — ne pas éditer à la main._
 
 ``````
 $body

@@ -61,3 +61,10 @@
 *.zip binary
 *.7z  binary
 *.gz  binary
+
+# ── Generated index — regenerated from `git ls-files`, never hand-merged ─────
+# `merge=ours` keeps the local side when two branches both touched the tree
+# listing, so a merge never halts on it; the next commit that changes the file
+# set regenerates it through the pre-commit hook. Needs the driver registered
+# (`git config merge.ours.driver true`), done by scripts/install-hooks.ps1.
+TREE.md merge=ours

@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 21:28 — source : `git ls-files`_
+_Généré depuis `git ls-files` — ne pas éditer à la main._
 
 ```
 ├── .claude/

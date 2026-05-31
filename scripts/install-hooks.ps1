@@ -21,3 +21,10 @@ foreach ($src in Get-ChildItem $sourceDir) {
     Copy-Item $src.FullName $dst -Force
     Write-Host "Hook '$($src.Name)' installé."
 }
+
+# Merge driver used by .gitattributes for TREE.md. `ours` keeps the local side
+# so two branches never collide on the generated tree listing; the next commit
+# that changes the file set regenerates it via the pre-commit hook. The driver
+# definition lives in .git/config (not shared by clone), so it is set here.
+git config merge.ours.driver true
+Write-Host "Driver de merge 'ours' enregistré (TREE.md)."
