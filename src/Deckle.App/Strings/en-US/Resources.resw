@@ -1418,6 +1418,9 @@
   <data name="LogWindow_CopyBadge_Copied" xml:space="preserve">
     <value>Copied</value>
   </data>
+  <data name="LogWindow_CopyBadge_Failed" xml:space="preserve">
+    <value>Copy failed</value>
+  </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────
        The XAML Title="..." attribute is overridden in code-behind

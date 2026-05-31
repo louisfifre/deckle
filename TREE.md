@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 20:50 — source : `git ls-files`_
+_Mise à jour : 2026-05-31 20:58 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -346,6 +346,7 @@ _Mise à jour : 2026-05-31 20:50 — source : `git ls-files`_
 │   │   │   ├── NativeMethods.cs
 │   │   │   ├── Structs.cs
 │   │   │   ├── UIAutomation.cs
+│   │   │   ├── Win32Clipboard.cs
 │   │   │   └── Win32Util.cs
 │   │   ├── Paths/
 │   │   │   └── AppPaths.cs
