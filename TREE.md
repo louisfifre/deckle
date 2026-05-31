@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 18:37 — source : `git ls-files`_
+_Mise à jour : 2026-05-31 19:10 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -624,6 +624,7 @@ _Mise à jour : 2026-05-31 18:37 — source : `git ls-files`_
 │   │   └── WhisperBackend.cs
 │   └── Deckle.Vision/
 │       ├── CapturedFrame.cs
+│       ├── CaptureStallDetector.cs
 │       ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Vision, the screen capture and frame analysis module (Windo…
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
@@ -659,6 +660,7 @@ _Mise à jour : 2026-05-31 18:37 — source : `git ls-files`_
 │       ├── Shell/
 │       │   └── DispatcherQueueExtensionsTests.cs
 │       ├── Vision/
+│       │   ├── CaptureStallDetectorTests.cs
 │       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
 ├── .gitattributes
