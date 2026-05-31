@@ -181,6 +181,23 @@ public sealed class ScreenCaptureService : IDisposable
     public event Action? Stopped;
 
     /// <summary>
+    /// Raised on the capture worker thread after a duplication recreate
+    /// renegotiated a surface that no longer matches what the consumer's
+    /// format-dependent resources were built against — a different pixel
+    /// format (the HDR↔SDR desktop toggle, which flips FP16↔BGRA8) or a
+    /// different surface size (a display mode / resolution change). The
+    /// consumer (AmbientEngine) must rebuild its FrameSampler from the
+    /// fresh <see cref="ActiveFormat"/> / <see cref="ContentSize"/> /
+    /// <see cref="PeakLuminance"/>. Raised synchronously on the same
+    /// worker thread that raises <see cref="FrameArrived"/>, so the
+    /// handler is serialised against frame delivery and can swap the
+    /// sampler without racing a Process() call. The name keeps the
+    /// "format" framing of the diagnosed bug even though a pure resize
+    /// (same format) also raises it — both invalidate the sampler.
+    /// </summary>
+    public event Action? FormatChanged;
+
+    /// <summary>
     /// Probes whether the running OS supports DXGI Output Duplication.
     /// Returns true on every Windows 8+ desktop session — kept as a
     /// method to preserve the call shape from the previous WGC-based
@@ -236,9 +253,7 @@ public sealed class ScreenCaptureService : IDisposable
                     Height = (int)desc.ModeDesc.Height,
                 };
                 _activeDxgiFormat = desc.ModeDesc.Format;
-                _activeFormat = _activeDxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT
-                    ? DirectXPixelFormat.R16G16B16A16Float
-                    : DirectXPixelFormat.B8G8R8A8UIntNormalized;
+                _activeFormat = MapDxgiFormat(_activeDxgiFormat);
 
                 // Sub-provider transverse Resource — acquire de la duplication
                 // output. size_bytes=0 parce que c'est un handle de
@@ -674,6 +689,16 @@ public sealed class ScreenCaptureService : IDisposable
         sampleDurationsUs.Clear();
     }
 
+    // Map a negotiated DXGI surface format to the WinRT pixel format the
+    // FrameSampler keys its tone-map path on. Only the two formats the
+    // duplication priority lists request are distinguished — FP16 scRGB
+    // (HDR) and BGRA8 (SDR / everything else). Shared by Start and the
+    // format-aware recreate so the derivation lives in one place.
+    private static DirectXPixelFormat MapDxgiFormat(uint dxgiFormat)
+        => dxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT
+            ? DirectXPixelFormat.R16G16B16A16Float
+            : DirectXPixelFormat.B8G8R8A8UIntNormalized;
+
     // Reopen the duplication after it was invalidated (ACCESS_LOST,
     // ACCESS_DENIED, SESSION_DISCONNECTED). Retry forever with a 2 s
     // backoff until either DuplicateOutput1 succeeds — meaning the
@@ -690,6 +715,21 @@ public sealed class ScreenCaptureService : IDisposable
             attempt++;
             try
             {
+                // Re-detect the display's HDR state fresh on every attempt.
+                // The interruption that invalidated the duplication is often
+                // an HDR desktop toggle, which flips BOTH the negotiable
+                // pixel format (FP16 scRGB ↔ BGRA8) and the peak luminance.
+                // Reusing the Start-time snapshot would request a format
+                // priority list that no longer matches the desktop — the
+                // root of the silent HDR→SDR freeze : the duplication then
+                // delivers BGRA8 while the sampler, never told, keeps tone-
+                // mapping it as FP16. DetectHdrState builds a throwaway DXGI
+                // factory each call, which is required — a factory predating
+                // the mode change reports stale colour-space state.
+                var hdr = ScreenCaptureInterop.DetectHdrState(_hmon);
+                _isHdrSession  = hdr.IsHdr;
+                _peakLuminance = hdr.PeakLuminance;
+
                 uint[] formatList = _isHdrSession ? HdrFormats : SdrFormats;
                 _duplicationPtr = ScreenCaptureInterop.DuplicateOutput1(
                     _output5Ptr, _d3dDevicePtr, formatList);
@@ -700,7 +740,24 @@ public sealed class ScreenCaptureService : IDisposable
                     Width  = (int)desc.ModeDesc.Width,
                     Height = (int)desc.ModeDesc.Height,
                 };
-                if (newSize.Width != _lastSize.Width || newSize.Height != _lastSize.Height)
+
+                // Read back the negotiated format and compare against the
+                // surface the consumer's sampler was built against. Either a
+                // format flip (HDR↔SDR) or a resize invalidates the sampler's
+                // GPU textures, so we surface a single FormatChanged signal
+                // covering both — without it, TryRecreateDuplication used to
+                // recover the duplication but leave the pipeline assuming the
+                // stale format/size for the rest of the session.
+                uint oldDxgiFormat = _activeDxgiFormat;
+                uint newDxgiFormat = desc.ModeDesc.Format;
+                bool formatChanged = newDxgiFormat != oldDxgiFormat;
+                bool sizeChanged = newSize.Width != _lastSize.Width
+                                || newSize.Height != _lastSize.Height;
+
+                _activeDxgiFormat = newDxgiFormat;
+                _activeFormat = MapDxgiFormat(newDxgiFormat);
+
+                if (sizeChanged)
                 {
                     DeckleVisionSource.Log.DuplicationResizeDetected(
                         _lastSize.Width, _lastSize.Height, newSize.Width, newSize.Height);
@@ -720,6 +777,25 @@ public sealed class ScreenCaptureService : IDisposable
 
                 DeckleVisionSource.Log.DuplicationRecreated(
                     attempt, _lastSize.Width, _lastSize.Height);
+
+                if (formatChanged)
+                {
+                    DeckleVisionSource.Log.CaptureFormatRenegotiated(_isHdrSession ? "HDR" : "SDR");
+                    DeckleVisionSource.Log.CaptureFormatRenegotiatedDetail(
+                        MapDxgiFormat(oldDxgiFormat).ToString(),
+                        _activeFormat.ToString(),
+                        _isHdrSession ? "on" : "off",
+                        _peakLuminance,
+                        _lastSize.Width, _lastSize.Height, attempt);
+                }
+
+                // Raise after the duplication is fully live and the active
+                // format/size fields are committed, so the consumer's rebuild
+                // reads consistent ActiveFormat / ContentSize / PeakLuminance.
+                if (formatChanged || sizeChanged)
+                {
+                    FormatChanged?.Invoke();
+                }
                 return;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
