@@ -673,12 +673,6 @@
   <data name="GeneralAutostartCard.Description" xml:space="preserve">
     <value>Launch Deckle automatically when you sign in.</value>
   </data>
-  <data name="GeneralWarmupCard.Header" xml:space="preserve">
-    <value>Warm up Whisper at launch</value>
-  </data>
-  <data name="GeneralWarmupCard.Description" xml:space="preserve">
-    <value>Run a silent transcription at startup so the first real recording is fast. Costs a few seconds of GPU at launch.</value>
-  </data>
   <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
     <value>Microphone</value>
   </data>

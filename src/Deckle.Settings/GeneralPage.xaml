@@ -165,11 +165,6 @@
                     <ToggleSwitch IsOn="{x:Bind ViewModel.AutostartEnabled, Mode=TwoWay}" />
                 </controls:SettingsCard>
 
-                <controls:SettingsCard x:Uid="GeneralWarmupCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.WarmupOnLaunch, Mode=TwoWay}" />
-                </controls:SettingsCard>
-
                 <!-- ── Application data ────────────────────────────────────── -->
                 <TextBlock x:Uid="GeneralPageApplicationDataHeaderLabel"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />

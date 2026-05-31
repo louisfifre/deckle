@@ -105,9 +105,6 @@ public partial class GeneralViewModel : ObservableObject
     [ObservableProperty]
     public partial bool AutostartEnabled { get; set; }
 
-    [ObservableProperty]
-    public partial bool WarmupOnLaunch { get; set; }
-
     partial void OnAutostartEnabledChanged(bool value)
     {
         if (_isSyncing) return;
@@ -123,13 +120,6 @@ public partial class GeneralViewModel : ObservableObject
         _isSyncing = true;
         try { AutostartEnabled = !value; }
         finally { _isSyncing = false; }
-    }
-
-    partial void OnWarmupOnLaunchChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Warmup on launch", value.ToString());
-        PushToSettings();
     }
 
     // ── Backup ───────────────────────────────────────────────────────────────
@@ -191,7 +181,6 @@ public partial class GeneralViewModel : ObservableObject
         OverlayAnimations = true;
         OverlayPosition = "BottomCenter";
         AutostartEnabled = false;
-        WarmupOnLaunch = true;
         BackupDirectory = "";
 
         // _isSyncing stays true — Load() will set it to false.
@@ -210,7 +199,6 @@ public partial class GeneralViewModel : ObservableObject
             OverlayAnimations = shell.Overlay.Animations;
             OverlayPosition = shell.Overlay.Position;
             AutostartEnabled = AutostartService.IsEnabled();
-            WarmupOnLaunch = shell.Startup.WarmupOnLaunch;
             BackupDirectory = shell.Paths.BackupDirectory;
         }
         finally
@@ -232,7 +220,6 @@ public partial class GeneralViewModel : ObservableObject
         shell.Overlay.FadeOnProximity = OverlayFadeOnProximity;
         shell.Overlay.Animations = OverlayAnimations;
         shell.Overlay.Position = OverlayPosition;
-        shell.Startup.WarmupOnLaunch = WarmupOnLaunch;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         SettingsService.Instance.Save();
     }
@@ -276,7 +263,6 @@ public partial class GeneralViewModel : ObservableObject
         try
         {
             AutostartEnabled = AutostartService.IsEnabled();
-            WarmupOnLaunch = true;
         }
         finally { _isSyncing = false; }
         PushToSettings();

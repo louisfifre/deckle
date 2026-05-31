@@ -27,7 +27,6 @@ public sealed class AppSettings
 {
     public PathsSettings       Paths       { get; set; } = new();
     public AppearanceSettings  Appearance  { get; set; } = new();
-    public StartupSettings     Startup     { get; set; } = new();
     public OverlaySettings     Overlay     { get; set; } = new();
     public PasteSettings       Paste       { get; set; } = new();
 }
@@ -45,15 +44,6 @@ public sealed class PasteSettings
 public sealed class AppearanceSettings
 {
     public string Theme { get; set; } = "System";
-}
-
-// Comportement au démarrage.
-public sealed class StartupSettings
-{
-    // Run a silent dummy transcription at launch to warm up the Whisper model
-    // (load + first inference pay the heavy cost). The real first hotkey press
-    // then skips the cold start. Hidden from HUD and tray — pure background.
-    public bool WarmupOnLaunch { get; set; } = true;
 }
 
 // Overlay HUD affiché pendant l'enregistrement/transcription.
