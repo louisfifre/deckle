@@ -80,6 +80,12 @@ public partial class App : Microsoft.UI.Xaml.Application
             || provider == "Deckle.Diagnostics.Resource";
     }
 
+    private static bool ShouldDropApplicationLogEntry(Deckle.Diagnostics.EventEntry entry)
+    {
+        var mode = LoggingSettingsService.Instance.Current.LogWindowVisibilityMode;
+        return !Deckle.Diagnostics.Logging.LogWindowFilter.IsVisible(entry, mode);
+    }
+
     public App()
     {
         InitializeComponent();
@@ -197,6 +203,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // 6g (auparavant le legacy Deckle.Logging.LoggingSettingsService).
         AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
+        TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(ShouldDropApplicationLogEntry);
 
         // Wave 1 sanity check — exercise the full pipeline (provider →
         // EventListener → JsonlEventListener + LegacyLogWindowSink) once

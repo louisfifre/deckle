@@ -17,12 +17,10 @@ using Deckle.App.Diagnostics;
 using Deckle.Core.Interop;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
+using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
 
 namespace Deckle.App;
-
-// SelectorBar mode — single active at a time (native exclusive selection).
-internal enum LogFilterMode { All, Activity, Alerts }
 
 // ─── Log window ──────────────────────────────────────────────────────────────
 //
@@ -54,7 +52,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private ScrollViewer? _listScrollViewer;
     private ItemsStackPanel? _itemsPanel;
 
-    private LogFilterMode _filterMode = LogFilterMode.All;
+    private LogWindowVisibilityMode _filterMode = LogWindowVisibilityMode.All;
     private string _currentSearch = "";
     private bool _isRecording;
 
@@ -116,7 +114,13 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // other levels in Activity rather than in their own dedicated tab —
         // they read as natural milestones inside the broader stream instead
         // of feeling cut off from context.
-        LevelSelector.SelectedItem = LevelFull;
+        _filterMode = LoggingSettingsService.Instance.Current.LogWindowVisibilityMode;
+        LevelSelector.SelectedItem = _filterMode switch
+        {
+            LogWindowVisibilityMode.Activity => LevelFiltered,
+            LogWindowVisibilityMode.Alerts   => LevelCritical,
+            _                                => LevelFull,
+        };
 
         Title = Loc.Get("LogWindow_WindowTitle");
         // ~1:2 aspect ratio (vertical) — two stacked squares. Fits on a 4K display.
@@ -320,17 +324,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         ScrollToBottom();
     }
 
-    // Les rows télémétrie pures sont filtrées par EventName parce que la
-    // sémantique « metadata diagnostique vs log » ne survit pas dans
-    // EventLevel BCL — ces events sont Verbose ou Informational comme un
-    // log normal. Couvre les deux events normalisés du corpus
-    // (CorpusAsr/RewriteRecorded), la latence et la télémétrie micro.
-    private static bool IsTelemetryRow(LogEntry e)
-        => e.EventName == "LatencyRecorded"
-        || e.EventName == "CorpusAsrRecorded"
-        || e.EventName == "CorpusRewriteRecorded"
-        || e.EventName == "MicrophoneTelemetryRecorded";
-
     private bool Matches(LogEntry e)
     {
         // Progressive event + level filter (All > Activity > Alerts) :
@@ -340,19 +333,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         //               hors Verbose et hors rows télémétrie
         //   Alerts    → Warning + Error + Critical uniquement,
         //               hors rows télémétrie
-        bool modeOk = _filterMode switch
-        {
-            LogFilterMode.All      => true,
-            LogFilterMode.Activity => !IsTelemetryRow(e)
-                                   && e.Level != EventLevel.Verbose
-                                   && e.Level != EventLevel.LogAlways,
-            LogFilterMode.Alerts   => !IsTelemetryRow(e)
-                                   && (e.Level == EventLevel.Warning
-                                    || e.Level == EventLevel.Error
-                                    || e.Level == EventLevel.Critical),
-            _                      => true,
-        };
-        if (!modeOk) return false;
+        if (!LogWindowFilter.IsVisible(e.Level, e.EventName, _filterMode)) return false;
 
         if (_currentSearch.Length > 0 &&
             e.Text.IndexOf(_currentSearch, StringComparison.OrdinalIgnoreCase) < 0) return false;
@@ -424,9 +405,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private void OnLevelSelectorChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         var sel = sender.SelectedItem;
-        _filterMode = sel == LevelFiltered ? LogFilterMode.Activity
-                    : sel == LevelCritical ? LogFilterMode.Alerts
-                    : LogFilterMode.All;
+        _filterMode = sel == LevelFiltered ? LogWindowVisibilityMode.Activity
+                    : sel == LevelCritical ? LogWindowVisibilityMode.Alerts
+                    : LogWindowVisibilityMode.All;
+        var settings = LoggingSettingsService.Instance.Current;
+        settings.LogWindowVisibilityMode = _filterMode;
+        LoggingSettingsService.Instance.Save();
         ApplyFilter();
     }
 

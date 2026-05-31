@@ -1,5 +1,4 @@
 using System.Diagnostics.Tracing;
-using System.Globalization;
 using Deckle.Diagnostics;
 
 namespace Deckle.App.Diagnostics;
@@ -11,9 +10,9 @@ namespace Deckle.App.Diagnostics;
 // realization de ligne.
 //
 // Le mapping `Provider` → label source ("Deckle.Whisp" → "WHISP",
-// "Deckle" → "APP") suit la convention courte uppercase héritée du
-// legacy LogSource ; il vivait dans LegacyLogWindowSink.MapSource et
-// migre ici puisque LogWindow est désormais le seul consommateur.
+// "Deckle.App" → "APP") suit la convention courte uppercase héritée
+// du legacy LogSource. Il vit dans Deckle.Diagnostics.LogLineFormatter
+// pour que la LogWindow et app.jsonl produisent la même ligne rendue.
 //
 // `EventName` et `Level` sont exposés en proxy parce que le
 // DataTemplateSelector route ses templates sur ces deux propriétés —
@@ -29,25 +28,6 @@ public sealed class LogEntry
     public LogEntry(EventEntry entry)
     {
         Entry = entry;
-        string source = MapSource(entry.Provider);
-        string message = entry.FormattedMessage ?? entry.EventName;
-        Text = string.Format(
-            CultureInfo.InvariantCulture,
-            "{0:HH:mm:ss.fff} [{1}] {2}",
-            entry.Timestamp, source, message);
-    }
-
-    private static string MapSource(string providerName)
-    {
-        // "Deckle" tout court → "APP" pour rester aligné avec
-        // l'ancienne constante LogSource.App. Les providers nommés
-        // "Deckle.<Module>" perdent le préfixe et passent en uppercase
-        // pour donner le tag court attendu en tête de ligne.
-        const string prefix = "Deckle.";
-        if (string.Equals(providerName, "Deckle", System.StringComparison.Ordinal))
-            return "APP";
-        if (providerName.StartsWith(prefix, System.StringComparison.Ordinal))
-            return providerName.Substring(prefix.Length).ToUpperInvariant();
-        return providerName.ToUpperInvariant();
+        Text = LogLineFormatter.Format(entry);
     }
 }

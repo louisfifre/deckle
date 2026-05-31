@@ -9,12 +9,12 @@ namespace Deckle.App;
 // et la LogWindow elle-même. Tout ce qui ne tient pas dans un module
 // spécifique mais vit dans l'app hôte passe par ce provider.
 //
-// Provider Name = "Deckle" (sans suffixe) → tag [APP] via le bridge
-// LegacyLogWindowSink (qui a une règle spéciale pour ce nom). Le legacy
-// utilisait à la fois [APP] et [STATUS] pour différentes émissions du
-// host — [STATUS] est conservé comme nom d'event mais le tag bridge
-// reste [APP].
-[EventSource(Name = "Deckle")]
+// Provider Name = "Deckle.App" → tag [APP] via LogLineFormatter. Le
+// legacy utilisait à la fois [APP] et [STATUS] pour différentes
+// émissions du host — [STATUS] est conservé comme nom d'event mais le
+// tag reste [APP]. Le suffixe ".App" est volontaire : les listeners
+// Diagnostics écoutent la famille canonique Deckle.*.
+[EventSource(Name = "Deckle.App")]
 public sealed class DeckleAppSource : DeckleEventSource
 {
     public static readonly DeckleAppSource Log = new();

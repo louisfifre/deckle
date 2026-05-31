@@ -38,6 +38,7 @@ public sealed class JsonlEventListener : EventListener
     private readonly System.Func<EventEntry, bool> _predicate;
     private readonly System.Func<EventWrittenEventArgs, bool>? _preEntryDropPredicate;
     private readonly string _kindLabel;
+    private readonly bool _includeJournalMetadata;
     private readonly object _writeLock = new();
     private readonly List<EventSource> _earlySources = new();
     private bool _ready;
@@ -65,12 +66,14 @@ public sealed class JsonlEventListener : EventListener
         string filePath,
         string kindLabel,
         System.Func<EventEntry, bool> predicate,
-        System.Func<EventWrittenEventArgs, bool>? preEntryDropPredicate = null)
+        System.Func<EventWrittenEventArgs, bool>? preEntryDropPredicate = null,
+        bool includeJournalMetadata = false)
     {
         _filePath = filePath;
         _kindLabel = kindLabel;
         _predicate = predicate;
         _preEntryDropPredicate = preEntryDropPredicate;
+        _includeJournalMetadata = includeJournalMetadata;
 
         lock (_earlySources)
         {
@@ -135,6 +138,15 @@ public sealed class JsonlEventListener : EventListener
                 writer.WriteString("timestamp", entry.Timestamp.ToString("o", System.Globalization.CultureInfo.InvariantCulture));
                 writer.WriteString("kind", _kindLabel);
                 writer.WriteString("session", DeckleEventSource.SessionId);
+                if (_includeJournalMetadata)
+                {
+                    writer.WriteString("provider", entry.Provider);
+                    writer.WriteString("event_name", entry.EventName);
+                    writer.WriteString("level", entry.Level.ToString());
+                    writer.WriteString("source", LogLineFormatter.MapSource(entry.Provider));
+                    writer.WriteString("message", entry.FormattedMessage ?? entry.EventName);
+                    writer.WriteString("line", LogLineFormatter.Format(entry));
+                }
                 writer.WritePropertyName("payload");
                 writer.WriteStartObject();
                 foreach (var kv in entry.Payload)

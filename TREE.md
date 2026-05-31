@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 20:50 — source : `git ls-files`_
+_Mise à jour : 2026-05-31 21:06 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -371,13 +371,16 @@ _Mise à jour : 2026-05-31 20:50 — source : `git ls-files`_
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
+│   │   ├── LogLineFormatter.cs
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics.Logging (live logging settings and AmbientCaptu…
 │   │   ├── Deckle.Diagnostics.Logging.csproj
 │   │   ├── LoggingSettings.cs
-│   │   └── LoggingSettingsService.cs
+│   │   ├── LoggingSettingsService.cs
+│   │   ├── LogWindowFilter.cs
+│   │   └── LogWindowVisibilityMode.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Diagnostics.Telemetry (JSONL telemetry listeners and user g…
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj

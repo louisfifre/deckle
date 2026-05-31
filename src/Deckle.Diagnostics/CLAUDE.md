@@ -70,17 +70,17 @@ A plain `if (IsEnabled())` is enough for parameter-less events. The parameterize
 
 **Live LogWindow.** The `LogWindowEventListener` listens to every event of the `Deckle.*` family, including structured telemetry, with no masking at emission. User filtering (by level and by module via the SelectorBar) happens on the sink side in the viewer.
 
-**JSONL routing.** One `JsonlEventListener` instance per destination file. Each listener receives a predicate that selects the events to write to its file. The concrete wiring (file paths, user gates) lives in `Deckle.Diagnostics.Telemetry`. The JSON schema reproduces the legacy key for key:
+**JSONL routing.** One listener instance per destination route. Each listener receives a predicate that selects the events to write to its file. The concrete wiring (file paths, user gates) lives in `Deckle.Diagnostics.Telemetry`. The structured telemetry JSON schema reproduces the legacy key for key:
 
 ```json
 {"timestamp":"<ISO 8601>","kind":"<label>","session":"YYYY-MM-DD-XXXX","payload":{<flat snake_case>}}
 ```
 
-Structured payloads (latency, microphone, corpus) have their own labels (`"latency"`, `"microphone"`, `"corpus"`); the general channel keeps `"log"` as legacy.
+Structured payloads (latency, microphone, corpus) have their own labels (`"latency"`, `"microphone"`, `"corpus"`); the general channel keeps `"log"` as legacy and extends the envelope with readable journal metadata.
 
 ## JSONL schema — machine contract
 
-The schema emitted by `JsonlEventListener` is frozen. One JSON line per event, `\n` separator, UTF-8 encoding without BOM. Envelope structure:
+The base schema emitted by `JsonlEventListener` is frozen for structured telemetry files. One JSON line per event, `\n` separator, UTF-8 encoding without BOM. Envelope structure:
 
 ```json
 {
@@ -94,6 +94,8 @@ The schema emitted by `JsonlEventListener` is frozen. One JSON line per event, `
 Primitive values are serialized by their native type (`int` → JSON number without quotes, `string` → JSON string, `bool` → `true`/`false`). `DateTime` and `DateTimeOffset` go through their `"o"` representation (round-trip ISO 8601). `Guid` values go through their `"D"` representation (uppercase segments, dashes). Any other type is stringified — in practice this case does not occur, EventSource forbidding complex types in `[Event]` parameters.
 
 `kind` takes the values `"log"` (general channel, in `app.jsonl`), `"latency"` (latency channel, in `latency.jsonl`), `"microphone"` (microphone channel, in `microphone.jsonl`), `"corpus"` (corpus channel, in `corpus.jsonl` or `<profile>/corpus.jsonl` depending on context). The `"log"` label is kept as-is for compatibility with existing benchmark tools.
+
+`app.jsonl` uses the same base envelope, but adds `provider`, `event_name`, `level`, `source`, `message`, and `line` before `payload`. These fields are intentionally app-journal-only: structured telemetry files keep the compact machine contract.
 
 ## Provider inventory and listening pipeline
 
@@ -115,7 +117,7 @@ Thirteen concrete EventSource providers active at boot, plus the non-instantiabl
 
 `Deckle.Core` and `Deckle.Composition` stay silent by doctrine — no call site justifies a provider.
 
-Six listeners instantiated at boot in `AppDiagnosticsBootstrap`, persist for the lifetime of the process. Four `JsonlEventListener`, one per destination file (`app.jsonl`, `latency.jsonl`, `microphone.jsonl`, `corpus.jsonl`). Each receives a predicate that selects the events to write to its file — selection by canonical event name for structured heartbeats (`LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusRecorded`), selection by keyword for the general channel. One `LogWindowEventListener` with a ring buffer of capacity 5000 and multi-sink `AttachSink` / `DetachSink` — the LogWindow attaches on its first lazy open and receives the boot history in replay. One `HudFeedbackEventListener` that filters exclusively on the `UserFeedbackEmitted` event name and routes to the concrete sink of the host.
+Seven listeners are instantiated at boot or just after HUD construction in `AppDiagnosticsBootstrap`, and persist for the lifetime of the process. Five JSONL listeners live behind `TelemetryListenerBootstrap`: three flat `JsonlEventListener` instances for `app.jsonl`, `latency.jsonl`, and `microphone.jsonl`, plus two routed `RoutedJsonlEventListener` instances for ASR and rewrite corpus lines in `corpus.jsonl`. Each receives a predicate that selects the events to write to its file — selection by canonical event name for structured heartbeats (`LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusAsrRecorded`, `CorpusRewriteRecorded`), selection by application-journal visibility for the general channel. `app.jsonl` persists the same rendered line as the LogWindow (`line`, `source`, `message`, `provider`, `event_name`, `level`) plus the raw payload, so the file stays readable when inspected directly. One `LogWindowEventListener` with a ring buffer of capacity 5000 and multi-sink `AttachSink` / `DetachSink` — the LogWindow attaches on its first lazy open and receives the boot history in replay. One `HudFeedbackEventListener` that filters exclusively on the `UserFeedbackEmitted` event name and routes to the concrete sink of the host.
 
 User configuration sources:
 
