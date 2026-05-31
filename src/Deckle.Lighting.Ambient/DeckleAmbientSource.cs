@@ -55,6 +55,8 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public const int EvtPipelinePerLightConfig        = 30;
     public const int EvtExternalChangeStoppedDetail   = 31;
     public const int EvtEchoIgnored                   = 32;
+    public const int EvtSamplerRebuilt                = 33;
+    public const int EvtSamplerRebuildFailed          = 34;
 
     // ── AmbientEngine — lifecycle ───────────────────────────────────────
 
@@ -157,6 +159,29 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public void PipelinePerLightConfig(string id, string name, string zone, double brightness, bool controlled)
     {
         if (IsEnabled()) WriteEvent(EvtPipelinePerLightConfig, id, name, zone, brightness, controlled);
+    }
+
+    // Consumer-side confirmation that the FrameSampler was rebuilt to match
+    // a capture surface the service renegotiated mid-session (HDR↔SDR toggle
+    // or resolution change). Info milestone — pairs with the Vision-side
+    // CaptureFormatRenegotiated so the live window shows the full chain :
+    // capture renegotiates → sampler rebuilt. mode = "HDR" | "SDR".
+    [Event(EvtSamplerRebuilt,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Frame sampler rebuilt for the renegotiated capture surface — now {0}")]
+    public void SamplerRebuilt(string mode)
+    {
+        if (IsEnabled()) WriteEvent(EvtSamplerRebuilt, mode);
+    }
+
+    [Event(EvtSamplerRebuildFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Frame sampler rebuild failed after a capture renegotiation — {0}: {1} (ambient output may stay frozen until restart)")]
+    public void SamplerRebuildFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSamplerRebuildFailed, ex_type, ex_message);
     }
 
     [Event(EvtPushLoopCrashed,

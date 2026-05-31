@@ -44,6 +44,8 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtSamplerProcessFailed            = 23;
     public const int EvtSecureDesktopRecovering         = 24;
     public const int EvtHeartbeat                       = 25;
+    public const int EvtCaptureFormatRenegotiated       = 26;
+    public const int EvtCaptureFormatRenegotiatedDetail = 27;
 
     // ── Capture session lifecycle ───────────────────────────────────────
 
@@ -229,6 +231,29 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public void DuplicationRecreateAttemptFailed(int attempt, string ex_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailed, attempt, ex_type, message);
+    }
+
+    // Milestone — ungated by AmbientCaptureGate (Info always passes) so the
+    // HDR↔SDR toggle is visible at test time even with LogAmbientCaptureActivity
+    // off. This is the line that disambiguates the diagnosed silent freeze :
+    // if it fires on the toggle, the recreate funnel saw the format flip and
+    // signalled the consumer to rebuild. mode = "HDR" | "SDR".
+    [Event(EvtCaptureFormatRenegotiated,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Capture surface renegotiated after a display change — now {0}")]
+    public void CaptureFormatRenegotiated(string mode)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureFormatRenegotiated, mode);
+    }
+
+    [Event(EvtCaptureFormatRenegotiatedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "renegotiate | old_format={0} | new_format={1} | hdr={2} | peak_lum={3:F0} | size={4}x{5} | attempt={6}")]
+    public void CaptureFormatRenegotiatedDetail(string old_format, string new_format, string hdr_state, double peak_lum, int width, int height, int attempt)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureFormatRenegotiatedDetail, old_format, new_format, hdr_state, peak_lum, width, height, attempt);
     }
 
     // ── FrameSampler ────────────────────────────────────────────────────

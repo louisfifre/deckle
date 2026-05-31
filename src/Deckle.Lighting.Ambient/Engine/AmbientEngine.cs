@@ -55,18 +55,21 @@ namespace Deckle.Lighting.Ambient;
 // instantiate the same engine — only the trigger differs.
 //
 // Ownership.
-//   - The ScreenCaptureService is borrowed, not owned. The engine
-//     calls Start() if the service isn't running, but never Stop() —
-//     the caller decided to construct the service and is responsible
-//     for its disposal.
-//   - The ILightOutput is borrowed, not owned. ConnectAsync is
-//     called on Start ; DisposeAsync is NOT called on engine
-//     teardown.
-//   - The FrameSampler is borrowed, not owned. The caller (Playground
-//     or AmbientPage) instantiates it from the capture service's
-//     Device + ContentSize once the capture is running, and disposes
-//     it when the pipeline stops. The engine never disposes the
-//     sampler.
+//   - The ScreenCaptureService is owned. The engine constructs it in
+//     StartAsync, Start()s it, and Disposes it in the deferred Stop
+//     cleanup. A fresh service per run picks up the current monitor
+//     selection + HDR negotiation rather than a stale snapshot.
+//   - The FrameSampler is owned. Built from the capture service's
+//     Device / ContentSize / ActiveFormat / PeakLuminance once capture
+//     is running, rebuilt in place when a mid-session recreate
+//     renegotiates the capture surface (OnCaptureFormatChanged), and
+//     disposed in the Stop cleanup.
+//   - The ILightOutput is owned. ConnectAsync on Start ; DisposeAsync
+//     (or Dispose) in the Stop cleanup.
+//   - The HueBridgeClient is borrowed from HuePairingService, the
+//     process-wide singleton owner shared with the Playground and the
+//     Settings AmbientPage. The engine releases the reference on Stop
+//     but never disposes it.
 //   - The engine owns its CancellationTokenSource and the push
 //     loop ; both are released on Stop / DisposeAsync.
 //
