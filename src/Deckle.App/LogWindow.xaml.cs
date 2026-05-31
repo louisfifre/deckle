@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Input;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
 using System.Text;
-using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using System.Threading.Tasks;
@@ -574,8 +573,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
                 if (selected.Contains(item))
                     sb.AppendLine(item.Text);
             }
-            CopyToClipboard(sb.ToString());
-            ShowCopiedFeedback();
+            if (CopyToClipboard(sb.ToString()))
+                ShowCopiedFeedback();
+            else
+                ShowCopyFailedFeedback();
         }
 
         // Full deselection — nothing persists.
@@ -611,11 +612,24 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         return null;
     }
 
-    private static void CopyToClipboard(string text)
+    // Copy through the shared verified Win32 writer (Deckle.Core.Interop.
+    // Win32Clipboard). The WinRT DataPackage/Clipboard.SetContent path this
+    // replaced wrote unverified and relied on delayed rendering, which
+    // truncated or failed silently on large selections — the bug this fixes.
+    // Returns true when the bytes reached the OS clipboard; callers surface a
+    // failure on the badge.
+    private bool CopyToClipboard(string text)
     {
-        var dp = new DataPackage();
-        dp.SetText(text);
-        Clipboard.SetContent(dp);
+        ClipboardWriteResult r = Win32Clipboard.TryCopyText(text);
+        if (!r.Landed)
+        {
+            DeckleAppSource.Log.LogWindowWarning($"copy failed: {r.Status} ({r.ExpectedChars} chars)");
+            return false;
+        }
+        if (r.Status is ClipboardWriteStatus.VerifyMissing or ClipboardWriteStatus.VerifyLengthMismatch)
+            DeckleAppSource.Log.LogWindowWarning(
+                $"copy verify {r.Status}: expected {r.ExpectedChars}, clipboard {r.ActualChars}");
+        return true;
     }
 
     private async void ShowCopiedFeedback()
@@ -627,14 +641,35 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             CopyBadgeText.Text = Loc.Get("LogWindow_CopyBadge_Single");
     }
 
+    // Transient failure toast on the same badge. Unlike ShowCopiedFeedback it
+    // collapses the badge afterwards — a failed copy from the CommandBar button
+    // has no hovered row keeping the badge alive, so it must clear itself.
+    private async void ShowCopyFailedFeedback()
+    {
+        CopyBadgeText.Text = Loc.Get("LogWindow_CopyBadge_Failed");
+        CopyBadge.Visibility = Visibility.Visible;
+        await Task.Delay(1600);
+        if (CopyBadgeText.Text == Loc.Get("LogWindow_CopyBadge_Failed"))
+        {
+            CopyBadge.Visibility = Visibility.Collapsed;
+            CopyBadgeText.Text = Loc.Get("LogWindow_CopyBadge_Single");
+        }
+    }
+
     // ── Copy button (CommandBar) ─────────────────────────────────────────────
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
     {
-        // Copy all visible entries.
+        // Copy all visible entries. Silent on success — the button has no row
+        // to anchor a badge to. On failure the badge surfaces it at the top of
+        // the surface so the user knows the clipboard was not updated.
         var sb = new StringBuilder();
         foreach (var entry in _visible) sb.AppendLine(entry.Text);
-        CopyToClipboard(sb.ToString());
+        if (!CopyToClipboard(sb.ToString()))
+        {
+            CopyBadgeTransform.Y = 0;
+            ShowCopyFailedFeedback();
+        }
     }
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
