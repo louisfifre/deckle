@@ -129,6 +129,13 @@ public sealed partial class AmbientEngine
             // service's retry loop. When we see this, the only sane move
             // is to stop the engine cleanly so the UI toggles back to off.
             _capture.Stopped += OnCaptureStopped;
+
+            // FormatChanged fires when a mid-session duplication recreate
+            // renegotiated a surface the current sampler can't read (HDR↔SDR
+            // toggle flips FP16↔BGRA8 ; a mode change resizes it). We rebuild
+            // the sampler in place so the pipeline keeps producing instead of
+            // tone-mapping a stale format into dead output.
+            _capture.FormatChanged += OnCaptureFormatChanged;
             ThrowIfStartAbortRequested();
 
             await _output!.ConnectAsync(ct).ConfigureAwait(false);
@@ -290,6 +297,66 @@ public sealed partial class AmbientEngine
         _sampler?.Process(frame);
     }
 
+    // Capture worker thread — raised from inside TryRecreateDuplication
+    // after the duplication renegotiated a surface (HDR↔SDR toggle or a
+    // resolution change) the live FrameSampler was not built for. Rebuild
+    // the sampler against the fresh format / size / peak luminance so the
+    // pipeline recovers instead of freezing on dead output. Runs on the
+    // same worker thread that raises FrameArrived, so the swap can't race a
+    // Process() call — no frame is mid-flight through the old sampler when
+    // we replace it. The next push-loop tick re-applies the live exposure
+    // to the new sampler (PushLoopAsync top), so we don't forward it here.
+    private void OnCaptureFormatChanged()
+    {
+        var capture = _capture;
+        var device = capture?.Device;
+        if (capture is null || device is null) return;
+
+        FrameSampler fresh;
+        try
+        {
+            fresh = new FrameSampler(
+                device,
+                capture.ContentSize,
+                capture.ActiveFormat,
+                capture.PeakLuminance);
+        }
+        catch (Exception ex)
+        {
+            DeckleAmbientSource.Log.SamplerRebuildFailed(ex.GetType().Name, ex.Message);
+            return;
+        }
+
+        // Publish the new sampler atomically. UI-thread readers (preview
+        // grid + tuning panel via LatestSample / GridCols / ContentPeak)
+        // see either the old or the new instance — both valid — and the
+        // superseded one's volatile snapshots stay readable even after
+        // dispose, so the swap never throws on the read side.
+        var superseded = Interlocked.Exchange(ref _sampler, fresh);
+
+        DeckleAmbientSource.Log.SamplerRebuilt(capture.IsHdrSession ? "HDR" : "SDR");
+
+        if (superseded is not null)
+        {
+            // Fire-and-forget : the superseded sampler is no longer reachable
+            // from Process (we swapped before the next FrameArrived) so
+            // releasing its GPU textures is safe. DisposeAsync completes
+            // synchronously (COM release only) ; the continuation is guarded
+            // so a release fault surfaces as a Warning rather than an
+            // unobserved task exception.
+            _ = DisposeSupersededSamplerAsync(superseded);
+        }
+    }
+
+    private static async Task DisposeSupersededSamplerAsync(FrameSampler sampler)
+    {
+        try { await sampler.DisposeAsync().ConfigureAwait(false); }
+        catch (Exception ex)
+        {
+            DeckleAmbientSource.Log.SamplerRebuildFailed(ex.GetType().Name, ex.Message);
+        }
+    }
+
     // Capture worker thread → marshal off it via Task.Run because Stop()
     // raises StateChanged whose subscribers (AmbientPage, tray) expect
     // to live on their own dispatchers, and Stop() is not designed to
@@ -417,6 +484,7 @@ public sealed partial class AmbientEngine
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
             try { _capture.Stopped -= OnCaptureStopped; } catch { }
+            try { _capture.FormatChanged -= OnCaptureFormatChanged; } catch { }
             try { _capture.Dispose(); } catch { }
             _capture = null;
         }
@@ -504,6 +572,7 @@ public sealed partial class AmbientEngine
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
             try { _capture.Stopped -= OnCaptureStopped; } catch { }
+            try { _capture.FormatChanged -= OnCaptureFormatChanged; } catch { }
         }
 
         // Spin the dep teardown on the thread pool. Awaits the push
