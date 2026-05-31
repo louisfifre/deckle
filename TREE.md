@@ -1,5 +1,5 @@
 ﻿# Arborescence — Deckle
-_Mise à jour : 2026-05-31 19:10 — source : `git ls-files`_
+_Mise à jour : 2026-05-31 19:11 — source : `git ls-files`_
 
 ```
 ├── .claude/
@@ -631,6 +631,7 @@ _Mise à jour : 2026-05-31 19:10 — source : `git ls-files`_
 │       ├── FrameAnalysisHint.cs
 │       ├── FrameSampler.cs
 │       ├── IFrameAnalyzer.cs
+│       ├── JOURNAL.md  — [module-journal] Journal daté du module Deckle.Vision — diagnostics de la capture DXGI Output Du…
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
 │       └── ScreenCaptureService.cs
