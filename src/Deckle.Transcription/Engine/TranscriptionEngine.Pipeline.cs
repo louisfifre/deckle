@@ -517,16 +517,18 @@ public sealed partial class TranscriptionEngine
     // safety net against clipboard-format mangling by a third-party watcher.
     private bool CopyToClipboard(string text)
     {
-        const uint GMEM_MOVEABLE  = 0x0002;
-        const uint CF_UNICODETEXT = 13;
+        // The Win32 write + read-back verification now lives in
+        // Deckle.Core.Interop.Win32Clipboard, shared with the LogWindow Copy
+        // command. This method keeps the engine's observability surface: it
+        // maps the structured result back onto the same EventSource events and
+        // UserFeedback the inline implementation emitted, in the same order.
+        ClipboardWriteResult r = Win32Clipboard.TryCopyText(text);
 
-        int byteCount = (text.Length + 1) * 2;
+        DeckleWhispSource.Log.ClipboardGlobalAlloc(r.ByteCount, r.Handle);
 
-        IntPtr hMem = NativeMethods.GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)byteCount);
-        DeckleWhispSource.Log.ClipboardGlobalAlloc(byteCount, (long)hMem);
-        if (hMem == IntPtr.Zero)
+        if (r.Status == ClipboardWriteStatus.AllocFailed)
         {
-            DeckleWhispSource.Log.ClipboardAllocFailed(byteCount);
+            DeckleWhispSource.Log.ClipboardAllocFailed(r.ByteCount);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
@@ -534,15 +536,9 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        IntPtr ptr = NativeMethods.GlobalLock(hMem);
-        Marshal.Copy(text.ToCharArray(), 0, ptr, text.Length);
-        Marshal.WriteInt16(ptr, text.Length * 2, 0);
-        NativeMethods.GlobalUnlock(hMem);
-
-        bool opened = NativeMethods.OpenClipboard(IntPtr.Zero);
-        DeckleWhispSource.Log.ClipboardOpen(opened);
-        if (!opened)
+        if (r.Status == ClipboardWriteStatus.OpenFailed)
         {
+            DeckleWhispSource.Log.ClipboardOpen(false);
             DeckleWhispSource.Log.ClipboardOpenFailed();
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardUnavailable_Title"),
@@ -551,10 +547,10 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        NativeMethods.EmptyClipboard();
-        IntPtr setHandle = NativeMethods.SetClipboardData(CF_UNICODETEXT, hMem);
-        NativeMethods.CloseClipboard();
-        if (setHandle == IntPtr.Zero)
+        // The clipboard opened successfully for every remaining branch.
+        DeckleWhispSource.Log.ClipboardOpen(true);
+
+        if (r.Status == ClipboardWriteStatus.SetDataFailed)
         {
             DeckleWhispSource.Log.ClipboardSetDataFailed();
             EmitUserFeedback(FB_ERROR,
@@ -564,40 +560,27 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        // Immediate read-back to verify the clipboard was set correctly.
-        // Mismatch is a Warning — the copy reached the OS, a third-party
-        // clipboard watcher may have re-encoded or trimmed the payload
-        // between SetClipboardData and our read.
-        if (NativeMethods.OpenClipboard(IntPtr.Zero))
+        // Bytes reached the OS clipboard. The two Verify states are advisory
+        // Warnings — the read-back flagged a discrepancy but the copy landed.
+        if (r.Status == ClipboardWriteStatus.VerifyMissing)
         {
-            IntPtr h = NativeMethods.GetClipboardData(CF_UNICODETEXT);
-            if (h == IntPtr.Zero)
-            {
-                DeckleWhispSource.Log.ClipboardVerifyMissing();
-                EmitUserFeedback(FB_WARN,
-                    Loc.Get("Engine_ClipboardIncomplete_Unverified_Title"),
-                    Loc.Get("Engine_ClipboardIncomplete_Unverified_Body"),
-                    FB_OVERLAY);
-            }
-            else
-            {
-                IntPtr p = NativeMethods.GlobalLock(h);
-                string? back = p != IntPtr.Zero ? Marshal.PtrToStringUni(p) : null;
-                NativeMethods.GlobalUnlock(h);
-                if (back is null || back.Length != text.Length)
-                {
-                    DeckleWhispSource.Log.ClipboardVerifyMismatch(text.Length, back?.Length ?? -1);
-                    EmitUserFeedback(FB_WARN,
-                        Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
-                        Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
-                        FB_OVERLAY);
-                }
-            }
-            NativeMethods.CloseClipboard();
+            DeckleWhispSource.Log.ClipboardVerifyMissing();
+            EmitUserFeedback(FB_WARN,
+                Loc.Get("Engine_ClipboardIncomplete_Unverified_Title"),
+                Loc.Get("Engine_ClipboardIncomplete_Unverified_Body"),
+                FB_OVERLAY);
+        }
+        else if (r.Status == ClipboardWriteStatus.VerifyLengthMismatch)
+        {
+            DeckleWhispSource.Log.ClipboardVerifyMismatch(r.ExpectedChars, r.ActualChars);
+            EmitUserFeedback(FB_WARN,
+                Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
+                Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
+                FB_OVERLAY);
         }
 
         DeckleWhispSource.Log.ClipboardCopied();
-        DeckleWhispSource.Log.ClipboardCopyComplete(text.Length, byteCount);
+        DeckleWhispSource.Log.ClipboardCopyComplete(r.ExpectedChars, r.ByteCount);
         return true;
     }
 
