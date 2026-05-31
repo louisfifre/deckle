@@ -10,6 +10,22 @@ Chronique datée du module, complément réversible au [CLAUDE.md](./CLAUDE.md) 
 
 ---
 
+## 2026-05-31 (suite) — Fix livré et confirmé : recreate format-aware, le « gel » re-HDR était le delta-gate
+
+Le mismatch de format diagnostiqué plus bas est **corrigé et confirmé en usage**. `TryRecreateDuplication` est devenu format-aware : re-détection HDR fraîche (facteur DXGI neuf), liste de formats alignée sur l'état courant, readback du format négocié, réécriture de `ActiveFormat`/`PeakLuminance`, et nouvel event `FormatChanged` levé sur changement de format **ou** de taille. `AmbientEngine` reconstruit le `FrameSampler` en place sur ce signal (thread worker capture, sérialisé avec `Process`, swap atomique). Commits `5e35b0c` `fix(vision): make the duplication recreate format-aware` + `e4829c2` `fix(ambient): rebuild the frame sampler on capture format change`. La doctrine timeless est montée dans le [CLAUDE.md](./CLAUDE.md) (section *HDR and cadence*), cette entrée en devient le pointeur chronologique.
+
+**Scénario A confirmé, B écarté (mesuré).** La télémétrie `app.jsonl` porte l'event Info `{"mode":"SDR"}` puis `{"mode":"HDR"}` à chaque toggle (renégociation + rebuild, ~2 ms d'écart) : HDR→SDR déclenche bien un `ACCESS_LOST` + recreate, le funnel voit le flip. Le scénario B (duplication qui ne se recrée pas, gel hors-format) est écarté. HDR→SDR : les lampes suivent.
+
+**Le « pas de récup en re-HDR » résolu — ce n'était pas la capture.** L'hypothèse ouverte du diagnostic ci-dessous est levée : le moteur ne s'arrête jamais tout seul au re-HDR (aucun `capture_lost` ni `DeviceLost` en télémétrie ; la session tournait encore 90 s après le toggle, le seul arrêt observé portait `reason:"user"`). Le « gel » perçu était le **delta-gate** (`ChangeThreshold`, push loop d'`AmbientEngine`) : écran statique après le toggle → aucun changement de couleur → push supprimé → les lampes tiennent leur dernière valeur. Comportement voulu, pas un bug — ça réagit dès que l'écran bouge (validé en usage).
+
+**Résidu cosmétique (observé).** `DuplicateOutput1` renvoie un `E_ACCESSDENIED` transitoire sur un recreate pendant que le mode HDR se stabilise (vu dans les deux sens). La boucle de retry l'absorbe (backoff 2 s). Émis en Warning (`DuplicationRecreateAttemptFailed`) — niveau discutable pour un transitoire auto-résolu ; reporté au chantier observabilité, pas tranché ici.
+
+**`CaptureStallDetector` orphelin.** Écrit comme watchdog acquire-based (`b6abd1d`, 7 tests verts), puis pressenti pour un repurpose en capteur de changement de format. Le scénario A étant confirmé — le funnel recreate détecte le flip inline, sans capteur séparé — ce type n'a plus d'objet. Il reste committé mais non câblé ; décision « retirer ou garder parké » laissée à Louis.
+
+**Learning méthodo.** `app.jsonl` ne persiste que le payload (ni nom d'event, ni provider, ni niveau, ni message rendu) : un event sans param devient un blob vide, et avec le gate `LogAmbientCaptureActivity` off seuls les jalons Info/Warning/Error passent — impossible de distinguer « lampes suivent un écran statique » de « lampes gelées » sans rouvrir le gate. Le Copy de la LogWindow tronque sur les grosses sélections, ce qui a forcé la lecture directe du disque pour ce diagnostic. Ces deux points alimentent le chantier observabilité séparé.
+
+---
+
 ## 2026-05-31 — Diagnostic : la screen capture gèle au toggle HDR (fix non codé)
 
 Le « screen capture s'arrête de lui-même pendant la capture ambient » a été reproduit et diagnostiqué. Le déclencheur n'est ni un jeu ni le secure desktop comme supposé d'abord — c'est le **toggle HDR du bureau**. Diagnostic posé en lisant directement `app.jsonl` (la séquence `CaptureSessionConfigured` + `DuplicationRecreateAttemptFailed`), pas le code.
