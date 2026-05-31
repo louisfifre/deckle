@@ -65,9 +65,16 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     private static bool ShouldDropAmbientCaptureVerbose(
         string provider,
-        System.Diagnostics.Tracing.EventLevel level)
+        System.Diagnostics.Tracing.EventLevel level,
+        System.Diagnostics.Tracing.EventKeywords keywords)
     {
         if (level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
+        // Le heartbeat est le rollup qui prouve « boucle vivante, rien à
+        // pousser » sur un écran statique — c'est précisément le signal
+        // qu'on veut pendant la capture. Il porte le keyword Heartbeat et
+        // doit survivre au gate qui silence le Verbose par-tick. Jamais
+        // drop. Cf. ADR-0017.
+        if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Heartbeat) != 0) return false;
         if (!AmbientCaptureGate.IsActive) return false;
         if (LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
         return provider == "Deckle.Ambient"

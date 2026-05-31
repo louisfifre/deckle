@@ -74,7 +74,7 @@ public static class TelemetryListenerBootstrap
     // toggle dans Settings prennent effet immédiatement.
     private static Func<string, bool>? _gateReader;
     private static Func<EventEntry, bool>? _applicationLogDropFilter;
-    private static Func<string, EventLevel, bool>? _applicationLogProviderLevelDropFilter;
+    private static Func<string, EventLevel, EventKeywords, bool>? _applicationLogProviderLevelDropFilter;
 
     public static void Configure(string telemetryDirectory, bool validationSubdirectory = true)
     {
@@ -96,7 +96,13 @@ public static class TelemetryListenerBootstrap
                 && e.EventName != "CorpusRecorded"
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
-            preEntryDropPredicate: ShouldDropApplicationLog));
+            preEntryDropPredicate: ShouldDropApplicationLog,
+            // app.jsonl est le miroir persistant du journal live : enveloppe
+            // auto-descriptive (provider/event/level/message) et bornée par
+            // rotation. Les datasets restent en PayloadOnly sans rotation
+            // (contrat figé, ADR-0011). Décision et bornes : ADR-0017.
+            schema:   JsonlSchema.SelfDescribing,
+            rotation: new JsonlRotationPolicy(maxBytes: 5 * 1024 * 1024, maxGenerations: 5)));
 
         _listeners.Add(new JsonlEventListener(
             filePath:  Path.Combine(rootDirectory, "latency.jsonl"),
@@ -172,7 +178,7 @@ public static class TelemetryListenerBootstrap
     // l'utilise pour que le toggle coupe aussi le coût d'allocation des
     // logs de boucle, pas seulement l'écriture finale.
     public static void ConfigureApplicationLogProviderLevelDropFilter(
-        Func<string, EventLevel, bool> filter)
+        Func<string, EventLevel, EventKeywords, bool> filter)
     {
         if (filter is null) throw new ArgumentNullException(nameof(filter));
         _applicationLogProviderLevelDropFilter = filter;
@@ -201,7 +207,7 @@ public static class TelemetryListenerBootstrap
 
         var filter = _applicationLogProviderLevelDropFilter;
         if (filter is null) return false;
-        try { return filter(provider, eventData.Level); }
+        try { return filter(provider, eventData.Level, eventData.Keywords); }
         catch { return false; }
     }
 

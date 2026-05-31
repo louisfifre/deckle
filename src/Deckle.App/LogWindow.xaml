@@ -27,7 +27,7 @@
                      au theme switch sans qu'on ait à recréer les rows. -->
                 <DataTemplate x:Key="NoWrap_Verbose">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="NoWrap" />
                 </DataTemplate>
@@ -52,7 +52,7 @@
 
                 <DataTemplate x:Key="Wrap_Verbose">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="Wrap" />
                 </DataTemplate>
@@ -76,42 +76,43 @@
                 </DataTemplate>
 
                 <!-- Rows télémétrie (latency / corpus / microphone) : rendu
-                     en tertiary text pour qu'elles lisent comme metadata
-                     diagnostique, pas comme log lines. Text est précomputé
+                     en secondary text — un cran au-dessus du Verbose (tertiary),
+                     pour qu'elles lisent comme metadata diagnostique structurée
+                     sans se noyer dans le firehose Verbose. Text est précomputé
                      par LogEntry au moment du wrap d'EventEntry. -->
                 <DataTemplate x:Key="NoWrap_Latency">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Corpus">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Microphone">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Latency">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Corpus">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Microphone">
                     <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                FontFamily="Consolas" FontSize="12"
                                TextWrapping="Wrap" />
                 </DataTemplate>

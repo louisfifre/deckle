@@ -48,6 +48,8 @@ Five native `EventLevel` values only.
 - **`Informational`** — progress milestone as a short Capital sentence ("Loading model", "Recording start"). It is the equivalent of legacy Info **and** Success — success semantics is carried by the message, no longer by a dedicated level.
 - **`Verbose`** — structured technical details, machine-greppable. Measures, identifiers, structured payloads. This is the level that carries `LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusAsrRecorded`, `CorpusRewriteRecorded` and their detailed parameters.
 
+A transient that a retry loop absorbs on its own — no user-visible effect, attempt count staying low — is `Verbose`, not `Warning`. It is technical detail, not an abnormal state worth a human's eye. `Warning` is reserved for a degradation a human would want to notice even though it eventually recovers (a dependency kept slow, a buffer repeatedly empty). The tell that a `Warning` is miscalibrated is a recurring line for an event that always self-heals on the first retry — the screen-capture `DuplicationRecreateAttemptFailed` (an `E_ACCESSDENIED` while an HDR mode change settles, attempt always 1) is exactly that case and belongs at `Verbose`.
+
 Legacy `Narrative` is dropped. If a UX text addressed to the user is needed, it goes through `UserFeedbackEmitted` (HUD) or through a `.resw` string (UI surface).
 
 ## Performance — gate before payload
@@ -70,30 +72,31 @@ A plain `if (IsEnabled())` is enough for parameter-less events. The parameterize
 
 **Live LogWindow.** The `LogWindowEventListener` listens to every event of the `Deckle.*` family, including structured telemetry, with no masking at emission. User filtering (by level and by module via the SelectorBar) happens on the sink side in the viewer.
 
-**JSONL routing.** One `JsonlEventListener` instance per destination file. Each listener receives a predicate that selects the events to write to its file. The concrete wiring (file paths, user gates) lives in `Deckle.Diagnostics.Telemetry`. The JSON schema reproduces the legacy key for key:
-
-```json
-{"timestamp":"<ISO 8601>","kind":"<label>","session":"YYYY-MM-DD-XXXX","payload":{<flat snake_case>}}
-```
-
-Structured payloads (latency, microphone, corpus) have their own labels (`"latency"`, `"microphone"`, `"corpus"`); the general channel keeps `"log"` as legacy.
+**JSONL routing.** One `JsonlEventListener` instance per destination file. Each listener receives a predicate that selects the events to write to its file, plus a `JsonlSchema` (envelope shape) and an optional `JsonlRotationPolicy` (size-based roll). The concrete wiring (file paths, user gates, schema, rotation) lives in `Deckle.Diagnostics.Telemetry`. Two envelope shapes exist, and the difference is the window↔telemetry symmetry decision recorded in [ADR-0017](../../docs/adr/0017-symetrie-fenetre-telemetrie-et-rotation-du-journal.md): the general `app.jsonl` journal is **self-describing** (it persists the event identity the LogWindow renders), while the dataset channels (latency, microphone, corpus) stay **payload-only and frozen** because their schema is a cross-session machine contract consumed by benchmark tooling and pinned by [ADR-0011](../../docs/adr/0011-corpus-normalise-comme-dataset-ml.md). Structured channels carry their own labels (`"latency"`, `"microphone"`, `"corpus"`); the general channel keeps `"log"`.
 
 ## JSONL schema — machine contract
 
-The schema emitted by `JsonlEventListener` is frozen. One JSON line per event, `\n` separator, UTF-8 encoding without BOM. Envelope structure:
+One JSON line per event, `\n` separator, UTF-8 encoding without BOM. Two envelopes, selected per listener by `JsonlSchema` — the choice is governed by [ADR-0017](../../docs/adr/0017-symetrie-fenetre-telemetrie-et-rotation-du-journal.md).
+
+**`PayloadOnly`** — the dataset channels (latency, microphone, corpus). Frozen, key for key, because benchmark tooling parses it:
 
 ```json
-{
-  "timestamp": "<ISO 8601 with local offset>",
-  "kind": "<channel label>",
-  "session": "YYYY-MM-DD-XXXX",
-  "payload": { "<snake_case parameter>": <typed value>, … }
-}
+{ "timestamp": "<ISO 8601 with local offset>", "kind": "<channel label>", "session": "YYYY-MM-DD-XXXX", "payload": { "<snake_case parameter>": <typed value>, … } }
 ```
 
-Primitive values are serialized by their native type (`int` → JSON number without quotes, `string` → JSON string, `bool` → `true`/`false`). `DateTime` and `DateTimeOffset` go through their `"o"` representation (round-trip ISO 8601). `Guid` values go through their `"D"` representation (uppercase segments, dashes). Any other type is stringified — in practice this case does not occur, EventSource forbidding complex types in `[Event]` parameters.
+**`SelfDescribing`** — the general `app.jsonl` journal. Same envelope plus the event identity the LogWindow renders, so the file is a faithful, greppable mirror of the live window rather than an anonymous payload; a parameter-less event keeps its `provider`/`event`/`level` instead of collapsing to an empty `payload`:
 
-`kind` takes the values `"log"` (general channel, in `app.jsonl`), `"latency"` (latency channel, in `latency.jsonl`), `"microphone"` (microphone channel, in `microphone.jsonl`), `"corpus"` (corpus channel, in `corpus.jsonl` or `<profile>/corpus.jsonl` depending on context). The `"log"` label is kept as-is for compatibility with existing benchmark tools.
+```json
+{ "timestamp": "…", "kind": "log", "session": "…", "provider": "Deckle.Vision", "event": "ScreenCaptureStarted", "level": "Informational", "message": "<rendered Message template, null when none>", "payload": { … } }
+```
+
+`level` is the `EventLevel` name (`Critical`/`Error`/`Warning`/`Informational`/`Verbose`). `message` is the rendered `Message` template, `null` when the provider declared none — `provider`+`event` still identify the line. Adding the four keys is additive: a reader that keys on `payload` is unaffected.
+
+Primitive payload values are serialized by their native type (`int` → JSON number, `string` → JSON string, `bool` → `true`/`false`). `DateTime`/`DateTimeOffset` go through their `"o"` representation (round-trip ISO 8601), `Guid` through `"D"`. Any other type is stringified — in practice this never happens, EventSource forbidding complex types in `[Event]` parameters.
+
+`kind` takes `"log"` (general, `app.jsonl`), `"latency"`, `"microphone"`, `"corpus"`. The `"log"` label is kept as-is for compatibility with existing benchmark tools.
+
+**Rotation.** `app.jsonl` carries a `JsonlRotationPolicy` (size-based roll: `app.jsonl` → `app.1.jsonl` → … → `app.{N}.jsonl`, oldest dropped) so a long session can't grow it without bound — the friction that first surfaced this work was a 23 MB / 118k-line file with no cap. The current bound is 5 MB × 5 generations (≈30 MB total). The dataset channels carry **no** policy and stay append-only: rolling them would truncate an ML dataset. The roll is best-effort under the write lock, with the active-file size tracked in process to avoid a stat syscall per line.
 
 ## Provider inventory and listening pipeline
 
