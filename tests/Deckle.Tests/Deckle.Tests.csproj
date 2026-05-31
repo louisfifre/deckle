@@ -40,6 +40,7 @@
          s'ajouteront au fil de l'extension de la couverture. -->
     <ProjectReference Include="..\..\src\Deckle.Chrono\Deckle.Chrono.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\src\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <!-- Vision pour DeckleVisionSourceTests (heartbeat capture). Tire
          WindowsAppSDK + Composition transitively. -->
     <ProjectReference Include="..\..\src\Deckle.Vision\Deckle.Vision.csproj" />

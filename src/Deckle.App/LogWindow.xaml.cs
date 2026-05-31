@@ -189,13 +189,15 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (DispatcherQueue.HasThreadAccess) AddEntrySafe(le);
         else
         {
-            // Threading — site cross-thread real (listener EventSource
-            // depuis un thread arbitraire vers UI). TryEnqueueObserved
-            // émet MarshalQueued → wait_ms/run_ms → MarshalCompleted en
-            // sus du rejet historique (DispatcherEnqueueRejected sur
-            // DeckleThreadingSource depuis la migration).
-            DispatcherQueue.TryEnqueueObserved(
-                "log-append", "log-window",
+            // Cross-thread (listener EventSource depuis un thread worker
+            // vers UI). On N'instrumente PAS ce marshalling : observer
+            // l'append du LogWindow réinjecte MarshalQueued/Completed
+            // dans le LogWindow, qui ré-append, qui ré-observe — effet
+            // observateur. La garde _emittingMarshal bride la récursion à
+            // ×3 au lieu du stack overflow, mais ×3 sur le firehose de
+            // capture suffit à noyer la fenêtre. TryEnqueueOrLog garde le
+            // warning de rejet utile, sans la paire Verbose.
+            DispatcherQueue.TryEnqueueOrLog(
                 () => AddEntrySafe(le),
                 "LOGWIN", "log entry");
         }

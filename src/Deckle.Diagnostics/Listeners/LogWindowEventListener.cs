@@ -45,6 +45,7 @@ public sealed class LogWindowEventListener : EventListener
     // toggle LogAmbientCaptureActivity est off (consommé via
     // Deckle.Diagnostics.Logging.AmbientCaptureGate).
     private Func<EventEntry, bool>? _dropFilter;
+    private Func<string, EventLevel, bool>? _providerLevelDropFilter;
 
     // We collect EventSources observed before the derived constructor
     // is ready, then enable them in the constructor body. EventListener's
@@ -104,6 +105,14 @@ public sealed class LogWindowEventListener : EventListener
         _dropFilter = filter;
     }
 
+    // Filtre de drop précoce, consulté avant BuildEntry. À utiliser
+    // pour les familles bruyantes dont provider + level suffisent à
+    // décider, afin d'éviter les allocations payload / format string.
+    public void ConfigureProviderLevelDropFilter(Func<string, EventLevel, bool> filter)
+    {
+        _providerLevelDropFilter = filter;
+    }
+
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
         if (eventSource.Name is null) return;
@@ -122,7 +131,16 @@ public sealed class LogWindowEventListener : EventListener
 
     protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
-        if (eventData.EventSource.Name is null) return;
+        string? provider = eventData.EventSource.Name;
+        if (provider is null) return;
+
+        var providerLevelDropFilter = _providerLevelDropFilter;
+        if (providerLevelDropFilter is not null)
+        {
+            try { if (providerLevelDropFilter(provider, eventData.Level)) return; }
+            catch { /* A filter must never crash the listener. */ }
+        }
+
         var entry = BuildEntry(eventData);
 
         // Drop filter consulté avant le buffer pour qu'un entry filtré

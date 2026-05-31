@@ -13,11 +13,12 @@ namespace Deckle.Diagnostics.Logging;
 // on-disk (<UserDataRoot>/modules/logging/settings.json) pour préserver
 // les settings utilisateur existants à travers la bascule.
 //
-// Consumer principal : le drop filter du LogWindowEventListener câblé au
-// boot par App (lecture de LogAmbientCaptureActivity à chaque event).
-// Lecture uncached — flipper le toggle dans Settings prend effet à la
-// prochaine émission. JsonSettingsStore garde un snapshot en mémoire,
-// donc le coût d'accès est négligeable.
+// Consumers principaux : le drop filter du LogWindowEventListener et
+// le prédicat app.jsonl câblés au boot par App (lecture de
+// LogAmbientCaptureActivity à chaque event). Lecture uncached —
+// flipper le toggle dans Settings prend effet à la prochaine émission.
+// JsonSettingsStore garde un snapshot en mémoire, donc le coût d'accès
+// est négligeable.
 //
 // Logs internes du store. Comme TelemetrySettingsService, les callbacks
 // log restent à null en 6g pour rester découplé du pipeline d'observabi-

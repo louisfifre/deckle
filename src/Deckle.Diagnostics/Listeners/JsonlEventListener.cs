@@ -36,6 +36,7 @@ public sealed class JsonlEventListener : EventListener
 {
     private readonly string _filePath;
     private readonly System.Func<EventEntry, bool> _predicate;
+    private readonly System.Func<EventWrittenEventArgs, bool>? _preEntryDropPredicate;
     private readonly string _kindLabel;
     private readonly object _writeLock = new();
     private readonly List<EventSource> _earlySources = new();
@@ -63,11 +64,13 @@ public sealed class JsonlEventListener : EventListener
     public JsonlEventListener(
         string filePath,
         string kindLabel,
-        System.Func<EventEntry, bool> predicate)
+        System.Func<EventEntry, bool> predicate,
+        System.Func<EventWrittenEventArgs, bool>? preEntryDropPredicate = null)
     {
         _filePath = filePath;
         _kindLabel = kindLabel;
         _predicate = predicate;
+        _preEntryDropPredicate = preEntryDropPredicate;
 
         lock (_earlySources)
         {
@@ -96,6 +99,13 @@ public sealed class JsonlEventListener : EventListener
 
     protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
+        var preEntryDropPredicate = _preEntryDropPredicate;
+        if (preEntryDropPredicate is not null)
+        {
+            try { if (preEntryDropPredicate(eventData)) return; }
+            catch { /* A filter must never crash the listener. */ }
+        }
+
         var entry = LogWindowEventListener.BuildEntry(eventData);
         if (!_predicate(entry)) return;
 

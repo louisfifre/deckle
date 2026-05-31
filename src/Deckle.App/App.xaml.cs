@@ -61,6 +61,23 @@ public partial class App : Microsoft.UI.Xaml.Application
     // les fenêtres puisse étiqueter la transition correctement.
     private static bool _firstThemeApplyDone;
 
+    private static bool ShouldDropAmbientCaptureVerbose(
+        string provider,
+        System.Diagnostics.Tracing.EventLevel level)
+    {
+        if (level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
+        if (!AmbientCaptureGate.IsActive) return false;
+        if (LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
+        return provider == "Deckle.Ambient"
+            || provider == "Deckle.Vision"
+            || provider == "Deckle.Lighting"
+            // Sub-provider transverse, mais pendant une capture c'est le
+            // firehose dominant : ResourceAcquired/Released par frame
+            // (textures D3D11 capture-loop + frame-sampler). Hors capture
+            // la gate est fermée, donc le Resource du HUD passe normalement.
+            || provider == "Deckle.Diagnostics.Resource";
+    }
+
     public App()
     {
         InitializeComponent();
@@ -176,15 +193,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // engine au Start / Stop. Le toggle utilisateur est lu sur le
         // nouveau LoggingSettingsService canonique depuis la sous-vague
         // 6g (auparavant le legacy Deckle.Logging.LoggingSettingsService).
-        AppDiagnosticsBootstrap.ConfigureLogWindowDropFilter(entry =>
-        {
-            if (entry.Level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
-            if (!Deckle.Diagnostics.Logging.AmbientCaptureGate.IsActive) return false;
-            if (Deckle.Diagnostics.Logging.LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
-            return entry.Provider == "Deckle.Ambient"
-                || entry.Provider == "Deckle.Vision"
-                || entry.Provider == "Deckle.Lighting";
-        });
+        AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
+        TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
 
         // Wave 1 sanity check — exercise the full pipeline (provider →
         // EventListener → JsonlEventListener + LegacyLogWindowSink) once
