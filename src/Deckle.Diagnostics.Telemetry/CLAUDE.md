@@ -22,7 +22,7 @@ The module depends on `Deckle.Diagnostics` (interfaces + JsonlEventListener) and
 
 `TelemetrySettingsService` is the per-module persistence singleton. Storage under `<UserDataRoot>/modules/diagnostics-telemetry/settings.json`. Pattern aligned with the other `*SettingsService` instances.
 
-`TelemetryListenerBootstrap` is the listener registration API. The App calls `TelemetryListenerBootstrap.Configure(...)` at boot after `TelemetrySettingsService.Instance`; the bootstrap instantiates one `JsonlEventListener` per destination file (one general for `app.jsonl`, three specialized for latency / microphone / corpus) with the right predicate on the canonical event name. Each listener checks its gate via `TelemetrySettingsService.Instance.Current` on every emission — a toggle change propagates immediately without restart.
+`TelemetryListenerBootstrap` is the listener registration API. The App calls `TelemetryListenerBootstrap.Configure(...)` at boot after `TelemetrySettingsService.Instance`; the bootstrap instantiates one `JsonlEventListener` per destination file (one general for `app.jsonl`, three specialized for latency / microphone / corpus) with the right predicate on the canonical event name. Each listener checks its gate via `TelemetrySettingsService.Instance.Current` on every emission — a toggle change propagates immediately without restart. The general `app.jsonl` listener also accepts an application-log drop predicate supplied by the App so runtime logging filters owned by `Deckle.Diagnostics.Logging` can affect persistence without creating a module dependency from Telemetry to Logging.
 
 ## Consent dialogs
 

@@ -18,6 +18,10 @@ namespace Deckle.Diagnostics.Telemetry;
 //     Configure ; les prédicates lisent la dernière valeur connue à
 //     chaque émission, donc une mise à jour du délégué propage sans
 //     reconstruction des listeners.
+//   - ConfigureApplicationLogDropFilter(...) câble les filtres runtime
+//     du journal applicatif (ex. Verbose ambient pendant capture). Le
+//     module Telemetry reste indépendant de Diagnostics.Logging : le
+//     host fournit le prédicat.
 //
 // Pourquoi séparer ? Configure crée les listeners avec leurs prédicates
 // figés ; les prédicates doivent consulter une variable mutable qui
@@ -69,6 +73,8 @@ public static class TelemetryListenerBootstrap
     // ConfigureGates ; lue à chaque émission pour que les flips du
     // toggle dans Settings prennent effet immédiatement.
     private static Func<string, bool>? _gateReader;
+    private static Func<EventEntry, bool>? _applicationLogDropFilter;
+    private static Func<string, EventLevel, bool>? _applicationLogProviderLevelDropFilter;
 
     public static void Configure(string telemetryDirectory, bool validationSubdirectory = true)
     {
@@ -88,7 +94,9 @@ public static class TelemetryListenerBootstrap
                    e.EventName != "LatencyRecorded"
                 && e.EventName != "MicrophoneTelemetryRecorded"
                 && e.EventName != "CorpusRecorded"
-                && ReadGate("ApplicationLogToDisk")));
+                && !ShouldDropApplicationLog(e)
+                && ReadGate("ApplicationLogToDisk"),
+            preEntryDropPredicate: ShouldDropApplicationLog));
 
         _listeners.Add(new JsonlEventListener(
             filePath:  Path.Combine(rootDirectory, "latency.jsonl"),
@@ -149,11 +157,51 @@ public static class TelemetryListenerBootstrap
         _gateReader = gateReader;
     }
 
+    // Câble le prédicat qui retire certains events du journal applicatif
+    // persisté. Le prédicat lit le même EventEntry que le LogWindow
+    // drop filter, ce qui garde l'app.jsonl aligné avec la fenêtre live
+    // sans introduire de référence de Telemetry vers Logging.
+    public static void ConfigureApplicationLogDropFilter(Func<EventEntry, bool> filter)
+    {
+        if (filter is null) throw new ArgumentNullException(nameof(filter));
+        _applicationLogDropFilter = filter;
+    }
+
+    // Variante précoce du filtre app.jsonl, évaluée avant la création
+    // d'EventEntry quand provider + level suffisent. Le cas ambient
+    // l'utilise pour que le toggle coupe aussi le coût d'allocation des
+    // logs de boucle, pas seulement l'écriture finale.
+    public static void ConfigureApplicationLogProviderLevelDropFilter(
+        Func<string, EventLevel, bool> filter)
+    {
+        if (filter is null) throw new ArgumentNullException(nameof(filter));
+        _applicationLogProviderLevelDropFilter = filter;
+    }
+
     private static bool ReadGate(string gateName)
     {
         var reader = _gateReader;
         if (reader is null) return false;
         try { return reader(gateName); }
+        catch { return false; }
+    }
+
+    private static bool ShouldDropApplicationLog(EventEntry entry)
+    {
+        var filter = _applicationLogDropFilter;
+        if (filter is null) return false;
+        try { return filter(entry); }
+        catch { return false; }
+    }
+
+    private static bool ShouldDropApplicationLog(EventWrittenEventArgs eventData)
+    {
+        string? provider = eventData.EventSource.Name;
+        if (provider is null) return false;
+
+        var filter = _applicationLogProviderLevelDropFilter;
+        if (filter is null) return false;
+        try { return filter(provider, eventData.Level); }
         catch { return false; }
     }
 
@@ -165,5 +213,8 @@ public static class TelemetryListenerBootstrap
         foreach (var listener in _listeners) listener.Dispose();
         _listeners.Clear();
         _configured = false;
+        _gateReader = null;
+        _applicationLogDropFilter = null;
+        _applicationLogProviderLevelDropFilter = null;
     }
 }

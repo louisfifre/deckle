@@ -11,9 +11,9 @@ namespace Deckle.Diagnostics.Logging;
 // migrera ici quand le LogWindow XAML emménagera dans ce module.
 public sealed class LoggingSettings
 {
-    // When false and an ambient capture loop is active, ambient
-    // providers (vision, lighting) drop their Verbose emissions before
-    // hitting WriteEvent. Reproduces the legacy
+    // When false and an ambient capture loop is active, Verbose events
+    // from the ambient providers are dropped by the live LogWindow
+    // listener and the app.jsonl predicate. Reproduces the legacy
     // TelemetryService._captureActive filter without re-introducing a
     // central hub. Off-by-default — matches the user's quiet-by-
     // default preference for the noisy capture path.

@@ -24,22 +24,23 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     // ── Logging — runtime emission filters ──────────────────────────────────
 
-    // Capture-window logging toggle for the ambient pipeline. The
-    // central filter in TelemetryService.Log drops every Verbose
-    // event from AMBIENT / SCREEN / HUE sources emitted while
-    // AmbientEngine has its capture-active flag on. AmbientEngine
-    // sets the flag right before launching its push loop (after the
-    // started milestones) and clears it at the very top of Stop
-    // (before the stopped milestones) — so the bracketing milestones
-    // and any user action emitted outside that window pass through.
-    // Non-Verbose levels also pass unconditionally. Default false —
-    // the routine cadence from three modules drowns out everything
-    // else during play, so the user starts quiet and opts in when
-    // investigating. The section will grow with sibling per-loop
-    // toggles for Whisp / Audio / Llm as each captures a runtime
-    // loop worth silencing. Wired through LoggingSettingsService —
-    // separate store from TelemetrySettings so flipping it leaves
-    // the disk-persistence opt-ins untouched.
+    // Capture-window logging toggle for the ambient pipeline. When off
+    // and a capture loop is active, the listener-side filter
+    // (App.ShouldDropAmbientCaptureVerbose, combining AmbientCaptureGate
+    // with this toggle) drops every Verbose event from the ambient
+    // providers — Deckle.Ambient / Vision / Lighting and the per-frame
+    // Deckle.Diagnostics.Resource firehose — before they reach the
+    // LogWindow buffer or app.jsonl. AmbientEngine opens the gate right
+    // before its push loop (after the started milestones) and closes it
+    // at the top of Stop (before the stopped milestones), so the
+    // bracketing milestones and any out-of-loop user action pass
+    // through. Non-Verbose levels always pass. Default false — the
+    // routine per-frame cadence drowns out everything else during play,
+    // so the user starts quiet and opts in when investigating. The
+    // section will grow with sibling per-loop toggles for Whisp / Audio
+    // / Llm. Wired through LoggingSettingsService — separate store from
+    // TelemetrySettings so flipping it leaves the disk-persistence
+    // opt-ins untouched.
     [ObservableProperty]
     public partial bool LogAmbientCaptureActivity { get; set; }
 
