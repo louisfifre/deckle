@@ -123,9 +123,6 @@ public static class NativeMethods
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int left, top, right, bottom; }
 
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetClipboardData(uint uFormat);
-
     // Renvoie le DPI logique de la fenêtre (96 = 100%, 120 = 125%, 144 = 150%…).
     // Per-monitor DPI aware : suit le moniteur sur lequel se trouve la fenêtre.
     [DllImport("user32.dll")]
@@ -158,20 +155,6 @@ public static class NativeMethods
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
-
-    // ── Presse-papier ─────────────────────────────────────────────────────────
-
-    [DllImport("user32.dll")]
-    public static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
-    [DllImport("user32.dll")]
-    public static extern bool EmptyClipboard();
-
-    [DllImport("user32.dll")]
-    public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
-
-    [DllImport("user32.dll")]
-    public static extern bool CloseClipboard();
 
     // ── waveIn (capture audio PCM) ────────────────────────────────────────────
 
@@ -231,15 +214,6 @@ public static class NativeMethods
 
     [DllImport("kernel32.dll")]
     public static extern bool CloseHandle(IntPtr hObject);
-
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
-
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GlobalLock(IntPtr hMem);
-
-    [DllImport("kernel32.dll")]
-    public static extern bool GlobalUnlock(IntPtr hMem);
 
     // ── Icône tray (Shell32) ──────────────────────────────────────────────────
 
