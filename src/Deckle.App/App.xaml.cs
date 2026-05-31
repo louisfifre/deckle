@@ -500,14 +500,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         }
         Milestone("hotkeys");
 
-        // Silent warmup — runs a dummy transcription on a zero-filled buffer
-        // so the first real hotkey doesn't pay the cold model load + first
-        // inference cost. Fire-and-forget on a background thread; the engine
-        // gates HUD/TranscriptionFinished events internally during the
-        // warmup Transcribe() pass so nothing surfaces to the user.
-        if (Settings.SettingsService.Instance.Current.Startup.WarmupOnLaunch)
-            _engine.Warmup();
-        Milestone("warmup");
+        // No model warmup at boot: nothing is loaded into VRAM while the app
+        // is idle. The model is loaded + its kernels compiled on demand on the
+        // first hotkey press, inside the engine worker (EnsurePrimed), while
+        // the HUD shows its Charging state; it is freed again after the idle
+        // timeout. The HUD's own composition warm (PrimeAndHide, no model)
+        // stays — it pays the DComp/font cost only, never any VRAM.
 
         // Apply saved theme (System/Light/Dark).
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);

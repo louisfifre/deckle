@@ -39,13 +39,6 @@ public sealed partial class TranscriptionEngine
         // down — silent no-op.
         if (_disposed) return ToggleResult.IgnoredDisposed;
 
-        // Unblock a warmup in flight. The user's hotkey wins over the
-        // best-effort priming work — abort_callback observes the token and
-        // whisper_full bails within ~50 ms, releasing _transcribeLock so the
-        // worker (spawned a few lines below) can enter Transcribe without
-        // waiting out the warmup's residual decode time.
-        TrySignalWarmupCancel();
-
         var current = (PipelineState)Volatile.Read(ref _state);
         if (current == PipelineState.Disposed) return ToggleResult.IgnoredDisposed;
 
@@ -150,66 +143,6 @@ public sealed partial class TranscriptionEngine
             _whisperInitMs = 0;
             _vadMs = 0;
 
-            // Consume the warmup flags on the first start — surface any
-            // problems detected silently at startup before the pipeline runs.
-            // Interlocked.Exchange makes the consumption race-free; the CAS
-            // above already prevents two concurrent Starts, so this is now
-            // belt-and-braces. Kept for documentation value at the call site.
-            if (System.Threading.Interlocked.Exchange(ref _warmupFlagsConsumed, 1) == 0)
-            {
-                if (!ModelWarmupOk)
-                {
-                    DeckleWhispSource.Log.WarmupFlagModelKO();
-                    EmitUserFeedback(FB_ERROR,
-                        Loc.Get("Engine_ModelNotReady_Title"),
-                        Loc.Get("Engine_ModelNotReady_Body"),
-                        FB_REPLACEMENT);
-                    return ToggleResult.IgnoredBusy;
-                }
-                if (!OllamaWarmupOk)
-                {
-                    // Live re-probe avant d'émettre le warning : Ollama peut
-                    // être devenu reachable entre warmup et premier hotkey
-                    // (cas typique : l'utilisateur a démarré Ollama après
-                    // Deckle, ou le service Windows a fini son init après
-                    // les 3 essais retry du warmup). Single-shot 3s, exécuté
-                    // sur thread pool pour éviter tout risque de deadlock
-                    // sur le UI thread du message host.
-                    bool reachableNow = false;
-                    try
-                    {
-                        var ollama = new Llm.OllamaService(
-                            () => _host.Llm.OllamaEndpoint);
-                        var probeTask = Task.Run(() => ollama.IsAvailableAsync());
-                        if (probeTask.Wait(TimeSpan.FromSeconds(4)))
-                            reachableNow = probeTask.Result;
-                    }
-                    catch
-                    {
-                        // IsAvailableAsync is fail-soft (catch interne), mais
-                        // filet sur Task.Run / Wait au cas où.
-                    }
-
-                    if (!reachableNow)
-                    {
-                        DeckleWhispSource.Log.WarmupFlagOllamaKO();
-                        EmitUserFeedback(FB_WARN,
-                            Loc.Get("Engine_RewriterUnavailable_Title"),
-                            Loc.Get("Engine_RewriterUnavailable_Body"),
-                            FB_OVERLAY);
-                    }
-                    else
-                    {
-                        DeckleWhispSource.Log.WarmupFlagOllamaRecovered();
-                    }
-                    // Proceed with recording — rewrite is optional.
-                }
-                if (!MicrophoneWarmupOk)
-                {
-                    DeckleWhispSource.Log.WarmupFlagMicKO();
-                }
-            }
-
             // Probe the audio device BEFORE firing StatusChanged("Recording").
             // If the mic is absent/busy, short-circuit the entire pipeline:
             // no HUD chrono, no worker thread, no Transcribe(empty).
@@ -300,12 +233,25 @@ public sealed partial class TranscriptionEngine
 
         try
         {
-            if (!EnsureModelLoaded())
+            // Prime before recording. On a cold worker — model not resident,
+            // i.e. the first hotkey of the session or the first after an idle
+            // unload — EnsurePrimed loads the model AND runs a dummy inference
+            // so the GPU kernels are compiled. The HUD sits in Charging
+            // (presented by App on the Started result) for the whole prime:
+            // the chrono stays frozen/grey and no capture runs until the model
+            // is warm. This is what guarantees the user's first real
+            // transcription is never a cold miss. A warm worker (model still
+            // resident from a recent transcription) falls straight through.
+            // Cancellable via _recordCts — a Stop pressed during the prime
+            // aborts the dummy inference and the whole start.
+            if (!EnsurePrimed(_recordCts.Token))
             {
                 RaiseFinished(TranscriptionOutcome.None);
                 return;
             }
 
+            // Only now does the recording actually begin: start the chrono and
+            // flip the HUD Charging → Recording through the "Recording" status.
             _recordingSw = System.Diagnostics.Stopwatch.StartNew();
             RaiseStatus(Loc.Get("Status_Recording"));
 
@@ -379,7 +325,10 @@ public sealed partial class TranscriptionEngine
 
             RaiseStatus(Loc.Get("Status_Transcribing"));
             TranscribeAsync(audio).GetAwaiter().GetResult();
-            ResetIdleTimer();
+            // The idle-unload timer is (re)armed in the finally below, which
+            // covers every exit that leaves the model resident — not only this
+            // success path. This is what closes the old "model loaded but no
+            // unload scheduled" gap (e.g. a prime followed by a mic error).
         }
         catch (Exception ex)
         {
@@ -422,6 +371,18 @@ public sealed partial class TranscriptionEngine
             }
             bool reachedIdle = prev != (int)PipelineState.Disposed;
             _worker = null;
+
+            // Arm the idle-unload whenever the worker exits with the model
+            // resident and the engine is still live (reachedIdle). This is the
+            // single arming point now: it covers the success path AND every
+            // early return that primed the model then bailed (mic error after
+            // prime, lost Transcribe CAS…), so a loaded model is never left in
+            // VRAM with no scheduled unload. Skipped when Dispose won — the
+            // timer is torn down in Dispose anyway.
+            if (reachedIdle && _backend.IsModelLoaded)
+            {
+                ResetIdleTimer();
+            }
 
             // Dispose and clear the per-run cancellation token. Done before
             // _idleEvent.Set() so a Dispose Wait that races on the event

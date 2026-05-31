@@ -26,9 +26,15 @@ public sealed partial class TranscriptionEngine
     // the IAsrBackend implementation; the orchestrator handles only the
     // user-facing wrapper (RaiseStatus, UserFeedback localization).
 
-    private bool LoadModel()
+    // silentStatus suppresses the "Loading model… → Ready" status transitions
+    // emitted here. Set by the parallel-load path in WorkerRun, where the load
+    // runs concurrently with the capture and the "Recording" status must hold
+    // for the whole recording instead of being clobbered by a load that
+    // happens to finish mid-capture. The error UserFeedback dialogs stay — a
+    // load failure must always surface, silent or not.
+    private bool LoadModel(bool silentStatus = false)
     {
-        RaiseStatus(Loc.Get("Status_LoadingModel"));
+        if (!silentStatus) RaiseStatus(Loc.Get("Status_LoadingModel"));
 
         ModelLoadResult result;
         try
@@ -49,7 +55,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Get("Engine_ModelLoadFailed_Body"),
                 FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_Ready"));
+            if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
             return false;
         }
 
@@ -72,7 +78,7 @@ public sealed partial class TranscriptionEngine
                     Loc.Get("Engine_ModelLoadFailed_Body"),
                     FB_REPLACEMENT);
             }
-            RaiseStatus(Loc.Get("Status_Ready"));
+            if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
             return false;
         }
 
@@ -83,18 +89,18 @@ public sealed partial class TranscriptionEngine
         // Mirror the symmetric "Ready" emitted on the failure paths above so
         // the tray tooltip transitions Loading model… → Ready as soon as the
         // model is in memory.
-        RaiseStatus(Loc.Get("Status_Ready"));
+        if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
         return true;
     }
 
-    private bool EnsureModelLoaded()
+    private bool EnsureModelLoaded(bool silentStatus = false)
     {
         if (_backend.IsModelLoaded) return true;
         lock (_idleUnloadLock)
         {
             if (_backend.IsModelLoaded) return true;
             DeckleWhispSource.Log.ModelOnDemandLoad();
-            return LoadModel();
+            return LoadModel(silentStatus);
         }
     }
 
@@ -211,157 +217,66 @@ public sealed partial class TranscriptionEngine
         }
     }
 
-    // ── Warmup ──────────────────────────────────────────────────────────────
+    // ── Prime ─────────────────────────────────────────────────────────────────
     //
-    // Runs a real "first inference" at startup so the user's first hotkey
-    // press doesn't pay the cold cost (context alloc + GPU warm + Vulkan
-    // pipeline compile + weight paging). We push a short embedded reference
-    // clip (Assets/Sounds/speech.wav, PCM mono 16 kHz ~2 s) through the full
-    // Transcribe() path so VAD finds speech, whisper_full actually decodes,
-    // and the GPU pipelines are compiled once and for all. Roughly 200–800 ms
-    // on RX 7900 XT with Vulkan ggml — paid here instead of on the user's
-    // first dictation.
+    // Ensures the backend is ready for a clean first transcription: model
+    // loaded AND inference kernels compiled. Called by WorkerRun *before* the
+    // recording begins (the HUD sits in Charging meanwhile), not at boot — the
+    // model is loaded on demand and freed again after the idle timeout, so
+    // nothing sits in VRAM while the app is idle.
     //
-    // StatusChanged / TranscriptionFinished / Narrative are gated during
-    // Transcribe() via t_isWarmup (RaiseStatus / RaiseFinished /
-    // RaiseNarrative) so the HUD never appears, the tray doesn't flash, and
-    // LogWindow doesn't surface "Looking for speech…" / "Speech detected —
-    // 2.4 s…" / "Whisper transcribed…" phrases that would confuse the user
-    // at boot. Two warmup-specific narratives are emitted directly — one at
-    // the start ("Priming the recognizer…") and one at the end ("Pipeline
-    // ready"). LoadModel's narrative stays audible because it runs before
-    // t_isWarmup flips.
+    // Returns true immediately when the model is already resident — a warm
+    // worker skips straight to recording. On a cold worker it does two things:
+    //   1) Load the model, silent on the status channel (silentStatus: true).
+    //      The HUD's Charging state is the user-facing "preparing" signal;
+    //      LoadModel's internal "Loading model… → Ready" transitions would
+    //      otherwise clobber it. A load failure surfaces its own localized
+    //      UserFeedback (inside LoadModel) and returns false.
+    //   2) Run a dummy inference: push the short embedded clip
+    //      (Assets/Sounds/speech.wav, PCM mono 16 kHz) through the full
+    //      Transcribe path so VAD + whisper_full + the first-time GPU kernel
+    //      compile all execute once. ~200–800 ms on RX 7900 XT with Vulkan
+    //      ggml. On a missing/corrupt clip we fall back to a 1.6 s silent
+    //      buffer — the dummy inference still compiles the kernels.
     //
-    // Cancellable. RequestToggle and Dispose call Cancel() on _warmupCts to
-    // unblock the user — a hotkey pressed during warmup must not wait for
-    // the warmup's whisper_full to finish before the recording can start.
-    // The abort_callback observes the token mid-decoder, so cancellation
-    // surfaces in ~50 ms rather than the worst-case ~800 ms.
+    // Robustness — never touches the clipboard. t_isWarmup gates the whole
+    // user-facing tail of TranscribeAsync (clipboard write, LLM rewrite, paste,
+    // corpus logging, StatusChanged, TranscriptionFinished). Because the prime
+    // now runs synchronously on the worker thread — not on a detached boot
+    // thread racing a real transcription — there is no window where a real run
+    // can observe a stale t_isWarmup, which is what used to let priming text
+    // occasionally leak to the clipboard.
     //
-    // Fire-and-forget on a background thread — the call site in
-    // App.OnLaunched must not block UI-thread startup. Named Warmup (not
-    // WarmupAsync) because the method returns void: the *Async suffix in
-    // C# is reserved for methods returning Task / ValueTask.
-    public void Warmup()
+    // Cancellable via the caller's token (the run's _recordCts): a Stop pressed
+    // during the prime aborts the dummy inference (abort_callback observes the
+    // token mid-decoder) and returns false so the whole start unwinds. The
+    // model load itself is not cancellable; a Stop during the load is observed
+    // right after it returns.
+    private bool EnsurePrimed(CancellationToken ct)
     {
-        if (_disposed) return;
-        var thread = new Thread(() =>
+        if (_backend.IsModelLoaded) return true;
+
+        DeckleWhispSource.Log.WarmupStart();
+
+        if (!EnsureModelLoaded(silentStatus: true)) return false;
+        if (ct.IsCancellationRequested) return false;
+
+        float[] warmupBuffer = TryLoadWarmupClip() ?? new float[25_600];
+
+        t_isWarmup = true;
+        try
         {
-            // Re-check : Dispose peut survenir entre le Thread.Start et
-            // le démarrage effectif du thread (rare mais possible si
-            // l'utilisateur quitte très tôt après le boot).
-            if (_disposed) return;
+            TranscribeAsync(warmupBuffer, ct).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            t_isWarmup = false;
+        }
 
-            // CTS lifetime is bounded by this thread. We assign to the field
-            // so RequestToggle / Dispose can signal cancellation, and clear
-            // it in finally so post-warmup callers see "no warmup in flight".
-            var cts = new CancellationTokenSource();
-            _warmupCts = cts;
-            var ct = cts.Token;
+        if (ct.IsCancellationRequested) return false;
 
-            try
-            {
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                DeckleWhispSource.Log.WarmupStart();
-
-                // 1) Mic probe — same code path StartRecording uses, just the
-                //    probe result is stored instead of blocking the recording.
-                _micWarmupOk = _capture.Probe(_host.Audio.AudioInputDeviceId).Ok ? 1 : 0;
-
-                if (ct.IsCancellationRequested)
-                {
-                    DeckleWhispSource.Log.WarmupCancelledBeforeModel(sw.ElapsedMilliseconds);
-                    return;
-                }
-
-                // 2) Model load. On failure we stop here — nothing else can
-                //    be tested without the model — and flag model+ollama as
-                //    failing so the first hotkey surfaces the right message.
-                if (!EnsureModelLoaded())
-                {
-                    _modelWarmupOk  = 0;
-                    _ollamaWarmupOk = 0;
-                    DeckleWhispSource.Log.WarmupAbortedModelLoad(sw.ElapsedMilliseconds, MicrophoneWarmupOk);
-                    return;
-                }
-                _modelWarmupOk = 1;
-
-                if (ct.IsCancellationRequested)
-                {
-                    DeckleWhispSource.Log.WarmupCancelledBeforeTranscribe(sw.ElapsedMilliseconds);
-                    return;
-                }
-
-                // Real-audio Transcribe through the full pipeline (VAD +
-                // whisper_full + Vulkan kernel compile) to pay the first-
-                // inference cost before any user hotkey. The clip is shipped
-                // alongside the exe under Assets/Sounds/speech.wav (PCM mono
-                // 16-bit 16 kHz). On load failure we fall back to a 1.6 s
-                // silent buffer — the user-visible narratives are gated
-                // either way, so the fallback is invisible beyond the warmup
-                // log line. Length-mismatch scenarios (corrupted file, wrong
-                // format) are rare but should not block startup.
-                float[] warmupBuffer = TryLoadWarmupClip()
-                    ?? new float[25_600];
-
-                t_isWarmup = true;
-                try
-                {
-                    TranscribeAsync(warmupBuffer, ct).GetAwaiter().GetResult();
-                }
-                finally
-                {
-                    t_isWarmup = false;
-                }
-
-                if (ct.IsCancellationRequested)
-                {
-                    DeckleWhispSource.Log.WarmupCancelledDuringTranscribe(sw.ElapsedMilliseconds);
-                    return;
-                }
-
-                // 3) Ollama health-check. Skipped (and left as OK) when the LLM
-                //    feature is disabled — no rewriter needed, no warning to
-                //    surface. 3 s timeout par tentative dans IsAvailableAsync
-                //    × 3 essais espacés de 500 ms — couvre la race classique
-                //    au boot PC où Deckle démarre avant qu'Ollama ait fini
-                //    d'écouter sur 11434. Pire cas borné à ~10 s.
-                var llmSettings = _host.Llm;
-                if (llmSettings.Enabled)
-                {
-                    try
-                    {
-                        var ollama = new Llm.OllamaService(
-                            () => _host.Llm.OllamaEndpoint);
-                        bool reachable = ollama.IsAvailableAsync(maxAttempts: 3).GetAwaiter().GetResult();
-                        _ollamaWarmupOk = reachable ? 1 : 0;
-                    }
-                    catch
-                    {
-                        _ollamaWarmupOk = 0;
-                    }
-                }
-
-                sw.Stop();
-                DeckleWhispSource.Log.WarmupComplete();
-                DeckleWhispSource.Log.WarmupCompleteDetail(
-                    sw.ElapsedMilliseconds,
-                    MicrophoneWarmupOk,
-                    ModelWarmupOk,
-                    OllamaWarmupOk);
-            }
-            catch (Exception ex)
-            {
-                DeckleWhispSource.Log.WarmupFailed(ex.GetType().Name, ex.Message);
-            }
-            finally
-            {
-                _warmupCts = null;
-                cts.Dispose();
-            }
-        });
-        thread.IsBackground = true;
-        thread.Start();
+        DeckleWhispSource.Log.WarmupComplete();
+        return true;
     }
 
 }
