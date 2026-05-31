@@ -191,28 +191,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     // null when Idle.
     private Thread? _worker;
 
-    // Cancellation channel for the boot warmup. Created by Warmup() when its
-    // background thread enters, nulled+disposed in finally before the thread
-    // exits. RequestToggle and Dispose call TrySignalWarmupCancel() to
-    // unblock a hotkey or quit pressed while warmup is in flight — see the
-    // Warmup doc-block for the rationale. Plain field, no `volatile`:
-    // writers see each other through the lifecycle (Warmup creates →
-    // toggle/Dispose cancels → Warmup nulls), and the helper snapshots the
-    // field locally to avoid TOCTOU between the null-check and Cancel().
-    private CancellationTokenSource? _warmupCts;
-
-    // Best-effort cancel of an in-flight warmup. No-op if no warmup is
-    // running. Catches ObjectDisposedException because the Warmup thread's
-    // finally may have disposed the CTS in the small window between our
-    // local snapshot and the Cancel() call.
-    private void TrySignalWarmupCancel()
-    {
-        var cts = _warmupCts;
-        if (cts is null) return;
-        try { cts.Cancel(); }
-        catch (ObjectDisposedException) { }
-    }
-
     // Name of the rewrite profile chosen by the hotkey that started this
     // recording (null = no manual rewrite; fall back to AutoRewriteRules
     // based on recording duration). Captured at StartRecording time and
@@ -277,21 +255,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     //                    VAD off or backend has no VAD step).
     private long _whisperInitMs;
     private long _vadMs;
-
-    // Warmup result flags — silent at warmup, consumed at the first hotkey press
-    // so problems detected upfront surface before the recording pipeline starts.
-    // All three default to true so a missing Warmup() run never reports a false
-    // negative. Written from the warmup thread, read from the hotkey thread:
-    // int-backed volatile fields (0 = false, 1 = true) because bool isn't a
-    // valid volatile type in C#.
-    private volatile int _micWarmupOk    = 1;
-    private volatile int _modelWarmupOk  = 1;
-    private volatile int _ollamaWarmupOk = 1;
-    private volatile int _warmupFlagsConsumed = 0;
-
-    public bool MicrophoneWarmupOk => _micWarmupOk    == 1;
-    public bool ModelWarmupOk      => _modelWarmupOk  == 1;
-    public bool OllamaWarmupOk     => _ollamaWarmupOk == 1;
 
     private bool _disposed;
 
@@ -409,12 +372,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-
-        // Unblock a warmup still in flight at Quit time — without this,
-        // backend.Dispose() at the end may wait up to ~800 ms for the
-        // warmup's inference to finish on its own. Cancelling brings that
-        // down to ~50 ms.
-        TrySignalWarmupCancel();
 
         // Capture before transitioning so the Verbose line below records
         // what the engine was actually doing when Dispose arrived.

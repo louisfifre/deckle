@@ -47,17 +47,14 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtWarmupClipSampleMismatch         = 3;
     public const int EvtWarmupClipLoadFailed             = 4;
     public const int EvtWarmupStart                      = 5;
-    public const int EvtWarmupCancelledBeforeModel       = 6;
-    public const int EvtWarmupAbortedModelLoad           = 7;
-    public const int EvtWarmupCancelledBeforeTranscribe  = 8;
-    public const int EvtWarmupCancelledDuringTranscribe  = 9;
+    // 6–9 — EvtWarmupCancelledBeforeModel / AbortedModelLoad /
+    // CancelledBeforeTranscribe / CancelledDuringTranscribe retirés avec le
+    // passage du warmup boot au prime à la demande (synchrone sur le worker,
+    // sans phases d'annulation distinctes). IDs brûlés, jamais réutilisés.
     public const int EvtWarmupComplete                   = 10;
-    public const int EvtWarmupCompleteDetail             = 11;
-    public const int EvtWarmupFailed                     = 12;
-    public const int EvtWarmupFlagModelKO                = 13;
-    public const int EvtWarmupFlagOllamaKO               = 14;
-    public const int EvtWarmupFlagOllamaRecovered        = 15;
-    public const int EvtWarmupFlagMicKO                  = 16;
+    // 11–16 — EvtWarmupCompleteDetail / Failed / FlagModelKO / FlagOllamaKO /
+    // FlagOllamaRecovered / FlagMicKO retirés avec le même passage (plus de
+    // flags warmup consommés au premier hotkey). IDs brûlés, jamais réutilisés.
     public const int EvtModelLoading                     = 17;
     public const int EvtModelLoadStart                   = 18;
     public const int EvtModelLoadAborted                 = 19;
