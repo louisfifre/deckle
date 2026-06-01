@@ -76,6 +76,14 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool RecordAudioCorpus { get; set; }
 
+    // Audio corpus content selector — which version of each take is saved
+    // when RecordAudioCorpus is on. Stored as an int index mirroring the
+    // RadioButtons order (0 = match the transcription, 1 = always raw) so
+    // RadioButtons.SelectedIndex binds TwoWay without a converter. Mapped
+    // to TelemetrySettings.AudioCorpusContent in Load / Push.
+    [ObservableProperty]
+    public partial int AudioCorpusContentIndex { get; set; }
+
     // Storage folder override — empty = AppPaths.TelemetryDirectory.
     // FolderPickerCard.DefaultPath is wired to the resolved default in
     // the page code-behind ; the picker shows it as a placeholder when
@@ -125,6 +133,16 @@ public partial class DiagnosticsViewModel : ObservableObject
         PushTelemetryToSettings();
     }
 
+    partial void OnAudioCorpusContentIndexChanged(int value)
+    {
+        // RadioButtons emits -1 transiently while it realises its items —
+        // ignore it so we never cast a bogus index onto the enum.
+        if (_isSyncing || value < 0) return;
+        DeckleSettingsSource.Log.SettingChanged(
+            "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
+        PushTelemetryToSettings();
+    }
+
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
@@ -154,6 +172,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         TelemetryLatencyEnabled = false;
         TelemetryCorpusEnabled = false;
         RecordAudioCorpus = false;
+        AudioCorpusContentIndex = 0;
         TelemetryStorageDirectory = "";
 
         // _isSyncing stays true — Load() will set it to false.
@@ -173,6 +192,7 @@ public partial class DiagnosticsViewModel : ObservableObject
             TelemetryLatencyEnabled = t.LatencyEnabled;
             TelemetryCorpusEnabled = t.CorpusEnabled;
             RecordAudioCorpus = t.RecordAudioCorpus;
+            AudioCorpusContentIndex = (int)t.AudioCorpusContent;
             TelemetryStorageDirectory = t.StorageDirectory;
         }
         finally
@@ -196,6 +216,9 @@ public partial class DiagnosticsViewModel : ObservableObject
         t.LatencyEnabled = TelemetryLatencyEnabled;
         t.CorpusEnabled = TelemetryCorpusEnabled;
         t.RecordAudioCorpus = RecordAudioCorpus;
+        t.AudioCorpusContent = AudioCorpusContentIndex < 0
+            ? AudioCorpusContent.MatchTranscription
+            : (AudioCorpusContent)AudioCorpusContentIndex;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
         TelemetrySettingsService.Instance.Save();
     }
@@ -224,6 +247,7 @@ public partial class DiagnosticsViewModel : ObservableObject
             TelemetryLatencyEnabled = false;
             TelemetryCorpusEnabled = false;
             RecordAudioCorpus = false;
+            AudioCorpusContentIndex = 0;
             TelemetryStorageDirectory = "";
         }
         finally { _isSyncing = false; }

@@ -1,6 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Deckle.Audio;
+using Deckle.Audio.Preprocessing;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace Deckle.Settings.ViewModels;
 
@@ -30,6 +33,89 @@ public partial class RecordingViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleSettingsSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
+    }
+
+    // ── Transcription pre-processing (DSP black box) ──────────────────────────
+
+    [ObservableProperty]
+    public partial bool PreprocessingEnabled { get; set; }
+
+    partial void OnPreprocessingEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
+        // On = active. The DSP self-adjusts on every recording (a no-op when
+        // the mic is already at target); the mic level check advises whether
+        // turning it on is worth it. No deferral, no auto-decision.
+        PushToSettings();
+    }
+
+    // ── Microphone level check (the indicator) ────────────────────────────────
+    //
+    // Measures the mic and tells the user whether the pre-processing is worth
+    // turning on — no transcription, no auto-decision, the toggle stays their
+    // call. Four mutually-exclusive advice flags drive four InfoBars (IsOpen is
+    // a plain bool, so no value converter is needed); MicResultDetail carries
+    // the raw → normalised dBFS line shown alongside the verdict.
+
+    [ObservableProperty]
+    public partial bool IsMeasuringMic { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceRecommended { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceMarginal { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceNotNeeded { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceError { get; set; }
+
+    [ObservableProperty]
+    public partial string MicResultDetail { get; set; } = "";
+
+    [RelayCommand]
+    private async Task MeasureMicAsync()
+    {
+        if (IsMeasuringMic) return;
+        IsMeasuringMic = true;
+        ClearMicResult();
+        try
+        {
+            var capture = CaptureSettingsService.Instance.Current;
+            MicLevelAssessment a = await new MicLevelTester()
+                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing);
+
+            if (!a.HasSignal)
+            {
+                AdviceError = true;
+                return;
+            }
+
+            MicResultDetail = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0:F0} dBFS → {1:F0} dBFS",
+                a.RawRmsDbfs, a.ProcessedRmsDbfs);
+
+            AdviceRecommended = a.Advice == PreprocessingAdvice.Recommended;
+            AdviceMarginal    = a.Advice == PreprocessingAdvice.Marginal;
+            AdviceNotNeeded   = a.Advice == PreprocessingAdvice.NotNeeded;
+        }
+        finally
+        {
+            IsMeasuringMic = false;
+        }
+    }
+
+    private void ClearMicResult()
+    {
+        AdviceRecommended = false;
+        AdviceMarginal    = false;
+        AdviceNotNeeded   = false;
+        AdviceError       = false;
+        MicResultDetail   = "";
     }
 
     // ── Level window (calibration) ──────────────────────────────────────────
@@ -93,6 +179,7 @@ public partial class RecordingViewModel : ObservableObject
         LevelWindowMaxDbfs = -32;
         LevelWindowExponent = 1.0;
         LevelWindowAutoCalibration = false;
+        PreprocessingEnabled = false;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -109,6 +196,7 @@ public partial class RecordingViewModel : ObservableObject
             LevelWindowMaxDbfs = capture.LevelWindow.MaxDbfs;
             LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
             LevelWindowAutoCalibration = capture.LevelWindow.AutoCalibrationEnabled;
+            PreprocessingEnabled = capture.Preprocessing.Enabled;
         }
         finally
         {
@@ -125,6 +213,7 @@ public partial class RecordingViewModel : ObservableObject
         capture.LevelWindow.MaxDbfs = (float)LevelWindowMaxDbfs;
         capture.LevelWindow.DbfsCurveExponent = (float)LevelWindowExponent;
         capture.LevelWindow.AutoCalibrationEnabled = LevelWindowAutoCalibration;
+        capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();
     }
@@ -139,6 +228,7 @@ public partial class RecordingViewModel : ObservableObject
             LevelWindowMaxDbfs = -32;
             LevelWindowExponent = 1.0;
             LevelWindowAutoCalibration = false;
+            PreprocessingEnabled = false;
         }
         finally { _isSyncing = false; }
         PushToSettings();

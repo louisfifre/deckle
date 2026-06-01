@@ -37,3 +37,14 @@ Easier: exploiting the corpus as an ASR dataset without de-duplicating WAVs at a
 Harder: the boot bootstrap hosts a routed JSONL listener in addition to the flat ones — one more class to maintain. JSONL paths contain components derived from the rewrite profile name, so sanitation MUST be applied systematically on the producer side. Keeping the `transcription_id` coherent across the two emissions is a local discipline, but a single pipeline is concerned.
 
 Impossible: recovering a WAV↔profile join for legacy artifacts generated before this redesign — they have no `transcription_id`, so no honest join exists. The legacy folders stay on disk as-is, no content migration; the user may delete them manually to reclaim space. Better to ignore than to invent a false join.
+
+## Amendment 2026-06-02 — selectable audio content
+
+The in-house transcription DSP (ADR-0008, `Deckle.Audio.Preprocessing`) reopens a question this ADR settled implicitly: the corpus WAV always stored the raw capture. That was right for the dataset — a re-derivable baseline, replayable against another model. But not for UX: when the user enables pre-processing, they expect the recorded audio to be what the engine actually heard, not a raw signal that silently diverges from the transcription.
+
+Decision: the WAV content becomes a user choice, `TelemetrySettings.AudioCorpusContent`, surfaced as two radios under the Audio corpus card on the Diagnostics page.
+
+- **MatchTranscription** (default) — writes the buffer handed to the backend: processed when the DSP ran, raw otherwise, so the corpus mirrors the engine's real input. Assumed trade-off: when the DSP is active, the re-derivable raw baseline is lost for those takes — the price accepted for "what I hear is what is stored".
+- **AlwaysRaw** — forces the untouched capture regardless of the DSP, preserving this ADR's original re-derivable baseline. Kept for whoever exploits the corpus as a dataset.
+
+The implicit default thus flips from "always raw" to "what was transcribed". A user who never enabled the DSP is unaffected (MatchTranscription == raw). The on-disk layout (`audio/<transcription_id>.wav`, dedup per transcription) is unchanged — only the WAV's samples may differ. A future "both" mode (raw + processed sidecar) can be added without breaking the persisted int or this layout.

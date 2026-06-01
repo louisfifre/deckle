@@ -1,10 +1,12 @@
 using System.Runtime.InteropServices;
 using Deckle.Audio;
+using Deckle.Audio.Preprocessing;
 using Deckle.Audio.Telemetry;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Core.Interop;
 using Deckle.Diagnostics;
+using Deckle.Diagnostics.Telemetry;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription.Corpus;
@@ -97,6 +99,7 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.AutoCalibrated(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
     }
 
+
     // ── Whisper transcription ────────────────────────────────────────────────
     //
     // Monolithic call: all audio is passed at once to whisper_full(), which
@@ -142,6 +145,24 @@ public sealed partial class TranscriptionEngine
         // measurement.
         if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
 
+        // Transcription pre-processing DSP — the terminal float[]→float[] stage
+        // between capture and the ASR backend (Deckle.Audio). Applied to a
+        // separate buffer fed to the backend only: the raw `audio` stays
+        // untouched and is what the corpus stores (ADR-0006), so a processed
+        // variant can always be re-derived from the raw baseline. Skipped during
+        // the warmup prime (the embedded clip is already clean). When the user
+        // has opted in it runs on every recording and self-adjusts — the makeup
+        // lands near 0 dB on a mic already at target, so it is a near no-op there.
+        float[] backendAudio = audio;
+        var pp = _host.Audio.Preprocessing;
+        if (!t_isWarmup && pp.Enabled)
+        {
+            var processed = TranscriptionPreprocessor.Process(audio, pp);
+            backendAudio = processed.Pcm;
+            DeckleWhispSource.Log.TranscriptionPreprocessed(
+                processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
+        }
+
         // Delegate the actual inference to the configured backend. Segment
         // streaming and per-segment logging happen inside the backend; we
         // forward each emitted segment to the NewSegment event so external
@@ -150,7 +171,7 @@ public sealed partial class TranscriptionEngine
         try
         {
             result = await _backend.TranscribeAsync(
-                audio,
+                backendAudio,
                 seg => NewSegment?.Invoke(seg),
                 ct).ConfigureAwait(false);
         }
@@ -458,8 +479,18 @@ public sealed partial class TranscriptionEngine
             // Audio dédupliqué par transcription. Vide quand l'utilisateur
             // n'a pas activé RecordAudioCorpus — la ligne JSONL reste
             // utile sans WAV.
+            //
+            // Quel buffer atterrit dans le WAV — choix utilisateur (ADR-0006,
+            // amendement 2026-06-02). MatchTranscription stocke ce que le
+            // backend a réellement reçu (backendAudio : traité quand le DSP a
+            // tourné, brut sinon) ; AlwaysRaw force la capture intouchée pour
+            // garder une baseline ré-dérivable.
+            float[] corpusAudio =
+                telemetrySettings.AudioCorpusContent == AudioCorpusContent.AlwaysRaw
+                    ? audio
+                    : backendAudio;
             string audioFileName = telemetrySettings.RecordAudioCorpus
-                ? (WavCorpusWriter.Write(_transcriptionId, audio) ?? "")
+                ? (WavCorpusWriter.Write(_transcriptionId, corpusAudio) ?? "")
                 : "";
 
             DeckleWhispSource.Log.CorpusAsrRecorded(

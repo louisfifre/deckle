@@ -66,6 +66,59 @@
                               SelectionChanged="AudioInputCombo_SelectionChanged" />
                 </controls:SettingsCard>
 
+                <!-- Transcription pre-processing — the DSP black box. Single
+                     opt-in toggle ; the fine parameters live in the Playground.
+                     The description carries the deferred-activation contract
+                     (enabled now, active after a few measured recordings). -->
+                <controls:SettingsCard x:Name="PreprocessingCard"
+                                       x:Uid="RecordingPagePreprocessingCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AudioRecording}}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.PreprocessingEnabled, Mode=TwoWay}"
+                                  OnContent=""
+                                  OffContent="" />
+                </controls:SettingsCard>
+
+                <!-- Microphone level check — the indicator. Speak a few seconds;
+                     Deckle reads the level, projects where the DSP would land it,
+                     and advises whether turning the toggle on is worth it. No
+                     transcription, no auto-decision — the user decides. The
+                     button self-disables while measuring (AsyncRelayCommand);
+                     the InfoBars toggle on plain bool flags (InfoBar.IsOpen), so
+                     no value converter is involved. -->
+                <controls:SettingsCard x:Name="MicCheckCard"
+                                       x:Uid="RecordingPageMicCheckCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.VoiceLevel}}">
+                    <Button x:Uid="RecordingPageMicCheckButton"
+                            MinWidth="120"
+                            Command="{x:Bind ViewModel.MeasureMicCommand}" />
+                </controls:SettingsCard>
+
+                <InfoBar x:Uid="RecordingPageMicCheckListening"
+                         IsClosable="False"
+                         Severity="Informational"
+                         IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}">
+                    <InfoBar.Content>
+                        <ProgressRing IsActive="True" Width="20" Height="20"
+                                      HorizontalAlignment="Left" Margin="0,0,0,12" />
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
+                         IsClosable="False" Severity="Success"
+                         IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
+                         IsClosable="False" Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
+                         IsClosable="False" Severity="Informational"
+                         IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}" />
+                <InfoBar x:Uid="RecordingPageMicAdviceError"
+                         IsClosable="False" Severity="Error"
+                         IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}" />
+
                 <!-- Voice level window — same calibration block as before. The
                      master toggle in the header enables auto-calibration; the
                      three sliders push live into AudioLevelMapper statics via

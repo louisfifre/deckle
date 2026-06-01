@@ -303,6 +303,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Internal/
 │   │   │   ├── PcmConversion.cs
 │   │   │   └── WaveInLoop.cs
+│   │   ├── Preprocessing/
+│   │   │   ├── Compressor.cs
+│   │   │   ├── HighPassFilter.cs
+│   │   │   ├── Limiter.cs
+│   │   │   ├── MicLevelCheck.cs
+│   │   │   ├── NoiseGate.cs
+│   │   │   ├── PreprocessingSettings.cs
+│   │   │   └── TranscriptionPreprocessor.cs
 │   │   ├── Telemetry/
 │   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
@@ -315,6 +323,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
+│   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   └── ProbeResult.cs
 │   ├── Deckle.Catalog/
@@ -603,6 +612,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
 │   │   ├── DeckleWhispSource.PipelineCompletion.cs
+│   │   ├── DeckleWhispSource.Preprocessing.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
@@ -639,6 +649,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       └── ScreenCaptureService.cs
 ├── tests/
 │   └── Deckle.Tests/
+│       ├── Audio/
+│       │   ├── MicLevelCheckTests.cs
+│       │   └── TranscriptionPreprocessorTests.cs
 │       ├── Chrono/
 │       │   ├── ChronoFormatterTests.cs
 │       │   └── DeckleChronoSourceTests.cs

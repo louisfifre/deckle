@@ -770,7 +770,19 @@
     <value>Also save audio (WAV)</value>
   </data>
   <data name="GeneralAudioCorpusCard.Description" xml:space="preserve">
-    <value>Keep the raw 16 kHz mono audio of each recording alongside the JSONL, in an audio/ subfolder per profile. Roughly 2 MB per minute of speech.</value>
+    <value>Keep the 16 kHz mono audio of each recording alongside the JSONL, in an audio/ subfolder per profile. Roughly 2 MB per minute of speech.</value>
+  </data>
+  <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
+    <value>Recorded audio</value>
+  </data>
+  <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
+    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard — the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
+  </data>
+  <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
+    <value>Match the transcription</value>
+  </data>
+  <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
+    <value>Always raw</value>
   </data>
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
     <value>Storage folder</value>
@@ -1200,10 +1212,40 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Microphone selection and voice level window calibration.</value>
+    <value>Microphone selection, signal pre-processing, and voice level window calibration.</value>
   </data>
   <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
     <value>Defaults</value>
+  </data>
+  <data name="RecordingPagePreprocessingCard.Header" xml:space="preserve">
+    <value>Microphone pre-processing</value>
+  </data>
+  <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
+    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. Off by default. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
+  </data>
+  <data name="RecordingPageMicCheckCard.Header" xml:space="preserve">
+    <value>Microphone level check</value>
+  </data>
+  <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
+    <value>Speak for a few seconds. Deckle reads your level, shows where pre-processing would bring it (around -20 dBFS, the range transcription handles best), and tells you whether turning it on is worth it. You decide.</value>
+  </data>
+  <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
+    <value>Measure</value>
+  </data>
+  <data name="RecordingPageMicCheckListening.Title" xml:space="preserve">
+    <value>Listening — speak now…</value>
+  </data>
+  <data name="RecordingPageMicAdviceRecommended.Title" xml:space="preserve">
+    <value>Your microphone is quiet — turning pre-processing on is recommended.</value>
+  </data>
+  <data name="RecordingPageMicAdviceMarginal.Title" xml:space="preserve">
+    <value>Borderline — pre-processing would help a little.</value>
+  </data>
+  <data name="RecordingPageMicAdviceNotNeeded.Title" xml:space="preserve">
+    <value>Your microphone is already at a good level — pre-processing isn't needed.</value>
+  </data>
+  <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
+    <value>Couldn't read the microphone. Check the device above and try again.</value>
   </data>
   <data name="GeneralPageBackupRestoreHeaderLabel.Text" xml:space="preserve">
     <value>Back up &amp; restore</value>
