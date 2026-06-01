@@ -11,9 +11,9 @@ namespace Deckle.Diagnostics.Listeners;
 //
 // Scope. Only the general application journal (app.jsonl) rolls. The
 // dataset channels (latency, microphone, corpus) are append-only ML
-// datasets with a stable cross-session contract (ADR-0011) and are never
+// datasets with a stable cross-session contract (ADR-0006) and are never
 // given a rotation policy — losing their tail would corrupt the dataset.
-// The decision and the chosen bound live in ADR-0017.
+// The decision and the chosen bound live in ADR-0007.
 public sealed class JsonlRotationPolicy
 {
     public long MaxBytes { get; }

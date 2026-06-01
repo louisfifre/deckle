@@ -28,7 +28,6 @@ Four run automatically (`dotnet test`, agent-driven, CI-ready), each tagged `[Tr
 
 - **`tdd`** — general TDD philosophy and testability design; read when a design question emerges.
 - **`deckle-nomenclature`** — naming rules, applied here to test classes and methods.
-- **`src/Deckle.Diagnostics/CLAUDE.md`** — the observability test pattern (`TestEventListener`, provider-side example, ADR-0005 link); the listener's native gotchas live as comments in `TestEventListener.cs`.
-- **[ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md)** — the `dotnet build` / `dotnet test` decision and the reapplicable XamlCompiler `MSB3073` workaround if the historic bug returns.
+- **`src/Deckle.Diagnostics/CLAUDE.md`** — the observability test pattern (`TestEventListener`, provider-side example, ADR-0003 link); the listener's native gotchas live as comments in `TestEventListener.cs`.
 - **`deckle-workflow`** — the daily build doctrine this overlaps with.
 - **`session-save-context`** — route a structural testing change through the cascade for a durable trace.

@@ -19,7 +19,7 @@ The build runs via `dotnet build`. From `src/Deckle.App/`, PowerShell without ad
 dotnet build -c Release -p:Platform=x64
 ```
 
-Output: `bin\x64\Release\net10.0-windows10.0.26100.0\Deckle.exe` (self-contained). Restore is implicit (a separate phase before Build), no explicit Restore target needed. The historical workaround via `MSBuild.exe` from Visual Studio is kept on record in [ADR-0012](../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md) — reactivable if the `XamlCompiler.exe` MSB3073 bug ever reappears.
+Output: `bin\x64\Release\net10.0-windows10.0.26100.0\Deckle.exe` (self-contained). Restore is implicit (a separate phase before Build), no explicit Restore target needed.
 
 Points of attention on the csproj side. `Microsoft.WindowsAppSDK` is pinned to `1.8.260317003` (official stable). `global.json` pins SDK `10.0.104` — keep as is. `<EnableMsixTooling>true</EnableMsixTooling>` forces the Publish pipeline to generate `Deckle.pri` in `PublishDir`; without it, on WindowsAppSDK 1.8 unpackaged, the `.xbf` files embedded in the `.pri` are unreachable and the app starts without a window (see [microsoft/WindowsAppSDK#3451](https://github.com/microsoft/WindowsAppSDK/issues/3451)).
 
@@ -65,7 +65,7 @@ The Wrap toggle also switches `HorizontalScrollBarVisibility` between `Auto` and
 
 Bottom padding `12,4,12,24` on the ListView. The 24 px bottom margin prevents the floating horizontal scrollbar (~12 px) from overlapping the last entry, which is precisely where new lines appear when AutoScroll is on.
 
-A `LogWindow` that was never shown has no initialised layout — `LogScrollViewer.UpdateLayout()` can only be called after the window has been shown at least once (flag `_isVisible` in place). The lazy-windows pattern is ratified by [ADR-0004](../../docs/adr/0004-lazy-windows-pour-stabilite-au-boot.md).
+A `LogWindow` that was never shown has no initialised layout — `LogScrollViewer.UpdateLayout()` can only be called after the window has been shown at least once (flag `_isVisible` in place). The lazy-windows pattern is ratified by [ADR-0001](../../docs/adr/0001-lazy-secondary-windows.md).
 
 ## HudWindow — host-side usage
 

@@ -8,7 +8,7 @@ public enum JsonlSchema
     // { timestamp, kind, session, payload }. The frozen legacy contract,
     // used by the dataset channels (latency, microphone, corpus). Their
     // schema is a stable machine contract consumed by benchmark tooling
-    // and pinned by ADR-0011 — it never gains envelope fields.
+    // and pinned by ADR-0006 — it never gains envelope fields.
     PayloadOnly,
 
     // { timestamp, kind, session, provider, event, level, source, message, line, payload }.
@@ -17,6 +17,6 @@ public enum JsonlSchema
     // renders. A parameter-less event is no longer an empty blob —
     // provider, event and level still identify it, and `message` holds the
     // rendered text (null when the provider declared no Message template).
-    // The window↔telemetry symmetry this enables is recorded in ADR-0017.
+    // The window↔telemetry symmetry this enables is recorded in ADR-0007.
     SelfDescribing,
 }

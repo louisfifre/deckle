@@ -31,11 +31,11 @@ namespace Deckle.Diagnostics.Listeners;
 // channel adds the event identity the LogWindow renders, so the file is
 // a faithful, greppable mirror of the live journal rather than an
 // anonymous payload — a parameter-less event keeps its provider/event/
-// level instead of collapsing to an empty blob. See ADR-0017.
+// level instead of collapsing to an empty blob. See ADR-0007.
 //
 // Rotation. An optional `JsonlRotationPolicy` rolls the file by size
 // (app.jsonl → app.1.jsonl → …) so a long session can't grow it without
-// bound. Datasets pass no policy and stay append-only. See ADR-0017.
+// bound. Datasets pass no policy and stay append-only. See ADR-0007.
 //
 // Threading. Write happens on the emitter thread, guarded by a per-
 // listener lock so concurrent emissions don't tear lines and so a roll

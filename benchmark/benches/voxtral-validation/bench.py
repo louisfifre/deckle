@@ -39,7 +39,7 @@ Usage typique :
     python bench.py --limit 5                    # 5 premiers samples
     python bench.py --skip-judge                 # metrics objectives seulement
 
-Référence : ADR-0014, brief session 2026-05-26.
+Référence : brief session 2026-05-26.
 """
 
 from __future__ import annotations

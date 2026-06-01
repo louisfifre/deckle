@@ -116,7 +116,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPipelineOutputs                  = 75;
     public const int EvtLatencyRecorded                  = 76;
     // 77 — EvtCorpusRecorded retiré au profit de CorpusAsr/RewriteRecorded
-    // (ADR-0011). L'ID est brûlé, jamais réutilisé.
+    // (ADR-0006). L'ID est brûlé, jamais réutilisé.
     public const int EvtUserFeedbackEmitted              = 78;
     public const int EvtManualProfileNotFound            = 79;
     public const int EvtDisposeWorkerJoinTimeout         = 80;

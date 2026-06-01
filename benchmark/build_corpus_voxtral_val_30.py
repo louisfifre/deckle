@@ -27,7 +27,7 @@ Le ``corpus.jsonl`` produit suit la convention v2 du loader
 ``lib/corpus.py`` : top-level ``timestamp / kind / session / payload``,
 payload contient ``transcription_id, audio_file, text, duration_seconds,
 tier, text_words``. On ajoute un champ ``reference_text_gemini`` laissé
-vide — il sera rempli par la passe ground-truth (cf. ADR-0014).
+vide — il sera rempli par la passe ground-truth.
 
 Usage::
 
@@ -36,7 +36,7 @@ Usage::
     python benchmark/build_corpus_voxtral_val_30.py --force    # écrase un corpus existant
 
 Référence : brief de session 2026-05-26 (handoff post-validation Voxtral
-perf), ADR-0014.
+perf).
 """
 
 from __future__ import annotations

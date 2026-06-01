@@ -9,7 +9,7 @@ module: Deckle.Transcription.Whisper
 
 whisper.cpp ASR backend for the `Deckle.Transcription` module. Implements `IAsrBackend` behind the `WhisperBackend` class, encapsulates the entire P/Invoke machinery toward `libwhisper.dll`, and exposes the provisioning catalogs (`SpeechModels`, `NativeRuntime`) consumed by the first-run wizard.
 
-Lives as a child module of `Deckle.Transcription` following the parent/children pattern already established by `Deckle.Diagnostics` → `Deckle.Diagnostics.Logging` + `Deckle.Diagnostics.Telemetry`. The parent carries the `IAsrBackend` contract, the `TranscriptionResult` DTO, and the `DeckleWhispSource` EventSource provider; the child carries the Whisper implementation. No reverse reference — the parent never sees this module; it is `Deckle.App` (the composition root) that instantiates `WhisperBackend` and injects it into `TranscriptionEngine`. Decision tracked in [ADR 0010](../../docs/adr/0010-backend-asr-pluggable-via-iasrbackend.md).
+Lives as a child module of `Deckle.Transcription` following the parent/children pattern already established by `Deckle.Diagnostics` → `Deckle.Diagnostics.Logging` + `Deckle.Diagnostics.Telemetry`. The parent carries the `IAsrBackend` contract, the `TranscriptionResult` DTO, and the `DeckleWhispSource` EventSource provider; the child carries the Whisper implementation. No reverse reference — the parent never sees this module; it is `Deckle.App` (the composition root) that instantiates `WhisperBackend` and injects it into `TranscriptionEngine`. Decision tracked in [ADR 0005](../../docs/adr/0005-pluggable-asr-backend-via-iasrbackend.md).
 
 ## Public surface
 

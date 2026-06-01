@@ -114,7 +114,7 @@ public sealed partial class TranscriptionEngine
         // Identité de cette invocation pipeline. Régénérée à chaque
         // entrée dans Transcribe — le moindre early-return en aval
         // n'émet aucun corpus event, donc l'ID n'a pas besoin d'être
-        // partagé avec le scope appelant. Voir ADR-0011.
+        // partagé avec le scope appelant. Voir ADR-0006.
         _transcriptionId = System.Guid.NewGuid().ToString("N");
 
         if (!_backend.IsModelLoaded)
@@ -437,7 +437,7 @@ public sealed partial class TranscriptionEngine
             pasted:               pasteVerified,
             outcome:              outcome.ToString());
 
-        // Corpus normalisé — voir ADR-0011. Deux events distincts joints
+        // Corpus normalisé — voir ADR-0006. Deux events distincts joints
         // par _transcriptionId : CorpusAsrRecorded capte toujours la
         // sortie ASR, CorpusRewriteRecorded n'est émis que si un profil
         // rewrite a tourné. L'audio WAV plat sous audio/<id>.wav est

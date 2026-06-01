@@ -1,6 +1,6 @@
 # Inventaire et classes d'observables EventSource (2026-05-24)
 
-Note de recherche datée. Cartographie l'état de l'instrumentation EventSource après la vague 6 d'observabilité (mergée 2026-05-22, cf. ADR-0005), identifie les classes d'observables récurrentes par domaine, et pointe les lacunes et incohérences avant que Louis tranche une éventuelle suite. Pas de directive, pas de modification du code — matière à décision.
+Note de recherche datée. Cartographie l'état de l'instrumentation EventSource après la vague 6 d'observabilité (mergée 2026-05-22, cf. ADR-0003), identifie les classes d'observables récurrentes par domaine, et pointe les lacunes et incohérences avant que Louis tranche une éventuelle suite. Pas de directive, pas de modification du code — matière à décision.
 
 ## Cadrage
 
@@ -37,7 +37,7 @@ Transcription d'un blob audio, réécriture LLM, calibration appareil, push ambi
 
 **Set canonique proposé** : identifiant d'opération (`transcription_id`), durée totale et par phase clé (`hotkey_to_capture_ms`, `record_drain_ms`, `whisper_init_ms`, `whisper_ms`, `llm_ms`, …), métriques d'entrée (`audio_sec`, `text_chars`, `prompt_tok`), métriques de sortie (`n_segments`, `text_words`, `tok_s`), outcome enum (`outcome=ok|repetition_loop|llm_failed|user_cancelled`), profil ou stratégie active (`strategy=`, `profile=`), flag binaire d'effet de bord (`pasted=true`).
 
-État actuel : `LatencyRecorded` à 24 champs est l'exemple canonique réussi — *canonical log line* au sens industrie, colocalise toutes les mesures clés en une ligne par invocation. `CorpusAsrRecorded` (14 champs) et `CorpusRewriteRecorded` (12 champs) suivent le même pattern pour la persistance dataset (ADR-0011). Le pattern est mature côté transcription ; il n'est pas systématisé ailleurs (par exemple le push ambient pourrait avoir son canonical heartbeat richer que l'actuel `Heartbeat` à 7 champs).
+État actuel : `LatencyRecorded` à 24 champs est l'exemple canonique réussi — *canonical log line* au sens industrie, colocalise toutes les mesures clés en une ligne par invocation. `CorpusAsrRecorded` (14 champs) et `CorpusRewriteRecorded` (12 champs) suivent le même pattern pour la persistance dataset (ADR-0006). Le pattern est mature côté transcription ; il n'est pas systématisé ailleurs (par exemple le push ambient pourrait avoir son canonical heartbeat richer que l'actuel `Heartbeat` à 7 champs).
 
 ### 3. Boucle temps réel haute fréquence
 

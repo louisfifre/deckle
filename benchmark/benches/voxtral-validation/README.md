@@ -10,7 +10,7 @@ Bench de qualité Voxtral 24B Q4_K_M (via `llama-mtmd-cli` Vulkan) sur le corpus
 
 ## Pourquoi ce bench
 
-Le POC de l'ADR-0014 a tranché en faveur de Voxtral sur l'axe perf (730 GB/s, 47 tok/s, RTF 0.05 sur Q4_K_M). Reste à valider la qualité sur un corpus représentatif. La référence Whisper hallucine régulièrement (chaînes type « Sous-titrage Société Radio-Canada », bouclage sur les longs) — méthodologiquement inutilisable comme ground truth. On bascule sur Gemini comme transcripteur ground truth, parce que Gemini écoute l'audio brut (`Part.from_bytes`) et produit une transcription directement comparable au signal.
+Le POC Voxtral a tranché en faveur de Voxtral sur l'axe perf (730 GB/s, 47 tok/s, RTF 0.05 sur Q4_K_M). Reste à valider la qualité sur un corpus représentatif. La référence Whisper hallucine régulièrement (chaînes type « Sous-titrage Société Radio-Canada », bouclage sur les longs) — méthodologiquement inutilisable comme ground truth. On bascule sur Gemini comme transcripteur ground truth, parce que Gemini écoute l'audio brut (`Part.from_bytes`) et produit une transcription directement comparable au signal.
 
 ## Préalables
 
@@ -51,6 +51,6 @@ Par row :
 
 ## Décision attendue
 
-Le bench instrumente la donnée ; il **ne tranche pas**. La décision finale (Voxtral remplace Whisper / Voxtral reste optionnel / on garde Whisper) se prend en lisant les JSONL et en évaluant à la main les régimes selon les axes prioritaires fixés par l'ADR-0014 (fidélité, propreté, absence de bouclage/hallucinations).
+Le bench instrumente la donnée ; il **ne tranche pas**. La décision finale (Voxtral remplace Whisper / Voxtral reste optionnel / on garde Whisper) se prend en lisant les JSONL et en évaluant à la main les régimes selon les axes prioritaires fixés par le POC (fidélité, propreté, absence de bouclage/hallucinations).
 
-Si le baseline n'est pas net, la skill `autoresearch` peut prendre le relais pour explorer l'espace des prompts (phase 3 ADR-0014).
+Si le baseline n'est pas net, la skill `autoresearch` peut prendre le relais pour explorer l'espace des prompts (phase 3 du POC).

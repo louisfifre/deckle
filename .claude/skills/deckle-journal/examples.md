@@ -4,11 +4,11 @@ Three worked entries, one per epistemic status: a validated advance, an observat
 
 **Validated technical advance.**
 
-> ## 2026-05-27 — Refonte format artefacts agents (ADR-0013)
+> ## 2026-05-27 — Refonte format artefacts agents
 >
 > Adoption du format canonique unifié pour tous les artefacts agents — `CLAUDE.md`, `SKILL.md`, ADRs, sheets `reference`/`research`, module READMEs. Le frontmatter YAML devient obligatoire (`name`, `description`, `type`), le vocabulaire d'H2 est fermé (Role, Context, Doctrine, Pointers, Boundaries, Examples), la convention RFC 2119 (MUST/SHOULD/MAY) cadre les paragraphes prescriptifs. Migration complète des artefacts existants livrée dans le merge `docs/refonte-format-artefacts-agents` ([c58a303](commit-sha)).
 >
-> Référence : [ADR-0013](docs/adr/0013-format-canonique-des-artefacts-agents.md). Le format normatif vit dans [`session-save-context/format.md`](.claude/skills/session-save-context/format.md).
+> Référence : [`session-save-context/format.md`](.claude/skills/session-save-context/format.md).
 
 **Observation in progress (hypothesis).**
 

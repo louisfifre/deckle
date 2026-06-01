@@ -66,8 +66,6 @@ Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
 # phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)
 # get imported from the freshly-regenerated .nuget.g.targets — no
 # CS5001 / CS0103 InitializeComponent surprise in a fresh worktree.
-# See ADR-0012 for the rationale on choosing `dotnet build` over the
-# historical MSBuild VS workaround.
 Write-Host "Build ($Configuration x64)..." -ForegroundColor Cyan
 & dotnet build $Csproj "-c:$Configuration" '-p:Platform=x64' '-v:m' '-nologo'
 if ($LASTEXITCODE -ne 0) { throw "dotnet build failed (code $LASTEXITCODE)" }

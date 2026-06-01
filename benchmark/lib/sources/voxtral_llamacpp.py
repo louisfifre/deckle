@@ -35,7 +35,6 @@ extrait du stderr via parsing de la ligne ``eval time = ... ms / N
 tokens / ...`` si présente — sinon on retourne ``-1``.
 
 Référence :
-  - ADR-0014 (Phase 1/2 du POC, voie llama.cpp validée)
   - ``perf-cap/session-2026-05-26-prompts.ps1`` (régimes T1-T6 testés)
   - Brief session 2026-05-26 (validation perf Q4_K_M)
 """

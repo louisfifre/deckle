@@ -41,7 +41,7 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    (routés)
 //   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
 //                                                    events (routés, pas de
-//                                                    tier — voir ADR-0011)
+//                                                    tier — voir ADR-0006)
 //
 // Sémantique des gates utilisateur :
 //   app.jsonl              ← ApplicationLogToDisk == true
@@ -97,8 +97,8 @@ public static class TelemetryListenerBootstrap
             // app.jsonl est le miroir persistant du journal live : enveloppe
             // auto-descriptive (provider/event/level/source/message/line)
             // et bornée par rotation. Les datasets restent en PayloadOnly
-            // sans rotation (contrat figé, ADR-0011). Décision et bornes :
-            // ADR-0017.
+            // sans rotation (contrat figé, ADR-0006). Décision et bornes :
+            // ADR-0007.
             schema:   JsonlSchema.SelfDescribing,
             rotation: new JsonlRotationPolicy(maxBytes: 5 * 1024 * 1024, maxGenerations: 5)));
 
@@ -114,7 +114,7 @@ public static class TelemetryListenerBootstrap
             predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
-        // Corpus normalisé — voir ADR-0011. Deux listeners routés qui
+        // Corpus normalisé — voir ADR-0006. Deux listeners routés qui
         // pulvérisent CorpusAsr/RewriteRecorded sur une arborescence
         // bucketée. Le predicate des deux gate sur CorpusEnabled et le
         // resolver compose le path à partir du payload de l'event.

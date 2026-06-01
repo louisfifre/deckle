@@ -17,7 +17,7 @@ namespace Deckle.Diagnostics.Listeners;
 // listener de pulvériser un même flux d'events vers une arborescence
 // dynamique de `corpus.jsonl` bucketés (par exemple
 // `corpus/raw/<tier>/corpus.jsonl` ou `corpus/rewrite-<name>-<id>/corpus.jsonl`
-// — voir ADR-0011).
+// — voir ADR-0006).
 //
 // Pourquoi pas l'héritage du JsonlEventListener. Le brief de la refonte
 // corpus a tranché : pas d'héritage. Le mode "routé" n'est pas un

@@ -24,7 +24,7 @@ public sealed partial class DeckleWhispSource
     //
     // CorpusRewriteRecorded capture la sortie réécriture LLM. Routée
     // vers corpus/rewrite-<name>-<id>/corpus.jsonl (plat — pas de tier
-    // sur le rewrite, voir ADR-0011). Le rewrite_profile_id sert de
+    // sur le rewrite, voir ADR-0006). Le rewrite_profile_id sert de
     // jointure avec le profil ; le prompt_template_hash invalide les
     // analyses si le template change sans rename d'ID.
     //

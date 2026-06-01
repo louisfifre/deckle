@@ -17,7 +17,7 @@ The module depends on `Deckle.Diagnostics` (interfaces + JsonlEventListener) and
 
 - **`LatencyEnabled`** — bool, off by default. Gates the write of `latency.jsonl`.
 - **`MicrophoneTelemetry`** — bool, off by default (GDPR: a microphone RMS summary is not voice content but remains a measurement of the user's microphone).
-- **`CorpusEnabled`** — bool, off by default. Gates the write of the two normalized corpus events (`CorpusAsrRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/<tier>/corpus.jsonl`, `CorpusRewriteRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/corpus.jsonl`). Schema set by ADR-0011: the ASR layer is tier-bucketed by length (`raw/very-short/`, `raw/short/`, …) and rewrite is flat-bucketed by profile (`rewrite-<name>-<id>/`).
+- **`CorpusEnabled`** — bool, off by default. Gates the write of the two normalized corpus events (`CorpusAsrRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/<tier>/corpus.jsonl`, `CorpusRewriteRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/corpus.jsonl`). Schema set by ADR-0006: the ASR layer is tier-bucketed by length (`raw/very-short/`, `raw/short/`, …) and rewrite is flat-bucketed by profile (`rewrite-<name>-<id>/`).
 - **`RecordAudioCorpus`** — bool, off by default. Gates the write of the raw WAV under `<UserDataRoot>/telemetry/audio/<transcription_id>.wav`, a flat directory deduplicated by invocation (the same WAV is referenced by both JSONL lines, ASR and rewrite). Non-trivial disk cost, consent to request.
 
 `TelemetrySettingsService` is the per-module persistence singleton. Storage under `<UserDataRoot>/modules/telemetry/settings.json`. Pattern aligned with the other `*SettingsService` instances.

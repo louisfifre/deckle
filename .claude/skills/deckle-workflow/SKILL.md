@@ -12,7 +12,7 @@ Answers "how does Claude work on Deckle day to day" — the boundary between wha
 
 ## Build and publish
 
-Claude runs Deckle builds locally to validate compilation — `dotnet build`, exact command in `src/Deckle.App/CLAUDE.md`; day to day, `scripts/lib/build-run.ps1` (build + kill instance + relaunch). **`publish` stays the maintainer's act — Claude never triggers it.** From a worktree, the cwd points to the worktree root first. The historical Visual Studio `MSBuild.exe` workaround is tracked in [ADR-0012](../../../docs/adr/0012-adoption-de-dotnet-build-et-dotnet-test.md), reactivable if the XamlCompiler MSB3073 bug resurfaces.
+Claude runs Deckle builds locally to validate compilation — `dotnet build`, exact command in `src/Deckle.App/CLAUDE.md`; day to day, `scripts/lib/build-run.ps1` (build + kill instance + relaunch). **`publish` stays the maintainer's act — Claude never triggers it.** From a worktree, the cwd points to the worktree root first.
 
 ## Third-party tools
 
@@ -50,7 +50,7 @@ A push to GitHub is bound to a **version**, never to "a coherent state landed lo
 
 ## Code comments
 
-LLM agents read comments as if they were true; a stale comment is worse than none — it pollutes the reasoning every time the file is read. **Why, not what** — the code already says the what; comment a *why* that is counter-intuitive or non-local, and if it needs a paragraph it becomes an ADR with the comment pointing to it (`// see ADR-0004 on lazy windows`). **Current truth** — a comment no longer true MUST be corrected or removed; when touching commented code, verify the comments still hold. **Marker discipline** — a TODO/HACK/FIXME without context becomes a fossil; do the work, drop it, or give it a trackable format (an assumed debt deserves an ADR). **Prefer the name** — an explanatory comment often signals a poor name or an over-long function; rename or extract before commenting. Cleanup happens module by module when working on that module, never as a giant centralized pass.
+LLM agents read comments as if they were true; a stale comment is worse than none — it pollutes the reasoning every time the file is read. **Why, not what** — the code already says the what; comment a *why* that is counter-intuitive or non-local, and if it needs a paragraph it becomes an ADR with the comment pointing to it (`// see ADR-0001 on lazy windows`). **Current truth** — a comment no longer true MUST be corrected or removed; when touching commented code, verify the comments still hold. **Marker discipline** — a TODO/HACK/FIXME without context becomes a fossil; do the work, drop it, or give it a trackable format (an assumed debt deserves an ADR). **Prefer the name** — an explanatory comment often signals a poor name or an over-long function; rename or extract before commenting. Cleanup happens module by module when working on that module, never as a giant centralized pass.
 
 ## Pointers
 

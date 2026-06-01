@@ -29,7 +29,7 @@ The `HotkeyManager` also listens for keyboard layout changes (`WM_INPUTLANGCHANG
 
 ## Autostart
 
-`AutostartService` manages the HKCU entry `Software\Microsoft\Windows\CurrentVersion\Run`. The written value targets `Environment.ProcessPath` (absolute path of the current exe). `Disable` does not touch an entry that points to another install — useful when the user has launched Deckle from a dev build while a release is installed elsewhere. States and errors are reported under `Lifecycle`. No MSIX StartupTask — decision recorded in [ADR-0002](../../docs/adr/0002-reporter-msix-rester-unpackaged.md).
+`AutostartService` manages the HKCU entry `Software\Microsoft\Windows\CurrentVersion\Run`. The written value targets `Environment.ProcessPath` (absolute path of the current exe). `Disable` does not touch an entry that points to another install — useful when the user has launched Deckle from a dev build while a release is installed elsewhere. States and errors are reported under `Lifecycle`. No MSIX StartupTask.
 
 ## DispatcherQueueExtensions
 

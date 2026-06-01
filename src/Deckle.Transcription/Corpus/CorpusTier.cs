@@ -4,7 +4,7 @@ namespace Deckle.Transcription.Corpus;
 // word count. Hard-codés ici parce que la passe Settings ultérieure
 // décidera si ces seuils méritent d'être édités par l'utilisateur —
 // d'ici là, le point de centralisation existe et les analyses tier-
-// stratifiées du corpus restent cohérentes. Voir ADR-0011.
+// stratifiées du corpus restent cohérentes. Voir ADR-0006.
 //
 // Bornes : plancher inclus, plafond exclu. Un texte vide tombe dans
 // very-short.

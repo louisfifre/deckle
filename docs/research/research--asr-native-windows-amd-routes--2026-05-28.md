@@ -94,7 +94,7 @@ ONNX Runtime DirectML (`Microsoft.ML.OnnxRuntime.DirectML`) charge sans problèm
 
 [`TrevorS/voxtral-mini-realtime-rs`](https://github.com/TrevorS/voxtral-mini-realtime-rs), v0.2.5 sortie le 2 avril 2026, 55 commits, 4 releases, projet actif. Implémentation pure Rust de Voxtral Mini 4B Realtime ASR + Voxtral 4B TTS via framework **Burn** (équivalent Rust de PyTorch côté abstraction tenseurs) + kernels **CubeCL**. Backends : **WGPU natif (Vulkan sur Windows/Linux, Metal sur macOS) + WGPU dans le browser via WASM**. Bench publié : NVIDIA DGX Spark, RTF 0.416 sur 16 s d'audio, 19.4 tok/s en Q4 GGUF natif.
 
-C'est *exactement* la promesse architecturale recherchée : **GPU AMD sur Windows via Vulkan, sans Python, sans CUDA**. Kernels Q4 WGSL custom (tiled pour M ≤ 4 single-token decode, naive pour M > 4). Cohérent avec la doctrine Deckle (ADR-0008 : *Rester sur Vulkan pour les backends GPU natifs*).
+C'est *exactement* la promesse architecturale recherchée : **GPU AMD sur Windows via Vulkan, sans Python, sans CUDA**. Kernels Q4 WGSL custom (tiled pour M ≤ 4 single-token decode, naive pour M > 4). Cohérent avec la doctrine Deckle (doctrine Vulkan : rester sur Vulkan pour les backends GPU natifs).
 
 ## La question bloquante — 4B Realtime ≠ 3B 2507
 
@@ -102,7 +102,7 @@ Le runtime cible **Voxtral Mini 4B Realtime 2602**, pas le 3B 2507 que Deckle a 
 
 ## Effort estimé
 
-2-3 jours pour cloner, builder Windows + Vulkan, mesurer RTF sur 7900 XT et qualité française sur voxtral-val-30. Si le bench passe : 1-2 semaines pour ajouter un crate `voxtral-ffi` qui expose une API C stable (load model, transcribe wav, free), puis quelques jours pour intégrer en P/Invoke dans un nouveau module `Deckle.Transcription.Voxtral` (pattern parent/enfant `IAsrBackend` documenté par [ADR-0010](../adr/0010-backend-asr-pluggable-via-iasrbackend.md)).
+2-3 jours pour cloner, builder Windows + Vulkan, mesurer RTF sur 7900 XT et qualité française sur voxtral-val-30. Si le bench passe : 1-2 semaines pour ajouter un crate `voxtral-ffi` qui expose une API C stable (load model, transcribe wav, free), puis quelques jours pour intégrer en P/Invoke dans un nouveau module `Deckle.Transcription.Voxtral` (pattern parent/enfant `IAsrBackend` documenté par [ADR-0005](../adr/0005-pluggable-asr-backend-via-iasrbackend.md)).
 
 ## Risques
 
@@ -119,7 +119,7 @@ PR [#2103](https://github.com/microsoft/onnxruntime-genai/pull/2103) *« Add Gem
 
 **Bloqueur structurel sur l'usage Deckle** : benchmark publié par [James Ding](https://twango.dev/writing/gemma4-asr-benchmark) sur Gemma4 E2B ASR (8 datasets short-form anglais, RTX 6000 Blackwell + vLLM bf16) : **2 203 % WER sur clips sub-1 seconde**, catastrophic failure under 3 s, hallucinations en bruit. La fenêtre sub-3 s est *exactement* la fenêtre typique de dictée hotkey Deckle. Auteur écrit : *« Don't swap it in for a dedicated ASR model. »*
 
-**Alternative émergente** : [Daniel Demin a shippé Gemma4 ASR en .NET 10 desktop](https://dev.to/mdemin729/shipping-gemma-4-speech-recognition-in-a-windows-net-desktop-app-a-5-variant-model-selection-tour-2l8i) ([parlotype](https://github.com/mdemin729/parlotype), 25 mai 2026) via **llama.cpp + Vulkan** parce que *« onnxruntime-genai does not support Gemma 4's architecture yet »*. Cohérent ADR-0008 Deckle. Default ship : E4B-it-Q4_K_M GGUF (~5.9 GB), 13.82 % WER LibriSpeech test-other anglais, RTF 0.038 CUDA. À garder en référence si Gemma4 redevient candidat.
+**Alternative émergente** : [Daniel Demin a shippé Gemma4 ASR en .NET 10 desktop](https://dev.to/mdemin729/shipping-gemma-4-speech-recognition-in-a-windows-net-desktop-app-a-5-variant-model-selection-tour-2l8i) ([parlotype](https://github.com/mdemin729/parlotype), 25 mai 2026) via **llama.cpp + Vulkan** parce que *« onnxruntime-genai does not support Gemma 4's architecture yet »*. Cohérent avec la doctrine Vulkan de Deckle. Default ship : E4B-it-Q4_K_M GGUF (~5.9 GB), 13.82 % WER LibriSpeech test-other anglais, RTF 0.038 CUDA. À garder en référence si Gemma4 redevient candidat.
 
 # Voie de repli — Whisper.cpp dynamic windowing + VAD énergie + distil-fr
 
@@ -286,7 +286,4 @@ Ce qui est acquis : le patch local OGA est **propre, testé empiriquement, et ca
 - [`research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md`](research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md) — comparatif ASR FR pour situer Phi-4 vs Voxtral vs Whisper sur benchmarks publics.
 - [`research--whisper-alternatives-fine-windowing--2026-05-27.md`](research--whisper-alternatives-fine-windowing--2026-05-27.md) — fenêtrage fin Whisper, prédécesseur du plan Whisper dynamic présenté ici.
 - [`benchmark/JOURNAL.md`](../../benchmark/JOURNAL.md) — entrées 2026-05-27 suites 1 à 6 pour la chronologie expérimentale amont.
-- [`ADR-0007 — Rester sur whisper.cpp, surveiller Voxtral`](../adr/0007-rester-sur-whisper-cpp-surveiller-voxtral.md) — pour la posture de bascule ASR.
-- [`ADR-0008 — Rester sur Vulkan pour les backends GPU natifs`](../adr/0008-rester-sur-vulkan-pour-backends-gpu-natifs.md) — doctrine Vulkan invoquée par la voie 3 TrevorS.
-- [`ADR-0010 — Backend ASR pluggable via IAsrBackend`](../adr/0010-backend-asr-pluggable-via-iasrbackend.md) — pattern parent/enfant pour l'intégration d'un nouveau backend (Phi-4, Voxtral, etc.).
-- [`ADR-0016 — Inférence safetensors-native pour Voxtral`](../adr/0016-inference-safetensors-native-pour-voxtral.md) — voie active du POC Voxtral via Transformers + torch ROCm Windows, parent du POC actuel.
+- [`ADR-0005 — Backend ASR pluggable via IAsrBackend`](../adr/0005-pluggable-asr-backend-via-iasrbackend.md) — pattern parent/enfant pour l'intégration d'un nouveau backend (Phi-4, Voxtral, etc.).

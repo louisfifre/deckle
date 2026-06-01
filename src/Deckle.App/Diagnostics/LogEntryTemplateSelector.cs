@@ -45,7 +45,7 @@ public sealed class LogEntryTemplateSelector : DataTemplateSelector
             {
                 case "LatencyRecorded":             return Latency!;
                 // Les deux events normalisés du corpus partagent le même
-                // template — voir ADR-0011 pour la séparation ASR/rewrite
+                // template — voir ADR-0006 pour la séparation ASR/rewrite
                 // sur disque, qui n'a pas vocation à se refléter dans la
                 // présentation live.
                 case "CorpusAsrRecorded":           return Corpus!;

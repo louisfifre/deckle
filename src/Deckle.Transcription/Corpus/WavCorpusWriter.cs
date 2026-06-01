@@ -5,7 +5,7 @@ namespace Deckle.Transcription.Corpus;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //
-// Pure passe-plat audio du corpus normalisé (ADR-0011). Écrit le 16 kHz
+// Pure passe-plat audio du corpus normalisé (ADR-0006). Écrit le 16 kHz
 // mono PCM fourni à whisper_full comme un WAV 16-bit signé, un fichier
 // par transcription, sous `<telemetry-root>/audio/<transcription_id>.wav`.
 // Plat — pas de slug, pas de sous-dossier par profil. L'audio est

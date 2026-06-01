@@ -27,7 +27,7 @@ At the end of `Record()`, `MicrophoneTelemetryCalculator` computes a distributio
 
 ## Observability
 
-The module migrated to `EventSource` in wave 2 of the observability overhaul ([ADR-0005](../../docs/adr/0005-adoption-eventsource-pour-l-observabilite.md)). All emissions go through `DeckleAudioSource.Log` — the `Deckle.Audio` provider exposed as a static singleton. No call to `TelemetryService.Instance` or `LogService.Instance` remains in the module.
+The module migrated to `EventSource` in wave 2 of the observability overhaul ([ADR-0003](../../docs/adr/0003-adopt-eventsource-for-observability.md)). All emissions go through `DeckleAudioSource.Log` — the `Deckle.Audio` provider exposed as a static singleton. No call to `TelemetryService.Instance` or `LogService.Instance` remains in the module.
 
 Three emission zones. The waveIn loop milestones and anomalies (`RecordingStarted`, `CaptureStarted`, `EmptyBufferReceived`, `LowAudioDetected`, `CaptureLagDetected`, `DurationCapReached`, `RecordingCompleted`, `CaptureCompleted`). Device opening anomalies and empty telemetry (`MicrophoneOpenFailed`, `MicrophoneTelemetryEmpty`). The structured rollup per recording (`RecordingTailSummary` for the readable headline, `MicrophoneTelemetryRecorded` for the distributional payload with 14 fields flattened from the former `MicrophoneTelemetryPayload`). The module's settings persistence goes through the four events `SettingsLoaded` / `SettingsLoadComplete` / `SettingsLoadWarning` / `SettingsLoadError`, which receive the raw message forwarded by `JsonSettingsStore<T>` — this zone stays message-parameterized until `SettingsHost` migrates (wave 4).
 

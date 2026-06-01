@@ -26,7 +26,7 @@ Adoption du format canonique unifié pour tous les artefacts agents — `CLAUDE.
 
 **Livré** dans le merge `docs/refonte-format-artefacts-agents` ([c58a303](https://github.com/) — `merge: docs/refonte-format-artefacts-agents — ADR-0013 et migration des artefacts au format canonique`). Migration complète des artefacts existants livrée dans la branche avant merge : tous les `CLAUDE.md` modulaires, tous les `SKILL.md` projet, les sheets `docs/reference/` et `docs/research/`, le `scripts/README.md`, les artefacts `benchmark/`.
 
-**Référence normative** : [ADR-0013](docs/adr/0013-format-canonique-des-artefacts-agents.md) pour la décision, et `session-save-context/format.md` (skill global sous `~/.claude/skills/session-save-context/`) pour le format technique réutilisable par d'autres skills.
+**Référence normative** : `session-save-context/format.md` (skill global sous `~/.claude/skills/session-save-context/`) pour le format technique réutilisable par d'autres skills.
 
 **Conséquence opérationnelle** : tout nouvel artefact agent créé désormais doit passer par le format canonique. Le hook `scripts/update-tree.ps1` scrape déjà `name` + `description` + `type` pour les afficher dans `TREE.md` — la conformité du frontmatter conditionne la lisibilité de l'arborescence.
 
