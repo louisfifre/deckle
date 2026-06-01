@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.Audio;
+using Deckle.Audio.Preprocessing;
 using Deckle.Audio.Telemetry;
 using Deckle.Catalog;
 using Deckle.Core;
@@ -97,6 +98,38 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.AutoCalibrated(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
     }
 
+    // Deferred-activation driver for the transcription pre-processing DSP.
+    // Runs after every real recording (alongside TryAutoCalibrate), but only
+    // does work while the feature is opted in AND still Calibrating. It
+    // accumulates the mic telemetry over the first PreprocCalibrationTakes
+    // recordings, then asks the pure calculator whether this mic sits far
+    // enough below the makeup target to benefit. The DSP itself never
+    // transforms audio until this flips the state to Active — that is the
+    // « activer ≠ actif tout de suite » contract. Pure compute lives in
+    // PreprocessingActivationCalculator; the ring buffer + persistence side
+    // effects stay here, mirroring TryAutoCalibrate.
+    private void TryUpdatePreprocessingActivation(MicrophoneTelemetryPayload payload)
+    {
+        var pp = _host.Audio.Preprocessing;
+        if (!pp.Enabled) return;                                          // not opted in
+        if (pp.Activation != PreprocessingActivation.Calibrating) return; // already decided
+
+        _preprocActivationBuffer.Enqueue(payload);
+        while (_preprocActivationBuffer.Count > PreprocCalibrationTakes) _preprocActivationBuffer.Dequeue();
+
+        var decision = PreprocessingActivationCalculator.Evaluate(
+            _preprocActivationBuffer,
+            PreprocCalibrationTakes,
+            pp.TargetRmsDbfs,
+            PreprocessingActivationCalculator.DefaultActivationDeltaDb);
+        if (!decision.Decided) return;
+
+        pp.Activation = decision.State;
+        _host.SaveSettings();
+        DeckleWhispSource.Log.PreprocessingActivationChanged(
+            decision.State.ToString(), decision.MedianDeltaDb, _preprocActivationBuffer.Count);
+    }
+
     // ── Whisper transcription ────────────────────────────────────────────────
     //
     // Monolithic call: all audio is passed at once to whisper_full(), which
@@ -142,6 +175,23 @@ public sealed partial class TranscriptionEngine
         // measurement.
         if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
 
+        // Transcription pre-processing DSP — the terminal float[]→float[] stage
+        // between capture and the ASR backend (Deckle.Audio). Applied to a
+        // separate buffer fed to the backend only: the raw `audio` stays
+        // untouched and is what the corpus stores (ADR-0011), so a processed
+        // variant can always be re-derived and the WER A/B keeps a raw baseline.
+        // Skipped during the warmup prime (the embedded clip is already clean)
+        // and unless the feature is opted in AND its calibration reached Active.
+        float[] backendAudio = audio;
+        var pp = _host.Audio.Preprocessing;
+        if (!t_isWarmup && pp.Enabled && pp.Activation == PreprocessingActivation.Active)
+        {
+            var processed = TranscriptionPreprocessor.Process(audio, pp);
+            backendAudio = processed.Pcm;
+            DeckleWhispSource.Log.TranscriptionPreprocessed(
+                processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
+        }
+
         // Delegate the actual inference to the configured backend. Segment
         // streaming and per-segment logging happen inside the backend; we
         // forward each emitted segment to the NewSegment event so external
@@ -150,7 +200,7 @@ public sealed partial class TranscriptionEngine
         try
         {
             result = await _backend.TranscribeAsync(
-                audio,
+                backendAudio,
                 seg => NewSegment?.Invoke(seg),
                 ct).ConfigureAwait(false);
         }

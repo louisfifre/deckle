@@ -616,6 +616,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
 │   │   ├── DeckleWhispSource.PipelineCompletion.cs
+│   │   ├── DeckleWhispSource.Preprocessing.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
