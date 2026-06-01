@@ -39,6 +39,11 @@
     <!-- Modules testés au premier sprint. D'autres ProjectReference
          s'ajouteront au fil de l'extension de la couverture. -->
     <ProjectReference Include="..\..\src\Deckle.Chrono\Deckle.Chrono.csproj" />
+    <!-- Audio pour les tests du DSP de pré-traitement transcription
+         (TranscriptionPreprocessor, PreprocessingActivationCalculator) et
+         l'observability DeckleAudioSource. Module pur côté DSP — aucune
+         dépendance native tirée. -->
+    <ProjectReference Include="..\..\src\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />

@@ -652,6 +652,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       └── ScreenCaptureService.cs
 ├── tests/
 │   └── Deckle.Tests/
+│       ├── Audio/
+│       │   ├── PreprocessingActivationCalculatorTests.cs
+│       │   └── TranscriptionPreprocessorTests.cs
 │       ├── Chrono/
 │       │   ├── ChronoFormatterTests.cs
 │       │   └── DeckleChronoSourceTests.cs
