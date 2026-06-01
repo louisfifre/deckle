@@ -1,87 +1,70 @@
 ---
 name: deckle-modularite
-description: Modularity and splitting doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries the criteria that guide where a module ends, when a file gets too big, what signals indicate that splitting should be reconsidered, and how to split a UI surface that has become monolithic. Triggers on phrases like deckle modularity, split deckle file, split deckle module, deckle modular refactor, deckle oversized file, deckle module responsibility, deckle module dependencies, deckle page splitting.
+description: Modularity doctrine for Deckle: why and when to separate code into modules and files — one responsibility per module, acyclic dependencies, the ~500-line vigilance threshold, the splitting strategy. Invoke before growing a module, judging a new module, or splitting a file or UI surface. Triggers like deckle modularity, split file, split module, oversized file, module responsibility, page splitting.
+type: skill
 ---
 
 # Deckle — Modularity doctrine
 
 ## Role
 
-Project-specific skill that answers two questions: **where a module ends**, and **when a file gets too big to remain comfortable**. Invoked before adding substantial code to a module, before deciding that a new module is needed, and before splitting a file that has become monolithic.
+Project-specific skill answering **why and when we separate code into modules and files** — not which modules exist (the code and `TREE.md` are the registry). Invoked before adding substantial code to a module, before judging that a new module is warranted, and before splitting a file or surface that has grown monolithic.
 
-The doctrine targets two joint objectives. Make work with an LLM agent easier — it spots more readily which file is concerned when the tree is legible and files stay at a human size. And make later re-reading by Louis easier, step by step, without having to load files of several thousand lines into memory.
-
-## Four-category taxonomy
-
-Before reasoning about a module — where it ends, what it must expose, who can reference it — first identify which **structural category** it belongs to. The repo sorts into four, and the rules of one category are not those of the others.
-
-**Support library** carries passive code with no runtime state of its own. Static code, structs, primitives, resources named by semantic key. Referenced widely, references almost nothing. No active singleton, no loop, no listening to Windows events. It is the lowest tier of the graph. Modules in this category today: `Deckle.Core`, `Deckle.Catalog`, `Deckle.Composition`, `Deckle.Chrono`.
-
-**Domain module** carries a domain, an active runtime state, and often a Settings store + a Settings page. Active singleton that holds state across the app's lifetime and acts on the system — it listens to Windows events, reads a device, mutates the clipboard, holds a buffer, drives a loop. Most `Deckle.*` modules that do something are domain modules.
-
-**Shell** is a presentation shell that receives and exposes nothing to domain modules. Does not reference domains, aggregates dynamically via a delegate registry or name-based resolution. `Deckle.Settings` is the only one of its kind today: its `NavigationView` loads pages owned by domain modules via `Type.GetType(tag)` from the `Tag` of the `NavigationViewItem`.
-
-**Host** references widely, aggregates, serves a differentiated use. `Deckle.App` is the production host (EXE entry point, composition root that sees every module). `Deckle.Setup` is the first-run wizard host (transient, openable from Settings for re-execution). `Deckle.Playground` is the dev/tuning host (persistent, exposed via the tray). **Hosts are explicitly exempt from the modularity doctrine** — their role *is* to aggregate. `Playground` is not an ad-hoc exception that gets tolerated; it is an instance of a named category that also includes `App` and `Setup`.
-
-## Discriminating criterion: support library vs domain module (K3)
-
-When a module is a candidate between support library and domain module, the test: **does it carry an active singleton that holds state across the app's lifetime and acts on the system**? If yes, domain module. Otherwise, support library. This criterion is structurally stable — it does not depend on the future appearance of a Settings POCO or a UI page, it captures the real difference between passive utility and active actor.
-
-The appearance of runtime state in a former support raises it to a domain module; this is a structural change worth naming. Conversely, removing the last runtime state from a domain module drops it back to support — that too is a structural change.
-
-## Settings modularity doctrine
-
-**The Settings page that configures a domain lives in the module that owns that domain, and its persistence service too.** Direct consequence: `WhisperPage` in `Deckle.Transcription`, `LlmPage` in `Deckle.Llm.Rewrite`, `AmbientPage` in `Deckle.Lighting.Ambient`. Pages still misplaced (typically `RecordingPage` on the audio capture side, `DiagnosticsPage` on the observability side) are historical residues to migrate.
-
-The `Deckle.Settings` shell references no domain module — it is `Deckle.App`, as composition root, that sees everyone and wires them up. The shell aggregates pages from domain modules dynamically via a registry mechanism (today `Type.GetType(tag)`; planned evolution toward a static registry `SettingsHost.Register(SettingsPageDescriptor)` pushed by `App.OnLaunched` to guarantee the compile-time check).
+Three payoffs drive the doctrine. An **agent** finds the right file faster when the tree is legible and files stay human-sized. **Multi-agent collaboration** stays untangled when ownership is clear and maximally-split files keep diffs readable. And **re-reading later** never means loading thousands of lines at once.
 
 ## One responsibility per module
 
-A Deckle module carries **one clear responsibility nameable in a single sentence**. If more than one sentence is needed to describe what a module does, it probably carries several and deserves to be split into sub-modules. Responsibility is expressed in domain or functional terms ("microphone audio capture", "transcribing an audio blob into text", "driving external lamps"), not in architectural terms ("the service", "the manager", "the helpers").
+A module carries **one responsibility nameable in a single sentence**, expressed in domain terms ("microphone audio capture", "driving external lamps"), never architectural ones ("the service", "the helpers"). More than one sentence means more than one responsibility — split. Its public API toward the rest of the app stays **narrow**; dozens of public symbols signal either several responsibilities or an under-thought surface.
 
-A well-split module has a **narrow public API** toward the rest of the app. Its implementation detail can be rich internally, but what it exposes is countable. When a module has dozens of public symbols, either it carries several responsibilities, or its public API is under-thought.
+## Four structural categories
 
-## Acyclic dependencies between modules
+Before reasoning about a module, identify its **structural category** — the rules of one are not those of another. This is also the reuse doctrine: what gets shared, and what stays put.
 
-Dependencies form a **directed acyclic graph**: a module depends on modules lower in the hierarchy (more fundamental), never on modules at the same level or above. When a cycle appears, it is a signal of poor responsibility separation — either a shared notion should rise into a common fundamental module, or two modules should be merged because they are in reality a single thing.
+- **Support library** — passive code with no runtime state of its own (statics, structs, primitives, keyed resources). Referenced widely, references almost nothing; the lowest tier of the graph. This is the *shared, reusable* layer.
+- **Domain module** — owns a domain and an active runtime state: a singleton living across the app's lifetime that acts on the system (listens to Windows events, reads a device, holds a buffer, drives a loop). An actor that does work, not shared utility code.
+- **Shell** — a presentation shell that references no domain; it aggregates them dynamically (name-based resolution, a registry).
+- **Host** — references widely and aggregates by role (production entry point, first-run wizard, dev/tuning surface). **Hosts are exempt from the modularity doctrine — aggregating is their job.**
 
-The order of modules in the graph (from the fundamental leaves toward the host app) also reflects the logical order in which to work on them — leaves first, what depends on them next.
+The support↔domain frontier is the one that drifts. The test: **does it hold an active runtime state that acts on the system?** Yes → domain; no → support. State appearing in a former support promotes it; losing its last state demotes it — either way a structural change worth naming.
 
-## File-splitting threshold
+## Acyclic dependencies
 
-Beyond roughly five hundred lines, a file deserves to be examined. This is not a hard rule — an immutable configuration record can have a thousand lines without posing a problem, a glue file can be uncomfortable at two hundred. It is a **vigilance** threshold: past this point, look at whether the file carries a single responsibility or whether several semantic blocks cohabit.
+Dependencies form a **directed acyclic graph**: a module depends only on more fundamental ones, never sideways or upward. A cycle signals poor separation — either a shared notion must rise into a common fundamental module, or two modules are really one and should merge. The graph order (fundamental leaves → host) is also the order to work in: leaves first.
 
-When several semantic blocks cohabit, extracting them into separate files of the same module is almost always beneficial. The LLM agent spots more easily which file is concerned by its task, Louis sees in the list of touched files a more precise trace of what changed, and re-reading becomes manageable.
+## Settings live with their domain
 
-Extraction follows responsibility, not arbitrary quartering. A fifteen-hundred-line file split into two seven-hundred-and-fifty-line files unrelated to semantics adds nothing. A two-thousand-line file shattered into four five-hundred-line files each carrying a clear sub-role (the state machine, the callbacks, the instrumentation, the clean disposal) adds a great deal.
+The settings page that configures a domain, and its persistence, **live in that domain's module** — not in the settings shell. The shell owns no domain; it aggregates pages dynamically, and the composition root wires everyone up. A page found outside its domain is a residue to migrate.
 
-## Testability as a signal
+## File size is a vigilance threshold
 
-A module that can be tested in isolation, without depending on the full execution environment (a real WinUI window, physical hardware, an external service), is probably well split. The domain logic lives in pure classes that depend only on interfaces; the implementations that touch the real world are injected and can be replaced by doubles in tests.
+Past ~500 lines, **examine** the file. Not a hard limit — an immutable record can run to a thousand without harm, a glue file can be uncomfortable at two hundred — but a prompt to ask: one responsibility, or several blocks cohabiting? When several cohabit, extract them into separate files of the same module. Extraction follows **responsibility, not arbitrary quartering**: a 1500-line file halved into two unrelated 750-line files gains nothing; shattered into four files each carrying a clear sub-role (the state machine, the callbacks, the instrumentation, the disposal) gains a lot. Default to splitting, toward specific files.
 
-Conversely, when a module cannot be tested without booting the entire app, this is a signal that responsibilities are mixed — pure logic is entangled with platform coupling. The refactor consists in extracting the pure logic into a fundamental module that does not depend on the platform, and leaving the platform layer as a thin facade.
+## Testability is a signal
 
-## Splitting into sub-pages for windows that grow
+A module testable in isolation — without a real window, hardware, or external service — is probably well split: pure logic depending only on interfaces, real-world implementations injected and replaceable by doubles. A module that needs the whole app booted to test signals mixed responsibilities — extract the pure logic into a platform-free module, leave a thin facade.
 
-When a window or a page accumulates different modes (a home mode, a calibration mode, a monitoring mode, an advanced configuration mode), the single code-behind becomes uncomfortable. The natural pattern is to **split into navigable sub-pages** — each mode becomes an autonomous page, the window becomes a navigation frame that selects the active page. This is what canonical Windows surfaces do for rich windows.
+## Splitting UI surfaces
 
-Splitting by sub-pages has a positive side effect: it makes each mode testable in isolation, because the sub-page can be instantiated without the host window. And it takes the modularity doctrine out of the pure-code domain and applies it to UI surfaces.
+A page or window that accumulates modes (home, calibration, monitoring, advanced) outgrows a single code-behind. Split it into **navigable sub-pages** — each mode an autonomous page, the window a frame that selects the active one, the way canonical Windows surfaces do. Side benefit: each mode becomes testable without its host window.
 
-## Logic versus presentation distinction
+In any module carrying both, **separate logic from presentation**. A `.xaml.cs` wires the surface to a domain object (view-model or service) that holds the logic; domain logic found in code-behind is a sign to extract.
 
-In a module that carries both logic and a UI surface, **separate the two sides**. A page's code-behind must not carry domain logic — it does the wiring between the visual surface and a domain object (a view-model or a service) that carries the logic. This discipline makes the logic testable and keeps the UI page thin. When domain logic is found in a `.xaml.cs` file, it is generally a sign that it should be extracted into a dedicated object.
+## How to split
 
-## How to split in practice
+1. **Map the semantic blocks** — the internal sub-roles the responsibility covers. Three or four identifiable blocks make a split worthwhile.
+2. **Start with the most independent** — a static helper reading no instance field leaves first; the most coupled blocks stay until their extraction becomes possible.
+3. **Validate after each extraction** — it compiles and behaves as before. The build discipline holds at every step, not only at the end.
 
-When a file or a module deserves to be split, the following sequence is effective.
+## Naming
 
-First, **identify the semantic blocks** present in the file — the internal roles that the global responsibility covers. An agent can help with this mapping by reading the file and producing a candidate split. At least three or four identifiable blocks are needed for a split to make sense.
+Modules follow `Deckle.<Capability>[.<Sub>]`, the hierarchy expressing a consumer/sub relationship (`Deckle.Lighting.Ambient` — Ambient consumes Lighting). The full naming doctrine lives in `deckle-nomenclature`; the live module list lives in the code and `TREE.md`.
 
-Then, **start with the most independent blocks** — those with the least coupling to the others. A static helper that reads no instance field can leave on its own; a nested class that depends on its enclosing class only through an interface can leave with its interface. The most coupled blocks remain in place in the original file until their extraction becomes possible.
+## A standing caveat
 
-Finally, **after each extraction, validate that the code compiles and behaves as before**. The build discipline passes at each step, not only at the end. A regression introduced by a split is easier to fix immediately than after ten cumulated splits.
+This spirit is not yet applied everywhere — some modules still deserve refactoring toward it. Treat an oversized or hard-to-test module as a known debt to repay when it is next touched, not as the norm to imitate.
 
 ## Pointers
 
-- **`session-save-context`** — when a non-trivial split decision is made (notably the extraction of a notion into a new module), route it through the cascade to leave a durable trace.
-- **`deckle-logging`** — observability of a well-split module is clearer; when splitting, take the opportunity to verify that observation sites follow the new boundary.
+- **`deckle-nomenclature`** — how modules, namespaces, and symbols are named.
+- **`session-save-context`** — route a non-trivial split decision (notably extracting a notion into a new module) through the cascade for a durable trace.
+- **`deckle-logging`** — when splitting, verify that observation sites follow the new boundary.

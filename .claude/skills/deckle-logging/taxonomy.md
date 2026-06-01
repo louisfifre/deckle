@@ -62,7 +62,7 @@ Transcription d'un blob audio, réécriture d'un texte par un modèle, calibrati
 
 Cadres dominants : **RED** (durée, taux, erreurs) et **Four Golden Signals** (latence end-to-end, erreurs détaillées, saturation si la ressource sous-jacente est partagée).
 
-Particularité : une **ligne canonique de récapitulatif** par opération qui colocalise toutes les mesures clés — durée totale et par étape, métriques d'entrée et de sortie, outcome final. C'est cette ligne qui porte la vraie matière diagnostique ; les jalons intermédiaires en jalonnent la lecture mais ne dupliquent pas son contenu. Pattern reconnu dans l'industrie sous le nom de *canonical log lines*.
+Particularité : le pattern dominant est la **ligne canonique de récapitulatif** par opération (*canonical log lines*), colocalisant les mesures clés — durée totale et par étape, métriques d'entrée et de sortie, outcome final. Son rôle vis-à-vis des jalons intermédiaires est défini dans le SKILL.
 
 ### Driver de matériel ou intégration externe
 
@@ -108,11 +108,9 @@ Les types de signaux qui reviennent dans le code Deckle. Le format canonique d'u
 
 **Erreurs structurées.** Type d'exception, message court, contexte minimal de reproduction, mapping vers UserFeedback (rôle, sévérité) si l'erreur doit être signalée à l'utilisateur.
 
-## Sur la couverture maximale
+## Couverture maximale
 
-La taxonomie ci-dessus est conçue pour être consultée largement, pas appliquée à minima. Quand on instrumente une étape, parcourir les sous-natures pertinentes et **capter ce qui est observable**, pas juste ce qui semble strictement nécessaire. Le filtrage à l'affichage ou à la requête est gratuit ; rajouter l'instrumentation après coup quand un diagnostic se présente coûte cher.
-
-La discipline du vocabulaire fermé garantit que cette couverture maximale reste exploitable — une mesure d'une nature donnée a partout le même nom, la même unité, le même format. Si une sous-nature manque parce qu'on observe une grandeur jamais observée jusqu'ici, elle est ajoutée au vocabulaire canonique avant utilisation.
+Parcourir cette taxonomie **largement** : à chaque étape instrumentée, capter ce qui est observable, pas le strict minimum. La doctrine (couverture maximale, et le vocabulaire fermé qui la rend exploitable) vit dans le SKILL. Si une sous-nature manque parce qu'on observe une grandeur jamais vue jusqu'ici, l'ajouter au vocabulaire canonique avant usage.
 
 ## Pointeurs
 

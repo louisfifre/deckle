@@ -1,6 +1,7 @@
 ---
 name: deckle-logging
-description: Observability doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries emission centralization, level separation (structured technical detail versus concise readable sentences), and the decision procedure for what to observe in a piece of code being instrumented. The detailed taxonomy of observables (canonical frames USE, RED, Four Golden Signals applied to the Deckle profile) lives in the companion file taxonomy.md loaded on demand. Triggers on phrases like deckle logging, deckle observability, what do I log here deckle, log level deckle, deckle instrumentation, deckle telemetry, observe code deckle, log an event deckle.
+description: Observability doctrine for Deckle: emission centralization, the split between readable milestones and structured detail, and the procedure for deciding what to observe. Canonical frames (USE/RED/Four Golden Signals) live in taxonomy.md. Invoke before adding or changing an observation point. Triggers like deckle logging, observability, what to log here, log level, instrumentation, telemetry.
+type: skill
 ---
 
 # Deckle — Observability doctrine
@@ -25,19 +26,17 @@ Drift signal to recognize in oneself: as soon as an intent appears to "create a 
 
 Two distinct families coexist and never mix.
 
-**The concise readable family** — informations, successes, warnings, errors, criticals. Short sentences, technical but simple, read as milestones by a human following the flow. No `key=value` notation, no technical identifiers in plain text, no numeric measurements inside the text. The content describes what happens at the step: "Loading the model", "Recording finished", "Cannot connect to service", etc. Conciseness is essential — no elaborate sentences, no embellishment, just the milestone.
+**The concise readable family** — informations, successes, warnings, errors, criticals. Short, simple sentences read as milestones by a human following the flow: "Loading the model", "Recording finished", "Cannot connect to service". No `key=value`, no technical identifiers, no numeric measurements in the text — just the milestone.
 
-**The structured detail family** — the verbose level. Receives measurements, identifiers, technical parameters, latencies, dimensions, return codes. Machine-greppable structured format, multiple lines possible if grouping semantically is desired, first word in lowercase to visually distinguish from the milestones of the previous family. When instrumenting an operation, capture everything observable it exposes, group it into 3-4 verbose lines per operation, not one line per variable. Maximum coverage is preferred — sorting by level and by filter happens on the display side or the query side, not at emission.
+**The structured detail family** — the verbose level. Receives measurements, identifiers, parameters, latencies, dimensions, return codes. Machine-greppable structured format, several lines if grouping semantically helps, first word lowercase to stand apart from the milestones above. Group an operation's observables into 3-4 verbose lines, not one line per variable.
 
 **Articulation of the two families.** Depending on the code sequence, the verbose detail precedes or follows the concise milestone. When verbose captures parameters that lead to a decision (for example detecting an error condition), it precedes the information or alert milestone that follows. When verbose details the measurements associated with a milestone (for example the durations of an operation that just finished), it follows the milestone. This articulation makes the narrative sequence natural to read in the live window.
 
 **Three recurring pitfalls to avoid**: putting `key=value` in a sentence of the concise family (sign that a mirror verbose should be emitted); multiplying milestones of the concise family for a single operation (sign that they should be merged into a single milestone with a detailed verbose); forgetting to instrument in verbose a step announced as a milestone (sign that diagnostic material is being lost).
 
-## Maximum coverage doctrine
+## Maximum coverage
 
-The maintainer wants **a lot of logs, well sorted**. When instrumenting a step, expose all observable measurements, not just the minimum. Sorting by level, by category, by filter happens at read time or on the UI side. Under-instrumenting today to save a bit of noise means having to re-instrument tomorrow when diagnosing a bug. Over-instrumenting costs little if filtering is correct.
-
-This doctrine pairs with the ability to enable or disable entire families of observation at runtime — a general toggle, plus a few toggles for particularly chatty subsystems (high-frequency capture, microphone telemetry, user corpus). Everything is instrumented; one then chooses what to look at and what to persist.
+The maintainer wants **a lot of logs, well sorted**: expose every observable measurement, not the minimum. Filtering by level, category, or term is free at read time; re-instrumenting after the fact, when a bug needs diagnosing, is expensive. Pair this with runtime control — a general toggle, plus a few for particularly chatty subsystems (high-frequency capture, microphone telemetry, user corpus). Everything is instrumented; what to look at and what to persist is chosen afterward.
 
 ## Decision procedure
 

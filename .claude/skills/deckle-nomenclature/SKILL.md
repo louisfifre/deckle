@@ -1,6 +1,7 @@
 ---
 name: deckle-nomenclature
-description: Naming doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries casing and prefix rules aligned with the Framework Design Guidelines, the project's assumed stance on accepted suffixes versus fuzzy suffixes to avoid, the convention of namespaces mirroring folders, WinUI x:Uid and theme resource patterns, and progressive renaming discipline. The detailed taxonomy (tabulated suffixes, x:Uid patterns, EventSource structure, commented examples) lives in the companion file taxonomie.md loaded on demand. Triggers on phrases like deckle naming, how do I name deckle, rename deckle, naming convention deckle, suffix deckle, namespace deckle, naming audit deckle, x:Uid deckle, EventSource provider deckle, Service Manager ambiguity deckle.
+description: Naming doctrine for Deckle: casing and prefixes, accepted vs fuzzy suffixes, namespaces mirroring folders, x:Uid and theme-resource patterns, renaming discipline. The tabulated detail lives in taxonomie.md. Invoke before naming or renaming a symbol, file, resource, or provider. Triggers like deckle naming, how to name, rename, suffix, namespace, x:Uid, EventSource provider naming.
+type: skill
 ---
 
 # Deckle — Naming doctrine
@@ -33,9 +34,9 @@ The tabulated detail lives in `taxonomie.md` with precise semantics and examples
 
 **Canonical accepted suffixes** — `Attribute`, `EventArgs`, `Exception`, `Stream`, `Reader`, `Writer`, `Collection`, `Builder`, `Factory`, `Service`, `Provider`, `Repository`, `Store`, `Strategy`, `Visitor`. All carry semantics recognized from the BCL or GoF patterns.
 
-**Stabilized Deckle-specific suffixes** — `Engine` for a complex business pipeline with a lifecycle, `Host` for an adapter that bridges a boundary (interop, isolation), `Mapper` for a pure `(In) → Out` transformation, `Calculator` for a stateless aggregative computation, `Detector` for a binary classifier of a condition. Adding a new suffix to the closed vocabulary assumes a responsibility nameable in one sentence and a traced decision.
+**Stabilized Deckle-specific suffixes** — `Engine` for a complex business pipeline with a lifecycle, `Host` for an adapter that bridges a boundary (interop, isolation), `Mapper` for a pure `(In) → Out` transformation, `Calculator` for a stateless aggregative computation, `Detector` for a binary classifier of a condition, `Bootstrap` for one-shot startup migration or provisioning code. Adding a new suffix to the closed vocabulary assumes a responsibility nameable in one sentence and a traced decision.
 
-**Suffixes to avoid in new applicative code** — `Manager`, `Helper`, `Utility`/`Util`/`Utils`, generic `Wrapper`, `Handler` without pipeline context. The stance is documented on the .NET community side (see [Name Smells](https://daedtech.com/name-smells/)). `Helper` indicates that the main type is not self-sufficient; `Manager` typically signals an unrefactored overflow; `Utils` is the receptacle for functions without a home. For Deckle, `TrayIconManager` and `HotkeyManager` are legacy Windows interop cases admitted by explicit derogation — any new code prefers the precise role (`Registry`, `Store + Reader`, `Coordinator`).
+**Suffixes to avoid in new applicative code** — `Manager`, `Helper`, `Utility`/`Util`/`Utils`, generic `Wrapper`, `Handler` without pipeline context, and the vague `Processor`/`Worker` outside a domain that imposes the term (a background worker, a queue message processor). The stance is documented on the .NET community side (see [Name Smells](https://daedtech.com/name-smells/)). `Helper` indicates that the main type is not self-sufficient; `Manager` typically signals an unrefactored overflow; `Utils` is the receptacle for functions without a home. For Deckle, `TrayIconManager` and `HotkeyManager` are legacy Windows interop cases admitted by explicit derogation — any new code prefers the precise role (`Registry`, `Store + Reader`, `Coordinator`).
 
 **Service / Provider / Engine / Host disambiguation**. A `Service` orchestrates; a `Provider` answers passively; an `Engine` orchestrates a heavy pipeline with its own lifecycle; a `Host` adapts or bridges a boundary. When two suffixes seem applicable to the same type, it is usually because it carries two responsibilities — decompose.
 
@@ -61,7 +62,7 @@ Three XAML directives must never be confused. `x:Name` identifies an element for
 
 `.resw` keys follow the pattern `<Scope>_<Element>.<Property>` or `<Scope>.<Property>`, with scope per page or per dialog (`WhisperPage_HeaderText.Text`, `CorpusConsent_Title`, `Common_Cancel`). A single `Resources.resw` per module under `Strings/en-US/`. A key sent for translation no longer changes — a rename triggers a retranslation cycle and is treated as a contract change. See `taxonomie.md` for detailed examples.
 
-WinUI **theme resources** are named by their functional semantics, never by value — `LayerFillColorDefaultBrush`, `CardStrokeColorDefaultBrush`, `OverlayCornerRadius`, `ControlCornerRadius`. Any literal value in XAML that should follow the theme is a signal of the wrong primitive (see root doctrine). For local Deckle theme resources, convention `<Domain>.<Descriptor>.<Variant>` with type suffix (`Hud.Glow.BrushDefault`), recognizable domain, living under `Themes/<Domain>.xaml` of the relevant module.
+WinUI **theme resources** are named by their functional semantics, never by value — `LayerFillColorDefaultBrush`, `CardStrokeColorDefaultBrush`, `OverlayCornerRadius`, `ControlCornerRadius`. Any literal value in XAML that should follow the theme is a signal of the wrong primitive (see `deckle-xaml`). For local Deckle theme resources, convention `<Domain>.<Descriptor>.<Variant>` with type suffix (`Hud.Glow.BrushDefault`), recognizable domain, living under `Themes/<Domain>.xaml` of the relevant module.
 
 ## Typed observability and providers
 

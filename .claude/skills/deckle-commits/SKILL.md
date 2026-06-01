@@ -1,6 +1,7 @@
 ---
 name: deckle-commits
-description: Commit doctrine for the Deckle project (Windows .NET 10 / WinUI 3). Carries the adapted Conventional Commits format, the closed vocabulary of types and module-aligned scopes, the grain doctrine that imposes one semantic intent per commit, the handling of cross-module overhauls, the feature-branch merge commit convention, and the author identity rule that excludes any LLM co-signature trailer. Invoke before every commit act, before defining a sequencing strategy for a large workstream, and during a history audit. Triggers on phrases like deckle commit, deckle commit message, deckle conventional commits, deckle commit scope, deckle commit grain, split deckle commit, deckle megacommit, deckle cross-cutting refactor commit, deckle merge commit, deckle commit author identity, deckle history audit, Co-Authored-By Claude deckle.
+description: Commit doctrine for Deckle: the adapted Conventional Commits format, one-intent-per-commit grain, module-derived scopes, the merge-commit convention, and the no-LLM-co-author rule. Invoke before a commit, when sequencing a workstream into commits, or during a history audit. Triggers like deckle commit, commit message, commit grain, split this commit, merge commit, commit scope, Co-Authored-By Claude.
+type: skill
 ---
 
 # Deckle — Commit doctrine
@@ -9,7 +10,7 @@ description: Commit doctrine for the Deckle project (Windows .NET 10 / WinUI 3).
 
 Project-specific skill that answers a recurring question: **which commit, with which message, at what grain**. Invoked before every non-trivial `git commit`, when sequencing a large workstream into intermediate commits, and when auditing the history of a branch or of the repo.
 
-Complements two distinct resources. `git-commit` (global skill) carries the **mechanics** of execution — analyzing the diff, staging, phrasing, executing. `personal-conventions` carries the **cross-project rules** — language, branch conventions, worktrees. `deckle-commits` is the project-local layer that encodes the doctrine applied by the engine and the Deckle-specific choices (scope vocabulary, expected granularity, author identity).
+Complements `personal-conventions`, which carries the **cross-project rules** — language, branch conventions, worktrees — that this skill applies to the project. `deckle-commits` is the full commit doctrine for Deckle: the format, the closed vocabularies of types and scopes, the grain doctrine, and the project-specific choices (expected granularity, author identity). The generic mechanics of executing a commit — analyzing the diff, staging, running `git commit` — are baseline git and are not restated here.
 
 ## Semantic posture
 
@@ -21,7 +22,7 @@ The inverse rule also applies: a commit that does only half of a change, leaving
 
 Conventional Commits v1.0.0 (see [conventionalcommits.org](https://www.conventionalcommits.org/en/v1.0.0/)). The canonical form is `type(scope): description`, subject in imperative present, first letter lowercase, no trailing period. Target length **72 characters for the subject**, which is the readable length in `git log --oneline` and the GitHub UIs without truncation; the strict 50/72 rule inherited from Tim Pope is an ideal — Deckle relaxes it to 72 for the subject because the `type(scope):` combination already consumes characters and the readability of the raw subject takes precedence over the conciseness ideal.
 
-The optional body is separated from the subject by a **blank line**, wrapped at 72 characters, phrased to say **why** the change exists — not what the diff already shows. Footers live after a final blank line and carry traceable references: `refs ADR-NNNN` when the commit enacts a decision documented in an ADR, `refs #123` for a ticket, `BREAKING CHANGE: …` for a change of external contract (Deckle does not yet have a publicly consumed release, so this mention mostly serves to flag what will need to surface at the time of a 1.0).
+The optional body is separated from the subject by a **blank line**, wrapped at 72 characters, phrased to say **why** the change exists — not what the diff already shows. Footers live after a final blank line and carry traceable references: `refs ADR-NNNN` when the commit enacts a decision documented in an ADR, `refs #123` for a ticket. A breaking change of external contract is flagged either by a `!` after the type or scope (`feat!:`, `refactor(core)!:`) or by a `BREAKING CHANGE: …` footer — the two are equivalent in the spec; Deckle does not yet have a publicly consumed release, so this mostly serves to flag what will need to surface at the time of a 1.0.
 
 ## Closed vocabulary of types
 
@@ -31,9 +32,9 @@ One local type kept: **`merge`** for the merge commits of feature branches into 
 
 **Types to proscribe** because they emerged ad hoc and fragment the vocabulary: `prep`, `tune`, `tools`, `bench`, `tweak`, `hud`, `settings`, `engine`, `logs`. These intents all fall into `feat`, `refactor`, `chore` or `docs`. For benchmark iterations, the right format is `chore(bench): iteration N — …` — the scope carries the context, not the type.
 
-## Closed vocabulary of scopes
+## Scopes
 
-The scope reflects the **boundary touched**, not the author or the environment. For Deckle, it mirrors the list of canonical modules — `core`, `audio`, `vision`, `lighting`, `ambient`, `chrono`, `composition`, `catalog`, `shell`, `settings`, `whisp`, `llm`, `playground`, `hud` (in the sense of `Deckle.Chrono.Hud`). Three cross-cutting scopes are admitted when the commit does not touch a particular module but a boundary of the project: **`scripts`** for `scripts/`, **`docs`** for `docs/` at the root (and only appears redundantly with the type `docs:` when one wants to disambiguate a precise page), **`agent`** for the `CLAUDE.md` files and the skills under `.claude/`.
+The scope reflects the **boundary touched**, not the author or the environment. It is the short name of the module touched — the capability segment of its identifier, lowercased: `Deckle.Lighting.Ambient` → `ambient`, `Deckle.Transcription` → `transcription`, `Deckle.Core` → `core`. The live module list is the code and `TREE.md`, never a roster frozen here; naming follows `deckle-nomenclature`, and the grain (module vs sub-project) follows `deckle-modularite`. Three cross-cutting scopes cover commits that touch a project boundary rather than a module: **`scripts`** for `scripts/`, **`docs`** for `docs/` at the root (redundant with the type `docs:` only to disambiguate a precise page), **`agent`** for the `CLAUDE.md` files and the skills under `.claude/`.
 
 **One single scope per commit.** The comma-separated form `feat(playground, ambient): …` that appeared in history is a splitting signal: either the commit blends two intents and must be split, or the actual scope is a cross-module theme (`refactor(observability)`, `refactor(catalog)`) that must be named. If a cross-cutting thematic scope starts appearing repeatedly, it is a signal to promote it to a dedicated sub-namespace — see `deckle-modularite`.
 
@@ -43,17 +44,13 @@ A commit must be summarizable by **one sentence without `and` or `+`**. The pres
 
 Canonical cases per workstream typology. **Cross-cutting overhaul such as the EventSource migration** — one infrastructure commit (interfaces, base class, boot registration), then one commit per migrated module (clear intent: migrate this module), then one commit switching the legacy sinks, then one commit cleaning up the stubs. No final megacommit that piles everything up. **Bug fix** — one commit for the fix, possibly one commit for the tests if coverage is added jointly. If the fix exposes a prerequisite refactor, the refactor is a separate commit upstream. **UI overhaul** — one commit per refactored surface, never an end-of-day dump. The UX copy pass on a page and the structural overhaul of the same page are two commits. **Renaming a module or an exposed symbol** — one commit for the rename alone (`refactor(catalog): rename Localization → Catalog`), then the functional content; this discipline makes the rename visible and spares it from a revert that would cancel real work.
 
+When a workstream spans several modules, one test arbitrates the grain: **do the intermediate commits each leave the repo compiling and coherent?** If yes, split by cross-module step — one commit per migrated module, scoped to that module (the EventSource case above). If no — the operation is semantically indivisible, typically an atomic rename of a public symbol consumed everywhere where any split would produce a non-compiling state — collapse it into a single commit under a cross-module thematic scope (`refactor(observability)`, `refactor(catalog)`). That single commit stays the minimal semantic unit, not a dump.
+
 ## Grain doctrine — when to merge
 
 The counterpart exists: a change is not atomic because it is small, it is atomic because it **forms a self-contained testable unit**. Three legitimate fusion cases. **Signature and callers** — modifying the signature of a public method and propagating the calls in the same commit, because an intermediate commit would not compile. **Resource and consumption** — adding a `.resw` key and consuming it in the matching XAML, because the orphan key has no meaning in isolation. **File rename and references** — moving a file and updating its `using` directives, because the repo does not hold together between the two.
 
 A modification of foreign scope that slipped into a commit in progress **does not fuse opportunistically**. You undo with `git restore --staged` or `git reset`, you commit the main intent, then you commit the incidental modification separately.
-
-## Cross-cutting refactor case
-
-When a workstream touches several modules, two strategies. The **canonical** route is splitting by cross-module semantic step — one commit per migrated module, with the scope of the touched module. This route preserves bisectability and tells the progression of the workstream. The **thematic** route, rarer, is worth it when the operation is semantically indivisible — for example an atomic rename of a public symbol consumed everywhere. The scope is then the cross-module theme (`refactor(catalog)`, `refactor(observability)`), and the commit stays unique because splitting it would produce non-compiling intermediate states.
-
-The choice criterion: **do intermediate commits leave the repo in a state that compiles and holds together**? If yes, split by module. If no, single thematic scope. The anti-megacommit rule remains: this unique commit stays the minimal semantic unit of the change, not a dump.
 
 ## Merge commits
 
@@ -71,9 +68,8 @@ Before executing `git commit`, three review questions that catch the majority of
 
 ## Pointers
 
-- **`git-commit`** (global skill) — execution mechanics, diff analysis, generic Conventional Commits format. `deckle-commits` specifies the doctrine for Deckle.
 - **`personal-conventions`** — cross-project rules (language, branch conventions, worktrees). `deckle-commits` applies them to the project.
 - **`session-save-context`** — routing for durable-value information including ADRs. When a commit enacts a tracked decision, the body mentions `refs ADR-NNNN`.
-- **`deckle-modularite`** — module boundaries. Commit scopes mirror this list; a scope that does not figure there is a signal either of an invented scope, or of a missing module to promote.
+- **`deckle-modularite`** — module boundaries and the grain (module vs sub-project) a scope reflects.
 - **`deckle-nomenclature`** — naming vocabulary, including the module names that serve as scopes.
 - **[conventionalcommits.org](https://www.conventionalcommits.org/en/v1.0.0/)** — normative reference spec.
