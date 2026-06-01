@@ -557,7 +557,12 @@ public sealed partial class AmbientEngine
         try { _cts?.Cancel(); } catch { /* best effort */ }
         IsRunning = false;
 
-        DeckleAmbientSource.Log.PipelineStopped();
+        DeckleAmbientSource.Log.PipelineStopped(_stopReason switch
+        {
+            "capture_lost" => "capture lost",
+            "external"     => "external light change",
+            _              => "user request",
+        });
         DeckleAmbientSource.Log.PipelineStopDetail(
             _stopReason,
             _multiLightActive ? "multi" : "group",
