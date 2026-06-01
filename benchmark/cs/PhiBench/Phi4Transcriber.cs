@@ -18,10 +18,8 @@ namespace Deckle.Benchmark.PhiBench;
 /// over a messages list <c>[{role: system, content: ...}, {role: user, content: ...}]</c>.
 ///
 /// Phi-4 has no canonical transcription mode (unlike Voxtral's [TRANSCRIBE]
-/// token). The bench passes a real instruction prompt through the regimes
-/// TOML. When the prompt is empty (T1_baseline canonical in voxtral_validation.toml),
-/// the transcriber falls back to a fixed FR instruction so the model still
-/// receives meaningful guidance.
+/// token). The bench passes the regime prompt through as-is. A null user
+/// prompt falls back to a short FR instruction; an empty string is honored.
 /// </summary>
 public sealed class Phi4Transcriber : IDisposable
 {

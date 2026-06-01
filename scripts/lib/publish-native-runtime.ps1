@@ -15,8 +15,7 @@
 #   - whisper DLLs : <WhisperRepo>\build\bin\ (cmake -DGGML_VULKAN=ON)
 #   - MinGW DLLs   : <scoop>\apps\mingw\current\bin\
 #
-# Recipe for rebuilding whisper.cpp lives in
-# docs/reference/reference--native-runtime--1.0.md.
+# Keep this script aligned with the native runtime bundle metadata in code.
 
 [CmdletBinding()]
 param(
@@ -51,7 +50,7 @@ $ErrorActionPreference = 'Stop'
 # ── Catalog ──────────────────────────────────────────────────────────────────
 #
 # Single source of truth for the bundle is
-# src/Deckle/Setup/NativeRuntime.cs RequiredDllNames. The two PowerShell
+# src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs RequiredDllNames. The two PowerShell
 # scripts that produce or consume the bundle (this one and setup-assets.ps1)
 # duplicate the list with a comment until extracted into a shared module.
 # Any divergence is a bug.
@@ -221,8 +220,8 @@ MinGW C++ runtime  : GPL-3 with runtime exception (libgcc, libstdc++) /
 
 Reproduction
 ------------
-See docs/reference/reference--native-runtime--1.0.md in the Deckle
-repository for the full recompilation recipe.
+Built by scripts/lib/publish-native-runtime.ps1 from the local
+whisper.cpp build and MinGW runtime directories recorded above.
 "@
 
 Set-Content -Path (Join-Path $StagingDir 'PROVENANCE.txt') -Value $prov -Encoding UTF8
@@ -256,7 +255,7 @@ Write-Host @"
   Size   : $ZipBytes bytes ($ZipSize MB)
   SHA256 : $ZipSha256
 
-  Paste into src/Deckle/Setup/NativeRuntime.cs CurrentBundle (after
+  Paste into src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs CurrentBundle (after
   publishing — fill Url with the actual GitHub Release asset URL):
 
     public static NativeRuntimeBundle CurrentBundle { get; } = new(

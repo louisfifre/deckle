@@ -26,10 +26,8 @@ namespace Deckle.Diagnostics;
 //
 // Session id. Generated lazily on first read (cheap, lock-free after
 // init) and shared by every provider derived from this class. The
-// format mirrors the legacy TelemetryService — "YYYY-MM-DD-XXXX" with
-// XXXX a 4-hex random suffix — so benchmark tooling continues to
-// group rows by session across the legacy and new sinks during the
-// migration window.
+// format is "YYYY-MM-DD-XXXX" with XXXX a 4-hex random suffix so
+// benchmark tooling can group rows by process session.
 public abstract class DeckleEventSource : EventSource
 {
     private static string? _sessionId;

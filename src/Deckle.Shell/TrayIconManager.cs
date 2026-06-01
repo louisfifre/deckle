@@ -103,8 +103,8 @@ public sealed class TrayIconManager : IDisposable
     //
     // Wired in App.OnLaunched as the unique sink of TranscriptionEngine.StatusChanged:
     // every transition emitted by the engine (Loading model… → Ready →
-    // Recording… → Transcribing… → Rewriting (...)… → Ready) lands here AND
-    // in LogService.Status, so the tooltip is by construction in sync with
+    // Recording… → Transcribing… → Rewriting (...)… → Ready) lands here and
+    // in DeckleAppSource.StatusChanged, so the tooltip stays in sync with
     // the live pipeline state visible in the LogWindow / app.jsonl.
     //
     // Tip caps at 127 chars (Shell_NotifyIcon szTip limit). Icon swaps to

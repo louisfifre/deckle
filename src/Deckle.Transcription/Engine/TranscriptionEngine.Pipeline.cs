@@ -54,7 +54,7 @@ public sealed partial class TranscriptionEngine
     //     even if p25 itself is in the noise floor.
     //   - Refuse to write if the resulting window collapses to < 10 dB
     //     (pathological case — e.g. all-silence sessions).
-    //   - Push to settings + HudChrono statics + log a Success line.
+    //   - Push to settings + AudioLevelMapper + log a Success line.
     //
     // The buffer is in-memory only: a fresh app launch starts collecting
     // again, which is fine — calibration only fires after N consecutive

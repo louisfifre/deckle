@@ -98,12 +98,11 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 
-    // ── TranscriptionSettings persistence (préfixés [whisp] dans le legacy) ─────
+    // ── TranscriptionSettings persistence ─────────────────────────────────
     // Entorse identique à celle de DeckleAudioSource pour les delegates
     // JsonSettingsStore — pas connu au site d'appel quelle opération
     // exacte est en cours. Préservé séparé de SettingsLoaded* pour
-    // permettre au LegacyLogWindowSink de garder le préfixe [whisp]
-    // dans le message tant que le moteur legacy LogWindow vit encore.
+    // garder un événement dédié aux messages déjà préfixés côté module.
 
     [Event(EvtWhispSettingsPrefixed,
            Level = EventLevel.Informational,

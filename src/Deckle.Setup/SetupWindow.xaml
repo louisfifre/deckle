@@ -31,9 +31,9 @@
                        TextWrapping="Wrap" />
         </StackPanel>
 
-        <!-- Pages will Navigate into ContentFrame from B.3 onward. The
-             SetupContext is passed via Frame.Navigate parameter so each
-             page picks it up in OnNavigatedTo. -->
+        <!-- Pages navigate into ContentFrame. The SetupWindow is passed via
+             Frame.Navigate parameter so each page picks up shared state and
+             shell controls in OnNavigatedTo. -->
         <Frame x:Name="ContentFrame"
                Grid.Row="2"
                Padding="40,8,40,16" />

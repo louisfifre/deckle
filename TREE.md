@@ -111,7 +111,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── codex.md  — [agent-instructions] Codex prompt for the weekly Deckle audit routine, emphasizing implementation ri…
 │   ├── runs/
 │   │   └── 2026/
-│   │       └── .gitkeep
+│   │       ├── .gitkeep
+│   │       └── 2026-06-01--codex.md
 │   ├── templates/
 │   │   └── weekly-audit.md
 │   ├── CLAUDE.md  — [agent-instructions] Shared instructions for recurring Deckle audits run by Codex, Claude, or future…
@@ -239,18 +240,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── reference/
 │   │   ├── reference--build-onnxruntime-genai-amd-windows--1.0.md  — [reference] Recette de build local de Microsoft `onnxruntime-genai` sur Windows AMD avec Vi…
 │   │   └── reference--eventsource-convention--1.2.md
-│   └── research/
-│       ├── phi4-oga-lora-activation--2026-05-28.patch
-│       ├── research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md  — [research] Comparaison ASR français au 2026-05-27 entre Voxtral Mini 3B / Small 24B, Whisp…
-│       ├── research--asr-native-windows-amd-routes--2026-05-28.md  — [research] Cartographie des voies réalistes pour exécuter un modèle ASR multimodal (Phi-4,…
-│       ├── research--hdr-graphics-capture--2026-05-15.md
-│       ├── research--hue-entertainment-v2--2026-05-15.md
-│       ├── research--hyperhdr-interpolators--2026-05-15.md
-│       ├── research--inventaire-observabilite-eventsource--2026-05-24.md
-│       ├── research--phi-4-multimodal-state-of-the-art--2026-05-27.md  — [research] Synthèse à l'état de l'art (2026-05-27) du modèle Phi-4-Multimodal de Microsoft…
-│       ├── research--whisper-alternatives-fine-windowing--2026-05-27.md  — [research] Alternatives à whisper.cpp pour réduire la fenêtre d'inférence Whisper de 30s à…
-│       ├── research--whisper-dynamic-vad-distil-fr--2026-05-28.md  — [research] Cartographie de la voie composite « Whisper dynamic windowing + VAD énergie + d…
-│       └── voxtral-val-30-notes-louis--2026-05-27.json
+│   ├── research/
+│   │   ├── phi4-oga-lora-activation--2026-05-28.patch
+│   │   ├── research--asr-benchmarks-voxtral-vs-whisper-fr--2026-05-27.md  — [research] Comparaison ASR français au 2026-05-27 entre Voxtral Mini 3B / Small 24B, Whisp…
+│   │   ├── research--asr-native-windows-amd-routes--2026-05-28.md  — [research] Cartographie des voies réalistes pour exécuter un modèle ASR multimodal (Phi-4,…
+│   │   ├── research--hdr-graphics-capture--2026-05-15.md
+│   │   ├── research--hue-entertainment-v2--2026-05-15.md
+│   │   ├── research--hyperhdr-interpolators--2026-05-15.md
+│   │   ├── research--inventaire-observabilite-eventsource--2026-05-24.md
+│   │   ├── research--phi-4-multimodal-state-of-the-art--2026-05-27.md  — [research] Synthèse à l'état de l'art (2026-05-27) du modèle Phi-4-Multimodal de Microsoft…
+│   │   ├── research--whisper-alternatives-fine-windowing--2026-05-27.md  — [research] Alternatives à whisper.cpp pour réduire la fenêtre d'inférence Whisper de 30s à…
+│   │   ├── research--whisper-dynamic-vad-distil-fr--2026-05-28.md  — [research] Cartographie de la voie composite « Whisper dynamic windowing + VAD énergie + d…
+│   │   └── voxtral-val-30-notes-louis--2026-05-27.json
+│   └── reviews/
+│       └── review--commentaires-code--2026-06-01.md
 ├── scripts/
 │   ├── hooks/
 │   │   └── pre-commit
@@ -631,7 +634,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WhisperBackend.cs
 │   └── Deckle.Vision/
 │       ├── CapturedFrame.cs
-│       ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Vision, the screen capture and frame analysis module (Windo…
+│       ├── CLAUDE.md  — [agent-instructions] Doctrine for Deckle.Vision, the DXGI screen capture and frame analysis module (…
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs

@@ -23,7 +23,7 @@ Single non-parameterizable format: 16 kHz, mono, PCM16. This is the format Whisp
 
 The RMS of each sub-window is emitted as a real-time event to feed the HUD animation via `AudioLevelMapper`. The `dBFS → [0, 1]` curve is defined by three statics (`MinDbfs`, `MaxDbfs`, `DbfsCurveExponent`) — the app pushes them on every setting change via `App.ApplyLevelWindow(...)`. These statics are mutable by design for runtime calibration from the Playground.
 
-At the end of `Record()`, `MicrophoneTelemetryCalculator` computes a distributional rollup (p10, p25, p50, p75, p90, peak) over the whole session plus a tail RMS over the last 600 ms (used to detect an unplugged mic or very low audio). `MicrophoneCalibrationCalculator` adjusts the dBFS bounds over the last N sessions (median of the p10 → MinDbfs, median of the p90 + 2 dB → MaxDbfs) so the perceptual curve stays adapted to the user's real environment.
+At the end of `Record()`, `MicrophoneTelemetryCalculator` computes a distributional rollup (p10, p25, p50, p75, p90, peak) over the whole session plus a tail RMS over the last 600 ms (used to detect an unplugged mic or very low audio). `MicrophoneCalibrationCalculator` adjusts the dBFS bounds over the last N sessions (`median(p25) - 5 dB` → MinDbfs, `median(p90) + 5 dB` → MaxDbfs, with clamps) so the perceptual curve stays adapted to the user's real environment.
 
 ## Observability
 
@@ -31,7 +31,7 @@ The module migrated to `EventSource` in wave 2 of the observability overhaul ([A
 
 Three emission zones. The waveIn loop milestones and anomalies (`RecordingStarted`, `CaptureStarted`, `EmptyBufferReceived`, `LowAudioDetected`, `CaptureLagDetected`, `DurationCapReached`, `RecordingCompleted`, `CaptureCompleted`). Device opening anomalies and empty telemetry (`MicrophoneOpenFailed`, `MicrophoneTelemetryEmpty`). The structured rollup per recording (`RecordingTailSummary` for the readable headline, `MicrophoneTelemetryRecorded` for the distributional payload with 14 fields flattened from the former `MicrophoneTelemetryPayload`). The module's settings persistence goes through the four events `SettingsLoaded` / `SettingsLoadComplete` / `SettingsLoadWarning` / `SettingsLoadError`, which receive the raw message forwarded by `JsonSettingsStore<T>` — this zone stays message-parameterized until `SettingsHost` migrates (wave 4).
 
-The `MicrophoneTelemetryPayload` payload still lives in `Deckle.Logging` until wave 6, as the POCO carrier used by `MicrophoneTelemetryCalculator`, `CaptureResult`, and the auto-calibration ring of `TranscriptionEngine`. The `ProjectReference` to `Deckle.Logging` in the csproj is documented as a type-only carry-over and disappears when legacy `Deckle.Logging` is deleted.
+`MicrophoneTelemetryPayload` lives in this module as the POCO carrier used by `MicrophoneTelemetryCalculator`, `CaptureResult`, the EventSource emission, and the auto-calibration ring of `TranscriptionEngine`.
 
 Payload gating is still done by the orchestrator via `IAudioRecordingHost.MicrophoneTelemetryEnabled` (the "Log microphone" toggle in Settings → Telemetry). When the toggle is off, `MicrophoneTelemetryRecorded` is simply not emitted; the payload is nevertheless computed to feed auto-calibration.
 

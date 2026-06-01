@@ -21,10 +21,6 @@ namespace Deckle.Setup;
 // Cancel + Back + Next. Mica backdrop, custom Tall title bar (no back
 // button — the Back button lives in the footer instead).
 //
-// **B.2 scope** — shell only. The Frame is empty in this commit; pages
-// (Choices, Installing, Summary) come in B.3-B.5 and Navigate into
-// ContentFrame with a SetupContext passed as parameter.
-//
 // Pages drive the shell via the public surface below:
 //   • Header text     — SetStepHeader(title, subtitle)
 //   • Footer state    — SetBackEnabled / SetNextEnabled / SetNextLabel /
@@ -34,10 +30,10 @@ namespace Deckle.Setup;
 //   • Termination     — Complete(success)              (pages call this
 //                       on Done; CancelButton + window close call false)
 //
-// Lifecycle: App.OnLaunched (later, in B.6) instantiates this Window,
-// awaits Completion, and either boots the engine (success=true) or
-// exits the app (false). The TaskCompletionSource resolves on Complete()
-// or on Window.Closed, whichever fires first.
+// Lifecycle: App.OnLaunched instantiates this Window when setup is needed,
+// awaits Completion, and either boots the engine (success=true) or exits
+// the app (false). The TaskCompletionSource resolves on Complete() or on
+// Window.Closed, whichever fires first.
 public sealed partial class SetupWindow : Window
 {
     private readonly TaskCompletionSource<bool> _completion = new();

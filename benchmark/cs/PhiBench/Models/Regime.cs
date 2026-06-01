@@ -5,9 +5,8 @@ namespace Deckle.Benchmark.PhiBench.Models;
 /// benchmark/prompts/transcription/voxtral_validation.toml.
 ///
 /// For Phi-4 (which has no canonical [TRANSCRIBE] token like Voxtral),
-/// even T1_baseline must use a real instruction prompt. Empty Prompt+SystemPrompt
-/// will be coerced into a default "Transcribe this audio in French." at the
-/// transcriber level — see Phi4Transcriber.
+/// regimes control the user prompt explicitly. An empty Prompt is sent
+/// as empty; the transcriber default is only for callers that pass null.
 /// </summary>
 public sealed record Regime(
     string Name,

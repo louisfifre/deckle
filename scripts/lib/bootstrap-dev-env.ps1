@@ -490,7 +490,7 @@ if ($Full) {
     Write-Host ""
     Write-Host "  4. (-Full only) Clone whisper.cpp for native rebuilds:" -ForegroundColor White
     Write-Host "       git clone https://github.com/ggerganov/whisper.cpp D:\workspace\whisper.cpp" -ForegroundColor DarkGray
-    Write-Host "     Recipe: docs/reference/reference--native-runtime--1.0.md" -ForegroundColor DarkGray
+    Write-Host "     Then build whisper.cpp with Vulkan before publishing a native bundle." -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "  5. (-Full only) Pull an Ollama model for the rewrite feature:" -ForegroundColor White
     Write-Host "       ollama pull llama3.2:3b      # ~2 GB, fast on CPU-only laptops" -ForegroundColor DarkGray

@@ -167,15 +167,12 @@ public sealed class AmbientSettings
     /// bands eat the whole frame.</summary>
     public int BorderCells { get; set; } = 8;
 
-    // ── HDR tuning (this branch) ───────────────────────────────────
+    // ── HDR tuning ─────────────────────────────────────────────────
     //
-    // Four user-tunable sliders exposed in AmbientPage. Analogous to
-    // the basic colour-grading panel of a video editor (exposure /
-    // saturation / lift / response curve). Defaults aim at a "Hue
-    // Sync-like" presence out of the box on HDR displays — bright and
-    // saturated. Each setting is read on every tick by AmbientEngine
-    // via the host so changes apply live without restarting the
-    // pipeline.
+    // User-tunable colour-grading controls (exposure / saturation /
+    // lift / response curve). The detailed sliders live in the
+    // Playground; AmbientEngine reads the settings on every tick so
+    // changes apply live without restarting the pipeline.
     //
     // Why these four :
     //   - Exposure compensates for scRGB content peaking well below

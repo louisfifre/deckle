@@ -1,6 +1,6 @@
 ---
 name: claude-deckle-vision
-description: "Doctrine for Deckle.Vision, the screen capture and frame analysis module (Windows.Graphics.Capture / DXGI, FrameSampler). Read before touching the DXGI capture loop, the recovery state machine, or the FrameSampler readback path."
+description: "Doctrine for Deckle.Vision, the DXGI screen capture and frame analysis module (FrameSampler). Read before touching the DXGI capture loop, the recovery state machine, or the FrameSampler readback path."
 type: agent-instructions
 module: Deckle.Vision
 ---
@@ -11,7 +11,7 @@ Screen capture and frame sampling module for the ambient lighting pipeline. Cove
 
 ## Why DXGI Output Duplication and not Windows.Graphics.Capture
 
-WGC is the modern API but the system draws a yellow border around the captured surface. The only way to disable it is the MSIX `graphicsCaptureWithoutBorder` capability, which cannot be declared from an unpackaged desktop app. DXGI Output Duplication is the pre-WGC API (Windows 8+), not subject to the border, and it is what HyperHDR, OBS, and NVIDIA ShadowPlay use. The full architectural rationale lives in `docs/architecture--color-science-pipeline--0.1.md` axis 2 (the WGC to DXGI migration workstream).
+WGC is the modern API but the system draws a yellow border around the captured surface. The only way to disable it is the MSIX `graphicsCaptureWithoutBorder` capability, which cannot be declared from an unpackaged desktop app. DXGI Output Duplication is the pre-WGC API (Windows 8+), not subject to the border, and it is what HyperHDR, OBS, and NVIDIA ShadowPlay use.
 
 ## Recovery — HRESULT taxonomy and retry doctrine
 

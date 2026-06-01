@@ -105,7 +105,7 @@ Thirteen concrete EventSource providers active at boot, plus the non-instantiabl
 - `Deckle.Ambient` (`Deckle.Lighting.Ambient`, tag `AMBIENT`) — ambient lighting orchestrator, Hue pairing consumer, aggregated heartbeat.
 - `Deckle.App` (`Deckle.App`, tag `APP`) — application host, crashes, boot, status transitions, restart, hotkey orchestration.
 - `Deckle.Audio` (`Deckle.Audio`, tag `AUDIO`) — microphone capture, waveIn anomalies, `MicrophoneTelemetryRecorded` telemetry rollup.
-- `Deckle.Chrono` (`Deckle.Chrono`, tag `CHRONO`) — historical wave 1 pilot, fleshed out once the module has milestones to emit.
+- `Deckle.Chrono` (`Deckle.Chrono`, tag `CHRONO`) — boot-time pilot event for pipeline validation.
 - `Deckle.Hud` (`Deckle.Hud`, tag `HUD`) — currently a single `HudWarning(string)`, under-instrumented.
 - `Deckle.Lighting` (`Deckle.Lighting`, tag `LIGHTING`) — Hue REST CLIP v1/v2 driver, discovery, pairing, color push at 10-15 Hz.
 - `Deckle.Llm` (`Deckle.Llm`, tag `LLM`) — Ollama rewriting, `/api/ps` polling, Settings → LLM surface.
@@ -127,11 +127,11 @@ User configuration sources:
 
 ## Session id
 
-A single `SessionId` in the format `YYYY-MM-DD-XXXX` is generated the first time a provider emits, and shared by all `Deckle.*` providers for the lifetime of the process. Stored as a static property on `DeckleEventSource`. Reproduces exactly the behavior of legacy `TelemetryService.SessionId` so that benchmarks can keep grouping by session during and after the migration.
+A single `SessionId` in the format `YYYY-MM-DD-XXXX` is generated the first time a provider emits, and shared by all `Deckle.*` providers for the lifetime of the process. Stored as a static property on `DeckleEventSource` so JSONL listeners can group rows by process session without threading a session parameter through every event.
 
 ## Coexistence during migration
 
-Legacy `Deckle.Logging` coexists until wave 6. Operational consequence: during the migration, a migrated module calls **only** its EventSource, a non-migrated module keeps calling `TelemetryService`. No double emission, no cross-pipeline bridge path. The EventListeners declared here are registered at boot in `App.OnLaunched` **alongside** the legacy sinks, and write to parallel files for the duration of schema validation. The final swap happens in wave 6 when legacy disappears.
+`Deckle.Logging` is gone. Modules emit through EventSource providers; listeners registered at boot handle the live LogWindow, HUD feedback, and JSONL persistence.
 
 ## Measurement vocabulary
 

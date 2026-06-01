@@ -41,7 +41,7 @@ The detector is whisper-specific (failure mode tuned for whisper.cpp). It theref
 
 ## Native runtime
 
-The module depends on `libwhisper.dll` and the ggml backends (Vulkan priority, CPU fallback). The DLLs are not embedded in the repo — they are downloaded at first-run from the `native-vX.Y.Z` GitHub release of the Deckle repo or recompiled locally by the maintainer when an upstream upgrade is necessary. The recompilation recipe, paths, and inventory live in [docs/reference/reference--native-runtime--1.0.md](../../docs/reference/reference--native-runtime--1.0.md). The bootstrap code is in `Setup/NativeRuntime.cs`.
+The module depends on `libwhisper.dll` and the ggml backends (Vulkan priority, CPU fallback). The DLLs are not embedded in the repo — they are downloaded at first-run from the `native-vX.Y.Z` GitHub release of the Deckle repo or recompiled locally by the maintainer when an upstream upgrade is necessary. `scripts/lib/publish-native-runtime.ps1` packages the versioned bundle; the bootstrap code is in `Setup/NativeRuntime.cs`.
 
 `WhisperPInvoke.cs` installs a `NativeLibrary.SetDllImportResolver` that loads `libwhisper.dll` from `<UserDataRoot>\native\` rather than from the exe directory. The `EntryDll` constant must stay synchronized with the literal string in each `[DllImport("libwhisper")]` — C# requires a literal constant in the attribute, so duplication is unavoidable.
 

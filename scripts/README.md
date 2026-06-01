@@ -104,6 +104,4 @@ gated on the EventSource logging refactor.
   runtime publish flow is run manually by the maintainer.
 - **Source mirror of whisper.cpp.** The repo no longer carries a
   `whisper.cpp/` clone. Rebuilders clone it themselves alongside the
-  Deckle repo (recipe in
-  [`../docs/reference/reference--native-runtime--1.0.md`](../docs/reference/reference--native-runtime--1.0.md))
-  and point `-WhisperRepo` at it.
+  Deckle repo, build it locally, and point `-WhisperRepo` at it.

@@ -22,12 +22,9 @@ namespace Deckle.Lighting.Ambient;
 // arbitrary. We surface "no clear suggestion" instead, the user picks
 // from the ComboBox explicitly.
 //
-// Why public. The Playground in Deckle.csproj consumes Suggest()
-// directly to pre-fill the per-light ComboBoxes — and Deckle.csproj
-// lives in a different assembly from Deckle.Lighting.Ambient.csproj,
-// so internal would hide it. AmbientPage (same module) will reuse
-// the same helper once J9 brings the runtime UI out of the dev-only
-// Playground.
+// Why public. The Playground assembly consumes Suggest() directly to
+// pre-fill the per-light ComboBoxes. Keeping the heuristic here avoids
+// duplicating ambient-domain rules in UI code.
 public static class LightZoneSuggester
 {
     // Threshold below which an axis is considered "too close to zero

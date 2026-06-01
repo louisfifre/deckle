@@ -25,9 +25,8 @@ namespace Deckle.Diagnostics.Telemetry;
 //
 // Pourquoi séparer ? Configure crée les listeners avec leurs prédicates
 // figés ; les prédicates doivent consulter une variable mutable qui
-// peut changer après l'instanciation (et qui change effectivement
-// pendant la sous-vague 6d, où l'App câble une lecture sur le legacy
-// AppTelemetryGates plutôt que sur le futur TelemetrySettingsService).
+// peut changer après l'instanciation quand l'utilisateur modifie les
+// toggles de telemetry.
 //
 // Destinations canoniques :
 //   app.jsonl                                      ← journal applicatif
@@ -56,14 +55,10 @@ namespace Deckle.Diagnostics.Telemetry;
 // reproduisant la posture de l'ancien JsonlFileSink quand AppSettings
 // n'était pas encore prêt.
 //
-// Validation sub-directory. Wave 1 runs the new pipeline alongside
-// the legacy JsonlFileSink, which still owns the canonical files at
-// <telemetryDir>/{app,latency,microphone,corpus}.jsonl. To avoid
-// mixed emissions in the same files during the validation window,
-// Configure(...) accepts a `validationSubdirectory` flag that, when
-// true, parks the new files under <telemetryDir>/validation/. The
-// flag flips to false in Wave 6 when the legacy sink is removed and
-// the new pipeline takes over the canonical paths.
+// Validation sub-directory. Configure(...) accepts a
+// `validationSubdirectory` flag for isolated comparison runs. Production
+// boot passes false so the listeners write the canonical files directly
+// under <telemetryDir>/{app,latency,microphone,corpus}.jsonl.
 public static class TelemetryListenerBootstrap
 {
     private static readonly List<EventListener> _listeners = new();

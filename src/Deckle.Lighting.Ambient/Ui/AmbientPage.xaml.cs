@@ -15,12 +15,10 @@ namespace Deckle.Lighting.Ambient;
 // NavigationView from src/Deckle.Settings/SettingsWindow.xaml via the
 // item Tag "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient".
 //
-// Surface : master Enabled toggle, Mode selector (Game / Realistic),
-// HDR tuning sliders (Exposure / Saturation / Min brightness /
-// brightness curve γ with live visualisation), Hue bridge pairing
-// expander (Discover / Pair / List groups / Forget). Light zones and
-// per-light brightness still live in the Playground for now ; they
-// move here in a later pass if Louis decides the UI is worth it.
+// Surface : master Enabled toggle, mode selector, Hue bridge pairing
+// expander (Discover / Pair / List groups / Forget), and an entry point
+// to the Playground for detailed tuning. The heavy visual tuning UI lives
+// in the Playground so Settings stays operational rather than experimental.
 //
 // Persistence : event-handler style (Toggled / SelectionChanged /
 // ValueChanged) that mutates AmbientSettings.Current and calls

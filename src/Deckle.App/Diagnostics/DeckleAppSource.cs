@@ -127,14 +127,10 @@ public sealed class DeckleAppSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtStartupMilestones, milestones_text);
     }
 
-    // ── Status (route vers tag [STATUS] côté legacy) ────────────────────
+    // ── Status ──────────────────────────────────────────────────────────
     //
-    // Le legacy utilisait LogSource.Status comme tag distinct. Côté
-    // EventSource, le tag dérive du provider — donc ce sera [APP] dans
-    // le LogWindow. C'est une régression visuelle mineure mais cohérente
-    // avec la doctrine un-provider-par-module. Si Louis veut récupérer
-    // le tag [STATUS] séparément, on remettra une exception dans le
-    // bridge LegacyLogWindowSink keyed sur le nom d'event.
+    // StatusChanged reste sur le provider App : le LogWindow l'affiche
+    // sous [APP], cohérent avec la doctrine un-provider-par-module.
 
     [Event(EvtStatusChanged,
            Level = EventLevel.Informational,

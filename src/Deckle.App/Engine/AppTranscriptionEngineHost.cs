@@ -14,9 +14,8 @@ namespace Deckle.App;
 // After slice C2b each module owns its own settings file
 // (modules/<id>/settings.json) and its own static service singleton —
 // so this bridge just forwards to the relevant XxxSettingsService.Instance.
-// Reads happen on every access (no caching), same posture as
-// AppTelemetryGates: a setting flipped through the Settings UI takes
-// effect on the next read with no event subscription needed.
+// Reads happen on every access (no caching): a setting flipped through the
+// Settings UI takes effect on the next read with no event subscription needed.
 internal sealed class AppTranscriptionEngineHost : ITranscriptionEngineHost
 {
     public TranscriptionSettings Transcription => TranscriptionSettingsService.Instance.Current;

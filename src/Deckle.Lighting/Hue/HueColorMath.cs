@@ -90,9 +90,8 @@ internal static class HueColorMath
     // client-side via nearest-edge projection keeps the deep blue
     // saturated at the blue corner instead.
     //
-    // See docs/architecture--color-science-pipeline--0.1.md axis 1
-    // decision A for the full math and the rejected alternatives
-    // (projection-toward-D65, sigmoid hull compression).
+    // Alternative clips such as projection toward D65 or sigmoid hull
+    // compression were rejected because they desaturate the blue corner.
     private const double GamutCRedX   = 0.6915, GamutCRedY   = 0.3083;
     private const double GamutCGreenX = 0.17,   GamutCGreenY = 0.7;
     private const double GamutCBlueX  = 0.1532, GamutCBlueY  = 0.0475;

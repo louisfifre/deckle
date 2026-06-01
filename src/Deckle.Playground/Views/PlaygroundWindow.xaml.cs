@@ -15,7 +15,7 @@ namespace Deckle.Playground;
 
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
-// Native TitleBar + Mica backdrop + NavigationView Auto + Frame. Hosts
+// Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
 // three pages : HomePage, HudPage, AmbientPage — each owning its tuning
 // surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes

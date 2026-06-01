@@ -21,8 +21,8 @@ namespace Deckle.Setup;
 //   • Speech model    — radio between the catalog's Whisper models.
 //
 // The Install button is enabled only when both the runtime is installed
-// and a model is selected. Clicking Install navigates to InstallingPage
-// (B.4), which downloads the chosen model + Silero VAD.
+// and a model is selected. Clicking Install navigates to InstallingPage,
+// which downloads the chosen model + Silero VAD.
 public sealed partial class ChoicesPage : Page
 {
     private SetupWindow? _setup;
@@ -105,8 +105,8 @@ public sealed partial class ChoicesPage : Page
         }
         else if (NativeRuntime.BundleUrlIsPlaceholder)
         {
-            // Auto-download disabled (build not yet wired to a published release).
-            // Browse... is the only path forward — surface it as a primary action.
+            // Auto-download disabled for this build. Browse... is the only
+            // path forward — surface it as a primary action.
             int missing = NativeRuntime.GetMissing().Count;
             NativeStatusText.Text = Loc.Format("Setup_Native_Missing_Format", missing);
             BrowseNativeButton.Content = Loc.Get("Common_Browse");

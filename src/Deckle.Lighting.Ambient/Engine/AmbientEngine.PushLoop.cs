@@ -18,10 +18,9 @@ public sealed partial class AmbientEngine
         {
             while (!ct.IsCancellationRequested)
             {
-                // Refresh the HDR tuning snapshot from the host. Cheap
-                // (four property reads on the singleton settings) and
-                // gives the AmbientPage sliders a one-tick reaction
-                // window without a restart.
+                // Refresh the tuning snapshot from the host. Cheap
+                // property reads on the singleton settings give UI
+                // edits a one-tick reaction window without a restart.
                 var ambient = _host.Ambient;
                 _sampler!.SetExposureEv(ambient.ExposureEv);
                 _saturationBoost                = ambient.SaturationBoost;

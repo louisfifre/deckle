@@ -3,13 +3,9 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Chrono;
 
-// EventSource pilote — premier provider concret du nouveau pipeline.
-// Conserve un volume d'événements faible (le chrono est un timer pur
-// sans interaction utilisateur) ; la vraie raison d'être de ce
-// provider en vague 1 est d'exercer toute la plomberie en amont :
+// EventSource pilote pour exercer toute la plomberie en amont :
 // SessionId partagé, EventListener qui découvre dynamiquement le
-// provider, sérialisation JSONL au schéma legacy, alimentation
-// LogWindow via le bridge sink.
+// provider, sérialisation JSONL, alimentation LogWindow.
 //
 // Les events portent ici une simple sémantique de jalon — pas de
 // payload structuré, pas de heartbeat agrégé. Quand un site d'appel
@@ -32,13 +28,9 @@ public sealed class DeckleChronoSource : DeckleEventSource
     // la vague 1, donc pas d'historique à respecter.
     public const int EvtPilotEmitted = 1;
 
-    // Event de validation vague 1. Émis une fois au boot pour exercer
-    // la chaîne EventSource → JsonlEventListener → app.jsonl et
-    // EventSource → LogWindowEventListener → bridge → LogWindow. Sera
-    // remplacé en vague suivante par les vrais jalons du chrono
-    // (Started, Tick, Stopped, etc.) quand les sites d'appel
-    // applicatifs migreront. Existence assumée comme transitoire ;
-    // pas de discipline d'API stable sur ce nom.
+    // Boot validation event. Émis une fois au démarrage par l'App pour
+    // exercer EventSource → JsonlEventListener → app.jsonl et
+    // EventSource → LogWindowEventListener → LogWindow.
     [Event(EvtPilotEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

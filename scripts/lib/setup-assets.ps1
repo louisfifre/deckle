@@ -3,7 +3,7 @@
 # Populates <UserDataRoot>\native\ and <UserDataRoot>\models\ with the
 # whisper.cpp DLLs, MinGW C++ runtime, and Whisper models the app needs
 # at runtime. This is the canonical setup step — the app reads from
-# <UserDataRoot> exclusively (see src/Deckle.App/AppPaths.cs).
+# <UserDataRoot> exclusively (see src/Deckle.Core/Paths/AppPaths.cs).
 #
 # Default <UserDataRoot> resolution mirrors AppPaths.ResolveUserDataRoot
 # on the C# side:
@@ -12,10 +12,10 @@
 #   3. %LOCALAPPDATA%\Deckle\
 #
 # Native runtime sources (mutually exclusive — exactly one wins):
-#   1. -FromRelease <X.Y.Z> (default for everyone except DLL rebuilders) —
+#   1. -FromRelease <X.Y.Z> —
 #      downloads deckle-native-<X.Y.Z>.zip from the Deckle GitHub Release
 #      and extracts the catalog DLLs in place. No local whisper.cpp clone
-#      needed. Recipe: docs/reference/reference--native-runtime--1.0.md.
+#      needed.
 #   2. -WhisperRepo <path> — copies DLLs from a local whisper.cpp build
 #      tree (path must contain build\bin\). For developers who recompile
 #      whisper.cpp themselves with the Vulkan backend.

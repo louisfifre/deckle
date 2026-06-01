@@ -18,10 +18,8 @@ namespace Deckle.App.Diagnostics;
 // est appelé sur le thread de l'EventListener — qui peut être n'importe
 // quel thread métier, EventSource ne sérialise pas.
 //
-// Sous-vague 6b : remplace le bridge `LegacyHudFeedbackSink` qui faisait
-// FeedbackEntry → `UserFeedback` record → callbacks. Le record legacy
-// disparaît avec `Deckle.Logging` à la sous-vague 6g ; le sink consomme
-// les champs primitifs de `FeedbackEntry` directement.
+// Le sink consomme les champs primitifs de `FeedbackEntry` directement ;
+// aucune dépendance au module HUD ne remonte dans Deckle.Diagnostics.
 internal sealed class AppHudFeedbackSink : IHudFeedbackSink
 {
     private readonly System.Action<int, string, string> _onReplacement;

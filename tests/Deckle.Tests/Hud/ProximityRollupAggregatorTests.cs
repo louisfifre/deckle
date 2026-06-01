@@ -3,10 +3,8 @@ using Xunit;
 
 namespace Deckle.Tests.Hud;
 
-// Aggregator est internal sealed dans Deckle.Hud — l'accès depuis le projet
-// de tests passe par InternalsVisibleTo (cf. AssemblyInfo de Deckle.Hud) ou
-// par un usage de la dll via Reflection. Vérifier au build : si l'accès est
-// bloqué, ajouter [InternalsVisibleTo("Deckle.Tests")] côté Deckle.Hud.
+// Aggregator est internal sealed dans Deckle.Hud ; l'accès depuis le projet
+// de tests passe par l'InternalsVisibleTo déclaré dans Deckle.Hud.csproj.
 [Trait("Category", "unit")]
 public class ProximityRollupAggregatorTests
 {

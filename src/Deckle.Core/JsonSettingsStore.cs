@@ -18,10 +18,9 @@ namespace Deckle.Core;
 //   • coordinate two app instances (mutex per file)
 //
 // Logging is delegate-injected (logInfo / logVerbose / logWarning /
-// logError), not via a hard reference to LogService — so this class
-// stays in Deckle.Core (the lowest-level lib, no Logging dependency).
-// Each caller passes lambdas that route to LogService with the
-// caller's LogSource constant.
+// logError), so this class stays in Deckle.Core (the lowest-level lib,
+// no diagnostics-module dependency). Each caller passes lambdas that
+// route to its own EventSource provider or local sink.
 //
 // Two optional migration hooks let callers patch the on-disk format
 // before strict deserialization (preDeserializeMigration: e.g. legacy

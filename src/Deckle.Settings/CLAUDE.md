@@ -9,7 +9,7 @@ module: Deckle.Settings
 
 The app's Settings UI shell. Hosts the `SettingsWindow` (adaptive Auto NavigationView + page Frame), the owned pages (`GeneralPage`, `RecordingPage`, `DiagnosticsPage`), the consent dialogs (corpus logging, paste opt-in, autorewrite rules), the persistence root (`SettingsService` for non-modular settings), and the `SettingsHost` delegate registry that business modules consume to invoke shell-side actions (theme broadcast, level window propagation, restart, parent-window access for cross-module dialogs, opening the first-run wizard).
 
-Modular pages (`WhisperPage` in `Deckle.Transcription`, `LlmPage` in `Deckle.Llm.Rewrite`, and the future `AmbientPage` in `Deckle.Lighting.Ambient`) do not live here — they are owned by their respective module and resolved via `Type.GetType(tag)` from the `NavigationViewItem`'s `Tag` (e.g. `Tag="Deckle.Transcription.WhisperPage, Deckle.Transcription"`).
+Modular pages (`WhisperPage` in `Deckle.Transcription`, `LlmPage` in `Deckle.Llm.Rewrite`, and `AmbientPage` in `Deckle.Lighting.Ambient`) do not live here — they are owned by their respective module and resolved via `Type.GetType(tag)` from the `NavigationViewItem`'s `Tag` (e.g. `Tag="Deckle.Transcription.WhisperPage, Deckle.Transcription"`).
 
 **Settings modularity doctrine.** The Settings page that configures a domain lives in the module that owns that domain, and so does its persistence service. This is the rule for any new Settings page — it is born in the domain's module, never in this shell. The shell aggregates dynamically, it does not host. `RecordingPage` and `DiagnosticsPage` are today historical residue still carried here; their migration toward `Deckle.Audio` and `Deckle.Diagnostics.Logging` is planned under the codename Move H (see [docs/reference/reference--cartographie-modules--1.1.md](../../docs/reference/reference--cartographie-modules--1.1.md)).
 
@@ -19,7 +19,7 @@ Native `Microsoft.UI.Xaml.Controls.TitleBar` (WindowsAppSDK 1.8), **Standard** c
 
 ## Adaptive NavigationView — PaneDisplayMode Auto
 
-No custom code-behind for the breakpoints. `PaneDisplayMode="Auto"` (WinUI default) handles the switch between the three modes on its own: **Left** ≥ 1008 dip, **LeftCompact** 641–1007, **LeftMinimal** ≤ 640. `PreferredMinimumWidth=320` on the presenter exposes the LeftMinimal mode. `NavigationView.AutoSuggestBox` slot reserved for live search (to be enabled when the inventory exceeds 15–20 settings visible at once, NN/G — not implemented at V1). The `DisplayModeChanged` handler manages only the Frame padding: `+48 px top` in Minimal mode so the hamburger isn't overlapped (Windows Terminal Settings pattern).
+No custom code-behind for the breakpoints. `PaneDisplayMode="Auto"` (WinUI default) handles the switch between the three modes on its own: **Left** ≥ 1008 dip, **LeftCompact** 641–1007, **LeftMinimal** ≤ 640. `PreferredMinimumWidth=320` on the presenter exposes the LeftMinimal mode. The `DisplayModeChanged` handler manages only the Frame padding: `+48 px top` in Minimal mode so the hamburger isn't overlapped (Windows Terminal Settings pattern).
 
 Content: `NavigationView.MenuItems` = General → Recording → Transcription → Rewriting → Diagnostics. `FooterMenuItems` = Logs (`SelectsOnInvoked=False`, click via `ItemInvoked` which delegates to `SettingsHost.OpenLogWindow` to open the shared `LogWindow` — Logs is not a nav page, it's an action). Before the 2026-05-04 split there were only 3 pages (General concentrated Recording and Diagnostics); the separation pulled General down from 28 settings / 7 sections to 6 coherent sections and created two dedicated pages for the distinct functional surfaces.
 
@@ -59,7 +59,7 @@ Shell level and global configuration. Auto-save via `SettingsService`. Six secti
 
 ## RecordingPage
 
-Page extracted from General on 2026-05-04. Concentrates everything that strictly belongs to the audio capture pipeline. **Microphone**: `ComboBox` Audio input device, Win32 `waveIn` enumeration, `AudioInputDeviceId` (`-1 = WAVE_MAPPER`) with "System default" at index 0. **Voice level window**: master `SettingsExpander` (Auto-calibration toggle in header) + 3 child sliders (Floor `MinDbfs`, Ceiling `MaxDbfs`, Curve exponent). Drags push live into `AudioLevelMapper` via `SettingsHost.ApplyLevelWindow` — the HUD reflects the new curve at the next sub-window without restart. Persistence: `CaptureSettingsService` (`capture.json`), separated from the shell since slice C2b.
+Page extracted from General on 2026-05-04. Concentrates everything that strictly belongs to the audio capture pipeline. **Microphone**: `ComboBox` Audio input device, Win32 `waveIn` enumeration, `AudioInputDeviceId` (`-1 = WAVE_MAPPER`) with "System default" at index 0. **Voice level window**: master `SettingsExpander` (Auto-calibration toggle in header) + 3 child sliders (Floor `MinDbfs`, Ceiling `MaxDbfs`, Curve exponent). Drags push live into `AudioLevelMapper` via `SettingsHost.ApplyLevelWindow` — the HUD reflects the new curve at the next sub-window without restart. Persistence: `CaptureSettingsService` under `modules/audio/settings.json`.
 
 ## DiagnosticsPage
 
@@ -77,7 +77,7 @@ This is an intentional pattern — the registry is not a disguised Service Locat
 
 ## Per-module persistence
 
-Each module owns its settings file under `<UserDataRoot>/modules/<moduleId>/settings.json`. The services involved are `SettingsService` (shell, non-modular), `CaptureSettingsService` in `Deckle.Audio`, `TelemetrySettingsService` (Diagnostics), `TranscriptionSettingsService` in `Deckle.Transcription`, `LlmSettingsService` in `Deckle.Llm.Rewrite`, and the future `AmbientSettingsService` in `Deckle.Lighting.Ambient`. Each service exposes `Current` (POCO singleton), `Save()` (debounced ~300 ms), and a `Changed` event. Atomic write-then-swap.
+Each module owns its settings file under `<UserDataRoot>/modules/<moduleId>/settings.json`. The services involved are `SettingsService` (shell, non-modular), `CaptureSettingsService` in `Deckle.Audio`, `TelemetrySettingsService` (Diagnostics), `TranscriptionSettingsService` in `Deckle.Transcription`, `LlmSettingsService` in `Deckle.Llm.Rewrite`, and `AmbientSettingsService` in `Deckle.Lighting.Ambient`. Each service exposes `Current` (POCO singleton), `Save()` (debounced ~300 ms), and a `Changed` event. Atomic write-then-swap.
 
 | Service | File | Content |
 |---|---|---|

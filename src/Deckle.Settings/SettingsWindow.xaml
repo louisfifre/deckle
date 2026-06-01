@@ -10,9 +10,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- TitleBar natif : icône + titre uniquement. La recherche vit dans
-             NavigationView.AutoSuggestBox (pattern canonique Microsoft Learn
-             "NavigationView → Pane" : slot dédié AutoSuggestBox). -->
+        <!-- TitleBar natif : icône + titre uniquement. La navigation et le
+             contenu restent sous la barre de titre. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="SettingsTitleBar">
@@ -21,11 +20,9 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <!-- NavigationView. PaneDisplayMode=Auto (défaut) → Left ≥1008,
-             LeftCompact 641-1007, LeftMinimal ≤640 (valeurs système, doc
-             Microsoft Learn "Default adaptive behavior"). Tag = nom complet
-             du type de Page, résolu via Type.GetType dans le handler (pattern
-             du sample officiel Microsoft Learn §"Code example"). -->
+        <!-- NavigationView. PaneDisplayMode=Auto (défaut) laisse WinUI choisir
+             Left / LeftCompact / LeftMinimal. Tag = nom complet du type de
+             Page, résolu via Type.GetType dans le handler. -->
         <NavigationView Grid.Row="1"
                         x:Name="Nav"
                         IsBackButtonVisible="Collapsed"

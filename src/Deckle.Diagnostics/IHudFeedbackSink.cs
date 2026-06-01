@@ -16,10 +16,8 @@ public interface IHudFeedbackSink
     void Write(FeedbackEntry entry);
 }
 
-// DTO for a single UserFeedback emission. Mirrors the legacy
-// Deckle.Logging.UserFeedback record one-for-one, kept here as a
-// primitive POCO so Deckle.Diagnostics stays free of any
-// Deckle.Logging reference during the coexistence window.
+// DTO for a single UserFeedback emission. Kept here as a primitive POCO
+// so Deckle.Diagnostics stays free of app/HUD references.
 public sealed record FeedbackEntry(
     string Title,
     string Body,

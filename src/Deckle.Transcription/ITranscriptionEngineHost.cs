@@ -28,7 +28,7 @@ public interface ITranscriptionEngineHost
     void SaveSettings();
 
     // Notify the host that LevelWindow values changed so it can push them
-    // into HudChrono statics (App.ApplyLevelWindow). Called from the engine
-    // after auto-calibration. Pass the live LevelWindowSettings.
+    // into the audio RMS mapper (App.ApplyLevelWindow). Called from the
+    // engine after auto-calibration. Pass the live LevelWindowSettings.
     void ApplyLevelWindow(LevelWindowSettings lw);
 }

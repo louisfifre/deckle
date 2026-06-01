@@ -23,11 +23,11 @@ public sealed class CaptureSettings
     public LevelWindowSettings LevelWindow { get; set; } = new();
 }
 
-// Persisted dBFS window the HUD chrono uses to map raw microphone RMS
+// Persisted dBFS window used to map raw microphone RMS
 // onto the [0, 1] perceptual level driving the Recording stroke. Exposed
 // as Settings so the user can calibrate against their own mic+DSP chain
-// without rebuilding — the values land in HudChrono.Min/MaxDbfs +
-// DbfsCurveExponent statics at app startup (and on every change).
+// without rebuilding — the values land in AudioLevelMapper at app startup
+// and on every change.
 //
 // Defaults match the shipping calibration:
 //   Min  -55 dBFS — below typical p25 silence band, well above the
@@ -37,14 +37,11 @@ public sealed class CaptureSettings
 //                  high end; lower = the opposite. The HUD reads "soit
 //                  là, soit pas là" with a linear ramp.
 //
-// AutoCalibration runs a rolling heuristic over the last N
-// `microphone.jsonl` rows: median(p10) → MinDbfs, median(p90 + 2 dB
-// headroom) → MaxDbfs. Off by default — the user has to opt-in to a
-// recurring tweak of their visual feedback. Triggers on every Recording
-// once SamplesNeeded rows are available; the very first run after enable
-// happens silently — the HUD just snaps to the new window on the next
-// Recording. Manual sliders override the auto values until auto runs
-// again.
+// AutoCalibration runs a rolling heuristic over the last N microphone
+// telemetry samples: median(p25) - 5 dB -> MinDbfs, median(p90) + 5 dB
+// -> MaxDbfs, with clamps in the calculator. Off by default — the user
+// has to opt in to recurring visual-feedback tweaks. Manual sliders
+// override the auto values until auto runs again.
 public sealed class LevelWindowSettings
 {
     public float MinDbfs                = -55f;

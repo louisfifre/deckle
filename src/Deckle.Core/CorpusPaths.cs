@@ -22,13 +22,8 @@ namespace Deckle.Core;
 //   2. `AppPaths.TelemetryDirectory` (= `<UserDataRoot>\telemetry\`),
 //      always present and writable.
 //
-// Carry-over de la vague 6 : ce helper vivait jadis dans `Deckle.Logging`
-// et lisait `TelemetryGates.Current.StorageDirectoryOverride` directement.
-// Le couplage au hub legacy est remplacé par un délégué injectable —
-// l'App câble le getter au boot (cf. `App.OnLaunched`) sur le service de
-// settings retenu (legacy `TelemetrySettingsService` pour la sous-vague
-// 6a, puis `Deckle.Diagnostics.Telemetry.TelemetrySettingsService` quand
-// ce dernier sera créé en sous-vague 6d).
+// The storage-directory source is injected by the host to keep this core
+// helper independent from telemetry settings and listener modules.
 public static class CorpusPaths
 {
     private static Func<string?> _storageDirectoryOverride = static () => null;

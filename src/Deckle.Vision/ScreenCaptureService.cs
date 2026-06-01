@@ -21,9 +21,7 @@ namespace Deckle.Vision;
 // capability `graphicsCaptureWithoutBorder` — which can't be declared
 // from an unpackaged desktop app. DXGI Output Duplication is the
 // pre-WGC API (Windows 8+) and is not subject to the border. It's
-// what HyperHDR / OBS / NVIDIA ShadowPlay use. The full architecture
-// rationale lives in docs/architecture--color-science-pipeline--0.1.md
-// axis 2 (the chantier that migrated us off WGC).
+// what HyperHDR / OBS / NVIDIA ShadowPlay use.
 //
 // Threading. The capture loop runs on a dedicated Task spun in Start.
 // FrameArrived is raised on that worker thread, never on the caller's

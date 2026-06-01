@@ -18,8 +18,7 @@ namespace Deckle.Settings;
 //
 // Mica + thème système, TitleBar natif (icône + titre). NavigationView en
 // PaneDisplayMode=Auto qui gère lui-même la bascule Left / LeftCompact /
-// LeftMinimal et son propre burger natif. La recherche est dans le slot
-// canonique NavigationView.AutoSuggestBox (pattern Microsoft Learn).
+// LeftMinimal et son propre burger natif.
 //
 // Navigation : Tag sur chaque item = nom complet du type de Page, résolu via
 // Type.GetType dans OnNavSelectionChanged (pattern du sample officiel
@@ -54,9 +53,8 @@ public sealed partial class SettingsWindow : Window
         }
 
         // Title bar natif : hauteur/drag/caption gérés par le contrôle.
-        // PreferredHeightOption=Tall agrandit les caption buttons système pour
-        // rester alignés avec le contenu interactif (AutoSuggestBox hébergé
-        // par NavigationView juste en dessous).
+        // Standard garde une barre compacte puisque le titre ne contient
+        // aucun contenu interactif.
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;

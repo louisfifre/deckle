@@ -39,13 +39,13 @@ Captures the screen in real-time via DXGI Output Duplication and drives
 Philips Hue lights to match the dominant colors, with per-zone mapping and
 HDR support.
 
-- **DXGI capture backend.** No yellow capture border (unlike
-  `Windows.Graphics.Capture`). Minimal latency, GPU-side frame copy.
+- **DXGI capture backend.** No yellow capture border. Minimal latency,
+  GPU-side frame copy.
 - **Color science pipeline.** Gamut clipping, linear-light averaging, OKLCh
   saturation boost. Accurate color reproduction on any display profile.
 - **Multi-zone support.** Map screen regions to individual Hue lights. Auto-
   discovery of the Hue Entertainment group.
-- **Hue Entertainment API v2.** Direct UDP streaming to Hue Bridge — no
+- **Hue REST control.** Local bridge calls through the Hue API — no
   third-party NuGet, no cloud relay.
 
 ### Shared infrastructure
@@ -105,9 +105,8 @@ environment).
 - **Vulkan SDK** (`scoop install vulkan`) — headers for the `ggml-vulkan`
   backend.
 - A local clone of [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
-  outside this repo. See
-  [`docs/reference/reference--native-runtime--1.0.md`](docs/reference/reference--native-runtime--1.0.md)
-  for the full recipe.
+  outside this repo. `scripts/lib/publish-native-runtime.ps1` packages the
+  built DLLs into the runtime bundle.
 
 #### Optional
 

@@ -50,9 +50,8 @@ namespace Deckle.Lighting.Ambient;
 // well-tested object that owns the lifecycle (start, stop, dispose),
 // the cadence (throttle pushes to a sane Hz against the bridge),
 // and the error surface (one Warning when a push fails, never spam
-// the LogWindow). Both the Playground (transient, manual start) and
-// later the Settings AmbientPage (persistent toggle Enabled) will
-// instantiate the same engine — only the trigger differs.
+// the LogWindow). Both the Playground tuning surface and the Settings
+// master toggle route through the same engine — only the trigger differs.
 //
 // Ownership.
 //   - The ScreenCaptureService is owned. The engine constructs it in
@@ -249,8 +248,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private readonly List<double> _hbHttpDurationsMs = new(128);
 
     // HDR tuning snapshot, refreshed at the top of each tick from
-    // _host.Ambient. Live-reload — the AmbientPage sliders apply on
-    // the next tick without restarting the pipeline. See
+    // _host.Ambient. Live-reload — settings changes apply on the next
+    // tick without restarting the pipeline. See
     // AmbientSettings.ExposureEv / SaturationBoost / MinBrightness /
     // BrightnessCurveParam for the user-facing semantics. The snapshot
     // avoids re-reading the host on every pixel inside the helpers.

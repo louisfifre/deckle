@@ -1,5 +1,5 @@
 <!-- Playground window shell. Native TitleBar (icon + title), Mica
-     backdrop, NavigationView Auto with three menu items, Frame holding
+     backdrop, compact NavigationView with menu items, Frame holding
      the active Page. Each NavigationViewItem.Tag carries the
      fully-qualified type name of the Page to navigate to ; the
      code-behind resolves it via Type.GetType and calls

@@ -126,14 +126,14 @@ public sealed class FrameSampler : IAsyncDisposable
     public bool IsHdr   => _isHdr;
 
     /// <summary>Rolling content-peak in scRGB units that the tone-map
-    /// is currently normalising against. Exposed for the Playground
-    /// preview and the AmbientPage tuning panel (shows whether the
+    /// is currently normalising against. Exposed for tuning surfaces
+    /// such as the Playground preview (shows whether the
     /// auto-exposure is biting). Always ≥ 1.0 (SDR floor). On a non-
     /// HDR session the value is pinned at 1.0.</summary>
     public float ContentPeak => _contentPeak;
 
-    /// <summary>Live-reload entry point for the AmbientPage Exposure
-    /// slider. Applied on the next frame ; no restart required. EV is
+    /// <summary>Live-reload entry point for ambient exposure tuning.
+    /// Applied on the next frame ; no restart required. EV is
     /// linear-light (one stop = ×2 of brightness).</summary>
     public void SetExposureEv(double exposureEv) => _exposureEv = exposureEv;
 

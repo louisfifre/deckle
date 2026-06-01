@@ -20,7 +20,7 @@ namespace Deckle.Settings;
 //   • CaptureSettings        → Deckle.Audio/CaptureSettingsService
 //   • TranscriptionSettings          → Deckle.Transcription/TranscriptionSettingsService
 //   • LlmSettings            → Deckle.Llm.Rewrite/LlmSettingsService
-//   • TelemetrySettings      → Deckle.Logging/TelemetrySettingsService
+//   • TelemetrySettings      → Deckle.Diagnostics.Telemetry/TelemetrySettingsService
 //
 // Mutations to `Current` go through SettingsService (debounced Save).
 public sealed class AppSettings
@@ -64,7 +64,8 @@ public sealed class OverlaySettings
 }
 
 // Chemins utilisateur. Vides par défaut → résolution automatique via
-// AppPaths (à côté de l'exe en dev unpackaged, sous LocalState en packagé MSIX).
+// AppPaths: DECKLE_DATA_ROOT, puis %LOCALAPPDATA%\Deckle, puis fallback
+// sous le dossier de l'exe.
 //
 // BackupDirectory  : dossier où SettingsBackupService dépose les snapshots
 //                    settings-YYYYMMDD-HHmmss.json. Pattern PowerToys :

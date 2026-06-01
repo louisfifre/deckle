@@ -18,7 +18,7 @@ public interface IAudioRecordingHost
     int MaxRecordingDurationSeconds { get; }
 
     // Settings ▸ Telemetry ▸ Log microphone toggle. Gates the emission of
-    // the per-recording MicrophoneTelemetryPayload event to TelemetryService.
+    // the per-recording MicrophoneTelemetryPayload EventSource event.
     // The payload is always *computed* (auto-calibration depends on it);
     // this flag only decides whether it's broadcast.
     bool MicrophoneTelemetryEnabled { get; }

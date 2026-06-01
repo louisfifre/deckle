@@ -9,12 +9,9 @@ namespace Deckle.Lighting.Ambient;
 // AmbientPage (Hue pair button + group list), et la persistance settings
 // du module (AmbientSettingsService).
 //
-// Provider Name = "Deckle.Ambient" — choix court pour le tag LegacyLogWindowSink
-// (l'alternative "Deckle.Lighting.Ambient" produirait LIGHTING.AMBIENT après
-// strip prefix, ce qui était peu lisible). Le legacy émettait sous deux
-// tags : [HUE] pour HuePairingService et [AMBIENT] pour AmbientEngine ;
-// les deux fusionnent sous [AMBIENT] dans la migration (HUE driver
-// niveau push reste à part dans Deckle.Lighting).
+// Provider Name = "Deckle.Ambient" — choix court pour garder le tag
+// LogWindow [AMBIENT]. Le driver Hue bas niveau garde son provider
+// séparé dans Deckle.Lighting.
 [EventSource(Name = "Deckle.Ambient")]
 public sealed class DeckleAmbientSource : DeckleEventSource
 {

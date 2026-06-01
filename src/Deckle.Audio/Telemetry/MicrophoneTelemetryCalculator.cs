@@ -6,7 +6,7 @@ namespace Deckle.Audio.Telemetry;
 // per-recording RMS series (50 ms sub-window cadence, ~20 Hz). No side
 // effects, no logging — the orchestrator (TranscriptionEngine) is responsible
 // for emitting both the user-facing tail headline and the structured
-// MicrophoneTelemetryPayload via TelemetryService.
+// MicrophoneTelemetryPayload via EventSource.
 //
 // Linear RMS → dBFS via 20·log10(rms); guarded against rms ≤ 0
 // (returns -120 dBFS, the conventional "digital silence" floor — the

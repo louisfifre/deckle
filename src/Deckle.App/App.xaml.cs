@@ -111,8 +111,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         InitializeComponent();
 
         // Diagnostic safety net — without this, a crash in a TranscriptionEngine
-        // event disappears silently. Any sink registered later in OnLaunched
-        // picks these up (the JsonlFileSink writes them to app.jsonl). Events
+        // event disappears silently. Any listener registered later in OnLaunched
+        // picks these up for LogWindow/app.jsonl. Events
         // raised before OnLaunched have no sinks yet and are dropped — there
         // are none of those in practice.
         this.UnhandledException += (_, e) =>
@@ -133,9 +133,9 @@ public partial class App : Microsoft.UI.Xaml.Application
             e.SetObserved();
         };
 
-        // Trace explicit du process-exit. Le sink JsonlFileSink flush à
-        // chaque écriture (using StreamWriter), donc les events précédents
-        // sont déjà sur disque — mais distinguer un shutdown propre d'un
+        // Trace explicit du process-exit. Les listeners JSONL flushent à
+        // chaque écriture, donc les events précédents sont déjà sur disque —
+        // mais distinguer un shutdown propre d'un
         // crash brut dans les logs aide le post-mortem. Pas un dump, juste
         // un marqueur "on est sorti par cette voie".
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
@@ -148,10 +148,9 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         // Cold-start instrumentation. Milestones accumulate into a local
         // list during construction and get flushed as a single aggregate
-        // line through LogService at the end of OnLaunched — LogWindow
-        // receives it under [APP]. A naive "one _log.Info per milestone"
-        // approach would lose the earliest ones (LogService has no sink
-        // before _logWindow is constructed and AddSink is called).
+        // EventSource line at the end of OnLaunched — LogWindow receives
+        // it under [APP]. A naive "one event per milestone" approach
+        // would make early boot noisier without improving diagnosis.
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var milestones = new List<string>();
         void Milestone(string name) => milestones.Add($"{name} +{sw.ElapsedMilliseconds}ms");
@@ -166,17 +165,10 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Why first? Because module SettingsService singletons load their
         // file in their constructor — if a module service initialized before
         // the dispatch ran, it would see a missing module file and write
-        // defaults, defeating the migration. AppTelemetryGates below
-        // touches TelemetrySettingsService on first emit, so we must dispatch
-        // before that.
+        // defaults, defeating the migration. Telemetry gate wiring below
+        // touches TelemetrySettingsService, so we must dispatch before that.
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
         Milestone("settings-bootstrap");
-
-        // Plus de TelemetryGates.Configure : depuis la sous-vague 6g, les
-        // listeners JsonlEventListener consultent directement
-        // TelemetrySettingsService.Instance.Current via le callback câblé
-        // sur TelemetryListenerBootstrap.ConfigureGates juste en-dessous.
-        // Le bridge legacy AppTelemetryGates a disparu avec Deckle.Logging.
 
         // Câblage `Deckle.Core.CorpusPaths` (relocalisé en sous-vague 6a) :
         // le helper de paths storage avait besoin d'un getter sur le
@@ -189,21 +181,16 @@ public partial class App : Microsoft.UI.Xaml.Application
             return string.IsNullOrWhiteSpace(s) ? null : s;
         });
 
-        // EventSource observability pipeline — sous-vague 6e prend la
-        // relève des paths canoniques `<TelemetryDir>/{app,latency,
-        // microphone,corpus}.jsonl`. Le legacy `JsonlFileSink` et son
-        // `TelemetryService.AddSink` ont disparu ; les Jsonl-
-        // EventListeners écrivent directement aux paths canoniques.
-        // Le LogWindow lazy s'attachera au listener via
-        // `AttachLogWindowSink` à sa première ouverture.
+        // EventSource observability pipeline. JsonlEventListeners écrivent
+        // directement aux paths canoniques `<TelemetryDir>/{app,latency,
+        // microphone,corpus}.jsonl`. Le LogWindow lazy s'attachera au
+        // listener via `AttachLogWindowSink` à sa première ouverture.
         AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
         // Câblage des gates utilisateur côté JsonlEventListeners
         // (Deckle.Diagnostics.Telemetry). Lecture directe sur le
-        // TelemetrySettingsService canonique depuis la sous-vague 6g —
-        // le bridge legacy AppTelemetryGates a disparu avec
-        // Deckle.Logging.
+        // TelemetrySettingsService canonique.
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
         {
             "ApplicationLogToDisk" => TelemetrySettingsService.Instance.Current.ApplicationLogToDisk,
@@ -218,18 +205,15 @@ public partial class App : Microsoft.UI.Xaml.Application
         // active ET que l'utilisateur n'a pas opt-in à LogAmbient-
         // CaptureActivity. La capture gate (AmbientCaptureGate) vit
         // dans Deckle.Diagnostics.Logging et est flippée par l'Ambient
-        // engine au Start / Stop. Le toggle utilisateur est lu sur le
-        // nouveau LoggingSettingsService canonique depuis la sous-vague
-        // 6g (auparavant le legacy Deckle.Logging.LoggingSettingsService).
+        // engine au Start / Stop. Le toggle utilisateur est lu sur
+        // LoggingSettingsService.
         AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(ShouldDropApplicationLogEntry);
 
-        // Wave 1 sanity check — exercise the full pipeline (provider →
-        // EventListener → JsonlEventListener + LegacyLogWindowSink) once
-        // at boot. The pilot emission is a no-op in production behaviour
-        // and will be retired in Wave 2 once a real applicative provider
-        // (Audio) emits genuine events.
+        // Boot-time sanity marker for the EventSource pipeline. It has no
+        // product behaviour; it simply proves provider discovery, JSONL
+        // routing, and LogWindow listener routing during startup.
         Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted("wave 1 boot");
 
         // Sub-provider transverse Network — capter les transitions
@@ -321,8 +305,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // pour que le viewer soit complet dès l'ouverture. Évite de
         // payer un swap chain DComp + visual tree DWM au boot pour une
         // fenêtre dont l'utilisateur n'a pas systématiquement besoin.
-        // Les events boot sont préservés dans app.jsonl (JsonlFileSink
-        // reste inscrit dès le boot).
+        // Les events boot sont préservés dans app.jsonl par le listener
+        // JSONL inscrit dès le boot.
 
         // SettingsWindow lazy : instanciée à la première ouverture via
         // ShowSettingsWindowLazy(). La branche --settings du boot
@@ -408,8 +392,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Engine events → UI. StatusChanged, TranscriptionFinished, etc. are
         // called from background threads; LogWindow and HudWindow marshal
         // internally via DispatcherQueue, UpdateStatus only calls
-        // Shell_NotifyIcon (thread-safe). Logging events are gone — the engine
-        // now logs directly via LogService.
+        // Shell_NotifyIcon (thread-safe). Engine logs are emitted by
+        // module EventSource providers.
         _engine.StatusChanged += status =>
         {
             _tray.UpdateStatus(status);
@@ -568,7 +552,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
 
         // Apply persisted level window (MinDbfs / MaxDbfs / DbfsCurveExponent)
-        // into HudChrono statics so the first Recording reflects the user's
+        // into AudioLevelMapper so the first Recording reflects the user's
         // calibration without a restart-from-defaults round-trip.
         ApplyLevelWindow(Audio.CaptureSettingsService.Instance.Current.LevelWindow);
 
@@ -619,8 +603,8 @@ public partial class App : Microsoft.UI.Xaml.Application
     // ── Level window ─────────────────────────────────────────────────────────
     //
     // Pushes the persisted dBFS calibration window from settings into the
-    // HudChrono statics that the per-frame RMS mapper reads. Called at boot
-    // (OnLaunched) and on every ViewModel change so live edits in
+    // AudioLevelMapper values that the per-frame RMS mapper reads. Called
+    // at boot (OnLaunched) and on every ViewModel change so live edits in
     // GeneralPage propagate without restart. Idempotent — safe to call
     // multiple times.
 
