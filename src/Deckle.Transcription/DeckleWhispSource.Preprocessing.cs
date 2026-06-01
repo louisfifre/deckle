@@ -13,11 +13,9 @@ public sealed partial class DeckleWhispSource
     // emitted on this provider, the orchestrator's own. Keeps the pipeline's
     // observability under one provider and one filter.
     //
-    // Two events. TranscriptionPreprocessed is the per-recording transform
-    // summary (Verbose, Pipeline keyword — a staged signal transformation,
-    // same family as VAD). PreprocessingActivationChanged is the milestone
-    // when the deferred-activation calibration flips the state (Informational,
-    // Capture keyword — a mic-characterisation outcome the user may care about).
+    // One event: TranscriptionPreprocessed, the per-recording transform summary
+    // (Verbose, Pipeline keyword — a staged signal transformation, same family
+    // as VAD).
 
     [Event(EvtTranscriptionPreprocessed,
            Level = EventLevel.Verbose,
@@ -26,14 +24,5 @@ public sealed partial class DeckleWhispSource
     public void TranscriptionPreprocessed(double input_dbfs, double output_dbfs, double makeup_db, double output_peak)
     {
         if (IsEnabled()) WriteEvent(EvtTranscriptionPreprocessed, input_dbfs, output_dbfs, makeup_db, output_peak);
-    }
-
-    [Event(EvtPreprocessingActivationChanged,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Pre-processing {0} (median deficit {1:F1} dB over {2} takes)")]
-    public void PreprocessingActivationChanged(string state, double median_delta_db, int samples)
-    {
-        if (IsEnabled()) WriteEvent(EvtPreprocessingActivationChanged, state, median_delta_db, samples);
     }
 }

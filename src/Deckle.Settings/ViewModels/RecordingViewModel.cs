@@ -44,12 +44,9 @@ public partial class RecordingViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
-        // Opting in (re)starts the deferred-activation calibration: the DSP
-        // stays inactive until the mic has been measured over the first few
-        // recordings, then the engine flips it to Active or Dormant. We only
-        // reset the state on enable — disabling leaves it irrelevant.
-        if (value)
-            CaptureSettingsService.Instance.Current.Preprocessing.Activation = PreprocessingActivation.Calibrating;
+        // On = active. The DSP self-adjusts on every recording (a no-op when
+        // the mic is already at target); the mic level check advises whether
+        // turning it on is worth it. No deferral, no auto-decision.
         PushToSettings();
     }
 

@@ -228,16 +228,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     // TryAutoCalibrate below for the heuristic.
     private readonly Queue<MicrophoneTelemetryPayload> _autoCalibBuffer = new();
 
-    // Pre-processing activation ring — sibling of _autoCalibBuffer, but feeds
-    // the deferred-activation decision of the transcription DSP rather than the
-    // HUD calibration. Only filled while the feature is opted in AND still
-    // Calibrating; once it holds PreprocCalibrationTakes entries the calculator
-    // decides Active / Dormant (see TryUpdatePreprocessingActivation). In-memory
-    // like _autoCalibBuffer: a fresh launch restarts a pending calibration,
-    // which is acceptable — the decided state itself is persisted.
-    private const int PreprocCalibrationTakes = 5;
-    private readonly Queue<MicrophoneTelemetryPayload> _preprocActivationBuffer = new();
-
     // Latency instrumentation — stage timers feeding LatencyPayload. Reset at
     // the entry of StartRecording so each run reports its own values.
     //

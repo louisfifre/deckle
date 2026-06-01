@@ -314,7 +314,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Limiter.cs
 │   │   │   ├── MicLevelCheck.cs
 │   │   │   ├── NoiseGate.cs
-│   │   │   ├── PreprocessingActivationCalculator.cs
 │   │   │   ├── PreprocessingSettings.cs
 │   │   │   └── TranscriptionPreprocessor.cs
 │   │   ├── Telemetry/
@@ -657,7 +656,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── Deckle.Tests/
 │       ├── Audio/
 │       │   ├── MicLevelCheckTests.cs
-│       │   ├── PreprocessingActivationCalculatorTests.cs
 │       │   └── TranscriptionPreprocessorTests.cs
 │       ├── Chrono/
 │       │   ├── ChronoFormatterTests.cs

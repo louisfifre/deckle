@@ -21,9 +21,9 @@ namespace Deckle.Audio.Preprocessing;
 public static class MicLevelCheck
 {
     // Deficit (target − measured level) at or above which the lift is clearly
-    // worth it. Shared with the activation calculator so the indicator and the
-    // (separate) activation logic can never disagree on "quiet". Provisional.
-    public const double RecommendDeltaDb = PreprocessingActivationCalculator.DefaultActivationDeltaDb;
+    // worth recommending. ~6 dB ≈ "noticeably quiet, not just a touch under".
+    // Provisional — an engineer's guess, to be grounded by measurement.
+    public const double RecommendDeltaDb = 6.0;
 
     // Below RecommendDeltaDb but above this, the lift is marginal — the user is
     // told it would help "a little". At or below it, the mic is already fine.

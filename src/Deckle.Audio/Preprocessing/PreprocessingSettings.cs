@@ -10,26 +10,21 @@ namespace Deckle.Audio.Preprocessing;
 // Two surfaces, deliberately separated:
 //   - `Enabled` is the only knob exposed in Settings ▸ Recording — the
 //     black-box opt-in toggle. Off by default.
-//   - every other field is a per-stage parameter tuned from the
-//     Playground (where the gain is heard + measured). The defaults
-//     below are an engineer's starting point, NOT measured optima —
-//     they are provisional until the WER bench grounds them.
+//   - every other field is a fixed per-stage parameter, not exposed in
+//     the UI: the whole point of the black box is that there are no knobs
+//     to turn. The defaults below are an engineer's starting point, NOT
+//     measured optima — provisional until grounded by measurement.
 //
 // Auto-properties (not public fields) so System.Text.Json round-trips
 // them under the module's default serializer options.
 public sealed class PreprocessingSettings
 {
-    // The opt-in toggle. Off by default — the feature is available and
-    // wired, but never transforms a recording until the user enables it
-    // and the activation model has confirmed the mic benefits (see
-    // PreprocessingActivation + PreprocessingActivationCalculator).
+    // The opt-in toggle, and the whole control. Off by default. On = the DSP
+    // runs on every recording and self-adjusts (the makeup lands near 0 dB on a
+    // mic already at target, so it does nothing there). The mic level check on
+    // the Recording page advises whether turning it on is worth it; the user
+    // decides — there is no deferral and no automatic on/off.
     public bool Enabled { get; set; } = false;
-
-    // Deferred-activation state. Meaningful only when Enabled. On opt-in
-    // the orchestrator resets this to Calibrating; the DSP transforms
-    // audio only once the state reaches Active. See the activation model
-    // for the rationale (« activer ≠ actif tout de suite »).
-    public PreprocessingActivation Activation { get; set; } = PreprocessingActivation.Calibrating;
 
     // ── High-pass — removes rumble (mains hum, HVAC), plosive thumps and
     //    the DC offset. Shared brick with the future energy VAD of the
@@ -41,7 +36,7 @@ public sealed class PreprocessingSettings
     // ── Noise gate — soft downward expander below the threshold. OFF by
     //    default on purpose: the real silence handling belongs to the VAD
     //    upstream (windowing workstream), and an aggressive gate eats weak
-    //    phonemes. Present so the Playground can experiment, not to run.
+    //    phonemes. Off by default; available but not run.
     public bool  GateEnabled       { get; set; } = false;
     public float GateThresholdDbfs { get; set; } = -55f;
     public float GateRatio         { get; set; } = 2f;
@@ -75,23 +70,4 @@ public sealed class PreprocessingSettings
     public bool  LimiterEnabled     { get; set; } = true;
     public float LimiterCeilingDbfs { get; set; } = -1f;
     public float LimiterReleaseMs   { get; set; } = 50f;
-}
-
-// State of the deferred-activation model. Off is represented by
-// PreprocessingSettings.Enabled == false (no enum member needed): when the
-// feature is disabled the activation state is simply irrelevant.
-//
-//   Calibrating — opted in, collecting microphone telemetry over the first
-//                 N recordings. The DSP does NOT transform audio yet; the
-//                 UI says « enabled, calibrating, not yet in service ».
-//   Active      — calibration confirmed the mic sits below the makeup
-//                 target by a meaningful margin; the DSP now transforms.
-//   Dormant     — calibration concluded the mic is already adequate; the
-//                 DSP stays opted-in but does not transform (the user is
-//                 told their mic does not need it).
-public enum PreprocessingActivation
-{
-    Calibrating,
-    Active,
-    Dormant,
 }

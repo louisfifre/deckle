@@ -303,7 +303,6 @@ public sealed partial class TranscriptionEngine
             if (capture.Telemetry is not null)
             {
                 TryAutoCalibrate(capture.Telemetry);
-                TryUpdatePreprocessingActivation(capture.Telemetry);
             }
 
             float[] audio = capture.Pcm;
