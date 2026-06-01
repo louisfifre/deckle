@@ -41,3 +41,14 @@ Devient plus difficile : le `TelemetryListenerBootstrap` héberge maintenant un 
 Devient impossible : retrouver une jointure WAV ↔ profil pour les artefacts legacy générés avant cette refonte. Les dossiers `affinage-*`, `arrangement-*`, `lissage-*` et le `corpus.jsonl` à la racine de `telemetry/` restent sur disque tels quels — aucune migration de contenu. Justification : ces données n'ont pas de `transcription_id`, et donc aucune façon d'être reliées à un futur WAV dans le nouveau modèle. Mieux vaut ignorer qu'inventer une fausse jointure. L'utilisateur peut supprimer manuellement s'il veut libérer l'espace.
 
 L'ancien event `CorpusRecorded` reste émis et écouté le temps de la transition. Le retrait définitif (event sur le provider + listener sur le bootstrap) est la dernière étape du chantier, une fois le nouveau pipeline validé en live. Aucune dépendance externe au `corpus.jsonl` legacy à la racine — c'est un fichier interne, l'outillage de benchmark Python tape déjà sur les sous-dossiers de profil.
+
+## Amendement 2026-06-02 — contenu audio sélectionnable (suite chantier DSP)
+
+L'arrivée du pré-traitement DSP de transcription (`Deckle.Audio.Preprocessing`, cf. `CONTEXT.md` « transcription pre-processing ») rouvre une question que cet ADR avait tranchée implicitement : le WAV du corpus stockait toujours la capture brute. C'était la bonne réponse côté dataset — une baseline ré-dérivable, ré-exploitable contre un autre modèle. Mais pas côté UX : quand l'utilisateur active le DSP, il s'attend à ce que l'audio enregistré soit celui que le moteur a réellement entendu, pas un brut qui diverge silencieusement de la transcription.
+
+Décision : le contenu du WAV devient un choix utilisateur, `TelemetrySettings.AudioCorpusContent`, exposé en deux radios sous la carte Audio corpus de la page Diagnostics.
+
+- **MatchTranscription** (défaut) — stocke le buffer remis au backend : traité quand le DSP a tourné, brut sinon. Le corpus reflète l'entrée réelle du moteur. Conséquence assumée : quand le DSP est actif, on **perd** la baseline brute ré-dérivable pour ces prises. C'est le compromis explicitement accepté pour la cohérence « ce que j'entends = ce qui est stocké ».
+- **AlwaysRaw** — force la capture intouchée quel que soit l'état du DSP. C'est l'option qui **préserve** la posture d'origine de cet ADR (baseline ré-dérivable, comparaison multi-modèles). Reste là pour qui exploite le corpus comme dataset.
+
+Le défaut bascule donc de « toujours brut » à « ce qui est transcrit ». Pour un utilisateur qui n'a jamais activé le DSP, le comportement est inchangé (MatchTranscription = brut). La structure disque (`audio/<transcription_id>.wav`, dédup par transcription) ne bouge pas — seul le contenu d'échantillons du WAV peut différer. Un troisième mode « les deux » (brut + sidecar traité) est envisageable plus tard sans casser l'`int` persisté ni cette arborescence.

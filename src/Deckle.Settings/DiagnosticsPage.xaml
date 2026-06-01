@@ -123,6 +123,15 @@
                                           IsOn="{x:Bind ViewModel.RecordAudioCorpus, Mode=TwoWay}"
                                           Toggled="AudioCorpusToggle_Toggled" />
                         </controls:SettingsCard>
+                        <controls:SettingsCard x:Name="AudioCorpusContentCard"
+                                               x:Uid="GeneralAudioCorpusContentCard"
+                                               ContentAlignment="Vertical"
+                                               IsEnabled="{x:Bind ViewModel.RecordAudioCorpus, Mode=OneWay}">
+                            <RadioButtons SelectedIndex="{x:Bind ViewModel.AudioCorpusContentIndex, Mode=TwoWay}">
+                                <RadioButton x:Uid="GeneralAudioCorpusContentMatch" />
+                                <RadioButton x:Uid="GeneralAudioCorpusContentRaw" />
+                            </RadioButtons>
+                        </controls:SettingsCard>
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 

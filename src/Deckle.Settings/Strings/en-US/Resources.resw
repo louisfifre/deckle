@@ -770,7 +770,19 @@
     <value>Also save audio (WAV)</value>
   </data>
   <data name="GeneralAudioCorpusCard.Description" xml:space="preserve">
-    <value>Keep the raw 16 kHz mono audio of each recording alongside the JSONL, in an audio/ subfolder per profile. Roughly 2 MB per minute of speech.</value>
+    <value>Keep the 16 kHz mono audio of each recording alongside the JSONL, in an audio/ subfolder per profile. Roughly 2 MB per minute of speech.</value>
+  </data>
+  <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
+    <value>Recorded audio</value>
+  </data>
+  <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
+    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard — the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
+  </data>
+  <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
+    <value>Match the transcription</value>
+  </data>
+  <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
+    <value>Always raw</value>
   </data>
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
     <value>Storage folder</value>

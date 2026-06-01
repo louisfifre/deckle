@@ -6,6 +6,7 @@ using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Core.Interop;
 using Deckle.Diagnostics;
+using Deckle.Diagnostics.Telemetry;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription.Corpus;
@@ -478,8 +479,18 @@ public sealed partial class TranscriptionEngine
             // Audio dédupliqué par transcription. Vide quand l'utilisateur
             // n'a pas activé RecordAudioCorpus — la ligne JSONL reste
             // utile sans WAV.
+            //
+            // Quel buffer atterrit dans le WAV — choix utilisateur (ADR-0011,
+            // amendement 2026-06-02). MatchTranscription stocke ce que le
+            // backend a réellement reçu (backendAudio : traité quand le DSP a
+            // tourné, brut sinon) ; AlwaysRaw force la capture intouchée pour
+            // garder une baseline ré-dérivable.
+            float[] corpusAudio =
+                telemetrySettings.AudioCorpusContent == AudioCorpusContent.AlwaysRaw
+                    ? audio
+                    : backendAudio;
             string audioFileName = telemetrySettings.RecordAudioCorpus
-                ? (WavCorpusWriter.Write(_transcriptionId, audio) ?? "")
+                ? (WavCorpusWriter.Write(_transcriptionId, corpusAudio) ?? "")
                 : "";
 
             DeckleWhispSource.Log.CorpusAsrRecorded(
