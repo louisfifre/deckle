@@ -6,15 +6,7 @@ argument-hint: "<context or copy to review>"
 
 # /ux-copy
 
-> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../../CONNECTORS.md).
-
 Write or review UX copy for any interface context.
-
-## Usage
-
-```
-/ux-copy $ARGUMENTS
-```
 
 ## What I Need From You
 
@@ -67,38 +59,6 @@ Adapt tone to context:
 - **Error**: Empathetic and helpful
 - **Warning**: Clear and actionable
 - **Neutral**: Informative and concise
-
-## Output
-
-```markdown
-## UX Copy: [Context]
-
-### Recommended Copy
-**[Element]**: [Copy]
-
-### Alternatives
-| Option | Copy | Tone | Best For |
-|--------|------|------|----------|
-| A | [Copy] | [Tone] | [When to use] |
-| B | [Copy] | [Tone] | [When to use] |
-| C | [Copy] | [Tone] | [When to use] |
-
-### Rationale
-[Why this copy works — user context, clarity, action-orientation]
-
-### Localization Notes
-[Anything translators should know — idioms to avoid, character expansion, cultural context]
-```
-
-## If Connectors Available
-
-If **~~knowledge base** is connected:
-- Pull your brand voice guidelines and content style guide
-- Check for existing copy patterns and terminology standards
-
-If **~~design tool** is connected:
-- View the screen context in Figma to understand the full user flow
-- Check character limits and layout constraints from the design
 
 ## Tips
 
