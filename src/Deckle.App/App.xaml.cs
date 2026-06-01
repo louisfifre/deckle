@@ -68,16 +68,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         System.Diagnostics.Tracing.EventLevel level,
         System.Diagnostics.Tracing.EventKeywords keywords)
     {
+        // Seul le Verbose des providers de capture est concerné. Les jalons
+        // (Info / Warning / Error) passent toujours — c'est par eux qu'on
+        // sait, même toggle off, que ça tourne et que ça s'arrête.
         if (level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
-        // Le heartbeat est le rollup qui prouve « boucle vivante, rien à
-        // pousser » sur un écran statique — c'est précisément le signal
-        // qu'on veut pendant la capture. Il porte le keyword Heartbeat et
-        // doit survivre au gate qui silence le Verbose par-tick. Jamais
-        // drop. Cf. ADR-0017.
-        if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Heartbeat) != 0) return false;
         if (!AmbientCaptureGate.IsActive) return false;
-        if (LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return false;
-        return provider == "Deckle.Ambient"
+
+        bool captureFamily =
+            provider == "Deckle.Ambient"
             || provider == "Deckle.Vision"
             || provider == "Deckle.Lighting"
             // Sub-provider transverse, mais pendant une capture c'est le
@@ -85,6 +83,21 @@ public partial class App : Microsoft.UI.Xaml.Application
             // (textures D3D11 capture-loop + frame-sampler). Hors capture
             // la gate est fermée, donc le Resource du HUD passe normalement.
             || provider == "Deckle.Diagnostics.Resource";
+        if (!captureFamily) return false;
+
+        // Toggle off : la capture est muette. Aucun Verbose, heartbeat
+        // compris — on ne veut rien voir, juste savoir via les jalons si
+        // ça marche. (Le filet de vitalité passera par un watchdog dédié,
+        // pas par un battement permanent.)
+        if (!LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return true;
+
+        // Toggle on : on montre le heartbeat (rollup 5 s) et les Verbose
+        // occasionnels (détails start / stop), mais jamais le firehose
+        // haute fréquence — push par-tick (keyword Push) et acquire/release
+        // D3D11 par-frame (sous-provider Resource) restent tus, même opt-in.
+        if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) != 0) return true;
+        if (provider == "Deckle.Diagnostics.Resource") return true;
+        return false;
     }
 
     private static bool ShouldDropApplicationLogEntry(Deckle.Diagnostics.EventEntry entry)

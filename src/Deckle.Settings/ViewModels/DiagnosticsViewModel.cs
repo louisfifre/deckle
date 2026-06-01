@@ -24,23 +24,26 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     // ── Logging — runtime emission filters ──────────────────────────────────
 
-    // Capture-window logging toggle for the ambient pipeline. When off
-    // and a capture loop is active, the listener-side filter
-    // (App.ShouldDropAmbientCaptureVerbose, combining AmbientCaptureGate
-    // with this toggle) drops every Verbose event from the ambient
-    // providers — Deckle.Ambient / Vision / Lighting and the per-frame
-    // Deckle.Diagnostics.Resource firehose — before they reach the
-    // LogWindow buffer or app.jsonl. AmbientEngine opens the gate right
-    // before its push loop (after the started milestones) and closes it
-    // at the top of Stop (before the stopped milestones), so the
-    // bracketing milestones and any out-of-loop user action pass
-    // through. Non-Verbose levels always pass. Default false — the
-    // routine per-frame cadence drowns out everything else during play,
-    // so the user starts quiet and opts in when investigating. The
-    // section will grow with sibling per-loop toggles for Whisp / Audio
-    // / Llm. Wired through LoggingSettingsService — separate store from
-    // TelemetrySettings so flipping it leaves the disk-persistence
-    // opt-ins untouched.
+    // Capture-window logging toggle for the ambient pipeline. The
+    // listener-side filter (App.ShouldDropAmbientCaptureVerbose, combining
+    // AmbientCaptureGate with this toggle) decides, per Verbose event from
+    // the ambient providers — Deckle.Ambient / Vision / Lighting and the
+    // per-frame Deckle.Diagnostics.Resource firehose — what reaches the
+    // LogWindow buffer or app.jsonl. Off (default): nothing Verbose passes
+    // while a capture loop runs, the 5 s heartbeat included — the user
+    // only sees the Info / Warning / Error milestones that say whether it
+    // runs and when it stops. On: the 5 s heartbeat and the occasional
+    // start / stop detail pass, but the high-frequency firehose (per-tick
+    // Push, per-frame Resource) stays dropped even opt-in — the rollup is
+    // the ceiling, the per-event torrent is reserved for a deep dive in
+    // code. The gate is opened right before the push loop (after the
+    // started milestones) and closed at the top of Stop (before the
+    // stopped milestones), so the bracketing milestones and any
+    // out-of-loop user action pass through. Non-Verbose levels always
+    // pass. The section will grow with sibling per-loop toggles for
+    // Whisp / Audio / Llm. Wired through LoggingSettingsService — separate
+    // store from TelemetrySettings so flipping it leaves the disk-
+    // persistence opt-ins untouched.
     [ObservableProperty]
     public partial bool LogAmbientCaptureActivity { get; set; }
 
