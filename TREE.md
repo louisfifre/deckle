@@ -312,6 +312,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Compressor.cs
 │   │   │   ├── HighPassFilter.cs
 │   │   │   ├── Limiter.cs
+│   │   │   ├── MicLevelCheck.cs
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingActivationCalculator.cs
 │   │   │   ├── PreprocessingSettings.cs
@@ -328,6 +329,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
+│   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   └── ProbeResult.cs
 │   ├── Deckle.Catalog/
@@ -654,6 +656,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── tests/
 │   └── Deckle.Tests/
 │       ├── Audio/
+│       │   ├── MicLevelCheckTests.cs
 │       │   ├── PreprocessingActivationCalculatorTests.cs
 │       │   └── TranscriptionPreprocessorTests.cs
 │       ├── Chrono/
