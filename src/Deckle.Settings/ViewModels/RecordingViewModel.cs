@@ -1,7 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Deckle.Audio;
 using Deckle.Audio.Preprocessing;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace Deckle.Settings.ViewModels;
 
@@ -49,6 +51,74 @@ public partial class RecordingViewModel : ObservableObject
         if (value)
             CaptureSettingsService.Instance.Current.Preprocessing.Activation = PreprocessingActivation.Calibrating;
         PushToSettings();
+    }
+
+    // ── Microphone level check (the indicator) ────────────────────────────────
+    //
+    // Measures the mic and tells the user whether the pre-processing is worth
+    // turning on — no transcription, no auto-decision, the toggle stays their
+    // call. Four mutually-exclusive advice flags drive four InfoBars (IsOpen is
+    // a plain bool, so no value converter is needed); MicResultDetail carries
+    // the raw → normalised dBFS line shown alongside the verdict.
+
+    [ObservableProperty]
+    public partial bool IsMeasuringMic { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceRecommended { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceMarginal { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceNotNeeded { get; set; }
+
+    [ObservableProperty]
+    public partial bool AdviceError { get; set; }
+
+    [ObservableProperty]
+    public partial string MicResultDetail { get; set; } = "";
+
+    [RelayCommand]
+    private async Task MeasureMicAsync()
+    {
+        if (IsMeasuringMic) return;
+        IsMeasuringMic = true;
+        ClearMicResult();
+        try
+        {
+            var capture = CaptureSettingsService.Instance.Current;
+            MicLevelAssessment a = await new MicLevelTester()
+                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing);
+
+            if (!a.HasSignal)
+            {
+                AdviceError = true;
+                return;
+            }
+
+            MicResultDetail = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0:F0} dBFS → {1:F0} dBFS",
+                a.RawRmsDbfs, a.ProcessedRmsDbfs);
+
+            AdviceRecommended = a.Advice == PreprocessingAdvice.Recommended;
+            AdviceMarginal    = a.Advice == PreprocessingAdvice.Marginal;
+            AdviceNotNeeded   = a.Advice == PreprocessingAdvice.NotNeeded;
+        }
+        finally
+        {
+            IsMeasuringMic = false;
+        }
+    }
+
+    private void ClearMicResult()
+    {
+        AdviceRecommended = false;
+        AdviceMarginal    = false;
+        AdviceNotNeeded   = false;
+        AdviceError       = false;
+        MicResultDetail   = "";
     }
 
     // ── Level window (calibration) ──────────────────────────────────────────
