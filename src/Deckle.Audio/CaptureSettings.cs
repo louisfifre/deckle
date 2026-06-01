@@ -1,3 +1,5 @@
+using Deckle.Audio.Preprocessing;
+
 namespace Deckle.Audio;
 
 // Microphone capture settings. AudioInputDeviceId = waveIn device index;
@@ -21,6 +23,15 @@ public sealed class CaptureSettings
     public int MaxRecordingDurationSeconds { get; set; } = 20 * 60;
 
     public LevelWindowSettings LevelWindow { get; set; } = new();
+
+    // Transcription pre-processing DSP (see CONTEXT.md). A terminal
+    // float[] → float[] signal transform applied after Stop, between
+    // capture and the ASR backend, to lift and homogenise a quiet/dynamic
+    // mic for machine intelligibility. Off by default; the only knob in
+    // Settings ▸ Recording is the opt-in toggle, fine params live in the
+    // Playground. Distinct from LevelWindow above, which drives the HUD
+    // display level and never alters the audio.
+    public PreprocessingSettings Preprocessing { get; set; } = new();
 }
 
 // Persisted dBFS window used to map raw microphone RMS

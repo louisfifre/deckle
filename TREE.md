@@ -308,6 +308,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Internal/
 │   │   │   ├── PcmConversion.cs
 │   │   │   └── WaveInLoop.cs
+│   │   ├── Preprocessing/
+│   │   │   ├── Compressor.cs
+│   │   │   ├── HighPassFilter.cs
+│   │   │   ├── Limiter.cs
+│   │   │   ├── NoiseGate.cs
+│   │   │   ├── PreprocessingActivationCalculator.cs
+│   │   │   ├── PreprocessingSettings.cs
+│   │   │   └── TranscriptionPreprocessor.cs
 │   │   ├── Telemetry/
 │   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
@@ -673,7 +681,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .gitattributes
 ├── .gitignore
 ├── AGENTS.md  — codex-deckle-bridge [agent-instructions] Minimal Codex bridge for Deckle. Claude-maintained files remain the source of t…
-├── CLAUDE.md  — claude-deckle-root [agent-instructions] Root agent-instructions for Deckle (local Windows utility, .NET 10 / WinUI 3).…
+├── CLAUDE.md  — claude-deckle-root [agent-instructions] Master agent-instructions for the Deckle project (Windows utility, .NET 10 / Wi…
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
