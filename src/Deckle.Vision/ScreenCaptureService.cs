@@ -80,9 +80,11 @@ public sealed class ScreenCaptureService : IDisposable
 
     // Heartbeat rollup cadence — one DeckleVisionSource.Log.Heartbeat
     // emission per window summarising throughput + latency percentiles.
-    // 1 s gives a stable fps figure at our ~15 Hz target without flooding
-    // the log. Mirrors the pattern in DeckleAmbientSource.Heartbeat.
-    private const int HeartbeatIntervalMs = 1_000;
+    // 5 s matches the Ambient engine cadence (DeckleAmbientSource.Heartbeat)
+    // so the two rollups line up in the log, and keeps a long session
+    // readable — at 1 s a multi-hour capture flooded the window with
+    // thousands of lines. fps stays stable at our ~15 Hz target over 5 s.
+    private const int HeartbeatIntervalMs = 5_000;
 
     // Format priorities passed to DuplicateOutput1. The first format
     // the OS can honour wins. HDR sessions prefer FP16 scRGB ; SDR
@@ -373,16 +375,16 @@ public sealed class ScreenCaptureService : IDisposable
         long throttleTicks = Stopwatch.Frequency * ThrottleIntervalMs / 1000;
 
         // Heartbeat rollup accumulators — reset every HeartbeatIntervalMs
-        // by EmitHeartbeatIfDue. Allocated lazily (capacity 64 covers a
-        // 1 s window at ~15 Hz target with margin) and only populated
+        // by EmitHeartbeatIfDue. Allocated lazily (capacity 320 covers a
+        // 5 s window at our cadence with margin) and only populated
         // when the Verbose|Heartbeat gate is open. The collection itself
         // is bypassed when the gate is closed — zero alloc on the hot
         // path of a typical session with no listener attached.
         long heartbeatWindowStartTicks = Stopwatch.GetTimestamp();
         int hbAcquired = 0;
         int hbDropped = 0;
-        var hbAcquireDurationsUs = new List<long>(64);
-        var hbSampleDurationsUs = new List<long>(64);
+        var hbAcquireDurationsUs = new List<long>(320);
+        var hbSampleDurationsUs = new List<long>(320);
 
         while (!ct.IsCancellationRequested)
         {
