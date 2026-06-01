@@ -90,10 +90,10 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     [Event(EvtPipelineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ambient pipeline stopped")]
-    public void PipelineStopped()
+           Message = "Ambient pipeline stopped ({0})")]
+    public void PipelineStopped(string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStopped);
+        if (IsEnabled()) WriteEvent(EvtPipelineStopped, reason);
     }
 
     [Event(EvtPipelineStopDetail,
