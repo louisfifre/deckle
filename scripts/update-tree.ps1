@@ -21,20 +21,41 @@ function Get-Frontmatter {
 
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
 
-    $lines = Get-Content -LiteralPath $Path -TotalCount 30 -Encoding UTF8 -ErrorAction SilentlyContinue
+    $lines = Get-Content -LiteralPath $Path -TotalCount 120 -Encoding UTF8 -ErrorAction SilentlyContinue
     if (-not $lines -or $lines.Count -lt 2) { return $null }
     if ($lines[0].Trim() -ne '---') { return $null }
 
     $fields = @{}
-    for ($i = 1; $i -lt $lines.Count; $i++) {
+    $i = 1
+    while ($i -lt $lines.Count) {
         $line = $lines[$i]
         if ($line.Trim() -eq '---') {
             if ($fields.Count -eq 0) { return $null }
             return $fields
         }
-        if ($line -match '^\s*([A-Za-z0-9_-]+)\s*:\s*(.*)$') {
+        if ($line -match '^([A-Za-z0-9_-]+)\s*:\s*(.*)$') {
             $key = $Matches[1].ToLowerInvariant()
             $value = $Matches[2].Trim()
+
+            if ($value -match '^[|>][+-]?$') {
+                $blockLines = [System.Collections.Generic.List[string]]::new()
+                $i++
+                while ($i -lt $lines.Count) {
+                    $blockLine = $lines[$i]
+                    if ($blockLine.Trim() -eq '---') {
+                        $i--
+                        break
+                    }
+                    if ($blockLine -match '^[A-Za-z0-9_-]+\s*:') {
+                        $i--
+                        break
+                    }
+                    $blockLines.Add($blockLine) | Out-Null
+                    $i++
+                }
+                $value = Format-FrontmatterBlock -Lines $blockLines
+            }
+
             # Strip surrounding quotes if present
             if (($value.StartsWith('"') -and $value.EndsWith('"')) -or
                 ($value.StartsWith("'") -and $value.EndsWith("'"))) {
@@ -44,9 +65,37 @@ function Get-Frontmatter {
             }
             $fields[$key] = $value
         }
+        $i++
     }
     # Closing --- never found
     return $null
+}
+
+function Format-FrontmatterBlock {
+    param([System.Collections.Generic.List[string]]$Lines)
+
+    if (-not $Lines -or $Lines.Count -eq 0) { return '' }
+
+    $minIndent = $null
+    foreach ($line in $Lines) {
+        if ($line.Trim() -eq '') { continue }
+        $indent = ([regex]::Match($line, '^\s*')).Value.Length
+        if ($null -eq $minIndent -or $indent -lt $minIndent) {
+            $minIndent = $indent
+        }
+    }
+
+    if ($null -eq $minIndent) { return '' }
+
+    $normalized = foreach ($line in $Lines) {
+        if ($line.Length -ge $minIndent) {
+            $line.Substring($minIndent)
+        } else {
+            $line.TrimStart()
+        }
+    }
+
+    return (($normalized -join ' ') -replace '\s+', ' ').Trim()
 }
 
 function Format-MarkdownSuffix {
@@ -55,19 +104,21 @@ function Format-MarkdownSuffix {
     $fm = Get-Frontmatter -Path $AbsolutePath
     if (-not $fm) { return '' }
 
+    $name = $fm['name']
     $type = $fm['type']
     $description = $fm['description']
-    if (-not $fm.ContainsKey('name') -and -not $type -and -not $description) { return '' }
-    if (-not $type -and -not $description) { return '' }
+    if (-not $name -and -not $type -and -not $description) { return '' }
 
     if ($description -and $description.Length -gt 80) {
         $description = $description.Substring(0, 79).TrimEnd() + '…'
     }
 
+    $namePart = if ($name) { $name } else { '' }
     $typePart = if ($type) { "[$type]" } else { '' }
     $descPart = if ($description) { $description } else { '' }
 
-    $tail = ($typePart, $descPart | Where-Object { $_ }) -join ' '
+    $parts = @($namePart, $typePart, $descPart) | Where-Object { $_ }
+    $tail = $parts -join ' '
     if (-not $tail) { return '' }
     return "  — $tail"
 }

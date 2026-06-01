@@ -1,3 +1,9 @@
+---
+name: claude-deckle-shell-traymenu
+description: "Doctrine for Deckle.Shell.TrayMenu, the WinUI 3 tray context menu host. Read before touching the tray menu window, flyout anchoring, visibility plumbing, or Deckle.Shell integration."
+type: agent-instructions
+---
+
 # CLAUDE.md — Deckle.Shell.TrayMenu
 
 Module qui rend le menu contextuel du tray Deckle au pattern WinUI 3 natif. Il existe en sibling de [Deckle.Shell](../Deckle.Shell/CLAUDE.md) pour préserver l'invariant Win32-pur du shell : Shell continue de ne porter que des primitives système (Shell_NotifyIcon, hotkeys, autostart, message-only host) sans aucune dépendance XAML, et la couche WinUI 3 du menu vit ici, isolée. `Deckle.App` référence les deux et câble la jonction dans `OnLaunched`.
