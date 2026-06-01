@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Audio;
+using Deckle.Audio.Preprocessing;
 using System.Globalization;
 
 namespace Deckle.Settings.ViewModels;
@@ -29,6 +30,24 @@ public partial class RecordingViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
+        PushToSettings();
+    }
+
+    // ── Transcription pre-processing (DSP black box) ──────────────────────────
+
+    [ObservableProperty]
+    public partial bool PreprocessingEnabled { get; set; }
+
+    partial void OnPreprocessingEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
+        // Opting in (re)starts the deferred-activation calibration: the DSP
+        // stays inactive until the mic has been measured over the first few
+        // recordings, then the engine flips it to Active or Dormant. We only
+        // reset the state on enable — disabling leaves it irrelevant.
+        if (value)
+            CaptureSettingsService.Instance.Current.Preprocessing.Activation = PreprocessingActivation.Calibrating;
         PushToSettings();
     }
 
@@ -93,6 +112,7 @@ public partial class RecordingViewModel : ObservableObject
         LevelWindowMaxDbfs = -32;
         LevelWindowExponent = 1.0;
         LevelWindowAutoCalibration = false;
+        PreprocessingEnabled = false;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -109,6 +129,7 @@ public partial class RecordingViewModel : ObservableObject
             LevelWindowMaxDbfs = capture.LevelWindow.MaxDbfs;
             LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
             LevelWindowAutoCalibration = capture.LevelWindow.AutoCalibrationEnabled;
+            PreprocessingEnabled = capture.Preprocessing.Enabled;
         }
         finally
         {
@@ -125,6 +146,7 @@ public partial class RecordingViewModel : ObservableObject
         capture.LevelWindow.MaxDbfs = (float)LevelWindowMaxDbfs;
         capture.LevelWindow.DbfsCurveExponent = (float)LevelWindowExponent;
         capture.LevelWindow.AutoCalibrationEnabled = LevelWindowAutoCalibration;
+        capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();
     }
@@ -139,6 +161,7 @@ public partial class RecordingViewModel : ObservableObject
             LevelWindowMaxDbfs = -32;
             LevelWindowExponent = 1.0;
             LevelWindowAutoCalibration = false;
+            PreprocessingEnabled = false;
         }
         finally { _isSyncing = false; }
         PushToSettings();

@@ -1200,10 +1200,16 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Microphone selection and voice level window calibration.</value>
+    <value>Microphone selection, signal pre-processing, and voice level window calibration.</value>
   </data>
   <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
     <value>Defaults</value>
+  </data>
+  <data name="RecordingPagePreprocessingCard.Header" xml:space="preserve">
+    <value>Microphone pre-processing</value>
+  </data>
+  <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
+    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. Off by default. Once enabled it stays inactive until Deckle has measured your microphone over the first few recordings — then it switches on by itself, or stays off if your mic is already at a good level.</value>
   </data>
   <data name="GeneralPageBackupRestoreHeaderLabel.Text" xml:space="preserve">
     <value>Back up &amp; restore</value>
