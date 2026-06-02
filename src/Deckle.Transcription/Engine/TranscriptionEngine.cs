@@ -98,31 +98,18 @@ public sealed partial class TranscriptionEngine : IDisposable
     // thread.
     public event Action<TranscriptionSegment>? NewSegment;
 
-    // All StatusChanged / TranscriptionFinished emissions route through these
-    // two helpers so the startup warmup can silence them in a single place
-    // instead of peppering the pipeline with if-checks.
-    //
-    // ThreadStatic — the suppression is scoped to the *invocation* of
-    // Transcribe() that owns the warmup, not to the engine instance. Warmup
-    // sets the flag on its own thread before calling Transcribe and clears
-    // it after; the user-driven Worker thread reads its own (false) copy and
-    // is unaffected. A shared instance flag would let the Worker observe
-    // Warmup's `true` for the slice between Warmup releasing
-    // _transcribeLock and reaching its `finally` reset, silencing the user's
-    // narratives mid-call. Whisper.cpp invokes its segment / abort / log
-    // callbacks synchronously on the thread that called whisper_full, so
-    // ThreadStatic is the right scope for them too.
-    [ThreadStatic] private static bool t_isWarmup;
-
+    // All StatusChanged / TranscriptionFinished emissions route through these two
+    // helpers. The prime (EnsurePrimed) used to silence them via a ThreadStatic
+    // warmup flag; the prime now calls the backend directly and never reaches
+    // these helpers (nor the clipboard, corpus, or finalize), so there is nothing
+    // left to gate — they always fire.
     private void RaiseStatus(string status)
     {
-        if (t_isWarmup) return;
         StatusChanged?.Invoke(status);
     }
 
     private void RaiseFinished(TranscriptionOutcome outcome)
     {
-        if (t_isWarmup) return;
         TranscriptionFinished?.Invoke(outcome);
     }
 
@@ -247,14 +234,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     private System.Diagnostics.Stopwatch? _hotkeySw;
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;
-
-    // Backend-reported inference timings, populated from the most recent
-    // TranscriptionResult and consumed by the LatencyPayload builder.
-    //   _whisperInitMs — pre-VAD setup time inside backend.TranscribeAsync.
-    //   _vadMs         — VAD wall time inside backend.TranscribeAsync (0 when
-    //                    VAD off or backend has no VAD step).
-    private long _whisperInitMs;
-    private long _vadMs;
 
     private bool _disposed;
 

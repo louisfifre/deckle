@@ -100,148 +100,27 @@ public sealed partial class TranscriptionEngine
     }
 
 
-    // ── Whisper transcription ────────────────────────────────────────────────
+    // ── Shared finalize ──────────────────────────────────────────────────────
     //
-    // Monolithic call: all audio is passed at once to whisper_full(), which
-    // handles its own internal windowing (30s + dynamic seek) and inter-window
-    // context propagation via tokens. No chunking on the C# side.
+    // Strategy-agnostic tail of a recording. From the assembled raw text plus
+    // the captured audio it writes the clipboard once, resolves and applies an
+    // optional LLM rewrite, optionally pastes, then emits the latency + corpus
+    // telemetry and raises Finished. Both pipelines — monolithic and streaming —
+    // converge here, so the user-facing behaviour is identical whatever produced
+    // the text. Synchronous: every step (clipboard, rewrite, paste) is blocking.
     //
-    // Progressive recovery via new_segment_callback: whisper.cpp invokes the
-    // callback for each new validated segment during decoding, on ITS inference
-    // thread — hence the lock on _segments. Final text is assembled from these
-    // segments at the end of the call.
-
-
-    private async Task TranscribeAsync(float[] audio, CancellationToken ct = default)
+    // The producing strategy owns capture, the backend call(s), and the state
+    // transitions up to Transcribing; here we only consume the result it hands
+    // back. _transcriptionId is generated once per recording by WorkerRun before
+    // the strategy runs (corpus join key, ADR-0006).
+    private void FinalizeTranscription(PipelineProduction prod)
     {
-        // Identité de cette invocation pipeline. Régénérée à chaque
-        // entrée dans Transcribe — le moindre early-return en aval
-        // n'émet aucun corpus event, donc l'ID n'a pas besoin d'être
-        // partagé avec le scope appelant. Voir ADR-0006.
-        _transcriptionId = System.Guid.NewGuid().ToString("N");
-
-        if (!_backend.IsModelLoaded)
-        {
-            RaiseStatus(Loc.Get("Status_ModelNotReady"));
-            RaiseFinished(TranscriptionOutcome.None);
-            return;
-        }
-
-        if (audio.Length == 0)
-        {
-            DeckleWhispSource.Log.TranscribeEmpty();
-            // No RaiseStatus here — WorkerRun's finally is the canonical
-            // emission point for "Ready" on the success path.
-            RaiseFinished(TranscriptionOutcome.None);
-            return;
-        }
-
-        float audioSec = (float)audio.Length / 16_000f;
-
-        // Stop the pre-backend overhead stopwatch the moment we hand off to
-        // the backend. The backend's TranscriptionResult.InitDurationMs
-        // covers the pre-VAD phase inside the inference call itself — sum
-        // the two for the equivalent of the legacy "stop to first vad line"
-        // measurement.
-        if (_stopToPipelineSw is { IsRunning: true }) _stopToPipelineSw.Stop();
-
-        // Transcription pre-processing DSP — the terminal float[]→float[] stage
-        // between capture and the ASR backend (Deckle.Audio). Applied to a
-        // separate buffer fed to the backend only: the raw `audio` stays
-        // untouched and is what the corpus stores (ADR-0006), so a processed
-        // variant can always be re-derived from the raw baseline. Skipped during
-        // the warmup prime (the embedded clip is already clean). When the user
-        // has opted in it runs on every recording and self-adjusts — the makeup
-        // lands near 0 dB on a mic already at target, so it is a near no-op there.
-        float[] backendAudio = audio;
-        var pp = _host.Audio.Preprocessing;
-        if (!t_isWarmup && pp.Enabled)
-        {
-            var processed = TranscriptionPreprocessor.Process(audio, pp);
-            backendAudio = processed.Pcm;
-            DeckleWhispSource.Log.TranscriptionPreprocessed(
-                processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
-        }
-
-        // Delegate the actual inference to the configured backend. Segment
-        // streaming and per-segment logging happen inside the backend; we
-        // forward each emitted segment to the NewSegment event so external
-        // subscribers (HUD, LogWindow) keep their existing contract.
-        TranscriptionResult result;
-        try
-        {
-            result = await _backend.TranscribeAsync(
-                backendAudio,
-                seg => NewSegment?.Invoke(seg),
-                ct).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            // Sub-provider transverse Cancellation — un OCE arrivé jusqu'ici
-            // signifie que le token de pipeline (Stop user, hotkey, shutdown)
-            // a fire pendant whisper_full(). Trace l'annulation avant que le
-            // comportement legacy ne reclasse l'évent en TranscribeFailed.
-            // Comportement existant préservé tel quel — refacto hors scope.
-            if (ex is OperationCanceledException)
-            {
-                DeckleCancellationSource.Log.OperationCancelled(
-                    "whisp-transcribe", "upstream", -1);
-            }
-            DeckleWhispSource.Log.TranscribeFailed(-1);
-            EmitUserFeedback(FB_ERROR,
-                Loc.Get("Engine_TranscriptionFailed_Title"),
-                Loc.Get("Engine_TranscriptionFailed_Body"),
-                FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
-            RaiseFinished(TranscriptionOutcome.None);
-            DeckleWhispSource.Log.SegmentCallbackThrew(ex.GetType().Name, ex.Message);
-            return;
-        }
-
-        // Surface the backend's phase timings to the LatencyPayload builder.
-        long transcribeMsTotal = result.TotalDurationMs;
-        _whisperInitMs = result.InitDurationMs;
-        _vadMs = result.VadDurationMs;
-
-        // A non-zero result code paired with an abort means the backend
-        // bailed on our signal — not a decoder error. Segments emitted
-        // before the abort are still usable, so fall through. A non-zero
-        // result without an abort is a real failure.
-        if (result.ResultCode != 0 && !result.Aborted)
-        {
-            DeckleWhispSource.Log.TranscribeFailed(result.ResultCode);
-            EmitUserFeedback(FB_ERROR,
-                Loc.Get("Engine_TranscriptionFailed_Title"),
-                Loc.Get("Engine_TranscriptionFailed_Body"),
-                FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
-            RaiseFinished(TranscriptionOutcome.None);
-            return;
-        }
-
-        string fullText = result.FullText;
-        int nSeg = result.Segments.Count;
-
-        DeckleWhispSource.Log.TranscribeCompleted(nSeg);
-        DeckleWhispSource.Log.TranscribeCompleteDetail(transcribeMsTotal, nSeg, fullText.Length);
-
-        if (string.IsNullOrWhiteSpace(fullText))
-        {
-            RaiseStatus(Loc.Get("Status_Ready"));
-            RaiseFinished(TranscriptionOutcome.None);
-            return;
-        }
-
-        // Warmup short-circuit. The expensive part — VAD + whisper_full +
-        // first-time Vulkan kernel compile — is now paid. Skipping the
-        // clipboard write, the LLM rewrite, and the paste keeps the user's
-        // clipboard untouched at boot, avoids a cold Ollama hit, and prevents
-        // a "Pasted" Narrative from leaking through. The Warmup() caller
-        // logs its own success line.
-        if (t_isWarmup)
-        {
-            return;
-        }
+        string  fullText          = prod.RawText;
+        float[] audio             = prod.RawAudio;
+        float[] backendAudio      = prod.BackendAudio;
+        float   audioSec          = (float)audio.Length / 16_000f;
+        long    transcribeMsTotal = prod.TotalTranscribeMs;
+        int     nSeg              = prod.NSegments;
 
         // Low-audio warning is emitted live by MicrophoneCapture once 5 s
         // of sustained sub-threshold signal has accumulated — see the
@@ -399,7 +278,8 @@ public sealed partial class TranscriptionEngine
         // coerce so the payload stays well-formed.
         //
         // Timing sourcing after the IAsrBackend split:
-        //   • _whisperInitMs, _vadMs   ← TranscriptionResult phase timings
+        //   • prod.InitMs, prod.VadMs  ← TranscriptionResult phase timings,
+        //                                carried on PipelineProduction
         //   • whisperMs (pure decode)  ← total - init - vad (clamped to 0)
         //   • vadInferenceMs (Silero
         //     CPU time, distinct from
@@ -410,8 +290,8 @@ public sealed partial class TranscriptionEngine
         long hotkeyToCaptureMs = _hotkeySw?.ElapsedMilliseconds ?? 0;
         long recordDrainMs     = (long)_recordDrainDuration.TotalMilliseconds;
         long stopToPipelineMs  = _stopToPipelineSw?.ElapsedMilliseconds ?? 0;
-        long whisperInitMs     = _whisperInitMs;
-        long vadMs             = _vadMs;
+        long whisperInitMs     = prod.InitMs;
+        long vadMs             = prod.VadMs;
         long whisperMs         = System.Math.Max(0, transcribeMsTotal - whisperInitMs - vadMs);
         long vadInferenceMs    = 0;
         // Backend name is the closest stable analogue to the old

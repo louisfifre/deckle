@@ -596,9 +596,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── WavCorpusWriter.cs
 │   │   ├── Engine/
 │   │   │   ├── IAsrBackend.cs
+│   │   │   ├── PipelineProduction.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
+│   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   └── TranscriptionEngine.StateMachine.cs
 │   │   ├── Setup/

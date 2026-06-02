@@ -233,19 +233,18 @@ public sealed partial class TranscriptionEngine
     //      otherwise clobber it. A load failure surfaces its own localized
     //      UserFeedback (inside LoadModel) and returns false.
     //   2) Run a dummy inference: push the short embedded clip
-    //      (Assets/Sounds/speech.wav, PCM mono 16 kHz) through the full
-    //      Transcribe path so VAD + whisper_full + the first-time GPU kernel
-    //      compile all execute once. ~200–800 ms on RX 7900 XT with Vulkan
-    //      ggml. On a missing/corrupt clip we fall back to a 1.6 s silent
-    //      buffer — the dummy inference still compiles the kernels.
+    //      (Assets/Sounds/speech.wav, PCM mono 16 kHz) straight through the
+    //      backend so VAD + whisper_full + the first-time GPU kernel compile all
+    //      execute once. ~200–800 ms on RX 7900 XT with Vulkan ggml. On a
+    //      missing/corrupt clip we fall back to a 1.6 s silent buffer — the dummy
+    //      inference still compiles the kernels.
     //
-    // Robustness — never touches the clipboard. t_isWarmup gates the whole
-    // user-facing tail of TranscribeAsync (clipboard write, LLM rewrite, paste,
-    // corpus logging, StatusChanged, TranscriptionFinished). Because the prime
-    // now runs synchronously on the worker thread — not on a detached boot
-    // thread racing a real transcription — there is no window where a real run
-    // can observe a stale t_isWarmup, which is what used to let priming text
-    // occasionally leak to the clipboard.
+    // Robustness — never touches the clipboard, the corpus, or the status /
+    // Finished events. The prime calls the backend DIRECTLY (not a pipeline
+    // strategy, not the shared finalize), with an empty segment sink, so there is
+    // no user-facing tail to suppress — the old ThreadStatic warmup flag is gone.
+    // It runs synchronously on the worker thread before "Recording" is raised, so
+    // a real transcription can never observe a half-primed state.
     //
     // Cancellable via the caller's token (the run's _recordCts): a Stop pressed
     // during the prime aborts the dummy inference (abort_callback observes the
@@ -263,14 +262,29 @@ public sealed partial class TranscriptionEngine
 
         float[] warmupBuffer = TryLoadWarmupClip() ?? new float[25_600];
 
-        t_isWarmup = true;
+        // Prime the inference path DIRECTLY through the backend — not through a
+        // pipeline strategy. The sole purpose is to pay the one-time cost (VAD +
+        // whisper_full + first-time GPU kernel compile); the result is discarded
+        // and nothing user-facing happens — no clipboard, no corpus, no
+        // status/Finished, and an empty segment sink so prime segments never leak
+        // to NewSegment subscribers. Going straight to the backend keeps the
+        // prime off any streaming consumer thread and avoids segmenting a clip
+        // that does not need it. It runs synchronously on the worker thread
+        // before "Recording" is raised, so a real transcription can never observe
+        // a half-primed state (this is what the old ThreadStatic warmup flag
+        // guarded against — no longer needed now that the prime bypasses the
+        // pipeline entirely).
         try
         {
-            TranscribeAsync(warmupBuffer, ct).GetAwaiter().GetResult();
+            _backend.TranscribeAsync(warmupBuffer, static _ => { }, ct)
+                .GetAwaiter().GetResult();
         }
-        finally
+        catch (OperationCanceledException)
         {
-            t_isWarmup = false;
+            // Stop pressed during the prime — unwind the start quietly. Any other
+            // exception is a genuine prime failure and propagates to WorkerRun's
+            // catch (PipelineCrashed), same as a real transcription crash.
+            return false;
         }
 
         if (ct.IsCancellationRequested) return false;

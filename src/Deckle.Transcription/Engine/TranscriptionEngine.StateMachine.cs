@@ -133,15 +133,13 @@ public sealed partial class TranscriptionEngine
             // by LoadModel() if it runs (cold path); _hotkeySw is stopped
             // after waveInStart via the MicrophoneCapture.CaptureStarted
             // event; _recordDrainDuration is set from CaptureResult on
-            // Record() return; _stopToPipelineSw and _whisperInitSw are
-            // stopped from the whisper.cpp log hook on the first whisper_vad
-            // line.
+            // Record() return; _stopToPipelineSw is stopped by the producing
+            // strategy at the backend handoff. The backend phase timings
+            // (init / VAD) now travel on PipelineProduction, not engine fields.
             _modelLoadMs = 0;
             _hotkeySw = System.Diagnostics.Stopwatch.StartNew();
             _recordDrainDuration = System.TimeSpan.Zero;
             _stopToPipelineSw = null;
-            _whisperInitMs = 0;
-            _vadMs = 0;
 
             // Probe the audio device BEFORE firing StatusChanged("Recording").
             // If the mic is absent/busy, short-circuit the entire pipeline:
@@ -255,76 +253,28 @@ public sealed partial class TranscriptionEngine
             _recordingSw = System.Diagnostics.Stopwatch.StartNew();
             RaiseStatus(Loc.Get("Status_Recording"));
 
-            CaptureResult capture = _capture.Record(_recordingHost, _recordCts.Token);
-            _recordDrainDuration = capture.DrainDuration;
+            // One id per recording (corpus join key, ADR-0006), shared by
+            // whichever strategy runs and consumed only in FinalizeTranscription.
+            _transcriptionId = System.Guid.NewGuid().ToString("N");
 
-            // Surface the post-capture narrative + cap-hit handling here in
-            // the orchestrator (Capture only emits codes — no localized
-            // text). The narratives mirror the legacy phrasing so existing
-            // log readers stay calibrated.
-            if (capture.Outcome == CaptureOutcome.MicError)
+            // The selected strategy owns capture, the backend call(s), and every
+            // state transition through to Transcribing (cap-hit CAS, auto-
+            // calibrate, Stopping → Transcribing). It returns the raw text +
+            // audio + backend timings for the shared finalize, or null when it
+            // already handled an early exit (mic error, empty audio, backend
+            // failure, lost CAS) and raised Finished itself.
+            //
+            // Strategy selection is read from the live settings snapshot, so the
+            // next recording picks up a Settings change with no restart. The
+            // streaming branch wires in increment 3; monolithic is the only path
+            // implemented today.
+            PipelineProduction? produced =
+                ProduceMonolithicAsync(_recordCts.Token).GetAwaiter().GetResult();
+
+            if (produced is not null)
             {
-                var (title, body) = LocalizeMicError(
-                    MicErrorKind.Unavailable, capture.MmsysErr);
-                DeckleWhispSource.Log.RecordingMicError(capture.MmsysErr, title);
-                EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
-                RaiseFinished(TranscriptionOutcome.None);
-                return;
+                FinalizeTranscription(produced.Value);
             }
-
-            if (capture.Outcome == CaptureOutcome.CapHit)
-            {
-                // CAS Recording → Stopping ourselves so the rest of the
-                // transition sequence below stays uniform with the user-
-                // driven Stop path. If Dispose won (state already Disposed)
-                // we just lose this CAS and the post-Record CAS fails too.
-                //
-                // _stopToPipelineSw timing semantics on cap-hit:
-                // legacy code started this stopwatch at the moment the cap
-                // was hit, BEFORE the drain phase. After extraction the
-                // drain runs inside MicrophoneCapture.Record so we only
-                // start the stopwatch on return — the metric now excludes
-                // the ~100 ms drain on cap-hit (rare path; user-driven
-                // Stop path is unchanged because RequestToggle starts the
-                // stopwatch BEFORE Cancel()). Acceptable drift.
-                if (Interlocked.CompareExchange(
-                        ref _state,
-                        (int)PipelineState.Stopping,
-                        (int)PipelineState.Recording)
-                    == (int)PipelineState.Recording)
-                {
-                    _stopToPipelineSw = System.Diagnostics.Stopwatch.StartNew();
-                }
-            }
-
-            // Auto-calibration enveloppe — pure compute lives in
-            // MicrophoneCalibrationCalculator; the ring buffer + side
-            // effects (SaveSettings, ApplyLevelWindow, log) stay here.
-            if (capture.Telemetry is not null)
-            {
-                TryAutoCalibrate(capture.Telemetry);
-            }
-
-            float[] audio = capture.Pcm;
-
-            // Record() returns either because RequestToggle CAS'd
-            // Recording → Stopping (the user pressed Stop), or because the
-            // cap-duration branch CAS'd it itself. Either way the state
-            // should now be Stopping; transition to Transcribing.
-            // If we lose this CAS, Dispose has won — skip Transcribe.
-            if (Interlocked.CompareExchange(
-                    ref _state,
-                    (int)PipelineState.Transcribing,
-                    (int)PipelineState.Stopping)
-                != (int)PipelineState.Stopping)
-            {
-                DeckleWhispSource.Log.TranscribeSkipped(((PipelineState)Volatile.Read(ref _state)).ToString());
-                RaiseFinished(TranscriptionOutcome.None);
-                return;
-            }
-
-            RaiseStatus(Loc.Get("Status_Transcribing"));
-            TranscribeAsync(audio).GetAwaiter().GetResult();
             // The idle-unload timer is (re)armed in the finally below, which
             // covers every exit that leaves the model resident — not only this
             // success path. This is what closes the old "model loaded but no
