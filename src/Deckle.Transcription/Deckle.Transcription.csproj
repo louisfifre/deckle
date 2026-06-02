@@ -34,6 +34,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Exposes internal algorithm helpers (EnergySegmenter) to the test project,
+         so they can be unit-tested in isolation without being made public. Same
+         MSBuild→Roslyn [InternalsVisibleTo] pattern as Deckle.Hud / Deckle.Lighting.Ambient. -->
+    <InternalsVisibleTo Include="Deckle.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />

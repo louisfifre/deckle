@@ -62,5 +62,9 @@
     <!-- Lighting.Ambient pour la régression EventStream Hue
          faux-external-stop + observability DeckleAmbientSource. -->
     <ProjectReference Include="..\..\src\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
+    <!-- Transcription pour EnergySegmenterTests (socle streaming) — machine à
+         états pure du découpage en utterances, accédée via InternalsVisibleTo.
+         Tire WindowsAppSDK (le module embarque WhisperPage) comme Hud/Vision. -->
+    <ProjectReference Include="..\..\src\Deckle.Transcription\Deckle.Transcription.csproj" />
   </ItemGroup>
 </Project>

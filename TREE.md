@@ -604,6 +604,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Setup/
 │   │   │   ├── Downloader.cs
 │   │   │   └── ModelEntry.cs
+│   │   ├── Streaming/
+│   │   │   ├── EnergySegmenter.cs
+│   │   │   ├── EnergySegmenterSettings.cs
+│   │   │   └── Utterance.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -677,6 +681,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   └── WindowsAppSdkBootstrap.cs
 │       ├── Shell/
 │       │   └── DispatcherQueueExtensionsTests.cs
+│       ├── Transcription/
+│       │   └── EnergySegmenterTests.cs
 │       ├── Vision/
 │       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
