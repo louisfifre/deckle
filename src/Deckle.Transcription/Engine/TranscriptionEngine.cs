@@ -155,15 +155,22 @@ public sealed partial class TranscriptionEngine : IDisposable
     // those.
     private int _state = (int)PipelineState.Idle;
 
-    // Cancellation channel for the active capture session. Recreated at the
-    // top of each WorkerRun (Idle → Recording transition), cancelled by the
-    // Stop path (RequestToggle after CAS Recording → Stopping) and by Dispose.
-    // Disposed inside WorkerRun's finally once the capture call has returned.
+    // Cancellation channel for the active capture session (the PRODUCER).
+    // Recreated at the top of each WorkerRun, cancelled by the Stop path
+    // (RequestToggle after CAS Recording → Stopping) AND by Dispose. Disposed
+    // inside WorkerRun's finally once the run has returned.
     //
-    // The cap-duration branch is now owned by MicrophoneCapture / WaveInLoop
-    // — the orchestrator observes it via CaptureResult.Outcome on return.
-    // No second channel needed.
+    // The cap-duration branch is owned by MicrophoneCapture / WaveInLoop — the
+    // orchestrator observes it via CaptureResult.Outcome on return.
     private CancellationTokenSource? _recordCts;
+
+    // Second cancellation channel for the streaming CONSUMER (the per-utterance
+    // transcription loop). Fired ONLY by Dispose, never by Stop — this is what
+    // lets a user Stop drain the queued utterances losslessly (the consumer is
+    // not cancelled) while Dispose aborts the in-flight inference so the worker
+    // join stays bounded and whisper_free never runs on an active context. The
+    // monolithic path ignores it; only the streaming pipeline observes it.
+    private CancellationTokenSource? _drainCts;
 
     // Signaled when the engine returns to Idle (worker exits + state reset).
     // Initialised "set" because no recording is in flight at construction time.
@@ -363,6 +370,13 @@ public sealed partial class TranscriptionEngine : IDisposable
         // to exit MicrophoneCapture.Record() cleanly to release the waveIn
         // handles. CTS may already be disposed if WorkerRun raced ahead.
         try { _recordCts?.Cancel(); }
+        catch (ObjectDisposedException) { }
+
+        // Abort the streaming consumer's in-flight inference too (the drain
+        // token). Without this, a Dispose mid-streaming would block the worker
+        // join on a long backlog and could let the backend free run while an
+        // inference is active. Fired only here — Stop never cancels it.
+        try { _drainCts?.Cancel(); }
         catch (ObjectDisposedException) { }
 
         var worker = _worker;

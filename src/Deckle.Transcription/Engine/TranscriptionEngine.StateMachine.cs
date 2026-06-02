@@ -224,10 +224,13 @@ public sealed partial class TranscriptionEngine
     // also gate on _state == Idle to avoid clobbering this invariant.
     private void WorkerRun()
     {
-        // Cancellation channel for this run — Stop / Dispose call Cancel()
-        // on it to drain the capture polling loop. Recreated each run so
-        // a previous Cancel() doesn't leak into the next session.
+        // Cancellation channels for this run, recreated each run so a previous
+        // Cancel() doesn't leak into the next session. _recordCts stops the
+        // producer (capture) — Stop and Dispose both fire it. _drainCts aborts
+        // the streaming consumer's in-flight inference — Dispose only, so a Stop
+        // drains the queued utterances losslessly.
         _recordCts = new CancellationTokenSource();
+        _drainCts  = new CancellationTokenSource();
 
         try
         {
@@ -264,12 +267,15 @@ public sealed partial class TranscriptionEngine
             // already handled an early exit (mic error, empty audio, backend
             // failure, lost CAS) and raised Finished itself.
             //
-            // Strategy selection is read from the live settings snapshot, so the
-            // next recording picks up a Settings change with no restart. The
-            // streaming branch wires in increment 3; monolithic is the only path
-            // implemented today.
+            // Strategy is read from the live settings snapshot, so the next
+            // recording picks up a Settings change with no restart. Streaming
+            // gets both tokens (producer + drain); monolithic ignores the drain.
+            bool streaming = _host.Transcription.Streaming.Strategy == PipelineStrategyKind.Streaming;
             PipelineProduction? produced =
-                ProduceMonolithicAsync(_recordCts.Token).GetAwaiter().GetResult();
+                (streaming
+                    ? ProduceStreamingAsync(_recordCts.Token, _drainCts.Token)
+                    : ProduceMonolithicAsync(_recordCts.Token))
+                .GetAwaiter().GetResult();
 
             if (produced is not null)
             {
@@ -334,13 +340,17 @@ public sealed partial class TranscriptionEngine
                 ResetIdleTimer();
             }
 
-            // Dispose and clear the per-run cancellation token. Done before
+            // Dispose and clear the per-run cancellation tokens. Done before
             // _idleEvent.Set() so a Dispose Wait that races on the event
             // doesn't see a still-live CTS field — fields read from there
             // are observably consistent with the worker exit.
             try { _recordCts?.Dispose(); }
             catch (ObjectDisposedException) { /* worker raced our dispose */ }
             _recordCts = null;
+
+            try { _drainCts?.Dispose(); }
+            catch (ObjectDisposedException) { /* worker raced our dispose */ }
+            _drainCts = null;
 
             _idleEvent.Set();
             if (reachedIdle)
