@@ -602,6 +602,91 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
+                <!-- ── Streaming pipeline (experimental) ───────────────────── -->
+                <TextBlock x:Uid="WhisperPageStreamingHeaderLabel"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <TextBlock x:Uid="WhisperPageStreamingBodyLabel"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="1,0,0,8" />
+
+                <controls:SettingsExpander x:Name="StreamingEnabledCard"
+                                           x:Uid="WhisperStreamingEnabledCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
+                    <ToggleSwitch x:Name="StreamingEnabledToggle"
+                                  IsOn="{x:Bind ViewModel.StreamingEnabled, Mode=TwoWay}" />
+                    <controls:SettingsExpander.Items>
+
+                        <controls:SettingsCard x:Name="SegThresholdCard"
+                                               x:Uid="WhisperSegThresholdCard"
+                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                            <NumberBox x:Name="SegThresholdBox"
+                                       Minimum="-90"
+                                       Maximum="0"
+                                       SmallChange="1"
+                                       LargeChange="5"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegThresholdDbfs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverCard"
+                                               x:Uid="WhisperSegHangoverCard"
+                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverBox"
+                                       Minimum="0"
+                                       Maximum="2000"
+                                       SmallChange="50"
+                                       LargeChange="100"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegMarginCard"
+                                               x:Uid="WhisperSegMarginCard"
+                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                            <NumberBox x:Name="SegMarginBox"
+                                       Minimum="0"
+                                       Maximum="1000"
+                                       SmallChange="50"
+                                       LargeChange="100"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegMarginMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegMinUtteranceCard"
+                                               x:Uid="WhisperSegMinUtteranceCard"
+                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                            <NumberBox x:Name="SegMinUtteranceBox"
+                                       Minimum="0"
+                                       Maximum="2000"
+                                       SmallChange="50"
+                                       LargeChange="100"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegMinUtteranceMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegMaxUtteranceCard"
+                                               x:Uid="WhisperSegMaxUtteranceCard"
+                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                            <NumberBox x:Name="SegMaxUtteranceBox"
+                                       Minimum="1000"
+                                       Maximum="60000"
+                                       SmallChange="1000"
+                                       LargeChange="5000"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegMaxUtteranceMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+
             </StackPanel>
             </Grid>
         </ScrollViewer>
