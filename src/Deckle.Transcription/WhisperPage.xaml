@@ -621,7 +621,7 @@
 
                         <controls:SettingsCard x:Name="SegThresholdCard"
                                                x:Uid="WhisperSegThresholdCard"
-                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegThresholdBox"
                                        Minimum="-90"
                                        Maximum="0"
@@ -634,7 +634,7 @@
 
                         <controls:SettingsCard x:Name="SegHangoverCard"
                                                x:Uid="WhisperSegHangoverCard"
-                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegHangoverBox"
                                        Minimum="0"
                                        Maximum="2000"
@@ -647,7 +647,7 @@
 
                         <controls:SettingsCard x:Name="SegMarginCard"
                                                x:Uid="WhisperSegMarginCard"
-                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegMarginBox"
                                        Minimum="0"
                                        Maximum="1000"
@@ -660,7 +660,7 @@
 
                         <controls:SettingsCard x:Name="SegMinUtteranceCard"
                                                x:Uid="WhisperSegMinUtteranceCard"
-                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegMinUtteranceBox"
                                        Minimum="0"
                                        Maximum="2000"
@@ -673,7 +673,7 @@
 
                         <controls:SettingsCard x:Name="SegMaxUtteranceCard"
                                                x:Uid="WhisperSegMaxUtteranceCard"
-                                               IsEnabled="{x:Bind ViewModel.StreamingEnabled, Mode=OneWay}">
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegMaxUtteranceBox"
                                        Minimum="1000"
                                        Maximum="60000"
