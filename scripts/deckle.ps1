@@ -6,8 +6,8 @@
 #   Build             — daily compile + run loop, per-worktree.
 #   Worktree maint    — clean artefacts, gather stats, per-worktree.
 #   Setup             — bootstrap a fresh dev machine (global, no
-#                       worktree picker). Runtime assets are handled by
-#                       the app's first-run wizard.
+#                       worktree picker), install local git hooks. Runtime
+#                       assets are handled by the app's first-run wizard.
 #
 # Per-worktree actions prompt for a worktree after the action is picked
 # (worktree auto-resolves when only the main repo exists). Global actions
@@ -64,6 +64,7 @@ $actions = @(
 
     [pscustomobject]@{ Label = '── Setup ──';                       Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Bootstrap dev environment';         Value = 'bootstrap-dev'                     }
+    [pscustomobject]@{ Label = 'Install git hooks';                 Value = 'install-hooks'                     }
 
     [pscustomobject]@{ Label = '';                                  Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Quit';                              Value = 'quit'                              }
@@ -115,6 +116,9 @@ switch ($action) {
         if ($dryRun) { $bootstrapArgs.DryRun = $true }
         if ($full)   { $bootstrapArgs.Full = $true }
         & (Join-Path $LibDir 'bootstrap-dev-env.ps1') @bootstrapArgs
+    }
+    'install-hooks' {
+        & (Join-Path $LibDir 'install-hooks.ps1')
     }
 
     'quit' {

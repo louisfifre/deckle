@@ -28,6 +28,6 @@ Adoption du format canonique unifié pour tous les artefacts agents — `CLAUDE.
 
 **Référence normative** : `session-save-context/format.md` (skill global sous `~/.claude/skills/session-save-context/`) pour le format technique réutilisable par d'autres skills.
 
-**Conséquence opérationnelle** : tout nouvel artefact agent créé désormais doit passer par le format canonique. Le hook `scripts/update-tree.ps1` scrape déjà `name` + `description` + `type` pour les afficher dans `TREE.md` — la conformité du frontmatter conditionne la lisibilité de l'arborescence.
+**Conséquence opérationnelle** : tout nouvel artefact agent créé désormais doit passer par le format canonique. Le hook `scripts/hooks/update-tree.ps1` scrape déjà `name` + `description` + `type` pour les afficher dans `TREE.md` — la conformité du frontmatter conditionne la lisibilité de l'arborescence.
 
 **Apprentissage méthodo** — la migration a révélé deux artefacts en dérive silencieuse par rapport à la liste fermée des `type`. Le journal benchmark écrit organiquement avec `type: module-journal` n'était pas reconnu par `format.md`, et il manquait `project-journal` pour ce fichier-ci. Les deux types ont été promus dans la liste fermée à l'occasion de l'introduction du JOURNAL projet (2026-05-27). La règle : quand une convention organique tient au moins une fois sur le terrain, elle est promue dans le format avant qu'un agent en aval ne s'égare.

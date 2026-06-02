@@ -3,7 +3,7 @@
 <#
 .SYNOPSIS
     Régénère TREE.md depuis git ls-files.
-    À invoquer avant tout commit qui ajoute, supprime ou renomme un fichier tracé.
+    Support du hook pre-commit, invocable aussi à la main.
 #>
 
 $ErrorActionPreference = 'Stop'

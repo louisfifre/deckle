@@ -249,19 +249,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       └── review--commentaires-code--2026-06-01.md
 ├── scripts/
 │   ├── hooks/
-│   │   └── pre-commit
+│   │   ├── pre-commit
+│   │   └── update-tree.ps1
 │   ├── lib/
 │   │   ├── _menu.psm1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
 │   │   ├── clean.ps1
+│   │   ├── install-hooks.ps1
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── setup-assets.ps1
 │   │   └── stats.ps1
 │   ├── deckle.ps1
-│   ├── install-hooks.ps1
-│   ├── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
-│   └── update-tree.ps1
+│   └── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
 ├── src/
 │   ├── Deckle.App/
 │   │   ├── Assets/
@@ -316,6 +316,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AudioLevelMapper.cs
+│   │   ├── CaptureFrame.cs
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
@@ -594,14 +595,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── WavCorpusWriter.cs
 │   │   ├── Engine/
 │   │   │   ├── IAsrBackend.cs
+│   │   │   ├── PipelineProduction.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
+│   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
-│   │   │   └── TranscriptionEngine.StateMachine.cs
+│   │   │   ├── TranscriptionEngine.StateMachine.cs
+│   │   │   └── TranscriptionEngine.StreamingPipeline.cs
 │   │   ├── Setup/
 │   │   │   ├── Downloader.cs
 │   │   │   └── ModelEntry.cs
+│   │   ├── Streaming/
+│   │   │   ├── EnergySegmenter.cs
+│   │   │   ├── EnergySegmenterSettings.cs
+│   │   │   └── Utterance.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -675,6 +683,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   └── WindowsAppSdkBootstrap.cs
 │       ├── Shell/
 │       │   └── DispatcherQueueExtensionsTests.cs
+│       ├── Transcription/
+│       │   └── EnergySegmenterTests.cs
 │       ├── Vision/
 │       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj

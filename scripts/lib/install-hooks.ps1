@@ -9,17 +9,23 @@
 
 $ErrorActionPreference = 'Stop'
 $repoRoot  = (git rev-parse --show-toplevel).Trim()
-$hooksDir  = Join-Path (git rev-parse --git-dir).Trim() 'hooks'
+$hooksDir  = Join-Path (git -C $repoRoot rev-parse --absolute-git-dir).Trim() 'hooks'
 $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
 
-foreach ($src in Get-ChildItem $sourceDir) {
-    $dst = Join-Path $hooksDir $src.Name
+$hookFiles = @('pre-commit')
+foreach ($hookFile in $hookFiles) {
+    $src = Join-Path $sourceDir $hookFile
+    if (-not (Test-Path -LiteralPath $src)) {
+        throw "Hook source missing: $src"
+    }
+
+    $dst = Join-Path $hooksDir $hookFile
     if (Test-Path $dst) {
-        Write-Warning "Hook '$($src.Name)' existant sauvegardé en '$($src.Name).bak'."
+        Write-Warning "Hook '$hookFile' existant sauvegardé en '$hookFile.bak'."
         Copy-Item $dst "$dst.bak" -Force
     }
-    Copy-Item $src.FullName $dst -Force
-    Write-Host "Hook '$($src.Name)' installé."
+    Copy-Item $src $dst -Force
+    Write-Host "Hook '$hookFile' installé."
 }
 
 # Merge driver used by .gitattributes for TREE.md. `ours` keeps the local side
