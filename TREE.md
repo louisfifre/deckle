@@ -291,7 +291,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── App.Ambient.cs
+│   │   ├── App.Hotkeys.cs
+│   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
+│   │   ├── App.Theme.cs
+│   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
 │   │   ├── CLAUDE.md  — claude-deckle-app [agent-instructions] Doctrine for Deckle.App, the WinUI 3 host module that composes all Deckle.* mod…
@@ -341,7 +346,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleChronoSource.cs
 │   ├── Deckle.Composition/
 │   │   ├── Core/
+│   │   │   ├── HudComposition.Animations.cs
+│   │   │   ├── HudComposition.Config.cs
 │   │   │   ├── HudComposition.cs
+│   │   │   ├── HudComposition.Factories.cs
+│   │   │   ├── HudComposition.NakedPreview.cs
+│   │   │   ├── HudComposition.Painting.cs
+│   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   └── ProcessingVariant.cs
 │   │   ├── Primitives/
 │   │   │   ├── ColorSpace.cs
@@ -419,6 +430,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Hue/
 │   │   │   ├── HueBridge.cs
 │   │   │   ├── HueBridgeClient.cs
+│   │   │   ├── HueBridgeClient.Dtos.cs
+│   │   │   ├── HueBridgeClient.EventStream.cs
+│   │   │   ├── HueBridgeClient.Pairing.cs
+│   │   │   ├── HueBridgeClient.V2.cs
 │   │   │   ├── HueColorMath.cs
 │   │   │   ├── HueDiscovery.cs
 │   │   │   ├── HueEntertainmentArea.cs
@@ -650,11 +665,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
 │       ├── FrameSampler.cs
+│       ├── FrameSampler.Process.cs
+│       ├── FrameSampler.Readback.cs
+│       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
 │       ├── JOURNAL.md  — journal-vision [module-journal] Journal daté du module Deckle.Vision — diagnostics de la capture DXGI Output Du…
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
-│       └── ScreenCaptureService.cs
+│       ├── ScreenCaptureInterop.D3D11.cs
+│       ├── ScreenCaptureInterop.Direct3D.cs
+│       ├── ScreenCaptureInterop.Duplication.cs
+│       ├── ScreenCaptureInterop.Hdr.cs
+│       ├── ScreenCaptureService.cs
+│       ├── ScreenCaptureService.Dispose.cs
+│       ├── ScreenCaptureService.Lifecycle.cs
+│       ├── ScreenCaptureService.Loop.cs
+│       └── ScreenCaptureService.Recovery.cs
 ├── tests/
 │   └── Deckle.Tests/
 │       ├── Audio/
