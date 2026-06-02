@@ -55,6 +55,14 @@ public sealed class MicrophoneCapture : System.IDisposable
     // 50 ms sub-window of the captured audio). Fired from the recording thread.
     public event System.Action<float>? AudioLevel;
 
+    // Per-sub-window capture frame (50 ms PCM float[-1, 1] + its linear RMS),
+    // fired ~20 Hz from the recording thread. Opt-in: when nothing is subscribed
+    // at Record() entry, the loop skips the float conversion entirely and only
+    // AudioLevel fires (the HUD path pays nothing). The streaming transcription
+    // socle subscribes to feed its energy segmenter; Capture stays unaware of
+    // that use — the frame says nothing about why we capture.
+    public event System.Action<CaptureFrame>? Frame;
+
     // Fired after waveInStart succeeds — the mic is now live and the first
     // 50 ms buffer is on its way. Used by the orchestrator to close the
     // hotkey-to-capture latency stopwatch (_hotkeySw in TranscriptionEngine).
@@ -202,6 +210,9 @@ public sealed class MicrophoneCapture : System.IDisposable
                 host:                host,
                 rmsLog:              _rmsLog,
                 audioLevelCallback:  rms => AudioLevel?.Invoke(rms),
+                // Gate the frame conversion on a subscriber present at entry:
+                // null here means EmitSubWindows never materialises a float[].
+                frameCallback:       Frame is null ? null : frame => Frame?.Invoke(frame),
                 onLowAudioDetected:  () => LowAudioDetected?.Invoke(),
                 ct:                  ct);
         }

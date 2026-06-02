@@ -21,6 +21,12 @@ public sealed partial class WhisperPage : Page
 {
     public WhisperViewModel ViewModel { get; } = new();
 
+    // Settings-UX doctrine: an option that only makes sense in a context is hidden
+    // when inapplicable, not greyed. The segmenter parameter cards appear only
+    // when the streaming pipeline is on.
+    private Visibility VisibleWhenStreaming(bool on) =>
+        on ? Visibility.Visible : Visibility.Collapsed;
+
     // Guards the Language combo's SelectionChanged and the model
     // AutoSuggestBox's SuggestionChosen during initial sync — these handlers
     // set VM properties which would trigger PushToSettings() needlessly.

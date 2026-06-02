@@ -156,9 +156,10 @@ public sealed class WhisperBackend : IAsrBackend
     public Task<TranscriptionResult> TranscribeAsync(
         ReadOnlyMemory<float> pcmSamples,
         Action<TranscriptionSegment>? segmentSink,
-        CancellationToken ct)
+        CancellationToken ct,
+        TranscriptionContext? context = null)
     {
-        return Task.FromResult(TranscribeSync(pcmSamples, segmentSink, ct));
+        return Task.FromResult(TranscribeSync(pcmSamples, segmentSink, ct, context));
     }
 
     // ── Model path resolution ────────────────────────────────────────────────
@@ -206,15 +207,20 @@ public sealed class WhisperBackend : IAsrBackend
     private Action<TranscriptionSegment>? _segmentSink;
     private volatile bool _abortRequested;
     private int _tokenBeg;
-    private long _lastSegmentT1;
     private Stopwatch? _transcribeSw;
     private string _strategyLabel = "";
+    // Where the current call's audio sits on the whole recording's timeline,
+    // from TranscriptionContext.TimelineOffsetSec. Added to the per-segment
+    // t0/t1 we log so a streaming segment reads its true position in the take.
+    // 0 for a standalone (monolithic) call.
+    private double _timelineOffsetSec;
     private readonly RepetitionDetector _repetitionDetector = new();
 
     private TranscriptionResult TranscribeSync(
         ReadOnlyMemory<float> pcmSamples,
         Action<TranscriptionSegment>? segmentSink,
-        CancellationToken ct)
+        CancellationToken ct,
+        TranscriptionContext? context = null)
     {
         IntPtr ctx = _ctx;
         if (ctx == IntPtr.Zero)
@@ -233,7 +239,6 @@ public sealed class WhisperBackend : IAsrBackend
         lock (_segmentsLock) _segmentsLocal.Clear();
         _segmentSink = segmentSink;
         _abortRequested = false;
-        _lastSegmentT1 = -1;
         _repetitionDetector.Reset();
         ResetVadParsingState();
 
@@ -245,7 +250,7 @@ public sealed class WhisperBackend : IAsrBackend
 
         var TranscriptionSettings = _host.Transcription;
         WhisperParamsMapper.NativeAllocations nativeAllocs =
-            WhisperParamsMapper.Apply(ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory());
+            WhisperParamsMapper.Apply(ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory(), context?.PrimingText);
 
         _tokenBeg = WhisperPInvoke.whisper_token_beg(ctx);
 
@@ -260,23 +265,33 @@ public sealed class WhisperBackend : IAsrBackend
 
         float audioSec = (float)pcmSamples.Length / 16_000f;
         _strategyLabel = wparams.strategy == 1 ? $"beam{wparams.beam_search_beam_size}" : "greedy";
-        DeckleWhispSource.Log.TranscribeStarted();
-        DeckleWhispSource.Log.TranscribeStartDetail(audioSec, pcmSamples.Length, _strategyLabel);
-        string strategyVerbose = wparams.strategy == 1
-            ? $"beam(size={wparams.beam_search_beam_size})"
-            : "greedy";
-        DeckleWhispSource.Log.TranscribeParams(
-            $"strategy={strategyVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2}" +
-            $" | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2}" +
-            $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
-            $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
+        _timelineOffsetSec = context?.TimelineOffsetSec ?? 0;
 
-        string prompt = TranscriptionSettings.Engine.InitialPrompt;
-        bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
-        if (!string.IsNullOrEmpty(prompt))
+        // One-time configuration preamble. A standalone call (monolithic) and the
+        // first utterance of a streaming take log it; the rest skip it, so a long
+        // streaming dictation shows the params/prompt once, not once per utterance
+        // (they are identical across the take). Pure observability gate — defaults
+        // on when there is no context.
+        if (context?.EmitPreamble ?? true)
         {
-            string truncated = prompt.Length > 60 ? prompt[..60] + "…" : prompt;
-            DeckleWhispSource.Log.TranscribePrompt(prompt.Length, carry, truncated);
+            DeckleWhispSource.Log.TranscribeStarted();
+            DeckleWhispSource.Log.TranscribeStartDetail(audioSec, pcmSamples.Length, _strategyLabel);
+            string strategyVerbose = wparams.strategy == 1
+                ? $"beam(size={wparams.beam_search_beam_size})"
+                : "greedy";
+            DeckleWhispSource.Log.TranscribeParams(
+                $"strategy={strategyVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2}" +
+                $" | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2}" +
+                $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
+                $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
+
+            string prompt = context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt;
+            bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
+            if (!string.IsNullOrEmpty(prompt))
+            {
+                string truncated = prompt.Length > 60 ? prompt[..60] + "…" : prompt;
+                DeckleWhispSource.Log.TranscribePrompt(prompt.Length, carry, truncated);
+            }
         }
 
         _vadCapturing = true;
@@ -387,16 +402,19 @@ public sealed class WhisperBackend : IAsrBackend
 
                 _segmentSink?.Invoke(segment);
 
+                // Fixed-width columns so the text column lines up vertically and a
+                // take reads top-to-bottom at a glance. t0/t1 are offset onto the
+                // whole recording's timeline (_timelineOffsetSec) so each segment
+                // shows its true position in the take, not a per-call zero; in
+                // monolithic the offset is 0 → absolute-from-start as before.
+                double t0Sec = _timelineOffsetSec + t0 / 100.0;
+                double t1Sec = _timelineOffsetSec + t1 / 100.0;
                 double dur = (t1 - t0) / 100.0;
-                double gap = _lastSegmentT1 < 0 ? 0.0 : (t0 - _lastSegmentT1) / 100.0;
-                _lastSegmentT1 = t1;
-                double elapsedSec = _transcribeSw?.Elapsed.TotalSeconds ?? 0;
                 string trimmed = segText.Trim();
                 DeckleWhispSource.Log.SegmentEmitted(
-                    $"seg #{i + 1} | t0={t0 / 100.0:F1}s | t1={t1 / 100.0:F1}s" +
-                    $" | dur={dur:F1}s | gap={(gap >= 0 ? "+" : "")}{gap:F1}s" +
-                    $" | nsp={nsp:P0} | p̄={avgP:F2} | min={minP:F2}" +
-                    $" | tok={textTok}/{nTok} | elapsed={elapsedSec:F1}s | text=\"{trimmed}\"");
+                    $"seg #{i + 1,2} | {t0Sec,7:F1}→{t1Sec,7:F1}s | dur {dur,5:F1}s" +
+                    $" | nsp {nsp,4:P0} | p̄ {avgP:F2} | min {minP:F2} | tok {textTok,2}/{nTok,2}" +
+                    $" | \"{trimmed}\"");
             }
         }
         catch (Exception ex)

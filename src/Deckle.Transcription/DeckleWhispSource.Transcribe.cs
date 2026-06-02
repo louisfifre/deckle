@@ -162,6 +162,26 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeSkipped, state);
     }
 
+    // ── Streaming pipeline ──────────────────────────────────────────────
+
+    [Event(EvtStreamingDrained,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Streaming complete | {0} utterances | {1:F1} s audio | {2} ms whisper | {3} words | {4} seg")]
+    public void StreamingDrained(int n_utterances, double audio_sec, long whisper_ms, int words, int n_seg)
+    {
+        if (IsEnabled()) WriteEvent(EvtStreamingDrained, n_utterances, audio_sec, whisper_ms, words, n_seg);
+    }
+
+    [Event(EvtUtteranceSkipped,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "utterance #{0} failed, dictation continues | {1}: {2}")]
+    public void UtteranceSkipped(int index, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtUtteranceSkipped, index, ex_type, ex_message);
+    }
+
     // ── Segment callback ────────────────────────────────────────────────
 
     [Event(EvtSegmentEmitted,

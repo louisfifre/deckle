@@ -255,6 +255,72 @@ public partial class WhisperViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Streaming pipeline ───────────────────────────────────────────────────
+    //
+    // StreamingEnabled is the user-facing on/off mapped onto the two-value
+    // PipelineStrategyKind (Streaming / Monolithic). The five Seg* values are the
+    // energy-segmenter parameters, consulted only when streaming is on.
+
+    [ObservableProperty]
+    public partial bool StreamingEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial double SegThresholdDbfs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegHangoverMs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegMarginMs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegMinUtteranceMs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegMaxUtteranceMs { get; set; }
+
+    partial void OnStreamingEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Strategy", value ? "Streaming" : "Monolithic");
+        PushToSettings();
+    }
+
+    partial void OnSegThresholdDbfsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.ThresholdDbfs", value.ToString("0.0"));
+        PushToSettings();
+    }
+
+    partial void OnSegHangoverMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnSegMarginMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.MarginMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnSegMinUtteranceMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.MinUtteranceMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnSegMaxUtteranceMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.MaxUtteranceMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
     // ── Constructor ──────────────────────────────────────────────────────────
 
     public WhisperViewModel()
@@ -283,6 +349,12 @@ public partial class WhisperViewModel : ObservableObject
         SuppressRegex = "";
         UseContext = true;
         MaxTokens = -1;
+        StreamingEnabled = false;
+        SegThresholdDbfs = -45.0;
+        SegHangoverMs = 400;
+        SegMarginMs = 150;
+        SegMinUtteranceMs = 250;
+        SegMaxUtteranceMs = 25000;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -320,6 +392,12 @@ public partial class WhisperViewModel : ObservableObject
             SuppressRegex = s.OutputFilters.SuppressRegex;
             UseContext = s.Context.UseContext;
             MaxTokens = s.Context.MaxTokens;
+            StreamingEnabled = s.Streaming.Strategy == PipelineStrategyKind.Streaming;
+            SegThresholdDbfs = s.Streaming.Segmenter.ThresholdDbfs;
+            SegHangoverMs = s.Streaming.Segmenter.HangoverMs;
+            SegMarginMs = s.Streaming.Segmenter.MarginMs;
+            SegMinUtteranceMs = s.Streaming.Segmenter.MinUtteranceMs;
+            SegMaxUtteranceMs = s.Streaming.Segmenter.MaxUtteranceMs;
         }
         finally
         {
@@ -362,6 +440,15 @@ public partial class WhisperViewModel : ObservableObject
         s.Context.UseContext = UseContext;
         if (!double.IsNaN(MaxTokens))
             s.Context.MaxTokens = (int)MaxTokens;
+
+        s.Streaming.Strategy = StreamingEnabled
+            ? PipelineStrategyKind.Streaming
+            : PipelineStrategyKind.Monolithic;
+        s.Streaming.Segmenter.ThresholdDbfs = SegThresholdDbfs;
+        if (!double.IsNaN(SegHangoverMs))     s.Streaming.Segmenter.HangoverMs     = (int)SegHangoverMs;
+        if (!double.IsNaN(SegMarginMs))       s.Streaming.Segmenter.MarginMs       = (int)SegMarginMs;
+        if (!double.IsNaN(SegMinUtteranceMs)) s.Streaming.Segmenter.MinUtteranceMs = (int)SegMinUtteranceMs;
+        if (!double.IsNaN(SegMaxUtteranceMs)) s.Streaming.Segmenter.MaxUtteranceMs = (int)SegMaxUtteranceMs;
 
         TranscriptionSettingsService.Instance.Save();
     }

@@ -1405,4 +1405,49 @@
     <value>Deckle Overlay</value>
   </data>
 
+  <!-- ─── WhisperPage — Streaming pipeline (experimental) ─────────────
+       Strategy selector + energy-segmenter parameters. -->
+  <data name="WhisperPageStreamingHeaderLabel.Text" xml:space="preserve">
+    <value>Streaming pipeline (experimental)</value>
+  </data>
+  <data name="WhisperPageStreamingBodyLabel.Text" xml:space="preserve">
+    <value>Instead of transcribing the whole take in one pass at Stop, cut the live recording into utterances on silence and transcribe each as you speak. Most of your dictation is already done by the time you Stop, and a runaway loop is confined to a single utterance. Transcription pre-processing (the DSP) is not applied in streaming yet. Default: off.</value>
+  </data>
+  <data name="WhisperStreamingEnabledCard.Header" xml:space="preserve">
+    <value>Use the streaming pipeline</value>
+  </data>
+  <data name="WhisperStreamingEnabledCard.Description" xml:space="preserve">
+    <value>Off keeps the delivered monolithic pipeline (one pass at Stop). Applies on your next recording.</value>
+  </data>
+  <data name="WhisperSegThresholdCard.Header" xml:space="preserve">
+    <value>Silence threshold</value>
+  </data>
+  <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
+    <value>Audio at or above this raw level (in dBFS) counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open. Default: -45 dBFS.</value>
+  </data>
+  <data name="WhisperSegHangoverCard.Header" xml:space="preserve">
+    <value>Hangover</value>
+  </data>
+  <data name="WhisperSegHangoverCard.Description" xml:space="preserve">
+    <value>How much trailing silence (in milliseconds) to wait after the last word before deciding an utterance has ended. Longer avoids splitting on a short pause. Default: 400 ms.</value>
+  </data>
+  <data name="WhisperSegMarginCard.Header" xml:space="preserve">
+    <value>Cut margin</value>
+  </data>
+  <data name="WhisperSegMarginCard.Description" xml:space="preserve">
+    <value>How much silence (in milliseconds) to keep after the last word when cutting. Distinct from the hangover — the silence beyond this is dropped. Default: 150 ms.</value>
+  </data>
+  <data name="WhisperSegMinUtteranceCard.Header" xml:space="preserve">
+    <value>Minimum utterance</value>
+  </data>
+  <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
+    <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
+  </data>
+  <data name="WhisperSegMaxUtteranceCard.Header" xml:space="preserve">
+    <value>Maximum utterance</value>
+  </data>
+  <data name="WhisperSegMaxUtteranceCard.Description" xml:space="preserve">
+    <value>Safety ceiling (in milliseconds): an utterance this long is cut and sent even mid-speech, then a new one starts. Recording is not stopped. Default: 25000 ms.</value>
+  </data>
+
 </root>

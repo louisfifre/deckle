@@ -98,31 +98,18 @@ public sealed partial class TranscriptionEngine : IDisposable
     // thread.
     public event Action<TranscriptionSegment>? NewSegment;
 
-    // All StatusChanged / TranscriptionFinished emissions route through these
-    // two helpers so the startup warmup can silence them in a single place
-    // instead of peppering the pipeline with if-checks.
-    //
-    // ThreadStatic — the suppression is scoped to the *invocation* of
-    // Transcribe() that owns the warmup, not to the engine instance. Warmup
-    // sets the flag on its own thread before calling Transcribe and clears
-    // it after; the user-driven Worker thread reads its own (false) copy and
-    // is unaffected. A shared instance flag would let the Worker observe
-    // Warmup's `true` for the slice between Warmup releasing
-    // _transcribeLock and reaching its `finally` reset, silencing the user's
-    // narratives mid-call. Whisper.cpp invokes its segment / abort / log
-    // callbacks synchronously on the thread that called whisper_full, so
-    // ThreadStatic is the right scope for them too.
-    [ThreadStatic] private static bool t_isWarmup;
-
+    // All StatusChanged / TranscriptionFinished emissions route through these two
+    // helpers. The prime (EnsurePrimed) used to silence them via a ThreadStatic
+    // warmup flag; the prime now calls the backend directly and never reaches
+    // these helpers (nor the clipboard, corpus, or finalize), so there is nothing
+    // left to gate — they always fire.
     private void RaiseStatus(string status)
     {
-        if (t_isWarmup) return;
         StatusChanged?.Invoke(status);
     }
 
     private void RaiseFinished(TranscriptionOutcome outcome)
     {
-        if (t_isWarmup) return;
         TranscriptionFinished?.Invoke(outcome);
     }
 
@@ -168,15 +155,22 @@ public sealed partial class TranscriptionEngine : IDisposable
     // those.
     private int _state = (int)PipelineState.Idle;
 
-    // Cancellation channel for the active capture session. Recreated at the
-    // top of each WorkerRun (Idle → Recording transition), cancelled by the
-    // Stop path (RequestToggle after CAS Recording → Stopping) and by Dispose.
-    // Disposed inside WorkerRun's finally once the capture call has returned.
+    // Cancellation channel for the active capture session (the PRODUCER).
+    // Recreated at the top of each WorkerRun, cancelled by the Stop path
+    // (RequestToggle after CAS Recording → Stopping) AND by Dispose. Disposed
+    // inside WorkerRun's finally once the run has returned.
     //
-    // The cap-duration branch is now owned by MicrophoneCapture / WaveInLoop
-    // — the orchestrator observes it via CaptureResult.Outcome on return.
-    // No second channel needed.
+    // The cap-duration branch is owned by MicrophoneCapture / WaveInLoop — the
+    // orchestrator observes it via CaptureResult.Outcome on return.
     private CancellationTokenSource? _recordCts;
+
+    // Second cancellation channel for the streaming CONSUMER (the per-utterance
+    // transcription loop). Fired ONLY by Dispose, never by Stop — this is what
+    // lets a user Stop drain the queued utterances losslessly (the consumer is
+    // not cancelled) while Dispose aborts the in-flight inference so the worker
+    // join stays bounded and whisper_free never runs on an active context. The
+    // monolithic path ignores it; only the streaming pipeline observes it.
+    private CancellationTokenSource? _drainCts;
 
     // Signaled when the engine returns to Idle (worker exits + state reset).
     // Initialised "set" because no recording is in flight at construction time.
@@ -193,15 +187,15 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     // Name of the rewrite profile chosen by the hotkey that started this
     // recording (null = no manual rewrite; fall back to AutoRewriteRules
-    // based on recording duration). Captured at StartRecording time and
-    // consumed at the end of Transcribe().
+    // based on recording duration). Captured when the hotkey starts the run
+    // (TryStartFromIdle) and consumed in FinalizeTranscription.
     private string?         _manualProfileName = null;
 
-    // Stable identifier for the current pipeline invocation. Regenerated
-    // at the top of Transcribe() ; stamped on every corpus event emitted
-    // for this transcription and on the WAV file basename so the JSONL
-    // lines and the audio file join unambiguously. 32 hex chars (Guid
-    // "N" format) — voir ADR-0006.
+    // Stable identifier for the current pipeline invocation. Regenerated once
+    // per recording in WorkerRun (before the strategy runs); stamped on every
+    // corpus event emitted for this transcription and on the WAV file basename
+    // so the JSONL lines and the audio file join unambiguously. 32 hex chars
+    // (Guid "N" format) — voir ADR-0006.
     private string          _transcriptionId   = "";
 
     // Model lifecycle: lazy load on first hotkey, unload after idle timeout.
@@ -247,14 +241,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     private System.Diagnostics.Stopwatch? _hotkeySw;
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;
-
-    // Backend-reported inference timings, populated from the most recent
-    // TranscriptionResult and consumed by the LatencyPayload builder.
-    //   _whisperInitMs — pre-VAD setup time inside backend.TranscribeAsync.
-    //   _vadMs         — VAD wall time inside backend.TranscribeAsync (0 when
-    //                    VAD off or backend has no VAD step).
-    private long _whisperInitMs;
-    private long _vadMs;
 
     private bool _disposed;
 
@@ -384,6 +370,13 @@ public sealed partial class TranscriptionEngine : IDisposable
         // to exit MicrophoneCapture.Record() cleanly to release the waveIn
         // handles. CTS may already be disposed if WorkerRun raced ahead.
         try { _recordCts?.Cancel(); }
+        catch (ObjectDisposedException) { }
+
+        // Abort the streaming consumer's in-flight inference too (the drain
+        // token). Without this, a Dispose mid-streaming would block the worker
+        // join on a long backlog and could let the backend free run while an
+        // inference is active. Fired only here — Stop never cancels it.
+        try { _drainCts?.Cancel(); }
         catch (ObjectDisposedException) { }
 
         var worker = _worker;

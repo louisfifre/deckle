@@ -1,3 +1,5 @@
+using Deckle.Transcription.Streaming;
+
 namespace Deckle.Transcription;
 
 // ── TranscriptionSettings ────────────────────────────────────────────────────
@@ -19,6 +21,24 @@ public sealed class TranscriptionSettings
     public OutputFilterSettings    OutputFilters   { get; set; } = new();
     public DecodingSettings        Decoding        { get; set; } = new();
     public ContextSettings         Context         { get; set; } = new();
+    public StreamingSettings       Streaming       { get; set; } = new();
+}
+
+// Which transcription pipeline runs a recording. Monolithic = the delivered
+// path (capture the whole take, one backend call doing its own internal
+// windowing). Streaming = the producer/consumer socle (energy segmenter cuts
+// utterances on the live stream, each transcribed as it arrives). Default
+// Monolithic so an upgrade changes nothing until the user opts in; the
+// monolithic path is slated for removal once streaming proves out.
+public enum PipelineStrategyKind { Monolithic, Streaming }
+
+// Settings for the streaming socle. Strategy selects the pipeline; Segmenter
+// carries the energy-segmenter parameters (consulted only when Streaming is
+// active). Auto-properties round-trip cleanly through JsonSettingsStore.
+public sealed class StreamingSettings
+{
+    public PipelineStrategyKind   Strategy  { get; set; } = PipelineStrategyKind.Monolithic;
+    public EnergySegmenterSettings Segmenter { get; set; } = new();
 }
 
 // Bootstrap parameters for the active ASR engine. The first three (Model /
