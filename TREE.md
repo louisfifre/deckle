@@ -429,6 +429,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Hue/
 │   │   │   ├── HueBridge.cs
 │   │   │   ├── HueBridgeClient.cs
+│   │   │   ├── HueBridgeClient.Dtos.cs
+│   │   │   ├── HueBridgeClient.EventStream.cs
+│   │   │   ├── HueBridgeClient.Pairing.cs
+│   │   │   ├── HueBridgeClient.V2.cs
 │   │   │   ├── HueColorMath.cs
 │   │   │   ├── HueDiscovery.cs
 │   │   │   ├── HueEntertainmentArea.cs
@@ -653,11 +657,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
 │       ├── FrameSampler.cs
+│       ├── FrameSampler.Process.cs
+│       ├── FrameSampler.Readback.cs
+│       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
 │       ├── JOURNAL.md  — journal-vision [module-journal] Journal daté du module Deckle.Vision — diagnostics de la capture DXGI Output Du…
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
-│       └── ScreenCaptureService.cs
+│       ├── ScreenCaptureInterop.D3D11.cs
+│       ├── ScreenCaptureInterop.Direct3D.cs
+│       ├── ScreenCaptureInterop.Duplication.cs
+│       ├── ScreenCaptureInterop.Hdr.cs
+│       ├── ScreenCaptureService.cs
+│       ├── ScreenCaptureService.Dispose.cs
+│       ├── ScreenCaptureService.Lifecycle.cs
+│       ├── ScreenCaptureService.Loop.cs
+│       └── ScreenCaptureService.Recovery.cs
 ├── tests/
 │   └── Deckle.Tests/
 │       ├── Audio/

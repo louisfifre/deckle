@@ -396,10 +396,10 @@ function Write-FileTableRow {
     $markerColor = [ConsoleColor]::Gray
     if ($File.Extension -eq '.resw' -and $null -ne $File.ReswKeys) {
         if ($File.ReswKeys -ge $ResourceTooLargeThreshold) {
-            $marker = '500k+'
+            $marker = '500+ keys'
             $markerColor = [ConsoleColor]::Red
         } elseif ($File.ReswKeys -ge $ResourceWatchThreshold) {
-            $marker = '300k+'
+            $marker = '300+ keys'
             $markerColor = [ConsoleColor]::Yellow
         }
     } elseif ($null -ne $File.RawLines -and $File.RawLines -ge $TooLargeThreshold) {
@@ -583,9 +583,9 @@ if ($resourceFiles.Count -gt 0) {
     Write-Section "Resource inventories (.resw)"
     foreach ($file in $resourceFiles) {
         if ($file.ReswKeys -ge $ResourceTooLargeThreshold) {
-            Write-ResourceThresholdLine -Marker '500k+' -Color Red -File $file
+            Write-ResourceThresholdLine -Marker '500+ keys' -Color Red -File $file
         } else {
-            Write-ResourceThresholdLine -Marker '300k+' -Color Yellow -File $file
+            Write-ResourceThresholdLine -Marker '300+ keys' -Color Yellow -File $file
         }
     }
 }
