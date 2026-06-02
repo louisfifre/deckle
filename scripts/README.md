@@ -24,10 +24,8 @@ dev action by purpose:
 |  | Build & run (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
 |  | Build only (no run) | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
 | **Worktree maintenance** | Clean bin/obj | yes | `lib/clean.ps1` |
-|  | Stats (LOC, files) | yes | `lib/stats.ps1` |
-| **Setup** | Setup assets (UserDataRoot) | no | `lib/setup-assets.ps1` |
-|  | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
-| **Maintainer** | Publish native runtime | no | `lib/publish-native-runtime.ps1` |
+|  | Stats (files, LOC, long files) | yes | `lib/stats.ps1` |
+| **Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
 
 Per-worktree actions prompt for a worktree right after the action is
 picked (auto-resolved when only the main repo exists). Global actions
@@ -42,9 +40,9 @@ profile — `deckle.ps1` is purely additive.
 |---|---|---|
 | [`lib/build-run.ps1`](lib/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build`, and launch the freshly built exe through `cmd /c start`. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
 | [`lib/clean.ps1`](lib/clean.ps1) | Remove every `bin/` and `obj/` directory directly under `src/<module>/`. Guards against symlinks / junctions (won't recurse into a reparse point and risk nuking its target). Reports total freed bytes. | `-Target <worktree>`, `-Pick` |
-| [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/` and tally file counts (`.cs` / `.xaml` / `.xaml.cs` / `.resw`) plus LOC. Excludes `bin/obj/.vs/Properties` and generated files (`*.g.cs`, `*.g.i.cs`, `*.xaml.g.cs`). | `-Target <worktree>`, `-Pick`, `-Detailed`, `-Json <path>` |
+| [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight files over 500 / 1000 raw lines, summarize modules by source LOC, list file types dynamically, and print the per-file module table. Excludes `bin/obj/.vs/Properties` and generated files (`*.g.cs`, `*.g.i.cs`, `*.xaml.g.cs`). | `-Target <worktree>`, `-Pick`, `-Json <path>` |
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
-| [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Calls `setup-assets.ps1` in the final step. | `-DryRun`, `-Full`, `-Yes`, `-SkipAssets`, `-AssetsRelease X.Y.Z` |
+| [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Runtime assets are left to the app's first-run wizard unless explicitly requested. | `-DryRun`, `-Full`, `-Yes`, `-IncludeAssets`, `-AssetsRelease X.Y.Z` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
 | [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`. **Not an entry point.** |
 
@@ -56,7 +54,10 @@ The hook delegates to [`update-tree.ps1`](update-tree.ps1), which rebuilds `TREE
 
 ## Native runtime — three sourcing modes
 
-`lib/setup-assets.ps1` provisions the 8 native DLLs (5 whisper.cpp
+The F5 menu no longer exposes runtime asset provisioning: first launch
+opens the in-app setup wizard when native DLLs or models are missing.
+`lib/setup-assets.ps1` remains a direct dev script and provisions the 8
+native DLLs (5 whisper.cpp
 Vulkan + 3 MinGW C++ runtime) through one of three paths:
 
 1. **`-FromRelease <X.Y.Z>` (default for non-rebuilders).** Fetches

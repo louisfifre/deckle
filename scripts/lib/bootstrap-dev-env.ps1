@@ -14,17 +14,19 @@
 #     prints the command instead).
 #
 # Tiers:
-#   Default — Tier 1 (managed build) + runtime assets via setup-assets.ps1.
-#             Sufficient for 99 % of C#/XAML work.
+#   Default — Tier 1 (managed build). Sufficient for 99 % of C#/XAML work.
 #   -Full   — Tier 1 + Tier 2 (native recompile toolchain) + Ollama.
 #             For maintainers who rebuild whisper.cpp DLLs or test the LLM
 #             rewrite path end-to-end.
+#   -IncludeAssets — also invoke setup-assets.ps1 at the end. Normally not
+#             needed anymore: the app's first-run wizard provisions runtime
+#             assets when native DLLs or models are missing.
 #
 # Usage:
-#   scripts\lib\bootstrap-dev-env.ps1                      # default tier + assets
+#   scripts\lib\bootstrap-dev-env.ps1                      # default tier only
 #   scripts\lib\bootstrap-dev-env.ps1 -DryRun              # probe only, no install
 #   scripts\lib\bootstrap-dev-env.ps1 -Full                # full toolchain
-#   scripts\lib\bootstrap-dev-env.ps1 -SkipAssets          # skip setup-assets.ps1
+#   scripts\lib\bootstrap-dev-env.ps1 -IncludeAssets       # also run setup-assets.ps1
 #   scripts\lib\bootstrap-dev-env.ps1 -Yes                 # no confirmation prompt
 
 [CmdletBinding()]
@@ -37,9 +39,13 @@ param(
     # local LLM rewrite path. Off by default to keep first setup lean.
     [switch]$Full,
 
-    # Skip the final invocation of scripts/lib/setup-assets.ps1. Use when you
-    # plan to provision <UserDataRoot> manually or rely on the first-run
-    # wizard.
+    # Also invoke scripts/lib/setup-assets.ps1 after environment bootstrap.
+    # Kept for explicit dev-machine provisioning; the app's first-run wizard
+    # is the normal runtime-assets path.
+    [switch]$IncludeAssets,
+
+    # Deprecated compatibility switch. Runtime assets are skipped by default
+    # now, so this is only kept to avoid breaking old direct calls.
     [switch]$SkipAssets,
 
     # Release tag passed to setup-assets.ps1 -FromRelease. Pins which
@@ -401,7 +407,7 @@ if ($Full -and -not $env:VULKAN_SDK) {
 # Runtime assets
 # =============================================================================
 
-if (-not $SkipAssets) {
+if ($IncludeAssets -and -not $SkipAssets) {
     Write-Section "Runtime assets"
     $setup = Join-Path $ScriptDir 'setup-assets.ps1'
     if (-not (Test-Path $setup)) {
@@ -410,6 +416,9 @@ if (-not $SkipAssets) {
         Write-Step "Invoking setup-assets.ps1 -FromRelease $AssetsRelease"
         & $setup -FromRelease $AssetsRelease
     }
+} else {
+    Write-Section "Runtime assets"
+    Write-Skip "Skipped — handled by the app's first-run wizard. Pass -IncludeAssets to provision from this script."
 }
 
 # =============================================================================

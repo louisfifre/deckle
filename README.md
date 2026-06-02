@@ -81,11 +81,11 @@ scripts/lib/bootstrap-dev-env.ps1 -Full     # Tier 1 + native recompile + Ollama
 ```
 
 It probes what is already installed, installs the missing pieces via winget
-and Scoop, sets the required environment variables, and invokes
-`setup-assets.ps1` to provision the runtime data. Run with `-DryRun` first
-to see the plan without installing anything. The same flow is reachable
-via the interactive menu at `scripts/deckle.ps1` (Setup → Bootstrap dev
-environment).
+and Scoop, and sets the required environment variables. Runtime assets
+are handled by the app's first-run wizard when native DLLs or models are
+missing. Run with `-DryRun` first to see the plan without installing
+anything. The same flow is reachable via the interactive menu at
+`scripts/deckle.ps1` (Setup → Bootstrap dev environment).
 
 #### Tier 1 — build & run Deckle (sufficient for C# / XAML work)
 
@@ -116,15 +116,16 @@ environment).
 
 ### Fresh clone — first run
 
-1. Run `scripts/lib/bootstrap-dev-env.ps1` (installs prerequisites + provisions
-   `%LOCALAPPDATA%\Deckle\` with native DLLs and Whisper models).
+1. Run `scripts/lib/bootstrap-dev-env.ps1` (installs prerequisites).
 2. Open a **new terminal** (environment variables set by the bootstrap are
    only visible in new sessions).
 3. Build & run via `scripts/deckle.ps1` (interactive menu), or directly:
    ```powershell
    scripts/lib/build-run.ps1 -Configuration Release
    ```
-4. Alternatively, open the solution in Visual Studio 2026 and press F5.
+4. On first launch, complete the setup wizard if native DLLs or Whisper
+   models are missing.
+5. Alternatively, open the solution in Visual Studio 2026 and press F5.
 
 ### Scripts
 
@@ -134,12 +135,12 @@ stay callable on their own CLI:
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/deckle.ps1` | Interactive menu: build, clean, stats, setup, bootstrap, publish. |
+| `scripts/deckle.ps1` | Interactive menu: build, clean, stats, bootstrap. |
 | `scripts/lib/build-run.ps1` | Build via VS MSBuild + launch. Resolves MSBuild automatically. |
 | `scripts/lib/clean.ps1` | Remove `bin/` + `obj/` under every `src/<module>/`. |
-| `scripts/lib/stats.ps1` | Per-module file + LOC stats (`.cs` / `.xaml` / `.resw`). |
-| `scripts/lib/setup-assets.ps1` | Provision `%LOCALAPPDATA%\Deckle\` with native DLLs and Whisper models. |
-| `scripts/lib/bootstrap-dev-env.ps1` | Probe + install dev dependencies (winget, Scoop, VS, .NET SDK). |
+| `scripts/lib/stats.ps1` | Per-module file inventory, LOC stats, long-file watch list, dynamic type summary. |
+| `scripts/lib/setup-assets.ps1` | Direct dev helper to provision `%LOCALAPPDATA%\Deckle\` with native DLLs and Whisper models; the app wizard is the normal path. |
+| `scripts/lib/bootstrap-dev-env.ps1` | Probe + install dev dependencies (winget, Scoop, VS, .NET SDK); runtime assets are opt-in. |
 | `scripts/lib/publish-native-runtime.ps1` | Maintainer-only: zip + publish a `native-vX.Y.Z` GitHub release. |
 
 See [`scripts/README.md`](scripts/README.md) for the full menu structure
