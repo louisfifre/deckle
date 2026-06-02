@@ -43,11 +43,11 @@ Any extension is **non-canonical and must be marked as such**: e.g. a `Known iss
 
 Deprecation discipline (SemVer FAQ): a capability is announced under **Deprecated** in a MINOR, kept for at least one cycle, then **Removed** in a MAJOR — never removed cold. This is the path for, e.g., retiring the monolithic transcription engine once streaming is the default.
 
-## Tooling — git-cliff, not release-please
+## Tooling — no new dependency, the agent curates from `git log`
 
-Because Deckle already writes Conventional Commits (`deckle-commits`), the changelog can be distilled mechanically. The tool is **[git-cliff](https://git-cliff.org/)** — a single Rust binary, keepachangelog output, no CI required — which fits the native/local posture. `release-please` is rejected: it assumes a GitHub Actions CI and a Release-PR flow, neither of which fits a solo, local-push project with no CI.
+Because Deckle already writes Conventional Commits (`deckle-commits`), the changelog is distilled from the history with **plain git — no added tool**. At a version cut the agent reads `git log <previous-tag>..HEAD`, sorts the commits into the six categories, and **curates**: it decides the hierarchy — what is a headline change versus a minor fix — which is exactly the judgement keepachangelog asks for and a mechanical generator cannot make.
 
-The generator's real value here is the **one-time backfill** of the historical `CHANGELOG.md` (0.2.0 → today) from the existing history. **Ongoing, the entry is curated by hand** at each version cut — the agent writes the commits, so it writes the changelog entry too, and curated beats generated, which is exactly what keepachangelog asks for. A hook running git-cliff on a version bump is possible but, for a one-developer agent-committed project, mostly redundant with hand-curation.
+`git-cliff` (a single Rust binary that does this from Conventional Commits) and `release-please` (a GitHub Actions / Release-PR flow) were both considered and **not adopted**: Louis is reticent about dependencies, the agent already writes the commits and can curate directly, and there is no CI. We borrow only git-cliff's *idea* (Conventional Commits → a categorized entry), not the binary. Even a one-time historical backfill of `CHANGELOG.md` (0.2.0 → today) is done by hand from `git log`.
 
 ## Release notes
 
@@ -59,4 +59,4 @@ Deckle policy: release notes are written **only for MINOR (`Y`) cuts**, not for 
 
 - **`deckle-workflow`** — the operational release: version-bound push, `main` hygiene, the bump/tag/push mechanics.
 - **`deckle-commits`** — Conventional Commits, the raw material a changelog distils from.
-- **[semver.org](https://semver.org/)**, **[keepachangelog.com](https://keepachangelog.com/)**, **[git-cliff.org](https://git-cliff.org/)** — normative references.
+- **[semver.org](https://semver.org/)**, **[keepachangelog.com](https://keepachangelog.com/)** — normative references.
