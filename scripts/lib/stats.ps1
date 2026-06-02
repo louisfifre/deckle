@@ -34,6 +34,12 @@ param(
     # Files at or above this raw-line count are shown as too large.
     [int]$TooLargeThreshold = 1000,
 
+    # .resw files at or above this key count are shown as resource inventories.
+    [int]$ResourceWatchThreshold = 300,
+
+    # .resw files at or above this key count are considered oversized inventories.
+    [int]$ResourceTooLargeThreshold = 500,
+
     # Write module and file inventory to this JSON path in addition to
     # the console output.
     [string]$Json
@@ -303,6 +309,18 @@ function Write-ThresholdLine {
     Write-Host (" {0}" -f $File.RelativeRepo)
 }
 
+function Write-ResourceThresholdLine {
+    param(
+        [string]$Marker,
+        [ConsoleColor]$Color,
+        $File
+    )
+
+    Write-Host ("  {0,5} keys   " -f $File.ReswKeys) -NoNewline
+    Write-Host ("{0,-8}" -f $Marker) -ForegroundColor $Color -NoNewline
+    Write-Host (" {0} ({1} raw XML lines)" -f $File.RelativeRepo, $File.RawLines)
+}
+
 function Get-PathParts {
     param([Parameter(Mandatory)][string]$Path)
     return @($Path -split '[\\/]')
@@ -376,12 +394,20 @@ function Write-FileTableRow {
 
     $marker = $null
     $markerColor = [ConsoleColor]::Gray
-    if ($null -ne $File.RawLines -and $File.RawLines -ge $TooLargeThreshold) {
-        $marker = '1000+'
-        $markerColor = [ConsoleColor]::Red
+    if ($File.Extension -eq '.resw' -and $null -ne $File.ReswKeys) {
+        if ($File.ReswKeys -ge $ResourceTooLargeThreshold) {
+            $marker = '500+ keys'
+            $markerColor = [ConsoleColor]::Red
+        } elseif ($File.ReswKeys -ge $ResourceWatchThreshold) {
+            $marker = '300+ keys'
+            $markerColor = [ConsoleColor]::Yellow
+        }
+    } elseif ($null -ne $File.RawLines -and $File.RawLines -ge $TooLargeThreshold) {
+            $marker = '1000+'
+            $markerColor = [ConsoleColor]::Red
     } elseif ($null -ne $File.RawLines -and $File.RawLines -ge $WatchThreshold) {
-        $marker = '500+'
-        $markerColor = [ConsoleColor]::Yellow
+            $marker = '500+'
+            $markerColor = [ConsoleColor]::Yellow
     }
 
     $line = (
@@ -535,16 +561,31 @@ $rows = $rows | Sort-Object Module
 
 # Long file watch list.
 $longFiles = @($moduleFiles |
-    Where-Object { $null -ne $_.RawLines -and $_.RawLines -ge $WatchThreshold } |
+    Where-Object { $_.Extension -ne '.resw' -and $null -ne $_.RawLines -and $_.RawLines -ge $WatchThreshold } |
     Sort-Object -Property @{ Expression = 'RawLines'; Descending = $true }, RelativeRepo)
 
 if ($longFiles.Count -gt 0) {
-    Write-Section "Files over threshold"
+    Write-Section "Files over threshold (non-resource text)"
     foreach ($file in $longFiles) {
         if ($file.RawLines -ge $TooLargeThreshold) {
             Write-ThresholdLine -Marker '1000+' -Color Red -File $file
         } else {
             Write-ThresholdLine -Marker '500+' -Color Yellow -File $file
+        }
+    }
+}
+
+$resourceFiles = @($moduleFiles |
+    Where-Object { $_.Extension -eq '.resw' -and $null -ne $_.ReswKeys -and $_.ReswKeys -ge $ResourceWatchThreshold } |
+    Sort-Object -Property @{ Expression = 'ReswKeys'; Descending = $true }, RelativeRepo)
+
+if ($resourceFiles.Count -gt 0) {
+    Write-Section "Resource inventories (.resw)"
+    foreach ($file in $resourceFiles) {
+        if ($file.ReswKeys -ge $ResourceTooLargeThreshold) {
+            Write-ResourceThresholdLine -Marker '500+ keys' -Color Red -File $file
+        } else {
+            Write-ResourceThresholdLine -Marker '300+ keys' -Color Yellow -File $file
         }
     }
 }
