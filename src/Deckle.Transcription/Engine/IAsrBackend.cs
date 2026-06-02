@@ -90,7 +90,23 @@ public interface IAsrBackend : IDisposable
 //     maps it onto initial_prompt (overriding the configured stylistic prompt
 //     for that call); a future backend may treat it as conversation history or
 //     ignore it. Null/empty means no override.
-public sealed record TranscriptionContext(string? PrimingText);
+//   • EmitPreamble — whether this call logs its one-time configuration preamble
+//     (the "Transcribing" milestone, the resolved params, the prompt). True for
+//     a standalone call (monolithic) and for the FIRST utterance of a streaming
+//     take; false for the rest, so a long streaming dictation logs the
+//     params/prompt once instead of once per utterance (the values are identical
+//     across the take). Pure observability — it changes nothing the backend
+//     computes. Defaults true so the monolithic path and any existing caller are
+//     unaffected.
+//   • TimelineOffsetSec — where this call's audio sits on the whole recording's
+//     timeline. The backend adds it to the per-segment t0/t1 it logs, so a
+//     streaming segment reads its true position in the take ("12.4→17.2 s")
+//     instead of restarting from zero each utterance. Defaults 0 → a standalone
+//     call logs absolute-from-start times exactly as before.
+public sealed record TranscriptionContext(
+    string? PrimingText,
+    bool EmitPreamble = true,
+    double TimelineOffsetSec = 0);
 
 // ── ModelLoadResult ──────────────────────────────────────────────────────────
 //

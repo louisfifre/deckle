@@ -167,10 +167,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingDrained,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Streaming drained | utterances={0} | total_ms={1} | n_seg={2}")]
-    public void StreamingDrained(int n_utterances, long total_ms, int n_seg)
+           Message = "Streaming complete | {0} utterances | {1:F1} s audio | {2} ms whisper | {3} words | {4} seg")]
+    public void StreamingDrained(int n_utterances, double audio_sec, long whisper_ms, int words, int n_seg)
     {
-        if (IsEnabled()) WriteEvent(EvtStreamingDrained, n_utterances, total_ms, n_seg);
+        if (IsEnabled()) WriteEvent(EvtStreamingDrained, n_utterances, audio_sec, whisper_ms, words, n_seg);
     }
 
     [Event(EvtUtteranceSkipped,

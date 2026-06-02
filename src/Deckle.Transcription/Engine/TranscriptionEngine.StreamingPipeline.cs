@@ -145,11 +145,16 @@ public sealed partial class TranscriptionEngine
 
         RaiseStatus(Loc.Get("Status_Transcribing"));
 
-        // Streaming-native completion milestone: utterance count is the metric that
-        // tells whether the segmenter did its job (segments are Whisper's own
-        // sub-cuts within each utterance).
+        // Streaming-native completion recap, emitted once at Stop: the readable
+        // summary of the whole take (utterances the segmenter produced, audio
+        // length, cumulative Whisper time, word count, Whisper's own sub-segments).
+        double takeAudioSec = (float)capture.Pcm.Length / 16_000f;
         DeckleWhispSource.Log.StreamingDrained(
-            consumed.NUtterances, consumed.TotalMs, consumed.NSegments);
+            consumed.NUtterances,
+            takeAudioSec,
+            consumed.TotalMs,
+            TextMetrics.CountWords(consumed.Text),
+            consumed.NSegments);
 
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {
@@ -200,7 +205,15 @@ public sealed partial class TranscriptionEngine
             // across these separate backend calls (Whisper has no cross-call
             // context). A looped previous utterance contributes no tail, so a loop
             // cannot contaminate the next.
-            var ctx = new TranscriptionContext(BuildPriming(fixedPrompt, previousTail));
+            //
+            // EmitPreamble only on the first utterance (nUtt was ++'d above, so
+            // ==1 here) → the params/prompt log once for the whole take, not once
+            // per utterance. TimelineOffsetSec positions this utterance's segments
+            // on the take's global timeline so the logs read true positions.
+            var ctx = new TranscriptionContext(
+                BuildPriming(fixedPrompt, previousTail),
+                EmitPreamble:      nUtt == 1,
+                TimelineOffsetSec: u.StartSec);
 
             TranscriptionResult result;
             try
