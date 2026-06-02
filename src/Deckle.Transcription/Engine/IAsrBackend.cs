@@ -67,11 +67,30 @@ public interface IAsrBackend : IDisposable
     //     the orchestrator can still claim partial segments already emitted.
     //   • Returns the full assembled text + per-segment metrics + wall-clock
     //     phase timings the orchestrator forwards to the latency payload.
+    //   • `context` (optional) supplies model-agnostic priming for this call —
+    //     used by the streaming socle to carry continuity across separate
+    //     per-utterance calls. Null (the default) means "no priming beyond the
+    //     backend's own configured settings", so the monolithic path and any
+    //     existing caller are unaffected.
     Task<TranscriptionResult> TranscribeAsync(
         ReadOnlyMemory<float> pcmSamples,
         Action<TranscriptionSegment>? segmentSink,
-        CancellationToken ct);
+        CancellationToken ct,
+        TranscriptionContext? context = null);
 }
+
+// ── TranscriptionContext ─────────────────────────────────────────────────────
+//
+// Optional per-call priming, model-agnostic by design so the contract outlives
+// Whisper. The streaming pipeline builds it to carry continuity across the
+// separate backend calls of consecutive utterances (Whisper has no cross-call
+// context — carry_initial_prompt and no_context both stay WITHIN one call).
+//
+//   • PrimingText — prior text to prime the decoder with. The Whisper backend
+//     maps it onto initial_prompt (overriding the configured stylistic prompt
+//     for that call); a future backend may treat it as conversation history or
+//     ignore it. Null/empty means no override.
+public sealed record TranscriptionContext(string? PrimingText);
 
 // ── ModelLoadResult ──────────────────────────────────────────────────────────
 //

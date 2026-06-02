@@ -55,14 +55,20 @@ public static class WhisperParamsMapper
     // `modelsDirectory` est le dossier où le modèle Silero VAD est cherché —
     // résolu côté hôte (ITranscriptionEngineHost.ResolveModelsDirectory) pour que ce
     // module reste indépendant du SettingsService de l'app.
+    //
+    // `promptOverride` (optionnel) remplace l'initial_prompt configuré pour CET
+    // appel : c'est le canal par lequel le socle streaming injecte son contexte
+    // inter-utterances (prompt fixe + queue de l'utterance précédente). Null =
+    // on garde le prompt stylistique des settings (chemin monolithique inchangé).
     public static NativeAllocations Apply(
         ref WhisperFullParams wparams,
         TranscriptionSettings whisp,
-        string modelsDirectory)
+        string modelsDirectory,
+        string? promptOverride = null)
     {
         // ── Transcription ─────────────────────────────────────────────────
         IntPtr langPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.Language);
-        IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.InitialPrompt);
+        IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(promptOverride ?? whisp.Engine.InitialPrompt);
         wparams.language = langPtr;
         wparams.initial_prompt = promptPtr;
         wparams.carry_initial_prompt = (byte)(whisp.Engine.CarryInitialPrompt ? 1 : 0);

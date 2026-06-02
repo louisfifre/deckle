@@ -156,9 +156,10 @@ public sealed class WhisperBackend : IAsrBackend
     public Task<TranscriptionResult> TranscribeAsync(
         ReadOnlyMemory<float> pcmSamples,
         Action<TranscriptionSegment>? segmentSink,
-        CancellationToken ct)
+        CancellationToken ct,
+        TranscriptionContext? context = null)
     {
-        return Task.FromResult(TranscribeSync(pcmSamples, segmentSink, ct));
+        return Task.FromResult(TranscribeSync(pcmSamples, segmentSink, ct, context));
     }
 
     // ── Model path resolution ────────────────────────────────────────────────
@@ -214,7 +215,8 @@ public sealed class WhisperBackend : IAsrBackend
     private TranscriptionResult TranscribeSync(
         ReadOnlyMemory<float> pcmSamples,
         Action<TranscriptionSegment>? segmentSink,
-        CancellationToken ct)
+        CancellationToken ct,
+        TranscriptionContext? context = null)
     {
         IntPtr ctx = _ctx;
         if (ctx == IntPtr.Zero)
@@ -245,7 +247,7 @@ public sealed class WhisperBackend : IAsrBackend
 
         var TranscriptionSettings = _host.Transcription;
         WhisperParamsMapper.NativeAllocations nativeAllocs =
-            WhisperParamsMapper.Apply(ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory());
+            WhisperParamsMapper.Apply(ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory(), context?.PrimingText);
 
         _tokenBeg = WhisperPInvoke.whisper_token_beg(ctx);
 
@@ -271,7 +273,7 @@ public sealed class WhisperBackend : IAsrBackend
             $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
             $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
 
-        string prompt = TranscriptionSettings.Engine.InitialPrompt;
+        string prompt = context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt;
         bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
         if (!string.IsNullOrEmpty(prompt))
         {
