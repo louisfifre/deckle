@@ -723,6 +723,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
+├── INSTALL.md
 ├── JOURNAL.md  — journal-deckle [project-journal] Journal daté du projet Deckle : avancées techniques validées, observations en c…
 ├── LICENSE
 ├── NOTICE.md
