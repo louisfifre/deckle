@@ -187,15 +187,15 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     // Name of the rewrite profile chosen by the hotkey that started this
     // recording (null = no manual rewrite; fall back to AutoRewriteRules
-    // based on recording duration). Captured at StartRecording time and
-    // consumed at the end of Transcribe().
+    // based on recording duration). Captured when the hotkey starts the run
+    // (TryStartFromIdle) and consumed in FinalizeTranscription.
     private string?         _manualProfileName = null;
 
-    // Stable identifier for the current pipeline invocation. Regenerated
-    // at the top of Transcribe() ; stamped on every corpus event emitted
-    // for this transcription and on the WAV file basename so the JSONL
-    // lines and the audio file join unambiguously. 32 hex chars (Guid
-    // "N" format) — voir ADR-0006.
+    // Stable identifier for the current pipeline invocation. Regenerated once
+    // per recording in WorkerRun (before the strategy runs); stamped on every
+    // corpus event emitted for this transcription and on the WAV file basename
+    // so the JSONL lines and the audio file join unambiguously. 32 hex chars
+    // (Guid "N" format) — voir ADR-0006.
     private string          _transcriptionId   = "";
 
     // Model lifecycle: lazy load on first hotkey, unload after idle timeout.
