@@ -75,3 +75,23 @@ _Avoid_ : gain, volume (those are signal operations, not display).
 **Transcription pre-processing** :
 A transform of the captured signal (filtering, compression, gain) applied to the `float[]` buffer between `MicrophoneCapture.Record()` and the ASR backend, for the sole purpose of maximizing machine intelligibility — not listening quality. Operates on the samples themselves, downstream of capture and upstream of transcription. Distinct from display level, and independent of how the buffer is windowed for the backend. Implemented as a post-capture two-pass DSP chain in `Deckle.Audio.Preprocessing` (`TranscriptionPreprocessor`); off by default and user-toggled, with a mic level check on the Recording page that advises whether it helps.
 _Avoid_ : AGC (it is not real-time automatic gain — it runs once, post-capture), normalization (it is a dynamics chain, not a single peak/RMS scale).
+
+## Speech segmentation — detection vs cutting
+
+Two devices carry the word "VAD" and are constantly conflated, yet they are different in kind: one is a model that finds speech in a finished buffer, the other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
+
+**Neural VAD** :
+A neural-network voice-activity detector (today Silero) that runs over a whole captured buffer to find speech regions and trim silence before decoding. Model-based and post-hoc — it needs the full buffer in hand. Wired inside `whisper_full` via `vad_model_path`.
+_Avoid_ : VAD (bare — ambiguous), Silero (vendor-specific; the term should outlive the model).
+
+**Energy segmenter** :
+A threshold-on-RMS state machine that runs live on the capture's real-time energy stream to place **utterance** boundaries at silences. Not a model and not speech recognition — it reads energy dips to decide where to cut, feeding the streaming producer/consumer pipeline.
+_Avoid_ : energy VAD (it does not detect voice, it cuts on silence), VAD.
+
+**Utterance** :
+The unit the energy segmenter emits — a speech span bounded by detected silence (or by the safety ceiling), and the atomic audio chunk handed to the backend for one transcription call.
+_Avoid_ : chunk, segment.
+
+**Segment** :
+Whisper's *output* unit — a short timestamped span the model re-derives **inside** each utterance from its own decoding. An utterance is an input cut decided by energy; a segment is an output cut decided by Whisper. One utterance contains one or more segments.
+_Avoid_ : utterance (the input unit), window (the 30 s encoder input).
