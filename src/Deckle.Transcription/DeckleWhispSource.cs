@@ -147,6 +147,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtCorpusAsrRecorded                = 105;
     public const int EvtCorpusRewriteRecorded            = 106;
     public const int EvtTranscriptionPreprocessed        = 107;
+    public const int EvtStreamingDrained                 = 108;
+    public const int EvtUtteranceSkipped                 = 109;
 
 
 }

@@ -12,7 +12,7 @@ public sealed partial class TranscriptionEngine
     // ── StreamingPipeline partial — producer/consumer over utterances ──────────
     //
     // Streaming strategy: an energy segmenter cuts the live capture stream into
-    // utterances (on the worker thread, via the Frame event), a Channel hands
+    // utterances on the worker thread (via the Audio Frame event), a Channel hands
     // them to a consumer task that transcribes each one as it arrives and
     // accumulates the text. At Stop the producer flushes the open utterance and
     // completes the channel; the consumer drains whatever is queued, then the
@@ -29,9 +29,13 @@ public sealed partial class TranscriptionEngine
     // hand-off between them.
     //
     // Two tokens: producerCt (Stop + Dispose) stops capture; drainCt (Dispose
-    // only) aborts the consumer's in-flight inference. On Stop the consumer is
-    // NOT cancelled, so the queued tail transcribes losslessly; on Dispose it is,
-    // so the worker join stays bounded.
+    // only) aborts the consumer. On Stop the consumer is NOT cancelled, so the
+    // queued tail transcribes losslessly; on Dispose it is, so the worker join
+    // stays bounded. Note how the abort actually lands: the backend observes
+    // drainCt through its abort hook and returns a normal result with
+    // Aborted=true (it does NOT throw), so the deterministic stop comes from the
+    // explicit drainCt check at the top of the consumer loop, not from an
+    // exception out of the backend call.
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt)
     {
@@ -57,23 +61,45 @@ public sealed partial class TranscriptionEngine
         CaptureResult capture;
         try
         {
-            // Blocks on the worker thread until Stop / cap / Dispose = the producer.
-            capture = _capture.Record(_recordingHost, producerCt);
+            try
+            {
+                // Blocks on the worker thread until Stop / cap / Dispose = the producer.
+                capture = _capture.Record(_recordingHost, producerCt);
+            }
+            finally
+            {
+                // No more frames will fire once Record has returned (the drain pass
+                // ran inside it, on this same thread). Flush the open utterance, then
+                // seal the channel so the consumer's ReadAllAsync completes.
+                _capture.Frame -= OnFrame;
+                segmenter.Flush();
+                channel.Writer.Complete();
+            }
         }
-        finally
+        catch
         {
-            // No more frames will fire once Record has returned (the drain pass
-            // ran inside it, on this same thread). Flush the open utterance, then
-            // seal the channel so the consumer's ReadAllAsync completes.
-            _capture.Frame -= OnFrame;
-            segmenter.Flush();
-            channel.Writer.Complete();
+            // Record threw. The channel is completed (finally above), so the
+            // consumer drains and finishes on its own — observe it here so its
+            // exception is never left unobserved, then let the original throw
+            // propagate to WorkerRun's crash handler.
+            try { await consumer.ConfigureAwait(false); } catch { /* teardown */ }
+            throw;
         }
 
         _recordDrainDuration = capture.DrainDuration;
 
+        // Cap-hit CAS BEFORE the drain await, symmetric with the monolithic path:
+        // otherwise the state would stay Recording for the whole drain and a hotkey
+        // arriving meanwhile would be mistaken for a valid Stop. On a user Stop the
+        // CAS already happened in RequestToggle.
+        if (capture.Outcome == CaptureOutcome.CapHit)
+        {
+            Interlocked.CompareExchange(
+                ref _state, (int)PipelineState.Stopping, (int)PipelineState.Recording);
+        }
+
         // Await the consumer drain. On Stop it finishes naturally (lossless tail);
-        // on Dispose drainCt aborted it mid-inference → OCE → abandon.
+        // on Dispose the loop's drainCt check throws OCE → abandon.
         StreamingConsumeResult consumed;
         try
         {
@@ -100,12 +126,6 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        if (capture.Outcome == CaptureOutcome.CapHit)
-        {
-            Interlocked.CompareExchange(
-                ref _state, (int)PipelineState.Stopping, (int)PipelineState.Recording);
-        }
-
         if (capture.Telemetry is not null)
         {
             TryAutoCalibrate(capture.Telemetry);
@@ -125,9 +145,11 @@ public sealed partial class TranscriptionEngine
 
         RaiseStatus(Loc.Get("Status_Transcribing"));
 
-        DeckleWhispSource.Log.TranscribeCompleted(consumed.NSegments);
-        DeckleWhispSource.Log.TranscribeCompleteDetail(
-            consumed.TotalMs, consumed.NSegments, consumed.Text.Length);
+        // Streaming-native completion milestone: utterance count is the metric that
+        // tells whether the segmenter did its job (segments are Whisper's own
+        // sub-cuts within each utterance).
+        DeckleWhispSource.Log.StreamingDrained(
+            consumed.NUtterances, consumed.TotalMs, consumed.NSegments);
 
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {
@@ -153,19 +175,26 @@ public sealed partial class TranscriptionEngine
 
     // Drains the utterance channel, transcribing each one as it arrives and
     // accumulating the text. Runs on its own task; the only backend caller at a
-    // time. drainCt aborts an in-flight call on Dispose (→ OCE, propagated).
+    // time. The drainCt check at the top of each iteration is what guarantees a
+    // deterministic stop on Dispose — the backend returns Aborted (it does not
+    // throw on cancellation), and ReadAllAsync may still yield a ready item after
+    // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
         ChannelReader<Utterance> reader, CancellationToken drainCt)
     {
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0, vadMs = 0;
-        int nSeg = 0;
+        int nSeg = 0, nUtt = 0;
 
         string fixedPrompt = _host.Transcription.Engine.InitialPrompt ?? "";
         string? previousTail = null;
 
         await foreach (Utterance u in reader.ReadAllAsync(drainCt).ConfigureAwait(false))
         {
+            // Deterministic Dispose stop — see the method remark.
+            drainCt.ThrowIfCancellationRequested();
+            nUtt++;
+
             // Inter-utterance context, rebuilt by hand: the fixed stylistic prompt
             // plus the tail of the previous utterance, so continuity carries
             // across these separate backend calls (Whisper has no cross-call
@@ -191,8 +220,7 @@ public sealed partial class TranscriptionEngine
             {
                 // One utterance failing must not lose the whole dictation — log,
                 // drop its context, keep going (resilience, the first goal).
-                DeckleWhispSource.Log.TranscribeFailed(-1);
-                DeckleWhispSource.Log.SegmentCallbackThrew(ex.GetType().Name, ex.Message);
+                DeckleWhispSource.Log.UtteranceSkipped(u.Index, ex.GetType().Name, ex.Message);
                 previousTail = null;
                 continue;
             }
@@ -214,7 +242,7 @@ public sealed partial class TranscriptionEngine
             previousTail = result.Aborted ? null : TailOf(text);
         }
 
-        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, vadMs, nSeg);
+        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, vadMs, nSeg, nUtt);
     }
 
     // Fixed stylistic prompt + the previous utterance's tail (most recent context
@@ -227,9 +255,9 @@ public sealed partial class TranscriptionEngine
     }
 
     // Last N words of an utterance — the continuity carried into the next.
-    // A modest, tunable window: enough for word-boundary/register continuity
-    // without blowing the prompt-token budget (Whisper keeps the most recent
-    // tokens if the prompt overflows anyway).
+    // PrimingTailWords is a reference value, not exposed and not yet tuned: enough
+    // for word-boundary/register continuity without blowing the prompt-token
+    // budget (Whisper keeps the most recent tokens if the prompt overflows anyway).
     private const int PrimingTailWords = 30;
     private static string TailOf(string text)
     {
@@ -239,8 +267,9 @@ public sealed partial class TranscriptionEngine
         return string.Join(' ', words[^PrimingTailWords..]);
     }
 
-    // Roll-up the consumer hands back to ProduceStreamingAsync — assembled text
-    // plus the backend timings summed across utterances.
+    // Roll-up the consumer hands back to ProduceStreamingAsync — assembled text,
+    // the backend timings summed across utterances, and how many utterances the
+    // segmenter produced.
     private readonly record struct StreamingConsumeResult(
-        string Text, long TotalMs, long InitMs, long VadMs, int NSegments);
+        string Text, long TotalMs, long InitMs, long VadMs, int NSegments, int NUtterances);
 }
