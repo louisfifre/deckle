@@ -56,6 +56,7 @@ internal static class WaveInLoop
         IAudioRecordingHost    host,
         List<float>       rmsLog,            // owned by MicrophoneCapture, cleared at start
         System.Action<float>? audioLevelCallback,
+        System.Action<CaptureFrame>? frameCallback, // null = no subscriber → no float conversion
         System.Action?    onLowAudioDetected, // fires once when first 5 s lacked sustained voice
         CancellationToken ct)
     {
@@ -138,7 +139,7 @@ internal static class WaveInLoop
                         var data = new byte[hdr.dwBytesRecorded];
                         Marshal.Copy(hdr.lpData, data, 0, (int)hdr.dwBytesRecorded);
                         allBytes.AddRange(data);
-                        EmitSubWindows(data, rmsLog, audioLevelCallback);
+                        EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                         buffersReceived++;
 
                         // Per-buffer low-audio tracker. 16 kHz mono PCM16 = 32
@@ -258,7 +259,7 @@ internal static class WaveInLoop
                 // _rmsLog covers the full session (the in-loop EmitSubWindows
                 // path stops as soon as the cancellation token fires, leaving
                 // the last 1-3 buffers undrained without this explicit pass).
-                EmitSubWindows(data, rmsLog, audioLevelCallback);
+                EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
             }
             NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
         }
@@ -286,7 +287,8 @@ internal static class WaveInLoop
     private static void EmitSubWindows(
         byte[]                pcm16,
         List<float>           rmsLog,
-        System.Action<float>? audioLevelCallback)
+        System.Action<float>? audioLevelCallback,
+        System.Action<CaptureFrame>? frameCallback)
     {
         const int SubWindowMs      = 50;
         const int BytesPerSubWin   = 16000 * 2 * SubWindowMs / 1000; // 1600 bytes
@@ -295,18 +297,29 @@ internal static class WaveInLoop
         int offset = 0;
         while (offset + BytesPerSubWin <= pcm16.Length)
         {
+            // Only materialise the float sub-window when a Frame subscriber is
+            // present — the HUD-only path (AudioLevel) allocates nothing extra.
+            // The buffer is a fresh array per sub-window, never an alias of the
+            // unmanaged ring buffer, so it is safe to hand off and keep.
+            float[]? frameSamples = frameCallback is null ? null : new float[SamplesPerSubWin];
+
             double sumSq = 0;
             for (int i = 0; i < SamplesPerSubWin; i++)
             {
                 short s = (short)(pcm16[offset + i * 2] | (pcm16[offset + i * 2 + 1] << 8));
                 double v = s / 32768.0;
                 sumSq += v * v;
+                // (float)(s/32768.0) is bit-identical to PcmConversion.PcmToFloat's
+                // s/32768.0f (2^15 divisor → exact), so frame samples match the
+                // buffer the backend ultimately receives.
+                if (frameSamples is not null) frameSamples[i] = (float)v;
             }
             double rms = System.Math.Sqrt(sumSq / SamplesPerSubWin);
             if (rms > 1.0) rms = 1.0;
             float rmsF = (float)rms;
             rmsLog.Add(rmsF);
             audioLevelCallback?.Invoke(rmsF);
+            if (frameSamples is not null) frameCallback!.Invoke(new CaptureFrame(frameSamples, rmsF));
             offset += BytesPerSubWin;
         }
     }

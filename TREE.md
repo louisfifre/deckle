@@ -317,6 +317,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AudioLevelMapper.cs
+│   │   ├── CaptureFrame.cs
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
