@@ -291,7 +291,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── App.Ambient.cs
+│   │   ├── App.Hotkeys.cs
+│   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
+│   │   ├── App.Theme.cs
+│   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
 │   │   ├── CLAUDE.md  — claude-deckle-app [agent-instructions] Doctrine for Deckle.App, the WinUI 3 host module that composes all Deckle.* mod…
@@ -340,7 +345,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleChronoSource.cs
 │   ├── Deckle.Composition/
 │   │   ├── Core/
+│   │   │   ├── HudComposition.Animations.cs
+│   │   │   ├── HudComposition.Config.cs
 │   │   │   ├── HudComposition.cs
+│   │   │   ├── HudComposition.Factories.cs
+│   │   │   ├── HudComposition.NakedPreview.cs
+│   │   │   ├── HudComposition.Painting.cs
+│   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   └── ProcessingVariant.cs
 │   │   ├── Primitives/
 │   │   │   ├── ColorSpace.cs
