@@ -66,4 +66,44 @@ public class DeckleWindowingSourceTests
         Assert.Equal("folder-picker", ev.Payload?[0]);
         Assert.Equal("10,20,300,40", ev.Payload?[1]);
     }
+
+    [Fact]
+    public void WindowZOrderStateEmitsVerboseOnWindowingKeyword()
+    {
+        using var listener = new TestEventListener("Deckle.Diagnostics.Windowing");
+
+        DeckleWindowingSource.Log.WindowZOrderState(
+            window: "hud", stage: "after_setwindowpos_topmost",
+            visible: true, topmost: true,
+            previous_visible: true, previous_topmost: false,
+            foreground_pid: 1001, foreground_class: "ApplicationFrameWindow",
+            previous_hwnd: 0x123456, previous_pid: 1002, previous_class: "Shell_TrayWnd",
+            visible_above_count: 1,
+            first_visible_above_pid: 1002,
+            first_visible_above_class: "Shell_TrayWnd",
+            first_visible_above_topmost: true,
+            setpos_ok: true, last_error: 0);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleWindowingSource.EvtWindowZOrderState, ev.EventId);
+        Assert.Equal(EventLevel.Verbose, ev.Level);
+        Assert.True(ev.HasKeyword(Keywords.Windowing));
+        Assert.Equal("hud", ev.Payload?[0]);
+        Assert.Equal("after_setwindowpos_topmost", ev.Payload?[1]);
+        Assert.Equal(true, ev.Payload?[2]);
+        Assert.Equal(true, ev.Payload?[3]);
+        Assert.Equal(true, ev.Payload?[4]);
+        Assert.Equal(false, ev.Payload?[5]);
+        Assert.Equal(1001L, ev.Payload?[6]);
+        Assert.Equal("ApplicationFrameWindow", ev.Payload?[7]);
+        Assert.Equal(0x123456L, ev.Payload?[8]);
+        Assert.Equal(1002L, ev.Payload?[9]);
+        Assert.Equal("Shell_TrayWnd", ev.Payload?[10]);
+        Assert.Equal(1, ev.Payload?[11]);
+        Assert.Equal(1002L, ev.Payload?[12]);
+        Assert.Equal("Shell_TrayWnd", ev.Payload?[13]);
+        Assert.Equal(true, ev.Payload?[14]);
+        Assert.Equal(true, ev.Payload?[15]);
+        Assert.Equal(0, ev.Payload?[16]);
+    }
 }

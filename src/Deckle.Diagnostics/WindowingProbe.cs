@@ -1,5 +1,6 @@
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Deckle.Diagnostics;
 
@@ -53,7 +54,28 @@ public static class WindowingProbe
     [DllImport("user32.dll")]
     private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
+    [DllImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
     private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    private const int GWL_EXSTYLE = -20;
+    private const long WS_EX_TOPMOST = 0x00000008;
+    private const uint GW_HWNDPREV = 3;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
@@ -138,5 +160,93 @@ public static class WindowingProbe
 
         DeckleWindowingSource.Log.PopupAnchored(
             popup, parent_rect, pos_x, pos_y, size_w, size_h);
+    }
+
+    public static void EmitWindowZOrderState(
+        IntPtr hwnd, string window, string stage,
+        bool setposOk = true, int lastError = 0)
+    {
+        if (!DeckleWindowingSource.Log.IsEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (hwnd == IntPtr.Zero) return;
+
+        bool visible = IsWindowVisible(hwnd);
+        bool topmost = HasTopmostStyle(hwnd);
+
+        uint foregroundPid = 0;
+        string foregroundClass = "";
+        IntPtr foreground = GetForegroundWindow();
+        if (foreground != IntPtr.Zero)
+        {
+            GetWindowThreadProcessId(foreground, out foregroundPid);
+            foregroundClass = GetClassNameOrEmpty(foreground);
+        }
+
+        uint previousPid = 0;
+        bool previousVisible = false;
+        bool previousTopmost = false;
+        string previousClass = "";
+        IntPtr previous = GetWindow(hwnd, GW_HWNDPREV);
+        if (previous != IntPtr.Zero)
+        {
+            GetWindowThreadProcessId(previous, out previousPid);
+            previousVisible = IsWindowVisible(previous);
+            previousTopmost = HasTopmostStyle(previous);
+            previousClass = GetClassNameOrEmpty(previous);
+        }
+
+        var firstVisibleAbove = FindVisibleWindowAbove(hwnd);
+
+        DeckleWindowingSource.Log.WindowZOrderState(
+            window, stage, visible, topmost,
+            previousVisible, previousTopmost,
+            foregroundPid, foregroundClass,
+            previous.ToInt64(), previousPid, previousClass,
+            firstVisibleAbove.Count,
+            firstVisibleAbove.Pid,
+            firstVisibleAbove.ClassName,
+            firstVisibleAbove.Topmost,
+            setposOk, lastError);
+    }
+
+    private static bool HasTopmostStyle(IntPtr hwnd)
+    {
+        long exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+        return (exStyle & WS_EX_TOPMOST) != 0;
+    }
+
+    private static string GetClassNameOrEmpty(IntPtr hwnd)
+    {
+        var sb = new StringBuilder(128);
+        return GetClassName(hwnd, sb, sb.Capacity) > 0 ? sb.ToString() : "";
+    }
+
+    private static (int Count, long Pid, string ClassName, bool Topmost) FindVisibleWindowAbove(IntPtr hwnd)
+    {
+        int count = 0;
+        long firstPid = 0;
+        string firstClass = "";
+        bool firstTopmost = false;
+
+        IntPtr current = GetWindow(hwnd, GW_HWNDPREV);
+        int guard = 0;
+        while (current != IntPtr.Zero && guard++ < 256)
+        {
+            if (IsWindowVisible(current))
+            {
+                count++;
+                if (firstPid == 0)
+                {
+                    GetWindowThreadProcessId(current, out uint pid);
+                    firstPid = pid;
+                    firstClass = GetClassNameOrEmpty(current);
+                    firstTopmost = HasTopmostStyle(current);
+                }
+            }
+
+            current = GetWindow(current, GW_HWNDPREV);
+        }
+
+        return (count, firstPid, firstClass, firstTopmost);
     }
 }

@@ -618,11 +618,19 @@ public sealed partial class HudWindow : Window
         var rect = GetRectPx();
         AppWindow.MoveAndResize(rect);
 
+        WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", "before_show_noactivate");
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-        NativeMethods.SetWindowPos(
+        WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", "after_show_noactivate");
+        bool setposOk = NativeMethods.SetWindowPos(
             _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+        int setposError = setposOk ? 0 : Marshal.GetLastWin32Error();
+        WindowingProbe.EmitWindowZOrderState(
+            _hwnd, "hud", "after_setwindowpos_topmost",
+            setposOk, setposError);
+        EmitDelayedZOrderState("after_setwindowpos_topmost_50ms", 50, setposOk, setposError);
+        EmitDelayedZOrderState("after_setwindowpos_topmost_250ms", 250, setposOk, setposError);
 
         // Windowing — émis après le MoveAndResize + ShowWindow pour
         // capturer le rect effectif post-DWM. `anchor` reflète le réglage
@@ -633,6 +641,19 @@ public sealed partial class HudWindow : Window
         string position = Settings.SettingsService.Instance.Current.Overlay.Position ?? "";
         string anchor = position.StartsWith("Top") ? "TopCenter" : "BottomCenter";
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);
+    }
+
+    private void EmitDelayedZOrderState(string stage, int delayMs, bool setposOk, int setposError)
+    {
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(delayMs);
+        timer.IsRepeating = false;
+        timer.Tick += (sender, _) =>
+        {
+            sender.Stop();
+            WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", stage, setposOk, setposError);
+        };
+        timer.Start();
     }
 
     // ── Subclass: WM_NCCALCSIZE (no-frame) + WM_INPUT (proximity) ─────────────

@@ -16,7 +16,7 @@ Quality target: a Windows app at Microsoft first-party level. Sensory reference:
 
 ## Hard rules
 
-Claude builds locally to validate compilation (`dotnet build`, daily via `scripts/lib/build-run.ps1`); `publish` stays the maintainer's act, never triggered by Claude.
+Local validation is compile-only `dotnet build`, Debug x64 by default, without stopping or relaunching Deckle. `publish` stays the maintainer's act, never triggered by agents.
 
 The commit ships under the maintainer's sole identity — no `Co-Authored-By: Claude` trailer, no `🤖 Generated with Claude Code` line.
 
