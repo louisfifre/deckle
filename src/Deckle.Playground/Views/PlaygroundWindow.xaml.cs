@@ -104,10 +104,15 @@ public sealed partial class PlaygroundWindow : Window
         {
             DispatcherQueue.TryEnqueueObserved(
                 operation: "ui-update", caller: "playground-window-nav",
-                callback: () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"),
+                callback: () =>
+                {
+                    SyncNavigationPane(Nav);
+                    OverrideNavPaneToggleTooltip(Nav, "Open navigation");
+                },
                 rejectSource: "PLAYGROUND", rejectWhat: "nav tooltip override",
                 priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
         };
+        Nav.DisplayModeChanged += OnNavDisplayModeChanged;
         Nav.PaneOpened += (_, _) =>
             OverrideNavPaneToggleTooltip(Nav, "Open navigation");
         Nav.PaneClosed += (_, _) =>
@@ -297,6 +302,11 @@ public sealed partial class PlaygroundWindow : Window
         }
     }
 
+    private void OnNavDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
+    {
+        SyncNavigationPane(sender);
+    }
+
     // PlaygroundShell.NavigateTo callback target. Pages invoke this with
     // a short tag ("home" / "hud" / "ambient") and the shell maps it to
     // the matching NavigationViewItem.Tag prefix.
@@ -335,6 +345,11 @@ public sealed partial class PlaygroundWindow : Window
         if (toggle is null) return;
         ToolTipService.SetToolTip(toggle, tooltip);
         AutomationProperties.SetName(toggle, tooltip);
+    }
+
+    private static void SyncNavigationPane(NavigationView nav)
+    {
+        nav.IsPaneOpen = nav.DisplayMode == NavigationViewDisplayMode.Expanded;
     }
 
     private static T? FindVisualDescendantByName<T>(DependencyObject root, string name)

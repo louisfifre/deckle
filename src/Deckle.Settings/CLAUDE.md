@@ -19,7 +19,7 @@ Native `Microsoft.UI.Xaml.Controls.TitleBar` (WindowsAppSDK 1.8), **Standard** c
 
 ## Adaptive NavigationView — PaneDisplayMode Auto
 
-No custom code-behind for the breakpoints. `PaneDisplayMode="Auto"` (WinUI default) handles the switch between the three modes on its own: **Left** ≥ 1008 dip, **LeftCompact** 641–1007, **LeftMinimal** ≤ 640. `PreferredMinimumWidth=320` on the presenter exposes the LeftMinimal mode. The `DisplayModeChanged` handler manages only the Frame padding: `+48 px top` in Minimal mode so the hamburger isn't overlapped (Windows Terminal Settings pattern).
+No custom code-behind for the breakpoints. `PaneDisplayMode="Auto"` (WinUI default) handles the switch between the three modes on its own: **Left** ≥ 1008 dip, **LeftCompact** 641–1007, **LeftMinimal** ≤ 640. `PreferredMinimumWidth=320` on the presenter exposes the LeftMinimal mode. The `DisplayModeChanged` handler manages Frame padding (`+48 px top` in Minimal mode so the hamburger isn't overlapped, Windows Terminal Settings pattern) and normalizes `IsPaneOpen`: open only in Expanded mode, closed in Compact/Minimal, so restored window placement cannot leave a visually collapsed pane reserving expanded width.
 
 Content: `NavigationView.MenuItems` = General → Recording → Transcription → Rewriting → Diagnostics. `FooterMenuItems` = Logs (`SelectsOnInvoked=False`, click via `ItemInvoked` which delegates to `SettingsHost.OpenLogWindow` to open the shared `LogWindow` — Logs is not a nav page, it's an action). Before the 2026-05-04 split there were only 3 pages (General concentrated Recording and Diagnostics); the separation pulled General down from 28 settings / 7 sections to 6 coherent sections and created two dedicated pages for the distinct functional surfaces.
 

@@ -80,7 +80,11 @@ public sealed partial class SettingsWindow : Window
         {
             DispatcherQueue.TryEnqueueObserved(
                 operation: "ui-update", caller: "settings-window-nav",
-                callback: () => OverrideNavPaneToggleTooltip(Nav, "Open navigation"),
+                callback: () =>
+                {
+                    SyncNavigationPane(Nav);
+                    OverrideNavPaneToggleTooltip(Nav, "Open navigation");
+                },
                 rejectSource: "SETTINGS", rejectWhat: "nav tooltip override",
                 priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
         };
@@ -176,6 +180,7 @@ public sealed partial class SettingsWindow : Window
 
     private void OnNavDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
     {
+        SyncNavigationPane(sender);
         PageFrame.Margin = sender.DisplayMode == NavigationViewDisplayMode.Minimal
             ? new Thickness(0, 48, 0, 0)
             : new Thickness(0);
@@ -264,6 +269,11 @@ public sealed partial class SettingsWindow : Window
         if (toggle is null) return;
         ToolTipService.SetToolTip(toggle, tooltip);
         AutomationProperties.SetName(toggle, tooltip);
+    }
+
+    private static void SyncNavigationPane(NavigationView nav)
+    {
+        nav.IsPaneOpen = nav.DisplayMode == NavigationViewDisplayMode.Expanded;
     }
 
     private static T? FindVisualDescendantByName<T>(DependencyObject root, string name)

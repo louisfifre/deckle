@@ -36,18 +36,16 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <!-- NavigationView LeftCompact + IsPaneOpen=False : the pane
-             starts collapsed (48 dip strip) and the user expands it
-             only when they want to read the labels. Three items, the
-             icons are enough at a glance, no need to dedicate 240 dip
-             to a permanently-open pane. Tag = fully-qualified Page
-             type name, resolved by Type.GetType in OnNavSelectionChanged. -->
+        <!-- NavigationView Auto : compact rail at the 1280 dip minimum,
+             expanded pane on genuinely wide Playground windows. Tag =
+             fully-qualified Page type name, resolved by Type.GetType
+             in OnNavSelectionChanged. -->
         <NavigationView Grid.Row="1"
                         x:Name="Nav"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        IsPaneOpen="False"
-                        PaneDisplayMode="LeftCompact"
+                        PaneDisplayMode="Auto"
+                        ExpandedModeThresholdWidth="1440"
                         SelectionChanged="OnNavSelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Uid="PlaygroundNavHome"
