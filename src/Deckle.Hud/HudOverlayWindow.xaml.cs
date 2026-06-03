@@ -177,15 +177,15 @@ public sealed partial class HudOverlayWindow : Window
     }
 
     // Initial placement: size the window at current DPI, move to target pixel
-    // position, then show without activation and pin to HWND_TOP so the newest
-    // overlay sits in front of older sibling overlays.
+    // position, then show without activation and reassert HWND_TOPMOST so the
+    // newest overlay stays in the topmost band without stealing focus.
     public void ShowAt(int xPx, int yPx)
     {
         var (w, h) = GetSizePx();
         AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(xPx, yPx, w, h));
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
         NativeMethods.SetWindowPos(
-            _hwnd, NativeMethods.HWND_TOP,
+            _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
 

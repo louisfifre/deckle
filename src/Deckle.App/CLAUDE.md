@@ -71,7 +71,7 @@ A `LogWindow` that was never shown has no initialised layout — `LogScrollViewe
 
 The `HudWindow` class now lives in `Deckle.Hud` (extracted from the host during the mapping cleanup). The host instantiates the singleton once in `OnLaunched` and never destroys it. UI handlers are marshalled via `DispatcherQueue.TryEnqueue` because `TranscriptionEngine` events come from background threads. Internal window detail: WinUI 3 `Window` of about 320×64, positioned bottom-centre via `DisplayArea.Primary.WorkArea`, as a non-resizable `OverlappedPresenter`, with `ExtendsContentIntoTitleBar=true`.
 
-To show the HUD, the sequence is `MoveAndResize` then `ShowWindow(SW_SHOWNOACTIVATE)` followed by `SetWindowPos(HWND_TOP, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. Never `SetForegroundWindow` — the HUD must not steal focus. To hide it, `ShowWindow(SW_HIDE)`. The details (progressive colouring of the timer, mouse-proximity fade via Raw Input and layered alpha with smoothstep, layered shadow constraint, notification regressions) live in [src/Deckle.Hud/CLAUDE.md](../Deckle.Hud/CLAUDE.md).
+To show the HUD, the sequence is `MoveAndResize` then `ShowWindow(SW_SHOWNOACTIVATE)` followed by `SetWindowPos(HWND_TOPMOST, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE)`. `HWND_TOPMOST` reasserts the native topmost band on every visible transition; `SWP_NOACTIVATE` keeps the no-focus-steal invariant. Never `SetForegroundWindow` for the HUD itself. To hide it, `ShowWindow(SW_HIDE)`. The details (progressive colouring of the timer, mouse-proximity fade via Raw Input and layered alpha with smoothstep, layered shadow constraint, notification regressions) live in [src/Deckle.Hud/CLAUDE.md](../Deckle.Hud/CLAUDE.md).
 
 ## Lifetime — `App.xaml.cs`
 

@@ -620,7 +620,7 @@ public sealed partial class HudWindow : Window
 
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
         NativeMethods.SetWindowPos(
-            _hwnd, NativeMethods.HWND_TOP,
+            _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
 
