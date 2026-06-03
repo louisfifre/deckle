@@ -305,7 +305,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
 │   │   ├── LogWindow.xaml
-│   │   └── LogWindow.xaml.cs
+│   │   ├── LogWindow.xaml.cs
+│   │   └── SecondaryWindowPlacement.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── PcmConversion.cs

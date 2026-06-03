@@ -15,7 +15,7 @@ Modular pages (`WhisperPage` in `Deckle.Transcription`, `LlmPage` in `Deckle.Llm
 
 ## TitleBar and backdrop
 
-Native `Microsoft.UI.Xaml.Controls.TitleBar` (WindowsAppSDK 1.8), **Standard** caption buttons (`AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard`). App icon via named `ImageIconSource`. `ExtendsContentIntoTitleBar=true` + `SetTitleBar(AppTitleBar)`. Caption button colors set manually by `UpdateCaptionButtonColors` with re-binding on `ActualThemeChanged` to follow the live theme (transparent backgrounds to let Mica show through, foreground adapted light/dark). `MicaBackdrop`. Classic `OverlappedPresenter` (min/max/resize). Initial resize 960×1440. `Closing → Cancel + Hide` — the window is reused via the tray.
+Native `Microsoft.UI.Xaml.Controls.TitleBar` (WindowsAppSDK 1.8), **Standard** caption buttons (`AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard`). App icon via named `ImageIconSource`. `ExtendsContentIntoTitleBar=true` + `SetTitleBar(AppTitleBar)`. Caption button colors set manually by `UpdateCaptionButtonColors` with re-binding on `ActualThemeChanged` to follow the live theme (transparent backgrounds to let Mica show through, foreground adapted light/dark). `MicaBackdrop`. Classic `OverlappedPresenter` (min/max/resize). Initial resize 960×1440. Close is real destruction: the host restores and saves native Win32 `WINDOWPLACEMENT` on `Closing`, then recreates the window lazily from the tray or `--settings`.
 
 ## Adaptive NavigationView — PaneDisplayMode Auto
 

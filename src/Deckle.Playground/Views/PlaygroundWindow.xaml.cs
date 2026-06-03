@@ -86,9 +86,7 @@ public sealed partial class PlaygroundWindow : Window
         presenter.PreferredMinimumHeight = 600;
         AppWindow.SetPresenter(presenter);
 
-        // Close → real destruction. Diverges intentionally from
-        // SettingsWindow / LogWindow (which Cancel→Hide to preserve
-        // state across opens). The Playground holds heavy runtime
+        // Close → real destruction. The Playground holds heavy runtime
         // resources (Win2D composition, screen capture, frame sampler,
         // Hue REST client, preview timers) — when the user dismisses
         // the window they expect the costs to go with it. App.xaml.cs
@@ -227,9 +225,9 @@ public sealed partial class PlaygroundWindow : Window
     {
         // Tear down resources owned by the pages — composition preview,
         // capture service, frame sampler, light output, observers. The
-        // shell deliberately drives this from Closed (terminal) rather
-        // than Closing (Cancel→Hide path) so a hide / show cycle
-        // preserves tuning state.
+        // shell deliberately drives this from Closed (terminal) so close
+        // releases the resources instead of leaving an idle visual tree
+        // alive behind the tray.
         try { _hudPage?.DisposeResources(); } catch { /* best effort */ }
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
 

@@ -9,7 +9,7 @@ module: Deckle.Playground
 
 Developer tuning surface for the app. Hosts `PlaygroundWindow` (NavigationView Auto + Frame of pages), three owned pages (`HomePage` landing, `HudPage` for stroke composition, `AmbientPage` for screen capture + Hue + HDR tuning), a static `PlaygroundShell` that serves as a navigation routing point on the page side, and two ViewModels (`HudViewModel`, `AmbientViewModel`). The module is dev-only: it exists so Louis can adjust live the parameters of the pipelines running in the app without a rebuild, and to serve as an antechamber for UX overhauls before they migrate into Settings or another final user-facing surface.
 
-The detailed architecture (shell + 3 pages, Tag → Type.GetType pattern, partial MVVM targeted at what pays off, real destruction on close) borrows the routing shape of `Deckle.Settings` but deliberately diverges on lifetime. The Playground holds heavy runtime resources and is rebuilt fresh on the next open; read `src/Deckle.Settings/CLAUDE.md` before touching shared shell patterns, but do not copy Settings' hide-on-close contract here. The Settings doctrine (Auto-save everywhere, NavigationView Auto, SettingsCard / SettingsExpander, H1 header per page) does not apply verbatim because the Playground is not a final user settings page — it is a tuning workshop with dense sliders, live previews, and programmatically generated panels.
+The detailed architecture (shell + 3 pages, Tag → Type.GetType pattern, partial MVVM targeted at what pays off, real destruction on close) borrows the routing shape of `Deckle.Settings`. The Playground holds heavy runtime resources and is rebuilt fresh on the next open; read `src/Deckle.Settings/CLAUDE.md` before touching shared shell patterns. The Settings doctrine (Auto-save everywhere, NavigationView Auto, SettingsCard / SettingsExpander, H1 header per page) does not apply verbatim because the Playground is not a final user settings page — it is a tuning workshop with dense sliders, live previews, and programmatically generated panels.
 
 ## Non-negotiable patterns
 
@@ -29,7 +29,7 @@ Mirror of `SettingsHost`. A static class with a single delegate today (`Navigate
 
 ## Window lifetime
 
-Lazy instance created on the first `ShowPlaygroundLazy()` call. Close is real destruction, not hide: `PlaygroundWindow.Closed` disposes page resources and `App.xaml.cs` clears `_playgroundWindow`, so the next open constructs a fresh window. This is intentional because Playground resources are heavy and dev-only; durable Ambient values already live in `AmbientSettingsService`, while HUD tuning remains process-memory only and resets with the new page instance.
+Lazy instance created on the first `ShowPlaygroundLazy()` call. Close is real destruction, not hide: `PlaygroundWindow.Closed` disposes page resources and `App.xaml.cs` clears `_playgroundWindow`, so the next open constructs a fresh window. The host also restores/saves native Win32 `WINDOWPLACEMENT` so the fresh window returns to the user's previous size/position without adding a Playground settings file. This is intentional because Playground resources are heavy and dev-only; durable Ambient values already live in `AmbientSettingsService`, while HUD tuning remains process-memory only and resets with the new page instance.
 
 ## Accepted limitations
 

@@ -24,8 +24,8 @@ namespace Deckle.Settings;
 // Type.GetType dans OnNavSelectionChanged (pattern du sample officiel
 // Microsoft Learn §"Code example").
 //
-// Auto-save partout, donc pas de Cancel/Save global. Close → cache, ne
-// détruit pas (créée une fois dans App.OnLaunched).
+// Auto-save partout, donc pas de Cancel/Save global. Close détruit la
+// fenêtre ; App recrée l'instance lazy à la prochaine ouverture.
 
 public sealed partial class SettingsWindow : Window
 {
@@ -103,19 +103,6 @@ public sealed partial class SettingsWindow : Window
         presenter.PreferredMinimumWidth  = 320;
         presenter.PreferredMinimumHeight = 400;
         AppWindow.SetPresenter(presenter);
-
-        // Close → hide, ne détruit pas. Réutilisée via le tray.
-        // SW_HIDE Win32 plutôt que AppWindow.Hide() : test diagnostic
-        // pour le lag move/resize global. AppWindow.Hide() ne suspend
-        // pas systématiquement le swap chain DComp côté DWM, ce qui
-        // garde la fenêtre dans le visual tree compositeur même
-        // cachée. SW_HIDE force la voie Win32 que DWM honore.
-        AppWindow.Closing += (_, args) =>
-        {
-            args.Cancel = true;
-            var hwnd = WindowNative.GetWindowHandle(this);
-            NativeMethods.ShowWindow(hwnd, NativeMethods.SW_HIDE);
-        };
 
         // Theme — câble ActualThemeChanged sur la racine XAML pour
         // tracer les transitions light/dark/HC. SettingsWindow est le

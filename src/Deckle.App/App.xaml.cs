@@ -298,7 +298,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // PlaygroundWindow lazy: dev tool, instancied on first tray
         // open via ShowPlaygroundLazy(). Avoids paying a DComp swap
         // chain + DWM visual tree at boot for a window rarely used.
-        // Same Closing→Hide contract once created.
+        // Close destroys it; native Win32 placement persistence keeps
+        // the next lazy instance at the user's last size and position.
 
         // Wire the recording cap into the Hud lib. Deckle.Hud is
         // a Settings-agnostic module ; the App is the one that reads
