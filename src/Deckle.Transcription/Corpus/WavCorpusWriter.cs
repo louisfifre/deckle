@@ -5,31 +5,28 @@ namespace Deckle.Transcription.Corpus;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //
-// Pure passe-plat audio du corpus normalisé (ADR-0006). Écrit le 16 kHz
-// mono PCM fourni à whisper_full comme un WAV 16-bit signé, un fichier
-// par transcription, sous `<telemetry-root>/audio/<transcription_id>.wav`.
-// Plat — pas de slug, pas de sous-dossier par profil. L'audio est
-// universel et dédupliqué ; les lignes JSONL ASR et rewrite réfèrent
-// au même WAV via leur champ `audio_file` (basename relatif au dossier
-// `audio/`).
+// Pure audio passthrough for the normalized corpus (ADR-0006). Writes the
+// 16 kHz mono PCM provided to whisper_full as signed 16-bit WAV, one file per
+// transcription, under `<telemetry-root>/audio/<transcription_id>.wav`. Flat:
+// no slug, no per-profile subfolder. Audio is universal and deduplicated; ASR
+// and rewrite JSONL lines refer to the same WAV through their `audio_file`
+// field (basename relative to the `audio/` folder).
 //
-// Quantization int16 (pas float32) : la moitié du disque, la lecture
-// reste universelle dans n'importe quel viewer WAV, et la re-
-// transcription offline accepte les deux. Le pipeline fournit du
-// float [-1, 1] (l'exact buffer que whisper.cpp consomme), clampé à
-// l'écriture pour défendre contre une éventuelle valeur hors plage.
+// int16 quantization (not float32): half the disk use, playback remains
+// universal in any WAV viewer, and offline retranscription accepts both. The
+// pipeline provides float [-1, 1] (the exact buffer consumed by whisper.cpp),
+// clamped on write to defend against a possible out-of-range value.
 //
-// Retourne le basename relatif (`<id>.wav`) en succès — c'est ce que
-// les events corpus stampent dans `audio_file`. Null en cas d'échec,
-// pour que l'émetteur surface une string vide dans le payload plutôt
-// que de propager une exception qui casserait la transcription.
+// Returns the relative basename (`<id>.wav`) on success; this is what corpus
+// events stamp into `audio_file`. Null on failure, so the emitter surfaces an
+// empty string in the payload rather than propagating an exception that would
+// break transcription.
 //
-// Carry-over de la vague 6 : ce helper vivait jadis dans `Deckle.Logging`
-// aux côtés de `CorpusPaths`. Relocalisé ici parce que son unique
-// consommateur métier est `TranscriptionEngine` ; `CorpusPaths` reste
-// dans `Deckle.Core` parce qu'il est aussi consommé par les dialogs
-// de consentement côté `Deckle.Settings` (qui ne peut pas dépendre de
-// `Deckle.Transcription` sans introduire un cycle).
+// Carry-over from wave 6: this helper used to live in `Deckle.Logging` next to
+// `CorpusPaths`. Relocated here because its only business consumer is
+// `TranscriptionEngine`; `CorpusPaths` stays in `Deckle.Core` because it is
+// also consumed by consent dialogs on the `Deckle.Settings` side (which cannot
+// depend on `Deckle.Transcription` without introducing a cycle).
 public static class WavCorpusWriter
 {
     private const int    SampleRate     = 16_000;
@@ -49,22 +46,22 @@ public static class WavCorpusWriter
             string audioDir = Path.Combine(root, AudioSubfolder);
             Directory.CreateDirectory(audioDir);
 
-            // transcriptionId est un Guid "N" (32 hex sans tirets) émis
-            // par TranscriptionEngine — c'est déjà filesystem-safe. Pas
-            // de Sanitize ici par principe : si un jour l'ID change de
-            // format, le contrat doit rester un identifiant sûr.
+            // transcriptionId is a Guid "N" (32 hex without dashes) emitted by
+            // TranscriptionEngine; it is already filesystem-safe. No Sanitize
+            // here by principle: if the ID format changes one day, the
+            // contract must remain a safe identifier.
             string fileName = transcriptionId + ".wav";
             string path = Path.Combine(audioDir, fileName);
             WritePcm16(path, audio);
 
-            // Basename relatif à `audio/` — c'est ce que les events
-            // corpus mettent dans `audio_file` pour qu'un outil offline
-            // résolve le WAV en joignant `<telemetry>/audio/` + basename.
+            // Basename relative to `audio/`: this is what corpus events put in
+            // `audio_file` so an offline tool can resolve the WAV by joining
+            // `<telemetry>/audio/` + basename.
             return fileName;
         }
         catch
         {
-            // L'écriture ne doit jamais casser la transcription.
+            // Writing must never break transcription.
             return null;
         }
     }

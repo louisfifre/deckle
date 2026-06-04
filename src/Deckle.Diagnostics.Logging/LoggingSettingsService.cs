@@ -7,24 +7,21 @@ namespace Deckle.Diagnostics.Logging;
 
 // ── LoggingSettingsService ──────────────────────────────────────────────────
 //
-// Module-local persistence for LoggingSettings. Successeur du
-// Deckle.Logging.LoggingSettingsService legacy supprimé en sous-vague 6g
-// — même JsonSettingsStore<T>, même singleton lazy, et surtout même path
-// on-disk (<UserDataRoot>/modules/logging/settings.json) pour préserver
-// les settings utilisateur existants à travers la bascule.
+// Module-local persistence for LoggingSettings. Successor of the legacy
+// Deckle.Logging.LoggingSettingsService removed in sub-wave 6g: same
+// JsonSettingsStore<T>, same lazy singleton, and above all the same on-disk
+// path (<UserDataRoot>/modules/logging/settings.json) to preserve existing user
+// settings through the switch.
 //
-// Consumers principaux : le drop filter du LogWindowEventListener et
-// le prédicat app.jsonl câblés au boot par App (lecture de
-// LogAmbientCaptureActivity à chaque event). Lecture uncached —
-// flipper le toggle dans Settings prend effet à la prochaine émission.
-// JsonSettingsStore garde un snapshot en mémoire, donc le coût d'accès
-// est négligeable.
+// Main consumers: LogWindowEventListener drop filter and app.jsonl predicate
+// wired at boot by App (read LogAmbientCaptureActivity on each event). Uncached
+// read: flipping the toggle in Settings takes effect on the next emission.
+// JsonSettingsStore keeps an in-memory snapshot, so access cost is negligible.
 //
-// Logs internes du store. Comme TelemetrySettingsService, les callbacks
-// log restent à null en 6g pour rester découplé du pipeline d'observabi-
-// lité — pas de provider EventSource consommable sans cycle de dépendance
-// vers Settings. Le store sera silencieux ; une erreur critique de
-// chargement se traduira par un reset sur defaults.
+// Internal store logs. Like TelemetrySettingsService, log callbacks remain null
+// in 6g to stay decoupled from the observability pipeline: no consumable
+// EventSource provider without a dependency cycle toward Settings. The store
+// will be silent; a critical load error will become a reset to defaults.
 public sealed class LoggingSettingsService
 {
     private static readonly Lazy<LoggingSettingsService> _instance =

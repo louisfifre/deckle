@@ -3,17 +3,16 @@ using Deckle.Diagnostics;
 
 namespace Deckle.App;
 
-// Host App provider. Couvre App.xaml.cs (cycle de vie process, status,
-// hotkey, observers ambient, shutdown/restart, command-line, post-build,
-// HUD wiring) ainsi que les surfaces HUD (HudWindow / HudOverlayManager)
-// et la LogWindow elle-même. Tout ce qui ne tient pas dans un module
-// spécifique mais vit dans l'app hôte passe par ce provider.
+// Host App provider. Covers App.xaml.cs (process lifecycle, status, hotkey,
+// ambient observers, shutdown/restart, command-line, post-build, HUD wiring),
+// as well as HUD surfaces (HudWindow / HudOverlayManager) and LogWindow
+// itself. Anything that does not fit in a specific module but lives in the
+// host app goes through this provider.
 //
 // Provider Name = "Deckle.App" → tag [APP] via LogLineFormatter. Le
-// legacy utilisait à la fois [APP] et [STATUS] pour différentes
-// émissions du host — [STATUS] est conservé comme nom d'event mais le
-// tag reste [APP]. Le suffixe ".App" est volontaire : les listeners
-// Diagnostics écoutent la famille canonique Deckle.*.
+// legacy used both [APP] and [STATUS] for different host emissions; [STATUS]
+// is kept as an event name but the tag stays [APP]. The ".App" suffix is
+// intentional: Diagnostics listeners observe the canonical Deckle.* family.
 [EventSource(Name = "Deckle.App")]
 public sealed class DeckleAppSource : DeckleEventSource
 {
@@ -129,8 +128,8 @@ public sealed class DeckleAppSource : DeckleEventSource
 
     // ── Status ──────────────────────────────────────────────────────────
     //
-    // StatusChanged reste sur le provider App : le LogWindow l'affiche
-    // sous [APP], cohérent avec la doctrine un-provider-par-module.
+    // StatusChanged stays on the App provider: LogWindow displays it under
+    // [APP], consistent with the one-provider-per-module doctrine.
 
     [Event(EvtStatusChanged,
            Level = EventLevel.Informational,
@@ -314,9 +313,9 @@ public sealed class DeckleAppSource : DeckleEventSource
     }
 
     // ── UserFeedback (HUD bridge) ───────────────────────────────────────
-    // Canal canonique pour les notifications utilisateur émises depuis
-    // l'app hôte. Severity 0/1/2 = Info/Warning/Error, role 0/1 =
-    // Replacement/Overlay. Filtré par HudFeedbackEventListener.
+    // Canonical channel for user notifications emitted from the host app.
+    // Severity 0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay.
+    // Filtered by HudFeedbackEventListener.
 
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,

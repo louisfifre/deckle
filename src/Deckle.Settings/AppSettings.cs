@@ -46,7 +46,7 @@ public sealed class AppearanceSettings
     public string Theme { get; set; } = "System";
 }
 
-// Overlay HUD affiché pendant l'enregistrement/transcription.
+// HUD overlay displayed during recording/transcription.
 // Position = "BottomCenter" | "BottomRight" | "TopCenter".
 public sealed class OverlaySettings
 {
@@ -63,14 +63,14 @@ public sealed class OverlaySettings
     public bool Animations { get; set; } = true;
 }
 
-// Chemins utilisateur. Vides par défaut → résolution automatique via
-// AppPaths: DECKLE_DATA_ROOT, puis %LOCALAPPDATA%\Deckle, puis fallback
-// sous le dossier de l'exe.
+// User paths. Empty by default → automatic resolution through
+// AppPaths: DECKLE_DATA_ROOT, then %LOCALAPPDATA%\Deckle, then fallback
+// under the exe folder.
 //
-// BackupDirectory  : dossier où SettingsBackupService dépose les snapshots
-//                    settings-YYYYMMDD-HHmmss.json. Pattern PowerToys :
-//                    le user peut pointer vers un dossier OneDrive/Drive
-//                    pour faire suivre ses backups entre machines.
+// BackupDirectory  : folder where SettingsBackupService writes snapshots
+//                    settings-YYYYMMDD-HHmmss.json. PowerToys pattern:
+//                    the user can point to a OneDrive/Drive folder to carry
+//                    backups across machines.
 //
 // ModelsDirectory used to live here too; it migrated to TranscriptionSettings on
 // 2026-05-02 (per-module persistence) since it's a Whisper-engine concern.

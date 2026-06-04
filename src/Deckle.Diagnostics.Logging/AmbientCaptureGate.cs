@@ -2,32 +2,30 @@ namespace Deckle.Diagnostics.Logging;
 
 // ── AmbientCaptureGate ─────────────────────────────────────────────────────
 //
-// Volatile boolean qui mémorise si une boucle de capture ambient est
-// active. Remplace l'ancien `TelemetryService.SetCaptureActive(bool)`
-// du legacy Deckle.Logging sans réintroduire de hub central de
-// télémétrie.
+// Volatile boolean remembering whether an ambient capture loop is active.
+// Replaces the old legacy Deckle.Logging
+// `TelemetryService.SetCaptureActive(bool)` without reintroducing a central
+// telemetry hub.
 //
-// Consommation. La gate est consultée par les delegates injectés dans
-// `LogWindowEventListener` et dans le predicate app.jsonl au boot de
-// l'App. Le filter combine cette gate avec le toggle utilisateur
-// `LoggingSettings.LogAmbientCaptureActivity` pour décider si une
-// émission Verbose des providers Ambient / Vision / Lighting doit
-// atterrir dans le journal live ou persistant. Tant que la gate est
-// ouverte (capture loop active) ET le toggle off, les Verbose ambient
-// sont silencés ; hors capture, tout passe.
+// Consumption. The gate is consulted by delegates injected into
+// `LogWindowEventListener` and into the app.jsonl predicate at App boot. The
+// filter combines this gate with the user toggle
+// `LoggingSettings.LogAmbientCaptureActivity` to decide whether a Verbose
+// emission from Ambient / Vision / Lighting providers should land in the live
+// or persistent journal. While the gate is open (capture loop active) AND the
+// toggle is off, ambient Verbose events are silenced; outside capture,
+// everything passes.
 //
-// Émission. La gate elle-même n'émet aucun event EventSource — c'est
-// un pur état partagé. Les transitions sont déjà logguées au niveau
-// applicatif par `DeckleAmbientSource.PipelineStarted` / `Pipeline-
-// Stopped`, et les surfaces UI peuvent observer ces events sans
-// passer par la gate.
+// Emission. The gate itself emits no EventSource event: it is pure shared
+// state. Transitions are already logged at application level by
+// `DeckleAmbientSource.PipelineStarted` / `PipelineStopped`, and UI surfaces
+// can observe these events without going through the gate.
 //
-// Threading. `volatile` garantit la visibilité cross-thread sans
-// nécessiter de lock — l'ambient engine flippe la gate depuis son
-// thread de pilotage, et chaque emission lit la valeur sans
-// synchronisation. Les races (un Verbose qui arrive juste au moment
-// du flip) sont bénignes : l'événement passe ou est filtré, jamais
-// corrompu.
+// Threading. `volatile` guarantees cross-thread visibility without requiring a
+// lock: the ambient engine flips the gate from its driving thread, and each
+// emission reads the value without synchronization. Races (a Verbose event
+// arriving exactly during the flip) are benign: the event passes or is
+// filtered, never corrupted.
 public static class AmbientCaptureGate
 {
     private static volatile bool _active;

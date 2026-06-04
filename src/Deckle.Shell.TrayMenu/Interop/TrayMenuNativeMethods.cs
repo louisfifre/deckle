@@ -3,25 +3,25 @@ using Deckle.Core.Interop;
 
 namespace Deckle.Shell.TrayMenu.Interop;
 
-// ─── P/Invokes spécifiques au tray menu ───────────────────────────────────────
+// ─── Tray menu specific P/Invokes ─────────────────────────────────────────────
 //
-// Les imports génériques (GetCursorPos, SetForegroundWindow, ShowWindow,
+// Generic imports (GetCursorPos, SetForegroundWindow, ShowWindow,
 // SetWindowLongPtr, SetLayeredWindowAttributes, DwmSetWindowAttribute,
-// GetDpiForWindow…) vivent dans Deckle.Core.Interop.NativeMethods et sont
-// consommés tels quels. Ici on ajoute uniquement ce qui manque : positionneur
-// de popup natif et constantes de style associées.
+// GetDpiForWindow…) live in Deckle.Core.Interop.NativeMethods and are consumed
+// as-is. Here we only add what is missing: native popup positioner and related
+// style constants.
 
 internal static class TrayMenuNativeMethods
 {
     // ── CalculatePopupWindowPosition ──────────────────────────────────────────
     //
-    // API user32 qui calcule la position canonique d'un popup étant donné un
-    // point d'ancrage, une taille de fenêtre, des flags d'alignement, et un
-    // rect d'exclusion. C'est exactement le calcul que TrackPopupMenu fait en
-    // interne — exposé séparément pour les implémentations de popup custom.
-    // Tient compte de la taskbar et des limites du moniteur quand TPM_WORKAREA
-    // est passé. Retourne la position via popupWindowPosition (pas via la
-    // valeur de retour, qui est juste BOOL succès/échec).
+    // user32 API that computes the canonical popup position given an anchor
+    // point, window size, alignment flags, and exclusion rect. This is exactly
+    // the calculation TrackPopupMenu does internally, exposed separately for
+    // custom popup implementations. Accounts for taskbar and monitor bounds
+    // when TPM_WORKAREA is passed. Returns the position through
+    // popupWindowPosition, not the return value, which is only BOOL
+    // success/failure.
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool CalculatePopupWindowPosition(
@@ -38,45 +38,45 @@ internal static class TrayMenuNativeMethods
         public int cy;
     }
 
-    // ── Flags TPM_* additionnels ──────────────────────────────────────────────
+    // ── Additional TPM_* flags ────────────────────────────────────────────────
     //
-    // TPM_BOTTOMALIGN / TPM_RIGHTALIGN vivent déjà dans Deckle.Core.Interop.
-    // TPM_WORKAREA contraint le popup à la zone de travail du moniteur courant
-    // (exclut la taskbar). Indispensable pour qu'un menu tray ne déborde pas
-    // sous la barre des tâches.
+    // TPM_BOTTOMALIGN / TPM_RIGHTALIGN already live in Deckle.Core.Interop.
+    // TPM_WORKAREA constrains the popup to the current monitor work area
+    // (excluding the taskbar). Essential so a tray menu does not overflow under
+    // the taskbar.
 
     public const uint TPM_WORKAREA = 0x10000;
     public const uint TPM_VERTICAL = 0x0040;
 
-    // ── Styles fenêtre additionnels ───────────────────────────────────────────
+    // ── Additional window styles ──────────────────────────────────────────────
     //
-    // WS_POPUPWINDOW = WS_POPUP | WS_BORDER | WS_SYSMENU. Appliqué post-Loaded
-    // au handle du host pour effacer toute trace de caption WinUI 3 héritée
-    // d'OverlappedPresenter et présenter un HWND purement popup côté DWM (pas
-    // de bordure system, pas de menu système, pas de titlebar).
+    // WS_POPUPWINDOW = WS_POPUP | WS_BORDER | WS_SYSMENU. Applied post-Loaded
+    // to the host handle to clear any WinUI 3 caption trace inherited from
+    // OverlappedPresenter and present a pure popup HWND to DWM (no system
+    // border, no system menu, no titlebar).
 
     public const uint WS_POPUP       = 0x80000000;
     public const uint WS_BORDER      = 0x00800000;
     public const uint WS_SYSMENU     = 0x00080000;
     public const uint WS_POPUPWINDOW = WS_POPUP | WS_BORDER | WS_SYSMENU;
 
-    // ── ShowWindow nCmdShow additionnels ──────────────────────────────────────
+    // ── Additional ShowWindow nCmdShow values ────────────────────────────────
     //
-    // SW_HIDE et SW_SHOWNOACTIVATE vivent déjà dans Deckle.Core.Interop.
-    // SW_SHOWNORMAL active la fenêtre — nécessaire pour qu'elle reçoive le
-    // focus que SetForegroundWindow va ensuite confirmer. Sans activation,
-    // le MenuFlyout ne dismiss pas correctement au click-outside.
+    // SW_HIDE and SW_SHOWNOACTIVATE already live in Deckle.Core.Interop.
+    // SW_SHOWNORMAL activates the window; required so it receives the focus
+    // that SetForegroundWindow will then confirm. Without activation,
+    // MenuFlyout does not dismiss correctly on click-outside.
 
     public const int SW_SHOWNORMAL = 1;
 
     // ── DPI per-monitor ───────────────────────────────────────────────────────
     //
-    // Le scale appliqué au flyout doit refléter le DPI du moniteur sous le
-    // curseur, pas celui où la fenêtre porteuse vit (elle est cachée au boot
-    // sur le moniteur primaire). `XamlRoot.RasterizationScale` du frame
-    // retourne le scale de ce moniteur primaire, donc faux en multi-monitor
-    // ou si l'écran primaire n'est pas à 100 %. On résout proprement avec
-    // MonitorFromPoint(curseur) + GetDpiForMonitor.
+    // The scale applied to the flyout must reflect the DPI of the monitor under
+    // the cursor, not the monitor where the carrier window lives (it is hidden
+    // at boot on the primary monitor). The frame's `XamlRoot.RasterizationScale`
+    // returns the scale of that primary monitor, so it is wrong on
+    // multi-monitor setups or if the primary screen is not at 100%. Resolve
+    // properly with MonitorFromPoint(cursor) + GetDpiForMonitor.
 
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);

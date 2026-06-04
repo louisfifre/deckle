@@ -3,21 +3,21 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
-// Settings module provider. Couvre la migration legacy → per-module
-// (SettingsBootstrap), la surface UI Settings (SettingsWindow, pages
-// General / Diagnostics / Recording, dialogs de consentement), les
-// ViewModels (GeneralViewModel, RecordingViewModel, DiagnosticsViewModel),
-// le service de backup (SettingsBackupService), les pickers de dossier
-// (FolderPickerCard / FolderPickerEditableCard), et la persistance
-// settings du module global (SettingsService).
+// Settings module provider. Covers legacy → per-module migration
+// (SettingsBootstrap), the Settings UI surface (SettingsWindow, General /
+// Diagnostics / Recording pages, consent dialogs), ViewModels
+// (GeneralViewModel, RecordingViewModel, DiagnosticsViewModel), the backup
+// service (SettingsBackupService), folder pickers (FolderPickerCard /
+// FolderPickerEditableCard), and global-module settings persistence
+// (SettingsService).
 //
-// Pour la zone setter des ViewModels — où chaque setter logue
-// systématiquement "Property ← value" — un event paramétré générique
-// SettingChanged(string property, string value) est privilégié sur
-// l'expansion combinatoire en quarante events typés. Cette zone
-// homogène par construction tolère le paramétrage générique sans
-// dégrader la sémantique de strict-typed : le niveau et le keyword
-// sont fixes, seuls les noms et valeurs de propriétés varient.
+// For the ViewModel setter area, where each setter systematically logs
+// "Property ← value", a generic parameterized
+// SettingChanged(string property, string value) event is preferred over
+// combinatorial expansion into forty typed events. This area is homogeneous by
+// construction and tolerates generic parameterization without degrading
+// strict-typed semantics: level and keyword are fixed, only property names and
+// values vary.
 [EventSource(Name = "Deckle.Settings")]
 public sealed class DeckleSettingsSource : DeckleEventSource
 {
@@ -74,7 +74,7 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtItemInvoked                       = 38;
     public const int EvtOpenLogsFromFooter                = 39;
 
-    // ── ViewModels (génériques) ──
+    // ── ViewModels (generic) ──
     public const int EvtSettingChanged                    = 40;
     public const int EvtSettingChangedDetail              = 41;
     public const int EvtSectionReset                      = 42;
@@ -446,17 +446,16 @@ public sealed class DeckleSettingsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtOpenLogsFromFooter);
     }
 
-    // ── ViewModels (générique paramétré) ────────────────────────────────
+    // ── ViewModels (parameterized generic) ──────────────────────────────
     //
-    // Les setters de propriété dans les ViewModels suivent un pattern
-    // homogène "Property ← value" — chaque setter logue son changement
-    // à Info ou Verbose. La doctrine "strict-typed per opération" se
-    // dégrade ici en une zone paramétrée stable : niveau et keyword
-    // sont fixes, seuls (name, value) varient. Justifiable parce que
-    // l'opération est elle-même générique par construction (un setter
-    // qui logue), et que multiplier les events typés (forty Apparence-
-    // ThemeChanged, OverlayEnabledChanged, etc.) sans gain sémantique
-    // créerait du bruit sans bénéfice.
+    // Property setters in ViewModels follow a homogeneous "Property ← value"
+    // pattern: each setter logs its change at Info or Verbose. The
+    // "strict-typed per operation" doctrine degrades here into a stable
+    // parameterized zone: level and keyword are fixed, only (name, value)
+    // vary. This is justified because the operation is itself generic by
+    // construction (a logging setter), and multiplying typed events (forty
+    // AppearanceThemeChanged, OverlayEnabledChanged, etc.) without semantic
+    // gain would create noise without benefit.
 
     [Event(EvtSettingChanged,
            Level = EventLevel.Informational,

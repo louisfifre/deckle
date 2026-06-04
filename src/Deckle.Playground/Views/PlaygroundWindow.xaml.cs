@@ -134,14 +134,13 @@ public sealed partial class PlaygroundWindow : Window
 
         this.Closed += OnWindowClosed;
 
-        // Theme — câble ActualThemeChanged sur la racine XAML. Le
-        // Playground est singleton-hidden (vit toute la session app
-        // une fois ouvert) donc voit toutes les bascules thème via
-        // ThemeRequestSourceProbe ("settings" depuis ThemeCombo
-        // user, "system" depuis colorPrevalence) ou directes (le
-        // root suit le système quand aucun RequestedTheme n'est posé).
-        // Trace utile pour corréler un glitch sliders / live preview
-        // avec une bascule thème pendant que la fenêtre était active.
+        // Theme: wires ActualThemeChanged on the XAML root. Playground is
+        // singleton-hidden (lives for the whole app session once opened), so it
+        // sees all theme switches through ThemeRequestSourceProbe ("settings"
+        // from user ThemeCombo, "system" from colorPrevalence) or direct ones
+        // (the root follows the system when no RequestedTheme is set). Useful
+        // trace to correlate a sliders / live preview glitch with a theme
+        // switch while the window was active.
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -182,13 +181,12 @@ public sealed partial class PlaygroundWindow : Window
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
 
-        // Windowing — émis post-Show pour capturer le rect effectif après
-        // que DWM ait positionné la fenêtre. Ancrage "Center" parce que le
-        // ctor ne fait qu'un AppWindow.Resize (1800×1440) sans Move
-        // explicite, le centrage initial est laissé à Windows. Émis à
-        // chaque ShowAndActivate parce qu'un drag utilisateur entre deux
-        // ouvertures change le rect — la dernière trace reste la vérité
-        // courante.
+        // Windowing: emitted post-Show to capture the effective rect after DWM
+        // has positioned the window. Anchor "Center" because the ctor only does
+        // an AppWindow.Resize (1800×1440) without explicit Move; initial
+        // centering is left to Windows. Emitted on each ShowAndActivate because
+        // a user drag between two openings changes the rect: the last trace
+        // remains the current truth.
         WindowingProbe.EmitWindowPositioned(_hwnd, "playground", "Center");
     }
 

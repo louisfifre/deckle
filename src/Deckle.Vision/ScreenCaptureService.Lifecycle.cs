@@ -55,9 +55,9 @@ public sealed partial class ScreenCaptureService
                 _activeDxgiFormat = desc.ModeDesc.Format;
                 _activeFormat = MapDxgiFormat(_activeDxgiFormat);
 
-                // Sub-provider transverse Resource — acquire de la duplication
-                // output. size_bytes=0 parce que c'est un handle de
-                // synchronisation, pas une allocation mémoire mesurable.
+                // Cross-cutting Resource sub-provider: output duplication
+                // acquire. size_bytes=0 because this is a synchronization
+                // handle, not a measurable memory allocation.
                 _duplicationAcquiredTicks = Stopwatch.GetTimestamp();
                 DeckleResourceSource.Log.ResourceAcquired(
                     "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
@@ -132,11 +132,11 @@ public sealed partial class ScreenCaptureService
         try { loopTask?.Wait(TimeSpan.FromSeconds(2)); }
         catch (AggregateException ex) when (ex.InnerExceptions.All(e => e is OperationCanceledException))
         {
-            // Expected — cooperative cancellation. Trace l'OCE attendu sur le
-            // sub-provider transverse Cancellation : Stop() a explicitement
-            // demandé l'arrêt, la boucle a propagé. `age_ms` reflète la durée
-            // entière de la session de capture car le worker a tourné de Start
-            // jusqu'au moment du cancel.
+            // Expected: cooperative cancellation. Trace the expected OCE on the
+            // cross-cutting Cancellation sub-provider: Stop() explicitly
+            // requested the stop, the loop propagated it. `age_ms` reflects the
+            // full capture session duration because the worker ran from Start
+            // until cancellation time.
             long ageMs = _startTimestamp != 0
                 ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                 : -1;

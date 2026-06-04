@@ -24,8 +24,8 @@ public static class IconAssets
         return File.Exists(path) ? Path.GetFullPath(path) : null;
     }
 
-    // Helper pour les fenêtres qui n'ont pas besoin de swap dynamique
-    // (HUD) — pose juste l'icône idle une fois en constructeur.
+    // Helper for windows that do not need dynamic swapping (HUD): just sets the
+    // idle icon once in the constructor.
     public static void ApplyToWindow(AppWindow appWindow, bool recording = false)
     {
         var path = ResolvePath(recording);

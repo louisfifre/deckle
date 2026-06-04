@@ -4,53 +4,51 @@ using System.Text;
 
 namespace Deckle.Diagnostics;
 
-// Helper interne au module Diagnostics — factorise les P/Invoke Win32
-// (`GetWindowRect`, `GetDpiForWindow`, `MonitorFromWindow`) consommées
-// par les sept sites de positionnement de fenêtres câblés sur
-// `DeckleWindowingSource`. Sans ce helper, chaque site dupliquerait les
-// quatre lignes de P/Invoke + la construction des paramètres — sept
-// sites multiplieraient la dette d'instrumentation par sept.
+// Internal helper for the Diagnostics module: factors the Win32 P/Invokes
+// (`GetWindowRect`, `GetDpiForWindow`, `MonitorFromWindow`) consumed by the
+// seven window-positioning sites wired to `DeckleWindowingSource`. Without this
+// helper, each site would duplicate the four P/Invoke lines + parameter
+// construction; seven sites would multiply the instrumentation debt by seven.
 //
-// **Pas de dépendance vers `Deckle.Core`.** Le module Diagnostics est
-// sous toutes les autres briques techniques (cf. `CLAUDE.md`) ; les
-// P/Invoke nécessaires sont redéclarées localement (privées) plutôt que
-// d'introduire une dep dure sur `Deckle.Core.Interop.NativeMethods`.
-// Aucun chevauchement de symbole — les déclarations P/Invoke sont
-// locales à ce fichier, et `Deckle.Core` garde ses propres déclarations
-// pour le reste de l'app.
+// **No dependency on `Deckle.Core`.** The Diagnostics module sits beneath every
+// other technical brick (see `CLAUDE.md`); the required P/Invokes are
+// redeclared locally (private) instead of introducing a hard dependency on
+// `Deckle.Core.Interop.NativeMethods`. No symbol overlap: P/Invoke
+// declarations are local to this file, and `Deckle.Core` keeps its own
+// declarations for the rest of the app.
 //
-// **Gate strict avant tout coût.** Chaque méthode `Emit*` teste
-// `IsEnabled(Verbose, Windowing)` en tête : quand aucun listener
-// n'écoute, l'instrumentation a un coût net nul (un test ETW + un
-// retour). Les P/Invoke ne sont jamais appelées si le gate est fermé.
+// **Strict gate before any cost.** Each `Emit*` method tests
+// `IsEnabled(Verbose, Windowing)` at the top: when no listener is attached, the
+// instrumentation has zero net cost (one ETW test + return). P/Invokes are
+// never called if the gate is closed.
 //
-// **Convention pixels écran absolus.** `GetWindowRect` retourne déjà
-// du pixel écran absolu (contrairement à `AppWindow.Position`/`Size`
-// qui restent en pixel mais sont reliés à l'`AppWindow` post-Move).
-// Lire directement le rect post-positionnement garantit qu'on capture
-// l'état effectif côté DWM, pas l'intention pré-Move.
+// **Absolute screen pixel convention.** `GetWindowRect` already returns
+// absolute screen pixels (unlike `AppWindow.Position`/`Size`, which stay in
+// pixels but are tied to the post-Move `AppWindow`). Reading the
+// post-positioning rect directly guarantees we capture the effective DWM-side
+// state, not the pre-Move intent.
 public static class WindowingProbe
 {
-    // ── P/Invoke privées ────────────────────────────────────────────────
+    // ── Private P/Invokes ───────────────────────────────────────────────
 
-    // Rect en pixels écran absolus de la fenêtre — inclut la zone non-
-    // client (frame, titre) ; pour les fenêtres Deckle qui suppriment
-    // la NC area via WM_NCCALCSIZE (HUD, HudOverlay) c'est équivalent
-    // au rect client. Pour les fenêtres app classiques (Settings, Log,
-    // Setup) l'écart NC est marginal (frame standard ~1 dip + caption).
+    // Window rect in absolute screen pixels; includes the non-client area
+    // (frame, title). For Deckle windows that remove the NC area through
+    // WM_NCCALCSIZE (HUD, HudOverlay), it is equivalent to the client rect.
+    // For classic app windows (Settings, Log, Setup), the NC gap is marginal
+    // (standard frame ~1 dip + caption).
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
 
-    // DPI logique de la fenêtre (96 = 100%, 120 = 125%, 144 = 150%…).
-    // Per-monitor DPI aware : suit le moniteur sur lequel se trouve la
-    // fenêtre, change runtime sur drag cross-monitor.
+    // Logical window DPI (96 = 100%, 120 = 125%, 144 = 150%...).
+    // Per-monitor DPI aware: follows the monitor the window is on, changes at
+    // runtime on cross-monitor drag.
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
 
-    // Handle moniteur sur lequel se trouve la fenêtre. `dwFlags=2`
-    // (MONITOR_DEFAULTTONEAREST) garantit qu'on a toujours un moniteur
-    // même si la fenêtre est partiellement hors écran (cas runtime
-    // après changement de résolution ou déconnexion d'un écran).
+    // Monitor handle for the monitor the window is on. `dwFlags=2`
+    // (MONITOR_DEFAULTTONEAREST) guarantees a monitor is always returned even
+    // if the window is partially off-screen (runtime case after resolution
+    // change or display disconnect).
     [DllImport("user32.dll")]
     private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
@@ -122,13 +120,13 @@ public static class WindowingProbe
         string FirstOccludingClassName,
         bool FirstOccludingTopmost);
 
-    // ── Helpers d'émission ──────────────────────────────────────────────
+    // ── Emission Helpers ────────────────────────────────────────────────
 
-    // Émet le tronc commun `WindowPositioned` pour tout site qui
-    // positionne ou redimensionne une fenêtre dont l'app possède le
-    // HWND. `window` est un nom logique court du vocabulaire fermé
-    // (cf. doc `DeckleWindowingSource.WindowPositioned`), `anchor`
-    // décrit l'intention de placement côté code.
+    // Emits the `WindowPositioned` common trunk for every site that positions
+    // or resizes a window whose HWND is owned by the app. `window` is a short
+    // logical name from the closed vocabulary (see
+    // `DeckleWindowingSource.WindowPositioned` docs), and `anchor` describes
+    // the code-side placement intent.
     public static void EmitWindowPositioned(IntPtr hwnd, string window, string anchor)
     {
         if (!DeckleWindowingSource.Log.IsEnabled(
@@ -145,11 +143,11 @@ public static class WindowingProbe
             rect.right - rect.left, rect.bottom - rect.top);
     }
 
-    // Émet `OverlaySlotAssigned` (spécialisé empilement) en plus du
-    // tronc commun déjà émis par EmitWindowPositioned. Les overlays
-    // Deckle (`HudOverlayWindow`) ont chacun un slot 0..N-1 assigné
-    // par `HudOverlayManager.Recompact` — slot 0 = plus proche du HUD
-    // principal, slot N-1 = le plus éloigné.
+    // Emits `OverlaySlotAssigned` (stacking specialization) in addition to the
+    // common trunk already emitted by EmitWindowPositioned. Deckle overlays
+    // (`HudOverlayWindow`) each have a 0..N-1 slot assigned by
+    // `HudOverlayManager.Recompact`: slot 0 = closest to the main HUD, slot
+    // N-1 = farthest away.
     public static void EmitOverlaySlotAssigned(IntPtr hwnd, int slot)
     {
         if (!DeckleWindowingSource.Log.IsEnabled(
@@ -165,14 +163,14 @@ public static class WindowingProbe
             rect.right - rect.left, rect.bottom - rect.top);
     }
 
-    // Émet `PopupAnchored` (spécialisé ancrage parent) en plus du
-    // tronc commun. `popup` est un nom logique court ("tray-popup",
-    // "folder-picker"), `parent_rect_x/y/w/h` décrivent le rect du
-    // contrôle ancré (icône tray, bouton picker) en pixels écran
-    // absolus. Pour les popups dont l'app n'a pas le HWND (menu natif
-    // TrackPopupMenu, dialog système FolderPicker), passer
-    // `IntPtr.Zero` en hwnd — la position/taille effective est alors
-    // émise comme zéro et seule l'intention (parent_rect) est tracée.
+    // Emits `PopupAnchored` (parent anchoring specialization) in addition to
+    // the common trunk. `popup` is a short logical name ("tray-popup",
+    // "folder-picker"), and `parent_rect_x/y/w/h` describe the anchored
+    // control rect (tray icon, picker button) in absolute screen pixels. For
+    // popups whose HWND is not owned by the app (native TrackPopupMenu menu,
+    // system FolderPicker dialog), pass `IntPtr.Zero` as hwnd; effective
+    // position/size is then emitted as zero and only the intent (parent_rect)
+    // is traced.
     public static void EmitPopupAnchored(
         IntPtr hwnd, string popup,
         int parent_rect_x, int parent_rect_y,

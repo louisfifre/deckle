@@ -2,24 +2,24 @@ using Deckle.Diagnostics;
 
 namespace Deckle.App.Diagnostics;
 
-// Sink concret hôte qui reçoit chaque `FeedbackEntry` capturée par le
-// `HudFeedbackEventListener` (un `UserFeedbackEmitted` émis par un provider
-// `Deckle.*`) et la route vers la bonne surface HUD selon `Role` :
+// Concrete host sink that receives each `FeedbackEntry` captured by the
+// `HudFeedbackEventListener` (a `UserFeedbackEmitted` event emitted by a
+// `Deckle.*` provider) and routes it to the right HUD surface by `Role`:
 //
 //   role 0 (Replacement) → surface principale `HudWindow.ShowUserFeedback`
-//                          (le chrono est swappé out le temps du message).
-//   role 1 (Overlay)     → carte stackée via `HudOverlayManager.Enqueue`
-//                          (au-dessus / en-dessous du HUD principal sans
-//                          interrompre le workflow en cours).
+//                          (the chrono is swapped out for the message).
+//   role 1 (Overlay)     → stacked card via `HudOverlayManager.Enqueue`
+//                          (above / below the main HUD without interrupting
+//                          the current workflow).
 //
-// La mécanique de marshalling vers le thread UI est portée par chaque
-// méthode cible (`HudWindow.ShowUserFeedback` / `HudOverlayManager.Enqueue`
-// font leur propre `EnqueueUI` / `_dispatcher.TryEnqueueOrLog`). Le sink
-// est appelé sur le thread de l'EventListener — qui peut être n'importe
-// quel thread métier, EventSource ne sérialise pas.
+// Marshalling to the UI thread is owned by each target method
+// (`HudWindow.ShowUserFeedback` / `HudOverlayManager.Enqueue` do their own
+// `EnqueueUI` / `_dispatcher.TryEnqueueOrLog`). The sink is called on the
+// EventListener thread, which can be any business thread; EventSource does not
+// serialize it.
 //
-// Le sink consomme les champs primitifs de `FeedbackEntry` directement ;
-// aucune dépendance au module HUD ne remonte dans Deckle.Diagnostics.
+// The sink consumes the primitive `FeedbackEntry` fields directly; no HUD
+// module dependency flows back into Deckle.Diagnostics.
 internal sealed class AppHudFeedbackSink : IHudFeedbackSink
 {
     private readonly System.Action<int, string, string> _onReplacement;

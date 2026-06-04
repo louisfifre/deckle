@@ -3,16 +3,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
-// Vision module provider. Couvre la capture écran (DXGI Output
-// Duplication) et l'échantillonnage de frames (FrameSampler — mip
-// chain + staging + readback). Les events couvrent le cycle de vie
-// de la session de capture, les anomalies de la boucle d'acquisition
-// (ACCESS_LOST, DEVICE_REMOVED, timeout, backoff), et la résilience
-// (recreate de duplication, resize détecté).
+// Vision module provider. Covers screen capture (DXGI Output Duplication) and
+// frame sampling (FrameSampler: mip chain + staging + readback). Events cover
+// capture session lifecycle, acquisition loop anomalies (ACCESS_LOST,
+// DEVICE_REMOVED, timeout, backoff), and resilience (duplication recreate,
+// resize detected).
 //
-// La source label dans la LogWindow reste "SCREEN" via la dérivation
-// "Deckle.Vision" → "VISION" — léger renommage côté affichage par
-// rapport au legacy `LogSource.Screen`, attendu pour la migration.
+// The source label in LogWindow remains "SCREEN" through "Deckle.Vision" →
+// "VISION" derivation: slight display-side rename compared with legacy
+// `LogSource.Screen`, expected for the migration.
 [EventSource(Name = "Deckle.Vision")]
 public sealed class DeckleVisionSource : DeckleEventSource
 {

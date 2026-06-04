@@ -5,12 +5,12 @@ using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
 
-// ─── Section General de LlmPage ────────────────────────────────────────────
+// ─── LlmPage General section ───────────────────────────────────────────────
 //
-// Gère le toggle "Enable rewriting" et le champ "Ollama endpoint".
-// Autosave à chaque changement. Émet EndpointChanged pour signaler au host
-// qu'il doit re-vérifier la disponibilité d'Ollama (la disponibilité dépend
-// de l'URL, donc le changement d'URL invalide le cache).
+// Handles the "Enable rewriting" toggle and "Ollama endpoint" field. Autosaves
+// on every change. Emits EndpointChanged to signal the host that it must
+// re-check Ollama availability (availability depends on URL, so a URL change
+// invalidates the cache).
 
 public sealed partial class LlmGeneralSection : UserControl
 {

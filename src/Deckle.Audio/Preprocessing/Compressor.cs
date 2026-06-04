@@ -12,8 +12,8 @@ namespace Deckle.Audio.Preprocessing;
 // the problem that absolute makeup gain alone can't fix. Deliberately
 // gentle (2:1 soft knee, not a broadcast 4:1): compressing hard lifts the
 // inter-word noise floor, and a raised floor is the documented fuel for
-// Whisper's silence hallucinations (« Sous-titres réalisés par la
-// communauté d'Amara.org », cf. research--whisper-dynamic-vad-distil-fr).
+// Whisper's silence hallucinations ("Subtitles made by the Amara.org
+// community", see research--whisper-dynamic-vad-distil-fr).
 // The clean fix for silence is the upstream VAD, not aggressive
 // compression here.
 //

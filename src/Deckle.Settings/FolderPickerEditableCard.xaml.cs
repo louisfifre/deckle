@@ -77,10 +77,10 @@ public sealed partial class FolderPickerEditableCard : UserControl
             var window = SettingsHost.GetSettingsWindow?.Invoke()
                 ?? throw new InvalidOperationException("Settings window not initialized");
 
-            // Windowing — cf. doc dans FolderPickerCard.PickButton_Click.
-            // Mêmes contraintes que la variante non-éditable : dialog
-            // COM Win32 system-owned sans HWND accessible, on capture
-            // l'intention via le rect du bouton trigger.
+            // Windowing: cf. doc in FolderPickerCard.PickButton_Click.
+            // Same constraints as the non-editable variant: dialog
+            // COM Win32 system-owned without accessible HWND; capture the
+            // intent through the trigger button rect.
             FolderPickerCard.EmitFolderPickerAnchor(sender as FrameworkElement, window);
 
             var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)

@@ -86,15 +86,16 @@ public sealed partial class HudChrono : UserControl
     {
         InitializeComponent();
 
-        // Pre-init des tableaux _digitPrimary / _digitAccent dès le ctor.
-        // Sans ça, ClearDigitHeat() (appelé par ApplyCharging au cold boot
-        // pendant le chargement modèle) early-return sur le null check
-        // l. ~226-233 et ne reset pas les opacités → rendu blanc/vide au
-        // lieu de "00.00.00" en couleur tertiaire (régression introduite
-        // par 7707f09 "fix(hud): complementary digit opacities", qui
-        // ajoute les accès sans garantir l'init préalable). EnsureSwipeInfra
-        // est idempotent (guard `if (_digitPrimary is null)` l. 751), donc
-        // l'appel ici n'a aucun coût quand StartSwipe() le rappelle.
+        // Pre-initialize the _digitPrimary / _digitAccent arrays from the
+        // ctor. Without this, ClearDigitHeat() (called by ApplyCharging on
+        // cold boot during model loading) early-returns on the null check
+        // around lines 226-233 and does not reset opacities, producing a
+        // white/empty render instead of "00.00.00" in tertiary color
+        // (regression introduced by 7707f09 "fix(hud): complementary digit
+        // opacities", which adds the accesses without guaranteeing prior
+        // initialization). EnsureSwipeInfra is idempotent (guard
+        // `if (_digitPrimary is null)` around line 751), so this call has no
+        // cost when StartSwipe() calls it again.
         EnsureSwipeInfra();
 
         ChronoRoot.ActualThemeChanged += (_, _) =>
@@ -332,11 +333,11 @@ public sealed partial class HudChrono : UserControl
     private HudComposition.ProcessingStroke? _processingStroke;
     private ProcessingVariant? _currentVariant;
 
-    // Acquire timestamp + handle gel pour le ProcessingStroke courant —
-    // capturés à AttachProcessingVisual, lus à Dispose pour calculer
-    // age_ms côté DeckleResourceSource. Le handle managé reste valide
-    // après dispose pour identifier l'event releasé (le stroke lui-même
-    // a été remplacé par null).
+    // Acquire timestamp + frozen handle for the current ProcessingStroke:
+    // captured in AttachProcessingVisual, read in Dispose to compute age_ms on
+    // the DeckleResourceSource side. The managed handle remains valid after
+    // dispose to identify the released event (the stroke itself was replaced
+    // with null).
     private long _processingStrokeAcquiredTicks;
     private long _processingStrokeHandle;
 
@@ -395,8 +396,8 @@ public sealed partial class HudChrono : UserControl
         if (crossingBoundary)
         {
             ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-            // Sub-provider transverse Resource — release du stroke au
-            // moment du dispose boundary-crossing (Recording ↔ Processing).
+            // Cross-cutting Resource sub-provider: stroke release at the
+            // boundary-crossing dispose point (Recording ↔ Processing).
             int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
                                        * 1000L / Stopwatch.Frequency);
             DeckleResourceSource.Log.ResourceReleased(
@@ -426,12 +427,11 @@ public sealed partial class HudChrono : UserControl
             ElementCompositionPreview.SetElementChildVisual(
                 ProcessingSurfaceHost, _processingStroke.Visual);
 
-            // Sub-provider transverse Resource — acquire du stroke.
-            // Handle = RuntimeHelpers.GetHashCode du Visual managé (stable
-            // pour la durée de vie de l'objet). size_bytes=0 — la taille
-            // mémoire d'un Visual Composition n'est pas mesurable côté
-            // managé sans introspection coûteuse, conformément à la
-            // convention du provider.
+            // Cross-cutting Resource sub-provider: stroke acquire.
+            // Handle = RuntimeHelpers.GetHashCode of the managed Visual
+            // (stable for the object's lifetime). size_bytes=0: the memory
+            // size of a Composition Visual is not measurable from managed code
+            // without costly introspection, per the provider convention.
             _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
             _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
             DeckleResourceSource.Log.ResourceAcquired(
@@ -459,8 +459,8 @@ public sealed partial class HudChrono : UserControl
         if (_processingStroke == null) return;
 
         ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-        // Sub-provider transverse Resource — release du stroke au moment
-        // du teardown final (Hidden state).
+        // Cross-cutting Resource sub-provider: release the stroke during final
+        // teardown (Hidden state).
         int ageMs = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
                            * 1000L / Stopwatch.Frequency);
         DeckleResourceSource.Log.ResourceReleased(
@@ -546,8 +546,8 @@ public sealed partial class HudChrono : UserControl
             ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
             log?.Invoke("REBUILD", "detached old visual from host");
 
-            // Sub-provider transverse Resource — release du stroke avant
-            // dispose dans le path Playground RebuildStroke.
+            // Cross-cutting Resource sub-provider: release the stroke before
+            // dispose in the Playground RebuildStroke path.
             if (_processingStroke != null)
             {
                 int ageMsRebuild = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
@@ -584,8 +584,8 @@ public sealed partial class HudChrono : UserControl
                 ProcessingSurfaceHost, _processingStroke.Visual);
             log?.Invoke("REBUILD", "attached new visual to host");
 
-            // Sub-provider transverse Resource — acquire du nouveau stroke
-            // dans le path Playground RebuildStroke.
+            // Cross-cutting Resource sub-provider: acquire the new stroke
+            // in the Playground RebuildStroke path.
             _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
             _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
             DeckleResourceSource.Log.ResourceAcquired(

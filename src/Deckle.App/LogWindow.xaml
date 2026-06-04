@@ -21,10 +21,10 @@
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
 
-                <!-- 4 niveaux sémantiques par dimension wrap, swappés via
-                     DataTemplateSelector au toggle Word-wrap. Chaque template
-                     bind sa Foreground à une ThemeResource : WinUI re-résout
-                     au theme switch sans qu'on ait à recréer les rows. -->
+                <!-- 4 semantic levels per wrap dimension, swapped through
+                     DataTemplateSelector on Word-wrap toggle. Each template
+                     binds its Foreground to a ThemeResource: WinUI re-resolves
+                     on theme switch without needing to recreate rows. -->
                 <DataTemplate x:Key="NoWrap_Verbose">
                     <TextBlock Text="{Binding Text}"
                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -75,11 +75,11 @@
                                TextWrapping="Wrap" />
                 </DataTemplate>
 
-                <!-- Rows télémétrie (latency / corpus / microphone) : rendu
-                     en secondary text — un cran au-dessus du Verbose (tertiary),
-                     pour qu'elles lisent comme metadata diagnostique structurée
-                     sans se noyer dans le firehose Verbose. Text est précomputé
-                     par LogEntry au moment du wrap d'EventEntry. -->
+                <!-- Telemetry rows (latency / corpus / microphone): rendered
+                     as secondary text, one notch above Verbose (tertiary), so
+                     they read as structured diagnostic metadata without
+                     drowning in the Verbose firehose. Text is precomputed by
+                     LogEntry when wrapping EventEntry. -->
                 <DataTemplate x:Key="NoWrap_Latency">
                     <TextBlock Text="{Binding Text}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"

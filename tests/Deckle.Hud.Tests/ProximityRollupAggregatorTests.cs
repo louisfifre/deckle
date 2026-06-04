@@ -3,8 +3,8 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// Aggregator est internal sealed dans Deckle.Hud ; l'accès depuis le projet
-// de tests passe par l'InternalsVisibleTo déclaré dans Deckle.Hud.csproj.
+// Aggregator is internal sealed in Deckle.Hud; access from the test project
+// goes through InternalsVisibleTo declared in Deckle.Hud.csproj.
 [Trait("Category", "unit")]
 public class ProximityRollupAggregatorTests
 {
@@ -72,7 +72,7 @@ public class ProximityRollupAggregatorTests
     {
         var agg = new ProximityRollupAggregator();
 
-        // Distances 1..100 → trié, p50 = 51 (index 50), p95 = 96 (index 95).
+        // Distances 1..100 → sorted, p50 = 51 (index 50), p95 = 96 (index 95).
         for (int i = 1; i <= 100; i++)
             agg.Add(distanceDip: i, alpha: 128);
 
@@ -92,8 +92,8 @@ public class ProximityRollupAggregatorTests
             aggSorted.Add(distanceDip: i, alpha: 128);
 
         var shuffled = new[] { 50, 12, 100, 1, 73, 25, 88, 4, 60, 33, 99, 17 };
-        // Compléter à 100 samples avec les valeurs restantes pour aligner
-        // la distribution.
+        // Complete to 100 samples with remaining values to align the
+        // distribution.
         var seen = new HashSet<int>(shuffled);
         foreach (var v in shuffled) aggShuffled.Add(distanceDip: v, alpha: 128);
         for (int i = 1; i <= 100; i++)
@@ -115,24 +115,23 @@ public class ProximityRollupAggregatorTests
     {
         var agg = new ProximityRollupAggregator();
 
-        // Première vague : Capacity samples à distance 9999 (qu'on veut
-        // voir écrasés).
+        // First wave: Capacity samples at distance 9999 (which we want to see
+        // overwritten).
         for (int i = 0; i < ProximityRollupAggregator.Capacity; i++)
             agg.Add(distanceDip: 9999, alpha: 128);
 
-        // Seconde vague : Capacity samples à distance 1..Capacity. Le
-        // ring doit avoir entièrement écrasé la première vague.
+        // Second wave: Capacity samples at distance 1..Capacity. The ring must
+        // have fully overwritten the first wave.
         for (int i = 1; i <= ProximityRollupAggregator.Capacity; i++)
             agg.Add(distanceDip: i, alpha: 128);
 
-        // TotalSamples reflète la vraie count cumulative, pas la
-        // capacité du buffer.
+        // TotalSamples reflects the true cumulative count, not buffer capacity.
         Assert.Equal(ProximityRollupAggregator.Capacity * 2, agg.TotalSamples);
 
         var (p50, p95) = agg.ComputePercentiles();
 
-        // Si la première vague avait survécu, le p95 serait 9999. Les
-        // percentiles doivent refléter strictement la seconde vague.
+        // If the first wave had survived, p95 would be 9999. Percentiles must
+        // strictly reflect the second wave.
         Assert.NotEqual(9999, p50);
         Assert.NotEqual(9999, p95);
         Assert.InRange(p50, 1, ProximityRollupAggregator.Capacity);

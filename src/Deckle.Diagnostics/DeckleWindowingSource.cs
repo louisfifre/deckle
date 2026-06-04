@@ -2,58 +2,53 @@ using System.Diagnostics.Tracing;
 
 namespace Deckle.Diagnostics;
 
-// Sub-provider transverse — positionnement et dimensionnement de toute
-// fenêtre WinUI 3 ou Win32 de l'app (HUD, HudOverlay, tray popup,
-// SettingsWindow, LogWindow, SetupWindow, FolderPicker). Sans cet event
-// transverse, un bug de placement DPI ou multi-écran n'a aucune trace —
-// l'instrumentation se ferait à la main avec `File.AppendAllText` au
-// site exact, exactement le chemin parallèle que la doctrine de
-// centralisation veut éviter. La primitive est strictement non-métier
-// (un wiring de plateforme) et consommée par plusieurs modules avec
-// exactement le même set de paramètres — promotion en sub-provider
-// transverse au sens du critère à deux clauses de la fiche
-// `reference--eventsource-convention--1.2.md` §*Sub-providers
-// transverses*.
+// Cross-cutting sub-provider: positioning and sizing of every WinUI 3 or Win32
+// app window (HUD, HudOverlay, tray popup, SettingsWindow, LogWindow,
+// SetupWindow, FolderPicker). Without this cross-cutting event, a DPI or
+// multi-monitor placement bug leaves no trace; instrumentation would be done
+// manually with `File.AppendAllText` at the exact site, the parallel path the
+// centralization doctrine wants to avoid. The primitive is strictly
+// non-business (platform wiring) and consumed by several modules with exactly
+// the same parameter set: promotion to cross-cutting sub-provider under the
+// two-clause criterion in `reference--eventsource-convention--1.2.md`
+// §*Cross-cutting sub-providers*.
 //
-// Convention de coordonnées : pixels écran absolus partout. Les calculs
-// internes peuvent partir de DIP, mais les events portent toujours du
-// pixel pour permettre la reverse via `dpi`. Cohérent avec ce que
-// retournent `GetCursorPos`, `GetWindowRect`, `GetMonitorInfo`. Cf.
-// 1.2 §*Classe 6 — Windowing* pour le set canonique de paramètres.
+// Coordinate convention: absolute screen pixels everywhere. Internal
+// calculations may start from DIPs, but events always carry pixels to allow
+// reversal through `dpi`. Consistent with what `GetCursorPos`, `GetWindowRect`,
+// and `GetMonitorInfo` return. See 1.2 §*Class 6 — Windowing* for the
+// canonical parameter set.
 //
-// Pattern « tronc commun + events spécialisés ». `WindowPositioned` est
-// le tronc émis par tout site qui positionne ou redimensionne une
-// fenêtre. Les overlays empilés émettent EN PLUS `OverlaySlotAssigned`
-// (le slot ne ferait pas sens sur les fenêtres app). Les popups ancrés
-// à un contrôle parent émettent EN PLUS `PopupAnchored` (avec le rect
-// du contrôle ancré sérialisé en string "x,y,w,h" pour tenir dans 6
-// paramètres EventSource). Les surfaces topmost/no-activate peuvent
-// émettre EN PLUS `WindowZOrderState` pour capturer le résultat natif
-// d'une transition de z-order.
+// "Common trunk + specialized events" pattern. `WindowPositioned` is the trunk
+// emitted by every site that positions or resizes a window. Stacked overlays
+// ALSO emit `OverlaySlotAssigned` (the slot would not make sense on app
+// windows). Popups anchored to a parent control ALSO emit `PopupAnchored` (with
+// the anchored control rect serialized as string "x,y,w,h" to fit in 6
+// EventSource parameters). Topmost/no-activate surfaces may ALSO emit
+// `WindowZOrderState` to capture the native result of a z-order transition.
 //
-// Vocabulaire fermé `window` (nom logique court pour le tronc commun) :
-//   "hud"           — fenêtre principale HudWindow (bas-centre)
-//   "hud-overlay"   — carte transient empilée HudOverlayWindow
+// Closed `window` vocabulary (short logical name for the common trunk):
+//   "hud"           — main HudWindow (bottom-center)
+//   "hud-overlay"   — stacked transient HudOverlayWindow card
 //   "settings"      — SettingsWindow
 //   "log"           — LogWindow
 //   "setup"         — SetupWindow first-run wizard
-//   "playground"    — PlaygroundWindow (shell de tuning Hud + Ambient)
-//   "tray-popup"    — popup contextuel du tray icon
-//   "folder-picker" — picker FolderPicker système ouvert depuis Settings
-// Toute nouvelle fenêtre ajoutée au projet doit étendre ce vocabulaire
-// avant émission, pour préserver la grep-abilité côté listener.
+//   "playground"    — PlaygroundWindow (Hud + Ambient tuning shell)
+//   "tray-popup"    — tray icon context popup
+//   "folder-picker" — system FolderPicker opened from Settings
+// Any new window added to the project must extend this vocabulary before
+// emission, to preserve listener-side grep-ability.
 //
-// Vocabulaire fermé `anchor` (intention de placement côté code, pas une
-// mesure) :
+// Closed `anchor` vocabulary (code-side placement intent, not a measurement):
 //   "BottomCenter"    — HUD en mode BottomCenter (default)
 //   "TopCenter"       — HUD en mode TopCenter
-//   "Center"          — fenêtre centrée sur la work area (Settings, Log,
+//   "Center"          — window centered on the work area (Settings, Log,
 //                       Setup)
-//   "CursorRelative"  — placement relatif au curseur (tray popup)
-//   "ParentRelative"  — placement relatif à un contrôle parent (folder
+//   "CursorRelative"  — placement relative to the cursor (tray popup)
+//   "ParentRelative"  — placement relative to a parent control (folder
 //                       picker)
-//   "absolute"        — pas d'ancrage logique, juste un move/resize
-//                       (placement Win32 brut)
+//   "absolute"        — no logical anchor, only a move/resize (raw Win32
+//                       placement)
 [EventSource(Name = "Deckle.Diagnostics.Windowing")]
 public sealed class DeckleWindowingSource : DeckleEventSource
 {
@@ -67,13 +62,12 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtPopupAnchored        = 3;
     public const int EvtWindowZOrderState    = 4;
 
-    // Tronc commun — émis par tout site qui positionne ou redimensionne
-    // une fenêtre. `window` est un nom logique court (cf. vocabulaire
-    // fermé ci-dessus). `hmon` est le handle moniteur retourné par
-    // `MonitorFromWindow`, `dpi` vient de `GetDpiForWindow`, `anchor`
-    // décrit l'ancrage choisi côté code, `pos`/`size` sont en pixels
-    // écran absolus. Les overlays et popups émettent CET event en plus
-    // de leur event spécialisé.
+    // Common trunk: emitted by every site that positions or resizes a window.
+    // `window` is a short logical name (see closed vocabulary above). `hmon`
+    // is the monitor handle returned by `MonitorFromWindow`, `dpi` comes from
+    // `GetDpiForWindow`, `anchor` describes the code-side chosen anchor, and
+    // `pos`/`size` are in absolute screen pixels. Overlays and popups emit THIS
+    // event in addition to their specialized event.
     [Event(EvtWindowPositioned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -86,12 +80,11 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         WriteEvent(EvtWindowPositioned, window, hmon, dpi, anchor, pos_x, pos_y, size_w, size_h);
     }
 
-    // Spécialisation overlays empilés — `slot=0` pour le plus proche du
-    // HUD principal, `slot=1` pour le suivant, etc. `WindowPositioned`
-    // est aussi émis avec window="hud-overlay" pour conserver le
-    // déterminisme du tronc commun et permettre à un listener qui
-    // s'abonnerait uniquement à `OverlaySlotAssigned` de ne pas recevoir
-    // le bruit des fenêtres app non-overlay.
+    // Stacked overlay specialization: `slot=0` for the closest to the main
+    // HUD, `slot=1` for the next one, etc. `WindowPositioned` is also emitted
+    // with window="hud-overlay" to preserve common trunk determinism and allow
+    // a listener subscribing only to `OverlaySlotAssigned` to avoid noise from
+    // non-overlay app windows.
     [Event(EvtOverlaySlotAssigned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -104,15 +97,14 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         WriteEvent(EvtOverlaySlotAssigned, slot, hmon, pos_x, pos_y, size_w, size_h);
     }
 
-    // Spécialisation popups ancrés — `parent_rect` est le rectangle du
-    // contrôle ancré (ex. icône tray, bouton FolderPicker) en pixels
-    // écran absolus, sérialisé en string "x,y,w,h" pour tenir dans 6
-    // paramètres EventSource. `WindowPositioned` est aussi émis avec
-    // window="tray-popup" ou "folder-picker" pour le tronc commun
-    // quand le popup est une fenêtre que l'app possède ; les popups
-    // dont l'app n'a pas le HWND (menu natif TrackPopupMenu, dialog
-    // système FolderPicker) n'émettent que `PopupAnchored` avec ce
-    // qu'on sait du déclencheur côté code.
+    // Anchored popup specialization: `parent_rect` is the anchored control's
+    // rectangle (e.g. tray icon, FolderPicker button) in absolute screen
+    // pixels, serialized as string "x,y,w,h" to fit in 6 EventSource
+    // parameters. `WindowPositioned` is also emitted with window="tray-popup"
+    // or "folder-picker" for the common trunk when the popup is a window owned
+    // by the app; popups whose HWND the app does not own (native
+    // TrackPopupMenu menu, system FolderPicker dialog) only emit
+    // `PopupAnchored` with what is known about the code-side trigger.
     [Event(EvtPopupAnchored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
@@ -125,14 +117,14 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         WriteEvent(EvtPopupAnchored, popup, parent_rect, pos_x, pos_y, size_w, size_h);
     }
 
-    // Spécialisation z-order — capture l'état natif autour d'une opération
-    // ShowWindow / SetWindowPos topmost. `visible_above_count` reste le
-    // z-order brut : une fenêtre visible au sens Win32 peut être cloaked,
-    // hors du rectangle HUD, ou un helper Shell/IME sans occlusion réelle.
-    // `occluding_above_count` est le signal utile pour le bug visuel : visible,
-    // non-cloaked, rect non vide, et intersection géométrique avec le HUD.
-    // `setpos_ok/last_error` reflètent l'appel SetWindowPos quand le stage
-    // suit cet appel, sinon true/0.
+    // Z-order specialization: captures native state around a ShowWindow /
+    // SetWindowPos topmost operation. `visible_above_count` remains raw
+    // z-order: a Win32-visible window can be cloaked, outside the HUD
+    // rectangle, or a Shell/IME helper without real occlusion.
+    // `occluding_above_count` is the useful signal for the visual bug: visible,
+    // non-cloaked, non-empty rect, and geometric intersection with the HUD.
+    // `setpos_ok/last_error` reflect the SetWindowPos call when the stage
+    // follows that call, otherwise true/0.
     [Event(EvtWindowZOrderState,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,

@@ -49,13 +49,12 @@ public sealed class CaptureSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Audio-Save",
             jsonOptions: _jsonOptions,
-            // EventSource bascule. Le label "[audio]" qui préfixait
-            // les messages legacy disparaît parce que la source tag
-            // côté LogWindow vient désormais du nom du provider
-            // ("Deckle.Audio" → AUDIO), plus de LogSource.Settings.
-            // Les delegates restent Action<string> pour ne pas
-            // toucher au contrat JsonSettingsStore<T> avant la
-            // refonte SettingsHost de la vague 4.
+            // EventSource switch. The "[audio]" label that prefixed legacy
+            // messages disappears because the source tag on the LogWindow side
+            // now comes from the provider name ("Deckle.Audio" → AUDIO), no
+            // longer LogSource.Settings. Delegates remain Action<string> to
+            // avoid touching the JsonSettingsStore<T> contract before the wave
+            // 4 SettingsHost redesign.
             logInfo:     msg => DeckleAudioSource.Log.SettingsLoaded(msg),
             logVerbose:  msg => DeckleAudioSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),

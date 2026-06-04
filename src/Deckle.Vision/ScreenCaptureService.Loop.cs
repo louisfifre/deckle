@@ -125,8 +125,8 @@ public sealed partial class ScreenCaptureService
                 try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); }
                 catch (OperationCanceledException)
                 {
-                    // Stop() a cancel le ct pendant le backoff transient —
-                    // sub-provider Cancellation, age_ms relatif à la session.
+                    // Stop() cancelled ct during transient backoff:
+                    // Cancellation sub-provider, age_ms relative to session.
                     long ageMs = _startTimestamp != 0
                         ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                         : -1;
@@ -153,14 +153,14 @@ public sealed partial class ScreenCaptureService
 
                 if (skipForThrottle)
                 {
-                    // Honour the cadence cap : release the GPU buffer
+                    // Honour the cadence cap: release the GPU buffer
                     // without copying it into the consumer's grid.
                     // Counted as dropped in the heartbeat — frame was
                     // acquired but not processed.
                     continue;
                 }
 
-                // QI the desktop image to ID3D11Texture2D. AddRef'd ;
+                // QI the desktop image to ID3D11Texture2D. AddRef'd;
                 // released in the inner finally. A QI failure here is
                 // unusual (the resource is guaranteed to back a texture
                 // by the duplication contract) but we wrap to avoid
@@ -176,15 +176,14 @@ public sealed partial class ScreenCaptureService
                     continue;
                 }
 
-                // Sub-provider transverse Resource — acquire de la
-                // texture frame. Boucle haute fréquence (~15 Hz cible)
-                // gated par IsEnabled(Verbose, Resource) côté provider :
-                // zéro alloc et zéro WriteEvent quand aucun listener
-                // n'écoute. La capture du timestamp est faite ici parce
-                // que la release est dans le finally en aval ; on
-                // accepte le test gate double (ici + dans le release)
-                // pour garder le code linéaire sans state local
-                // per-iteration. bytes_per_pixel = 4 (BGRA8) ou 8 (FP16).
+                // Cross-cutting Resource sub-provider: frame texture acquire.
+                // High-frequency loop (~15 Hz target) gated by
+                // IsEnabled(Verbose, Resource) on the provider side: zero alloc
+                // and zero WriteEvent when no listener is attached. Timestamp
+                // capture is done here because release is in the downstream
+                // finally; accept the double gate test (here + in release) to
+                // keep code linear without per-iteration local state.
+                // bytes_per_pixel = 4 (BGRA8) or 8 (FP16).
                 int bytesPerPixel = _activeDxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 4;
                 int textureSizeBytes = _lastSize.Width * _lastSize.Height * bytesPerPixel;
                 long textureAcquiredTicks = Stopwatch.GetTimestamp();

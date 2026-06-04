@@ -104,23 +104,22 @@ public static class WhisperPInvoke
     [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
     public static extern float whisper_full_get_token_p(IntPtr ctx, int i_segment, int i_token);
 
-    // Renvoie l'id à partir duquel les tokens sont des timestamps (<|0.00|>, <|5.30|>…).
-    // Tout token dont l'id est >= à cette valeur est un token de timestamp, pas du texte.
+    // Returns the id from which tokens are timestamps (<|0.00|>, <|5.30|>...).
+    // Any token whose id is >= this value is a timestamp token, not text.
     [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
     public static extern int whisper_token_beg(IntPtr ctx);
 
     [DllImport("libwhisper", CallingConvention = CallingConvention.Cdecl)]
     public static extern void whisper_free(IntPtr ctx);
 
-    // ── whisper_log_set : callback global pour les logs internes ──────────────
+    // ── whisper_log_set: Global Callback For Internal Logs ───────────────────
     //
-    // whisper.cpp émet en permanence des lignes de log (chargement modèle,
-    // démarrage du décodage, métriques GPU, timings, etc.). Par défaut elles
-    // partent sur stderr où elles sont perdues. En branchant un callback on
-    // redirige tout ça vers la LogWindow.
+    // whisper.cpp continuously emits log lines (model loading, decoding start,
+    // GPU metrics, timings, etc.). By default they go to stderr where they are
+    // lost. By wiring a callback, redirect all of it to the LogWindow.
     //
-    // Signature C : void (*)(enum ggml_log_level level, const char *text, void *user_data)
-    // Niveaux ggml_log_level : 0=None, 1=Info, 2=Warn, 3=Error, 4=Debug, 5=Cont.
+    // C signature: void (*)(enum ggml_log_level level, const char *text, void *user_data)
+    // ggml_log_level levels: 0=None, 1=Info, 2=Warn, 3=Error, 4=Debug, 5=Cont.
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void WhisperLogCallback(int level, IntPtr text, IntPtr user_data);

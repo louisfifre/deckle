@@ -18,7 +18,7 @@ public sealed partial class DeckleWhispSource
     // same family as VAD. PreprocessedTelemetryRecorded is the distribution rollup
     // of the processed signal — the post-DSP mirror of DeckleAudioSource's raw
     // MicrophoneTelemetryRecorded, on Heartbeat so the two distributions sit under
-    // the same filter and read avant/après term for term. It lives on this provider
+    // the same filter and read before/after term for term. It lives on this provider
     // because the DSP is the orchestrator's concern, not the capture module's.
 
     [Event(EvtTranscriptionPreprocessed,

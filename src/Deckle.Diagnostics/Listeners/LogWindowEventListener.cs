@@ -18,12 +18,11 @@ namespace Deckle.Diagnostics.Listeners;
 // thread. The ILogWindowSink implementation is responsible for
 // marshalling to the UI thread if it needs to (e.g. via DispatcherQueue).
 //
-// Buffer pour lazy LogWindow. Le LogWindow est créé à la première
-// ouverture utilisateur (lazy) ; les events émis pendant le boot
-// doivent être visibles dès cette ouverture. Le listener tient un
-// ring de capacité fixe (5000) et le rejoue intégralement au moment
-// où un sink s'attache via `AttachSink`. Remplace l'ancien `Telemetry-
-// Service._history` du legacy avec la même garantie d'historique.
+// Buffer for lazy LogWindow. The LogWindow is created lazily on first user
+// open; events emitted during boot must be visible as soon as it opens. The
+// listener keeps a fixed-capacity ring (5000) and replays it in full when a
+// sink attaches through `AttachSink`. Replaces the old legacy
+// `TelemetryService._history` with the same history guarantee.
 public sealed class LogWindowEventListener : EventListener
 {
     private const int BufferCapacity = 5000;
@@ -32,17 +31,16 @@ public sealed class LogWindowEventListener : EventListener
     private readonly List<EventEntry> _buffer = new(capacity: BufferCapacity);
     private readonly object _lock = new();
 
-    // Optional drop filter. Quand non-null et retourne true, l'entry
-    // est ignorée AVANT insertion dans le buffer ring et AVANT broadcast
-    // aux sinks. Conséquence directe : un entry filtré ne sera pas non
-    // plus rejoué par AttachSink, puisqu'il n'a jamais atterri dans le
-    // buffer. Posture délibérée — le filter exprime un signal "cet
-    // event n'a pas vocation à exister dans la fenêtre de log live",
-    // pas un masquage temporaire de l'affichage.
+    // Optional drop filter. When non-null and returns true, the entry is
+    // ignored BEFORE insertion into the ring buffer and BEFORE broadcast to
+    // sinks. Direct consequence: a filtered entry will not be replayed by
+    // AttachSink either, since it never landed in the buffer. Deliberate
+    // posture: the filter expresses "this event is not meant to exist in the
+    // live log window", not temporary display masking.
     //
-    // Câblé par le host via ConfigureDropFilter. Cas d'usage actuel :
-    // silencer les Verbose ambient pendant la capture loop quand le
-    // toggle LogAmbientCaptureActivity est off (consommé via
+    // Wired by the host through ConfigureDropFilter. Current use case:
+    // silencing ambient Verbose events during the capture loop when the
+    // LogAmbientCaptureActivity toggle is off (consumed through
     // Deckle.Diagnostics.Logging.AmbientCaptureGate).
     private Func<EventEntry, bool>? _dropFilter;
     private Func<string, EventLevel, EventKeywords, bool>? _providerLevelDropFilter;
@@ -69,11 +67,10 @@ public sealed class LogWindowEventListener : EventListener
         }
     }
 
-    // Attache un sink et lui rejoue l'historique bufferisé depuis le
-    // boot. Le rejeu se fait sous le lock du buffer pour qu'aucun event
-    // ne s'intercale entre la copie du snapshot et l'inscription du
-    // sink — un event arrivé pendant le rejeu sera capturé dans le live
-    // path, jamais perdu ni dupliqué.
+    // Attaches a sink and replays the buffered history since boot. Replay is
+    // done under the buffer lock so no event can slip between snapshot copy and
+    // sink registration; an event arriving during replay will be captured in
+    // the live path, never lost or duplicated.
     public void AttachSink(ILogWindowSink sink)
     {
         EventEntry[] replay;
@@ -94,25 +91,22 @@ public sealed class LogWindowEventListener : EventListener
         lock (_lock) _sinks.Remove(sink);
     }
 
-    // Installe un filter de drop unique. Un seul filter actif à la
-    // fois — un nouvel appel remplace le précédent. Null désinstalle.
-    // Le filter est consulté dans OnEventWritten avant insertion dans
-    // le buffer et avant broadcast aux sinks ; un entry filtré n'est
-    // donc jamais vu par les sinks (ni en live, ni au replay
-    // d'AttachSink).
+    // Installs a single drop filter. Only one filter is active at a time; a new
+    // call replaces the previous one. Null uninstalls. The filter is consulted
+    // in OnEventWritten before insertion into the buffer and before broadcast
+    // to sinks; a filtered entry is therefore never seen by sinks (neither live
+    // nor during AttachSink replay).
     public void ConfigureDropFilter(Func<EventEntry, bool> filter)
     {
         _dropFilter = filter;
     }
 
-    // Filtre de drop précoce, consulté avant BuildEntry. À utiliser
-    // pour les familles bruyantes dont provider + level + keywords
-    // suffisent à décider, afin d'éviter les allocations payload /
-    // format string. Les keywords sont fournis pour qu'un rollup
-    // périodique (keyword Heartbeat) puisse être exempté d'un drop qui
-    // vise le Verbose par-tick — ETW expose déjà les keywords sur
-    // EventWrittenEventArgs avant tout BuildEntry, donc l'exemption
-    // reste sans allocation.
+    // Early drop filter, consulted before BuildEntry. Use for noisy families
+    // where provider + level + keywords are enough to decide, to avoid payload
+    // / format string allocations. Keywords are provided so a periodic rollup
+    // (Heartbeat keyword) can be exempted from a drop targeting per-tick
+    // Verbose; ETW already exposes keywords on EventWrittenEventArgs before any
+    // BuildEntry, so the exemption remains allocation-free.
     public void ConfigureProviderLevelDropFilter(Func<string, EventLevel, EventKeywords, bool> filter)
     {
         _providerLevelDropFilter = filter;
@@ -148,10 +142,10 @@ public sealed class LogWindowEventListener : EventListener
 
         var entry = BuildEntry(eventData);
 
-        // Drop filter consulté avant le buffer pour qu'un entry filtré
-        // ne soit ni rejoué ni broadcasté. Lecture non locked du field :
-        // une race au moment d'un ConfigureDropFilter passe au pire un
-        // event de trop ou un event de moins, jamais une corruption.
+        // Drop filter consulted before the buffer so a filtered entry is
+        // neither replayed nor broadcast. Unlocked field read: a race during
+        // ConfigureDropFilter may at worst pass one event too many or too few,
+        // never corruption.
         var dropFilter = _dropFilter;
         if (dropFilter is not null)
         {
@@ -162,12 +156,11 @@ public sealed class LogWindowEventListener : EventListener
         ILogWindowSink[] snapshot;
         lock (_lock)
         {
-            // Ring : on bornè le buffer pour ne pas croître indéfini-
-            // ment sur les longues sessions. Quand on dépasse la cap,
-            // on jette le plus ancien — même posture que `LogWindow`
-            // côté UI (cap 5000 dans `_entries`). La capacité matche
-            // pour que le replay d'ouverture remplisse exactement la
-            // fenêtre que l'utilisateur va voir.
+            // Ring: bound the buffer so it does not grow indefinitely on long
+            // sessions. When the cap is exceeded, discard the oldest entry:
+            // same posture as `LogWindow` on the UI side (cap 5000 in
+            // `_entries`). Capacity matches so opening replay fills exactly
+            // the window the user will see.
             _buffer.Add(entry);
             if (_buffer.Count > BufferCapacity) _buffer.RemoveAt(0);
             snapshot = _sinks.ToArray();

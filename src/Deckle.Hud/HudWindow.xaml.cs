@@ -49,11 +49,11 @@ public sealed partial class HudWindow : Window
     private const int HUD_HEIGHT        =  78;
     private const int HUD_BOTTOM_MARGIN =  96;
 
-    // Fade continu : alpha mappé sur la distance curseur/HUD via smoothstep.
-    //   distance >= FAR_RADIUS → alpha MAX_ALPHA (HUD pleine)
-    //   distance <= NEAR_RADIUS → alpha MIN_ALPHA (HUD estompée)
-    //   entre les deux → smoothstep (t²(3-2t)).
-    // Pas d'animation : chaque WM_INPUT recalcule et applique l'alpha cible.
+    // Continuous fade: alpha mapped to cursor/HUD distance through smoothstep.
+    //   distance >= FAR_RADIUS → alpha MAX_ALPHA (full HUD)
+    //   distance <= NEAR_RADIUS → alpha MIN_ALPHA (faded HUD)
+    //   between the two → smoothstep (t²(3-2t)).
+    // No animation: each WM_INPUT recalculates and applies the target alpha.
     private const double NEAR_RADIUS_DIP = 10;
     private const double FAR_RADIUS_DIP  = 128;
     private const byte   MAX_ALPHA       = 255;
@@ -71,14 +71,14 @@ public sealed partial class HudWindow : Window
     private HudState _state = HudState.Hidden;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _messageHideTimer;
 
-    // Proximity rollup — collecte sample-par-sample via UpdateProximity
-    // (WM_INPUT, ~125 Hz) pendant toute la fenêtre de visibilité du HUD.
-    // Récapitulatif émis une seule fois au passage shown → hidden via
-    // EndProximitySessionAndFlush. Le gate IsEnabled est testé deux fois :
-    // au début de session (pour décider si on collecte) et au flush (pour
-    // confirmer qu'un listener est toujours là). L'aggregator est isolé
-    // pour être testable unit ; HudWindow ne fait que wire le cycle de
-    // vie. Stopwatch fournit duration_ms réelle de la session.
+    // Proximity rollup: sample-by-sample collection through UpdateProximity
+    // (WM_INPUT, ~125 Hz) over the full HUD visibility window. A summary is
+    // emitted only once on the shown → hidden transition through
+    // EndProximitySessionAndFlush. The IsEnabled gate is tested twice: at
+    // session start (to decide whether to collect) and at flush time (to
+    // confirm a listener is still attached). The aggregator is isolated for
+    // unit testability; HudWindow only wires the lifecycle. Stopwatch provides
+    // the session's actual duration_ms.
     private readonly ProximityRollupAggregator _proximityRollup = new();
     private bool _proximityRollupEnabled;
     private System.Diagnostics.Stopwatch? _proximitySessionStopwatch;
@@ -183,14 +183,13 @@ public sealed partial class HudWindow : Window
 
         RegisterMouseRawInput();
 
-        // Theme — câble ActualThemeChanged sur la racine XAML pour
-        // tracer light/dark/HC transitions. `RequestedTheme` posé par
-        // App.ApplyTheme via Push("user"/"app-init") sur la probe ;
-        // changement système (Personalization) tombe sans pending et
-        // est étiqueté "system". Le HUD ne porte pas de re-application
-        // manuelle de brushes au theme change (HudChrono le fait pour
-        // son chrono — cf. son propre site d'abonnement), donc cet
-        // event est purement observationnel ici.
+        // Theme: wires ActualThemeChanged on the XAML root to trace
+        // light/dark/HC transitions. `RequestedTheme` is set by App.ApplyTheme
+        // through Push("user"/"app-init") on the probe; a system change
+        // (Personalization) arrives without a pending value and is labeled
+        // "system". The HUD does not manually reapply brushes on theme change
+        // (HudChrono does that for its chronometer; see its own subscription
+        // site), so this event is purely observational here.
         if (Content is Microsoft.UI.Xaml.FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -207,9 +206,9 @@ public sealed partial class HudWindow : Window
 
     // ── Theme tracing ────────────────────────────────────────────────────────
     //
-    // Mémorise la dernière valeur connue d'ActualTheme pour fabriquer le
-    // couple (from, to) attendu par DeckleThemeSource.ThemeChanged. Initialisée
-    // au ctor depuis Content.ActualTheme et mise à jour à chaque event.
+    // Stores the last known ActualTheme value to build the (from, to) pair
+    // expected by DeckleThemeSource.ThemeChanged. Initialized in the ctor from
+    // Content.ActualTheme and updated on each event.
     private Microsoft.UI.Xaml.ElementTheme _lastTheme;
 
     private void OnRootActualThemeChanged(Microsoft.UI.Xaml.FrameworkElement sender, object args)
@@ -274,16 +273,17 @@ public sealed partial class HudWindow : Window
 
     // ─── Feedback routing ───────────────────────────────────────────────────
     //
-    // Severity et duration arrivent en primitives plutôt qu'en `UserFeedback`
-    // record : depuis la sous-vague 6b, l'émission passe par le canal
-    // EventSource `UserFeedbackEmitted(severity:int, title, body, role:int)`
-    // exposé par chaque provider de module (DeckleWhispSource, etc.). Le sink
-    // host (`AppHudFeedbackSink`) route vers la surface réplica (`ShowUser-
-    // Feedback`) ou stack (`HudOverlayManager.Enqueue`) selon `role`.
+    // Severity and duration arrive as primitives rather than as a
+    // `UserFeedback` record: since sub-wave 6b, emission goes through the
+    // `UserFeedbackEmitted(severity:int, title, body, role:int)` EventSource
+    // channel exposed by each module provider (DeckleWhispSource, etc.). The
+    // host sink (`AppHudFeedbackSink`) routes to the replica surface
+    // (`ShowUserFeedback`) or stack (`HudOverlayManager.Enqueue`) according to
+    // `role`.
     //
-    // Severity convention : 0=Info, 1=Warning, 2+=Error (mêmes ordinaux que
-    // l'ancien `UserFeedbackSeverity` enum). Conservée à l'identique pour
-    // éviter une bascule de ce contrat côté providers.
+    // Severity convention: 0=Info, 1=Warning, 2+=Error (same ordinals as the
+    // former `UserFeedbackSeverity` enum). Preserved exactly to avoid changing
+    // this contract on the provider side.
     public void ShowUserFeedback(int severity, string title, string body)
     {
         MessageKind kind = severity switch
@@ -299,10 +299,10 @@ public sealed partial class HudWindow : Window
 
     // ─── Feedback durations ─────────────────────────────────────────────────
     //
-    // Tunées par sévérité : warn/error linger, info clears quickly. Constantes
-    // hardcoded — un knob Settings ici ajouterait de la complexité pour une
-    // valeur qu'un utilisateur ne touche jamais. `SuccessDuration` partagé
-    // avec les Success messages internes du HUD (ShowCopied / ShowPasted).
+    // Tuned by severity: warn/error linger, info clears quickly. Hardcoded
+    // constants; a Settings knob here would add complexity for a value a user
+    // never changes. `SuccessDuration` is shared with the HUD's internal
+    // Success messages (ShowCopied / ShowPasted).
     internal static readonly TimeSpan SuccessDuration = TimeSpan.FromSeconds(2);
 
     internal static TimeSpan FeedbackDuration(int severity) => severity switch
@@ -331,10 +331,10 @@ public sealed partial class HudWindow : Window
     {
         if (DispatcherQueue.HasThreadAccess) { SetState(HudState.Hidden, reason: "hide_sync"); return; }
         var done = new ManualResetEventSlim();
-        // Threading — site cross-thread real et critique (rendezvous
-        // transcribe thread → UI juste avant SendInput Ctrl+V). Un
-        // wait_ms anormal ici signale un UI thread bloqué qui va
-        // déclencher le timeout défensif et propager une race au paste.
+        // Threading: real and critical cross-thread site (transcribe thread →
+        // UI rendezvous just before SendInput Ctrl+V). An abnormal wait_ms
+        // here indicates a blocked UI thread that will trigger the defensive
+        // timeout and propagate a paste race.
         bool enqueued = DispatcherQueue.TryEnqueueObserved(
             "window-show", "hud-window-hide-sync",
             () =>
@@ -343,18 +343,17 @@ public sealed partial class HudWindow : Window
             },
             "HUD", "HideSync");
 
-        // Si l'enqueue a échoué (queue fermée pendant teardown), on évite
-        // le Wait infini en libérant immédiatement. Le HUD ne sera pas
-        // caché — mais le caller (transcribe thread) doit continuer pour
-        // que le paste suive son cours.
+        // If enqueue failed (queue closed during teardown), avoid an infinite
+        // Wait by releasing immediately. The HUD will not be hidden, but the
+        // caller (transcribe thread) must continue so the paste can proceed.
         if (!enqueued) { done.Set(); return; }
 
-        // Timeout défensif : SetState est microseconds en temps normal,
-        // mais si le UI thread est bloqué (composition glitch, deadlock
-        // externe), on libère le caller plutôt que de hang la pipeline.
-        // Le paste sera émis sans le rendezvous Hide → risque de race
-        // documenté dans src/Deckle.Transcription/CLAUDE.md (section Paste),
-        // accepté en cas pathologique.
+        // Defensive timeout: SetState takes microseconds under normal
+        // conditions, but if the UI thread is blocked (composition glitch,
+        // external deadlock), release the caller instead of hanging the
+        // pipeline. Paste will be emitted without the Hide rendezvous, creating
+        // the race risk documented in src/Deckle.Transcription/CLAUDE.md
+        // (Paste section), accepted in pathological cases.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
             DeckleHudSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
@@ -367,11 +366,10 @@ public sealed partial class HudWindow : Window
     // forwards to the control's ApplyState / Show, shows the (fixed-size)
     // window, and arms the auto-hide timer for messages.
 
-    // `reason` est une étiquette sémantique du déclencheur, propagée à
-    // DeckleHudSource.StateChanged pour différencier "hide_sync",
-    // "message_timeout", "show_recording", etc. — sans cette info, lire la
-    // trace LogWindow reviendrait à deviner pourquoi le HUD vient de changer
-    // d'état.
+    // `reason` is a semantic trigger label propagated to
+    // DeckleHudSource.StateChanged to distinguish "hide_sync",
+    // "message_timeout", "show_recording", etc.; without it, reading the
+    // LogWindow trace would mean guessing why the HUD just changed state.
     private void SetState(HudState next, MessagePayload? msg = null, string reason = "unspecified")
     {
         // Overlay disabled in Settings → no-op for any *visible* state. Hidden
@@ -388,22 +386,21 @@ public sealed partial class HudWindow : Window
 
         _messageHideTimer?.Stop();
 
-        // Axe 1 — StateChanged. Émis avant le dispatch concret pour que la
-        // séquence dans la LogWindow lise la transition en tête de chaque
-        // change. alpha lue avant ApplyShowAlpha (donc l'alpha "courant"
-        // pré-transition) ; dpi recalculée via GetDpiForWindow pour suivre
-        // un changement DPI runtime entre deux shows.
+        // Axis 1: StateChanged. Emitted before the concrete dispatch so the
+        // sequence in the LogWindow reads the transition at the head of each
+        // change. alpha is read before ApplyShowAlpha (therefore the "current"
+        // pre-transition alpha); dpi is recalculated through GetDpiForWindow to
+        // track a runtime DPI change between two shows.
         int dpiNow = (int)NativeMethods.GetDpiForWindow(_hwnd);
         DeckleHudSource.Log.StateChanged(from.ToString(), next.ToString(), reason, _currentAlpha, dpiNow);
 
         if (wasShown != isShown)
             MainHudVisibilityChanged?.Invoke(this, isShown);
 
-        // Proximity rollup — Begin au passage à visible (initialise le
-        // gate IsEnabled et arme le stopwatch de session), End au passage
-        // à Hidden (flush le récap unique de la fenêtre de visibilité).
-        // Aucune émission entre les deux — le rollup est strictement
-        // per-session, pas périodique.
+        // Proximity rollup: Begin when becoming visible (initializes the
+        // IsEnabled gate and arms the session stopwatch), End when becoming
+        // Hidden (flushes the visibility window's single summary). No emission
+        // between the two; the rollup is strictly per-session, not periodic.
         if (isShown && !wasShown)
             BeginProximitySession();
         else if (!isShown && wasShown)
@@ -499,12 +496,12 @@ public sealed partial class HudWindow : Window
         if (DispatcherQueue.HasThreadAccess) a();
         else
         {
-            // Threading — point central des marshallings cross-thread du
-            // HUD (engine StatusChanged depuis worker, callbacks composition
-            // hors UI). TryEnqueueObserved instrumente MarshalQueued →
-            // wait_ms/run_ms → MarshalCompleted ; rejet via
-            // DispatcherEnqueueRejected sur DeckleThreadingSource si queue
-            // fermée.
+            // Threading: central point for the HUD's cross-thread marshalling
+            // (engine StatusChanged from worker, composition callbacks outside
+            // UI). TryEnqueueObserved instruments MarshalQueued →
+            // wait_ms/run_ms → MarshalCompleted; rejection goes through
+            // DispatcherEnqueueRejected on DeckleThreadingSource if the queue
+            // is closed.
             DispatcherQueue.TryEnqueueObserved(
                 "ui-update", "hud-window",
                 () => a(),
@@ -563,12 +560,12 @@ public sealed partial class HudWindow : Window
         EmitDelayedZOrderState("after_setwindowpos_topmost_50ms", 50, setposOk, setposError);
         EmitDelayedZOrderState("after_setwindowpos_topmost_250ms", 250, setposOk, setposError);
 
-        // Windowing — émis après le MoveAndResize + ShowWindow pour
-        // capturer le rect effectif post-DWM. `anchor` reflète le réglage
-        // Settings.Overlay.Position (BottomCenter default, TopCenter
-        // alternative) ; l'enroulement DPI/work area/centrage horizontal
-        // vit dans GetRectPx mais on capture le résultat plutôt que
-        // l'intention pour permettre la reverse via dpi.
+        // Windowing: emitted after MoveAndResize + ShowWindow to capture the
+        // effective post-DWM rect. `anchor` reflects the
+        // Settings.Overlay.Position setting (BottomCenter default, TopCenter
+        // alternative); DPI/work area/horizontal centering wrapping lives in
+        // GetRectPx, but we capture the result rather than the intent to allow
+        // reversal through dpi.
         string position = Settings.SettingsService.Instance.Current.Overlay.Position ?? "";
         string anchor = position.StartsWith("Top") ? "TopCenter" : "BottomCenter";
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);
@@ -646,13 +643,13 @@ public sealed partial class HudWindow : Window
         byte alpha = (byte)Math.Round(MIN_ALPHA + eased * (MAX_ALPHA - MIN_ALPHA));
         if (alpha != _currentAlpha) SetAlphaImmediate(alpha);
 
-        // Axe 5 — Collecte sample pour ProximityRollup. Le flag
-        // _proximityRollupEnabled court-circuite la collecte quand aucun
-        // listener n'écoute Verbose+Heartbeat sur Deckle.Hud — c'est la
-        // gate strict que la doctrine deckle-logging exige pour les
-        // boucles haute fréquence WM_INPUT (~125 Hz). Réévalué au début
-        // de chaque session de visibilité pour absorber une bascule live
-        // d'un listener entre deux shows.
+        // Axis 5: sample collection for ProximityRollup. The
+        // _proximityRollupEnabled flag short-circuits collection when no
+        // listener is attached to Verbose+Heartbeat on Deckle.Hud; this is the
+        // strict gate required by the deckle-logging doctrine for
+        // high-frequency WM_INPUT loops (~125 Hz). Re-evaluated at the start
+        // of each visibility session to absorb a listener live toggle between
+        // two shows.
         if (_proximityRollupEnabled)
         {
             int distDip = (int)Math.Round(distancePx / scale);
@@ -660,26 +657,24 @@ public sealed partial class HudWindow : Window
         }
     }
 
-    // ── Proximity rollup — récap per-session de la visibilité HUD ──────
+    // ── Proximity rollup — per-session HUD visibility summary ──────────
     //
-    // WM_INPUT arrive à ~125 Hz quand la souris bouge ; la doctrine
-    // deckle-logging interdit d'émettre un event par tick. Une variante
-    // périodique 1 s a précédé ce design — elle produisait jusqu'à ~10
-    // events par session HUD (50 sessions × ~10 s/jour = ~500 events/jour
-    // en LogWindow) sans valeur diagnostique sur les sessions où la
-    // souris ne s'approchait pas. Le pattern actuel agrège toute la
-    // fenêtre de visibilité (shown → hidden) et émet un récap unique
-    // sous deux conditions cumulatives : au moins un sample collecté ET
-    // min_alpha != max_alpha (sinon le smoothstep est resté plat et
-    // aucune trajectoire de proximité n'existe à diagnostiquer).
+    // WM_INPUT arrives at ~125 Hz when the mouse moves; deckle-logging
+    // doctrine forbids emitting one event per tick. A previous 1 s periodic
+    // variant produced up to ~10 events per HUD session (50 sessions ×
+    // ~10 s/day = ~500 events/day in LogWindow) with no diagnostic value on
+    // sessions where the mouse did not approach. The current pattern
+    // aggregates the full visibility window (shown → hidden) and emits one
+    // summary under two cumulative conditions: at least one sample collected
+    // AND min_alpha != max_alpha (otherwise smoothstep stayed flat and there
+    // is no proximity trajectory to diagnose).
 
     private void BeginProximitySession()
     {
-        // Évalue la gate au début de session — quand fermée, la collecte
-        // est court-circuitée dans UpdateProximity (test
-        // _proximityRollupEnabled). Si un listener s'attache pendant la
-        // session, rien n'est enregistré tardivement ; le prochain show
-        // captera la nouvelle gate.
+        // Evaluates the gate at session start; when closed, collection is
+        // short-circuited in UpdateProximity (_proximityRollupEnabled test).
+        // If a listener attaches during the session, nothing is recorded late;
+        // the next show will capture the new gate.
         _proximityRollupEnabled = DeckleHudSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
         if (!_proximityRollupEnabled) return;
@@ -702,17 +697,17 @@ public sealed partial class HudWindow : Window
         byte minAlpha = _proximityRollup.MinAlpha;
         byte maxAlpha = _proximityRollup.MaxAlpha;
 
-        // Skip si min == max — la souris n'est pas rentrée dans le rayon
-        // proximity, le smoothstep est resté plat, aucune trajectoire à
-        // diagnostiquer. La doctrine "toute émission porte une valeur
-        // diagnostique" exige ce gate, sinon la LogWindow est noyée de
-        // récaps "rien ne s'est passé" sur les sessions HUD typiques où
-        // l'utilisateur ne s'approche pas du HUD.
+        // Skip if min == max: the mouse did not enter the proximity radius,
+        // smoothstep stayed flat, and there is no trajectory to diagnose. The
+        // "every emission carries diagnostic value" doctrine requires this
+        // gate, otherwise the LogWindow is drowned in "nothing happened"
+        // summaries on typical HUD sessions where the user does not approach
+        // the HUD.
         if (minAlpha == maxAlpha) return;
 
-        // Re-test gate au flush — un listener a pu se détacher pendant
-        // la session. Match la sémantique du double-test du design
-        // périodique précédent.
+        // Re-test the gate at flush time; a listener may have detached during
+        // the session. Matches the double-test semantics of the previous
+        // periodic design.
         if (!DeckleHudSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
 
@@ -752,11 +747,10 @@ public sealed partial class HudWindow : Window
         _fadeInTimer.Tick += OnFadeInTick;
         _fadeInTimer.Start();
 
-        // Axe 2 — FadeInStarted. scope="hud" parce que c'est le fade-in
-        // de la fenêtre principale (HudOverlayWindow a son propre site
-        // d'émission avec scope="overlay"). fromAlpha capturé avant le
-        // reset à 0 pour tracer une éventuelle transition depuis un
-        // alpha proximity en cours.
+        // Axis 2: FadeInStarted. scope="hud" because this is the main window's
+        // fade-in (HudOverlayWindow has its own emission site with
+        // scope="overlay"). fromAlpha is captured before the reset to 0 to
+        // trace a possible transition from an in-progress proximity alpha.
         DeckleHudSource.Log.FadeInStarted("hud", FADE_IN_MS, fromAlpha, target);
     }
 

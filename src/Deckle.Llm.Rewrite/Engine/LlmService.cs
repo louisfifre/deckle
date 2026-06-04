@@ -150,8 +150,8 @@ public class LlmService
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
             sw.Stop();
-            // Sub-provider transverse Cancellation — REWRITE_HARD_CAP a
-            // tiré, c'est un timeout franc.
+            // Cross-cutting Cancellation sub-provider: REWRITE_HARD_CAP fired,
+            // this is a hard timeout.
             DeckleCancellationSource.Log.OperationCancelled(
                 "llm-rewrite", "timeout", (int)sw.ElapsedMilliseconds);
             DeckleLlmSource.Log.RewriteTimeout(REWRITE_HARD_CAP.TotalMinutes, profile.Name, profile.Model);
@@ -250,9 +250,9 @@ public class LlmService
         catch (OperationCanceledException)
         {
             // Expected: the caller cancels pollDone as soon as the main request returns.
-            // Sub-provider transverse Cancellation — propagation amont attendue
-            // depuis le finally du Rewrite (`pollDone.Cancel()`). age_ms reflète
-            // le temps écoulé du Rewrite parent au moment où le poll s'arrête.
+            // Cross-cutting Cancellation sub-provider: expected upstream
+            // propagation from the Rewrite finally (`pollDone.Cancel()`).
+            // age_ms reflects elapsed parent Rewrite time when polling stops.
             DeckleCancellationSource.Log.OperationCancelled(
                 "llm-warmup", "upstream", (int)requestElapsed.ElapsedMilliseconds);
         }

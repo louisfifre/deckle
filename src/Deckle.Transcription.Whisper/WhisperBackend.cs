@@ -486,7 +486,7 @@ public sealed class WhisperBackend : IAsrBackend
                 // ── "no GPU found" downgrade for the second backend init ─
                 // The VAD context creation triggers a second whisper_backend
                 // _init_gpu that always reports "no GPU found" (whisper.cpp
-                // hardcodes use_gpu=false in whisper_vad_init_context). Bénin
+                // hardcodes use_gpu=false in whisper_vad_init_context). Benign
                 // but alarming at Warn — keep it Verbose. Targeted match so a
                 // real GPU failure phrased differently still surfaces.
                 if (msg.StartsWith("whisper_backend_init_gpu", StringComparison.Ordinal) &&

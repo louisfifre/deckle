@@ -4,28 +4,27 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.App.Diagnostics;
 
-// Route chaque LogEntry vers le DataTemplate adapté. Deux familles de
-// décisions :
+// Routes each LogEntry to the appropriate DataTemplate. Two decision families:
 //
-//   1. Quelques EventName spécifiques portent une présentation
-//      compacte tertiary text (Latency / Corpus / Microphone). Ils
-//      passent par leur template dédié indépendamment du niveau.
-//   2. Sinon, on retombe sur la couleur sémantique par EventLevel
+//   1. A few specific EventName values carry compact tertiary text
+//      presentation (Latency / Corpus / Microphone). They go through their
+//      dedicated template regardless of level.
+//   2. Otherwise, fall back to semantic color by EventLevel
 //      (Verbose / Informational / Warning / Error / Critical / LogAlways).
 //
-// Instancié deux fois dans les ressources XAML (NoWrapSelector et
-// WrapSelector) ; la bascule Word-wrap échange la collection complète.
-// Tous les slots doivent être renseignés au load XAML — un slot vide
-// fait crasher la première row de ce niveau au realization.
+// Instantiated twice in XAML resources (NoWrapSelector and WrapSelector);
+// the Word-wrap toggle swaps the whole collection. Every slot must be set at
+// XAML load time; an empty slot crashes the first row of that level at
+// realization.
 public sealed class LogEntryTemplateSelector : DataTemplateSelector
 {
-    // Couleurs sémantiques alignées sur les EventLevel BCL.
+    // Semantic colors aligned with BCL EventLevel values.
     public DataTemplate? Verbose       { get; set; }
     public DataTemplate? Info          { get; set; }
     public DataTemplate? Warning       { get; set; }
     public DataTemplate? Error         { get; set; }
 
-    // Présentation compacte tertiary pour les rows télémétrie pure.
+    // Compact tertiary presentation for pure telemetry rows.
     public DataTemplate? Latency       { get; set; }
     public DataTemplate? Corpus        { get; set; }
     public DataTemplate? Microphone    { get; set; }
@@ -39,15 +38,14 @@ public sealed class LogEntryTemplateSelector : DataTemplateSelector
     {
         if (item is LogEntry e)
         {
-            // Routage par nom d'event d'abord pour capter les rows
-            // télémétrie spécialisées avant la dispatch par niveau.
+            // Route by event name first to catch specialized telemetry rows
+            // before dispatching by level.
             switch (e.EventName)
             {
                 case "LatencyRecorded":             return Latency!;
-                // Les deux events normalisés du corpus partagent le même
-                // template — voir ADR-0006 pour la séparation ASR/rewrite
-                // sur disque, qui n'a pas vocation à se refléter dans la
-                // présentation live.
+                // The two normalized corpus events share the same template;
+                // see ADR-0006 for ASR/rewrite separation on disk, which is
+                // not meant to be reflected in live presentation.
                 case "CorpusAsrRecorded":           return Corpus!;
                 case "CorpusRewriteRecorded":       return Corpus!;
                 case "MicrophoneTelemetryRecorded": return Microphone!;
@@ -58,14 +56,13 @@ public sealed class LogEntryTemplateSelector : DataTemplateSelector
                 EventLevel.Verbose       => Verbose!,
                 EventLevel.Informational => Info!,
                 EventLevel.Warning       => Warning!,
-                // Critical et Error partagent le template Error
-                // (rouge critical) — la distinction BCL ne porte pas
-                // de différence visuelle dans cette surface.
+                // Critical and Error share the Error template (critical red);
+                // the BCL distinction carries no visual difference here.
                 EventLevel.Critical      => Error!,
                 EventLevel.Error         => Error!,
-                // LogAlways = events qu'un EventListener reçoit
-                // toujours, peu importe le niveau demandé. Sans
-                // sémantique de gravité propre — on rend en Info.
+                // LogAlways = events an EventListener always receives,
+                // regardless of the requested level. No intrinsic severity
+                // semantics; render as Info.
                 EventLevel.LogAlways     => Info!,
                 _                        => Info!,
             };

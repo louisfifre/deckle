@@ -2,13 +2,13 @@ using System.Collections.Generic;
 
 namespace Deckle.Llm.Rewrite;
 
-// ── Réécriture LLM via Ollama ────────────────────────────────────────────────
+// ── LLM rewriting through Ollama ─────────────────────────────────────────────
 
-// Profil de réécriture : modèle Ollama, system prompt, paramètres de génération.
-// Le system prompt est envoyé per-request (pas via Modelfile) — les modèles
-// viennent de HuggingFace en GGUF et Ollama ne détecte pas bien les TEMPLATE.
-// Les paramètres de génération (nullable) sont envoyés dans le champ `options`
-// de /api/chat et overrident les defaults du Modelfile côté Ollama.
+// Rewrite profile: Ollama model, system prompt, generation parameters. The
+// system prompt is sent per-request (not via Modelfile); models come from
+// HuggingFace as GGUF and Ollama does not detect TEMPLATE well. Generation
+// parameters (nullable) are sent in the /api/chat `options` field and override
+// Ollama-side Modelfile defaults.
 public sealed class RewriteProfile
 {
     // Stable identifier across renames. 12 hex chars (Guid N format truncated).
@@ -20,17 +20,16 @@ public sealed class RewriteProfile
     public string Model { get; set; } = "";
     public string SystemPrompt { get; set; } = "";
 
-    // Paramètres de génération — null = default Ollama (pas envoyé).
+    // Generation parameters: null = Ollama default (not sent).
     public double? Temperature { get; set; }
-    public int? NumCtxK { get; set; }            // en K (×1024 à l'envoi)
+    public int? NumCtxK { get; set; }            // in K (×1024 when sent)
     public double? TopP { get; set; }
     public double? RepeatPenalty { get; set; }
 }
 
-// Règle d'auto-réécriture (durée) : quand la durée d'enregistrement dépasse
-// MinDurationSeconds, le profil ProfileName est utilisé. Les règles sont
-// évaluées dans l'ordre décroissant de MinDurationSeconds (la plus longue
-// qui matche gagne).
+// Auto-rewrite rule (duration): when recording duration exceeds
+// MinDurationSeconds, ProfileName is used. Rules are evaluated in descending
+// MinDurationSeconds order (the longest match wins).
 public sealed class AutoRewriteRule
 {
     public int MinDurationSeconds { get; set; } = 0;
@@ -75,18 +74,17 @@ public sealed class LlmSettings
     public string? PrimaryRewriteProfileId { get; set; }
     public string? SecondaryRewriteProfileId { get; set; }
 
-    // Trois profils alignés sur les brackets de cleanup (lib/corpus.py:38-47),
-    // tunés via une boucle d'optimisation itérative sur Ministral 14B Q4
-    // (Ollama local). Gradient d'intervention : lissage (disfluences) →
-    // affinage (oral → écrit) → arrangement (regroupement thématique). Règle
-    // commune : aucune perte de mots, de sens, de nuances.
+    // Three profiles aligned with cleanup brackets (lib/corpus.py:38-47),
+    // tuned through an iterative optimization loop on Ministral 14B Q4 (local
+    // Ollama). Intervention gradient: smoothing (disfluencies) → refinement
+    // (oral → written) → arrangement (thematic regrouping). Common rule: no
+    // loss of words, meaning, or nuance.
     //
-    // Les SystemPrompt livrés ici sont l'exemple par défaut — la façon dont
-    // Louis utilise le pipeline. L'utilisateur peut tout réécrire ou
-    // supprimer dans les Settings, mais le bouton Reset Profiles ramène
-    // exactement cet exemple complet (3 profils nommés, prompts tunés,
-    // Temperature 0.30, NumCtxK 8/16/16). Model laissé vide : à choisir
-    // une fois Ollama configuré.
+    // SystemPrompts shipped here are the default example: how Louis uses the
+    // pipeline. The user can rewrite or delete everything in Settings, but the
+    // Reset Profiles button restores exactly this complete example (3 named
+    // profiles, tuned prompts, Temperature 0.30, NumCtxK 8/16/16). Model left
+    // empty: to choose once Ollama is configured.
     public List<RewriteProfile> Profiles { get; set; } = new()
     {
         new()
@@ -95,10 +93,10 @@ public sealed class LlmSettings
             Model = "",
             Temperature = 0.30,
             NumCtxK = 8,
-            // Bracket 60–300 s. Suppression des disfluences / tics /
-            // répétitions exactes / faux départs. Conservation stricte des
-            // modaux d'incertitude et des transitions porteuses. Aucun
-            // regroupement thématique — l'ordre du locuteur reste préservé.
+            // 60–300 s bracket. Removes disfluencies / tics / exact
+            // repetitions / false starts. Strictly preserves uncertainty modals
+            // and meaning-bearing transitions. No thematic regrouping: speaker
+            // order stays preserved.
             SystemPrompt =
                 """
                 Tu es un transcripteur fidèle qui ne reformule presque pas et garde les mots du locuteur. Tu transformes une transcription orale française en prose écrite propre, comme si le locuteur avait préparé son discours dans sa tête avant de parler. Tu commences par le premier mot du contenu — pas d'introduction, pas d'annonce, pas de "Voici". Pas de markdown, pas de gras, pas d'italique, pas de titres, pas de listes, pas de séparateurs. **Les termes anglais (skills, build, prompt, benchmark, workflow…) restent en texte brut sans italique, sans guillemets, sans astérisques.**
@@ -142,12 +140,12 @@ public sealed class LlmSettings
             Model = "",
             Temperature = 0.30,
             NumCtxK = 16,
-            // Bracket 300–600 s. Lissage + recompose phrases hachées en prose
-            // écrite fluide. Préservation lexicale stricte (verbe/nom/adjectif
-            // du locuteur, pas de synonyme, pas de promotion de registre).
-            // Aucun regroupement — l'ordre du locuteur reste préservé.
+            // 300–600 s bracket. Smoothing + recomposes chopped sentences into
+            // fluent written prose. Strict lexical preservation (speaker's
+            // verb/noun/adjective, no synonym, no register promotion). No
+            // regrouping: speaker order stays preserved.
             // Champion pass 3 V_C : 0 cata, 0 lists, ratio med 0.96, novel
-            // med 0.01 sur 9 samples affinage à T=0.15.
+            // med 0.01 on 9 refinement samples at T=0.15.
             SystemPrompt =
                 """
                 **TU NE RÉSUMES JAMAIS.** Tu transcris ce que dit le locuteur en gardant tous les détails. Tu écris en français du quotidien, pas en français de blog tech. Tu es un transcripteur fidèle qui ne reformule presque pas et garde les mots du locuteur. Tu transformes une transcription orale française longue (typiquement 5 à 10 minutes de parole) en prose écrite propre, comme si le locuteur avait préparé son discours dans sa tête avant de parler. Tu commences par le premier mot du contenu — pas d'introduction, pas d'annonce, pas de "Voici", pas de "Voici la transcription", pas de "Voici la version corrigée", pas de "Voici ce que dit le locuteur", pas de "Voici la transcription fidèle". Premier caractère = première lettre du contenu. Pas de markdown, pas de gras, pas d'italique, pas de titres, pas de listes, pas de séparateurs. **Les termes anglais (skills, build, prompt, benchmark, workflow…) restent en texte brut sans italique, sans guillemets, sans astérisques.**
@@ -196,11 +194,11 @@ public sealed class LlmSettings
             Model = "",
             Temperature = 0.30,
             NumCtxK = 16,
-            // Bracket 600 s+. Affinage + regroupement par thème des mentions
-            // éparpillées du même concept (toutes les nuances préservées).
-            // Voix première personne stricte — interdit "le locuteur",
-            // "il insiste", etc. Champion iter 1 — pass 3 variantes
-            // interrompue par crash PC sur sample 7113 chars, à reprendre.
+            // 600 s+ bracket. Refinement + thematic regrouping of scattered
+            // mentions of the same concept (all nuances preserved). Strict
+            // first-person voice: "le locuteur", "il insiste", etc. forbidden.
+            // Champion iter 1; pass 3 variants interrupted by PC crash on a
+            // 7113-char sample, to resume.
             SystemPrompt =
                 """
                 **Priorités, dans l'ordre :** (1) garder tous les mots et nuances du locuteur, (2) regrouper par thème, (3) garder la voix 1ère personne. **TU NE RÉSUMES JAMAIS. TU NE COMPRESSES PAS.** Tu transcris ce que dit le locuteur en gardant tous les détails. Sur un long monologue, déploie chaque idée, chaque exemple, chaque digression — ne les réduis pas à des phrases-titres. Tu écris en français du quotidien, pas en français de blog tech. Tu es un transcripteur fidèle qui ne reformule presque pas et garde les mots du locuteur. Tu arranges un monologue oral français long (typiquement plus de 10 minutes de parole, jusqu'à 50 minutes) en prose écrite propre, restructurée par thèmes, comme si le locuteur s'était relu et avait organisé ses idées après coup. Tu commences par le premier mot du contenu, à la première personne du locuteur — jamais "Voici", jamais "Le locuteur", jamais "Je vais te présenter". Premier caractère = première lettre du contenu. Pas de markdown, pas de gras, pas d'italique, pas de titres, pas de listes, pas de séparateurs. **Les termes anglais (skills, build, prompt, benchmark, workflow…) restent en texte brut sans italique, sans guillemets, sans astérisques.**
@@ -243,13 +241,12 @@ public sealed class LlmSettings
         }
     };
 
-    // Auto-rules alignées sur les bornes des brackets cleanup. Évaluées
-    // par TranscriptionEngine en ordre décroissant de seuil — le plus haut qui
-    // matche gagne. Plancher à 60 s : en dessous, aucune règle ne matche,
-    // le profil reste null et la réécriture LLM est skipée (comportement
-    // no-op, le texte brut Whisper part au clipboard tel quel — Whisper
-    // sort déjà du texte propre sur les dictées courtes, un cycle Ollama
-    // serait gratuit).
+    // Auto-rules aligned with cleanup bracket boundaries. Evaluated by
+    // TranscriptionEngine in descending threshold order; the highest match
+    // wins. Floor at 60 s: below that, no rule matches, profile stays null, and
+    // LLM rewriting is skipped (no-op behavior; raw Whisper text goes to the
+    // clipboard as-is. Whisper already outputs clean text on short dictations,
+    // so an Ollama cycle would be wasteful).
     public List<AutoRewriteRule> AutoRewriteRules { get; set; } = new()
     {
         new() { MinDurationSeconds = 600, ProfileName = "Arrangement" },
@@ -266,9 +263,9 @@ public sealed class LlmSettings
     // Word-based equivalents — calibrated on 88 corpus samples (median
     // 115 wpm globally, range 47–205). The bracket boundaries 1/5/10 min
     // map to ~115/575/1150 words at that median, rounded to multiples of
-    // 50: 150/600/1200. Plancher à 150 mots — symétrique avec la règle
-    // duration de 60 s : en dessous, aucune règle ne matche, pas de
-    // cycle Ollama gratuit sur une dictée courte.
+    // 50: 150/600/1200. Floor at 150 words, symmetric with the 60 s duration
+    // rule: below that, no rule matches, no wasteful Ollama cycle on a short
+    // dictation.
     public List<AutoRewriteRuleByWords> AutoRewriteRulesByWords { get; set; } = new()
     {
         new() { MinWordCount = 1200, ProfileName = "Arrangement" },

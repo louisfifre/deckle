@@ -5,13 +5,12 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Sub-provider transverse — transitions d'état réseau. Test sentinelle qui
-// vérifie que l'event canonique du provider sort avec ses quatre paramètres
-// dans l'ordre déclaré (connected, profile, ipv4_count, ipv6_count) et au
-// bon EventId / Level / Keyword. La présence du test à ce grain protège
-// contre une régression silencieuse de schéma (réordering, retypage d'un
-// paramètre) qui ne se verrait qu'au moment où un listener consommerait
-// effectivement la valeur.
+// Cross-cutting sub-provider: network state transitions. Sentinel test that
+// verifies the provider's canonical event comes out with its four parameters in
+// declared order (connected, profile, ipv4_count, ipv6_count) and the right
+// EventId / Level / Keyword. This test at this grain protects against a silent
+// schema regression (reordering, retyping a parameter) that would only be seen
+// when a listener consumed it.
 [Trait("Category", "observability")]
 public class DeckleNetworkSourceTests
 {

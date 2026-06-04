@@ -88,7 +88,7 @@ public sealed partial class GeneralPage : Page
 
     // ── Overlay position ─────────────────────────────────────────────────────
     //
-    // ComboBoxItem avec Tag — pas bindable en TwoWay, conversion manuelle.
+    // ComboBoxItem with Tag: not TwoWay-bindable, manual conversion.
     // Older settings.json may carry corner values (TopLeft / BottomRight…)
     // that the combo no longer exposes — Sync normalizes them to
     // TopCenter / BottomCenter on Load.

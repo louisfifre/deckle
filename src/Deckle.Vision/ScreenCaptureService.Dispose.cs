@@ -10,10 +10,10 @@ public sealed partial class ScreenCaptureService
     {
         if (_duplicationPtr != 0)
         {
-            // Sub-provider transverse Resource — release de la duplication
-            // sur Stop / Dispose. age calculé depuis le dernier acquire
-            // (Start ou TryRecreateDuplication). Émis avant le Release
-            // pour ne pas perdre l'event si le Release lève.
+            // Cross-cutting Resource sub-provider: release duplication on
+            // Stop / Dispose. Age computed from the last acquire (Start or
+            // TryRecreateDuplication). Emitted before Release so the event is
+            // not lost if Release throws.
             long releasedHandle = (long)_duplicationPtr;
             int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
                                * 1000L / Stopwatch.Frequency);

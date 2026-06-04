@@ -5,32 +5,28 @@ namespace Deckle.Transcription;
 
 public sealed partial class DeckleWhispSource
 {
-    // ── Heartbeats structurés — JSONL canoniques ────────────────────────
+    // ── Structured Heartbeats: Canonical JSONL ──────────────────────────
     //
-    // LatencyRecorded, CorpusAsrRecorded et CorpusRewriteRecorded sont
-    // les events que JsonlEventListener (et RoutedJsonlEventListener pour
-    // les deux corpus) filtrent pour écrire latency.jsonl et les
-    // corpus.jsonl bucketés. Le format Message est un récap mono-ligne
-    // pour LogWindow ; le payload complet est sérialisé par
-    // EtwSelfDescribingEventFormat avec les noms snake_case devenant
-    // les clés JSON.
+    // LatencyRecorded, CorpusAsrRecorded, and CorpusRewriteRecorded are the
+    // events JsonlEventListener (and RoutedJsonlEventListener for both corpora)
+    // filters to write latency.jsonl and bucketed corpus.jsonl files. The
+    // Message format is a one-line summary for LogWindow; the full payload is
+    // serialized by EtwSelfDescribingEventFormat with snake_case names becoming
+    // JSON keys.
     //
-    // CorpusAsrRecorded capture la sortie ASR (Whisper, plus tard
-    // Voxtral). Routée vers corpus/<bucket>/<tier>/corpus.jsonl
-    // (bucket=raw en mode mot-pour-mot, bucket=voxtral-<instruction>
-    // quand le mode instruction-nommée Voxtral sera branché). Les
-    // cinq tiers de longueur — very-short / short / medium / long /
-    // very-long — découpent le dataset par charge ASR pour l'analyse.
+    // CorpusAsrRecorded captures ASR output (Whisper, later Voxtral). Routed
+    // to corpus/<bucket>/<tier>/corpus.jsonl (bucket=raw in word-for-word mode,
+    // bucket=voxtral-<instruction> when named-instruction Voxtral mode is
+    // wired). The five length tiers — very-short / short / medium / long /
+    // very-long — split the dataset by ASR load for analysis.
     //
-    // CorpusRewriteRecorded capture la sortie réécriture LLM. Routée
-    // vers corpus/rewrite-<name>-<id>/corpus.jsonl (plat — pas de tier
-    // sur le rewrite, voir ADR-0006). Le rewrite_profile_id sert de
-    // jointure avec le profil ; le prompt_template_hash invalide les
-    // analyses si le template change sans rename d'ID.
+    // CorpusRewriteRecorded captures LLM rewrite output. Routed to
+    // corpus/rewrite-<name>-<id>/corpus.jsonl (flat: no tier on rewrite, see
+    // ADR-0006). rewrite_profile_id joins with the profile; prompt_template_hash
+    // invalidates analyses if the template changes without ID rename.
     //
-    // Quand un rewrite tourne, les deux events partent avec le même
-    // transcription_id — c'est la clé qui joint les lignes au WAV
-    // (audio/<transcription_id>.wav).
+    // When a rewrite runs, both events leave with the same transcription_id:
+    // this is the key joining lines to the WAV (audio/<transcription_id>.wav).
 
     [Event(EvtLatencyRecorded,
            Level = EventLevel.Verbose,

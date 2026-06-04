@@ -5,12 +5,12 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Sub-provider transverse — transitions de thème (light / dark / accent).
-// Un seul event ThemeChanged porte les quatre paramètres surface/from/to/
-// source. Le test fixe l'ordre des paramètres et vérifie que la probe
+// Cross-cutting sub-provider: theme transitions (light / dark / accent). A
+// single ThemeChanged event carries the four surface/from/to/source parameters.
+// The test fixes parameter order and verifies that the probe
 // statique ThemeRequestSourceProbe round-trip un push/consume correctement
-// (le mécanisme Push/Consume sert à distinguer une bascule "user" d'une
-// bascule "system" côté handler ActualThemeChanged).
+// (the Push/Consume mechanism distinguishes a "user" switch from a "system"
+// switch on the ActualThemeChanged handler side).
 [Trait("Category", "observability")]
 public class DeckleThemeSourceTests
 {
@@ -35,7 +35,7 @@ public class DeckleThemeSourceTests
     [Fact]
     public void ThemeRequestSourceProbeRoundtripsPushAndConsume()
     {
-        // Reset au cas où un autre test aurait laissé un pending.
+        // Reset in case another test left a pending value.
         ThemeRequestSourceProbe.Consume();
 
         ThemeRequestSourceProbe.Push("user");

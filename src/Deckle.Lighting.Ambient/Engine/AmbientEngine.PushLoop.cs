@@ -61,12 +61,11 @@ public sealed partial class AmbientEngine
         catch (OperationCanceledException)
         {
             // Expected when Stop / DisposeAsync cancels the token.
-            // Sub-provider transverse Cancellation — map _stopReason
-            // (vocabulaire engine local) sur la vocabulaire fermé du
-            // sub-provider : "user" reste tel quel, les arrêts pilotés
-            // par un événement amont (capture lost, external Hue
-            // interference) sont des "upstream". L'âge est calculé à
-            // partir du Stopwatch armé au start de la pipeline.
+            // Cross-cutting Cancellation sub-provider: map _stopReason (local
+            // engine vocabulary) to the sub-provider's closed vocabulary:
+            // "user" stays as-is, stops driven by an upstream event (capture
+            // lost, external Hue interference) are "upstream". Age is computed
+            // from the Stopwatch armed at pipeline start.
             string reason = _stopReason switch
             {
                 "user"         => "user",
@@ -149,8 +148,8 @@ public sealed partial class AmbientEngine
             _hbPushed++;
             // Verbose gating is handled by the LogWindow drop filter
             // (App.OnLaunched) : provider=Deckle.Ambient + capture
-            // gate ouverte + user toggle off ⇒ ce Verbose est filtré
-            // avant insertion buffer. No call-site check needed.
+            // gate open + user toggle off ⇒ this Verbose is filtered
+            // before buffer insertion. No call-site check needed.
             DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, httpMs);
         }
         catch (OperationCanceledException) { throw; }

@@ -62,8 +62,8 @@ public sealed class EngineSettings
     public bool CarryInitialPrompt { get; set; } = true;
 }
 
-// VAD Silero — pré-filtre qui détecte les segments de parole avant Whisper.
-// Quand Enabled=false, tous les autres champs sont ignorés par l'engine.
+// Silero VAD: pre-filter that detects speech segments before Whisper.
+// When Enabled=false, all other fields are ignored by the engine.
 public sealed class SpeechDetectionSettings
 {
     public bool Enabled { get; set; } = true;
@@ -75,9 +75,9 @@ public sealed class SpeechDetectionSettings
     public float SamplesOverlap { get; set; } = 0.1f;
 }
 
-// Seuils qui déclenchent le fallback température de whisper.cpp. Stockés en
-// double pour l'UI (NumberBox/Slider WinUI travaillent en double) ; cast en
-// float au moment du mapping vers la struct native.
+// Thresholds that trigger whisper.cpp temperature fallback. Stored as double
+// for the UI (WinUI NumberBox/Slider work in double); cast to float when
+// mapping to the native struct.
 public sealed class ConfidenceSettings
 {
     public double EntropyThreshold { get; set; } = 2.4;
@@ -105,8 +105,8 @@ public sealed class DecodingSettings
 }
 
 
-// UseContext = inverse de no_context natif (vocabulaire orienté utilisateur).
-// MaxTokens = -1 signifie « auto / illimité ».
+// UseContext = inverse of native no_context (user-oriented vocabulary).
+// MaxTokens = -1 means "auto / unlimited".
 public sealed class ContextSettings
 {
     public bool UseContext { get; set; } = true;

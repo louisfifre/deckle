@@ -3,16 +3,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Chrono;
 
-// EventSource pilote pour exercer toute la plomberie en amont :
-// SessionId partagé, EventListener qui découvre dynamiquement le
-// provider, sérialisation JSONL, alimentation LogWindow.
+// Pilot EventSource to exercise all upstream plumbing: shared SessionId,
+// EventListener dynamically discovering the provider, JSONL serialization,
+// LogWindow feeding.
 //
-// Les events portent ici une simple sémantique de jalon — pas de
-// payload structuré, pas de heartbeat agrégé. Quand un site d'appel
-// applicatif voudra réellement instrumenter le chrono (par exemple
-// au moment où la vague de surface refondra la HUD), on étendra
-// avec des [Event] supplémentaires en respectant la doctrine du
-// brief — un [Event] par opération distincte.
+// Events here carry simple milestone semantics: no structured payload, no
+// aggregated heartbeat. When an application call site actually needs to
+// instrument the chronometer (for example when the surface wave redesigns the
+// HUD), this will be extended with additional [Event] entries while respecting
+// the brief's doctrine: one [Event] per distinct operation.
 [EventSource(Name = "Deckle.Chrono")]
 public sealed class DeckleChronoSource : DeckleEventSource
 {
@@ -21,16 +20,15 @@ public sealed class DeckleChronoSource : DeckleEventSource
     private DeckleChronoSource() { }
 
     // ── EventIds ────────────────────────────────────────────────────────
-    // Numérotation séquentielle à partir de 1. Les ids sont publics
-    // dans le manifest ETW — ne pas réutiliser un id après suppression
-    // d'un event (un consumer historique pourrait encore en avoir
-    // besoin pour décoder un dump). Pour Deckle on commence frais à
-    // la vague 1, donc pas d'historique à respecter.
+    // Sequential numbering from 1. IDs are public in the ETW manifest; do not
+    // reuse an ID after deleting an event (a historical consumer may still need
+    // it to decode a dump). For Deckle we start fresh at wave 1, so there is no
+    // history to preserve.
     public const int EvtPilotEmitted = 1;
 
-    // Boot validation event. Émis une fois au démarrage par l'App pour
-    // exercer EventSource → JsonlEventListener → app.jsonl et
-    // EventSource → LogWindowEventListener → LogWindow.
+    // Boot validation event. Emitted once at App startup to exercise
+    // EventSource → JsonlEventListener → app.jsonl and EventSource →
+    // LogWindowEventListener → LogWindow.
     [Event(EvtPilotEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

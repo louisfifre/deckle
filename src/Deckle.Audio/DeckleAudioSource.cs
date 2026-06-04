@@ -3,28 +3,27 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Audio;
 
-// Audio module provider. Couvre la capture microphone (boucle waveIn,
-// détection low-audio, capture lag, cap de durée), le récap télémétrie
-// microphone par recording (payload structuré à 14 champs), et la
-// persistance settings du module.
+// Audio module provider. Covers microphone capture (waveIn loop, low-audio
+// detection, capture lag, duration cap), per-recording microphone telemetry
+// summary (14-field structured payload), and module settings persistence.
 //
 // Singleton statique, instanciation thread-safe via `static readonly`.
-// Le manifest ETW est self-describing (hérité de DeckleEventSource) ;
-// les noms des paramètres en snake_case deviennent directement les
-// clés JSON dans le payload émis par JsonlEventListener.
+// The ETW manifest is self-describing (inherited from DeckleEventSource);
+// snake_case parameter names directly become JSON keys in the payload emitted
+// by JsonlEventListener.
 //
-// Conventions de naming pour ce provider :
-//   - Jalons concis (Capital, niveau Informational) → suffixe verbe
-//     au passé : RecordingStarted, RecordingCompleted.
-//   - Verbose miroirs structurés → suffixe -Started / -Completed
-//     en miroir : CaptureStarted, CaptureCompleted.
-//   - Payload structuré (heartbeat) → suffixe -Recorded :
+// Naming conventions for this provider:
+//   - Concise milestones (capitalized, Informational level) → past-tense verb
+//     suffix: RecordingStarted, RecordingCompleted.
+//   - Structured Verbose mirrors → mirrored -Started / -Completed suffix:
+//     CaptureStarted, CaptureCompleted.
+//   - Structured payload (heartbeat) → -Recorded suffix:
 //     MicrophoneTelemetryRecorded.
-//   - Anomalies → nom de la condition au passé :
+//   - Anomalies → past-tense condition name:
 //     EmptyBufferReceived, LowAudioDetected, CaptureLagDetected,
 //     DurationCapReached, MicrophoneOpenFailed,
 //     MicrophoneTelemetryEmpty.
-//   - Persistance settings du module → préfixe Settings- :
+//   - Module settings persistence → Settings- prefix:
 //     SettingsLoaded, SettingsLoadComplete, SettingsLoadWarning,
 //     SettingsLoadError.
 [EventSource(Name = "Deckle.Audio")]
@@ -34,7 +33,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     private DeckleAudioSource() { }
 
-    // ── EventIds — séquentiels à partir de 1, jamais réutilisés ─────────
+    // ── EventIds: sequential from 1, never reused ───────────────────────
     public const int EvtRecordingStarted          = 1;
     public const int EvtCaptureStarted            = 2;
     public const int EvtEmptyBufferReceived       = 3;
@@ -52,7 +51,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtSettingsLoadWarning       = 15;
     public const int EvtSettingsLoadError         = 16;
 
-    // ── Recording lifecycle (jalons + verbose miroirs) ──────────────────
+    // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
@@ -99,7 +98,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRecordingTailSummary, tail_headline, tail_ms, tail_dbfs);
     }
 
-    // ── Anomalies captées dans la boucle waveIn ─────────────────────────
+    // ── Anomalies Captured In The waveIn Loop ───────────────────────────
 
     [Event(EvtEmptyBufferReceived,
            Level = EventLevel.Warning,
@@ -155,12 +154,12 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtMicrophoneTelemetryEmpty);
     }
 
-    // ── Heartbeat structuré — payload télémétrie microphone ─────────────
+    // ── Structured Heartbeat: Microphone Telemetry Payload ──────────────
     //
     // Remplace TelemetryService.Microphone(MicrophoneTelemetryPayload).
-    // Les 14 propriétés du POCO record legacy deviennent paramètres
-    // typés primitifs. EventSource n'accepte pas de types complexes
-    // en signature, c'est pour ça que le payload est aplati.
+    // The 14 properties of the legacy POCO record become primitive typed
+    // parameters. EventSource does not accept complex types in signatures, so
+    // the payload is flattened.
 
     [Event(EvtMicrophoneTelemetryRecorded,
            Level = EventLevel.Verbose,
@@ -189,25 +188,24 @@ public sealed class DeckleAudioSource : DeckleEventSource
             mean_rms, mean_dbfs, tail_rms, tail_dbfs, tail_state);
     }
 
-    // ── Persistance settings du module ──────────────────────────────────
+    // ── Module Settings Persistence ─────────────────────────────────────
     //
-    // Le pattern legacy faisait passer ces lignes par LogSource.Settings
-    // avec un préfixe "[audio]" inscrit dans le message. La nouvelle
-    // architecture les rapatrie au provider qui les émet (DeckleAudioSource
-    // est dans Deckle.Audio, le SettingsService aussi) — la source label
-    // devient AUDIO via le bridge LogWindow, plus SETTINGS. Le préfixe
-    // dans le message disparaît parce que le tag fait déjà le travail.
+    // The legacy pattern sent these lines through LogSource.Settings with an
+    // "[audio]" prefix written in the message. The new architecture brings
+    // them back to the provider that emits them (DeckleAudioSource is in
+    // Deckle.Audio, and so is SettingsService); the source label becomes AUDIO
+    // through the LogWindow bridge, no longer SETTINGS. The message prefix
+    // disappears because the tag already does the work.
     //
-    // Entorse à la doctrine « strict-typed per opération ». Les delegates
-    // de JsonSettingsStore<T> dans Deckle.Core sont Action<string> et
-    // appellent ces 4 méthodes avec un message paramétré ; je ne sais
-    // pas, au site d'appel du delegate, distinguer « Settings loaded »
-    // de « Settings initialized (defaults) » ou de « reloaded from disk
-    // ». Le typage de cette zone est donc par niveau et par keyword,
-    // pas par opération. La refonte propre vient à la vague 4 quand
-    // SettingsHost / JsonSettingsStore basculent eux-mêmes sur un
-    // contrat EventSource direct, et ces 4 events seront alors
-    // remplacés par leurs équivalents per-opération.
+    // Exception to the "strict-typed per operation" doctrine. The
+    // JsonSettingsStore<T> delegates in Deckle.Core are Action<string> and call
+    // these 4 methods with a parameterized message; at the delegate call site,
+    // I cannot distinguish "Settings loaded" from "Settings initialized
+    // (defaults)" or "reloaded from disk". This area is therefore typed by
+    // level and keyword, not by operation. The clean redesign comes in wave 4
+    // when SettingsHost / JsonSettingsStore themselves move to a direct
+    // EventSource contract, and these 4 events will then be replaced by their
+    // per-operation equivalents.
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,

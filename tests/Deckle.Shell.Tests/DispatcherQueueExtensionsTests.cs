@@ -12,29 +12,28 @@ namespace Deckle.Shell.Tests;
 
 // ── DispatcherQueueExtensionsTests ──────────────────────────────────────────
 //
-// Test régression sur la garde anti-récursion `_emittingMarshal` posée dans
-// `TryEnqueueObserved`. Reproduit le scénario qui a crashé l'app en session
+// Regression test for the `_emittingMarshal` anti-recursion guard placed in
+// `TryEnqueueObserved`. Reproduces the scenario that crashed the app in session
 // 2026-05-25 :
 //
-//   1. Sur un thread worker, un appel à `queue.TryEnqueueObserved(...)`
-//      émet `MarshalQueued` synchronement.
-//   2. Un EventListener installé sur `Deckle.Diagnostics.Threading` reçoit
-//      l'event synchrone sur le même worker thread (OnEventWritten est
-//      synchrone côté EventSource).
-//   3. Le listener route vers un sink qui re-appelle `queue.TryEnqueueObserved`
-//      sur le même worker thread (mimic LogWindowEventListener →
-//      LogWindow.Write → DispatcherQueue.TryEnqueueObserved côté prod).
-//   4. Sans garde : la 2e entrée ré-émet `MarshalQueued` → re-route → re-call
-//      → récursion synchrone → StackOverflowException.
-//   5. Avec la garde `_emittingMarshal` thread-static : la 2e entrée bascule
-//      sur le path froid `TryEnqueueOrLog` qui enqueue sans émettre — la
-//      chaîne synchrone se termine en deux niveaux.
+//   1. On a worker thread, a call to `queue.TryEnqueueObserved(...)` emits
+//      `MarshalQueued` synchronously.
+//   2. An EventListener installed on `Deckle.Diagnostics.Threading` receives
+//      the synchronous event on the same worker thread (OnEventWritten is
+//      synchronous on the EventSource side).
+//   3. The listener routes to a sink that calls `queue.TryEnqueueObserved`
+//      again on the same worker thread (mimics LogWindowEventListener →
+//      LogWindow.Write → DispatcherQueue.TryEnqueueObserved in production).
+//   4. Without guard: the 2nd entry re-emits `MarshalQueued` → re-route →
+//      re-call → synchronous recursion → StackOverflowException.
+//   5. With the thread-static `_emittingMarshal` guard: the 2nd entry switches
+//      to the cold `TryEnqueueOrLog` path, which enqueues without emitting; the
+//      synchronous chain terminates in two levels.
 //
-// Le test fait tenir cette propriété sans dépendre du timing du callback
-// enqueué : le listener réentrant ne re-call que pour `MarshalQueued`
-// (EventId 1), ignore `MarshalCompleted` (qui s'émet plus tard sur le thread
-// de la queue) — la boucle qu'on protège est strictement synchrone côté
-// thread caller.
+// The test holds this property without depending on the timing of the enqueued
+// callback: the reentrant listener only re-calls for `MarshalQueued` (EventId
+// 1), ignores `MarshalCompleted` (which is emitted later on the queue thread);
+// the loop being protected is strictly synchronous on the caller thread side.
 [Trait("Category", "regression")]
 [Trait("Category", "observability")]
 public class DispatcherQueueExtensionsTests
@@ -51,17 +50,17 @@ public class DispatcherQueueExtensionsTests
             bool ok = queue.TryEnqueueObserved(
                 operation: "test",
                 caller: "test-caller",
-                callback: () => { /* no-op — propriété testée vit côté caller. */ },
+                callback: () => { /* no-op: tested property lives caller-side. */ },
                 rejectSource: "TEST",
                 rejectWhat: "test enqueue");
 
             Assert.True(ok);
 
-            // Propriété centrale du fix _emittingMarshal : la 2e tentative
-            // d'émission MarshalQueued, déclenchée par le listener réentrant
-            // sur le même thread, est court-circuitée par la garde thread-
-            // static. Sans le fix, on aurait soit StackOverflow, soit
-            // listener.MarshalQueuedCount == maxReentry (50).
+            // Central property of the _emittingMarshal fix: the 2nd
+            // MarshalQueued emission attempt, triggered by the reentrant
+            // listener on the same thread, is short-circuited by the
+            // thread-static guard. Without the fix, we would have either
+            // StackOverflow or listener.MarshalQueuedCount == maxReentry (50).
             Assert.Equal(1, listener.MarshalQueuedCount);
             Assert.False(listener.HitMaxReentry);
         }
@@ -71,17 +70,16 @@ public class DispatcherQueueExtensionsTests
         }
     }
 
-    // Propriété : le paramètre `priority` exposé par TryEnqueueObserved
-    // (et par TryEnqueueOrLog en miroir) doit être propagé au
-    // `DispatcherQueue.TryEnqueue(priority, callback)` sous-jacent.
-    // L'API DispatcherQueue ne permet pas d'inspecter directement à
-    // quelle priority un callback a été enqueueé — on observe la
-    // propriété indirectement par l'ordre d'exécution : queue 4
-    // callbacks avec priorities Low, Low, Normal, High pendant que le
-    // UI thread est bloqué sur une gate, puis libère la gate. La queue
-    // doit dispatcher dans l'ordre High → Normal → Low (FIFO intra-
-    // niveau). Si priority est ignoré (tout posté en Normal), l'ordre
-    // serait celui d'arrivée Low, Low, Normal, High.
+    // Property: the `priority` parameter exposed by TryEnqueueObserved (and by
+    // mirrored TryEnqueueOrLog) must be propagated to the underlying
+    // `DispatcherQueue.TryEnqueue(priority, callback)`. DispatcherQueue API
+    // does not allow directly inspecting which priority a callback was
+    // enqueued with; observe the property indirectly through execution order:
+    // queue 4 callbacks with Low, Low, Normal, High priorities while the UI
+    // thread is blocked on a gate, then release the gate. The queue must
+    // dispatch in High → Normal → Low order (FIFO within level). If priority is
+    // ignored (everything posted as Normal), order would be arrival order:
+    // Low, Low, Normal, High.
     [Fact]
     [Trait("Category", "observability")]
     public async Task TryEnqueueObservedHonorsPriorityParameter()
@@ -95,10 +93,10 @@ public class DispatcherQueueExtensionsTests
             using var gate = new ManualResetEventSlim(false);
             var testCt = TestContext.Current.CancellationToken;
 
-            // Bloque le UI thread avant l'enqueue des 4 callbacks à
-            // tester. Sans ça, le premier enqueueé pourrait s'exécuter
-            // avant que les suivants soient en queue, et la dispatcher
-            // n'aurait jamais à arbitrer entre niveaux de priority.
+            // Blocks the UI thread before enqueuing the 4 callbacks under
+            // test. Without this, the first enqueued callback could execute
+            // before the next ones are in the queue, and the dispatcher would
+            // never have to arbitrate between priority levels.
             queue.TryEnqueue(() => gate.Wait(TimeSpan.FromSeconds(5), testCt));
 
             queue.TryEnqueueObserved(
@@ -137,11 +135,11 @@ public class DispatcherQueueExtensionsTests
         }
     }
 
-    // Miroir de TryEnqueueObservedHonorsPriorityParameter pour le wrapper
-    // historique TryEnqueueOrLog. Étendu à la priority dans la même vague
-    // que TryEnqueueObserved parce que le cold path de TryEnqueueObserved
-    // y délègue, et que perdre la priority sur le cold path casserait la
-    // coordination UI des Settings pages quand le verbose n'est pas écouté.
+    // Mirror of TryEnqueueObservedHonorsPriorityParameter for the historical
+    // TryEnqueueOrLog wrapper. Extended to priority in the same wave as
+    // TryEnqueueObserved because TryEnqueueObserved's cold path delegates to it,
+    // and losing priority on the cold path would break Settings page UI
+    // coordination when Verbose is not listened to.
     [Fact]
     [Trait("Category", "observability")]
     public async Task TryEnqueueOrLogHonorsPriorityParameter()
@@ -180,17 +178,16 @@ public class DispatcherQueueExtensionsTests
         }
     }
 
-    // EventListener réentrant — observe `Deckle.Diagnostics.Threading` et
-    // re-appelle `queue.TryEnqueueObserved` à chaque `MarshalQueued` reçu.
-    // C'est exactement le pattern qui a déclenché la récursion en prod :
-    // le sink (`LogWindow.Write`) appelle `DispatcherQueue.TryEnqueueObserved`
-    // pour marshaller la mise à jour ListView vers le UI thread, et cette
-    // chaîne synchrone partait en boucle sans la garde.
+    // Reentrant EventListener: observes `Deckle.Diagnostics.Threading` and
+    // calls `queue.TryEnqueueObserved` again on each received `MarshalQueued`.
+    // This is exactly the pattern that triggered recursion in production: the
+    // sink (`LogWindow.Write`) calls `DispatcherQueue.TryEnqueueObserved` to
+    // marshal the ListView update to the UI thread, and this synchronous chain
+    // looped without the guard.
     //
-    // Le compteur `MarshalQueuedCount` reflète combien de fois `MarshalQueued`
-    // est entré dans `OnEventWritten` sur le worker thread (i.e. directement
-    // depuis le caller, pas via la queue) — c'est exactement la grandeur que
-    // la garde doit borner à 1.
+    // `MarshalQueuedCount` reflects how many times `MarshalQueued` entered
+    // `OnEventWritten` on the worker thread (i.e. directly from the caller, not
+    // via the queue): exactly the value the guard must bound to 1.
     private sealed class ReentrantThreadingListener : EventListener
     {
         private const string ProviderName = "Deckle.Diagnostics.Threading";
@@ -206,9 +203,9 @@ public class DispatcherQueueExtensionsTests
             _queue = queue;
             _maxReentry = maxReentry;
 
-            // Rattrapage des sources déjà créées avant l'instanciation du
-            // listener (OnEventSourceCreated a couru pendant base() avec les
-            // champs encore non-assignés).
+            // Catch up sources already created before listener instantiation
+            // (OnEventSourceCreated ran during base() with fields still
+            // unassigned).
             foreach (var source in EventSource.GetSources())
             {
                 if (source.Name == ProviderName)
@@ -236,10 +233,10 @@ public class DispatcherQueueExtensionsTests
                 return;
             }
 
-            // Le re-call qui déclencherait la boucle synchrone sans garde.
-            // L'appel se fait sur le même thread que celui qui a émis
-            // l'event original — la garde `_emittingMarshal` thread-static
-            // est précisément posée pour bloquer cette branche.
+            // The re-call that would trigger the synchronous loop without the
+            // guard. The call happens on the same thread that emitted the
+            // original event; the thread-static `_emittingMarshal` guard is
+            // placed precisely to block this branch.
             _queue.TryEnqueueObserved(
                 operation: "reentrant",
                 caller: "reentrant-listener",

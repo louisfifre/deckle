@@ -10,7 +10,7 @@
     </windowsSettings>
   </application>
 
-  <!-- Common Controls v6 — requis pour SetWindowSubclass (comctl32.dll v6) -->
+  <!-- Common Controls v6: required for SetWindowSubclass (comctl32.dll v6) -->
   <dependency>
     <dependentAssembly>
       <assemblyIdentity

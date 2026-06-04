@@ -4,25 +4,25 @@ namespace Deckle.TestSupport;
 
 // ── WindowsAppSdkBootstrap ──────────────────────────────────────────────────
 //
-// Les projets de tests sont OutputType=Exe (Microsoft Testing Platform / xUnit v3)
-// non-packagés. Les APIs WinAppSDK consommées par les tests qui touchent à
-// Deckle.Shell ou Deckle.Vision (`DispatcherQueueController.CreateOnDedicatedThread`,
-// composition, etc.) requièrent que le bootstrap dynamique soit initialisé
-// avant tout premier appel — sinon `REGDB_E_CLASSNOTREG (0x80040154)` au moment
-// de l'activation WinRT, parce que les factory classes du package WinAppSDK
-// ne sont pas enregistrées dans le process unpackaged tant qu'on n'a pas
-// résolu le package via la Dynamic Dependency API.
+// Test projects are unpackaged OutputType=Exe (Microsoft Testing Platform /
+// xUnit v3). WinAppSDK APIs consumed by tests touching Deckle.Shell or
+// Deckle.Vision (`DispatcherQueueController.CreateOnDedicatedThread`,
+// composition, etc.) require dynamic bootstrap initialization before the first
+// call; otherwise `REGDB_E_CLASSNOTREG (0x80040154)` occurs during WinRT
+// activation because WinAppSDK package factory classes are not registered in
+// the unpackaged process until the package is resolved through the Dynamic
+// Dependency API.
 //
-// `WindowsAppSdkModuleInitializer` est lié dans chaque assembly de test via
-// `tests/Directory.Build.props`, puis appelle cette méthode avant qu'aucun
-// `[Fact]` ne tourne. `TryInitialize` est idempotent au sens "retourne false si
-// déjà initialisé" — on accepte le bool sans le tester parce qu'un échec d'init
-// causera un throw clair au premier site WinAppSDK du test et c'est le bon
-// comportement.
+// `WindowsAppSdkModuleInitializer` is linked into each test assembly through
+// `tests/Directory.Build.props`, then calls this method before any `[Fact]`
+// runs. `TryInitialize` is idempotent in the "returns false if already
+// initialized" sense; accept the bool without testing it because an init
+// failure will cause a clear throw at the first WinAppSDK test site, and that
+// is the right behavior.
 //
-// `majorMinorVersion = 0x00010008` correspond à WinAppSDK 1.8, la version
-// alignée sur toute la solution. Bumper conjointement avec le bump du package
-// transverse.
+// `majorMinorVersion = 0x00010008` corresponds to WinAppSDK 1.8, the version
+// aligned across the solution. Bump together with the cross-cutting package
+// bump.
 public static class WindowsAppSdkBootstrap
 {
     public static void Initialize()

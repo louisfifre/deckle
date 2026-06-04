@@ -5,14 +5,14 @@
          host App.xaml can merge it via
          ms-appx:///Deckle.Catalog/Themes/Icons.xaml. The module hosts
          no Page or UserControl — only the icon ResourceDictionary plus
-         Loc.cs / Glyphs.cs façades. -->
+         Loc.cs / Glyphs.cs facades. -->
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- ResourceLoader (Microsoft.Windows.ApplicationModel.Resources). Version
-         pinned identical à Deckle.csproj — un seul runtime WindowsAppSDK chargé
+         pinned identical to Deckle.csproj: a single WindowsAppSDK runtime loaded
          par process. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />

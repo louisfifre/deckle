@@ -46,8 +46,8 @@
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- DiagnosticsViewModel consomme LoggingSettingsService /
-         TelemetrySettingsService — successeurs canoniques des stores
-         legacy (Deckle.Logging supprimé en sous-vague 6g). -->
+         TelemetrySettingsService: canonical successors of the legacy stores
+         (Deckle.Logging removed in sub-wave 6g). -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->

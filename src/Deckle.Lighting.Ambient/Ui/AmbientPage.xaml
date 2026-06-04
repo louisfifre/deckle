@@ -6,10 +6,10 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:ambientControls="using:Deckle.Lighting.Ambient.Controls">
 
-    <!-- Pattern canonique Microsoft Learn (SettingsExpander sample
-         "Settings page example") : StackPanel max 1000 dans un Grid,
-         Spacing=4 entre cards, Margin="1,30,0,6" sur les headers de
-         section. Calque exact de GeneralPage / WhisperPage. -->
+    <!-- Canonical Microsoft Learn pattern (SettingsExpander sample
+         "Settings page example"): StackPanel max 1000 in a Grid,
+         Spacing=4 between cards, Margin="1,30,0,6" on section headers.
+         Exact layer of GeneralPage / WhisperPage. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"

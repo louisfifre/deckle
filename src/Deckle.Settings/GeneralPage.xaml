@@ -7,9 +7,9 @@
     xmlns:settings="using:Deckle.Settings"
     xmlns:vm="using:Deckle.Settings.ViewModels">
 
-    <!-- Pattern canonique Microsoft Learn (SettingsExpander sample "Settings page
-         example") : StackPanel max 1000 dans un Grid, Spacing=4 entre cards,
-         Margin="1,30,0,6" sur les headers de section. -->
+    <!-- Canonical Microsoft Learn pattern (SettingsExpander sample "Settings page
+         example"): StackPanel max 1000 in a Grid, Spacing=4 between cards,
+         Margin="1,30,0,6" on section headers. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -29,8 +29,8 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <!-- Titre de page — pattern Win11 Settings : le H1 vit dans la
-                     Page, pas dans le chrome de la fenêtre. -->
+                <!-- Page title: Win11 Settings pattern where the H1 lives in
+                     the Page, not in the window chrome. -->
                 <TextBlock x:Uid="GeneralPageTitleLabel"
                            Style="{StaticResource TitleTextBlockStyle}"
                            Margin="0,0,0,8" />

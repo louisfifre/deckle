@@ -7,59 +7,55 @@ namespace Deckle.Shell;
 
 // ─── DispatcherQueueExtensions ─────────────────────────────────────────────
 //
-// Wrappers autour de `DispatcherQueue.TryEnqueue` consommés par tous les
-// sites de Deckle qui marshalent un callback vers le UI thread.
+// Wrappers around `DispatcherQueue.TryEnqueue`, consumed by every Deckle site
+// that marshals a callback to the UI thread.
 //
-// `TryEnqueueOrLog` est le wrapper historique : émet un Warning
-// `DispatcherEnqueueRejected` quand l'enqueue échoue (queue shut down).
-// Sans ça, l'event UI est perdu en silence — typique au teardown de
-// window où StatusChanged engine arrive alors que la dispatcher queue
-// est déjà fermée. Le Warning sort sur `DeckleThreadingSource` (sub-
-// provider transverse `Deckle.Diagnostics.Threading`) depuis la vague
-// d'instrumentation transverse — l'event ne décrivait pas une opération
-// shell, il décrivait un rejet de dispatcher transverse à tout module
-// qui marshale vers le UI thread. La signature publique côté appelants
-// reste identique (`source` et `what`) pour ne pas casser les sites
-// existants.
+// `TryEnqueueOrLog` is the historical wrapper: emits a
+// `DispatcherEnqueueRejected` Warning when enqueue fails (queue shut down).
+// Without it, the UI event is silently lost, typical during window teardown
+// when engine StatusChanged arrives after the dispatcher queue is already
+// closed. Since the cross-cutting instrumentation wave, the Warning is emitted
+// on `DeckleThreadingSource` (cross-cutting `Deckle.Diagnostics.Threading`
+// sub-provider). The event did not describe a shell operation; it described a
+// dispatcher rejection crossing any module that marshals to the UI thread. The
+// public signature for callers stays identical (`source` and `what`) to avoid
+// breaking existing sites.
 //
-// `TryEnqueueObserved` est le wrapper instrumenté de la vague transverse :
-// émet en plus du rejet la paire `MarshalQueued` (avant le `TryEnqueue`)
-// et `MarshalCompleted` (en fin de callback) avec les mesures `wait_ms`
-// (latence de marshalling) et `run_ms` (durée d'exécution du callback).
-// Gate strict `IsEnabled(Verbose, Threading)` en tête : quand aucun
-// listener n'écoute, l'instrumentation a un coût net nul (un test ETW
-// + un retour) — le wrapper retombe sur le comportement de
-// `TryEnqueueOrLog`. `MarshalTimeout` reste déclaré côté provider mais
-// non câblé activement dans cette passe — son contrat est figé pour une
-// passe ultérieure qui détectera les callbacks restés trop longtemps en
-// queue via un watchdog dédié.
+// `TryEnqueueObserved` is the instrumented wrapper from the cross-cutting wave:
+// in addition to rejection, it emits the `MarshalQueued` (before TryEnqueue)
+// and `MarshalCompleted` (at callback end) pair with `wait_ms` (marshalling
+// latency) and `run_ms` (callback execution duration) measurements. Strict
+// `IsEnabled(Verbose, Threading)` gate at the top: when no listener is attached,
+// instrumentation has zero net cost (one ETW test + return), and the wrapper
+// falls back to `TryEnqueueOrLog` behavior. `MarshalTimeout` remains declared
+// on the provider but is not actively wired in this pass; its contract is
+// frozen for a later pass that will detect callbacks that stayed too long in
+// queue through a dedicated watchdog.
 //
-// Garde anti-récursion `_logging` (warning path). Si LogWindow appelle
-// l'un de ces wrappers et que sa propre queue est fermée, le Warning
-// loggé route à nouveau vers LogWindow → re-TryEnqueue → re-fail →
-// boucle. Un flag thread-static court-circuite la deuxième tentative.
-// La garde reste pertinente après la migration EventSource :
-// `LogWindowEventListener` reçoit toujours l'event Warning et le
-// repousse dans la même `DispatcherQueue` côté LogWindow.
+// Anti-recursion guard `_logging` (warning path). If LogWindow calls one of
+// these wrappers and its own queue is closed, the logged Warning routes back to
+// LogWindow → re-TryEnqueue → re-fail → loop. A thread-static flag
+// short-circuits the second attempt. The guard remains relevant after the
+// EventSource migration: `LogWindowEventListener` still receives the Warning
+// event and pushes it back into the same LogWindow-side `DispatcherQueue`.
 //
-// Garde anti-récursion `_emittingMarshal` (verbose path). Même classe
-// de boucle, déclenchée par l'émission *systématique* de `MarshalQueued`
-// dans `TryEnqueueObserved` : un appel à `LogWindow.Write` depuis
-// `LogWindowEventListener.OnEventWritten` (sur worker thread) traverse
-// `TryEnqueueObserved` qui émet `MarshalQueued` synchronement, ce que
-// le listener observe et re-route vers `LogWindow.Write` → nouvelle
-// émission → récursion synchrone → stack overflow. Constaté empiriquement
-// 2026-05-25, signature : tail JSONL inondé de `MarshalQueued
-// operation=log-append caller=log-window` à plusieurs kHz puis crash.
-// Quand la réentrance est détectée, on retombe sur le path froid
-// `TryEnqueueOrLog` qui enqueue le callback sans émission — l'event
-// utile (celui qui a déclenché la chaîne) atterrit bien dans la queue
-// UI, seule l'observation du marshalling imbriqué est skippée.
+// Anti-recursion guard `_emittingMarshal` (verbose path). Same loop class,
+// triggered by the *systematic* `MarshalQueued` emission in `TryEnqueueObserved`:
+// a `LogWindow.Write` call from `LogWindowEventListener.OnEventWritten` (on a
+// worker thread) goes through `TryEnqueueObserved`, which synchronously emits
+// `MarshalQueued`; the listener observes it and re-routes to `LogWindow.Write`
+// → new emission → synchronous recursion → stack overflow. Empirically
+// observed on 2026-05-25; signature: JSONL tail flooded with `MarshalQueued
+// operation=log-append caller=log-window` at several kHz, then crash. When
+// reentrancy is detected, fall back to the cold `TryEnqueueOrLog` path, which
+// enqueues the callback without emission. The useful event (the one that
+// triggered the chain) still lands in the UI queue; only observation of nested
+// marshalling is skipped.
 //
-// Pourquoi pas un simple `if (!queue.TryEnqueue(...)) _log.Warning(...)`
-// inline à chaque site ? Centraliser réduit la duplication (8 sites
-// rejet + 5 sites observed) et garantit que le pattern de garde anti-
-// récursion est partout, sans risque d'oubli.
+// Why not a simple `if (!queue.TryEnqueue(...)) _log.Warning(...)` inline at
+// each site? Centralizing reduces duplication (8 rejection sites + 5 observed
+// sites) and guarantees the anti-recursion guard pattern is everywhere, with no
+// risk of forgetting it.
 
 public static class DispatcherQueueExtensions
 {
@@ -70,15 +66,15 @@ public static class DispatcherQueueExtensions
     private static bool _emittingMarshal;
 
     /// <summary>
-    /// Enqueue le callback sur la dispatcher queue. Si l'enqueue échoue
-    /// (queue fermée), émet un Warning sur DeckleThreadingSource avec la
-    /// source caller et la description fournie, puis retourne false.
+    /// Enqueues the callback on the dispatcher queue. If enqueue fails (closed
+    /// queue), emits a Warning on DeckleThreadingSource with the caller source
+    /// and supplied description, then returns false.
     /// </summary>
-    /// <param name="queue">La dispatcher queue cible.</param>
-    /// <param name="callback">Le delegate à exécuter sur le UI thread.</param>
-    /// <param name="source">Identifiant libre de l'émetteur (ex. "HUD", "LOGWIN"). Passé en champ payload de l'event.</param>
-    /// <param name="what">Description courte de l'event perdu (ex. "log entry", "recording state").</param>
-    /// <param name="priority">Priority d'ordonnancement de la dispatcher queue. Défaut Normal. Passer Low pour différer le callback après le batch de layout courant (pattern de coordination utilisé par les Settings pages pour clearer `_initializing` après hydratation des contrôles).</param>
+    /// <param name="queue">Target dispatcher queue.</param>
+    /// <param name="callback">Delegate to execute on the UI thread.</param>
+    /// <param name="source">Free-form emitter identifier (e.g. "HUD", "LOGWIN"). Passed as an event payload field.</param>
+    /// <param name="what">Short description of the lost event (e.g. "log entry", "recording state").</param>
+    /// <param name="priority">Dispatcher queue scheduling priority. Default Normal. Pass Low to defer the callback after the current layout batch (coordination pattern used by Settings pages to clear `_initializing` after control hydration).</param>
     public static bool TryEnqueueOrLog(
         this DispatcherQueue queue,
         DispatcherQueueHandler callback,
@@ -100,22 +96,21 @@ public static class DispatcherQueueExtensions
     }
 
     /// <summary>
-    /// Enqueue le callback sur la dispatcher queue en l'instrumentant
-    /// pour le sub-provider transverse Threading. Émet `MarshalQueued`
-    /// avant l'enqueue, mesure `wait_ms` (latence) et `run_ms` (exécution)
-    /// autour du callback et émet `MarshalCompleted` en fin. Si l'enqueue
-    /// échoue, émet `DispatcherEnqueueRejected` exactement comme
-    /// `TryEnqueueOrLog`. Gate strict `IsEnabled(Verbose, Threading)` :
-    /// quand aucun listener n'écoute, retombe sur `TryEnqueueOrLog`
-    /// (zéro alloc supplémentaire pour l'instrumentation).
+    /// Enqueues the callback on the dispatcher queue while instrumenting it for
+    /// the cross-cutting Threading sub-provider. Emits `MarshalQueued` before
+    /// enqueue, measures `wait_ms` (latency) and `run_ms` (execution) around
+    /// the callback, and emits `MarshalCompleted` at the end. If enqueue fails,
+    /// emits `DispatcherEnqueueRejected` exactly like `TryEnqueueOrLog`. Strict
+    /// `IsEnabled(Verbose, Threading)` gate: when no listener is attached,
+    /// falls back to `TryEnqueueOrLog` (zero extra allocation for instrumentation).
     /// </summary>
-    /// <param name="queue">La dispatcher queue cible.</param>
-    /// <param name="operation">Nom court de l'opération marshalée (vocabulaire fermé documenté sur DeckleThreadingSource).</param>
-    /// <param name="caller">Nom court du site logique (ex. "log-window", "hud-window", "overlay-manager").</param>
-    /// <param name="callback">Le delegate à exécuter sur le UI thread.</param>
-    /// <param name="rejectSource">Identifiant libre passé à DispatcherEnqueueRejected si l'enqueue échoue (ex. "HUD", "LOGWIN").</param>
-    /// <param name="rejectWhat">Description courte de l'event perdu (ex. "log entry", "overlay enqueue").</param>
-    /// <param name="priority">Priority d'ordonnancement de la dispatcher queue, propagée au TryEnqueue sous-jacent. Défaut Normal. Passer Low pour différer le callback après le batch de layout courant — pattern de coordination utilisé par les Settings pages pour clearer `_initializing` après hydratation des contrôles.</param>
+    /// <param name="queue">Target dispatcher queue.</param>
+    /// <param name="operation">Short name of the marshalled operation (closed vocabulary documented on DeckleThreadingSource).</param>
+    /// <param name="caller">Short logical-site name (e.g. "log-window", "hud-window", "overlay-manager").</param>
+    /// <param name="callback">Delegate to execute on the UI thread.</param>
+    /// <param name="rejectSource">Free-form identifier passed to DispatcherEnqueueRejected if enqueue fails (e.g. "HUD", "LOGWIN").</param>
+    /// <param name="rejectWhat">Short description of the lost event (e.g. "log entry", "overlay enqueue").</param>
+    /// <param name="priority">Dispatcher queue scheduling priority, propagated to the underlying TryEnqueue. Default Normal. Pass Low to defer the callback after the current layout batch: coordination pattern used by Settings pages to clear `_initializing` after control hydration.</param>
     public static bool TryEnqueueObserved(
         this DispatcherQueue queue,
         string operation,
@@ -128,24 +123,23 @@ public static class DispatcherQueueExtensions
         bool verboseEnabled = DeckleThreadingSource.Log.IsEnabled(
             EventLevel.Verbose, (EventKeywords)Keywords.Threading);
 
-        // Path froid — pas d'instrumentation Queued/Completed, juste
-        // l'enqueue brut + la voie de rejet historique. La gate
-        // Warning sur DispatcherEnqueueRejected reste ouverte
-        // indépendamment du Verbose. Path emprunté aussi en réentrance
-        // (cf. note `_emittingMarshal` en tête de fichier) : on enqueue
-        // sans émission pour ne pas re-déclencher la chaîne synchrone
-        // listener → Write → TryEnqueueObserved.
+        // Cold path: no Queued/Completed instrumentation, just raw enqueue +
+        // the historical rejection path. The Warning gate on
+        // DispatcherEnqueueRejected remains open independently of Verbose. This
+        // path is also used during reentrancy (see `_emittingMarshal` note at
+        // top of file): enqueue without emission to avoid retriggering the
+        // synchronous listener → Write → TryEnqueueObserved chain.
         if (!verboseEnabled || _emittingMarshal)
         {
             return queue.TryEnqueueOrLog(callback, rejectSource, rejectWhat, priority);
         }
 
-        // Path chaud — instrumentation complète. Stopwatch capturé en
-        // closure pour mesurer wait_ms (queue → début callback) et
-        // run_ms (durée callback). Gardé par `_emittingMarshal` thread-
-        // static : toute émission MarshalQueued/Completed qui ré-entre
-        // synchronement dans ce wrapper sur le même thread voit la garde
-        // posée et bascule sur le path froid au lieu de ré-émettre.
+        // Hot path: full instrumentation. Stopwatch captured in the closure to
+        // measure wait_ms (queue → callback start) and run_ms (callback
+        // duration). Guarded by thread-static `_emittingMarshal`: any
+        // MarshalQueued/Completed emission that synchronously re-enters this
+        // wrapper on the same thread sees the guard and switches to the cold
+        // path instead of re-emitting.
         _emittingMarshal = true;
         try
         {

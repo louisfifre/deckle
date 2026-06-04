@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// Couverture observability du provider Deckle.Hud — restreinte ici à
+// Observability coverage of the Deckle.Hud provider: restricted here to
 // ProximityRollup parce que c'est l'event qui vient de basculer de
-// signature (period_ms → duration_ms) et de sémantique (périodique 1 s
+// signature (period_ms → duration_ms) and semantics (1 s periodic
 // → per-session). Les autres axes (StateChanged, FadeInStarted, etc.)
-// ne sont pas couverts dans cette passe ; ils s'ajouteront au fil des
-// chantiers qui les touchent.
+// are not covered in this pass; they will be added as the work touching them
+// lands.
 [Trait("Category", "observability")]
 public class DeckleHudSourceTests
 {

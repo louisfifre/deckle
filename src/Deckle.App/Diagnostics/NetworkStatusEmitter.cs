@@ -4,30 +4,29 @@ using Windows.Networking.Connectivity;
 
 namespace Deckle.App.Diagnostics;
 
-// Site d'émission unique pour `DeckleNetworkSource`. Câblé au boot
-// dans `App.OnLaunched` via `Start()`. L'abonnement à
-// `NetworkInformation.NetworkStatusChanged` est statique côté WinRT
-// (event broadcast process-wide), donc dupliquer l'abonnement
-// dédoublerait les events — `Start()` est idempotent : un appel
-// supplémentaire est ignoré.
+// Single emission site for `DeckleNetworkSource`. Wired at boot in
+// `App.OnLaunched` via `Start()`. The subscription to
+// `NetworkInformation.NetworkStatusChanged` is static on the WinRT side
+// (process-wide broadcast event), so duplicating the subscription would
+// duplicate events; `Start()` is idempotent and ignores extra calls.
 //
-// L'émission initiale au boot capture l'état au moment du lancement —
-// sans elle, le premier event ne tomberait qu'à la prochaine transition
-// (qui peut ne jamais arriver si la machine reste connectée). Le
-// listener boucle alors sur l'état présent en `IsEnabled` puis push.
+// The initial boot emission captures state at launch time; without it, the
+// first event would only arrive on the next transition (which may never happen
+// if the machine stays connected). The listener then loops over the current
+// state in `IsEnabled` and pushes it.
 internal static class NetworkStatusEmitter
 {
     private static int _started;
 
     public static void Start()
     {
-        // Interlocked CAS plutôt qu'un bool : `Start()` peut être appelé
-        // depuis n'importe quel thread, on veut garantir un seul
-        // abonnement sans paying un lock dédié.
+        // Interlocked CAS rather than a bool: `Start()` can be called from any
+        // thread, and we want to guarantee a single subscription without
+        // paying for a dedicated lock.
         if (System.Threading.Interlocked.Exchange(ref _started, 1) != 0) return;
 
         NetworkInformation.NetworkStatusChanged += OnNetworkStatusChanged;
-        // Émission initiale — capter l'état au boot.
+        // Initial emission: capture state at boot.
         EmitCurrent();
     }
 
@@ -35,11 +34,10 @@ internal static class NetworkStatusEmitter
 
     private static void EmitCurrent()
     {
-        // Gate côté provider évite déjà l'allocation du payload quand
-        // aucun listener n'écoute, mais la collecte WinRT (GetInternet-
-        // ConnectionProfile + GetHostNames) coûte des marshalling
-        // COM. Court-circuiter ici quand personne n'écoute économise
-        // ces aller-retours.
+        // The provider-side gate already avoids payload allocation when no
+        // listener is attached, but WinRT collection (GetInternet-
+        // ConnectionProfile + GetHostNames) costs COM marshalling.
+        // Short-circuiting here when nobody listens saves those round trips.
         if (!DeckleNetworkSource.Log.IsEnabled(
                 System.Diagnostics.Tracing.EventLevel.Verbose,
                 (System.Diagnostics.Tracing.EventKeywords)Keywords.Network))
@@ -49,7 +47,7 @@ internal static class NetworkStatusEmitter
 
         ConnectionProfile? profile = null;
         try { profile = NetworkInformation.GetInternetConnectionProfile(); }
-        catch { /* No internet adapter — profile reste null, traité ci-dessous. */ }
+        catch { /* No internet adapter; profile stays null and is handled below. */ }
 
         bool connected = false;
         try
@@ -57,7 +55,7 @@ internal static class NetworkStatusEmitter
             connected = profile is not null
                 && profile.GetNetworkConnectivityLevel() >= NetworkConnectivityLevel.InternetAccess;
         }
-        catch { /* WinRT peut throw si le profile est arraché entre Get et GetLevel. */ }
+        catch { /* WinRT can throw if the profile is removed between Get and GetLevel. */ }
 
         string profileName = profile?.ProfileName ?? "(none)";
 
@@ -73,7 +71,7 @@ internal static class NetworkStatusEmitter
                 }
             }
         }
-        catch { /* Best-effort — un échec d'énumération laisse les compteurs à 0. */ }
+        catch { /* Best-effort; an enumeration failure leaves counters at 0. */ }
 
         DeckleNetworkSource.Log.NetworkStatusChanged(connected, profileName, ipv4, ipv6);
     }

@@ -1,28 +1,27 @@
 namespace Deckle.Llm.Rewrite;
 
-// ─── Templates de prompt par famille de modèle ────────────────────────────────
+// ─── Prompt templates by model family ────────────────────────────────────────
 //
-// Ollama accepte un mode "raw" dans /api/generate : le prompt est envoyé tel
-// quel au tokenizer, sans substitution de TEMPLATE Modelfile. En contrepartie,
-// c'est à l'appelant de produire un prompt au format attendu par la famille.
+// Ollama accepts a "raw" mode in /api/generate: the prompt is sent as-is to
+// the tokenizer, without Modelfile TEMPLATE substitution. In return, the caller
+// must produce a prompt in the format expected by the family.
 //
-// Cette classe détecte la famille à partir du nom du modèle puis produit :
-//   - le prompt formaté (avec system + user fusionnés selon la convention de
-//     la famille),
-//   - les tokens de stop à envoyer en options (fin-de-tour, etc.),
-//   - un identifiant de famille pour les logs.
+// This class detects the family from the model name, then produces:
+//   - the formatted prompt (with system + user merged according to family convention),
+//   - stop tokens to send as options (end-of-turn, etc.),
+//   - a family identifier for logs.
 //
-// Les formats sont ceux documentés par chaque éditeur. Le BOS (<s>, <|begin_of_text|>)
-// est ajouté automatiquement par le tokenizer côté serveur — on ne le préfixe pas.
+// Formats are those documented by each publisher. BOS (<s>, <|begin_of_text|>)
+// is added automatically by the server-side tokenizer; do not prefix it.
 //
-// Familles supportées (matching par substring case-insensitive sur le nom) :
+// Supported families (case-insensitive substring match on the name):
 //   - mistral / ministral / mixtral       → [INST] ... [/INST]
 //   - llama3, llama-3, meta-llama-3       → header_id blocks + <|eot_id|>
 //   - qwen (qwen2, qwen2.5, qwen3)        → ChatML <|im_start|> / <|im_end|>
 //   - gemma (gemma2, gemma3)              → <start_of_turn>user / <end_of_turn>
 //   - phi3 / phi-3 / phi4                 → <|system|> <|user|> <|assistant|>
-//   - fallback (famille inconnue)         → ChatML (couvre beaucoup de modèles
-//     récents y compris yi, deepseek, nous-*, openchat)
+//   - fallback (unknown family)           → ChatML (covers many recent models,
+//     including yi, deepseek, nous-*, openchat)
 
 public static class PromptTemplates
 {
@@ -49,8 +48,8 @@ public static class PromptTemplates
     }
 
     /// <summary>
-    /// Nettoie la sortie du modèle des tokens de stop qui traînent parfois en
-    /// fin de chaîne (certains runtimes les incluent dans le texte renvoyé).
+    /// Cleans model output from stop tokens that sometimes trail at the end of
+    /// the string (some runtimes include them in returned text).
     /// </summary>
     public static string StripStops(string text, string family)
     {
@@ -76,9 +75,9 @@ public static class PromptTemplates
         return false;
     }
 
-    // ── Formats par famille ────────────────────────────────────────────────
+    // ── Formats by family ─────────────────────────────────────────────────
 
-    // Mistral / Ministral / Mixtral : system fusionné dans le premier [INST].
+    // Mistral / Ministral / Mixtral: system merged into the first [INST].
     // Format officiel : "[INST] {system}\n\n{user} [/INST]"
     static string MistralInst(string system, string user)
     {
@@ -86,8 +85,8 @@ public static class PromptTemplates
         return $"[INST] {merged} [/INST]";
     }
 
-    // Llama 3 / 3.1 / 3.2 : header_id blocks, séparés par <|eot_id|>, se termine
-    // par un bloc assistant vide pour amorcer la génération.
+    // Llama 3 / 3.1 / 3.2: header_id blocks separated by <|eot_id|>, ending
+    // with an empty assistant block to prime generation.
     static string Llama3(string system, string user)
     {
         var sb = new System.Text.StringBuilder();
@@ -104,8 +103,8 @@ public static class PromptTemplates
         return sb.ToString();
     }
 
-    // ChatML : Qwen, Yi, DeepSeek, Nous-*, OpenChat, la plupart des modèles
-    // récents hors Mistral/Llama/Gemma.
+    // ChatML: Qwen, Yi, DeepSeek, Nous-*, OpenChat, most recent models outside
+    // Mistral/Llama/Gemma.
     static string ChatMl(string system, string user)
     {
         var sb = new System.Text.StringBuilder();
@@ -122,15 +121,15 @@ public static class PromptTemplates
         return sb.ToString();
     }
 
-    // Gemma 2 / 3 : pas de rôle system natif — le system est fusionné en tête
-    // du tour user. Marqueurs <start_of_turn> / <end_of_turn>.
+    // Gemma 2 / 3: no native system role; system is merged at the beginning of
+    // the user turn. <start_of_turn> / <end_of_turn> markers.
     static string Gemma(string system, string user)
     {
         string merged = string.IsNullOrWhiteSpace(system) ? user : $"{system}\n\n{user}";
         return $"<start_of_turn>user\n{merged}<end_of_turn>\n<start_of_turn>model\n";
     }
 
-    // Phi-3 / Phi-4 : blocks <|system|> <|user|> <|assistant|> terminés par <|end|>.
+    // Phi-3 / Phi-4: <|system|> <|user|> <|assistant|> blocks terminated by <|end|>.
     static string Phi(string system, string user)
     {
         var sb = new System.Text.StringBuilder();

@@ -5,21 +5,21 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// EnergySegmenter est internal sealed dans Deckle.Transcription ; l'accès depuis
-// le projet de tests passe par l'InternalsVisibleTo déclaré dans
-// Deckle.Transcription.csproj. Tests purs, déterministes : on lui pousse des
-// suites de frames synthétiques (50 ms chacune, voisée ou silencieuse) et on
-// asserte les utterances émises — sans micro ni threading.
+// EnergySegmenter is internal sealed in Deckle.Transcription; access from the
+// test project goes through InternalsVisibleTo declared in
+// Deckle.Transcription.csproj. Pure, deterministic tests: feed it synthetic
+// frame sequences (50 ms each, voiced or silent) and assert emitted utterances,
+// without microphone or threading.
 //
-// Repères avec les paramètres par défaut (frame = 50 ms) :
-//   hangover 400 ms = 8 frames · marge 150 ms = 3 frames · min 250 ms = 5 frames
-//   (extent voisé) · max 25 000 ms = 500 frames.
+// Reference points with default settings (frame = 50 ms):
+//   hangover 400 ms = 8 frames · margin 150 ms = 3 frames · min 250 ms = 5 frames
+//   (voiced extent) · max 25,000 ms = 500 frames.
 [Trait("Category", "unit")]
 public class EnergySegmenterTests
 {
     private const int FrameSamples = 800; // 50 ms @ 16 kHz
 
-    // RMS clairement au-dessus / en-dessous du seuil -45 dBFS (≈ 0.0056 linéaire).
+    // RMS clearly above/below the -45 dBFS threshold (≈ 0.0056 linear).
     private static CaptureFrame Frame(bool voiced)
         => new(new float[FrameSamples], voiced ? 0.1f : 0.0f);
 
@@ -48,7 +48,7 @@ public class EnergySegmenterTests
         var got = new List<Utterance>();
         var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
 
-        // 3 frames voisées (150 ms) < min 250 ms → jeté quand le hangover expire.
+        // 3 voiced frames (150 ms) < min 250 ms → dropped when the hangover expires.
         PushN(seg, voiced: true, 3);
         PushN(seg, voiced: false, 8);
 
@@ -61,12 +61,12 @@ public class EnergySegmenterTests
         var got = new List<Utterance>();
         var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
 
-        // 10 voisées (extent ≥ min) puis 8 silences → fin sur silence.
+        // 10 voiced frames (extent ≥ min), then 8 silences → end on silence.
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 8);
 
         var u = Assert.Single(got);
-        // Conservé = 10 voisées + 3 de marge ; les 5 silences au-delà sont jetés.
+        // Kept = 10 voiced frames + 3 margin; the 5 silences beyond are dropped.
         Assert.Equal(13, FrameCount(u));
         Assert.Equal(0, u.Index);
         Assert.Equal(0.0, u.StartSec, 3);
@@ -80,9 +80,9 @@ public class EnergySegmenterTests
         var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
 
         PushN(seg, voiced: true, 10);
-        PushN(seg, voiced: false, 5);  // pause < hangover (8) → ne coupe pas
-        PushN(seg, voiced: true, 10);  // reprise
-        PushN(seg, voiced: false, 8);  // vraie fin
+        PushN(seg, voiced: false, 5);  // pause < hangover (8) → does not split
+        PushN(seg, voiced: true, 10);  // resume
+        PushN(seg, voiced: false, 8);  // real end
 
         Assert.Single(got);
     }
@@ -94,9 +94,9 @@ public class EnergySegmenterTests
         var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
 
         PushN(seg, voiced: true, 10);
-        PushN(seg, voiced: false, 8);   // → U0 (frames globales 0..17)
-        PushN(seg, voiced: false, 10);  // silence inter-utterance, jeté (18..27)
-        PushN(seg, voiced: true, 10);   // U1 démarre à la frame globale 28
+        PushN(seg, voiced: false, 8);   // → U0 (global frames 0..17)
+        PushN(seg, voiced: false, 10);  // inter-utterance silence, dropped (18..27)
+        PushN(seg, voiced: true, 10);   // U1 starts at global frame 28
         PushN(seg, voiced: false, 8);   // → U1
 
         Assert.Equal(2, got.Count);
@@ -109,8 +109,8 @@ public class EnergySegmenterTests
     public void MaxDurationForcesFlushAndKeepsCapturing()
     {
         var got = new List<Utterance>();
-        // Max ramené à 500 ms (10 frames) ; min à 50 ms (1 frame) pour ne pas
-        // jeter la queue.
+        // Max reduced to 500 ms (10 frames); min to 50 ms (1 frame) to avoid
+        // dropping the tail.
         var settings = new EnergySegmenterSettings { MaxUtteranceMs = 500, MinUtteranceMs = 50 };
         var seg = new EnergySegmenter(settings, got.Add);
 
@@ -118,8 +118,8 @@ public class EnergySegmenterTests
         seg.Flush();
 
         Assert.Equal(3, got.Count);
-        Assert.Equal(10, FrameCount(got[0])); // flush forcé au max
-        Assert.Equal(10, FrameCount(got[1])); // second flush forcé
+        Assert.Equal(10, FrameCount(got[0])); // forced flush at max
+        Assert.Equal(10, FrameCount(got[1])); // second forced flush
         Assert.Equal(5, FrameCount(got[2]));  // reste, sorti au Flush
     }
 
@@ -133,7 +133,7 @@ public class EnergySegmenterTests
         seg.Flush();
 
         var u = Assert.Single(got);
-        Assert.Equal(10, FrameCount(u)); // tout le buffer conservé (pas de traîne)
+        Assert.Equal(10, FrameCount(u)); // whole buffer kept (no tail)
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class EnergySegmenterTests
         var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
 
         PushN(seg, voiced: true, 10);
-        PushN(seg, voiced: false, 8); // → une utterance émise, retour en Silence
+        PushN(seg, voiced: false, 8); // → one utterance emitted, back to Silence
         seg.Flush();                  // rien d'ouvert → no-op
 
         Assert.Single(got);

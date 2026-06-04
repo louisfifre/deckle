@@ -3,10 +3,10 @@ using System.Text;
 
 namespace Deckle.Core.Interop;
 
-// ─── Helpers Win32 pour le debug ──────────────────────────────────────────────
+// ─── Win32 Helpers For Debugging ─────────────────────────────────────────────
 //
-// DescribeHwnd : produit une chaîne lisible "Exe / Titre / focus=Class" pour
-// caractériser une fenêtre. Sert à diagnostiquer les pertes de focus / paste.
+// DescribeHwnd: produces a readable "Exe / Title / focus=Class" string to
+// characterize a window. Used to diagnose focus / paste losses.
 
 public static class Win32Util
 {
@@ -22,7 +22,7 @@ public static class Win32Util
             string exe = "?";
             try { exe = Process.GetProcessById((int)pid).ProcessName; } catch { }
 
-            // Titre fenêtre
+            // Window title
             int len = NativeMethods.GetWindowTextLength(hwnd);
             string title = "";
             if (len > 0)
@@ -32,7 +32,7 @@ public static class Win32Util
                 title = sb.ToString();
             }
 
-            // Contrôle focusé dans le thread cible
+            // Focused control in the target thread
             string focus = "?";
             var gti = new NativeMethods.GUITHREADINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
             if (NativeMethods.GetGUIThreadInfo(tid, ref gti))

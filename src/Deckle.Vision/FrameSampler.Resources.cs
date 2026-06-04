@@ -89,20 +89,18 @@ public sealed partial class FrameSampler
         {
             _disposed = true;
 
-            // Sub-provider transverse Resource — release des trois
-            // textures persistantes. Le contexte et le device ne sont
-            // pas tracés ici parce qu'ils sont borrowed (AddRef'd
-            // depuis l'extérieur via ScreenCaptureInterop.GetD3D11Device,
-            // owned ailleurs) — leur cycle de vie n'est pas spécifique
-            // au sampler.
+            // Cross-cutting Resource sub-provider: release the three
+            // persistent textures. The context and device are not traced here
+            // because they are borrowed (AddRef'd from outside through
+            // ScreenCaptureInterop.GetD3D11Device, owned elsewhere); their
+            // lifecycle is not specific to the sampler.
             if (_intermediateSrv != 0)
             {
                 long h = (long)_intermediateSrv;
                 Marshal.Release(_intermediateSrv);
                 _intermediateSrv = 0;
-                // SRV : pas de timestamp tracké séparément, ageMs=0
-                // (acquire et release effectivement simultanés à
-                // l'échelle de la trace dispose).
+                // SRV: no separately tracked timestamp, ageMs=0 (acquire and
+                // release effectively simultaneous at dispose trace scale).
                 DeckleResourceSource.Log.ResourceReleased(
                     "dxgi-resource", h, 0, "frame-sampler");
             }

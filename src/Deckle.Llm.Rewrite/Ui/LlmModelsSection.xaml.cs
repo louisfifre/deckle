@@ -9,31 +9,30 @@ using Deckle.Catalog;
 
 namespace Deckle.Llm.Rewrite;
 
-// ─── Section Models de LlmPage ─────────────────────────────────────────────
+// ─── LlmPage Models section ────────────────────────────────────────────────
 //
-// Liste les modèles locaux d'Ollama (via LlmOllamaContext) + bouton Refresh.
-// Remove par modèle avec ContentDialog de confirmation. Le host écoute
-// RefreshRequested pour relancer RefreshOllamaStateAsync côté page après
-// refresh manuel.
+// Lists local Ollama models (via LlmOllamaContext) + Refresh button. Per-model
+// Remove with confirmation ContentDialog. The host listens to RefreshRequested
+// to relaunch page-side RefreshOllamaStateAsync after manual refresh.
 //
-// Erreurs locales affichées dans l'ErrorBar de la section — la StatusBar
-// globale de LlmPage ne sert qu'à l'état de disponibilité d'Ollama.
+// Local errors are displayed in the section ErrorBar; the global LlmPage
+// StatusBar is only for Ollama availability state.
 //
-// L'import GGUF a été retiré : Ollama gère nativement `ollama create` et
-// `ollama pull` depuis le shell, donc un wrapper UI in-app n'apporte rien
-// au-delà de la liste + refresh + delete.
+// GGUF import was removed: Ollama natively handles `ollama create` and
+// `ollama pull` from the shell, so an in-app UI wrapper adds nothing beyond
+// list + refresh + delete.
 
 public sealed partial class LlmModelsSection : UserControl
 {
     private LlmOllamaContext? _context;
 
-    // CTS de cycle de vie de la section. Annule les opérations Ollama en
-    // vol (DeleteModelAsync) quand l'utilisateur ferme SettingsWindow ou
-    // navigue ailleurs pendant l'attente. Sans ça, la requête HTTP continue
-    // jusqu'au timeout 30s, et les UI updates post-await tentent de toucher
-    // une section unloaded — pas crash garanti mais ressources gaspillées.
-    // Recréé à chaque Loaded car la section peut être re-chargée
-    // (NavigationCacheMode.Required sur LlmPage).
+    // Section lifecycle CTS. Cancels in-flight Ollama operations
+    // (DeleteModelAsync) when the user closes SettingsWindow or navigates away
+    // during the wait. Without this, the HTTP request continues until the 30s
+    // timeout, and post-await UI updates try to touch an unloaded section: not
+    // a guaranteed crash, but wasted resources. Recreated on every Loaded
+    // because the section can be reloaded (NavigationCacheMode.Required on
+    // LlmPage).
     private CancellationTokenSource _sectionCts = new();
 
     public event EventHandler? RefreshRequested;
@@ -44,7 +43,7 @@ public sealed partial class LlmModelsSection : UserControl
 
         Loaded += (_, _) =>
         {
-            // Re-arme un CTS frais à chaque retour sur la page.
+            // Rearm a fresh CTS on each return to the page.
             if (_sectionCts.IsCancellationRequested)
             {
                 _sectionCts.Dispose();
@@ -54,11 +53,11 @@ public sealed partial class LlmModelsSection : UserControl
 
         Unloaded += (_, _) =>
         {
-            // Cancel — laisse les operations en vol observer et abandonner.
-            // Pas de Dispose ici : un await en cours pourrait encore lire
-            // le token. Le Loaded suivant rotate proprement.
+            // Cancel: lets in-flight operations observe and abandon. No Dispose
+            // here: an active await could still read the token. The next Loaded
+            // rotates cleanly.
             try { _sectionCts.Cancel(); }
-            catch (ObjectDisposedException) { /* déjà disposé, ignore */ }
+            catch (ObjectDisposedException) { /* already disposed, ignore */ }
         };
     }
 
@@ -127,26 +126,26 @@ public sealed partial class LlmModelsSection : UserControl
                     {
                         if (_context?.Service != null)
                         {
-                            // Lie le timeout 30s au CTS de section pour que
-                            // Unload (close de SettingsWindow, navigate away)
-                            // annule la suppression en vol au lieu d'attendre
-                            // 30s pour rien.
+                            // Bind the 30s timeout to the section CTS so Unload
+                            // (SettingsWindow close, navigate away) cancels
+                            // the in-flight deletion instead of waiting 30s for
+                            // nothing.
                             using var localCts = CancellationTokenSource.CreateLinkedTokenSource(_sectionCts.Token);
                             localCts.CancelAfter(TimeSpan.FromSeconds(30));
                             await _context.Service.DeleteModelAsync(modelName, localCts.Token);
                         }
-                        // Si la section a été unloaded pendant l'await, on
-                        // évite de déclencher RefreshRequested qui forcerait
-                        // un Reload côté page sur un visual tree détaché.
+                        // If the section was unloaded during the await, avoid
+                        // triggering RefreshRequested, which would force a
+                        // page-side Reload on a detached visual tree.
                         if (_sectionCts.IsCancellationRequested) return;
                         RefreshRequested?.Invoke(this, EventArgs.Empty);
                     }
                     catch (OperationCanceledException) when (_sectionCts.IsCancellationRequested)
                     {
-                        // Section unloaded pendant la suppression — silencieux,
-                        // l'utilisateur a fermé Settings, pas la peine de surfer.
-                        // Sub-provider transverse Cancellation — l'utilisateur
-                        // a fermé la surface, pas de Stopwatch dédié ici.
+                        // Section unloaded during deletion: silent; the user
+                        // closed Settings, no need to surface it. Cross-cutting
+                        // Cancellation sub-provider: the user closed the
+                        // surface, no dedicated Stopwatch here.
                         DeckleCancellationSource.Log.OperationCancelled(
                             "llm-models", "user", -1);
                     }

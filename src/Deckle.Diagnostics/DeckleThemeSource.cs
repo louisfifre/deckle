@@ -2,65 +2,61 @@ using System.Diagnostics.Tracing;
 
 namespace Deckle.Diagnostics;
 
-// Sub-provider transverse — transitions de thème (light / dark /
-// HighContrast / accent) sur les surfaces XAML de l'app. Sans cet event
-// transverse, un glitch de rendu corrélé à une bascule système (l'OS
-// change Personalization > Color, l'utilisateur clique sur Appearance
-// dans Settings, l'app force RequestedTheme au boot) ne laisse aucune
-// trace systématique — un brush qui ne se ré-applique pas, un foreground
-// resté en hardcoded color, une caption button stuck dans l'ancien
-// thème, tout se diagnostique en cherchant la transition dans le log.
-// La primitive est strictement non-métier (un wiring de plateforme XAML)
-// et consommée par toutes les fenêtres de l'app avec le même set de
-// paramètres — promotion en sub-provider transverse au sens du critère
-// à deux clauses de la fiche `reference--eventsource-convention--1.2.md`
-// §*Sub-providers transverses*.
+// Cross-cutting sub-provider: theme transitions (light / dark /
+// HighContrast / accent) on the app's XAML surfaces. Without this
+// cross-cutting event, a rendering glitch correlated with a system switch
+// (the OS changes Personalization > Color, the user clicks Appearance in
+// Settings, the app forces RequestedTheme at boot) leaves no systematic trace:
+// a brush that does not reapply, a foreground left as a hardcoded color, a
+// caption button stuck in the old theme, all are diagnosed by looking for the
+// transition in the log. The primitive is strictly non-business (XAML platform
+// wiring) and consumed by all app windows with the same parameter set:
+// promotion to cross-cutting sub-provider under the two-clause criterion in
+// `reference--eventsource-convention--1.2.md` §*Cross-cutting sub-providers*.
 //
-// Vocabulaire fermé `surface` (nom logique court, à étendre ici si une
-// nouvelle fenêtre s'ajoute au projet) :
-//   "hud"         — HudWindow (bas-centre, longue vie)
-//   "hud-overlay" — HudOverlayWindow (carte transient empilée)
+// Closed `surface` vocabulary (short logical name, to extend here if a new
+// window is added to the project):
+//   "hud"         — HudWindow (bottom-center, long-lived)
+//   "hud-overlay" — HudOverlayWindow (stacked transient card)
 //   "settings"    — SettingsWindow
 //   "log"         — LogWindow
 //   "setup"       — SetupWindow first-run wizard
-//   "tray"        — TrayIconManager (icône notification + menu Win32)
+//   "tray"        — TrayIconManager (notification icon + Win32 menu)
 //
-// Vocabulaire fermé `from` / `to` — représentations string de
-// `Microsoft.UI.Xaml.ElementTheme` :
-//   "Light"        — palette claire
-//   "Dark"         — palette sombre
-//   "Default"      — suivre le thème système (jamais observé directement
-//                    en sortie d'ActualThemeChanged qui résout toujours
-//                    en Light ou Dark, présent uniquement en `from` quand
-//                    l'app passe d'un "follow system" non encore matérialisé
-//                    à une valeur concrète)
-//   "HighContrast" — placeholder si une future bascule High Contrast est
-//                    observée distinctement (ElementTheme n'expose pas
-//                    HighContrast en V1, c'est porté par les theme resources
-//                    et `ApplicationHighContrastAdjustment`)
+// Closed `from` / `to` vocabulary: string representations of
+// `Microsoft.UI.Xaml.ElementTheme`:
+//   "Light"        — light palette
+//   "Dark"         — dark palette
+//   "Default"      — follow system theme (never observed directly from
+//                    ActualThemeChanged, which always resolves to Light or
+//                    Dark; only present in `from` when the app moves from a
+//                    not-yet-materialized "follow system" state to a concrete
+//                    value)
+//   "HighContrast" — placeholder if a future High Contrast switch is observed
+//                    distinctly (ElementTheme does not expose HighContrast in
+//                    V1; it is carried by theme resources and
+//                    `ApplicationHighContrastAdjustment`)
 //
-// Vocabulaire fermé `source` — déclencheur de la transition tel qu'on
-// peut le déduire côté code. Heuristique imparfaite par construction
-// (cf. note ci-dessous) :
-//   "system"   — l'OS a changé le thème système (Windows Settings >
-//                Personalization > Colors > Choose your mode). C'est le
-//                cas par défaut quand on ne sait pas distinguer.
-//   "user"     — l'utilisateur a changé le thème via la page Settings
-//                de Deckle (Appearance combo) qui force `RequestedTheme`
-//                sur chaque fenêtre via `App.ApplyTheme`.
-//   "app-init" — l'app pose le thème initial au boot (premier `ApplyTheme`
-//                après lecture des settings, avant la première render
-//                frame utile).
+// Closed `source` vocabulary: transition trigger as can be inferred from the
+// code side. Imperfect heuristic by design (see note below):
+//   "system"   — the OS changed the system theme (Windows Settings >
+//                Personalization > Colors > Choose your mode). This is the
+//                default case when we cannot distinguish.
+//   "user"     — the user changed the theme through Deckle's Settings page
+//                (Appearance combo), which forces `RequestedTheme` on each
+//                window through `App.ApplyTheme`.
+//   "app-init" — the app sets the initial theme at boot (first `ApplyTheme`
+//                after reading settings, before the first useful render
+//                frame).
 //
-// Heuristique pour distinguer `source` côté handler ActualThemeChanged :
-// on entretient un champ statique `_pendingSource` posé juste avant les
-// affectations explicites de `RequestedTheme` (côté App.ApplyTheme) et
-// consommé par le handler via `RequestSourceProbe.Consume()`. Quand le
-// handler tombe sans pending pose, c'est l'OS qui a bougé — fallback
-// "system". Cette heuristique peut se tromper si l'app pose RequestedTheme
-// et qu'un changement OS arrive dans la même tick de dispatcher (race
-// rare ; le pire effet est qu'un transition system serait étiquetée
-// "user"). La distinction reste utile à la lecture courante.
+// Heuristic to distinguish `source` in the ActualThemeChanged handler: keep a
+// static `_pendingSource` field set just before explicit `RequestedTheme`
+// assignments (on the App.ApplyTheme side) and consumed by the handler through
+// `RequestSourceProbe.Consume()`. When the handler runs without a pending
+// value, the OS moved: fallback "system". This heuristic can be wrong if the
+// app sets RequestedTheme and an OS change arrives in the same dispatcher tick
+// (rare race; worst case is a system transition labeled "user"). The
+// distinction remains useful in ordinary reading.
 [EventSource(Name = "Deckle.Diagnostics.Theme")]
 public sealed class DeckleThemeSource : DeckleEventSource
 {
@@ -71,13 +67,12 @@ public sealed class DeckleThemeSource : DeckleEventSource
     // ── EventIds ────────────────────────────────────────────────────────
     public const int EvtThemeChanged = 1;
 
-    // Émis par chaque handler `FrameworkElement.ActualThemeChanged` câblé
-    // sur la racine XAML d'une fenêtre Deckle, ou par tout site qui sait
-    // détecter un changement de thème côté surface non-XAML (tray icon).
-    // Verbose parce que les valeurs portent des identifiants (theme name,
-    // surface name) et que la grep-abilité passe par les paramètres typés
-    // plutôt que par le niveau, conformément au contrat doctrinal « tout
-    // event qui porte un ID est Verbose » du CLAUDE.md Deckle.Diagnostics.
+    // Emitted by each `FrameworkElement.ActualThemeChanged` handler wired on
+    // the XAML root of a Deckle window, or by any site that can detect a theme
+    // change on a non-XAML surface (tray icon). Verbose because values carry
+    // identifiers (theme name, surface name) and grep-ability goes through
+    // typed parameters rather than level, per the "any event carrying an ID is
+    // Verbose" doctrine contract in Deckle.Diagnostics CLAUDE.md.
     [Event(EvtThemeChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Theme,
@@ -89,37 +84,36 @@ public sealed class DeckleThemeSource : DeckleEventSource
     }
 }
 
-// Probe statique consommée par les handlers `ActualThemeChanged` pour
-// retrouver l'origine d'une bascule. Le code qui *déclenche* une bascule
-// programmatique (App.ApplyTheme) appelle `Push(source)` juste avant
-// d'écrire `RequestedTheme` sur ses fenêtres ; le handler appelle
-// `Consume()` qui retourne le pending et le reset à null. Quand le
-// handler tombe sans pending, le fallback `"system"` est appliqué côté
-// appelant — c'est la signature d'un changement initié par l'OS.
+// Static probe consumed by `ActualThemeChanged` handlers to recover the origin
+// of a switch. Code that *triggers* a programmatic switch (App.ApplyTheme)
+// calls `Push(source)` just before writing `RequestedTheme` on its windows; the
+// handler calls `Consume()`, which returns the pending value and resets it to
+// null. When the handler runs without a pending value, the `"system"` fallback
+// is applied by the caller: this is the signature of an OS-initiated change.
 //
-// Une variable statique partagée par tous les threads est admissible
-// ici parce que toutes les opérations vivent sur le UI thread (XAML
-// theme changes sont marshalés par le framework). Pas de lock requis.
+// A static variable shared by all threads is acceptable here because all
+// operations live on the UI thread (XAML theme changes are marshalled by the
+// framework). No lock required.
 //
-// Pas de pile : la doctrine accepte que `Push` qui précède immédiatement
-// l'écriture `RequestedTheme` soit consommée par le batch de
-// `ActualThemeChanged` qui suit. Un second Push avant le batch écrase
-// le précédent — c'est le bon comportement parce que le second pose est
-// celui dont l'utilisateur ou l'app est responsable au moment du fire.
+// No stack: doctrine accepts that the `Push` immediately preceding the
+// `RequestedTheme` write is consumed by the following `ActualThemeChanged`
+// batch. A second Push before the batch overwrites the previous one; this is
+// the right behavior because the second set is the one the user or app is
+// responsible for at fire time.
 public static class ThemeRequestSourceProbe
 {
     private static string? _pending;
 
-    // Marque la source de la prochaine transition observable. À appeler
-    // juste avant chaque écriture de `FrameworkElement.RequestedTheme`
-    // ou `AppWindow.TitleBar.PreferredTheme` qui pourrait déclencher un
+    // Marks the source of the next observable transition. Call just before
+    // each write to `FrameworkElement.RequestedTheme` or
+    // `AppWindow.TitleBar.PreferredTheme` that may trigger an
     // ActualThemeChanged.
     public static void Push(string source) => _pending = source;
 
-    // Lit la source pending et la reset. Le handler ActualThemeChanged
-    // appelle ceci en première ligne ; le retour `null` signale qu'aucun
-    // Push n'a précédé — l'appelant doit appliquer son fallback (typiquement
-    // "system" pour les surfaces XAML, "system" pour le tray icon).
+    // Reads the pending source and resets it. The ActualThemeChanged handler
+    // calls this on the first line; a `null` return means no Push preceded it,
+    // so the caller must apply its fallback (typically "system" for XAML
+    // surfaces, "system" for the tray icon).
     public static string? Consume()
     {
         var s = _pending;

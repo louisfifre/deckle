@@ -4,15 +4,15 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// Strate 1 de la mesure — correction signal. Le DSP est pur et déterministe,
-// donc on assert sur ce qu'il fait au signal lui-même (niveau atteint,
-// atténuation du high-pass, plafond du limiteur, non-mutation, déterminisme).
-// La strate 2 — gain WER réel — vit hors scope automatique (banc).
+// Measurement layer 1: signal correction. The DSP is pure and deterministic,
+// so assert on what it does to the signal itself (reached level, high-pass
+// attenuation, limiter ceiling, non-mutation, determinism). Layer 2, real WER
+// gain, lives outside automatic scope (bench).
 //
-// Tous les étages sont exercés via l'API publique TranscriptionPreprocessor
-// .Process : on isole un étage en désactivant les autres. Astuce : poser
-// MaxMakeupGainDb = 0 borne le makeup à [0,0] dB, ce qui le neutralise et
-// laisse mesurer un étage seul sans renormalisation parasite.
+// All stages are exercised through the public TranscriptionPreprocessor.Process
+// API: isolate one stage by disabling the others. Trick: setting
+// MaxMakeupGainDb = 0 bounds makeup to [0,0] dB, which neutralizes it and lets
+// one stage be measured alone without parasitic renormalization.
 [Trait("Category", "unit")]
 public class TranscriptionPreprocessorTests
 {

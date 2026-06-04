@@ -129,9 +129,9 @@ public sealed partial class ScreenCaptureService : IDisposable
     private long _frameCount;
     private long _startTimestamp;
 
-    // Acquire timestamp du _duplicationPtr courant, lu au moment du
-    // release pour calculer age_ms dans DeckleResourceSource. Réécrit
-    // à chaque (re)création de la duplication.
+    // Acquire timestamp of the current _duplicationPtr, read at release time
+    // to compute age_ms in DeckleResourceSource. Rewritten on each duplication
+    // (re)creation.
     private long _duplicationAcquiredTicks;
 
     /// <summary>True when a capture session is currently running.</summary>

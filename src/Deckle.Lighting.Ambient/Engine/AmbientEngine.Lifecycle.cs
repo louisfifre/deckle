@@ -244,11 +244,10 @@ public sealed partial class AmbientEngine
             // so they pass the LogWindow drop filter even with
             // LogAmbientCaptureActivity off. From here on, Verbose
             // AMBIENT / SCREEN / HUE inside the loop are candidates
-            // for filtering — l'App câble le drop filter sur le
-            // LogWindowEventListener au boot et le filter combine
-            // cette gate avec le toggle utilisateur pour décider.
-            // La fenêtre se referme au sommet de Stop() pour que les
-            // milestones de stop passent aussi.
+            // for filtering: the App wires the drop filter on
+            // LogWindowEventListener at boot and the filter combines this gate
+            // with the user toggle to decide. The window closes at the top of
+            // Stop() so stop milestones pass too.
             AmbientCaptureGate.SetActive(true);
 
             _pushLoopTask = Task.Run(() => PushLoopAsync(_cts.Token), _cts.Token);
@@ -548,7 +547,7 @@ public sealed partial class AmbientEngine
         // drop filter even with LogAmbientCaptureActivity off. The
         // push loop may still emit a final tick before cancellation
         // propagates ; those late Verbose lines also pass since the
-        // gate est déjà off.
+        // gate is already off.
         AmbientCaptureGate.SetActive(false);
 
         long endTimestamp = Stopwatch.GetTimestamp();

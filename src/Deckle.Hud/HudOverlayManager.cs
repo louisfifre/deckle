@@ -46,20 +46,20 @@ public sealed class HudOverlayManager : IDisposable
         mainHud.MainHudVisibilityChanged += OnMainHudVisibilityChanged;
     }
 
-    // Sous-vague 6b : signature en primitives plutôt qu'en `UserFeedback`
-    // record. Severity convention 0=Info, 1=Warning, 2+=Error — alignée
-    // sur l'event EventSource `UserFeedbackEmitted(severity, ...)`.
+    // Sub-wave 6b: signature in primitives rather than a `UserFeedback`
+    // record. Severity convention 0=Info, 1=Warning, 2+=Error, aligned with
+    // the `UserFeedbackEmitted(severity, ...)` EventSource event.
     public void Enqueue(int severity, string title, string body)
     {
         if (_disposed) return;
 
         if (!_dispatcher.HasThreadAccess)
         {
-            // Threading — overlay enqueue depuis un thread non-UI
-            // (HudFeedbackEventListener côté Diagnostics, ou tout
-            // émetteur UserFeedbackEmitted depuis un worker engine).
-            // wait_ms anormal ici signale un UI thread saturé qui
-            // retarde l'affichage des overlays.
+            // Threading: overlay enqueue from a non-UI thread
+            // (HudFeedbackEventListener on the Diagnostics side, or any
+            // UserFeedbackEmitted emitter from a worker engine). An abnormal
+            // wait_ms here indicates a saturated UI thread delaying overlay
+            // display.
             _dispatcher.TryEnqueueObserved(
                 "feedback-display", "overlay-manager",
                 () => Enqueue(severity, title, body),
@@ -83,13 +83,12 @@ public sealed class HudOverlayManager : IDisposable
         window.ApplyPayload(severity, title, body);
         window.ShowAt(xPx, yPx);
 
-        // Windowing — spécialisation overlay émise après le ShowAt (qui
-        // émet déjà le tronc commun avec window="hud-overlay"). Le slot
-        // n'est connu qu'ici dans le manager, pas dans la window elle-
-        // même. Émis aussi à chaque réassignation de slot dans
-        // Recompact ci-dessous quand un overlay change de position
-        // suite à l'expiration d'un voisin ou la (dés)apparition du
-        // HUD principal.
+        // Windowing: overlay specialization emitted after ShowAt (which
+        // already emits the common trunk with window="hud-overlay"). The slot
+        // is only known here in the manager, not in the window itself. Also
+        // emitted on each slot reassignment in Recompact below when an overlay
+        // changes position after a neighbor expires or the main HUD
+        // appears/disappears.
         WindowingProbe.EmitOverlaySlotAssigned(hwnd, newSlot);
 
         var slide = new WindowSlideAnimator(hwnd, _dispatcher, xPx, yPx);
@@ -120,10 +119,10 @@ public sealed class HudOverlayManager : IDisposable
 
         if (!_dispatcher.HasThreadAccess)
         {
-            // Threading — propagation de l'event visibilité HUD principal
-            // vers la stack overlay. Cross-thread quand HudWindow émet
-            // depuis un chemin non-UI (rare en pratique mais le path est
-            // câblé). Instrumentation identique aux autres sites overlay.
+            // Threading: propagation of the main HUD visibility event to the
+            // overlay stack. Cross-thread when HudWindow emits from a non-UI
+            // path (rare in practice, but the path is wired). Instrumentation
+            // identical to other overlay sites.
             _dispatcher.TryEnqueueObserved(
                 "ui-update", "overlay-manager",
                 () => OnMainHudVisibilityChanged(sender, visible),
@@ -179,13 +178,12 @@ public sealed class HudOverlayManager : IDisposable
                 entry.SlotIndex = newSlot;
                 entry.Slide.SlideTo(xPx, yPx);
 
-                // Windowing — réassignation de slot. Émis seulement
-                // quand le slot change (pas sur un simple repositionnement
-                // intra-slot dû à un changement de DPI ou de work area).
-                // Le rect post-slide est asynchrone côté animator ; on
-                // capture le rect courant qui reflète la position pré-
-                // animation — la trace renseigne « slot N assigné à
-                // cette fenêtre », pas « animation terminée ».
+                // Windowing: slot reassignment. Emitted only when the slot
+                // changes (not on simple in-slot repositioning caused by a DPI
+                // or work area change). The post-slide rect is asynchronous on
+                // the animator side; we capture the current rect, which
+                // reflects the pre-animation position. The trace says "slot N
+                // assigned to this window", not "animation completed".
                 if (slotChanged)
                 {
                     WindowingProbe.EmitOverlaySlotAssigned(entry.Window.Hwnd, newSlot);

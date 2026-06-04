@@ -82,13 +82,12 @@ public sealed partial class FolderPickerCard : UserControl
             var window = SettingsHost.GetSettingsWindow?.Invoke()
                 ?? throw new InvalidOperationException("Settings window not initialized");
 
-            // Windowing — picker système. Microsoft.Windows.Storage.Pickers
-            // ouvre un dialog COM Win32 dont l'app n'a pas le HWND
-            // (l'API ne l'expose pas) ; pos/size effectifs du dialog
-            // sont inaccessibles côté code. On émet PopupAnchored avec
-            // le rect du bouton qui a déclenché le picker (intention
-            // d'ancrage côté UI Settings), pos/size du dialog à zéro.
-            // parent_rect en pixels écran absolus calculé via
+            // Windowing: system picker. Microsoft.Windows.Storage.Pickers
+            // opens a Win32 COM dialog whose HWND the app does not own (the API
+            // does not expose it); effective dialog pos/size are inaccessible
+            // from code. Emit PopupAnchored with the button rect that triggered
+            // the picker (UI Settings anchoring intent), dialog pos/size at
+            // zero. parent_rect in absolute screen pixels computed through
             // TransformToVisual(null) + AppWindow.Position + scale DPI.
             EmitFolderPickerAnchor(sender as FrameworkElement, window);
 
@@ -109,10 +108,10 @@ public sealed partial class FolderPickerCard : UserControl
         }
     }
 
-    // Calcule le rect du bouton trigger en pixels écran absolus à partir
-    // du TransformToVisual(null) (position du bouton dans la window en
-    // DIP) + AppWindow.Position (top-left de la window en pixels écran)
-    // + scale DPI. Réutilisé par les deux variants de FolderPicker.
+    // Computes the trigger button rect in absolute screen pixels from
+    // TransformToVisual(null) (button position in the window in DIPs) +
+    // AppWindow.Position (window top-left in screen pixels) + DPI scale. Reused
+    // by both FolderPicker variants.
     internal static void EmitFolderPickerAnchor(FrameworkElement? trigger, Microsoft.UI.Xaml.Window window)
     {
         if (trigger is null) { WindowingProbe.EmitPopupAnchored(IntPtr.Zero, "folder-picker", 0, 0, 0, 0); return; }

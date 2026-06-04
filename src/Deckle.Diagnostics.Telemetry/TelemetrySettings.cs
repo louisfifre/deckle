@@ -24,10 +24,9 @@ public sealed class TelemetrySettings
     // re-derivable baseline (the original ADR-0006 posture). See ADR-0006.
     public AudioCorpusContent AudioCorpusContent { get; set; } = AudioCorpusContent.MatchTranscription;
 
-    // ApplicationLogToDisk gate l'écriture du journal applicatif sur
-    // disque (app.jsonl). StorageDirectory est l'override optionnel
-    // du dossier racine des fichiers JSONL ; vide = défaut résolu par
-    // AppPaths.
+    // ApplicationLogToDisk gates writing the application journal to disk
+    // (app.jsonl). StorageDirectory is the optional override for the JSONL root
+    // folder; empty = default resolved by AppPaths.
     public bool   ApplicationLogToDisk { get; set; } = false;
     public string StorageDirectory     { get; set; } = "";
 }

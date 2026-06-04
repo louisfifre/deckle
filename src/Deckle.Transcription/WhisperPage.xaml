@@ -16,9 +16,9 @@
             </Style.Setters>
         </Style>
 
-        <!-- Slider compact pour valeurs bornées continues — pattern Settings
-             Windows 11 (sensibilité souris, volume, etc.). Pas de spinner,
-             pas de layout shift, valeur affichée à droite via ValueTextBlock. -->
+        <!-- Compact slider for bounded continuous values: Windows 11 Settings
+             pattern (mouse sensitivity, volume, etc.). No spinner, no layout
+             shift, value shown on the right through ValueTextBlock. -->
         <Style x:Key="SettingSliderStyle"
                TargetType="Slider">
             <Setter Property="MinWidth" Value="180" />
@@ -35,8 +35,8 @@
             <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         </Style>
 
-        <!-- Bouton reset per-setting. Opacity 0 par défaut, passée à 1 au
-             PointerEntered de la SettingsCard parente (code-behind). -->
+        <!-- Per-setting reset button. Opacity 0 by default, switched to 1 on
+             PointerEntered of the parent SettingsCard (code-behind). -->
         <Style x:Key="ResetButtonStyle"
                BasedOn="{StaticResource SubtleButtonStyle}"
                TargetType="Button">
@@ -296,16 +296,15 @@
                                                x:Uid="WhisperVadMaxSpeechCard"
                                                IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <!-- Bug WinUI 3 release (net10 / trimming) :
-                                     poser Minimum="5" ou Value="5" en XAML
-                                     fait throw le parser à InitializeComponent
+                                <!-- WinUI 3 release bug (net10 / trimming):
+                                     setting Minimum="5" or Value="5" in XAML
+                                     makes the parser throw at InitializeComponent
                                      ("Failed to assign to property RangeBase.
-                                     Minimum/Value"). Seul Slider du fichier
-                                     avec Minimum > defaultValue. Fix : on
-                                     laisse en XAML uniquement Maximum et les
-                                     steps ; Minimum et Value sont posés en
-                                     code-behind dans le ctor via
-                                     ConfigureMinValueSlider() (après
+                                     Minimum/Value"). Only Slider in the file
+                                     with Minimum > defaultValue. Fix: leave
+                                     only Maximum and steps in XAML; Minimum
+                                     and Value are set in code-behind in the
+                                     ctor via ConfigureMinValueSlider() (after
                                      InitializeComponent). -->
                                 <Slider x:Name="VadMaxSpeechSlider"
                                         Style="{StaticResource SettingSliderStyle}"
@@ -443,8 +442,8 @@
                                        x:Uid="WhisperMaxTokensCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tokens}}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <!-- SpinButtonPlacementMode=Hidden : pas de flyout qui pousse
-                             le layout ; saisie clavier + molette. -->
+                        <!-- SpinButtonPlacementMode=Hidden: no flyout pushing
+                             the layout; keyboard input + mouse wheel. -->
                         <NumberBox x:Name="MaxTokensBox"
                                    Minimum="-1"
                                    Maximum="448"
@@ -463,12 +462,12 @@
 
                 <!-- ── Decoding ────────────────────────────────────────────── -->
                 <!--
-                    Pattern PowerToys / Win11 Settings : grouper les sliders
-                    apparentés sous un SettingsExpander parent, contenu en
-                    ContentAlignment="Vertical" pour que la description longue
-                    et le slider full-width respirent. Header + icône fixés
-                    sur le parent, enfants sans icône (le glyph parent porte
-                    l'identité visuelle du groupe).
+                    PowerToys / Win11 Settings pattern: group related sliders
+                    under a parent SettingsExpander, with content in
+                    ContentAlignment="Vertical" so the long description and
+                    full-width slider breathe. Header + icon fixed on the
+                    parent, children without icons (the parent glyph carries
+                    the group's visual identity).
                 -->
                 <controls:SettingsExpander x:Name="DecodingExpander"
                                            x:Uid="WhisperDecodingExpander"
@@ -522,9 +521,9 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
-                <!-- L'InfoBar reste hors expander : un warning sur fallback
-                     désactivé doit rester visible même quand le groupe
-                     Decoding est replié. -->
+                <!-- InfoBar stays outside the expander: a warning about
+                     disabled fallback must remain visible even when the
+                     Decoding group is collapsed. -->
                 <InfoBar x:Name="TemperatureIncrementWarning"
                          x:Uid="WhisperTemperatureIncrementWarning"
                          IsOpen="False"
@@ -691,9 +690,9 @@
             </Grid>
         </ScrollViewer>
 
-        <!-- Footer restart — pattern Windows Terminal Settings.
-             56px de haut, DividerStrokeColorDefaultBrush en séparateur,
-             AccentButton primaire + Button standard, 8px gap, 32px marge droite. -->
+        <!-- Restart footer: Windows Terminal Settings pattern.
+             56px high, DividerStrokeColorDefaultBrush as separator,
+             primary AccentButton + standard Button, 8px gap, 32px right margin. -->
         <Grid x:Name="RestartFooter"
               Grid.Row="1"
               Height="56"
