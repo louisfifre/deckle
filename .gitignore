@@ -33,6 +33,9 @@ benchmark/cs/**/obj/
 
 # Deployment output — rebuildable via dotnet publish.
 publish/
+# Release staging from scripts/lib/publish-app.ps1 (publish folder +
+# versioned ZIP + .sha256). Lives on the repo volume, off C:; never committed.
+artifacts/
 
 # Misc build logs.
 build-log.txt

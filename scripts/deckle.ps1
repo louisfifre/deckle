@@ -4,6 +4,7 @@
 # a PowerShell 7+ terminal. The menu groups actions by purpose:
 #
 #   Build             — daily compile + run loop, per-worktree.
+#   Release           — publish the self-contained app ZIP, per-worktree.
 #   Worktree maint    — clean artefacts, gather stats, per-worktree.
 #   Setup             — bootstrap a fresh dev machine (global, no
 #                       worktree picker), install local git hooks. Runtime
@@ -58,6 +59,9 @@ $actions = @(
     [pscustomobject]@{ Label = 'Build & run (Release)';             Value = 'build-release'                     }
     [pscustomobject]@{ Label = 'Build only (no run)';               Value = 'build-norun'                       }
 
+    [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
+    [pscustomobject]@{ Label = 'Publish app (self-contained ZIP)';  Value = 'publish-app'                       }
+
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Clean bin/obj';                     Value = 'clean'                             }
     [pscustomobject]@{ Label = 'Stats (files, LOC, long files)';    Value = 'stats'                             }
@@ -94,6 +98,13 @@ switch ($action) {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'build-run.ps1') -Target $wt -Configuration Release -NoRun
+    }
+
+    # ----- Release — per-worktree ----------------------------------------
+    'publish-app' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
     }
 
     # ----- Worktree maintenance ------------------------------------------

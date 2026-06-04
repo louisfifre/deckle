@@ -32,19 +32,26 @@
   </PropertyGroup>
 
   <!-- Publish-only options. Gated on _IsPublishing (MSBuild-internal flag
-       set exclusively by the Publish target) so a plain `MSBuild /t:Build`
-       in Release doesn't trigger the WinAppSDK "SingleFile without
-       SelfContained" warning nor pay single-file costs at every iteration.
+       set exclusively by the Publish target) so a plain `dotnet build` in
+       Release doesn't pay self-contained costs at every iteration.
 
-       PublishSingleFile bundles the managed assemblies into Deckle.exe.
+       SelfContained bundles the .NET runtime so the distribution runs with no
+       system-wide .NET install. Paired with WindowsAppSDKSelfContained above,
+       the publish output is a self-sufficient folder — Deckle.exe + runtime +
+       Windows App SDK + Deckle.pri + assets — that xcopy-deploys as-is.
+
+       Folder, NOT single-file. PublishSingleFile for unpackaged WinUI 3
+       requires IncludeAllContentForSelfExtract=true, which makes the exe
+       re-extract its whole payload to %TEMP% (a C: path) on each version's
+       first launch. Deckle installs into a permanent, user-chosen folder, so
+       the self-extracting exe buys nothing and instead pollutes C: — the very
+       thing the install-location choice exists to avoid. The folder runs in
+       place from wherever it lands. The ZIP is produced by
+       scripts/lib/publish-app.ps1.
+
        Native DLLs (libwhisper + ggml backends + MinGW runtime) and Whisper
-       models are NOT shipped — they live in <UserDataRoot>\native\ and
-       <UserDataRoot>\models\, populated by scripts/lib/setup-assets.ps1 (or
-       the future first-run wizard) on a per-user basis.
-
-       SelfContained pairs with PublishSingleFile per WinAppSDK's SingleFile
-       target requirements, and it's what the distribution ZIP wants anyway
-       (no dependency on a system-wide .NET runtime install).
+       models are NOT shipped — they live under the user data root (native\,
+       models\), populated by the first-run wizard on a per-user basis.
 
        PublishTrimmed is NOT enabled: WinUI 3 + XAML compilation + x:Bind
        generated code rely on reflection paths the IL linker can't prove
@@ -53,7 +60,6 @@
        off until there's a concrete size/perf motive AND a runtime test
        matrix proves it safe. -->
   <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
-    <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 

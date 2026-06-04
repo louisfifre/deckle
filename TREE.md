@@ -259,6 +259,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── build-run.ps1
 │   │   ├── clean.ps1
 │   │   ├── install-hooks.ps1
+│   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── setup-assets.ps1
 │   │   └── stats.ps1
