@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Deckle.Installer</RootNamespace>
+    <!-- The distributed file the end user double-clicks (and that stays on disk
+         as the uninstaller). Dashed file name is fine for an exe; it never
+         appears as a C# identifier. -->
+    <AssemblyName>Deckle-Installer</AssemblyName>
+
+    <!-- TargetFramework is inherited from Directory.Build.props
+         (net10.0-windows10.0.26100.0). A bare net10.0-windows would default
+         TargetPlatformVersion to 7.0 and clash with the repo's
+         TargetPlatformMinVersion (NETSDK1135). The SDK-versioned TFM brings the
+         WinRT projections we don't use, but the AOT linker trims unreferenced
+         code, so the image stays lean without the deviation. We only consume
+         Win32 + registry + COM (IShellLink), all available here. -->
+
+    <!-- NativeAOT: a self-contained native exe, no .NET runtime to unpack, instant
+         cold start. `dotnet build` stays IL-only (compile validation); the native
+         link happens at `dotnet publish -r win-x64` — the maintainer's act. The AOT
+         analyzers DO run on build, so non-AOT-safe code surfaces as warnings here. -->
+    <PublishAot>true</PublishAot>
+
+    <!-- Drops ICU from the AOT image: the installer has no culture-sensitive text. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- No third-party packages. Registry, COM source-generated interop
+         (System.Runtime.InteropServices.Marshalling) and XML/HTTP all ship in the
+         net10.0-windows framework — conforms to the zero-dependency doctrine. -->
+  </PropertyGroup>
+
+</Project>
