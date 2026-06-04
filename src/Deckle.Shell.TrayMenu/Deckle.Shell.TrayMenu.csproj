@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>Deckle.Shell.TrayMenu</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Platforms>x64</Platforms>
     <!-- WinUI 3 XAML compilation in a class library: required so MenuFlyout
          theme resources resolve at runtime and the MainResourceMap merges
          this assembly's PRI into the host process map. Mirror of the flag
@@ -13,7 +8,6 @@
     <UseWinUI>true</UseWinUI>
     <DefaultLanguage>en-US</DefaultLanguage>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
