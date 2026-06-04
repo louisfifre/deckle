@@ -2,28 +2,31 @@ using System;
 
 namespace Deckle.Diagnostics.Listeners;
 
-// Size-based rolling policy for a JsonlEventListener destination. When
-// the active file would cross MaxBytes, it is rolled to a numbered
-// generation (app.jsonl → app.1.jsonl → … → app.{MaxGenerations}.jsonl)
-// and writing resumes on a fresh active file; the generation beyond
-// MaxGenerations is dropped. Total on-disk footprint is therefore bounded
-// to roughly (MaxGenerations + 1) × MaxBytes.
+// Line-count rolling policy for a JsonlEventListener destination. When the
+// active file reaches MaxLines, it is rolled into a monotonically-numbered
+// generation under an `archive/` subfolder (app.jsonl → archive/app.jsonl.0001
+// → archive/app.jsonl.0002 → …) and writing resumes on a fresh active file.
+// Generations are never renamed or deleted — they accumulate and the user
+// prunes them at will; the index keeps climbing and is zero-padded so a
+// directory listing sorts in chronological order.
 //
-// Scope. Only the general application journal (app.jsonl) rolls. The
-// dataset channels (latency, microphone, corpus) are append-only ML
-// datasets with a stable cross-session contract (ADR-0006) and are never
-// given a rotation policy — losing their tail would corrupt the dataset.
-// The decision and the chosen bound live in ADR-0007.
+// A journal is read in lines, not bytes — "118k lines" was the unit that
+// surfaced the unbounded-growth friction — so the cap is expressed in lines,
+// and the active name keeps its full `.jsonl` extension with the generation
+// index appended after it so every generation sorts next to the active file.
+//
+// Scope. Only the general application journal (app.jsonl) rolls. The dataset
+// channels (latency, microphone, corpus) are append-only datasets with a
+// stable cross-session contract and are never given a rotation policy —
+// losing their tail would corrupt the dataset. The principle (journal rolled,
+// datasets untouched) is recorded in ADR-0007.
 public sealed class JsonlRotationPolicy
 {
-    public long MaxBytes { get; }
-    public int MaxGenerations { get; }
+    public int MaxLines { get; }
 
-    public JsonlRotationPolicy(long maxBytes, int maxGenerations)
+    public JsonlRotationPolicy(int maxLines)
     {
-        if (maxBytes <= 0) throw new ArgumentOutOfRangeException(nameof(maxBytes));
-        if (maxGenerations < 1) throw new ArgumentOutOfRangeException(nameof(maxGenerations));
-        MaxBytes = maxBytes;
-        MaxGenerations = maxGenerations;
+        if (maxLines <= 0) throw new ArgumentOutOfRangeException(nameof(maxLines));
+        MaxLines = maxLines;
     }
 }

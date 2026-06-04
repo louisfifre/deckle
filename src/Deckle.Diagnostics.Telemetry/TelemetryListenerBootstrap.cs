@@ -95,12 +95,13 @@ public static class TelemetryListenerBootstrap
                 && ReadGate("ApplicationLogToDisk"),
             preEntryDropPredicate: ShouldDropApplicationLog,
             // app.jsonl est le miroir persistant du journal live : enveloppe
-            // auto-descriptive (provider/event/level/source/message/line)
-            // et bornée par rotation. Les datasets restent en PayloadOnly
-            // sans rotation (contrat figé, ADR-0006). Décision et bornes :
-            // ADR-0007.
+            // auto-descriptive (provider/event/level/source/message/line),
+            // roulé par tranches de lignes vers des générations numérotées
+            // dans archive/ (jamais renommées ni supprimées — l'utilisateur
+            // élague). Les datasets restent en PayloadOnly sans rotation.
+            // Principe journal-roulé / datasets-intouchés : ADR-0007.
             schema:   JsonlSchema.SelfDescribing,
-            rotation: new JsonlRotationPolicy(maxBytes: 5 * 1024 * 1024, maxGenerations: 5)));
+            rotation: new JsonlRotationPolicy(maxLines: 8000)));
 
         _listeners.Add(new JsonlEventListener(
             filePath:  Path.Combine(rootDirectory, "latency.jsonl"),

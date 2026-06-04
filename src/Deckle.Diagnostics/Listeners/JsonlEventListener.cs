@@ -33,9 +33,11 @@ namespace Deckle.Diagnostics.Listeners;
 // anonymous payload — a parameter-less event keeps its provider/event/
 // level instead of collapsing to an empty blob. See ADR-0007.
 //
-// Rotation. An optional `JsonlRotationPolicy` rolls the file by size
-// (app.jsonl → app.1.jsonl → …) so a long session can't grow it without
-// bound. Datasets pass no policy and stay append-only. See ADR-0007.
+// Rotation. An optional `JsonlRotationPolicy` rolls the file once it reaches
+// MaxLines lines into a monotonically-numbered generation under an `archive/`
+// subfolder (app.jsonl → archive/app.jsonl.0001 → …). Generations accumulate;
+// none is renamed or deleted. Datasets pass no policy and stay append-only.
+// See ADR-0007.
 //
 // Threading. Write happens on the emitter thread, guarded by a per-
 // listener lock so concurrent emissions don't tear lines and so a roll
@@ -53,12 +55,12 @@ public sealed class JsonlEventListener : EventListener
     private readonly List<EventSource> _earlySources = new();
     private bool _ready;
 
-    // Running size of the active file, maintained under _writeLock so the
-    // rotation check is a counter compare instead of a per-line stat
-    // syscall. Seeded from the file on disk at construction so a restart
-    // doesn't forget what was already written. Only meaningful when
-    // _rotation is non-null.
-    private long _bytesWritten;
+    // Running line count of the active file, maintained under _writeLock so
+    // the rotation check is a counter compare instead of re-reading the file
+    // each line. Seeded by counting the active file's lines at construction
+    // so a restart doesn't forget what was already written. Only meaningful
+    // when _rotation is non-null.
+    private long _linesWritten;
 
     private static readonly JsonWriterOptions _jsonOptions = new()
     {
@@ -82,7 +84,7 @@ public sealed class JsonlEventListener : EventListener
     // `schema`    — envelope shape. PayloadOnly (default) for the frozen
     //              dataset channels; SelfDescribing for the app.jsonl
     //              journal.
-    // `rotation`  — optional size-based roll policy. Null (default) leaves
+    // `rotation`  — optional line-count roll policy. Null (default) leaves
     //              the file append-only without bound — correct for the
     //              datasets, never for the application journal.
     public JsonlEventListener(
@@ -102,8 +104,7 @@ public sealed class JsonlEventListener : EventListener
 
         if (_rotation is not null)
         {
-            try { _bytesWritten = File.Exists(_filePath) ? new FileInfo(_filePath).Length : 0L; }
-            catch { _bytesWritten = 0L; }
+            _linesWritten = CountLines(_filePath);
         }
 
         lock (_earlySources)
@@ -190,15 +191,11 @@ public sealed class JsonlEventListener : EventListener
             jsonBytes = ms.ToArray();
         }
 
-        long lineBytes = jsonBytes.Length + 1; // payload + '\n'
         lock (_writeLock)
         {
-            // Roll before writing when this line would push the active
-            // file past the cap — but never roll an empty file, so a
-            // single line larger than MaxBytes still lands somewhere.
-            if (_rotation is not null
-                && _bytesWritten > 0
-                && _bytesWritten + lineBytes > _rotation.MaxBytes)
+            // Roll before writing once the active file has reached the line
+            // cap, so each generation holds at most MaxLines lines.
+            if (_rotation is not null && _linesWritten >= _rotation.MaxLines)
             {
                 RollFiles();
             }
@@ -208,16 +205,21 @@ public sealed class JsonlEventListener : EventListener
                 fs.Write(jsonBytes, 0, jsonBytes.Length);
                 fs.WriteByte((byte)'\n');
             }
-            _bytesWritten += lineBytes;
+            _linesWritten++;
         }
     }
 
-    // Shifts the generations up by one and turns the active file into
-    // generation 1. Called under _writeLock with no stream open, so the
-    // moves are safe. Best-effort: if a move fails (an archive is held
-    // open by an external reader), the active file is left in place and
-    // the counter is re-synced from disk so the next attempt waits for
-    // another MaxBytes of growth instead of retrying on every line.
+    // Turns the active file into the next archive generation, kept under an
+    // `archive/` subfolder next to it. The generation index is monotonic:
+    // each roll takes the highest existing index + 1, zero-padded so a
+    // directory listing sorts in chronological order (app.jsonl →
+    // archive/app.jsonl.0001 → archive/app.jsonl.0002 → …). Nothing is ever
+    // renamed or deleted — generations accumulate and the user prunes them at
+    // will. Called under _writeLock with no stream open, so the move is safe.
+    // Best-effort: if the move fails (an archive is held open by an external
+    // reader), the active file is left in place and the line counter is
+    // re-synced from disk so the next attempt waits for another MaxLines of
+    // growth instead of retrying on every line.
     private void RollFiles()
     {
         var rotation = _rotation;
@@ -226,27 +228,66 @@ public sealed class JsonlEventListener : EventListener
         try
         {
             string dir = Path.GetDirectoryName(_filePath) ?? string.Empty;
-            string name = Path.GetFileNameWithoutExtension(_filePath);
-            string ext = Path.GetExtension(_filePath);
-            string Generation(int n) => Path.Combine(dir, $"{name}.{n}{ext}");
+            string archiveDir = Path.Combine(dir, "archive");
+            Directory.CreateDirectory(archiveDir);
 
-            // Top-down so each destination is vacated before it is
-            // overwritten. The move into the highest slot overwrites the
-            // oldest generation, dropping it.
-            for (int n = rotation.MaxGenerations - 1; n >= 1; n--)
-            {
-                string src = Generation(n);
-                if (File.Exists(src)) File.Move(src, Generation(n + 1), overwrite: true);
-            }
-            if (File.Exists(_filePath)) File.Move(_filePath, Generation(1), overwrite: true);
+            string fileName = Path.GetFileName(_filePath); // e.g. "app.jsonl"
+            int next = NextGeneration(archiveDir, fileName);
+            string target = Path.Combine(archiveDir, $"{fileName}.{next:D4}");
 
-            _bytesWritten = 0L;
+            if (File.Exists(_filePath)) File.Move(_filePath, target, overwrite: true);
+
+            _linesWritten = 0L;
         }
         catch
         {
-            try { _bytesWritten = File.Exists(_filePath) ? new FileInfo(_filePath).Length : 0L; }
-            catch { /* leave the counter as-is; next line retries the check */ }
+            _linesWritten = CountLines(_filePath);
         }
+    }
+
+    // Highest existing generation index in the archive folder, + 1 (1 when
+    // empty). Recomputed at each roll rather than held in memory, so the
+    // numbering continues correctly after a restart with no persisted state.
+    // Rolls are rare (every MaxLines lines), so the directory scan is cheap.
+    private static int NextGeneration(string archiveDir, string fileName)
+    {
+        int max = 0;
+        string prefix = fileName + ".";
+        try
+        {
+            foreach (string path in Directory.EnumerateFiles(archiveDir, prefix + "*"))
+            {
+                string suffix = Path.GetFileName(path).Substring(prefix.Length);
+                if (int.TryParse(suffix, System.Globalization.NumberStyles.None,
+                        System.Globalization.CultureInfo.InvariantCulture, out int n) && n > max)
+                    max = n;
+            }
+        }
+        catch { /* fall back to 1 */ }
+        return max + 1;
+    }
+
+    // Counts the lines (newline bytes) of a file on disk, streaming so a
+    // large active journal isn't loaded into memory. Returns 0 for a missing
+    // or unreadable file. Used to seed the line counter at construction and
+    // to re-sync it after a failed roll.
+    private static long CountLines(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return 0L;
+            long count = 0L;
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var buffer = new byte[64 * 1024];
+            int read;
+            while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                for (int i = 0; i < read; i++)
+                    if (buffer[i] == (byte)'\n') count++;
+            }
+            return count;
+        }
+        catch { return 0L; }
     }
 
     private static void WriteValue(Utf8JsonWriter writer, string name, object? value)
