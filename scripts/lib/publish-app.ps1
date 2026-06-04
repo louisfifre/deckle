@@ -178,6 +178,9 @@ if ($Publish) {
     $tag    = "v$Version"
     $title  = "Deckle $tag"
     $ghArgs = @('release', 'create', $tag, $ZipPath, $ShaPath, '--title', $title)
+    # Every 0.x cut is a pre-release (versioning convention): the phase is
+    # pre-stable, so the release must not claim the repo's "Latest" badge.
+    if ($Version -like '0.*') { $ghArgs += '--prerelease' }
     if ($Notes) { $ghArgs += @('--notes-file', $Notes) }
     else        { $ghArgs += '--generate-notes' }
     & gh @ghArgs
