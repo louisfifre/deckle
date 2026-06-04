@@ -118,6 +118,7 @@ public sealed partial class TranscriptionEngine
             backendAudio = processed.Pcm;
             DeckleWhispSource.Log.TranscriptionPreprocessed(
                 processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
+            EmitPreprocessedTelemetry(backendAudio);
         }
 
         // Single backend call. Segments stream through the sink to NewSegment so

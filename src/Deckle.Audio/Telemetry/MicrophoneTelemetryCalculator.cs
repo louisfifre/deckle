@@ -132,4 +132,36 @@ public static class MicrophoneTelemetryCalculator
             TailDbfs:        tail.TailDbfs,
             TailState:       tail.TailState);
     }
+
+    // The live capture emits one RMS sub-window every 50 ms — the cadence the
+    // distribution math above assumes (durSec = n * 0.05). A post-hoc series
+    // rebuilt from a finished buffer (e.g. the DSP output, to mirror the raw mic
+    // distribution on the processed signal) must use the same window so the two
+    // payloads stay comparable.
+    public const int SubWindowSamples = 800; // 50 ms @ 16 kHz
+
+    // Re-derive the 50 ms-window RMS series from a PCM buffer. A trailing partial
+    // window (< windowSamples) is dropped, matching the live path which only ever
+    // emits whole sub-windows. Pure, single allocation.
+    public static System.Collections.Generic.IReadOnlyList<float> RmsSeries(
+        System.ReadOnlySpan<float> pcm, int windowSamples)
+    {
+        if (windowSamples <= 0 || pcm.Length < windowSamples)
+            return System.Array.Empty<float>();
+
+        int nWindows = pcm.Length / windowSamples;
+        var series = new float[nWindows];
+        for (int w = 0; w < nWindows; w++)
+        {
+            double sumSq = 0;
+            int start = w * windowSamples;
+            for (int i = 0; i < windowSamples; i++)
+            {
+                double v = pcm[start + i];
+                sumSq += v * v;
+            }
+            series[w] = (float)System.Math.Sqrt(sumSq / windowSamples);
+        }
+        return series;
+    }
 }

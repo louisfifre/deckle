@@ -99,6 +99,31 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.AutoCalibrated(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
     }
 
+    // Emit the post-DSP level distribution — the processed-signal mirror of the raw
+    // MicrophoneTelemetryRecorded, on this orchestrator's provider (the DSP is its
+    // concern, not the capture module's). Same consent gate as the raw side. Callers
+    // pass the buffer the backend received, and only when the DSP actually ran — off,
+    // processed == raw and this would just duplicate the raw distribution. Rebuilds a
+    // 50 ms RMS series so the shared Compute path yields a payload comparable, field
+    // for field, with the raw one.
+    private void EmitPreprocessedTelemetry(float[] processed)
+    {
+        if (!_recordingHost.MicrophoneTelemetryEnabled) return;
+
+        var rms = MicrophoneTelemetryCalculator.RmsSeries(
+            processed, MicrophoneTelemetryCalculator.SubWindowSamples);
+        var tail = MicrophoneTelemetryCalculator.ComputeTail(rms);
+        if (tail is null) return;
+
+        var t = MicrophoneTelemetryCalculator.Compute(rms, tail.Value);
+        if (t is null) return;
+
+        DeckleWhispSource.Log.PreprocessedTelemetryRecorded(
+            t.DurationSeconds, t.Samples,
+            t.MinDbfs, t.P10Dbfs, t.P25Dbfs, t.P50Dbfs, t.P75Dbfs, t.P90Dbfs, t.MaxDbfs,
+            t.MeanRms, t.MeanDbfs, t.TailRms, t.TailDbfs, t.TailState);
+    }
+
 
     // ── Shared finalize ──────────────────────────────────────────────────────
     //

@@ -149,6 +149,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscriptionPreprocessed        = 107;
     public const int EvtStreamingDrained                 = 108;
     public const int EvtUtteranceSkipped                 = 109;
+    public const int EvtPreprocessedTelemetryRecorded    = 110;
 
 
 }

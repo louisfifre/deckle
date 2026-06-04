@@ -691,6 +691,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── Deckle.Tests/
 │       ├── Audio/
 │       │   ├── MicLevelCheckTests.cs
+│       │   ├── MicrophoneTelemetryCalculatorTests.cs
 │       │   └── TranscriptionPreprocessorTests.cs
 │       ├── Chrono/
 │       │   ├── ChronoFormatterTests.cs
