@@ -86,7 +86,10 @@ if ($LASTEXITCODE -eq 0 -and $remoteUrl) {
 
 # ── Output layout ────────────────────────────────────────────────────────────
 if (-not $OutDir) {
-    $OutDir = Join-Path $RepoRoot "artifacts\deckle-app-$Version"
+    # Folder name = the ZIP stem (Deckle-v<X.Y.Z>) so the artefact layout is
+    # coherent end to end: artifacts\Deckle-v0.4.0\Deckle-v0.4.0.zip, matching
+    # the release tag v<X.Y.Z> and the asset download URL.
+    $OutDir = Join-Path $RepoRoot "artifacts\Deckle-v$Version"
 }
 if (Test-Path $OutDir) {
     Warn "OutDir exists, cleaning: $OutDir"
