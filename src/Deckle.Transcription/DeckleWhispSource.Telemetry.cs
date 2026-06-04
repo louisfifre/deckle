@@ -74,7 +74,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtCorpusAsrRecorded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "asr | bucket={2} | tier={3} | words={9} | wps={12:F1}")]
+           Message = "asr | bucket={2} | tier={3} | words={9} | wps={12:F1} | audio={14}")]
     public void CorpusAsrRecorded(
         string transcription_id,
         string audio_file,
@@ -89,14 +89,15 @@ public sealed partial class DeckleWhispSource
         int    text_chars,
         double duration_seconds,
         double words_per_second,
-        long   elapsed_ms)
+        long   elapsed_ms,
+        string audio_content)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtCorpusAsrRecorded,
             transcription_id, audio_file, bucket, tier,
             backend, model, language, prompt_or_instruction,
             text, text_words, text_chars, duration_seconds,
-            words_per_second, elapsed_ms);
+            words_per_second, elapsed_ms, audio_content);
     }
 
     [Event(EvtCorpusRewriteRecorded,
