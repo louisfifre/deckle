@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
+using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
 using Deckle.Transcription.Engine;
 using Deckle.Transcription.Streaming;
@@ -163,15 +164,21 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        // The raw take (untouched capture) is the corpus audio, exactly as in the
-        // monolithic path. No per-utterance DSP runs in the socle (see the module
-        // CLAUDE.md / plan), so backend audio == raw take.
+        // RawAudio is the untouched capture — the corpus baseline (ADR-0006). When
+        // the opt-in DSP ran, the consumer handed back the concatenation of the
+        // processed utterances: that is exactly what the backend received (the kept
+        // utterances, not the continuous take), so it becomes BackendAudio. With the
+        // DSP off there is no separate buffer and BackendAudio falls back to raw.
         float[] raw = capture.Pcm;
+        float[] backendAudio = consumed.BackendAudio ?? raw;
+
+        // Post-DSP distribution, only when the DSP ran (else backendAudio == raw).
+        if (consumed.BackendAudio is not null) EmitPreprocessedTelemetry(consumed.BackendAudio);
 
         return new PipelineProduction(
             RawText:           consumed.Text,
             RawAudio:          raw,
-            BackendAudio:      raw,
+            BackendAudio:      backendAudio,
             TotalTranscribeMs: consumed.TotalMs,
             InitMs:            consumed.InitMs,
             VadMs:             consumed.VadMs,
@@ -194,6 +201,21 @@ public sealed partial class TranscriptionEngine
         string fixedPrompt = _host.Transcription.Engine.InitialPrompt ?? "";
         string? previousTail = null;
 
+        // Transcription pre-processing DSP, opt-in. The monolithic path runs the
+        // two-pass chain once over the whole take; here it runs per utterance, just
+        // before each backend call. Per-utterance is faithful for intelligibility:
+        // every utterance is decoded in its own backend call, so landing each one
+        // on TargetRmsDbfs is exactly the per-call level Whisper wants — the
+        // inter-utterance coherence a whole-take pass would add is moot when no two
+        // utterances share a decode window, and a true whole-take measure could only
+        // complete at Stop, which would defeat the streaming latency it exists for.
+        // The segmenter emits only voiced spans, so the makeup guardrail (boosting
+        // silence lifts the noise floor) is already defused upstream. Processed
+        // chunks are accumulated so BackendAudio is exactly what the backend
+        // received — the kept utterances, not the continuous take (ADR-0006).
+        var pp = _host.Audio.Preprocessing;
+        List<float[]>? backendChunks = pp.Enabled ? new List<float[]>() : null;
+
         await foreach (Utterance u in reader.ReadAllAsync(drainCt).ConfigureAwait(false))
         {
             // Deterministic Dispose stop — see the method remark.
@@ -215,11 +237,23 @@ public sealed partial class TranscriptionEngine
                 EmitPreamble:      nUtt == 1,
                 TimelineOffsetSec: u.StartSec);
 
+            // Run the opt-in DSP on this utterance and feed the processed buffer to
+            // the backend; accumulate it so BackendAudio mirrors what was sent.
+            float[] samples = u.Samples;
+            if (backendChunks is not null)
+            {
+                var processed = TranscriptionPreprocessor.Process(u.Samples, pp);
+                samples = processed.Pcm;
+                backendChunks.Add(samples);
+                DeckleWhispSource.Log.TranscriptionPreprocessed(
+                    processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
+            }
+
             TranscriptionResult result;
             try
             {
                 result = await _backend.TranscribeAsync(
-                    u.Samples,
+                    samples,
                     seg => NewSegment?.Invoke(seg),
                     drainCt,
                     ctx).ConfigureAwait(false);
@@ -255,7 +289,28 @@ public sealed partial class TranscriptionEngine
             previousTail = result.Aborted ? null : TailOf(text);
         }
 
-        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, vadMs, nSeg, nUtt);
+        float[]? backendAudio = backendChunks is null ? null : ConcatSamples(backendChunks);
+        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, vadMs, nSeg, nUtt, backendAudio);
+    }
+
+    // Flatten the per-utterance processed buffers into one contiguous take. A
+    // single exact-sized allocation rather than a growing List<float> — the chunks
+    // are known and immutable by the time we drain, so there is nothing to double.
+    // internal: the ordered-concat invariant it guards is what makes BackendAudio
+    // a faithful corpus record (ADR-0006), exercised directly by Deckle.Tests.
+    internal static float[] ConcatSamples(List<float[]> chunks)
+    {
+        int total = 0;
+        for (int i = 0; i < chunks.Count; i++) total += chunks[i].Length;
+
+        var flat = new float[total];
+        int offset = 0;
+        for (int i = 0; i < chunks.Count; i++)
+        {
+            Array.Copy(chunks[i], 0, flat, offset, chunks[i].Length);
+            offset += chunks[i].Length;
+        }
+        return flat;
     }
 
     // Fixed stylistic prompt + the previous utterance's tail (most recent context
@@ -281,8 +336,11 @@ public sealed partial class TranscriptionEngine
     }
 
     // Roll-up the consumer hands back to ProduceStreamingAsync — assembled text,
-    // the backend timings summed across utterances, and how many utterances the
-    // segmenter produced.
+    // the backend timings summed across utterances, how many utterances the
+    // segmenter produced, and (when the opt-in DSP ran) the concatenation of the
+    // processed utterances for the corpus. BackendAudio is null when the DSP was
+    // off, so the caller falls back to the raw take.
     private readonly record struct StreamingConsumeResult(
-        string Text, long TotalMs, long InitMs, long VadMs, int NSegments, int NUtterances);
+        string Text, long TotalMs, long InitMs, long VadMs, int NSegments, int NUtterances,
+        float[]? BackendAudio);
 }

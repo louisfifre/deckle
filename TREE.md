@@ -717,7 +717,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── Shell/
 │       │   └── DispatcherQueueExtensionsTests.cs
 │       ├── Transcription/
-│       │   └── EnergySegmenterTests.cs
+│       │   ├── EnergySegmenterTests.cs
+│       │   └── StreamingBackendAudioTests.cs
 │       ├── Vision/
 │       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
