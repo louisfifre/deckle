@@ -9,6 +9,19 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). Versions `0.2.0` and later are reconstructed from the git history;
 earlier development predates this file.
 
+## [0.4.1] — 2026-06-04
+
+A downloadable installer.
+
+### Added
+
+- **Installer.** A standalone download stub installs Deckle without cloning or
+  building. It resolves the latest GitHub release, downloads and SHA-256–verifies
+  the app, installs per-user without admin rights, adds a Start Menu shortcut and
+  an Installed-apps entry, then launches the app — binaries and data/models in
+  separate, relocatable folders. Re-running it updates to the newest release;
+  uninstalling reverses everything and keeps your models by default.
+
 ## [0.4.0] — 2026-06-02
 
 The streaming transcription socle.

@@ -403,6 +403,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MessageKind.cs
 │   │   ├── ProximityRollupAggregator.cs
 │   │   └── WindowSlideAnimator.cs
+│   ├── Deckle.Installer/
+│   │   ├── Install/
+│   │   │   ├── CliArgs.cs
+│   │   │   ├── InstallFlow.cs
+│   │   │   ├── InstallPaths.cs
+│   │   │   └── Uninstaller.cs
+│   │   ├── Io/
+│   │   │   └── Downloader.cs
+│   │   ├── Platform/
+│   │   │   ├── Shortcut.cs
+│   │   │   ├── UninstallEntry.cs
+│   │   │   └── UserEnvironment.cs
+│   │   ├── Release/
+│   │   │   └── ReleaseResolver.cs
+│   │   ├── Ui/
+│   │   │   └── ConsoleUi.cs
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Installer.csproj
+│   │   └── Program.cs
 │   ├── Deckle.Lighting/
 │   │   ├── Hue/
 │   │   │   ├── HueBridge.cs
