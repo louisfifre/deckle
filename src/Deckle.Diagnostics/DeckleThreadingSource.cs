@@ -45,10 +45,9 @@ namespace Deckle.Diagnostics;
 //   "engine-state-sync" — synchronisation UI suite à un événement engine
 //                         (état de pipeline, transition recording,
 //                         arrêt screen capture)
-//   "warm-pass-tail"    — transition d'état HUD différée Low après le
-//                         premier rendu pour absorber les cold-path costs
-//                         de DComp/font shaping invisiblement (warm pass
-//                         layered alpha=0)
+//   "warm-pass-tail"    — reserved legacy operation from the former HUD
+//                         composition warm pass. Do not reuse for a different
+//                         scheduling pattern.
 //
 // Convention `caller` : nom court du site logique
 // ("transcription-engine", "ambient-pipeline", "hue-driver", "hud-window",

@@ -71,12 +71,6 @@ public sealed partial class HudWindow : Window
     private HudState _state = HudState.Hidden;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _messageHideTimer;
 
-    // Warm pass stopwatch — démarré par PrimeAndHide, arrêté quand la
-    // bascule SetState(Hidden) du dispatch Low priority retombe, ce qui
-    // est le moment où la première frame a effectivement été composée.
-    // Lue par SetState pour émettre WarmPassCompleted une seule fois.
-    private System.Diagnostics.Stopwatch? _warmPassStopwatch;
-
     // Proximity rollup — collecte sample-par-sample via UpdateProximity
     // (WM_INPUT, ~125 Hz) pendant toute la fenêtre de visibilité du HUD.
     // Récapitulatif émis une seule fois au passage shown → hidden via
@@ -153,12 +147,19 @@ public sealed partial class HudWindow : Window
             ref backdropType, sizeof(uint));
 
         // WS_EX_LAYERED is the precondition for SetLayeredWindowAttributes.
-        // WS_EX_TOOLWINDOW keeps the HUD out of alt-tab. WS_EX_TRANSPARENT
-        // forwards mouse hits beneath the window so it never steals focus.
+        // WS_EX_TOOLWINDOW keeps the HUD out of alt-tab. WS_EX_NOACTIVATE
+        // makes the no-focus-steal contract native rather than only relying
+        // on SW_SHOWNOACTIVATE. WS_EX_TRANSPARENT forwards mouse hits beneath
+        // the window; proximity fade still runs through Raw Input.
         var ex = NativeMethods.GetWindowLongPtr(_hwnd, NativeMethods.GWL_EXSTYLE).ToInt64();
         NativeMethods.SetWindowLongPtr(
             _hwnd, NativeMethods.GWL_EXSTYLE,
-            new IntPtr(ex | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_TRANSPARENT));
+            new IntPtr(
+                ex
+                | NativeMethods.WS_EX_LAYERED
+                | NativeMethods.WS_EX_TOOLWINDOW
+                | NativeMethods.WS_EX_NOACTIVATE
+                | NativeMethods.WS_EX_TRANSPARENT));
         NativeMethods.SetLayeredWindowAttributes(
             _hwnd, 0, MAX_ALPHA, NativeMethods.LWA_ALPHA);
 
@@ -313,58 +314,6 @@ public sealed partial class HudWindow : Window
 
     public void Hide() => EnqueueUI(() => SetState(HudState.Hidden, reason: "hide"));
 
-    // Boot-time warm pass. Drives a transient Charging → Hidden cycle through
-    // the canonical SetState path so the first composition (swap chain DComp
-    // + visual tree + Bitcount font shaping) happens at boot rather than at
-    // the user's first hotkey, eliminating the ~0.3 s blank frame previously
-    // visible there.
-    //
-    // Goes through SetState(bypassGate: true) on purpose — going around it
-    // (calling ShowNoActivate / ShowWindow directly) leaves the
-    // OverlappedPresenter and z-order in a half-applied state and a
-    // subsequent real Show landed behind other windows instead of topmost.
-    // Using SetState makes the warm byte-for-byte identical to what happens
-    // on a real hotkey, so the presenter ends up exactly where it needs to
-    // be afterwards.
-    //
-    // bypassGate skips the Overlay.Enabled check : we warm regardless of
-    // whether the user currently has the HUD enabled, because they may
-    // toggle it on at runtime and the first show after that toggle should
-    // also be cold-free.
-    //
-    // No off-screen relocation : per project memory the warm appears at the
-    // real position. Visibility is suppressed via WS_EX_LAYERED alpha=0 so the
-    // composition runs (DComp swap chain, font shaping, visual tree) but
-    // nothing reaches the screen — the user sees no flash. SetState(Hidden)
-    // resets alpha to MAX_ALPHA via SetAlphaImmediate, so the next real Show
-    // starts with a fully opaque layered window.
-    public void PrimeAndHide()
-    {
-        if (!DispatcherQueue.HasThreadAccess)
-        {
-            DispatcherQueue.TryEnqueueOrLog(PrimeAndHide, "HUD", "PrimeAndHide");
-            return;
-        }
-
-        // Stopwatch armed BEFORE the first SetState so it englobe la
-        // composition complète (Charging show + dispatch tail Low + Hidden
-        // teardown). Lue dans SetState(Hidden) ci-dessous quand le
-        // _warmPassStopwatch est non-null pour émettre WarmPassCompleted
-        // une fois et le clear.
-        _warmPassStopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-        SetState(HudState.Charging, bypassGate: true, alphaOverride: 0, reason: "warm_pass");
-
-        // Low priority fires after the next render pass — by the time it
-        // runs the first frame has been presented and the cold-path costs
-        // are paid.
-        DispatcherQueue.TryEnqueueObserved(
-            operation: "warm-pass-tail", caller: "hud-window",
-            callback: () => SetState(HudState.Hidden, reason: "warm_pass"),
-            rejectSource: "HUD", rejectWhat: "warm pass tail",
-            priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
-    }
-
     // Forward mic RMS samples (20 Hz, engine recording thread) to the chrono
     // control without marshalling. HudChrono.UpdateAudioLevel writes to a
     // CompositionPropertySet scalar, which is thread-safe by Composition's
@@ -418,21 +367,16 @@ public sealed partial class HudWindow : Window
     // forwards to the control's ApplyState / Show, shows the (fixed-size)
     // window, and arms the auto-hide timer for messages.
 
-    // alphaOverride lets the warm pass force alpha=0 so the boot composition
-    // pass is invisible to the user (PrimeAndHide). Real shows leave it null
-    // and use MAX_ALPHA, exactly like before. `reason` est une étiquette
-    // sémantique du déclencheur, propagée à DeckleHudSource.StateChanged
-    // pour différencier "warm_pass", "hide_sync", "message_timeout",
-    // "show_recording", etc. — sans cette info, lire la trace LogWindow
-    // reviendrait à deviner pourquoi le HUD vient de changer d'état.
-    private void SetState(HudState next, MessagePayload? msg = null, bool bypassGate = false, byte? alphaOverride = null, string reason = "unspecified")
+    // `reason` est une étiquette sémantique du déclencheur, propagée à
+    // DeckleHudSource.StateChanged pour différencier "hide_sync",
+    // "message_timeout", "show_recording", etc. — sans cette info, lire la
+    // trace LogWindow reviendrait à deviner pourquoi le HUD vient de changer
+    // d'état.
+    private void SetState(HudState next, MessagePayload? msg = null, string reason = "unspecified")
     {
         // Overlay disabled in Settings → no-op for any *visible* state. Hidden
         // still runs so an in-flight HUD gets cleared if the user toggles.
-        // bypassGate=true lets the boot warm pass run regardless of the user's
-        // overlay setting (cf. PrimeAndHide).
-        if (next != HudState.Hidden && !bypassGate &&
-            !Settings.SettingsService.Instance.Current.Overlay.Enabled)
+        if (next != HudState.Hidden && !Settings.SettingsService.Instance.Current.Overlay.Enabled)
         {
             return;
         }
@@ -476,19 +420,6 @@ public sealed partial class HudWindow : Window
                 SetAlphaImmediate(MAX_ALPHA);
                 IconAssets.ApplyToWindow(AppWindow, recording: false);
                 NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE);
-
-                // Axe 4 — WarmPassCompleted. Le warm pass est terminé quand
-                // le SetState(Hidden) de fin de PrimeAndHide retombe (Low
-                // priority, après la première frame composée). On émet une
-                // seule fois et on clear le stopwatch pour qu'un Hide
-                // utilisateur ultérieur ne déclenche pas un faux warm
-                // event.
-                if (_warmPassStopwatch is { } sw)
-                {
-                    sw.Stop();
-                    _warmPassStopwatch = null;
-                    DeckleHudSource.Log.WarmPassCompleted((int)sw.ElapsedMilliseconds);
-                }
                 return;
 
             case HudState.Message:
@@ -499,8 +430,10 @@ public sealed partial class HudWindow : Window
                 Message.Visibility = Visibility.Visible;
                 Message.Show(msg);
                 IconAssets.ApplyToWindow(AppWindow, recording: false);
+                bool shouldFadeMessage = ShouldFadeIn(wasShown);
+                if (shouldFadeMessage) SetAlphaImmediate(0);
                 ShowNoActivate();
-                ApplyShowAlpha(targetAlpha: MAX_ALPHA, alphaOverride: alphaOverride, wasShown: wasShown);
+                ApplyShowAlpha(targetAlpha: MAX_ALPHA, shouldFadeIn: shouldFadeMessage);
                 ArmMessageHideTimer(msg.Duration);
                 return;
 
@@ -512,30 +445,25 @@ public sealed partial class HudWindow : Window
                 Message.Visibility = Visibility.Collapsed;
                 Chrono.Visibility  = Visibility.Visible;
                 IconAssets.ApplyToWindow(AppWindow, recording: next == HudState.Recording);
+                bool shouldFadeChrono = ShouldFadeIn(wasShown);
+                if (shouldFadeChrono) SetAlphaImmediate(0);
                 ShowNoActivate();
-                ApplyShowAlpha(targetAlpha: MAX_ALPHA, alphaOverride: alphaOverride, wasShown: wasShown);
+                ApplyShowAlpha(targetAlpha: MAX_ALPHA, shouldFadeIn: shouldFadeChrono);
                 return;
         }
     }
 
-    // Centralised alpha application for visible states. Three branches:
-    //   - alphaOverride.HasValue → warm pass, alpha forced (typically 0),
-    //     proximity skipped so a cursor near the HUD region cannot
-    //     overwrite the override on the next WM_INPUT.
+    // Centralised alpha application for visible states. Two branches:
     //   - Hidden → visible transition with animations enabled → fade-in
     //     150ms cubic ease-out, proximity re-activated on completion.
-    //   - All other cases (state switch while visible, animations off) →
+    //   - Other cases (state switch while visible, animations off) →
     //     instant alpha, proximity activated immediately.
-    private void ApplyShowAlpha(byte targetAlpha, byte? alphaOverride, bool wasShown)
-    {
-        if (alphaOverride.HasValue)
-        {
-            CancelFadeIn();
-            SetAlphaImmediate(alphaOverride.Value);
-            return;
-        }
+    private static bool ShouldFadeIn(bool wasShown) =>
+        !wasShown && AnimationSystemSetting.AreClientAreaAnimationsEnabled();
 
-        if (!wasShown && AnimationSystemSetting.AreClientAreaAnimationsEnabled())
+    private void ApplyShowAlpha(byte targetAlpha, bool shouldFadeIn)
+    {
+        if (shouldFadeIn)
         {
             StartFadeIn(targetAlpha, activateProximityOnComplete: true);
             return;
@@ -618,11 +546,22 @@ public sealed partial class HudWindow : Window
         var rect = GetRectPx();
         AppWindow.MoveAndResize(rect);
 
+        WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", "before_show_noactivate");
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-        NativeMethods.SetWindowPos(
+        WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", "after_show_noactivate");
+        bool setposOk = NativeMethods.SetWindowPos(
             _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
-            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+            NativeMethods.SWP_NOSIZE
+            | NativeMethods.SWP_NOMOVE
+            | NativeMethods.SWP_NOACTIVATE
+            | NativeMethods.SWP_SHOWWINDOW);
+        int setposError = setposOk ? 0 : Marshal.GetLastWin32Error();
+        WindowingProbe.EmitWindowZOrderState(
+            _hwnd, "hud", "after_setwindowpos_topmost",
+            setposOk, setposError);
+        EmitDelayedZOrderState("after_setwindowpos_topmost_50ms", 50, setposOk, setposError);
+        EmitDelayedZOrderState("after_setwindowpos_topmost_250ms", 250, setposOk, setposError);
 
         // Windowing — émis après le MoveAndResize + ShowWindow pour
         // capturer le rect effectif post-DWM. `anchor` reflète le réglage
@@ -633,6 +572,19 @@ public sealed partial class HudWindow : Window
         string position = Settings.SettingsService.Instance.Current.Overlay.Position ?? "";
         string anchor = position.StartsWith("Top") ? "TopCenter" : "BottomCenter";
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);
+    }
+
+    private void EmitDelayedZOrderState(string stage, int delayMs, bool setposOk, int setposError)
+    {
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(delayMs);
+        timer.IsRepeating = false;
+        timer.Tick += (sender, _) =>
+        {
+            sender.Stop();
+            WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", stage, setposOk, setposError);
+        };
+        timer.Start();
     }
 
     // ── Subclass: WM_NCCALCSIZE (no-frame) + WM_INPUT (proximity) ─────────────

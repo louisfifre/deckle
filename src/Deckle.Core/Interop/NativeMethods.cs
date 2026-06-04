@@ -340,6 +340,11 @@ public static class NativeMethods
     // curseur et la sélection traversent la HUD et atteignent la fenêtre
     // en dessous, quel que soit l'alpha layered appliqué.
     public const uint WS_EX_TRANSPARENT = 0x00000020;
+    // WS_EX_NOACTIVATE : la fenêtre ne devient pas foreground quand elle est
+    // affichée ou cliquée. Aligné avec le contrat HUD : information visible,
+    // jamais de vol de focus. Les futurs menus interactifs devront vivre sur
+    // une surface séparée, pas sur cette fenêtre passthrough.
+    public const uint WS_EX_NOACTIVATE = 0x08000000;
     public const uint LWA_ALPHA     = 0x00000002;
 
     [DllImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowLongPtrW")]

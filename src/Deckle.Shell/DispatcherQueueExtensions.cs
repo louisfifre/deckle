@@ -115,7 +115,7 @@ public static class DispatcherQueueExtensions
     /// <param name="callback">Le delegate à exécuter sur le UI thread.</param>
     /// <param name="rejectSource">Identifiant libre passé à DispatcherEnqueueRejected si l'enqueue échoue (ex. "HUD", "LOGWIN").</param>
     /// <param name="rejectWhat">Description courte de l'event perdu (ex. "log entry", "overlay enqueue").</param>
-    /// <param name="priority">Priority d'ordonnancement de la dispatcher queue, propagée au TryEnqueue sous-jacent. Défaut Normal. Passer Low pour différer le callback après le batch de layout courant — pattern de coordination utilisé par les Settings pages pour clearer `_initializing` après hydratation des contrôles et par HudWindow pour le warm pass différé d'une frame.</param>
+    /// <param name="priority">Priority d'ordonnancement de la dispatcher queue, propagée au TryEnqueue sous-jacent. Défaut Normal. Passer Low pour différer le callback après le batch de layout courant — pattern de coordination utilisé par les Settings pages pour clearer `_initializing` après hydratation des contrôles.</param>
     public static bool TryEnqueueObserved(
         this DispatcherQueue queue,
         string operation,

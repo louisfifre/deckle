@@ -38,7 +38,7 @@ public partial class App
             app.QuitApp();
     }
 
-    public static void RestartViaShellExecute()
+    public static void RestartViaShellExecute(string args = "")
     {
         DeckleAppSource.Log.PostBuildRestartRequested();
         try { Settings.SettingsService.Instance.Flush(); } catch { }
@@ -48,10 +48,10 @@ public partial class App
         {
             var psi = new System.Diagnostics.ProcessStartInfo
             {
-                FileName        = "cmd.exe",
-                Arguments       = $"/c start \"\" \"{exePath}\"",
-                UseShellExecute = false,
-                CreateNoWindow  = true,
+                FileName        = exePath,
+                Arguments       = args,
+                UseShellExecute = true,
+                WorkingDirectory = Path.GetDirectoryName(exePath) ?? "",
             };
             DeckleAppSource.Log.PostBuildShellExecute(exePath);
             try { System.Diagnostics.Process.Start(psi); }

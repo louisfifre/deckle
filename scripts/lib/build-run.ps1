@@ -14,7 +14,11 @@ param(
     # triggers a one-shot self-restart at the app side, mitigating the
     # post-build HUD topmost glitch. Disable here for debug scenarios
     # where you want a stable PID (attached debugger, log capture, ...).
-    [switch]$NoAutoRestart
+    [switch]$NoAutoRestart,
+    # Diagnostic branch only: keep this script's build+launch path, but ask
+    # Deckle to relaunch into a bounded HUD z-order self-test instead of
+    # staying resident.
+    [switch]$HudZOrderSelfTest
 )
 
 $ErrorActionPreference = 'Stop'
@@ -86,34 +90,36 @@ if (-not $ExeCandidates) { throw "Exe not found under $BinConfigDir (expected bi
 $ExePath = $ExeCandidates[0].FullName
 Write-Host "Run $ExePath" -ForegroundColor Green
 
-# Launch via `cmd /c start` instead of `Start-Process -FilePath` so the
-# new Deckle process is created via ShellExecute (detached) rather than
-# CreateProcess as a child of PowerShell. Direct CreateProcess from a
-# non-foreground PowerShell host makes Windows treat the new process as
-# also non-foreground, and the foreground lock policy then silently
-# downgrades / defers the WS_EX_TOPMOST flag that HudWindow's
-# OverlappedPresenter posts at construction (IsAlwaysOnTop = true). The
-# net effect: HUD launches behind every other window for the entire
-# session, and only an app restart from Explorer (which routes through
-# ShellExecute and gets proper foreground promotion) cures it.
-# `cmd /c start "" "<path>"` is the canonical Windows idiom for "launch
-# this exe as if the user had double-clicked it from the shell". The
-# empty "" is the START title slot — required when the path is quoted,
-# otherwise `start` interprets the quoted path as the title and silently
-# does nothing.
+function Start-DeckleViaShell {
+    param(
+        [Parameter(Mandatory=$true)][string]$FilePath,
+        [string[]]$DeckleArgs = @()
+    )
+
+    $psi = [System.Diagnostics.ProcessStartInfo]::new()
+    $psi.FileName = $FilePath
+    $psi.UseShellExecute = $true
+    $psi.WorkingDirectory = Split-Path -Parent $FilePath
+    $psi.Arguments = ($DeckleArgs -join ' ')
+    [System.Diagnostics.Process]::Start($psi) | Out-Null
+}
+
+# Launch via real ShellExecute so the new Deckle process is detached from
+# PowerShell and enters the same shell path as a user-opened executable.
+# The earlier `cmd /c start` route went through a console shell first; that
+# looked close but still left Deckle under the timing/foreground state of
+# the build script in the HUD topmost repro.
 #
-# Post-build mitigation: even with cmd /c start, the first launch right
-# after the build has finished still occasionally exhibits the HUD-behind
-# glitch (the foreground lock heuristic appears to be sensitive to the
-# timing of the PowerShell host that just spawned the build). To work
-# around this, we pass --post-build to Deckle.exe so it re-launches
-# itself once via cmd /c start after a short delay, then exits. The
-# second instance never inherits the post-build foreground state. Pass
-# -NoAutoRestart to suppress (debug-attach scenarios).
-if ($NoAutoRestart) {
-    & cmd /c start "" "$ExePath"
+# Post-build mitigation: the first launch right after the build can still
+# inherit a degraded foreground state, so we pass --post-build to Deckle.exe
+# and let the app relaunch itself once via the same ShellExecute primitive.
+# Pass -NoAutoRestart to suppress (debug-attach scenarios).
+if ($HudZOrderSelfTest) {
+    Start-DeckleViaShell -FilePath $ExePath -DeckleArgs @('--post-build-hud-zorder-selftest')
+} elseif ($NoAutoRestart) {
+    Start-DeckleViaShell -FilePath $ExePath
 } else {
-    & cmd /c start "" "$ExePath" --post-build
+    Start-DeckleViaShell -FilePath $ExePath -DeckleArgs @('--post-build')
 }
 
 if ($Wait) {
