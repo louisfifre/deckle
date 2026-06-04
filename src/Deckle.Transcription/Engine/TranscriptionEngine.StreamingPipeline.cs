@@ -297,7 +297,7 @@ public sealed partial class TranscriptionEngine
     // single exact-sized allocation rather than a growing List<float> — the chunks
     // are known and immutable by the time we drain, so there is nothing to double.
     // internal: the ordered-concat invariant it guards is what makes BackendAudio
-    // a faithful corpus record (ADR-0006), exercised directly by Deckle.Tests.
+    // a faithful corpus record (ADR-0006), exercised directly by Deckle.Transcription.Tests.
     internal static float[] ConcatSamples(List<float[]> chunks)
     {
         int total = 0;

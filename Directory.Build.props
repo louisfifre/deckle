@@ -15,7 +15,7 @@
          UseWinUI           — only the modules that compile XAML.
          DefaultLanguage    — only the modules that ship a .resw.
          EnableMsixTooling  — only the modules that must emit their own .pri.
-         OutputType         — App is WinExe, the test project is Exe, libs are default.
+         OutputType         — App is WinExe, test projects are Exe, libs are default.
          Version            — single source of truth is Deckle.App.csproj.
 
        The benchmark/ suite opts out entirely via benchmark/Directory.Build.props

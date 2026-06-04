@@ -1,0 +1,22 @@
+<Project>
+
+  <Import Project="..\Directory.Build.props" />
+
+<PropertyGroup Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests'))">
+    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Win2DWarnNoPlatform>false</Win2DWarnNoPlatform>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests'))">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Deckle.TestSupport\Deckle.TestSupport.csproj" />
+    <Compile Include="$(MSBuildThisFileDirectory)Deckle.TestSupport\WindowsAppSdkModuleInitializer.cs" Link="TestSupport\WindowsAppSdkModuleInitializer.cs" />
+  </ItemGroup>
+
+</Project>

@@ -688,40 +688,51 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── ScreenCaptureService.Loop.cs
 │       └── ScreenCaptureService.Recovery.cs
 ├── tests/
-│   └── Deckle.Tests/
-│       ├── Audio/
-│       │   ├── MicLevelCheckTests.cs
-│       │   ├── MicrophoneTelemetryCalculatorTests.cs
-│       │   └── TranscriptionPreprocessorTests.cs
-│       ├── Chrono/
-│       │   ├── ChronoFormatterTests.cs
-│       │   └── DeckleChronoSourceTests.cs
-│       ├── Diagnostics/
-│       │   ├── DeckleCancellationSourceTests.cs
-│       │   ├── DeckleNetworkSourceTests.cs
-│       │   ├── DeckleResourceSourceTests.cs
-│       │   ├── DeckleThemeSourceTests.cs
-│       │   ├── DeckleThreadingSourceTests.cs
-│       │   ├── DeckleWindowingSourceTests.cs
-│       │   └── TelemetryListenerBootstrapTests.cs
-│       ├── Hud/
-│       │   ├── DeckleHudSourceTests.cs
-│       │   └── ProximityRollupAggregatorTests.cs
-│       ├── Lighting/
-│       │   ├── AmbientHueEchoClassifierTests.cs
-│       │   └── DeckleAmbientSourceTests.cs
-│       ├── Shared/
-│       │   ├── EventArgsExtensions.cs
-│       │   ├── TestEventListener.cs
-│       │   └── WindowsAppSdkBootstrap.cs
-│       ├── Shell/
-│       │   └── DispatcherQueueExtensionsTests.cs
-│       ├── Transcription/
-│       │   ├── EnergySegmenterTests.cs
-│       │   └── StreamingBackendAudioTests.cs
-│       ├── Vision/
-│       │   └── DeckleVisionSourceTests.cs
-│       └── Deckle.Tests.csproj
+│   ├── Deckle.Audio.Tests/
+│   │   ├── Deckle.Audio.Tests.csproj
+│   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   └── TranscriptionPreprocessorTests.cs
+│   ├── Deckle.Chrono.Tests/
+│   │   ├── ChronoFormatterTests.cs
+│   │   ├── Deckle.Chrono.Tests.csproj
+│   │   └── DeckleChronoSourceTests.cs
+│   ├── Deckle.Diagnostics.Telemetry.Tests/
+│   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
+│   │   └── TelemetryListenerBootstrapTests.cs
+│   ├── Deckle.Diagnostics.Tests/
+│   │   ├── Deckle.Diagnostics.Tests.csproj
+│   │   ├── DeckleCancellationSourceTests.cs
+│   │   ├── DeckleNetworkSourceTests.cs
+│   │   ├── DeckleResourceSourceTests.cs
+│   │   ├── DeckleThemeSourceTests.cs
+│   │   ├── DeckleThreadingSourceTests.cs
+│   │   └── DeckleWindowingSourceTests.cs
+│   ├── Deckle.Hud.Tests/
+│   │   ├── Deckle.Hud.Tests.csproj
+│   │   ├── DeckleHudSourceTests.cs
+│   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Lighting.Ambient.Tests/
+│   │   ├── AmbientHueEchoClassifierTests.cs
+│   │   ├── Deckle.Lighting.Ambient.Tests.csproj
+│   │   └── DeckleAmbientSourceTests.cs
+│   ├── Deckle.Shell.Tests/
+│   │   ├── Deckle.Shell.Tests.csproj
+│   │   └── DispatcherQueueExtensionsTests.cs
+│   ├── Deckle.TestSupport/
+│   │   ├── Deckle.TestSupport.csproj
+│   │   ├── EventArgsExtensions.cs
+│   │   ├── TestEventListener.cs
+│   │   ├── WindowsAppSdkBootstrap.cs
+│   │   └── WindowsAppSdkModuleInitializer.cs
+│   ├── Deckle.Transcription.Tests/
+│   │   ├── Deckle.Transcription.Tests.csproj
+│   │   ├── EnergySegmenterTests.cs
+│   │   └── StreamingBackendAudioTests.cs
+│   ├── Deckle.Vision.Tests/
+│   │   ├── Deckle.Vision.Tests.csproj
+│   │   └── DeckleVisionSourceTests.cs
+│   └── Directory.Build.props
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
@@ -731,6 +742,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
+├── Deckle.Tests.sln
 ├── Directory.Build.props
 ├── Directory.Packages.props
 ├── INSTALL.md
