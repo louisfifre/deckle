@@ -1,0 +1,128 @@
+# Deckle — EditorConfig
+#
+# Machine-readable projection of the deckle-nomenclature doctrine: what was
+# prose in a skill becomes live IDE feedback (and a build lever when wanted).
+# The IDE teaches the conventions instead of a human having to remember them.
+#
+# Scope note: C# code-style diagnostics (IDExxxx, including the IDE1006 naming
+# rules below) surface in the IDE by default but NOT during `dotnet build`.
+# To also fail/warn them at build time, set <EnforceCodeStyleInBuild>true</…>
+# in Directory.Build.props — deliberately left off for now to keep build output
+# clean during first adoption.
+
+root = true
+
+# ── All files ─────────────────────────────────────────────────────────────────
+[*]
+indent_style = space
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Line endings are governed by .gitattributes, not restated here.
+
+# ── C# ──────────────────────────────────────────────────────────────────────────
+[*.cs]
+indent_size = 4
+tab_width = 4
+
+# Layout matching the codebase
+csharp_new_line_before_open_brace = all              # Allman
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_using_directive_placement = outside_namespace:suggestion
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Language hygiene the codebase already follows
+dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
+dotnet_style_predefined_type_for_member_access = true:suggestion
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+# ── Naming — the deckle-nomenclature prefixes ───────────────────────────────────
+# Severity is `warning` so the rules stand out in the IDE. Generated code
+# (.g.cs from XAML, source generators) is skipped by the Roslyn naming analyzer.
+# `t_` for [ThreadStatic] fields stays a doctrine-only convention — the standard
+# naming engine cannot target a symbol by attribute.
+
+# Styles
+dotnet_naming_style.pascal_case.capitalization                 = pascal_case
+dotnet_naming_style.interface_prefix.required_prefix           = I
+dotnet_naming_style.interface_prefix.capitalization            = pascal_case
+dotnet_naming_style.type_parameter_prefix.required_prefix      = T
+dotnet_naming_style.type_parameter_prefix.capitalization       = pascal_case
+dotnet_naming_style.underscore_camel.required_prefix           = _
+dotnet_naming_style.underscore_camel.capitalization            = camel_case
+dotnet_naming_style.s_underscore_camel.required_prefix         = s_
+dotnet_naming_style.s_underscore_camel.capitalization          = camel_case
+
+# Symbols
+dotnet_naming_symbols.interfaces.applicable_kinds              = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities    = *
+
+dotnet_naming_symbols.type_parameters.applicable_kinds         = type_parameter
+dotnet_naming_symbols.type_parameters.applicable_accessibilities = *
+
+dotnet_naming_symbols.types.applicable_kinds                   = class, struct, enum, delegate
+dotnet_naming_symbols.types.applicable_accessibilities         = *
+
+dotnet_naming_symbols.constants.applicable_kinds              = field
+dotnet_naming_symbols.constants.required_modifiers            = const
+
+dotnet_naming_symbols.public_members.applicable_kinds         = property, method, field, event
+dotnet_naming_symbols.public_members.applicable_accessibilities = public, internal, protected, protected_internal, private_protected
+
+dotnet_naming_symbols.private_static_fields.applicable_kinds        = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private, internal, private_protected
+dotnet_naming_symbols.private_static_fields.required_modifiers      = static
+
+dotnet_naming_symbols.private_fields.applicable_kinds          = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, internal, private_protected
+
+# Rules — most specific first (Roslyn applies the first match per symbol)
+dotnet_naming_rule.interfaces_prefixed.symbols   = interfaces
+dotnet_naming_rule.interfaces_prefixed.style     = interface_prefix
+dotnet_naming_rule.interfaces_prefixed.severity  = warning
+
+dotnet_naming_rule.type_parameters_prefixed.symbols  = type_parameters
+dotnet_naming_rule.type_parameters_prefixed.style    = type_parameter_prefix
+dotnet_naming_rule.type_parameters_prefixed.severity = warning
+
+dotnet_naming_rule.types_pascal.symbols   = types
+dotnet_naming_rule.types_pascal.style     = pascal_case
+dotnet_naming_rule.types_pascal.severity  = warning
+
+dotnet_naming_rule.constants_pascal.symbols  = constants
+dotnet_naming_rule.constants_pascal.style    = pascal_case
+dotnet_naming_rule.constants_pascal.severity = warning
+
+dotnet_naming_rule.public_members_pascal.symbols  = public_members
+dotnet_naming_rule.public_members_pascal.style    = pascal_case
+dotnet_naming_rule.public_members_pascal.severity = warning
+
+dotnet_naming_rule.private_static_underscore.symbols  = private_static_fields
+dotnet_naming_rule.private_static_underscore.style    = s_underscore_camel
+dotnet_naming_rule.private_static_underscore.severity = warning
+
+dotnet_naming_rule.private_fields_underscore.symbols  = private_fields
+dotnet_naming_rule.private_fields_underscore.style    = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = warning
+
+# ── Project / markup files ──────────────────────────────────────────────────────
+[*.{csproj,props,targets,xml,resw,manifest}]
+indent_size = 2
+
+[*.xaml]
+indent_size = 4
+
+[*.{ps1,psm1}]
+indent_size = 4
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+# Markdown: trailing whitespace can be a deliberate hard line break.
+[*.md]
+trim_trailing_whitespace = false

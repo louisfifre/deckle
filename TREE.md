@@ -720,6 +720,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── Vision/
 │       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
+├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
 ├── AGENTS.md  — codex-deckle-bridge [agent-instructions] Minimal Codex bridge for Deckle. Claude-maintained files remain the source of t…
