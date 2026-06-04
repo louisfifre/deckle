@@ -31,6 +31,28 @@
          Permissive, not coercive — a module that never uses unsafe pays nothing,
          and the interop-heavy modules stop hitting SYSLIB1062 / CS0227. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Artifacts output layout (.NET 8+). Pulls every bin/ + obj/ out of the
+         per-module folders into one root artifacts/ tree, so a module folder
+         holds only its source. Layout: artifacts/<bin|obj|publish>/<Project>/<pivot>,
+         pivot = configuration (TFM omitted — single-targeted; RID appended only
+         when published for a RID). The x64 platform is NOT a pivot, so it leaves
+         the path: src\Deckle.App\bin\x64\Debug\net10...\Deckle.exe collapses to
+         artifacts\bin\Deckle.App\debug\Deckle.exe.
+
+         ArtifactsPath, NOT the bare UseArtifactsOutput flag, is deliberate.
+         $(MSBuildThisFileDirectory) binds to THIS file's directory (the repo
+         root) regardless of who imports it — so tests/, which re-imports this
+         file (tests/Directory.Build.props), consolidates into the SAME root
+         artifacts/ instead of spawning its own tests/artifacts/. benchmark/ has
+         its own Directory.Build.props that does not import this one, so it stays
+         on the classic per-project layout — intended, it is an autonomous box.
+
+         Cohabits with the publish-staging artifacts/Deckle-v<X.Y.Z>/ produced by
+         scripts/lib/publish-app.ps1 (distinct names; the whole artifacts/ tree is
+         git-ignored). publish-app.ps1 passes an explicit -o, so its output path
+         is unaffected by this property. -->
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
   </PropertyGroup>
 
 </Project>

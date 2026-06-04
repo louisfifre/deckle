@@ -1,13 +1,30 @@
 # clean.ps1 — Local workspace cleanup
 #
-# Removes generated artifacts from a Deckle worktree without touching
-# anything tracked by git. Targets per-module `bin/` and `obj/` under
-# `src/` — all `.gitignore`d and rebuilt by the next build, safe to
-# delete and re-create at will.
+# Removes generated build output from a Deckle worktree without touching
+# anything tracked by git. All `.gitignore`d, rebuilt by the next build,
+# safe to delete and re-create at will.
 #
-# Symlink guard: skips any reparse-point folder rather than recursing
-# into it. PowerShell's `Remove-Item -Recurse` follows symlinks and
-# nukes the target — a guard is non-negotiable when scanning blindly.
+# Two locations, since the repo uses the .NET artifacts output layout
+# (root Directory.Build.props sets ArtifactsPath):
+#   - artifacts\{bin,obj,publish,package}\  — the consolidated output of
+#     every src/ and tests/ project (they share the root layout).
+#   - src\<m>\{bin,obj}\, tests\<m>\{bin,obj}\, benchmark\cs\<m>\{bin,obj}\
+#     — stragglers: benchmark/ keeps the classic per-project layout (its
+#     own Directory.Build.props opts out), and a worktree built before the
+#     artifacts migration may still carry old per-module folders. Cleaned
+#     too so a single run leaves the tree pristine.
+#
+# Released ZIP staging (artifacts\Deckle-v<X.Y.Z>\) is KEPT by default — it
+# is a release artefact, not transient build output. Pass -IncludeReleases
+# to purge it as well.
+#
+# The running Deckle process is stopped first: it locks Deckle.exe and its
+# DLLs, and with $ErrorActionPreference='Stop' a locked-file delete would
+# abort the whole purge mid-run. Mirrors build-run.ps1's kill step.
+#
+# Symlink guard: skips any reparse-point folder rather than recursing into
+# it. PowerShell's `Remove-Item -Recurse` follows symlinks and nukes the
+# target — a guard is non-negotiable when scanning blindly.
 
 [CmdletBinding()]
 param(
@@ -19,7 +36,11 @@ param(
     # Interactive worktree picker via scripts/lib/_menu.psm1. Overrides
     # -Target. Useful when cleaning from a terminal with several
     # worktrees checked out.
-    [switch]$Pick
+    [switch]$Pick,
+
+    # Also delete the released ZIP staging under artifacts\Deckle-v*\.
+    # Destructive of release artefacts — opt-in only.
+    [switch]$IncludeReleases
 )
 
 $ErrorActionPreference = 'Stop'
@@ -44,10 +65,8 @@ if ($Pick) {
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 
 # =============================================================================
-# Purge per-module bin/ + obj/ at the root of every src/* folder.
+# Helpers
 # =============================================================================
-$SrcDir = Join-Path $RepoRoot 'src'
-if (-not (Test-Path $SrcDir)) { throw "src/ not found under $RepoRoot" }
 
 # Compute folder size before deletion — gives a meaningful end-of-run
 # tally. Get-ChildItem -Force picks up hidden/system files (e.g. NuGet
@@ -68,40 +87,105 @@ function Format-Size {
     else                    { "$Bytes B" }
 }
 
-$modules    = Get-ChildItem -LiteralPath $SrcDir -Directory
+# Delete one folder, with size tally and reparse-point guard. Returns a
+# hashtable { Removed; Skipped; Bytes } so the caller can accumulate.
+function Remove-OutputDir {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Label
+    )
+    $result = @{ Removed = 0; Skipped = 0; Bytes = [int64]0 }
+    if (-not (Test-Path -LiteralPath $Path)) { return $result }
+
+    # Symlink / junction guard — don't recurse into a reparse point;
+    # Remove-Item would shoot the target on the other side.
+    $item = Get-Item -LiteralPath $Path -Force
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        Write-Host ("  ! skipped (reparse point): {0}" -f $Label) -ForegroundColor Yellow
+        $result.Skipped = 1
+        return $result
+    }
+
+    $bytes = Get-FolderSizeBytes -Path $Path
+    Remove-Item -LiteralPath $Path -Recurse -Force
+    $result.Removed = 1
+    $result.Bytes   = $bytes
+    Write-Host ("  - {0,-44}  ({1})" -f $Label, (Format-Size $bytes)) -ForegroundColor DarkGray
+    return $result
+}
+
+# =============================================================================
+# 0. Stop the running Deckle instance — it locks Deckle.exe + DLLs under
+#    artifacts\bin\Deckle.App\, which would make the delete throw and abort.
+# =============================================================================
+Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
+    Write-Host "Killing Deckle PID $($_.Id)" -ForegroundColor Yellow
+    $_ | Stop-Process -Force
+}
+
 $removed    = 0
 $skipped    = 0
 $totalBytes = [int64]0
 
-Write-Host ""
-Write-Host "Cleaning bin/ and obj/ under src/ ..." -ForegroundColor Cyan
+function Add-Result {
+    param($Result)
+    $script:removed    += $Result.Removed
+    $script:skipped    += $Result.Skipped
+    $script:totalBytes += $Result.Bytes
+}
 
-foreach ($module in $modules) {
-    foreach ($name in @('bin', 'obj')) {
-        $dir = Join-Path $module.FullName $name
-        if (-not (Test-Path -LiteralPath $dir)) { continue }
+# =============================================================================
+# 1. Consolidated artifacts output (src/ + tests/ via the root layout).
+#    bin/obj/publish/package are transient; Deckle-v* release staging is
+#    kept unless -IncludeReleases.
+# =============================================================================
+$ArtifactsDir = Join-Path $RepoRoot 'artifacts'
+if (Test-Path -LiteralPath $ArtifactsDir) {
+    Write-Host ""
+    Write-Host "Cleaning artifacts\ (consolidated build output) ..." -ForegroundColor Cyan
+    foreach ($name in @('bin', 'obj', 'publish', 'package')) {
+        Add-Result (Remove-OutputDir -Path (Join-Path $ArtifactsDir $name) -Label "artifacts\$name")
+    }
 
-        # Symlink / junction guard — don't recurse into a reparse point;
-        # PowerShell's Remove-Item would shoot the target on the other
-        # side. Skip with a visible warning so the user can investigate.
-        $item = Get-Item -LiteralPath $dir -Force
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-            Write-Host ("  ! skipped (reparse point): {0}\{1}" -f $module.Name, $name) -ForegroundColor Yellow
-            $skipped++
-            continue
-        }
-
-        $bytes       = Get-FolderSizeBytes -Path $dir
-        $totalBytes += $bytes
-
-        Remove-Item -LiteralPath $dir -Recurse -Force
-        $removed++
-        Write-Host ("  - {0}\{1,-3}  ({2})" -f $module.Name, $name, (Format-Size $bytes)) -ForegroundColor DarkGray
+    if ($IncludeReleases) {
+        Write-Host "Cleaning artifacts\Deckle-v* (release staging, -IncludeReleases) ..." -ForegroundColor Cyan
+        Get-ChildItem -LiteralPath $ArtifactsDir -Directory -Filter 'Deckle-v*' -ErrorAction SilentlyContinue |
+            ForEach-Object { Add-Result (Remove-OutputDir -Path $_.FullName -Label "artifacts\$($_.Name)") }
     }
 }
 
+# =============================================================================
+# 2. Straggler per-project bin/obj — benchmark/ (classic layout, opts out of
+#    the root props) plus any pre-migration leftovers under src/ and tests/.
+# =============================================================================
+$stragglerRoots = @(
+    (Join-Path $RepoRoot 'src'),
+    (Join-Path $RepoRoot 'tests'),
+    (Join-Path $RepoRoot 'benchmark\cs')
+) | Where-Object { Test-Path -LiteralPath $_ }
+
 Write-Host ""
-Write-Host ("Done. {0} folders removed, {1} freed." -f $removed, (Format-Size $totalBytes)) -ForegroundColor Green
+Write-Host "Cleaning straggler bin/ and obj/ under src/, tests/, benchmark/cs/ ..." -ForegroundColor Cyan
+foreach ($root in $stragglerRoots) {
+    $rootName = Split-Path $root -Leaf
+    $rootParent = Split-Path $root -Parent
+    if ((Split-Path $rootParent -Leaf) -eq 'benchmark') { $rootName = "benchmark\$rootName" }
+    foreach ($module in (Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue)) {
+        foreach ($name in @('bin', 'obj')) {
+            $dir = Join-Path $module.FullName $name
+            Add-Result (Remove-OutputDir -Path $dir -Label "$rootName\$($module.Name)\$name")
+        }
+    }
+}
+
+# =============================================================================
+# Tally
+# =============================================================================
+Write-Host ""
+Write-Host ("Done. {0} folder(s) removed, {1} freed." -f $removed, (Format-Size $totalBytes)) -ForegroundColor Green
 if ($skipped -gt 0) {
     Write-Host ("Skipped {0} reparse-point folder(s) — inspect manually." -f $skipped) -ForegroundColor Yellow
+}
+if (-not $IncludeReleases) {
+    Write-Host "Kept artifacts\Deckle-v* release staging (pass -IncludeReleases to purge)." -ForegroundColor DarkGray
 }

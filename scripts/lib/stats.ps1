@@ -8,9 +8,9 @@
 #   - dynamic file-type counts found in modules
 #   - detailed per-module file tree
 #
-# Generated files and build output are excluded: bin/, obj/, .vs/,
-# __pycache__/, Generated Files/, Properties/, *.g.cs, *.g.i.cs, *.xaml.g.cs,
-# GlobalUsings.g.cs, AssemblyInfo.cs.
+# Generated files and build output are excluded: bin/, obj/, artifacts/,
+# .vs/, __pycache__/, Generated Files/, Properties/, *.g.cs, *.g.i.cs,
+# *.xaml.g.cs, GlobalUsings.g.cs, AssemblyInfo.cs.
 #
 # LOC is intentionally conservative:
 #   - .cs strips blank lines and pure comment lines
@@ -63,7 +63,7 @@ Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 $SrcDir = Join-Path $RepoRoot 'src'
 if (-not (Test-Path $SrcDir)) { throw "src/ not found under $RepoRoot" }
 
-$skipDirs       = @('bin', 'obj', '.git', '.vs', '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', 'Generated Files', 'Properties')
+$skipDirs       = @('bin', 'obj', 'artifacts', '.git', '.vs', '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', 'Generated Files', 'Properties')
 $generatedRegex = '(\.g\.cs|\.g\.i\.cs|\.xaml\.g\.cs|GlobalUsings\.g\.cs|AssemblyInfo\.cs)$'
 $textExtensions = @(
     '.cs', '.xaml', '.resw', '.csproj', '.xml', '.json', '.jsonl',

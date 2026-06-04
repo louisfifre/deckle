@@ -53,12 +53,15 @@ $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 
-# Resolve the exe path lazily after the build (the TargetPlatformVersion
-# may change over time — historically 19041, now 26100 — and we don't
-# want a hardcoded TFM segment to silently launch a stale binary from a
-# previous TPV). We glob for the freshest net10.0-windows10.0.*\Deckle.exe
-# under the configured bin directory after the build returns.
-$BinConfigDir = Join-Path $ProjectDir "bin\x64\$Configuration"
+# Artifacts output layout (see root Directory.Build.props): every bin/ is
+# consolidated under <RepoRoot>\artifacts\bin\<Project>\<pivot>\. For the App
+# the pivot is just the lowercased configuration (single-TFM, so no TFM
+# segment; x64 is not a pivot). We still resolve the exe lazily AFTER the
+# build and glob by pivot prefix rather than hardcoding the full path, so a
+# RID-suffixed pivot (debug_win-x64) or a future TFM segment can't leave us
+# launching a stale binary. LastWriteTime sort picks the freshest.
+$AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
+$PivotPrefix     = $Configuration.ToLowerInvariant()
 
 # 1. Kill running instance (otherwise the .exe is locked)
 Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
@@ -77,16 +80,14 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet build failed (code $LASTEXITCODE)" }
 # 3. Run
 if ($NoRun) { return }
 
-# Resolve the freshest Deckle.exe under bin\x64\<Config>\net10.0-windows*\.
-# Globbing rather than hardcoding the TFM segment so TargetPlatformVersion
-# bumps (e.g. 19041 → 26100 when we needed access to MinUpdateInterval +
-# IDXGIOutput6) don't silently leave us launching the stale exe from the
-# old TPV folder. LastWriteTime sort picks the freshest if both old and
-# new TFM dirs coexist.
-$ExeCandidates = Get-ChildItem -Path $BinConfigDir -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
-    Where-Object { $_.Directory.Name -like 'net10.0-windows10.0.*' } |
+# Resolve the freshest Deckle.exe under artifacts\bin\Deckle.App\<pivot>\.
+# Pivot prefix match (debug / debug_win-x64) rather than an exact folder so a
+# RID-suffixed pivot can't strand us on a stale exe. LastWriteTime sort picks
+# the freshest if several pivots coexist.
+$ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
+    Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
-if (-not $ExeCandidates) { throw "Exe not found under $BinConfigDir (expected bin\x64\$Configuration\net10.0-windows10.0.*\Deckle.exe)" }
+if (-not $ExeCandidates) { throw "Exe not found under $AppArtifactsBin (expected artifacts\bin\Deckle.App\$PivotPrefix\Deckle.exe)" }
 $ExePath = $ExeCandidates[0].FullName
 Write-Host "Run $ExePath" -ForegroundColor Green
 
