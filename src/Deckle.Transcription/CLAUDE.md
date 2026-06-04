@@ -55,7 +55,7 @@ Robustness: the prime MUST run synchronously on the worker thread, never on a de
 
 The idle-unload timer MUST be armed from `WorkerRun`'s `finally` whenever the model is resident and the engine reached `Idle`, not only on the transcription success path. This closes the gap where a primed-then-failed run (e.g. a mic error after the prime) would otherwise leave the model in VRAM with no scheduled unload. It is disarmed at the start of every pipeline (`TryStartFromIdle`) and re-armed at the end.
 
-Do not confuse this with the HUD's own composition warm (`PrimeAndHide` in `Deckle.App` / `Deckle.Hud`): that one pays the first-frame DComp / font-shaping cost at boot and touches no model and no VRAM. It stays at boot — only the *model* warmup moved to on-demand.
+Do not confuse this with the former HUD composition warm (`PrimeAndHide` in `Deckle.App` / `Deckle.Hud`): that boot-time hidden show was removed. The *model* warmup described here remains on-demand and is the only remaining warmup in the first-hotkey path.
 
 ## Non-negotiable UX rules
 

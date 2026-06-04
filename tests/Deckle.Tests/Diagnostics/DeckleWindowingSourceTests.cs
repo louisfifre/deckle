@@ -82,6 +82,10 @@ public class DeckleWindowingSourceTests
             first_visible_above_pid: 1002,
             first_visible_above_class: "Shell_TrayWnd",
             first_visible_above_topmost: true,
+            occluding_above_count: 1,
+            first_occluding_above_pid: 1003,
+            first_occluding_above_class: "ApplicationFrameWindow",
+            first_occluding_above_topmost: true,
             setpos_ok: true, last_error: 0);
 
         var ev = Assert.Single(listener.Events);
@@ -103,7 +107,41 @@ public class DeckleWindowingSourceTests
         Assert.Equal(1002L, ev.Payload?[12]);
         Assert.Equal("Shell_TrayWnd", ev.Payload?[13]);
         Assert.Equal(true, ev.Payload?[14]);
-        Assert.Equal(true, ev.Payload?[15]);
-        Assert.Equal(0, ev.Payload?[16]);
+        Assert.Equal(1, ev.Payload?[15]);
+        Assert.Equal(1003L, ev.Payload?[16]);
+        Assert.Equal("ApplicationFrameWindow", ev.Payload?[17]);
+        Assert.Equal(true, ev.Payload?[18]);
+        Assert.Equal(true, ev.Payload?[19]);
+        Assert.Equal(0, ev.Payload?[20]);
+    }
+
+    [Fact]
+    public void ZOrderSummarySeparatesRawVisibleWindowsFromActualOcclusion()
+    {
+        var hudRect = new WindowingProbe.WindowRect(Left: 100, Top: 100, Right: 372, Bottom: 178);
+        var windowsAbove = new[]
+        {
+            new WindowingProbe.ZOrderWindow(
+                Hwnd: 0x10, Pid: 2001, ClassName: "Shell_TrayWnd",
+                Visible: true, Topmost: true, Cloaked: false,
+                Rect: new WindowingProbe.WindowRect(0, 1030, 1920, 1080)),
+            new WindowingProbe.ZOrderWindow(
+                Hwnd: 0x11, Pid: 2002, ClassName: "Windows.UI.Core.CoreWindow",
+                Visible: true, Topmost: true, Cloaked: true,
+                Rect: new WindowingProbe.WindowRect(90, 90, 390, 190)),
+            new WindowingProbe.ZOrderWindow(
+                Hwnd: 0x12, Pid: 2003, ClassName: "ApplicationFrameWindow",
+                Visible: true, Topmost: true, Cloaked: false,
+                Rect: new WindowingProbe.WindowRect(80, 80, 420, 220)),
+        };
+
+        var summary = WindowingProbe.SummarizeWindowsAboveForTest(hudRect, windowsAbove);
+
+        Assert.Equal(3, summary.VisibleCount);
+        Assert.Equal(2001L, summary.FirstVisiblePid);
+        Assert.Equal("Shell_TrayWnd", summary.FirstVisibleClassName);
+        Assert.Equal(1, summary.OccludingCount);
+        Assert.Equal(2003L, summary.FirstOccludingPid);
+        Assert.Equal("ApplicationFrameWindow", summary.FirstOccludingClassName);
     }
 }

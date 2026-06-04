@@ -14,9 +14,9 @@ namespace Deckle.Hud;
 //
 // Initialement le provider portait uniquement le timeout warning du
 // HideSync rendezvous. La vague d'instrumentation observabilité transverse
-// (mai 2026) l'étend avec cinq axes d'observation interne — transitions
-// de state machine, fade-in, retract message, warm pass boot, rollup
-// proximity — pour rendre la mécanique HUD diagnostiquable depuis la
+// (mai 2026) l'étend avec quatre axes d'observation interne — transitions
+// de state machine, fade-in, retract message, rollup proximity — pour rendre
+// la mécanique HUD diagnostiquable depuis la
 // LogWindow et les JSONL plutôt que via File.AppendAllText ad hoc. Voir
 // la fiche `reference--eventsource-convention--1.2.md` §*HUD interne
 // sous-instrumenté* (lacune 1.1) qui motive l'extension, et CLAUDE.md
@@ -31,7 +31,8 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtStateChanged        = 2;
     public const int EvtFadeInStarted       = 3;
     public const int EvtMessageRetracted    = 4;
-    public const int EvtWarmPassCompleted   = 5;
+    // 5 reserved: former HUD composition warm pass event, removed in 2026-06
+    // when boot-time PrimeAndHide was deleted.
     public const int EvtProximityRollup     = 6;
 
     [Event(EvtHudWarning,
@@ -48,7 +49,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     // Émis par HudWindow.SetState à chaque transition (Hidden, Charging,
     // Recording, Transcribing, Rewriting, Message). `reason` capture le
     // déclencheur sémantique côté appelant (hotkey, paste, message_hide,
-    // warm_pass, etc.). `alpha` et `dpi` sont les paramètres techniques
+    // etc.). `alpha` et `dpi` sont les paramètres techniques
     // du window manager au moment de la transition — un mauvais alpha ou
     // un dpi inattendu signalent souvent un bug de fade-in ou de DPI-
     // aware resizing.
@@ -96,24 +97,7 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtMessageRetracted, from_w, from_h, to_w, to_h, duration_ms);
     }
 
-    // ─── Axe 4 — Warm pass au boot ─────────────────────────────────────
-    //
-    // Émis à la fin du warm pass invisible (PrimeAndHide). Le coût payé
-    // au boot évite la première frame partielle sur le premier hotkey
-    // réel. Une valeur `took_ms` qui dérive vers le haut signale une
-    // régression de cold-path composition (DComp swap chain, font shaping
-    // Bitcount, visual tree DWM).
-    [Event(EvtWarmPassCompleted,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warm pass complete | took_ms={0}")]
-    public void WarmPassCompleted(int took_ms)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtWarmPassCompleted, took_ms);
-    }
-
-    // ─── Axe 5 — Proximity smoothstep (rollup per-session) ─────────────
+    // ─── Axe 4 — Proximity smoothstep (rollup per-session) ─────────────
     //
     // Pattern rollup canonique (cf. classe d'observables n°3 "Boucle temps
     // réel haute fréquence" de la fiche `reference--eventsource-

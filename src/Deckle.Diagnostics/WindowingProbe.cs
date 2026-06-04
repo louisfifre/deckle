@@ -72,10 +72,15 @@ public static class WindowingProbe
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
+    [DllImport("dwmapi.dll", PreserveSig = true)]
+    private static extern int DwmGetWindowAttribute(
+        IntPtr hwnd, uint dwAttribute, out int pvAttribute, int cbAttribute);
+
     private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TOPMOST = 0x00000008;
     private const uint GW_HWNDPREV = 3;
+    private const uint DWMWA_CLOAKED = 14;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
@@ -85,6 +90,37 @@ public static class WindowingProbe
         public int right;
         public int bottom;
     }
+
+    internal readonly record struct WindowRect(int Left, int Top, int Right, int Bottom)
+    {
+        public bool IsEmpty => Right <= Left || Bottom <= Top;
+
+        public bool Intersects(WindowRect other)
+            => !IsEmpty && !other.IsEmpty
+                && Left < other.Right
+                && Right > other.Left
+                && Top < other.Bottom
+                && Bottom > other.Top;
+    }
+
+    internal readonly record struct ZOrderWindow(
+        long Hwnd,
+        long Pid,
+        string ClassName,
+        bool Visible,
+        bool Topmost,
+        bool Cloaked,
+        WindowRect Rect);
+
+    internal readonly record struct ZOrderAboveSummary(
+        int VisibleCount,
+        long FirstVisiblePid,
+        string FirstVisibleClassName,
+        bool FirstVisibleTopmost,
+        int OccludingCount,
+        long FirstOccludingPid,
+        string FirstOccludingClassName,
+        bool FirstOccludingTopmost);
 
     // ── Helpers d'émission ──────────────────────────────────────────────
 
@@ -195,17 +231,24 @@ public static class WindowingProbe
             previousClass = GetClassNameOrEmpty(previous);
         }
 
-        var firstVisibleAbove = FindVisibleWindowAbove(hwnd);
+        WindowRect targetRect = TryGetWindowRect(hwnd, out var rect)
+            ? rect
+            : new WindowRect(0, 0, 0, 0);
+        var above = SummarizeWindowsAbove(hwnd, targetRect);
 
         DeckleWindowingSource.Log.WindowZOrderState(
             window, stage, visible, topmost,
             previousVisible, previousTopmost,
             foregroundPid, foregroundClass,
             previous.ToInt64(), previousPid, previousClass,
-            firstVisibleAbove.Count,
-            firstVisibleAbove.Pid,
-            firstVisibleAbove.ClassName,
-            firstVisibleAbove.Topmost,
+            above.VisibleCount,
+            above.FirstVisiblePid,
+            above.FirstVisibleClassName,
+            above.FirstVisibleTopmost,
+            above.OccludingCount,
+            above.FirstOccludingPid,
+            above.FirstOccludingClassName,
+            above.FirstOccludingTopmost,
             setposOk, lastError);
     }
 
@@ -221,32 +264,112 @@ public static class WindowingProbe
         return GetClassName(hwnd, sb, sb.Capacity) > 0 ? sb.ToString() : "";
     }
 
-    private static (int Count, long Pid, string ClassName, bool Topmost) FindVisibleWindowAbove(IntPtr hwnd)
-    {
-        int count = 0;
-        long firstPid = 0;
-        string firstClass = "";
-        bool firstTopmost = false;
+    internal static ZOrderAboveSummary SummarizeWindowsAboveForTest(
+        WindowRect targetRect,
+        IReadOnlyList<ZOrderWindow> windowsAbove)
+        => SummarizeWindowsAbove(targetRect, windowsAbove);
 
+    private static ZOrderAboveSummary SummarizeWindowsAbove(IntPtr hwnd, WindowRect targetRect)
+    {
+        var windowsAbove = new List<ZOrderWindow>();
         IntPtr current = GetWindow(hwnd, GW_HWNDPREV);
         int guard = 0;
         while (current != IntPtr.Zero && guard++ < 256)
         {
-            if (IsWindowVisible(current))
+            if (TryReadZOrderWindow(current, out var candidate))
             {
-                count++;
-                if (firstPid == 0)
-                {
-                    GetWindowThreadProcessId(current, out uint pid);
-                    firstPid = pid;
-                    firstClass = GetClassNameOrEmpty(current);
-                    firstTopmost = HasTopmostStyle(current);
-                }
+                windowsAbove.Add(candidate);
             }
 
             current = GetWindow(current, GW_HWNDPREV);
         }
 
-        return (count, firstPid, firstClass, firstTopmost);
+        return SummarizeWindowsAbove(targetRect, windowsAbove);
+    }
+
+    private static ZOrderAboveSummary SummarizeWindowsAbove(
+        WindowRect targetRect,
+        IReadOnlyList<ZOrderWindow> windowsAbove)
+    {
+        int visibleCount = 0;
+        long firstVisiblePid = 0;
+        string firstVisibleClass = "";
+        bool firstVisibleTopmost = false;
+
+        int occludingCount = 0;
+        long firstOccludingPid = 0;
+        string firstOccludingClass = "";
+        bool firstOccludingTopmost = false;
+
+        foreach (var current in windowsAbove)
+        {
+            if (current.Visible)
+            {
+                visibleCount++;
+                if (firstVisiblePid == 0)
+                {
+                    firstVisiblePid = current.Pid;
+                    firstVisibleClass = current.ClassName;
+                    firstVisibleTopmost = current.Topmost;
+                }
+            }
+
+            if (IsOccludingTarget(targetRect, current))
+            {
+                occludingCount++;
+                if (firstOccludingPid == 0)
+                {
+                    firstOccludingPid = current.Pid;
+                    firstOccludingClass = current.ClassName;
+                    firstOccludingTopmost = current.Topmost;
+                }
+            }
+        }
+
+        return new ZOrderAboveSummary(
+            visibleCount,
+            firstVisiblePid,
+            firstVisibleClass,
+            firstVisibleTopmost,
+            occludingCount,
+            firstOccludingPid,
+            firstOccludingClass,
+            firstOccludingTopmost);
+    }
+
+    private static bool IsOccludingTarget(WindowRect targetRect, ZOrderWindow candidate)
+        => candidate.Visible
+            && !candidate.Cloaked
+            && candidate.Rect.Intersects(targetRect);
+
+    private static bool TryReadZOrderWindow(IntPtr hwnd, out ZOrderWindow window)
+    {
+        window = default;
+        if (!TryGetWindowRect(hwnd, out var rect)) return false;
+
+        GetWindowThreadProcessId(hwnd, out uint pid);
+        window = new ZOrderWindow(
+            hwnd.ToInt64(),
+            pid,
+            GetClassNameOrEmpty(hwnd),
+            IsWindowVisible(hwnd),
+            HasTopmostStyle(hwnd),
+            IsCloaked(hwnd),
+            rect);
+        return true;
+    }
+
+    private static bool TryGetWindowRect(IntPtr hwnd, out WindowRect rect)
+    {
+        rect = default;
+        if (!GetWindowRect(hwnd, out var nativeRect)) return false;
+        rect = new WindowRect(nativeRect.left, nativeRect.top, nativeRect.right, nativeRect.bottom);
+        return true;
+    }
+
+    private static bool IsCloaked(IntPtr hwnd)
+    {
+        int hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int));
+        return hr == 0 && cloaked != 0;
     }
 }

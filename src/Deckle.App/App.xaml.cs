@@ -353,12 +353,6 @@ public partial class App : Microsoft.UI.Xaml.Application
                 onReplacement: (sev, title, body) => _hudWindow.ShowUserFeedback(sev, title, body),
                 onOverlay:     (sev, title, body) => _overlayManager.Enqueue(sev, title, body)));
 
-        // Warm pass: brief Show + Hide of the HUD at its real position so the
-        // first composition (swap chain DComp + visual tree + Bitcount font
-        // shaping) happens at boot rather than at first hotkey. The flash is
-        // visible during boot — accepted, because the user isn't watching the
-        // HUD position yet. First hotkey afterwards is cold-path-free.
-        _hudWindow.PrimeAndHide();
         Milestone("hudwindow");
 
         // Tray icon : only left-click action lives here ; the right-click
@@ -528,8 +522,9 @@ public partial class App : Microsoft.UI.Xaml.Application
         // is idle. The model is loaded + its kernels compiled on demand on the
         // first hotkey press, inside the engine worker (EnsurePrimed), while
         // the HUD shows its Charging state; it is freed again after the idle
-        // timeout. The HUD's own composition warm (PrimeAndHide, no model)
-        // stays — it pays the DComp/font cost only, never any VRAM.
+        // timeout. There is no separate HUD composition warm at boot anymore:
+        // the first real visible transition pays that cost through the normal
+        // ShowNoActivate + fade-in path.
 
         // Apply saved theme (System/Light/Dark).
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
@@ -553,6 +548,51 @@ public partial class App : Microsoft.UI.Xaml.Application
             // Indistinct du chemin tray quand l'utilisateur ouvre Settings
             // pour la première fois.
             ShowSettingsWindowLazy(pageTag);
+        }
+
+        // Diagnostic-only repro path for the HUD z-order bug. It follows the
+        // same shape as the post-build workaround, but relaunches into a
+        // bounded self-test that triggers the first real HUD show, then quits.
+        int postBuildHudZOrderSelfTestIdx = Array.IndexOf(cliArgs, "--post-build-hud-zorder-selftest");
+        if (postBuildHudZOrderSelfTestIdx >= 0)
+        {
+            DeckleAppSource.Log.CmdLinePostBuildFlag();
+            var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            var timer = dq.CreateTimer();
+            timer.Interval = TimeSpan.FromMilliseconds(800);
+            timer.IsRepeating = false;
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                RestartViaShellExecute("--hud-zorder-selftest");
+            };
+            timer.Start();
+        }
+
+        int hudZOrderSelfTestIdx = Array.IndexOf(cliArgs, "--hud-zorder-selftest");
+        if (hudZOrderSelfTestIdx >= 0)
+        {
+            var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            var showTimer = dq.CreateTimer();
+            showTimer.Interval = TimeSpan.FromMilliseconds(1200);
+            showTimer.IsRepeating = false;
+            showTimer.Tick += (s, e) =>
+            {
+                showTimer.Stop();
+                _hudWindow.ShowRecording();
+
+                var quitTimer = dq.CreateTimer();
+                quitTimer.Interval = TimeSpan.FromMilliseconds(2500);
+                quitTimer.IsRepeating = false;
+                quitTimer.Tick += (s2, e2) =>
+                {
+                    quitTimer.Stop();
+                    _hudWindow.Hide();
+                    QuitApp();
+                };
+                quitTimer.Start();
+            };
+            showTimer.Start();
         }
 
         // If launched with --post-build (set by scripts/lib/build-run.ps1),

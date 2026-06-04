@@ -126,17 +126,17 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     }
 
     // Spécialisation z-order — capture l'état natif autour d'une opération
-    // ShowWindow / SetWindowPos topmost. `previous_*` identifie la fenêtre
-    // immédiatement au-dessus dans le z-order au moment du snapshot ; si
-    // `previous_topmost=true`, le HUD est bien dans la bande topmost mais pas
-    // forcément en tête de cette bande. La classe Win32 distingue notamment
-    // la taskbar (`Shell_TrayWnd`) d'une vraie fenêtre applicative.
+    // ShowWindow / SetWindowPos topmost. `visible_above_count` reste le
+    // z-order brut : une fenêtre visible au sens Win32 peut être cloaked,
+    // hors du rectangle HUD, ou un helper Shell/IME sans occlusion réelle.
+    // `occluding_above_count` est le signal utile pour le bug visuel : visible,
+    // non-cloaked, rect non vide, et intersection géométrique avec le HUD.
     // `setpos_ok/last_error` reflètent l'appel SetWindowPos quand le stage
     // suit cet appel, sinon true/0.
     [Event(EvtWindowZOrderState,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "z-order state | window={0} | stage={1} | visible={2} | topmost={3} | previous_visible={4} | previous_topmost={5} | foreground_pid={6} | foreground_class={7} | previous_hwnd=0x{8:X} | previous_pid={9} | previous_class={10} | visible_above_count={11} | first_visible_above_pid={12} | first_visible_above_class={13} | first_visible_above_topmost={14} | setpos_ok={15} | last_error={16}")]
+           Message = "z-order state | window={0} | stage={1} | visible={2} | topmost={3} | previous_visible={4} | previous_topmost={5} | foreground_pid={6} | foreground_class={7} | previous_hwnd=0x{8:X} | previous_pid={9} | previous_class={10} | visible_above_count={11} | first_visible_above_pid={12} | first_visible_above_class={13} | first_visible_above_topmost={14} | occluding_above_count={15} | first_occluding_above_pid={16} | first_occluding_above_class={17} | first_occluding_above_topmost={18} | setpos_ok={19} | last_error={20}")]
     public void WindowZOrderState(
         string window, string stage,
         bool visible, bool topmost,
@@ -147,6 +147,10 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         long first_visible_above_pid,
         string first_visible_above_class,
         bool first_visible_above_topmost,
+        int occluding_above_count,
+        long first_occluding_above_pid,
+        string first_occluding_above_class,
+        bool first_occluding_above_topmost,
         bool setpos_ok, int last_error)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
@@ -160,6 +164,10 @@ public sealed class DeckleWindowingSource : DeckleEventSource
             first_visible_above_pid,
             first_visible_above_class,
             first_visible_above_topmost,
+            occluding_above_count,
+            first_occluding_above_pid,
+            first_occluding_above_class,
+            first_occluding_above_topmost,
             setpos_ok, last_error);
     }
 }

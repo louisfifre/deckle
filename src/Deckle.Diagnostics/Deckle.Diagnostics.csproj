@@ -14,4 +14,8 @@
     -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Tests" />
+  </ItemGroup>
 </Project>
