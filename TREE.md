@@ -728,6 +728,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
 ├── Directory.Build.props
+├── Directory.Packages.props
 ├── INSTALL.md
 ├── JOURNAL.md  — journal-deckle [project-journal] Journal daté du projet Deckle : avancées techniques validées, observations en c…
 ├── LICENSE

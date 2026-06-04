@@ -1,0 +1,45 @@
+<Project>
+
+  <!-- ── Central Package Management (CPM) ──────────────────────────────────────
+       One source of truth for every third-party package version. Project files
+       carry versionless <PackageReference Include="..." />; the version is resolved
+       from the <PackageVersion> entries below. A WindowsAppSDK bump (today spread
+       across ~13 csproj) becomes a single edit here.
+
+       CentralPackageTransitivePinningEnabled pins transitively-pulled packages to
+       the versions listed here, closing the door on silent transitive drift.
+       CentralPackageVersionOverrideEnabled=false forbids a project from quietly
+       overriding a central version with VersionOverride — versions move here or
+       not at all.
+
+       The benchmark/ suite opts out (ManagePackageVersionsCentrally=false in
+       benchmark/Directory.Build.props) and keeps its own inline versions. -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinUI 3 runtime + build tooling. Versions must stay in lockstep: a single
+         WindowsAppSDK runtime is loaded per process. -->
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
+
+    <!-- MVVM source generators ([ObservableProperty], [RelayCommand]) +
+         SettingsCard/SettingsExpander (the Windows 11 settings-page pattern). -->
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+
+    <!-- Direct2D-backed drawing on a CompositionDrawingSurface (HUD rewriting stroke). -->
+    <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
+
+    <!-- Test stack (tests/Deckle.Tests): xUnit v3 on the Microsoft Testing Platform,
+         VSTest bridge for the Test Explorer. -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+</Project>

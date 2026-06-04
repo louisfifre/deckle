@@ -8,12 +8,12 @@
          CompositionEffectFactory / animations) consommé par les primitives
          de stroke conique et de swipe. Version pinnée identique à
          Deckle.csproj — un seul runtime WinAppSDK chargé par process. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
     <!-- Win2D : Direct2D-backed CanvasDrawingSession sur
          CompositionDrawingSurface. Utilisé pour peindre le conic gradient
          arc-en-ciel et le mask arc — primitives pures, pas de dépendance
          XAML. -->
-    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 
   <ItemGroup>
