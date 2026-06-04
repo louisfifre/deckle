@@ -1,0 +1,36 @@
+<Project>
+
+  <!-- ── Shared MSBuild properties for every Deckle project under src/ and tests/ ──
+       Centralizes the properties that were duplicated, byte-for-byte, across the
+       22 module csproj. A target-framework or platform bump now lives in one
+       place instead of 22 files.
+
+       Only UNCONDITIONAL, universally-true properties belong here. Directory.Build.props
+       is imported very early (before the project body), so anything that depends on a
+       value the project sets later (RID, target-framework-conditional logic) would
+       evaluate wrong here — those stay in the project files.
+
+       Deliberately NOT centralized (legitimately per-project):
+         RootNamespace      — one per module.
+         UseWinUI           — only the modules that compile XAML.
+         DefaultLanguage    — only the modules that ship a .resw.
+         EnableMsixTooling  — only the modules that must emit their own .pri.
+         OutputType         — App is WinExe, the test project is Exe, libs are default.
+         Version            — single source of truth is Deckle.App.csproj.
+
+       The benchmark/ suite opts out entirely via benchmark/Directory.Build.props
+       (different target framework, autonomous sandbox). -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <!-- Permits `unsafe` / LibraryImport in any module without re-declaring it.
+         Permissive, not coercive — a module that never uses unsafe pays nothing,
+         and the interop-heavy modules stop hitting SYSLIB1062 / CS0227. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+</Project>

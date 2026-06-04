@@ -219,6 +219,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── build_html.py
 │   ├── build_corpus_voxtral_val_30.py
 │   ├── CLAUDE.md  — claude-benchmark [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
+│   ├── Directory.Build.props
 │   ├── JOURNAL.md  — journal-benchmark [module-journal] Journal daté du module benchmark : décisions intermédiaires, hypothèses, learni…
 │   ├── pregenerate_groundtruth_gemini.py
 │   └── README.md  — readme-benchmark [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
@@ -719,13 +720,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── Vision/
 │       │   └── DeckleVisionSourceTests.cs
 │       └── Deckle.Tests.csproj
+├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
 ├── AGENTS.md  — codex-deckle-bridge [agent-instructions] Minimal Codex bridge for Deckle. Claude-maintained files remain the source of t…
+├── CHANGELOG.md
 ├── CLAUDE.md  — claude-deckle-root [agent-instructions] Root agent-instructions for Deckle (local Windows utility, .NET 10 / WinUI 3).…
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
+├── Directory.Build.props
+├── Directory.Packages.props
 ├── INSTALL.md
 ├── JOURNAL.md  — journal-deckle [project-journal] Journal daté du projet Deckle : avancées techniques validées, observations en c…
 ├── LICENSE

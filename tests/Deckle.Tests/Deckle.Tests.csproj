@@ -3,12 +3,7 @@
     <!-- TargetFramework aligné sur les modules testés (Chrono, Diagnostics
          compilent en net10.0-windows10.0.26100.0). Une asymétrie ferait
          échouer la résolution des ProjectReference. -->
-    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>Deckle.Tests</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Platforms>x64</Platforms>
 
     <!-- xUnit v3 : un projet de test est un exécutable autonome
          (Microsoft Testing Platform). Compatible aussi avec VSTest via
@@ -27,12 +22,12 @@
 
   <ItemGroup>
     <!-- Orchestration VSTest — découverte par dotnet test et Test Explorer. -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <!-- Framework de test xUnit v3 (versions documentées : xunit.v3 3.2.2,
          xunit.runner.visualstudio 3.1.5). Choix v3 motivé par recommandation
          officielle de l'équipe xUnit pour tout nouveau projet en 2026. -->
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>

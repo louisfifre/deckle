@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>Deckle.Settings</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Platforms>x64</Platforms>
     <!-- WinUI XAML compilation : Deckle.Settings ships the SettingsWindow
          NavView shell + GeneralPage + the four ConsentDialogs + the
          GeneralViewModel. WhisperPage and LlmPage moved out to
@@ -34,13 +29,13 @@
   <ItemGroup>
     <!-- Versions aligned on Deckle.csproj : single WinAppSDK runtime per
          process, bump synchrone obligatoire. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <!-- MVVM Toolkit — [ObservableProperty] / [RelayCommand] sources gen
          used by GeneralViewModel / WhisperViewModel / ProfileViewModel. -->
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- SettingsCard / SettingsExpander — every page consumes them. -->
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 
   <ItemGroup>
