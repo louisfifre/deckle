@@ -707,7 +707,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleResourceSourceTests.cs
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
-│   │   └── DeckleWindowingSourceTests.cs
+│   │   ├── DeckleWindowingSourceTests.cs
+│   │   └── JsonlEventListenerRotationTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
