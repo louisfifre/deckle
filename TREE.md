@@ -12,7 +12,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   └── SKILL.md  — deckle-commits [skill] Commit doctrine for Deckle: the adapted Conventional Commits format, one-intent…
 │       ├── deckle-journal/
 │       │   ├── examples.md
-│       │   └── SKILL.md  — deckle-journal [skill] How to write the JOURNAL.md. Invoke when recording a finding, or a small decisi…
+│       │   └── SKILL.md  — deckle-journal [skill] Journal doctrine for Deckle: how the root and per-module JOURNAL.md chronicles…
 │       ├── deckle-logging/
 │       │   ├── SKILL.md  — deckle-logging [skill] Observability doctrine for Deckle: emission centralization, the split between r…
 │       │   └── taxonomy.md
@@ -24,7 +24,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── deckle-settings-ux/
 │       │   └── SKILL.md  — deckle-settings-ux [skill] UX doctrine for Deckle's settings surfaces: what to expose and how to organize…
 │       ├── deckle-testing/
-│       │   └── SKILL.md  — deckle-testing [skill] Testing posture — test behavior not implementation, stay sober, grow coverage p…
+│       │   └── SKILL.md  — deckle-testing [skill] How the Deckle project tests its code (.NET 10 / WinUI 3) — the testable-withou…
 │       ├── deckle-versioning/
 │       │   └── SKILL.md  — deckle-versioning [skill] Versioning and changelog doctrine for Deckle: how versions are numbered (SemVer…
 │       ├── deckle-workflow/
@@ -356,7 +356,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSchema.cs
 │   │   │   ├── LogWindowEventListener.cs
 │   │   │   └── RoutedJsonlEventListener.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Observability foundation — EventSource providers, levels, sinks, JSONL contract.
+│   │   ├── CLAUDE.md  — claude-deckle-diagnostics [agent-instructions] Doctrine for Deckle.Diagnostics, the observability foundation module. Read befo…
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -373,14 +373,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── AmbientCaptureGate.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
+│   │   ├── CLAUDE.md  — claude-deckle-diagnostics-logging [agent-instructions] Doctrine for Deckle.Diagnostics.Logging (live logging settings and AmbientCaptu…
 │   │   ├── Deckle.Diagnostics.Logging.csproj
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilter.cs
 │   │   └── LogWindowVisibilityMode.cs
 │   ├── Deckle.Diagnostics.Telemetry/
-│   │   ├── CLAUDE.md  — [agent-instructions] Structured JSONL persistence and consent gates.
+│   │   ├── CLAUDE.md  — claude-deckle-diagnostics-telemetry [agent-instructions] Doctrine for Deckle.Diagnostics.Telemetry (JSONL telemetry listeners and user g…
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
 │   │   ├── TelemetryListenerBootstrap.cs
 │   │   ├── TelemetrySettings.cs
@@ -593,10 +593,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrayMenuNativeMethods.cs
 │   │   ├── Themes/
 │   │   │   └── TrayMenu.xaml
-│   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
+│   │   ├── CLAUDE.md  — claude-deckle-shell-traymenu [agent-instructions] Doctrine for Deckle.Shell.TrayMenu, the WinUI 3 tray context menu host. Read be…
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
-│   │   ├── JOURNAL.md  — [module-journal] Dated journal for Deckle.Shell.TrayMenu — in-flight diagnostics, observations m…
+│   │   ├── JOURNAL.md  — journal-shell-traymenu [module-journal] Journal daté du module Deckle.Shell.TrayMenu — diagnostics en cours, observatio…
 │   │   ├── TrayContextMenuHost.cs
 │   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Transcription/

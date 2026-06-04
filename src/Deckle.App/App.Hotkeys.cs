@@ -51,6 +51,17 @@ public partial class App
 
             case ToggleResult.Stopped:
                 DeckleAppSource.Log.HotkeyStop();
+                // Acknowledge the stop on the hotkey thread, the instant the
+                // CAS claims it — symmetric with Started → ShowPreparing above.
+                // The HUD is otherwise driven by engine status, but the next
+                // status ("Transcribing") only fires after the streaming drain
+                // has finished decoding the queued tail; until then the chrono
+                // would keep ticking and the user would perceive the stop as
+                // laggy. Switching here freezes the chrono and shows the
+                // finishing affordance immediately; the drain ("the margin")
+                // runs invisibly behind it. The later status-driven
+                // SwitchToTranscribing is then an idempotent no-op.
+                _hudWindow?.SwitchToTranscribing();
                 break;
 
             case ToggleResult.IgnoredNoProfile:
