@@ -36,7 +36,9 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    dédiées
 //   latency.jsonl                                  ← LatencyRecorded events
 //   microphone.jsonl                               ← MicrophoneTelemetryRecorded
-//                                                    events
+//                                                    events (brut)
+//   microphone.processed.jsonl                     ← PreprocessedTelemetryRecorded
+//                                                    events (miroir post-DSP)
 //   corpus/<bucket>/<tier>/corpus.jsonl            ← CorpusAsrRecorded events
 //                                                    (routés)
 //   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
@@ -44,9 +46,10 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    tier — voir ADR-0006)
 //
 // Sémantique des gates utilisateur :
-//   app.jsonl              ← ApplicationLogToDisk == true
-//   latency.jsonl          ← LatencyEnabled == true
-//   microphone.jsonl       ← MicrophoneTelemetry == true
+//   app.jsonl                  ← ApplicationLogToDisk == true
+//   latency.jsonl              ← LatencyEnabled == true
+//   microphone.jsonl,
+//   microphone.processed.jsonl ← MicrophoneTelemetry == true
 //   corpus/raw/…,
 //   corpus/rewrite-…/      ← CorpusEnabled == true
 //
@@ -89,6 +92,7 @@ public static class TelemetryListenerBootstrap
             predicate: e =>
                    e.EventName != "LatencyRecorded"
                 && e.EventName != "MicrophoneTelemetryRecorded"
+                && e.EventName != "PreprocessedTelemetryRecorded"
                 && e.EventName != "CorpusAsrRecorded"
                 && e.EventName != "CorpusRewriteRecorded"
                 && !ShouldDropApplicationLog(e)
@@ -113,6 +117,18 @@ public static class TelemetryListenerBootstrap
             filePath:  Path.Combine(rootDirectory, "microphone.jsonl"),
             kindLabel: "microphone",
             predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
+                         && ReadGate("MicrophoneTelemetry")));
+
+        // Miroir post-DSP de microphone.jsonl : la distribution du signal
+        // traité, même schéma champ pour champ que le brut, dans un fichier
+        // frère qui trie à côté. Deux fichiers homogènes plutôt qu'un fichier
+        // mixte — chacun se charge tel quel sans filtrer un discriminant, et
+        // le traité n'existe que quand le DSP a tourné. Même consentement :
+        // l'émission gate déjà sur MicrophoneTelemetry côté orchestrateur.
+        _listeners.Add(new JsonlEventListener(
+            filePath:  Path.Combine(rootDirectory, "microphone.processed.jsonl"),
+            kindLabel: "microphone_processed",
+            predicate: e => e.EventName == "PreprocessedTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
         // Corpus normalisé — voir ADR-0006. Deux listeners routés qui

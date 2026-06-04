@@ -39,6 +39,12 @@ public sealed class TelemetryListenerBootstrapTests
         {
             if (IsEnabled()) WriteEvent(3, text);
         }
+
+        [Event(5, Level = EventLevel.Verbose, Message = "post-dsp | text={0}")]
+        public void PreprocessedTelemetryRecorded(string text)
+        {
+            if (IsEnabled()) WriteEvent(5, text);
+        }
     }
 
     [Fact]
@@ -130,6 +136,39 @@ public sealed class TelemetryListenerBootstrapTests
             Assert.Contains("ordinary-log-line", jsonl);
             Assert.DoesNotContain("sensitive-asr-text", jsonl);
             Assert.DoesNotContain("sensitive-rewrite-text", jsonl);
+        }
+        finally
+        {
+            TelemetryListenerBootstrap.ShutDown();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PostDspTelemetryRoutesToProcessedFileNotApplicationLog()
+    {
+        string root = Path.Combine(
+            AppContext.BaseDirectory,
+            "telemetry-postdsp-" + Guid.NewGuid().ToString("N"));
+        string appLog = Path.Combine(root, "app.jsonl");
+        string processed = Path.Combine(root, "microphone.processed.jsonl");
+
+        TelemetryListenerBootstrap.ShutDown();
+        try
+        {
+            TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.ConfigureGates(
+                name => name == "ApplicationLogToDisk" || name == "MicrophoneTelemetry");
+
+            TestTelemetrySource.Log.PreprocessedTelemetryRecorded("processed-distribution");
+            TestTelemetrySource.Log.InfoLine("ordinary-log-line");
+
+            Assert.True(File.Exists(processed));
+            Assert.Contains("processed-distribution", File.ReadAllText(processed));
+
+            string appJsonl = File.ReadAllText(appLog);
+            Assert.Contains("ordinary-log-line", appJsonl);
+            Assert.DoesNotContain("processed-distribution", appJsonl);
         }
         finally
         {
