@@ -35,7 +35,7 @@
     <!-- Direct2D-backed drawing on a CompositionDrawingSurface (HUD rewriting stroke). -->
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
 
-    <!-- Test stack (tests/Deckle.Tests): xUnit v3 on the Microsoft Testing Platform,
+    <!-- Test stack (tests/Deckle.*.Tests): xUnit v3 on the Microsoft Testing Platform,
          VSTest bridge for the Test Explorer. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />

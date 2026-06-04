@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Shell\Deckle.Shell.csproj" />
+    <ProjectReference Include="..\..\src\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+</Project>

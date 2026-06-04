@@ -11,6 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Deckle.Tests" />
+    <InternalsVisibleTo Include="Deckle.Diagnostics.Tests" />
   </ItemGroup>
 </Project>

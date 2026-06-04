@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Deckle.Tests" />
+    <InternalsVisibleTo Include="Deckle.Lighting.Ambient.Tests" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
+    <ProjectReference Include="..\..\src\Deckle.Lighting\Deckle.Lighting.csproj" />
+  </ItemGroup>
+</Project>

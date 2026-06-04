@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Hud\Deckle.Hud.csproj" />
+  </ItemGroup>
+</Project>

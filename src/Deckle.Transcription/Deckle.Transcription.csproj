@@ -31,7 +31,7 @@
     <!-- Exposes internal algorithm helpers (EnergySegmenter) to the test project,
          so they can be unit-tested in isolation without being made public. Same
          MSBuild→Roslyn [InternalsVisibleTo] pattern as Deckle.Hud / Deckle.Lighting.Ambient. -->
-    <InternalsVisibleTo Include="Deckle.Tests" />
+    <InternalsVisibleTo Include="Deckle.Transcription.Tests" />
   </ItemGroup>
 
   <ItemGroup>
