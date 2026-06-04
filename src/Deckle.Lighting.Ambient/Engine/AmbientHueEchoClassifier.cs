@@ -19,8 +19,6 @@ internal readonly record struct AmbientHueEventDecision(
 
 internal static class AmbientHueEchoClassifier
 {
-    public static readonly TimeSpan EchoWindow = TimeSpan.FromSeconds(2);
-
     private const int BrightnessTolerance = 1;
     private const float XyTolerance = 0.002f;
 
@@ -36,9 +34,18 @@ internal static class AmbientHueEchoClassifier
 
         if (lastPushed is { } pushed)
         {
-            var age = nowUtc - pushed.PushedAt;
-            double ageMs = age.Duration().TotalMilliseconds;
-            if (age.Duration() <= EchoWindow && Matches(update, pushed.State))
+            // State match is authoritative — the age is telemetry only. The
+            // last push is our standing intent for this light until we push
+            // again ; the per-light delta-gate suspends pushes precisely while
+            // the colour is unchanged, so a stale slot still reflects what
+            // ambient wants on screen. If the bridge reports that same state
+            // back it is our own (possibly delayed) echo, whatever its age ; a
+            // genuine external command differs on at least one carried
+            // component → Matches fails → External. The old fixed 2 s window
+            // only manufactured false external-stops on static zones (see
+            // AmbientHueEchoClassifierTests, incident 2026-06-04).
+            double ageMs = (nowUtc - pushed.PushedAt).Duration().TotalMilliseconds;
+            if (Matches(update, pushed.State))
             {
                 return new AmbientHueEventDecision(AmbientHueEventDecisionKind.Echo, ageMs);
             }

@@ -245,6 +245,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── research--hyperhdr-interpolators--2026-05-15.md
 │   │   ├── research--inventaire-observabilite-eventsource--2026-05-24.md
 │   │   ├── research--phi-4-multimodal-state-of-the-art--2026-05-27.md  — research-phi-4-multimodal-state-of-the-art-2026-05-27 [research] Synthèse à l'état de l'art (2026-05-27) du modèle Phi-4-Multimodal de Microsoft…
+│   │   ├── research--software-engineering-convention-report--2026-06-04.md
 │   │   ├── research--whisper-alternatives-fine-windowing--2026-05-27.md  — research-whisper-alternatives-fine-windowing-2026-05-27 [research] Alternatives à whisper.cpp pour réduire la fenêtre d'inférence Whisper de 30s à…
 │   │   └── research--whisper-dynamic-vad-distil-fr--2026-05-28.md  — research-whisper-dynamic-vad-distil-fr-2026-05-28 [research] Cartographie de la voie composite « Whisper dynamic windowing + VAD énergie + d…
 │   └── reviews/
@@ -259,6 +260,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── build-run.ps1
 │   │   ├── clean.ps1
 │   │   ├── install-hooks.ps1
+│   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── setup-assets.ps1
 │   │   └── stats.ps1
