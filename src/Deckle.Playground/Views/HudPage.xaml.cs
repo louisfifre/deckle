@@ -292,6 +292,19 @@ public sealed partial class HudPage : Page
         }
         ChronoPreview.ApplyState(state);
 
+        // Clock lifecycle is now separate from the paint (ApplyState only
+        // styles). Drive it explicitly so the preview behaves like the real
+        // HUD does through HudWindow.SetState: Charging parks at zero,
+        // Recording ticks, Transcribing / Rewriting freeze on the current
+        // value with the reveal running.
+        switch (state)
+        {
+            case HudState.Charging:     ChronoPreview.ResetClock(); break;
+            case HudState.Recording:    ChronoPreview.StartClock(); break;
+            case HudState.Transcribing:
+            case HudState.Rewriting:    ChronoPreview.StopClock();  break;
+        }
+
         if (_simulateChangedDigits &&
             (currentTarget == HudTarget.Transcribing || currentTarget == HudTarget.Rewriting))
         {
