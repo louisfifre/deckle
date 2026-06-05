@@ -693,6 +693,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── deckle.code-workspace
 ├── Deckle.Tests.sln
 ├── Directory.Build.props
+├── Directory.Build.targets
 ├── Directory.Packages.props
 ├── INSTALL.md
 ├── JOURNAL.md  — [project-journal] Dated project notes for Deckle — cross-cutting findings too dated for a CLAUDE.…
