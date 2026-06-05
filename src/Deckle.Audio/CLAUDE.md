@@ -13,13 +13,7 @@ Capture doesn't know *why* it runs (transcription, a future Ask-Ollama, anything
 
 ## Transcription pre-processing (`Preprocessing/`)
 
-A post-capture DSP stage that homogenizes the signal before the ASR backend — high-pass, optional gate, gentle compressor, two-pass makeup gain, limiter. It is **two-pass (measure then apply), never a real-time adaptive AGC**, and a pure `float[] → float[]` transform the orchestrator inserts before `TranscribeAsync`. The two-pass makeup self-normalizes every buffer to the same target level whatever it came in at.
-
-**Why the defaults are gentle (central guardrail):** compressing hard lifts the inter-word noise floor, and a lifted noise floor feeds Whisper's silence hallucinations (the spurious « Sous-titres réalisés par… » boilerplate). Hence the ~2:1 ratio, gate **off by default**, conservative target. The parameters are conservative starting points, not asserted optima.
-
-Two invariants: the sub-module is **pure — it emits nothing** (no EventSource dependency; the orchestrator emits the processed-take telemetry on its own provider), and the **corpus keeps the raw buffer** — when the stage is active the backend gets a separate processed buffer while the untouched `audio` is written to the corpus WAV, so a processed variant can always be re-derived.
-
-**Activation is the user's call** — the `Enabled` toggle is the whole control: no auto-gate, no calibration delay (the stage is a near no-op on a mic already at target). A Mic level check records a sample, runs the real DSP on it, and advises *recommended / marginal / not needed* — it proposes, the toggle decides.
+An optional, user-toggled DSP stage (high-pass, optional gate, gentle compressor, two-pass makeup, limiter) that conditions the captured signal for the ASR backend — a pure `float[] → float[]` transform, two-pass (measure then apply), never a real-time AGC, emitting nothing of its own. Defaults are deliberately gentle: hard compression lifts the inter-word noise floor, which feeds Whisper's silence hallucinations (the spurious « Sous-titres réalisés par… »), so the gate is off by default and targets stay conservative — starting points, not asserted optima. Whether the stage earns its place is still open.
 
 ## Observability
 
