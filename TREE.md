@@ -389,6 +389,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — claude-deckle-hud [agent-instructions] Doctrine for Deckle.Hud, the HUD window, overlay manager, and composite shadow…
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
+│   │   ├── HudChrono.Clock.cs
+│   │   ├── HudChrono.Reveal.cs
+│   │   ├── HudChrono.Stroke.cs
 │   │   ├── HudChrono.xaml
 │   │   ├── HudChrono.xaml.cs
 │   │   ├── HudMessage.xaml

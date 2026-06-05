@@ -1,15 +1,7 @@
-using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
-using Deckle.Audio;
-using Deckle.Chrono;
 using Deckle.Composition;
-using Deckle.Diagnostics;
 
 namespace Deckle.Hud;
 
@@ -17,7 +9,7 @@ namespace Deckle.Hud;
 //
 // Owns the Bitcount Single MM.SS.cc clock and the progressive digit accent
 // (each digit that ever changed locks to SystemFillColorCriticalBrush until
-// the next ApplyState(Recording) reset). Stroke sources:
+// the next clock reset). Stroke sources:
 //   - DWM frame (always on)     — 1-dip system accent stroke on the rounded
 //                                  HWND silhouette (DWMWA_BORDER_COLOR =
 //                                  DWMWA_COLOR_DEFAULT in HudWindow). Plays
@@ -30,55 +22,17 @@ namespace Deckle.Hud;
 //
 // The vsync rendering hook (CompositionTarget.Rendering) drives the clock
 // — no DispatcherTimer, no jitter when the UI thread is busy.
+//
+// Split across per-concern partials (see deckle-modularite):
+//   - HudChrono.xaml.cs (this file) — state dispatch, the Apply* paint
+//                                     methods, and the shared vsync hook.
+//   - HudChrono.Clock.cs            — the chronometer face and its lifecycle
+//                                     (ResetClock / StartClock / StopClock).
+//   - HudChrono.Reveal.cs           — the progressive-coloring swipe wave.
+//   - HudChrono.Stroke.cs           — the Composition processing stroke.
 public sealed partial class HudChrono : UserControl
 {
-    // Cross-assembly hook for the recording cap used by UpdateClock to
-    // freeze the chrono at the configured ceiling. The shipping App wires
-    // this to Audio.CaptureSettingsService.Instance.Current.MaxRecordingDurationSeconds
-    // at boot; until wired, the default `int.MaxValue` is a no-op (no cap),
-    // which keeps the lib usable standalone (HudPlayground tests, future
-    // host modules) without a Settings module dependency.
-    //
-    // Read by ChronoFormatter.Decompose on every vsync tick — must be
-    // cheap (a single delegate invoke). Mutating it live is allowed; the
-    // change takes effect on the next render frame.
-    public static System.Func<int> MaxRecordingDurationSecondsProvider { get; set; }
-        = () => int.MaxValue;
-
-    private readonly ChronoTimer _stopwatch = new();
     private bool _renderingHooked;
-
-    private int _lastMin = -1;
-    private int _lastSec = -1;
-    private int _lastCs  = -1;
-
-    // Per-digit changed flags + heat — owned by the SwipeWaveAnimator
-    // since 2026-05-02 (canonical extraction into Deckle.Composition).
-    // The animator holds two parallel arrays of length DigitCount:
-    //   - changed[i] : "was modified during Recording" — preserved across
-    //                  the Recording → Transcribing / Rewriting transition
-    //                  so the swipe can tell which digits are eligible for
-    //                  the accent flash (dots and unchanged digits stay at
-    //                  Opacity 0 on their accent overlay forever).
-    //   - heat[i]    : 0..1 driving the accent overlay's Opacity. Rises
-    //                  fast when the swipe head is on a changed digit,
-    //                  decays slowly afterwards. The asymmetric rise/decay
-    //                  (see SwipeWaveAnimator.SwipeRiseAlpha /
-    //                  SwipeDecayAlpha) gives the wave effect described in
-    //                  the spec: a digit keeps glowing for a moment after
-    //                  the head has moved on, so several digits are
-    //                  partially lit at once — a trailing comet instead of
-    //                  a single moving pixel.
-    // Index order matches `_digitPrimary` / `_digitAccent`:
-    //   0 Min1, 1 Min2, 2 Sec1, 3 Sec2, 4 Cs1, 5 Cs2.
-    private readonly SwipeWaveAnimator _swipe = new(DigitCount);
-
-    // Cached references assembled in EnsureSwipeInfra. Parallel arrays so
-    // the per-frame loop is a tight zip over three indices. Accent elements
-    // are TextBlocks (NOT UIElements in general) so we can assign .Opacity
-    // directly without reaching for Composition.
-    private TextBlock[]? _digitPrimary;
-    private TextBlock[]? _digitAccent;
 
     private HudState _state = HudState.Hidden;
 
@@ -88,13 +42,13 @@ public sealed partial class HudChrono : UserControl
 
         // Pre-init des tableaux _digitPrimary / _digitAccent dès le ctor.
         // Sans ça, ClearDigitHeat() (appelé par ApplyCharging au cold boot
-        // pendant le chargement modèle) early-return sur le null check
-        // l. ~226-233 et ne reset pas les opacités → rendu blanc/vide au
-        // lieu de "00.00.00" en couleur tertiaire (régression introduite
-        // par 7707f09 "fix(hud): complementary digit opacities", qui
-        // ajoute les accès sans garantir l'init préalable). EnsureSwipeInfra
-        // est idempotent (guard `if (_digitPrimary is null)` l. 751), donc
-        // l'appel ici n'a aucun coût quand StartSwipe() le rappelle.
+        // pendant le chargement modèle) early-return sur son null check et
+        // ne reset pas les opacités → rendu blanc/vide au lieu de "00.00.00"
+        // en couleur tertiaire (régression introduite par 7707f09
+        // "fix(hud): complementary digit opacities", qui ajoute les accès
+        // sans garantir l'init préalable). EnsureSwipeInfra est idempotent
+        // (guard `if (_digitPrimary is null)`), donc l'appel ici n'a aucun
+        // coût quand StartSwipe() le rappelle.
         EnsureSwipeInfra();
 
         ChronoRoot.ActualThemeChanged += (_, _) =>
@@ -127,21 +81,8 @@ public sealed partial class HudChrono : UserControl
         };
     }
 
-    // Resolved at runtime from Application.Resources so theme switches
-    // still update the brush (System resource keys flip color across
-    // light/dark). Only ResolveNeutralBrush is used from code — the
-    // critical / primary brushes now live purely in XAML via
-    // {ThemeResource …} bindings on the accent overlay TextBlocks and
-    // the shared ChronoDigitStyle, respectively, and theme changes are
-    // handled by WinUI's resource-tracking machinery. The neutral brush
-    // is the one exception because Charging overrides the primary
-    // Foreground with the tertiary tone on every digit — too
-    // state-specific to express as a ThemeResource default.
-    private static Brush ResolveNeutralBrush() =>
-        (Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush)
-        ?? new SolidColorBrush(Microsoft.UI.Colors.Gray);
-
-    // Single state-driven entry point. Called by HudWindow.SetState.
+    // Single state-driven entry point. Called by HudWindow.SetState (which
+    // also drives the clock lifecycle around it — see HudChrono.Clock.cs).
     public void ApplyState(HudState next)
     {
         _state = next;
@@ -164,60 +105,6 @@ public sealed partial class HudChrono : UserControl
                 ApplyHidden();
                 break;
         }
-    }
-
-    // ── Clock lifecycle ───────────────────────────────────────────────────────
-    //
-    // The functional chronometer, owned here and driven by the host
-    // (HudWindow.SetState maps each transition to one of these) and the
-    // Playground. Deliberately kept OUT of the Apply* paint methods: ApplyState
-    // only styles the card — it never starts, stops, or zeroes the clock. That
-    // separation is what lets the same visual (e.g. the parked Charging look) be
-    // painted over either a zeroed clock at session start or a frozen one at the
-    // end of a take, without the paint deciding the elapsed value.
-
-    // Zero the clock and the digit face. Called on a new session (Charging
-    // entry) so a take never opens on the previous take's frozen value — the
-    // bug the old in-ApplyCharging reset papered over, now an explicit step.
-    public void ResetClock()
-    {
-        _stopwatch.Reset();
-        ClearDigitDisplay();
-    }
-
-    // Restart from zero and begin ticking. Robust to entry without a preceding
-    // ResetClock (the warm path can show Recording directly): clears the face
-    // first so the jump to 00.00.00 doesn't flash the digits that differ from a
-    // leftover frozen value.
-    public void StartClock()
-    {
-        ClearDigitDisplay();
-        _stopwatch.Start();   // ChronoTimer.Start == Stopwatch.Restart (zero + run)
-        UpdateClock();        // paint 00.00.00 before the first vsync tick
-        HookRendering();      // vsync drives UpdateClock while running
-    }
-
-    // Freeze on the final value. UpdateClock latches the elapsed reached between
-    // the last vsync tick and the Stop (may light the last-changed digit) — it
-    // must run before the swipe starts, which the caller guarantees by calling
-    // StopClock before SetState(Transcribing).
-    public void StopClock()
-    {
-        _stopwatch.Stop();
-        UpdateClock();
-    }
-
-    // Reset the visible chrono face to a pristine zero: invalidate the
-    // last-rendered cache so UpdateClock repaints every position, drop the
-    // per-digit "ever-changed" flags and accent heat (the red flash state), and
-    // write the glyphs straight to "0" via ResetDigitTexts (not WriteDigit,
-    // which would treat the change as a tick and flash it).
-    private void ClearDigitDisplay()
-    {
-        _lastMin = _lastSec = _lastCs = -1;
-        ClearDigitChanged();
-        ClearDigitHeat();
-        ResetDigitTexts();
     }
 
     private void ApplyCharging()
@@ -281,62 +168,6 @@ public sealed partial class HudChrono : UserControl
         HookRendering();
     }
 
-    // Drops the per-digit "ever-changed" flags. Not called on
-    // Transcribing / Rewriting entry — those preserve the flags so the
-    // swipe reveal can target only the digits that actually moved.
-    private void ClearDigitChanged()
-    {
-        _swipe.ClearAllChanged();
-    }
-
-    // Drops all heat to zero and pushes Opacity=0 onto the accent
-    // overlays. Used on state entries that need a clean slate (Charging,
-    // Recording start). Transcribing / Rewriting inherit heat from the
-    // last Recording frame so the previously-lit digits decay naturally
-    // as the swipe picks them up.
-    private void ClearDigitHeat()
-    {
-        _swipe.ClearAllHeat();
-        if (_digitAccent is null) return;
-        foreach (var t in _digitAccent) t.Opacity = 0;
-        // Restore the primary-glyph invariant: accent = 0 ⇒ primary = 1.
-        // Without this, primaries knocked to 0 by a previous Recording
-        // flash would stay hidden after the state transition clears the
-        // accents.
-        if (_digitPrimary is null) return;
-        foreach (var t in _digitPrimary) t.Opacity = 1;
-    }
-
-    private void ResetDigitTexts()
-    {
-        Min1.Text = Min2.Text = "0";
-        Sec1.Text = Sec2.Text = "0";
-        Cs1.Text  = Cs2.Text  = "0";
-        DotA.Text = DotB.Text = ".";
-        // Keep the accent overlays' Text in sync even when they're hidden
-        // — otherwise the next heat-up would show a stale digit briefly
-        // before UpdateClock rewrites it.
-        Min1Accent.Text = Min2Accent.Text = "0";
-        Sec1Accent.Text = Sec2Accent.Text = "0";
-        Cs1Accent.Text  = Cs2Accent.Text  = "0";
-    }
-
-    // Clears the local Foreground on all 8 primary TextBlocks. Each falls
-    // back to its Style default (TextFillColorPrimaryBrush). The accent
-    // overlays always carry SystemFillColorCriticalBrush from XAML, so
-    // they don't need clearing here — only the Opacity is state-driven.
-    private void ClearDigitForegrounds()
-    {
-        Min1.ClearValue(TextBlock.ForegroundProperty);
-        Min2.ClearValue(TextBlock.ForegroundProperty);
-        DotA.ClearValue(TextBlock.ForegroundProperty);
-        Sec1.ClearValue(TextBlock.ForegroundProperty);
-        Sec2.ClearValue(TextBlock.ForegroundProperty);
-        DotB.ClearValue(TextBlock.ForegroundProperty);
-        Cs1.ClearValue(TextBlock.ForegroundProperty);
-        Cs2.ClearValue(TextBlock.ForegroundProperty);
-    }
-
     private void ApplyHidden()
     {
         UnhookRendering();
@@ -346,341 +177,6 @@ public sealed partial class HudChrono : UserControl
         // The clock is left as-is (stopped after a take); the next session's
         // ResetClock zeroes it. Rendering is unhooked, so nothing reads a
         // residual value while hidden — it stays invisible and harmless.
-    }
-
-    // ── Composition stroke attach ─────────────────────────────────────────────
-    //
-    // ProcessingSurfaceHost (XAML Border) is the attach point for the
-    // Composition visual produced by HudComposition. The visual sits above
-    // ChronoCard and below the ClockText in the Grid z-order, so its stroke
-    // paints on the card surface but the clock text reads on top.
-    //
-    // Fallback dims (272, 78) catch the pre-layout attach (ActualWidth/Height
-    // are 0 before the first measure pass). The visual is not auto-resized
-    // on subsequent layout passes — acceptable here because Charging/Recording
-    // always resets the surface, and Transcribing/Rewriting only fire after
-    // at least one full chrono measure.
-    //
-    // Single-pipeline, live-modulated variants where possible. The stroke is
-    // created on first enter into Recording / Transcribing / Rewriting. For
-    // Transcribing ↔ Rewriting transitions, ApplyVariant blends effect
-    // properties on the SAME visual — no surface rebuild. The Recording ↔
-    // (Transcribing / Rewriting) boundary crosses between a rotation-frozen
-    // stroke and a spinning one: the two rotation modes are baked at
-    // creation (static TransformMatrix vs KeyFrameAnimation on
-    // CompositionSurfaceBrush.TransformMatrix, settled once and impossible
-    // to unbind cleanly mid-life), so we dispose and rebuild.
-
-    private HudComposition.ProcessingStroke? _processingStroke;
-    private ProcessingVariant? _currentVariant;
-
-    // Serializes the ProcessingStroke lifecycle (create / Dispose, owned by
-    // the UI thread in Attach/DetachProcessingVisual) against the ~20 Hz RMS
-    // push (UpdateAudioLevel, on the recording audio thread). The push itself
-    // is documented thread-safe per Composition's contract, but the gate it
-    // relies on — _currentVariant == Recording — was check-then-act across the
-    // two threads: the audio thread could clear both guards, then the UI
-    // thread Dispose() the stroke mid-pump, leaving UpdateLevel writing to a
-    // destroyed visual (native AV, no managed trace). This only became
-    // reachable once the Recording→Transcribing switch could fire while
-    // capture was still draining (instant Stop acknowledgement); until then
-    // the switch always ran after capture had quiesced. The lock is
-    // uncontended at 20 Hz and only ever briefly held during a state switch.
-    private readonly object _strokeSync = new();
-
-    // Acquire timestamp + handle gel pour le ProcessingStroke courant —
-    // capturés à AttachProcessingVisual, lus à Dispose pour calculer
-    // age_ms côté DeckleResourceSource. Le handle managé reste valide
-    // après dispose pour identifier l'event releasé (le stroke lui-même
-    // a été remplacé par null).
-    private long _processingStrokeAcquiredTicks;
-    private long _processingStrokeHandle;
-
-    // HudPlayground-only: config override consumed (and cleared) by the
-    // next stroke creation inside AttachProcessingVisual. Lets the
-    // playground bring up a state with a caller-supplied config in a
-    // single stroke creation — without this slot, the playground had to
-    // call ApplyState (creates a stroke with shipping defaults) then
-    // RebuildStroke (dispose + recreate with tuning config), which
-    // doubled the stroke churn on every target change and inflated
-    // live_stroke_count artefacts in the instrumentation log.
-    //
-    // Null in shipping Deckle — OnLaunched and HudWindow never set it,
-    // so AttachProcessingVisual falls back to the factories' default
-    // configs. Shipping behaviour is byte-identical.
-    private HudComposition.ConicArcStrokeConfig? _nextStrokeConfig;
-
-    // EMA-smoothed perceptual level. The mapping math + the four
-    // tunables (EmaAlpha / MinDbfs / MaxDbfs / DbfsCurveExponent) live
-    // in Deckle.Audio.AudioLevelMapper — they're audio-domain, not
-    // HUD-domain. The smoother STATE is per-consumer though, so it
-    // stays here.
-    private float _smoothedLevel;
-
-    // Forwarded from HudWindow.OnAudioLevel. Called from the recording
-    // audio thread. Gated on _currentVariant == Recording so the engine
-    // event can stay subscribed permanently — Transcribing / Rewriting
-    // strokes have ApplyVariant-driven opacity and must not be pushed
-    // from the RMS pump. CompositionPropertySet + StartAnimation are
-    // thread-safe per Composition's contract — no DispatcherQueue.
-    public void UpdateAudioLevel(float rms)
-    {
-        // Held for the whole read-and-write so a UI-thread Dispose can never
-        // land between the guard and UpdateLevel — see _strokeSync.
-        lock (_strokeSync)
-        {
-            if (_processingStroke is null) return;
-            if (_currentVariant != ProcessingVariant.Recording) return;
-
-            float perceptual = AudioLevelMapper.RmsToPerceptualLevel(rms);
-            float a = AudioLevelMapper.EmaAlpha;
-            _smoothedLevel = _smoothedLevel * a + perceptual * (1f - a);
-            _processingStroke.UpdateLevel(_smoothedLevel);
-        }
-    }
-
-    private void AttachProcessingVisual(ProcessingVariant variant)
-    {
-        bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
-
-        // Rotation-frozen vs spinning strokes cannot share a SpriteVisual —
-        // the TransformMatrix is set once at creation (static matrix or
-        // keyframe animation) and swapping modes live isn't supported by
-        // Composition. Tear the existing stroke down when crossing that
-        // boundary; in-kind transitions (Transcribing ↔ Rewriting) keep
-        // the same visual and only blend effect properties.
-        // Whole mutation region under _strokeSync: the audio thread reads
-        // _processingStroke / _currentVariant in UpdateAudioLevel, so the
-        // Dispose, the rebuild, and the _currentVariant flip must be atomic
-        // against it — otherwise the pump can write to a half-swapped or
-        // destroyed stroke. UI-thread + infrequent, so holding it across the
-        // Composition calls is free in practice.
-        lock (_strokeSync)
-        {
-            bool crossingBoundary =
-                _processingStroke != null &&
-                IsRecording(variant) != IsRecording(_currentVariant);
-
-            if (crossingBoundary)
-            {
-                ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-                // Sub-provider transverse Resource — release du stroke au
-                // moment du dispose boundary-crossing (Recording ↔ Processing).
-                int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                                           * 1000L / Stopwatch.Frequency);
-                DeckleResourceSource.Log.ResourceReleased(
-                    "composition-visual", _processingStrokeHandle, ageMsBoundary, "hud-chrono-stroke");
-                _processingStroke!.Dispose();
-                _processingStroke = null;
-            }
-
-            if (_processingStroke == null)
-            {
-                var compositor = ElementCompositionPreview
-                    .GetElementVisual(ProcessingSurfaceHost).Compositor;
-
-                float w = (float)ProcessingSurfaceHost.ActualWidth;
-                float h = (float)ProcessingSurfaceHost.ActualHeight;
-                if (w == 0f || h == 0f) { w = 272f; h = 78f; }
-                var size = new Vector2(w, h);
-
-                // Consume the one-shot config override if the playground armed
-                // one before this ApplyState call. Null in shipping Deckle.
-                var cfg = _nextStrokeConfig;
-                _nextStrokeConfig = null;
-
-                _processingStroke = variant == ProcessingVariant.Recording
-                    ? HudComposition.CreateRecordingStroke(compositor, size, cfg)
-                    : HudComposition.CreateProcessingStroke(compositor, size, cfg);
-                ElementCompositionPreview.SetElementChildVisual(
-                    ProcessingSurfaceHost, _processingStroke.Visual);
-
-                // Sub-provider transverse Resource — acquire du stroke.
-                // Handle = RuntimeHelpers.GetHashCode du Visual managé (stable
-                // pour la durée de vie de l'objet). size_bytes=0 — la taille
-                // mémoire d'un Visual Composition n'est pas mesurable côté
-                // managé sans introspection coûteuse, conformément à la
-                // convention du provider.
-                _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
-                _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
-                DeckleResourceSource.Log.ResourceAcquired(
-                    "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
-            }
-
-            // Reset the EMA accumulator on every Recording entry so leftover
-            // energy from a previous recording session doesn't seed the new
-            // outline with a non-zero opacity floor. Safe to reset here even
-            // on a same-kind re-attach (ApplyRecording → ApplyRecording) — the
-            // Recording path always starts from silence.
-            if (variant == ProcessingVariant.Recording)
-                _smoothedLevel = 0f;
-
-            _currentVariant = variant;
-
-            // Cold start or in-kind transition: blend the effect properties to
-            // the new variant's targets. ApplyVariant skips Opacity for
-            // Recording (UpdateLevel owns that channel).
-            _processingStroke.ApplyVariant(variant, isDark);
-        }
-    }
-
-    private void DetachProcessingVisual()
-    {
-        // Same _strokeSync discipline as AttachProcessingVisual — the final
-        // teardown disposes the stroke the audio pump may still be reading.
-        lock (_strokeSync)
-        {
-            if (_processingStroke == null) return;
-
-            ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-            // Sub-provider transverse Resource — release du stroke au moment
-            // du teardown final (Hidden state).
-            int ageMs = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                               * 1000L / Stopwatch.Frequency);
-            DeckleResourceSource.Log.ResourceReleased(
-                "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
-            _processingStroke.Dispose();
-            _processingStroke = null;
-            _currentVariant   = null;
-        }
-    }
-
-    private static bool IsRecording(ProcessingVariant? v)
-        => v == ProcessingVariant.Recording;
-
-    // HudPlayground-only: rebuild the stroke with a caller-supplied config
-    // so baked-geometry knobs (StrokeThickness, WedgeCount, ConicSpan*,
-    // ArcMirror, ArcPhaseTurns, etc.) can be explored interactively. The
-    // stroke is rebuilt, not mutated — paint-time fields are baked into
-    // Win2D surfaces and cannot be animated live.
-    //
-    // No-op when no variant is active (Hidden / Charging have no stroke).
-    // The current variant determines which factory is called; the caller
-    // must pass a config that matches (Recording* fields honoured when
-    // variant == Recording, generic fields otherwise).
-    // `log` is an optional diagnostic sink used exclusively by the
-    // HudPlayground — shipping Deckle never passes one, so the null-
-    // conditional invocations collapse to zero cost. Each anchor lets
-    // the playground log panel show the exact lifecycle order when
-    // a stroke is observed freezing mid-run; the try/catch wraps
-    // the whole teardown + rebuild + apply sequence so a Composition
-    // exception thrown deep inside any of the factories surfaces as a
-    // visible ERROR line instead of freezing silently.
-    // HudPlayground-only: force the "digit was modified during Recording"
-    // flags so the swipe reveal (only visible on flagged digits) can be
-    // observed without first running a full Recording cycle. Shipping
-    // Deckle never calls this — the flags flip naturally inside
-    // UpdateClock as the chrono advances.
-    //
-    // The four CS digits and both seconds digits are the usual candidates
-    // for "was modified" because a typical recording spans at least a few
-    // tenths of a second. Minutes stay unflagged unless a call supplies
-    // true for them explicitly — mirrors the shipping pattern where
-    // minutes only flip on recordings longer than 60s.
-    public void SimulateChangedDigits(
-        bool min1, bool min2,
-        bool sec1, bool sec2,
-        bool cs1,  bool cs2)
-    {
-        // Index order matches the animator's flags: 0 Min1, 1 Min2,
-        // 2 Sec1, 3 Sec2, 4 Cs1, 5 Cs2.
-        _swipe.SetChanged(0, min1);
-        _swipe.SetChanged(1, min2);
-        _swipe.SetChanged(2, sec1);
-        _swipe.SetChanged(3, sec2);
-        _swipe.SetChanged(4, cs1);
-        _swipe.SetChanged(5, cs2);
-    }
-
-    // HudPlayground-only: arms a config override to be consumed by the
-    // very next stroke creation inside AttachProcessingVisual (which
-    // happens during ApplyState for Recording / Transcribing / Rewriting).
-    // The override is one-shot — it's cleared as soon as it's used, so
-    // subsequent ApplyState calls without a fresh Set* would fall back to
-    // the factories' defaults. Use RebuildStroke after the state is live
-    // to apply a new config without changing state.
-    public void SetNextStrokeConfig(HudComposition.ConicArcStrokeConfig config)
-    {
-        _nextStrokeConfig = config;
-    }
-
-    public void RebuildStroke(
-        HudComposition.ConicArcStrokeConfig config,
-        System.Action<string, string>? log = null)
-    {
-        if (_currentVariant is not { } variant)
-        {
-            log?.Invoke("REBUILD", "skip — no active variant");
-            return;
-        }
-
-        try
-        {
-            log?.Invoke("REBUILD", $"begin variant={variant}");
-
-            ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-            log?.Invoke("REBUILD", "detached old visual from host");
-
-            // Sub-provider transverse Resource — release du stroke avant
-            // dispose dans le path Playground RebuildStroke.
-            if (_processingStroke != null)
-            {
-                int ageMsRebuild = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                                          * 1000L / Stopwatch.Frequency);
-                DeckleResourceSource.Log.ResourceReleased(
-                    "composition-visual", _processingStrokeHandle, ageMsRebuild, "hud-chrono-stroke");
-            }
-            _processingStroke?.Dispose();
-            _processingStroke = null;
-            log?.Invoke("REBUILD", "disposed old ProcessingStroke");
-
-            var compositor = ElementCompositionPreview
-                .GetElementVisual(ProcessingSurfaceHost).Compositor;
-
-            float w = (float)ProcessingSurfaceHost.ActualWidth;
-            float h = (float)ProcessingSurfaceHost.ActualHeight;
-            bool fallback = (w == 0f || h == 0f);
-            if (fallback) { w = 272f; h = 78f; }
-            var size = new Vector2(w, h);
-            log?.Invoke("REBUILD", $"size={w:F1}×{h:F1}{(fallback ? " (fallback)" : "")}");
-
-            _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, config)
-                : HudComposition.CreateProcessingStroke(compositor, size, config);
-            // Log the unique CreationId + live-count alongside the variant
-            // so the playground log reads chronologically as "created #N
-            // (live=K)" — when K starts climbing beyond 1, the Dispose
-            // path is failing somewhere and that's the freeze signal.
-            log?.Invoke("REBUILD",
-                $"created {(variant == ProcessingVariant.Recording ? "Recording" : "Processing")}Stroke " +
-                $"#{_processingStroke.CreationId} (live={HudComposition.LiveStrokeCount})");
-
-            ElementCompositionPreview.SetElementChildVisual(
-                ProcessingSurfaceHost, _processingStroke.Visual);
-            log?.Invoke("REBUILD", "attached new visual to host");
-
-            // Sub-provider transverse Resource — acquire du nouveau stroke
-            // dans le path Playground RebuildStroke.
-            _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
-            _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
-            DeckleResourceSource.Log.ResourceAcquired(
-                "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
-
-            bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
-            _processingStroke.ApplyVariant(variant, isDark);
-            log?.Invoke("REBUILD", $"ApplyVariant {variant} isDark={isDark} — done");
-        }
-        catch (System.Exception ex)
-        {
-            // Composition can throw (e.g. DirectX device lost, surface
-            // creation failure, expression parse error in StartRotation).
-            // Without this catch the exception bubbles to the UI thread
-            // and either crashes the playground or — worse — silently
-            // kills the visual's animations, which is exactly the
-            // "freeze mid-run" symptom we are tracking down.
-            log?.Invoke("ERROR", $"RebuildStroke threw {ex.GetType().Name}: {ex.Message}");
-            throw;
-        }
     }
 
     private void HookRendering()
@@ -705,168 +201,4 @@ public sealed partial class HudChrono : UserControl
         UpdateClock();
         UpdateSwipe();
     }
-
-    // Writes `newText` onto both the primary and accent TextBlocks at
-    // `index`, flags the digit as "changed" for the downstream swipe,
-    // and bumps its heat to 1 so the accent overlay is visible
-    // immediately — the Recording-time "each change flashes red" UX
-    // we have been iterating on. Returns early if the text didn't
-    // actually change (no-op on every vsync for stationary digits).
-    // Index order matches the swipe animator's per-element arrays:
-    // 0 Min1, 1 Min2, 2 Sec1, 3 Sec2, 4 Cs1, 5 Cs2.
-    private void WriteDigit(int index, string newText, TextBlock primary, TextBlock accent)
-    {
-        if (primary.Text == newText) return;
-        primary.Text = newText;
-        accent.Text  = newText;
-        _swipe.SetChanged(index, true);
-        _swipe.SetHeat(index, 1f);
-        // Push the flash directly on the overlay. During Recording the
-        // vsync loop (UpdateClock) runs but UpdateSwipe is dormant
-        // (_swipeRunning=false), so without this line heat=1 never
-        // reaches the overlay and the digit stays primary. During
-        // Transcribing/Rewriting the swipe rewrites Opacity every
-        // vsync — this write is immediately superseded by UpdateSwipe,
-        // so no interference with the wave animation.
-        //
-        // Invariant primary.Opacity + accent.Opacity = 1 so only one
-        // glyph ever contributes ink. Without this, both TextBlocks
-        // render at full alpha simultaneously and the accent glyph
-        // appears visibly thicker / bolder than an unchanged digit,
-        // because two ClearType-hinted copies of the same glyph at
-        // the same position double up on subpixel coverage.
-        accent.Opacity  = 1;
-        primary.Opacity = 0;
-    }
-
-    private void UpdateClock()
-    {
-        int capSec = MaxRecordingDurationSecondsProvider();
-        var d = ChronoFormatter.Decompose(_stopwatch.Elapsed, capSec);
-        int min = d.Minutes;
-        int sec = d.Seconds;
-        int cs  = d.Centiseconds;
-
-        if (min != _lastMin)
-        {
-            int d1 = min / 10, d2 = min % 10;
-            WriteDigit(0, d1.ToString(), Min1, Min1Accent);
-            WriteDigit(1, d2.ToString(), Min2, Min2Accent);
-            _lastMin = min;
-        }
-        if (sec != _lastSec)
-        {
-            int d1 = sec / 10, d2 = sec % 10;
-            WriteDigit(2, d1.ToString(), Sec1, Sec1Accent);
-            WriteDigit(3, d2.ToString(), Sec2, Sec2Accent);
-            _lastSec = sec;
-        }
-        if (cs != _lastCs)
-        {
-            int d1 = cs / 10, d2 = cs % 10;
-            WriteDigit(4, d1.ToString(), Cs1, Cs1Accent);
-            WriteDigit(5, d2.ToString(), Cs2, Cs2Accent);
-            _lastCs = cs;
-        }
-    }
-
-    // ── Swipe reveal animation ───────────────────────────────────────────
-    //
-    // During Transcribing and Rewriting, a wave travels left→right across
-    // the 6 digits. Each digit carries its own *heat* scalar in [0, 1]
-    // driving the Opacity of its accent overlay TextBlock — when heat
-    // rises, the overlay (SystemFillColorCriticalBrush) cross-fades in
-    // over the primary; at heat=1 the digit reads as pure red.
-    //
-    // The wave motion math (head walk + asymmetric rise/decay lerp) lives
-    // in `SwipeWaveAnimator` (Deckle.Composition.Primitives) since
-    // 2026-05-02. HudChrono drives the animator's Tick() each vsync and
-    // copies the per-element heat values onto the digits' XAML
-    // TextBlock.Opacity. Tunables (cycle, easing, rise/decay alphas,
-    // head domain) are public statics on SwipeWaveAnimator and can be
-    // tuned live by the playground. See the type-level comment on
-    // SwipeWaveAnimator for the full algorithm description.
-    //
-    // Dots (DotA / DotB) have no accent overlay and no heat tracking —
-    // they stay primary the whole cycle. Unchanged digits (those that
-    // did not flip during Recording, per the animator's changed flags)
-    // have their target pinned at 0 so their heat only decays; if they
-    // inherit any heat from the Recording hand-off, it fades and then
-    // they stay dark.
-    //
-    // Why managed driving instead of CompositionPropertySet + animation:
-    // the heat state depends on the head index *and* the per-digit
-    // changed flag, neither of which is cleanly expressible as a
-    // Composition Expression. At 6 elements × vsync the per-frame cost
-    // is trivial in managed code.
-
-    // Digit count — structural, must match the 6 accent overlays declared
-    // in HudChrono.xaml. Not a tunable. Passed to the animator at
-    // construction so its internal arrays are sized identically.
-    private const int DigitCount = 6;
-
-    private readonly System.Diagnostics.Stopwatch _swipeStopwatch = new();
-    private bool _swipeRunning;
-
-    private void EnsureSwipeInfra()
-    {
-        if (_digitPrimary is null)
-        {
-            _digitPrimary = new[] { Min1, Min2, Sec1, Sec2, Cs1, Cs2 };
-            _digitAccent  = new[] { Min1Accent, Min2Accent, Sec1Accent, Sec2Accent, Cs1Accent, Cs2Accent };
-        }
-    }
-
-    private void StartSwipe()
-    {
-        EnsureSwipeInfra();
-        if (_swipeRunning) return;
-        _swipeStopwatch.Restart();
-        _swipeRunning = true;
-    }
-
-    private void StopSwipe()
-    {
-        if (!_swipeRunning) return;
-        _swipeStopwatch.Stop();
-        _swipeRunning = false;
-        // Drop heat to zero and hide the accent overlays on the way out.
-        // The next state entry (ApplyRecording / ApplyCharging) takes
-        // over from a clean slate.
-        ClearDigitHeat();
-    }
-
-    private void UpdateSwipe()
-    {
-        if (!_swipeRunning || _digitPrimary is null || _digitAccent is null) return;
-
-        // Advance the animator: it computes new heats given the seconds
-        // elapsed since the cycle started, reading the SwipeWaveAnimator
-        // statics for cadence / easing / rise-decay alphas.
-        _swipe.Tick(_swipeStopwatch.Elapsed.TotalSeconds);
-
-        for (int i = 0; i < DigitCount; i++)
-        {
-            // Push the new heat onto the overlay's Opacity. TextBlock
-            // Opacity is a DP so the set is a no-op when unchanged; no
-            // need to guard manually — but we round to 3 decimals first
-            // so a heat of 0.9999997 (floating noise) doesn't repeatedly
-            // invalidate the render pass.
-            //
-            // The primary glyph's Opacity is pushed to (1 - accent) so
-            // the two layers never double up on subpixel coverage (see
-            // WriteDigit comment). Skipping this invariant makes
-            // Recording-time flashes look bolder than unchanged digits.
-            double rounded = System.Math.Round(_swipe.GetHeat(i), 3);
-            if (_digitAccent[i].Opacity != rounded)
-                _digitAccent[i].Opacity = rounded;
-            double primaryOpacity = 1.0 - rounded;
-            if (_digitPrimary[i].Opacity != primaryOpacity)
-                _digitPrimary[i].Opacity = primaryOpacity;
-        }
-    }
-
-    // CubicBezierEase moved to Deckle.Composition.Primitives.Easing
-    // 2026-05-02 — see Deckle.Composition/Primitives/Easing.cs. Pure
-    // math, callers reach it as Easing.CubicBezier(...).
 }
