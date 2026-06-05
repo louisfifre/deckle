@@ -112,11 +112,17 @@ public sealed partial class HudChrono : UserControl
             // palette — re-apply the variant on live theme change so the
             // stroke brightness matches the new substrate immediately.
             // Rewriting is palette-neutral and doesn't need this pass.
-            if (_processingStroke != null && _currentVariant is { } v
-                && v != ProcessingVariant.Rewriting)
+            // Same _strokeSync discipline: touches the stroke the audio pump
+            // may be writing, so a live theme switch during recording can't
+            // overlap a Dispose/rebuild on the shared field.
+            lock (_strokeSync)
             {
-                _processingStroke.ApplyVariant(
-                    v, ChronoRoot.ActualTheme == ElementTheme.Dark);
+                if (_processingStroke != null && _currentVariant is { } v
+                    && v != ProcessingVariant.Rewriting)
+                {
+                    _processingStroke.ApplyVariant(
+                        v, ChronoRoot.ActualTheme == ElementTheme.Dark);
+                }
             }
         };
     }
@@ -332,6 +338,20 @@ public sealed partial class HudChrono : UserControl
     private HudComposition.ProcessingStroke? _processingStroke;
     private ProcessingVariant? _currentVariant;
 
+    // Serializes the ProcessingStroke lifecycle (create / Dispose, owned by
+    // the UI thread in Attach/DetachProcessingVisual) against the ~20 Hz RMS
+    // push (UpdateAudioLevel, on the recording audio thread). The push itself
+    // is documented thread-safe per Composition's contract, but the gate it
+    // relies on — _currentVariant == Recording — was check-then-act across the
+    // two threads: the audio thread could clear both guards, then the UI
+    // thread Dispose() the stroke mid-pump, leaving UpdateLevel writing to a
+    // destroyed visual (native AV, no managed trace). This only became
+    // reachable once the Recording→Transcribing switch could fire while
+    // capture was still draining (instant Stop acknowledgement); until then
+    // the switch always ran after capture had quiesced. The lock is
+    // uncontended at 20 Hz and only ever briefly held during a state switch.
+    private readonly object _strokeSync = new();
+
     // Acquire timestamp + handle gel pour le ProcessingStroke courant —
     // capturés à AttachProcessingVisual, lus à Dispose pour calculer
     // age_ms côté DeckleResourceSource. Le handle managé reste valide
@@ -369,13 +389,18 @@ public sealed partial class HudChrono : UserControl
     // thread-safe per Composition's contract — no DispatcherQueue.
     public void UpdateAudioLevel(float rms)
     {
-        if (_processingStroke is null) return;
-        if (_currentVariant != ProcessingVariant.Recording) return;
+        // Held for the whole read-and-write so a UI-thread Dispose can never
+        // land between the guard and UpdateLevel — see _strokeSync.
+        lock (_strokeSync)
+        {
+            if (_processingStroke is null) return;
+            if (_currentVariant != ProcessingVariant.Recording) return;
 
-        float perceptual = AudioLevelMapper.RmsToPerceptualLevel(rms);
-        float a = AudioLevelMapper.EmaAlpha;
-        _smoothedLevel = _smoothedLevel * a + perceptual * (1f - a);
-        _processingStroke.UpdateLevel(_smoothedLevel);
+            float perceptual = AudioLevelMapper.RmsToPerceptualLevel(rms);
+            float a = AudioLevelMapper.EmaAlpha;
+            _smoothedLevel = _smoothedLevel * a + perceptual * (1f - a);
+            _processingStroke.UpdateLevel(_smoothedLevel);
+        }
     }
 
     private void AttachProcessingVisual(ProcessingVariant variant)
@@ -388,86 +413,100 @@ public sealed partial class HudChrono : UserControl
         // Composition. Tear the existing stroke down when crossing that
         // boundary; in-kind transitions (Transcribing ↔ Rewriting) keep
         // the same visual and only blend effect properties.
-        bool crossingBoundary =
-            _processingStroke != null &&
-            IsRecording(variant) != IsRecording(_currentVariant);
-
-        if (crossingBoundary)
+        // Whole mutation region under _strokeSync: the audio thread reads
+        // _processingStroke / _currentVariant in UpdateAudioLevel, so the
+        // Dispose, the rebuild, and the _currentVariant flip must be atomic
+        // against it — otherwise the pump can write to a half-swapped or
+        // destroyed stroke. UI-thread + infrequent, so holding it across the
+        // Composition calls is free in practice.
+        lock (_strokeSync)
         {
-            ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-            // Sub-provider transverse Resource — release du stroke au
-            // moment du dispose boundary-crossing (Recording ↔ Processing).
-            int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                                       * 1000L / Stopwatch.Frequency);
-            DeckleResourceSource.Log.ResourceReleased(
-                "composition-visual", _processingStrokeHandle, ageMsBoundary, "hud-chrono-stroke");
-            _processingStroke!.Dispose();
-            _processingStroke = null;
+            bool crossingBoundary =
+                _processingStroke != null &&
+                IsRecording(variant) != IsRecording(_currentVariant);
+
+            if (crossingBoundary)
+            {
+                ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
+                // Sub-provider transverse Resource — release du stroke au
+                // moment du dispose boundary-crossing (Recording ↔ Processing).
+                int ageMsBoundary = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
+                                           * 1000L / Stopwatch.Frequency);
+                DeckleResourceSource.Log.ResourceReleased(
+                    "composition-visual", _processingStrokeHandle, ageMsBoundary, "hud-chrono-stroke");
+                _processingStroke!.Dispose();
+                _processingStroke = null;
+            }
+
+            if (_processingStroke == null)
+            {
+                var compositor = ElementCompositionPreview
+                    .GetElementVisual(ProcessingSurfaceHost).Compositor;
+
+                float w = (float)ProcessingSurfaceHost.ActualWidth;
+                float h = (float)ProcessingSurfaceHost.ActualHeight;
+                if (w == 0f || h == 0f) { w = 272f; h = 78f; }
+                var size = new Vector2(w, h);
+
+                // Consume the one-shot config override if the playground armed
+                // one before this ApplyState call. Null in shipping Deckle.
+                var cfg = _nextStrokeConfig;
+                _nextStrokeConfig = null;
+
+                _processingStroke = variant == ProcessingVariant.Recording
+                    ? HudComposition.CreateRecordingStroke(compositor, size, cfg)
+                    : HudComposition.CreateProcessingStroke(compositor, size, cfg);
+                ElementCompositionPreview.SetElementChildVisual(
+                    ProcessingSurfaceHost, _processingStroke.Visual);
+
+                // Sub-provider transverse Resource — acquire du stroke.
+                // Handle = RuntimeHelpers.GetHashCode du Visual managé (stable
+                // pour la durée de vie de l'objet). size_bytes=0 — la taille
+                // mémoire d'un Visual Composition n'est pas mesurable côté
+                // managé sans introspection coûteuse, conformément à la
+                // convention du provider.
+                _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
+                _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
+                DeckleResourceSource.Log.ResourceAcquired(
+                    "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
+            }
+
+            // Reset the EMA accumulator on every Recording entry so leftover
+            // energy from a previous recording session doesn't seed the new
+            // outline with a non-zero opacity floor. Safe to reset here even
+            // on a same-kind re-attach (ApplyRecording → ApplyRecording) — the
+            // Recording path always starts from silence.
+            if (variant == ProcessingVariant.Recording)
+                _smoothedLevel = 0f;
+
+            _currentVariant = variant;
+
+            // Cold start or in-kind transition: blend the effect properties to
+            // the new variant's targets. ApplyVariant skips Opacity for
+            // Recording (UpdateLevel owns that channel).
+            _processingStroke.ApplyVariant(variant, isDark);
         }
-
-        if (_processingStroke == null)
-        {
-            var compositor = ElementCompositionPreview
-                .GetElementVisual(ProcessingSurfaceHost).Compositor;
-
-            float w = (float)ProcessingSurfaceHost.ActualWidth;
-            float h = (float)ProcessingSurfaceHost.ActualHeight;
-            if (w == 0f || h == 0f) { w = 272f; h = 78f; }
-            var size = new Vector2(w, h);
-
-            // Consume the one-shot config override if the playground armed
-            // one before this ApplyState call. Null in shipping Deckle.
-            var cfg = _nextStrokeConfig;
-            _nextStrokeConfig = null;
-
-            _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, cfg)
-                : HudComposition.CreateProcessingStroke(compositor, size, cfg);
-            ElementCompositionPreview.SetElementChildVisual(
-                ProcessingSurfaceHost, _processingStroke.Visual);
-
-            // Sub-provider transverse Resource — acquire du stroke.
-            // Handle = RuntimeHelpers.GetHashCode du Visual managé (stable
-            // pour la durée de vie de l'objet). size_bytes=0 — la taille
-            // mémoire d'un Visual Composition n'est pas mesurable côté
-            // managé sans introspection coûteuse, conformément à la
-            // convention du provider.
-            _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
-            _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
-            DeckleResourceSource.Log.ResourceAcquired(
-                "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
-        }
-
-        // Reset the EMA accumulator on every Recording entry so leftover
-        // energy from a previous recording session doesn't seed the new
-        // outline with a non-zero opacity floor. Safe to reset here even
-        // on a same-kind re-attach (ApplyRecording → ApplyRecording) — the
-        // Recording path always starts from silence.
-        if (variant == ProcessingVariant.Recording)
-            _smoothedLevel = 0f;
-
-        _currentVariant = variant;
-
-        // Cold start or in-kind transition: blend the effect properties to
-        // the new variant's targets. ApplyVariant skips Opacity for
-        // Recording (UpdateLevel owns that channel).
-        _processingStroke.ApplyVariant(variant, isDark);
     }
 
     private void DetachProcessingVisual()
     {
-        if (_processingStroke == null) return;
+        // Same _strokeSync discipline as AttachProcessingVisual — the final
+        // teardown disposes the stroke the audio pump may still be reading.
+        lock (_strokeSync)
+        {
+            if (_processingStroke == null) return;
 
-        ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-        // Sub-provider transverse Resource — release du stroke au moment
-        // du teardown final (Hidden state).
-        int ageMs = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                           * 1000L / Stopwatch.Frequency);
-        DeckleResourceSource.Log.ResourceReleased(
-            "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
-        _processingStroke.Dispose();
-        _processingStroke = null;
-        _currentVariant   = null;
+            ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
+            // Sub-provider transverse Resource — release du stroke au moment
+            // du teardown final (Hidden state).
+            int ageMs = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
+                               * 1000L / Stopwatch.Frequency);
+            DeckleResourceSource.Log.ResourceReleased(
+                "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
+            _processingStroke.Dispose();
+            _processingStroke = null;
+            _currentVariant   = null;
+        }
     }
 
     private static bool IsRecording(ProcessingVariant? v)
