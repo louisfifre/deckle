@@ -14,7 +14,8 @@ namespace Deckle.Inference.Onnx;
 // The model is the unified v5 silero_vad.onnx (16 kHz / 8 kHz in one file), run
 // at 16 kHz: 512-sample windows, each fed with a 64-sample context prefix carried
 // from the previous window (the reference OnnxWrapper behaviour — feeding the bare
-// 512 also runs but shifts the probabilities off the reference thresholds).
+// 512 reportedly runs too but is expected to shift the probabilities off the
+// reference thresholds; inherited from the reference, not measured here).
 //
 // Inference (this class) and the decision logic (SileroSpeechTimestamps) are kept
 // separate on purpose: the state machine is pure and unit-tested, this is the thin

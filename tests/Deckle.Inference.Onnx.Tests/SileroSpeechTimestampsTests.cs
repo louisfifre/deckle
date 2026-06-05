@@ -23,9 +23,9 @@ public class SileroSpeechTimestampsTests
     private static float[] Probs(params (float value, int count)[] runs)
         => runs.SelectMany(r => Enumerable.Repeat(r.value, r.count)).ToArray();
 
-    private static List<(int start, int end)> Compute(float[] probs)
+    private static List<(int start, int end)> Compute(float[] probs, SileroVadOptions? options = null)
         => SileroSpeechTimestamps
-            .Compute(probs, probs.Length * W, SileroVadOptions.Default)
+            .Compute(probs, probs.Length * W, options ?? SileroVadOptions.Default)
             .Select(s => (s.StartSample, s.EndSample))
             .ToList();
 
@@ -79,5 +79,25 @@ public class SileroSpeechTimestampsTests
         var segs = Compute(Probs((0.9f, 10), (0.4f, 3), (0.9f, 10)));
         Assert.Single(segs);
         Assert.Equal((0, 11776), segs[0]);
+    }
+
+    [Fact]
+    public void TightGapPaddingSplitsTheGapWithoutOverlap()
+    {
+        // When the inter-span gap is narrower than 2*pad, the reference splits it
+        // by halves so the padded spans meet instead of overlapping. At the default
+        // 30 ms pad that branch is unreachable (min-silence always leaves a wider
+        // gap), so widen the pad to 100 ms (1600 samples → 2*pad = 3200) over the
+        // same two-span signal — its raw gap of 2560 now falls under 3200.
+        var segs = Compute(
+            Probs((0.9f, 10), (0.1f, 5), (0.9f, 10)),
+            SileroVadOptions.Default with { SpeechPadMs = 100 });
+
+        // Raw spans (0,5120) and (7680,12800): gap 2560 split by 1280, so the two
+        // padded spans meet exactly at 6400 with no overlap.
+        Assert.Equal(2, segs.Count);
+        Assert.Equal((0, 6400), segs[0]);
+        Assert.Equal((6400, 12800), segs[1]);
+        Assert.True(segs[0].end <= segs[1].start);
     }
 }

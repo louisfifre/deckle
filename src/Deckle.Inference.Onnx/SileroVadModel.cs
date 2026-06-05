@@ -9,7 +9,6 @@ namespace Deckle.Inference.Onnx;
 // ~2.31 MB, pinned to the immutable v5.0 tag so the URL never moves with master.
 public static class SileroVadModel
 {
-    public const string FileName  = "silero_vad.onnx";
-    public const string Url       = "https://raw.githubusercontent.com/snakers4/silero-vad/v5.0/files/silero_vad.onnx";
-    public const long   SizeBytes = 2_313_101L;
+    public const string FileName = "silero_vad.onnx";
+    public const string Url      = "https://raw.githubusercontent.com/snakers4/silero-vad/v5.0/files/silero_vad.onnx";
 }
