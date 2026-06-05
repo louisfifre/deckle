@@ -13,7 +13,7 @@ whisper.cpp emits a flood of native log lines, unrelated to the EventSource pipe
 
 ## Repetition guard
 
-`RepetitionDetector` catches a whisper-specific failure: on long audio with ambiguous trailing silence, the greedy decoder loops on N identical segments at `p̂ ≈ 0.99`, where `logprob_thold` and `entropy_thold` don't bite. It aborts the run through the `abort_callback`, keeping the segments produced so far. It lives here, not in the parent — another backend will fail differently.
+`RepetitionDetector` catches a whisper-specific failure: on long audio with ambiguous trailing silence, the greedy decoder loops at `p̂ ≈ 0.99`, where `logprob_thold` and `entropy_thold` don't bite. Two shapes are guarded on a strict character-exact match — one phrase repeating (`A A A`, the observed 2026-04-18 case) and an alternating pair (`A B A B`). The strict match keeps a legitimate refrain from tripping it; the abort is non-destructive — it stops the runaway decode through the `abort_callback` and keeps the segments produced so far. It lives here, not in the parent — another backend will fail differently.
 
 ## Native runtime
 

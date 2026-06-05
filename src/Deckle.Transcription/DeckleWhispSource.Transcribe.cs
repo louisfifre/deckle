@@ -147,10 +147,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeRepetitionLoop,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "repetition loop detected — {0} identical segments ('{1}'); requesting whisper to abort")]
-    public void TranscribeRepetitionLoop(int streak, string preview)
+           Message = "repetition loop detected — period-{1} streak {0} ('{2}'); requesting whisper to abort")]
+    public void TranscribeRepetitionLoop(int streak, int period, string preview)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoop, streak, preview);
+        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoop, streak, period, preview);
     }
 
     [Event(EvtTranscribeSkipped,
