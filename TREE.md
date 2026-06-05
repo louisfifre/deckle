@@ -355,6 +355,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudState.cs
 │   │   ├── HudWindow.xaml
 │   │   ├── HudWindow.xaml.cs
+│   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
 │   │   ├── MessageKind.cs
 │   │   ├── ProximityRollupAggregator.cs
 │   │   └── WindowSlideAnimator.cs
@@ -397,6 +398,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── ILightOutput.cs
+│   │   ├── JOURNAL.md  — [module-journal] Color-science decisions and the Night Owl gamut bug for Deckle.Lighting — read…
 │   │   ├── LightColor.cs
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
@@ -592,6 +594,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── ITranscriptionEngineHost.cs
+│   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes and kept decisions for Deckle.Transcription — read on demand wh…
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml

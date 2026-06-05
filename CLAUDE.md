@@ -1,6 +1,5 @@
 ---
-name: claude-deckle-root
-description: "Root agent-instructions for Deckle (local Windows utility, .NET 10 / WinUI 3). Identity, hard rules, posture, and pointers to where the rest lives. Read first on every Deckle session."
+description: Root agent-instructions for Deckle — identity, hard rules, posture, and where the rest lives.
 type: agent-instructions
 ---
 
@@ -31,5 +30,5 @@ Everything specialized is discoverable, not pre-chewed here — orient, never re
 - "How we do things" doctrines → `deckle-*` skills in `.claude/skills/`; their descriptions say when to invoke them, go look.
 - A module's local technical doctrine → the `CLAUDE.md` at that module's root.
 - Repo structure (tree, headers, skills) → `TREE.md`, auto-generated.
-- Frozen decisions → `docs/adr/`. Versioned specs → `docs/reference/`. Dated research → `docs/research/`.
+- Frozen decisions → `docs/adr/`.
 - WinUI/XAML and Windows APIs → Microsoft Learn MCP before local code.
