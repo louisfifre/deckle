@@ -409,6 +409,21 @@ public sealed partial class HudWindow : Window
         else if (!isShown && wasShown)
             EndProximitySessionAndFlush();
 
+        // Clock lifecycle — owned by the chrono control, driven from here, the
+        // single transition dispatcher, NOT by the Apply* paint methods. A new
+        // session zeroes the face, recording starts ticking, the Stop (the
+        // instant-ack on the hotkey thread, or the later engine status) freezes
+        // it. Kept out of ApplyState so the painted visual and the elapsed value
+        // stay independent — see HudChrono's clock lifecycle remark. Gated with
+        // the visible states (above the overlay-disabled early return), so a
+        // disabled overlay never arms the vsync tick on a hidden control.
+        switch (next)
+        {
+            case HudState.Charging:     Chrono.ResetClock(); break;
+            case HudState.Recording:    Chrono.StartClock(); break;
+            case HudState.Transcribing: Chrono.StopClock();  break;
+        }
+
         switch (next)
         {
             case HudState.Hidden:

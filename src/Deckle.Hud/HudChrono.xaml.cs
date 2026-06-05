@@ -166,22 +166,73 @@ public sealed partial class HudChrono : UserControl
         }
     }
 
-    private void ApplyCharging()
+    // ── Clock lifecycle ───────────────────────────────────────────────────────
+    //
+    // The functional chronometer, owned here and driven by the host
+    // (HudWindow.SetState maps each transition to one of these) and the
+    // Playground. Deliberately kept OUT of the Apply* paint methods: ApplyState
+    // only styles the card — it never starts, stops, or zeroes the clock. That
+    // separation is what lets the same visual (e.g. the parked Charging look) be
+    // painted over either a zeroed clock at session start or a frozen one at the
+    // end of a take, without the paint deciding the elapsed value.
+
+    // Zero the clock and the digit face. Called on a new session (Charging
+    // entry) so a take never opens on the previous take's frozen value — the
+    // bug the old in-ApplyCharging reset papered over, now an explicit step.
+    public void ResetClock()
     {
         _stopwatch.Reset();
-        UnhookRendering();
-        StopSwipe();
+        ClearDigitDisplay();
+    }
 
+    // Restart from zero and begin ticking. Robust to entry without a preceding
+    // ResetClock (the warm path can show Recording directly): clears the face
+    // first so the jump to 00.00.00 doesn't flash the digits that differ from a
+    // leftover frozen value.
+    public void StartClock()
+    {
+        ClearDigitDisplay();
+        _stopwatch.Start();   // ChronoTimer.Start == Stopwatch.Restart (zero + run)
+        UpdateClock();        // paint 00.00.00 before the first vsync tick
+        HookRendering();      // vsync drives UpdateClock while running
+    }
+
+    // Freeze on the final value. UpdateClock latches the elapsed reached between
+    // the last vsync tick and the Stop (may light the last-changed digit) — it
+    // must run before the swipe starts, which the caller guarantees by calling
+    // StopClock before SetState(Transcribing).
+    public void StopClock()
+    {
+        _stopwatch.Stop();
+        UpdateClock();
+    }
+
+    // Reset the visible chrono face to a pristine zero: invalidate the
+    // last-rendered cache so UpdateClock repaints every position, drop the
+    // per-digit "ever-changed" flags and accent heat (the red flash state), and
+    // write the glyphs straight to "0" via ResetDigitTexts (not WriteDigit,
+    // which would treat the change as a tick and flash it).
+    private void ClearDigitDisplay()
+    {
         _lastMin = _lastSec = _lastCs = -1;
         ClearDigitChanged();
         ClearDigitHeat();
         ResetDigitTexts();
+    }
 
-        // Charging is the one state where the primary text is painted in
-        // the neutral / tertiary colour — a "parked" clock waiting for the
-        // first recording. Override the Style default Foreground for the
-        // 6 digits; dots stay primary (they're structural punctuation,
-        // not data, so they read at full contrast regardless of state).
+    private void ApplyCharging()
+    {
+        UnhookRendering();
+        StopSwipe();
+
+        // Pure paint: the "parked" clock look — primary text in the neutral /
+        // tertiary colour, waiting for the first recording. Override the Style
+        // default Foreground for the 6 digits; dots stay primary (structural
+        // punctuation, not data, so they read at full contrast regardless of
+        // state). The clock value and the digit glyphs are owned by the clock
+        // lifecycle (ResetClock on entry, driven by the host) — Charging must
+        // not touch them, so this same style can later be reused over a frozen
+        // clock without zeroing it.
         var neutral = ResolveNeutralBrush();
         Min1.Foreground = neutral; Min2.Foreground = neutral;
         Sec1.Foreground = neutral; Sec2.Foreground = neutral;
@@ -193,53 +244,36 @@ public sealed partial class HudChrono : UserControl
 
     private void ApplyRecording()
     {
-        _stopwatch.Start();
         StopSwipe();
 
         AttachProcessingVisual(ProcessingVariant.Recording);
 
-        _lastMin = _lastSec = _lastCs = -1;
-        ClearDigitChanged();
-        ClearDigitHeat();
-        ResetDigitTexts();
-
-        // Clear local Foreground so each primary TextBlock inherits its
-        // Style default (TextFillColorPrimaryBrush, theme-resource-bound).
-        // UpdateClock will then bump the swipe animator's heat to 1 on
-        // any digit that changes — the accent overlay cross-fades in
-        // immediately (no latency during Recording, because the head
-        // isn't "sweeping" here — each change is an independent event).
+        // Clear local Foreground so each primary TextBlock inherits its Style
+        // default (TextFillColorPrimaryBrush, theme-resource-bound). The clock
+        // face itself (the 00.00.00 reset + the ticking + the per-tick accent
+        // flash) is owned by StartClock, which the host calls before this.
         ClearDigitForegrounds();
-
-        UpdateClock();
-        HookRendering();
     }
 
     private void ApplyTranscribing()
     {
-        // Freeze the clock at its last value.
-        _stopwatch.Stop();
-
-        // Order matters: UpdateClock first to write the final elapsed value
-        // (which may mark the last-changed digit because the stopwatch
-        // advanced between the last vsync tick and the Stop), then the
-        // swipe starts. We KEEP the animator's changed flags so the swipe
-        // knows which digits are eligible for the accent flash.
-        UpdateClock();
+        // The clock is frozen by StopClock (the host calls it before this),
+        // which also latches the final elapsed value and may light the
+        // last-changed digit — we KEEP the animator's changed flags so the
+        // swipe knows which digits are eligible for the accent reveal.
         ClearDigitForegrounds();
 
         AttachProcessingVisual(ProcessingVariant.Transcribing);
         StartSwipe();
-        // HookRendering drives OnRendering → UpdateSwipe (stopwatch is
-        // stopped so UpdateClock is a no-op on the digit values).
+        // HookRendering drives OnRendering → UpdateSwipe (the clock is stopped,
+        // so UpdateClock is a no-op on the digit values).
         HookRendering();
     }
 
     private void ApplyRewriting()
     {
-        _stopwatch.Stop();
-
-        UpdateClock();
+        // Clock already frozen by the Transcribing transition; Rewriting only
+        // re-skins the stroke and restarts the reveal.
         ClearDigitForegrounds();
 
         AttachProcessingVisual(ProcessingVariant.Rewriting);
@@ -305,11 +339,13 @@ public sealed partial class HudChrono : UserControl
 
     private void ApplyHidden()
     {
-        _stopwatch.Stop();
         UnhookRendering();
         StopSwipe();
 
         DetachProcessingVisual();
+        // The clock is left as-is (stopped after a take); the next session's
+        // ResetClock zeroes it. Rendering is unhooked, so nothing reads a
+        // residual value while hidden — it stays invisible and harmless.
     }
 
     // ── Composition stroke attach ─────────────────────────────────────────────
