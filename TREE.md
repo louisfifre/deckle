@@ -572,7 +572,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
-│   │   │   └── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   └── TranscriptionEngine.Vad.cs
 │   │   ├── Setup/
 │   │   │   ├── Downloader.cs
 │   │   │   └── ModelEntry.cs

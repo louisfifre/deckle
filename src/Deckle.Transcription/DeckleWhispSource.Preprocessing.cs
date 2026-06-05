@@ -56,4 +56,67 @@ public sealed partial class DeckleWhispSource
             min_dbfs, p10_dbfs, p25_dbfs, p50_dbfs, p75_dbfs, p90_dbfs, max_dbfs,
             mean_rms, mean_dbfs, tail_rms, tail_dbfs, tail_state);
     }
+
+    // ── External Silero VAD pre-trim (Deckle.Inference.Onnx) ────────────────
+    //
+    // Distinct from the whisper-internal SpeechDetection VAD: this is the
+    // orchestrator's own pass that trims each streaming utterance to its speech
+    // before the backend and drops a no-speech utterance outright. Same Pipeline
+    // family as the DSP above; emitted on this provider because the trim is the
+    // orchestrator's concern. The VAD-lifecycle events (load / download) ride here
+    // too so the whole external-VAD story reads under one provider.
+
+    [Event(EvtSpeechTrimmed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Speech trim | utt #{0} | {1} → {2} samples | {3} ms")]
+    public void SpeechTrimmed(int utterance_index, int in_samples, int out_samples, long trim_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimmed, utterance_index, in_samples, out_samples, trim_ms);
+    }
+
+    [Event(EvtUtteranceDroppedNoSpeech,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Utterance #{0} dropped — no speech detected")]
+    public void UtteranceDroppedNoSpeech(int utterance_index)
+    {
+        if (IsEnabled()) WriteEvent(EvtUtteranceDroppedNoSpeech, utterance_index);
+    }
+
+    [Event(EvtSpeechTrimVadLoaded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Silero VAD loaded ({0})")]
+    public void SpeechTrimVadLoaded(string model_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoaded, model_path);
+    }
+
+    [Event(EvtSpeechTrimVadUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Silero VAD unavailable — {0}")]
+    public void SpeechTrimVadUnavailable(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailable, reason);
+    }
+
+    [Event(EvtSpeechTrimVadDownloadStart,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Downloading Silero VAD model… ({0})")]
+    public void SpeechTrimVadDownloadStart(string url)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStart, url);
+    }
+
+    [Event(EvtSpeechTrimVadDownloadComplete,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Silero VAD model downloaded ({0})")]
+    public void SpeechTrimVadDownloadComplete(string model_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadComplete, model_path);
+    }
 }

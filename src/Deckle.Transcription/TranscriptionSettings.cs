@@ -37,8 +37,23 @@ public enum PipelineStrategyKind { Monolithic, Streaming }
 // active). Auto-properties round-trip cleanly through JsonSettingsStore.
 public sealed class StreamingSettings
 {
-    public PipelineStrategyKind   Strategy  { get; set; } = PipelineStrategyKind.Monolithic;
-    public EnergySegmenterSettings Segmenter { get; set; } = new();
+    public PipelineStrategyKind    Strategy   { get; set; } = PipelineStrategyKind.Monolithic;
+    public EnergySegmenterSettings Segmenter  { get; set; } = new();
+    public SpeechTrimSettings      SpeechTrim { get; set; } = new();
+}
+
+// External Silero VAD pre-trim (Deckle.Inference.Onnx), distinct from the
+// whisper-internal SpeechDetection VAD. Streaming path only: each utterance is
+// trimmed to its speech spans before the backend, and an utterance with no speech
+// (an energy-segmenter false positive on noise/silence) is dropped outright — the
+// main guard against whisper hallucinating on near-silence. The model
+// (silero_vad.onnx) is provisioned on demand; until it is present the trim is a
+// silent no-op. Opt-in (default off) so an upgrade changes nothing until the user
+// asks for it, mirroring Strategy. Detection parameters use the Silero reference
+// defaults (SileroVadOptions) and are not exposed.
+public sealed class SpeechTrimSettings
+{
+    public bool Enabled { get; set; } = false;
 }
 
 // Bootstrap parameters for the active ASR engine. The first three (Model /

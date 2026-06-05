@@ -40,6 +40,9 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <!-- External Silero VAD (ONNX). One-way dependency: the orchestrator uses the
+         inference module, never the reverse. -->
+    <ProjectReference Include="..\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
     <!-- For SettingsHost.RestartApp — cross-assembly App-side hook called

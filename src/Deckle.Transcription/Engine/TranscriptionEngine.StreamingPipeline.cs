@@ -5,6 +5,7 @@ using Deckle.Audio;
 using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
 using Deckle.Diagnostics.Logging;
+using Deckle.Inference.Onnx;
 using Deckle.Transcription.Engine;
 using Deckle.Transcription.Streaming;
 
@@ -61,6 +62,15 @@ public sealed partial class TranscriptionEngine
             segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
             segCfg.MarginMs, segCfg.MinUtteranceMs);
 
+        // External Silero VAD pre-trim (opt-in). Resolved here on the worker
+        // thread, before the consumer launches, so the consumer captures a ready
+        // instance. Null when disabled or when the model isn't present yet (a
+        // missing model kicks off a one-time background download — this take runs
+        // untrimmed, a later one picks it up).
+        SileroVad? vad = _host.Transcription.Streaming.SpeechTrim.Enabled
+            ? EnsureVadReady()
+            : null;
+
         var channel = Channel.CreateUnbounded<Utterance>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -116,7 +126,7 @@ public sealed partial class TranscriptionEngine
         // utterances they yield) arrive during Record.
         Task<StreamingConsumeResult> consumer =
             Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt,
-                onDequeue: () => Interlocked.Decrement(ref backlogBox[0])));
+                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad));
 
         _capture.Frame += OnFrame;
 
@@ -253,7 +263,8 @@ public sealed partial class TranscriptionEngine
     // throw on cancellation), and ReadAllAsync may still yield a ready item after
     // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
-        ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue)
+        ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue,
+        SileroVad? vad)
     {
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0, vadMs = 0;
@@ -275,7 +286,10 @@ public sealed partial class TranscriptionEngine
         // chunks are accumulated so BackendAudio is exactly what the backend
         // received — the kept utterances, not the continuous take (ADR-0006).
         var pp = _host.Audio.Preprocessing;
-        List<float[]>? backendChunks = pp.Enabled ? new List<float[]>() : null;
+        // Capture the backend audio (ADR-0006) whenever a stage transforms it — the
+        // DSP or the VAD trim — so BackendAudio mirrors exactly what the backend
+        // received.
+        List<float[]>? backendChunks = (pp.Enabled || vad is not null) ? new List<float[]>() : null;
 
         await foreach (Utterance u in reader.ReadAllAsync(drainCt).ConfigureAwait(false))
         {
@@ -303,17 +317,35 @@ public sealed partial class TranscriptionEngine
                 EmitPreamble:      nUtt == 1,
                 TimelineOffsetSec: u.StartSec);
 
-            // Run the opt-in DSP on this utterance and feed the processed buffer to
-            // the backend; accumulate it so BackendAudio mirrors what was sent.
+            // Resolve the buffer the backend will see: optional DSP, then the
+            // optional external VAD trim. Accumulate the final buffer so
+            // BackendAudio mirrors exactly what was sent (ADR-0006).
             float[] samples = u.Samples;
-            if (backendChunks is not null)
+            if (pp.Enabled)
             {
                 var processed = TranscriptionPreprocessor.Process(u.Samples, pp);
                 samples = processed.Pcm;
-                backendChunks.Add(samples);
                 DeckleWhispSource.Log.TranscriptionPreprocessed(
                     processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
             }
+            if (vad is not null)
+            {
+                long trimStart = Stopwatch.GetTimestamp();
+                float[] trimmed = vad.Trim(samples, SileroVadOptions.Default);
+                long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
+                DeckleWhispSource.Log.SpeechTrimmed(u.Index, samples.Length, trimmed.Length, trimMs);
+                if (trimmed.Length == 0)
+                {
+                    // No speech — an energy false positive on noise/silence. Drop it
+                    // rather than feed near-silence to whisper, which hallucinates on
+                    // it. The previous tail is left intact: a dropped utterance adds
+                    // no text and must not sever the continuity of the real ones.
+                    DeckleWhispSource.Log.UtteranceDroppedNoSpeech(u.Index);
+                    continue;
+                }
+                samples = trimmed;
+            }
+            backendChunks?.Add(samples);
 
             TranscriptionResult result;
             try

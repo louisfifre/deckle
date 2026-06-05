@@ -41,6 +41,8 @@ nuget.org or the upstream repository for the full text.
   Foundation / Microsoft.
 - `CommunityToolkit.WinUI.Extensions` / `Helpers` / `Triggers` — MIT —
   .NET Foundation / Microsoft.
+- `Microsoft.ML.OnnxRuntime` — MIT — Microsoft. Runs the external Silero
+  VAD on the CPU execution provider.
 
 ## Models
 
@@ -48,3 +50,11 @@ Whisper model weights downloaded from
 [ggerganov/whisper.cpp on Hugging Face](https://huggingface.co/ggerganov/whisper.cpp)
 are distributed under the original Whisper license (MIT). They are not
 redistributed in this repository.
+
+### Silero VAD
+
+- Repository : https://github.com/snakers4/silero-vad
+- License : MIT — Copyright (c) 2020-present Silero Team.
+- Used as : the `silero_vad.onnx` v5 model, downloaded on demand to the
+  models directory and run by `Deckle.Inference.Onnx` for external voice
+  activity detection. Not redistributed in this repository.
