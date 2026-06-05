@@ -15,7 +15,7 @@ namespace Deckle.TestSupport;
 // for sources created AFTER listener instantiation.
 //
 // Typical use in a test:
-//   using var listener = new TestEventListener("Deckle.Chrono");
+//   using var listener = new TestEventListener("Deckle-Chrono");
 //   DeckleChronoSource.Log.PilotEmitted("test");
 //   Assert.Single(listener.Events);
 //

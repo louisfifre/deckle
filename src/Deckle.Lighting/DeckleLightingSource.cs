@@ -12,7 +12,7 @@ namespace Deckle.Lighting;
 // For V0 only Hue is implemented; the provider is unique for the whole module,
 // and future drivers will add their events under the same provider instead of
 // creating a child Deckle.Lighting.* provider.
-[EventSource(Name = "Deckle.Lighting")]
+[EventSource(Name = "Deckle-Lighting")]
 public sealed class DeckleLightingSource : DeckleEventSource
 {
     public static readonly DeckleLightingSource Log = new();

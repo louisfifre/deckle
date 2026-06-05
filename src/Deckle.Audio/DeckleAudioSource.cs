@@ -26,7 +26,7 @@ namespace Deckle.Audio;
 //   - Module settings persistence → Settings- prefix:
 //     SettingsLoaded, SettingsLoadComplete, SettingsLoadWarning,
 //     SettingsLoadError.
-[EventSource(Name = "Deckle.Audio")]
+[EventSource(Name = "Deckle-Audio")]
 public sealed class DeckleAudioSource : DeckleEventSource
 {
     public static readonly DeckleAudioSource Log = new();

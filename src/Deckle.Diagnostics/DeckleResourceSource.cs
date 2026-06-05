@@ -41,7 +41,7 @@ namespace Deckle.Diagnostics;
 // The `ResourceLeakSuspect` event is declared to freeze the contract in this
 // wave, but active wiring (missed release detection through finalizer or
 // watchdog) will come in a later pass. No active call site in the current code.
-[EventSource(Name = "Deckle.Diagnostics.Resource")]
+[EventSource(Name = "Deckle-Resource")]
 public sealed class DeckleResourceSource : DeckleEventSource
 {
     public static readonly DeckleResourceSource Log = new();

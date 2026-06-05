@@ -17,7 +17,7 @@ public class DeckleWindowingSourceTests
     [Fact]
     public void WindowPositionedEmitsVerboseOnWindowingKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Windowing");
+        using var listener = new TestEventListener("Deckle-Windowing");
 
         DeckleWindowingSource.Log.WindowPositioned(
             window: "settings", hmon: 0x12345L, dpi: 144, anchor: "Center",
@@ -40,7 +40,7 @@ public class DeckleWindowingSourceTests
     [Fact]
     public void OverlaySlotAssignedEmitsVerboseOnWindowingKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Windowing");
+        using var listener = new TestEventListener("Deckle-Windowing");
 
         DeckleWindowingSource.Log.OverlaySlotAssigned(
             slot: 2, hmon: 0xABCL,
@@ -55,7 +55,7 @@ public class DeckleWindowingSourceTests
     [Fact]
     public void PopupAnchoredSerialisesParentRectAsCommaSeparatedString()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Windowing");
+        using var listener = new TestEventListener("Deckle-Windowing");
 
         DeckleWindowingSource.Log.PopupAnchored(
             popup: "folder-picker", parent_rect: "10,20,300,40",
@@ -71,7 +71,7 @@ public class DeckleWindowingSourceTests
     [Fact]
     public void WindowZOrderStateEmitsVerboseOnWindowingKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Windowing");
+        using var listener = new TestEventListener("Deckle-Windowing");
 
         DeckleWindowingSource.Log.WindowZOrderState(
             window: "hud", stage: "after_setwindowpos_topmost",

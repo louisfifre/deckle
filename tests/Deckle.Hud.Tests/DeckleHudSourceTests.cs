@@ -18,7 +18,7 @@ public class DeckleHudSourceTests
     [Fact]
     public void ProximityRollupEmitsVerboseOnHeartbeatKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Hud");
+        using var listener = new TestEventListener("Deckle-Hud");
 
         DeckleHudSource.Log.ProximityRollup(
             duration_ms: 4200, samples: 525,

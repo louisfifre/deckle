@@ -51,7 +51,7 @@ public sealed class CaptureSettingsService
             jsonOptions: _jsonOptions,
             // EventSource switch. The "[audio]" label that prefixed legacy
             // messages disappears because the source tag on the LogWindow side
-            // now comes from the provider name ("Deckle.Audio" → AUDIO), no
+            // now comes from the provider name ("Deckle-Audio" → AUDIO), no
             // longer LogSource.Settings. Delegates remain Action<string> to
             // avoid touching the JsonSettingsStore<T> contract before the wave
             // 4 SettingsHost redesign.

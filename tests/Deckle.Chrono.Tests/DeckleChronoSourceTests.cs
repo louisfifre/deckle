@@ -11,7 +11,7 @@ namespace Deckle.Chrono.Tests;
 // providers Deckle.* (Audio, Vision, Whisp, etc.).
 //
 // Le provider DeckleChronoSource est un singleton process-wide. Le
-// listener subscribes through its ETW name "Deckle.Chrono"; it does not depend
+// listener subscribes through its ETW name "Deckle-Chrono"; it does not depend
 // on an instance, which makes tests naturally isolated (each
 // test instancie son propre listener via using).
 [Trait("Category", "observability")]
@@ -20,7 +20,7 @@ public class DeckleChronoSourceTests
     [Fact]
     public void PilotEmittedProducesOneInformationalEventOnTheChronoProvider()
     {
-        using var listener = new TestEventListener("Deckle.Chrono");
+        using var listener = new TestEventListener("Deckle-Chrono");
 
         DeckleChronoSource.Log.PilotEmitted("hello-test");
 
@@ -32,7 +32,7 @@ public class DeckleChronoSourceTests
     [Fact]
     public void PilotEmittedCarriesTheNoteAsFirstPayload()
     {
-        using var listener = new TestEventListener("Deckle.Chrono");
+        using var listener = new TestEventListener("Deckle-Chrono");
 
         DeckleChronoSource.Log.PilotEmitted("payload-content");
 

@@ -8,9 +8,9 @@ namespace Deckle.Setup;
 // InstallingPage (download orchestration + verification), SummaryPage (final
 // summary), SetupWindow (window lifecycle).
 //
-// Provider Name = "Deckle.Setup" → [SETUP] tag through the bridge. Legacy used
+// Provider Name = "Deckle-Setup" → [SETUP] tag through the bridge. Legacy used
 // LogSource.Setup (= "SETUP") for exactly this scope.
-[EventSource(Name = "Deckle.Setup")]
+[EventSource(Name = "Deckle-Setup")]
 public sealed class DeckleSetupSource : DeckleEventSource
 {
     public static readonly DeckleSetupSource Log = new();

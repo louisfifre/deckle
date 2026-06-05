@@ -9,9 +9,9 @@ Foundation of the observability pillar: the plumbing shared by every `Deckle.*Ev
 
 ## Provider convention
 
-One concrete EventSource per emitting module: class `Deckle<Module>Source`, ETW `[EventSource(Name = "Deckle.<Module>")]`, static singleton `Log`, `sealed`, inheriting `DeckleEventSource`. Cross-cutting keywords occupy keyword bits 0–9; bits 10+ belong to the provider and stay local. One `[Event]` method per distinct call-site operation — no generic `Log(string, level)` channel, no typed-payload argument.
+One concrete EventSource per emitting module: class `Deckle<Module>Source`, ETW `[EventSource(Name = "Deckle-<Module>")]`, static singleton `Log`, `sealed`, inheriting `DeckleEventSource`. The provider name takes a **dash**, never a dot: it is an emitter identity, kept visually distinct from the homonymous `Deckle.<Module>` namespace (see `deckle-nomenclature`). Cross-cutting keywords occupy keyword bits 0–9; bits 10+ belong to the provider and stay local. One `[Event]` method per distinct call-site operation — no generic `Log(string, level)` channel, no typed-payload argument.
 
-**Transverse sub-providers** (`Deckle<X>Source`, ETW `Deckle.Diagnostics.<X>`) live here, not in a business module. Promotion criterion, both clauses required: (1) ≥2 business modules consume the primitive with the *same* parameter set, AND (2) it's non-business platform wiring.
+**Transverse sub-providers** (`Deckle<X>Source`, ETW `Deckle-<X>` — the `Diagnostics` home is a code-organization fact, not part of the emitter identity, so the umbrella does not enter the provider name) live here, not in a business module. Promotion criterion, both clauses required: (1) ≥2 business modules consume the primitive with the *same* parameter set, AND (2) it's non-business platform wiring.
 
 Event parameters are `snake_case` — a deliberate derogation from the Framework Design Guidelines, because they become the JSON keys in the JSONL and must match the ETW manifest a third-party consumer (PerfView, benchmark scripts) reads. `IDE1006` is suppressed in the emitting csproj.
 
@@ -36,7 +36,7 @@ Every `[Event]` is gated by `IsEnabled()` (or `IsEnabled(level, keywords)`) befo
 ## Sinks — three consumer contracts
 
 - **HUD** — the canonical `UserFeedbackEmitted(int severity, string title, string body, int role)` event, filtered exclusively by `HudFeedbackEventListener`. `int` because EventSource rejects user enums; the App re-encodes on the sink side. A site wanting feedback calls the milestone event **and** `UserFeedbackEmitted` — no substitution.
-- **Live LogWindow** — listens to the whole `Deckle.*` family with no masking at emission; user filtering happens on the sink side.
+- **Live LogWindow** — listens to the whole `Deckle-*` family with no masking at emission; user filtering happens on the sink side.
 - **JSONL** — one listener per destination route, each with a selection predicate + envelope shape. Two envelopes: self-describing `app.jsonl` (rotated) vs frozen payload-only dataset channels. Concrete wiring lives in `Deckle.Diagnostics.Telemetry`.
 
 A single `SessionId` (`YYYY-MM-DD-XXXX`) is generated on the first emission and shared by all providers as a static on `DeckleEventSource`, so listeners group rows by process session without threading a parameter everywhere.

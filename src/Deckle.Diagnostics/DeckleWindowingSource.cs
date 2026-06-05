@@ -49,7 +49,7 @@ namespace Deckle.Diagnostics;
 //                       picker)
 //   "absolute"        — no logical anchor, only a move/resize (raw Win32
 //                       placement)
-[EventSource(Name = "Deckle.Diagnostics.Windowing")]
+[EventSource(Name = "Deckle-Windowing")]
 public sealed class DeckleWindowingSource : DeckleEventSource
 {
     public static readonly DeckleWindowingSource Log = new();

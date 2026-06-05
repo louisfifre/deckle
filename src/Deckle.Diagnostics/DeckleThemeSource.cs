@@ -57,7 +57,7 @@ namespace Deckle.Diagnostics;
 // app sets RequestedTheme and an OS change arrives in the same dispatcher tick
 // (rare race; worst case is a system transition labeled "user"). The
 // distinction remains useful in ordinary reading.
-[EventSource(Name = "Deckle.Diagnostics.Theme")]
+[EventSource(Name = "Deckle-Theme")]
 public sealed class DeckleThemeSource : DeckleEventSource
 {
     public static readonly DeckleThemeSource Log = new();

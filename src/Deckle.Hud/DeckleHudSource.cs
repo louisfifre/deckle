@@ -20,7 +20,7 @@ namespace Deckle.Hud;
 // File.AppendAllText calls. See `reference--eventsource-convention--1.2.md`
 // §*Under-instrumented internal HUD* (gap 1.1), which motivates the extension,
 // and the module CLAUDE.md §*Internal instrumentation* for the wiring doctrine.
-[EventSource(Name = "Deckle.Hud")]
+[EventSource(Name = "Deckle-Hud")]
 public sealed class DeckleHudSource : DeckleEventSource
 {
     public static readonly DeckleHudSource Log = new();

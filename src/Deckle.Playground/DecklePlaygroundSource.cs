@@ -8,12 +8,12 @@ namespace Deckle.Playground;
 // interactions, the AmbientViewModel (HDR tone-mapping sliders + multi-light
 // switch), and the host PlaygroundWindow itself.
 //
-// Provider Name = "Deckle.Playground" → [PLAYGROUND] tag through the legacy
+// Provider Name = "Deckle-Playground" → [PLAYGROUND] tag through the legacy
 // bridge. Playground is a dev/tuning surface: strict-typed doctrine is applied
 // to clear transitions (nav, settings), but a generic channel is accepted for
 // the many diagnostic interaction strings (Hue pairing attempts, zone scan,
 // match entertainment areas) that are not each worth a typed event.
-[EventSource(Name = "Deckle.Playground")]
+[EventSource(Name = "Deckle-Playground")]
 public sealed class DecklePlaygroundSource : DeckleEventSource
 {
     public static readonly DecklePlaygroundSource Log = new();

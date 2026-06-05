@@ -8,7 +8,7 @@ namespace Deckle.Llm;
 // /api/show, /api/blobs, /api/create (OllamaService), and orchestrated GGUF
 // import (GgufImportDialog). Module settings persistence (LlmSettingsService)
 // goes through the four transitional Settings* events.
-[EventSource(Name = "Deckle.Llm")]
+[EventSource(Name = "Deckle-Llm")]
 public sealed class DeckleLlmSource : DeckleEventSource
 {
     public static readonly DeckleLlmSource Log = new();

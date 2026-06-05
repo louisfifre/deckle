@@ -18,7 +18,7 @@ namespace Deckle.Settings;
 // construction and tolerates generic parameterization without degrading
 // strict-typed semantics: level and keyword are fixed, only property names and
 // values vary.
-[EventSource(Name = "Deckle.Settings")]
+[EventSource(Name = "Deckle-Settings")]
 public sealed class DeckleSettingsSource : DeckleEventSource
 {
     public static readonly DeckleSettingsSource Log = new();

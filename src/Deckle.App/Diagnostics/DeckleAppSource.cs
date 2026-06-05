@@ -9,11 +9,11 @@ namespace Deckle.App;
 // itself. Anything that does not fit in a specific module but lives in the
 // host app goes through this provider.
 //
-// Provider Name = "Deckle.App" → tag [APP] via LogLineFormatter. Le
+// Provider Name = "Deckle-App" → tag [APP] via LogLineFormatter. Le
 // legacy used both [APP] and [STATUS] for different host emissions; [STATUS]
 // is kept as an event name but the tag stays [APP]. The ".App" suffix is
 // intentional: Diagnostics listeners observe the canonical Deckle.* family.
-[EventSource(Name = "Deckle.App")]
+[EventSource(Name = "Deckle-App")]
 public sealed class DeckleAppSource : DeckleEventSource
 {
     public static readonly DeckleAppSource Log = new();

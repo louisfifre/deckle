@@ -15,7 +15,7 @@ namespace Deckle.Diagnostics;
 // A single emitter subscribed to `NetworkInformation.NetworkStatusChanged` at
 // App boot is enough: the Windows Runtime API already broadcasts to the whole
 // process, duplicating the subscription would only duplicate events.
-[EventSource(Name = "Deckle.Diagnostics.Network")]
+[EventSource(Name = "Deckle-Network")]
 public sealed class DeckleNetworkSource : DeckleEventSource
 {
     public static readonly DeckleNetworkSource Log = new();
