@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
 using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
+using Deckle.Diagnostics.Logging;
 using Deckle.Transcription.Engine;
 using Deckle.Transcription.Streaming;
 
@@ -40,22 +42,81 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt)
     {
+        // Streaming-activity gate: held open for the lifetime of this method
+        // through `using`, so any early return / throw / cancellation still
+        // closes it on the way out. The listener-side drop filter (App)
+        // combines this gate with the LogStreamingTranscriptionActivity
+        // toggle to silence Whisp Verbose events during streaming.
+        using var _ = StreamingCaptureScope.Open();
+
+        // Milestone + verbose snapshot pair: the LogWindow gets a human jalon
+        // (StreamingPipelineStarted), then the structured line that says under
+        // which segmenter parameters this take ran (so a reread of the log
+        // never has to wonder which threshold or hangover was active).
+        var segCfg = _host.Transcription.Streaming.Segmenter;
+        DeckleWhispSource.Log.StreamingPipelineStarted();
+        DeckleWhispSource.Log.SegmenterSettingsSnapshot(
+            segCfg.ThresholdDbfs,
+            segCfg.HangoverMaxMs, segCfg.HangoverMinMs,
+            segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
+            segCfg.MarginMs, segCfg.MinUtteranceMs);
+
         var channel = Channel.CreateUnbounded<Utterance>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = true,
         });
 
-        var segmenter = new EnergySegmenter(
-            _host.Transcription.Streaming.Segmenter,
-            u => channel.Writer.TryWrite(u)); // unbounded → never blocks the producer
+        // Backlog: channel depth (utterances queued, not yet transcribed). Held
+        // in a one-cell array so producer (Interlocked.Increment on enqueue) and
+        // consumer (Interlocked.Decrement after dequeue) share the same address
+        // through closures. The heartbeat reads it with Volatile.Read.
+        int[] backlogBox = new int[1];
 
-        void OnFrame(CaptureFrame f) => segmenter.Push(f);
+        // Frame-rate clock for the 1 Hz heartbeat (20 × 50 ms frames per tick)
+        // and for the recording_sec field. Stopwatch starts now, OnFrame trips
+        // the heartbeat once per second.
+        var recordSw = Stopwatch.StartNew();
+        int hbFrames = 0;
+        // Last per-frame RMS, kept so the heartbeat can report a live mic level
+        // without spamming an event for every 50 ms frame.
+        float lastRmsLinear = 0f;
+
+        var segmenter = new EnergySegmenter(
+            segCfg,
+            u =>
+            {
+                Interlocked.Increment(ref backlogBox[0]);
+                channel.Writer.TryWrite(u); // unbounded → never blocks the producer
+            });
+
+        void OnFrame(CaptureFrame f)
+        {
+            lastRmsLinear = f.Rms;
+            segmenter.Push(f);
+            if (++hbFrames >= 20)
+            {
+                hbFrames = 0;
+                var snap = segmenter.Snapshot();
+                double rmsDbfs = lastRmsLinear > 1e-6f
+                    ? 20.0 * Math.Log10(lastRmsLinear)
+                    : -120.0;
+                DeckleWhispSource.Log.StreamingHeartbeat(
+                    snap.State,
+                    rmsDbfs,
+                    snap.CurrentUtteranceFrames * 50,
+                    snap.RequiredHangoverFrames * 50,
+                    Volatile.Read(ref backlogBox[0]),
+                    snap.TotalUtterancesEmitted,
+                    (int)(recordSw.ElapsedMilliseconds / 1000));
+            }
+        }
 
         // The consumer must be live BEFORE capture starts — frames (and the
         // utterances they yield) arrive during Record.
         Task<StreamingConsumeResult> consumer =
-            Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt));
+            Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt,
+                onDequeue: () => Interlocked.Decrement(ref backlogBox[0])));
 
         _capture.Frame += OnFrame;
 
@@ -192,7 +253,7 @@ public sealed partial class TranscriptionEngine
     // throw on cancellation), and ReadAllAsync may still yield a ready item after
     // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
-        ChannelReader<Utterance> reader, CancellationToken drainCt)
+        ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue)
     {
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0, vadMs = 0;
@@ -221,6 +282,11 @@ public sealed partial class TranscriptionEngine
             // Deterministic Dispose stop — see the method remark.
             drainCt.ThrowIfCancellationRequested();
             nUtt++;
+            // Decrement the shared backlog now: heartbeat readings between here
+            // and the end of this iteration reflect the in-flight utterance as
+            // dequeued, regardless of whether the backend call ahead succeeds
+            // or fails.
+            int backlogAfter = onDequeue();
 
             // Inter-utterance context, rebuilt by hand: the fixed stylistic prompt
             // plus the tail of the previous utterance, so continuity carries
@@ -283,6 +349,10 @@ public sealed partial class TranscriptionEngine
                 if (sb.Length > 0) sb.Append(' ');
                 sb.Append(text);
             }
+
+            DeckleWhispSource.Log.ConsumerUtterance(
+                u.Index, result.TotalDurationMs, TextMetrics.CountWords(text),
+                result.Segments.Count, backlogAfter, result.Aborted);
 
             // Carry the tail forward unless the utterance looped (Aborted with the
             // repetition guard) — then a contaminated tail must not prime the next.

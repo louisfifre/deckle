@@ -1425,11 +1425,29 @@
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
     <value>Audio at or above this raw level (in dBFS) counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open. Default: -45 dBFS.</value>
   </data>
-  <data name="WhisperSegHangoverCard.Header" xml:space="preserve">
-    <value>Hangover</value>
+  <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
+    <value>Hangover (max)</value>
   </data>
-  <data name="WhisperSegHangoverCard.Description" xml:space="preserve">
-    <value>How much trailing silence (in milliseconds) to wait after the last word before deciding an utterance has ended. Longer avoids splitting on a short pause. Default: 400 ms.</value>
+  <data name="WhisperSegHangoverMaxCard.Description" xml:space="preserve">
+    <value>How much trailing silence (in milliseconds) to wait after the last word at the start of an utterance, before deciding it has ended. Long by default so only a paragraph-break silence cuts. Default: 5000 ms.</value>
+  </data>
+  <data name="WhisperSegHangoverMinCard.Header" xml:space="preserve">
+    <value>Hangover (min)</value>
+  </data>
+  <data name="WhisperSegHangoverMinCard.Description" xml:space="preserve">
+    <value>Floor the hangover decays to once the utterance has grown past the ramp end. Never below this — a shorter micro-pause is treated as intra-word. Default: 500 ms.</value>
+  </data>
+  <data name="WhisperSegHangoverRampStartCard.Header" xml:space="preserve">
+    <value>Hangover ramp start</value>
+  </data>
+  <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
+    <value>Utterance length (in milliseconds) at which the hangover starts shrinking from the max toward the min. Below this, the hangover stays at the max. Default: 60000 ms (1 min).</value>
+  </data>
+  <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
+    <value>Hangover ramp end</value>
+  </data>
+  <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
+    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover decays sharply (cubic ease-in). Default: 180000 ms (3 min).</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>
@@ -1442,12 +1460,6 @@
   </data>
   <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
     <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
-  </data>
-  <data name="WhisperSegMaxUtteranceCard.Header" xml:space="preserve">
-    <value>Maximum utterance</value>
-  </data>
-  <data name="WhisperSegMaxUtteranceCard.Description" xml:space="preserve">
-    <value>Safety ceiling (in milliseconds): an utterance this long is cut and sent even mid-speech, then a new one starts. Recording is not stopped. Default: 25000 ms.</value>
   </data>
 
 </root>

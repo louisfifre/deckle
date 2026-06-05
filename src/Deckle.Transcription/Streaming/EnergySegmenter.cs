@@ -4,6 +4,17 @@ using Deckle.Audio;
 
 namespace Deckle.Transcription.Streaming;
 
+// A point-in-time view of the segmenter's internal state, consumed by the
+// streaming pipeline to populate the 1 Hz StreamingHeartbeat. HangoverRequired
+// frames is the silence the state machine WOULD currently demand to cut — it
+// shrinks as the open utterance grows past the ramp, so the log shows the
+// dynamic hangover in action.
+internal readonly record struct SegmenterSnapshot(
+    string State,
+    int CurrentUtteranceFrames,
+    int RequiredHangoverFrames,
+    int TotalUtterancesEmitted);
+
 // ── EnergySegmenter ──────────────────────────────────────────────────────────
 //
 // Threshold-on-RMS state machine that places utterance boundaries on the live
@@ -24,16 +35,18 @@ namespace Deckle.Transcription.Streaming;
 //              opens the hangover (move to Hangover); a voiced frame extends.
 //   Hangover — building an utterance, in a trailing silence we are not yet sure
 //              is the end. A voiced frame means speech resumed (back to Speech);
-//              enough consecutive silence (HangoverMs reached) ends the utterance.
+//              enough consecutive silence (current hangover reached) ends it.
 //
 // ── Hangover vs margin (the two values people conflate) ───────────────────────
 //   Hangover = DECISION delay. We wait this much silence after the last voiced
-//   frame before declaring the utterance over, so a brief intra-phrase pause does
-//   not split a sentence.
+//   frame before declaring the utterance over, so a brief intra-phrase pause
+//   does not split a sentence. The required delay SHRINKS as the utterance
+//   grows: HangoverMaxMs while the utterance is below HangoverRampStartMs,
+//   HangoverMinMs at and above HangoverRampEndMs, log-linear decay in between.
+//   No hard cap — a very long utterance ends on a micro-pause, never mid-word.
+//
 //   Margin = CUT POSITION. The emitted span ends MarginMs after the last voiced
 //   frame. The silence between the margin and the hangover expiry is DROPPED.
-//   With the defaults (hangover 400 ms, margin 150 ms): on a real end we keep
-//   150 ms of trailing silence and discard the other 250 ms.
 //
 // All durations resolve to whole 50 ms frames (the capture sub-window size).
 internal sealed class EnergySegmenter
@@ -46,11 +59,13 @@ internal sealed class EnergySegmenter
     private readonly Action<Utterance> _onUtterance;
 
     // Derived from settings once, in frame units.
-    private readonly float _rmsThreshold;   // linear RMS at/above which a frame is voiced
-    private readonly int   _hangoverFrames; // silent frames to wait before ending
-    private readonly int   _marginFrames;   // trailing silence frames kept after last voiced
-    private readonly int   _minVoicedFrames;// shorter voiced extent → dropped as a blip
-    private readonly int   _maxFrames;      // utterance length forcing a safety flush
+    private readonly float _rmsThreshold;       // linear RMS at/above which a frame is voiced
+    private readonly int   _hangoverMaxFrames;  // hangover at utterance start
+    private readonly int   _hangoverMinFrames;  // hangover floor past the ramp
+    private readonly int   _rampStartFrames;    // utterance length above which hangover starts shrinking
+    private readonly int   _rampEndFrames;      // utterance length at/above which hangover = min
+    private readonly int   _marginFrames;       // trailing silence frames kept after last voiced
+    private readonly int   _minVoicedFrames;    // shorter voiced extent → dropped as a blip
 
     private enum State { Silence, Speech, Hangover }
     private State _state = State.Silence;
@@ -70,18 +85,44 @@ internal sealed class EnergySegmenter
         _onUtterance = onUtterance;
 
         // dBFS → linear once, so the per-frame test is a plain comparison (no log).
-        _rmsThreshold    = (float)Math.Pow(10.0, settings.ThresholdDbfs / 20.0);
-        _hangoverFrames  = FramesFromMs(settings.HangoverMs,     min: 1);
-        _marginFrames    = FramesFromMs(settings.MarginMs,       min: 0);
-        _minVoicedFrames = FramesFromMs(settings.MinUtteranceMs, min: 1);
-        _maxFrames       = FramesFromMs(settings.MaxUtteranceMs, min: 1);
+        _rmsThreshold      = (float)Math.Pow(10.0, settings.ThresholdDbfs / 20.0);
+        _hangoverMaxFrames = FramesFromMs(settings.HangoverMaxMs,       min: 1);
+        _hangoverMinFrames = FramesFromMs(settings.HangoverMinMs,       min: 1);
+        _rampStartFrames   = FramesFromMs(settings.HangoverRampStartMs, min: 1);
+        _rampEndFrames     = FramesFromMs(settings.HangoverRampEndMs,   min: 1);
+        _marginFrames      = FramesFromMs(settings.MarginMs,            min: 0);
+        _minVoicedFrames   = FramesFromMs(settings.MinUtteranceMs,      min: 1);
+
+        // Min must not exceed Max, and RampEnd must not precede RampStart — keep
+        // the curve monotone non-increasing even if settings are inconsistent.
+        if (_hangoverMinFrames > _hangoverMaxFrames) _hangoverMinFrames = _hangoverMaxFrames;
+        if (_rampEndFrames     < _rampStartFrames)   _rampEndFrames     = _rampStartFrames;
     }
 
     private static int FramesFromMs(int ms, int min)
         => Math.Max(min, (int)Math.Round(ms / FrameMs));
 
+    // Current hangover requirement, based on how long the open utterance has
+    // grown. Below RampStart: max. At/above RampEnd: min. In between: cubic
+    // ease-in (p³) wrapped around the log-linear decay — the hangover stays
+    // near the max in the first half of the ramp window, then drops sharply in
+    // the last quarter. This is the curve Louis wanted: long stability, then
+    // brutal switch.
+    private int RequiredHangoverFrames()
+    {
+        int len = _frames.Count;
+        if (len <= _rampStartFrames) return _hangoverMaxFrames;
+        if (len >= _rampEndFrames)   return _hangoverMinFrames;
+
+        double p = (double)(len - _rampStartFrames) / (_rampEndFrames - _rampStartFrames);
+        double pSteep = p * p * p;
+        double ratio = (double)_hangoverMinFrames / _hangoverMaxFrames;
+        int frames = (int)Math.Round(_hangoverMaxFrames * Math.Pow(ratio, pSteep));
+        return Math.Max(_hangoverMinFrames, frames);
+    }
+
     // Feed one capture frame. Emits an Utterance via the callback if this frame
-    // completes one (silence-bounded end or safety ceiling).
+    // completes one (silence-bounded end).
     public void Push(CaptureFrame frame)
     {
         bool voiced = frame.Rms >= _rmsThreshold;
@@ -115,9 +156,8 @@ internal sealed class EnergySegmenter
                     // First silent frame after speech opens the hangover.
                     _state = State.Hangover;
                     _hangoverCount = 1;
-                    if (_hangoverCount >= _hangoverFrames) { EmitOnSilence(); return; }
+                    if (_hangoverCount >= RequiredHangoverFrames()) { EmitOnSilence(); return; }
                 }
-                CheckMax();
                 break;
 
             case State.Hangover:
@@ -133,9 +173,8 @@ internal sealed class EnergySegmenter
                 else
                 {
                     _hangoverCount++;
-                    if (_hangoverCount >= _hangoverFrames) { EmitOnSilence(); return; }
+                    if (_hangoverCount >= RequiredHangoverFrames()) { EmitOnSilence(); return; }
                 }
-                CheckMax();
                 break;
         }
     }
@@ -163,27 +202,37 @@ internal sealed class EnergySegmenter
     {
         int voicedExtent = _lastVoicedIdx + 1;
         int keptCount    = Math.Min(_frames.Count, voicedExtent + _marginFrames);
-        if (voicedExtent < _minVoicedFrames) return; // blip — dropped
+        if (voicedExtent < _minVoicedFrames)
+        {
+            DeckleWhispSource.Log.SegmenterBlipDropped(
+                voicedExtent, (int)Math.Round(voicedExtent * FrameMs));
+            return; // blip — dropped
+        }
 
-        Emit(keptCount);
+        Emit(keptCount, voicedExtent, _hangoverCount);
     }
 
-    // Safety ceiling: an utterance that reaches the max length is force-flushed
-    // mid-speech (no margin trim, no min check — 25 s is far past any floor) and
-    // a fresh utterance starts. Capture is NOT stopped.
-    private void CheckMax()
-    {
-        if (_frames.Count < _maxFrames) return;
-        Emit(_frames.Count);
-        ResetToSilence();
-    }
-
-    private void Emit(int frameCount)
+    private void Emit(int frameCount, int voicedFrames, int hangoverUsedFrames)
     {
         double startSec = _utteranceStartFrame * FrameSec;
         double endSec   = startSec + frameCount * FrameSec;
-        _onUtterance(new Utterance(Concat(frameCount), _nextIndex++, startSec, endSec));
+        int index = _nextIndex++;
+        _onUtterance(new Utterance(Concat(frameCount), index, startSec, endSec));
+
+        DeckleWhispSource.Log.SegmenterUtteranceEmitted(
+            index, voicedFrames, frameCount, startSec, endSec,
+            (int)Math.Round(hangoverUsedFrames * FrameMs));
     }
+
+    // Snapshot reads the live state. Frame counts come from the running
+    // utterance (0 when in Silence); the required hangover is computed from the
+    // current length so the heartbeat sees the ramp moving as the chunk grows.
+    internal SegmenterSnapshot Snapshot()
+        => new(
+            State: _state.ToString(),
+            CurrentUtteranceFrames: _state == State.Silence ? 0 : _frames.Count,
+            RequiredHangoverFrames: _state == State.Silence ? _hangoverMaxFrames : RequiredHangoverFrames(),
+            TotalUtterancesEmitted: _nextIndex);
 
     private float[] Concat(int frameCount)
     {

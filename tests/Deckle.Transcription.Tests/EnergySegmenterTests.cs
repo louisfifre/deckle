@@ -11,9 +11,11 @@ namespace Deckle.Transcription.Tests;
 // frame sequences (50 ms each, voiced or silent) and assert emitted utterances,
 // without microphone or threading.
 //
-// Reference points with default settings (frame = 50 ms):
+// Reference points with TestSettings (frame = 50 ms):
 //   hangover 400 ms = 8 frames · margin 150 ms = 3 frames · min 250 ms = 5 frames
-//   (voiced extent) · max 25,000 ms = 500 frames.
+//   (voiced extent). The ramp is parked far above any test length, so the
+//   hangover stays at HangoverMaxMs throughout — the rampless legacy behaviour
+//   the early tests were written against.
 [Trait("Category", "unit")]
 public class EnergySegmenterTests
 {
@@ -22,6 +24,18 @@ public class EnergySegmenterTests
     // RMS clearly above/below the -45 dBFS threshold (≈ 0.0056 linear).
     private static CaptureFrame Frame(bool voiced)
         => new(new float[FrameSamples], voiced ? 0.1f : 0.0f);
+
+    // Settings used by tests that want the simple, ramp-inactive behaviour:
+    // Min == Max means RequiredHangoverFrames stays at 8 regardless of length,
+    // and the ramp anchors are pushed far past any synthesis length.
+    private static EnergySegmenterSettings TestSettings()
+        => new()
+        {
+            HangoverMaxMs       = 400,
+            HangoverMinMs       = 400,
+            HangoverRampStartMs = 1_000_000,
+            HangoverRampEndMs   = 1_000_000,
+        };
 
     private static void PushN(EnergySegmenter seg, bool voiced, int n)
     {
@@ -34,7 +48,7 @@ public class EnergySegmenterTests
     public void PureSilenceEmitsNothing()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         PushN(seg, voiced: false, 20);
         seg.Flush();
@@ -46,7 +60,7 @@ public class EnergySegmenterTests
     public void ShortBurstBelowMinIsDroppedAsBlip()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         // 3 voiced frames (150 ms) < min 250 ms → dropped when the hangover expires.
         PushN(seg, voiced: true, 3);
@@ -59,7 +73,7 @@ public class EnergySegmenterTests
     public void VoicedThenSilenceEmitsOneUtteranceTrimmedToMargin()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         // 10 voiced frames (extent ≥ min), then 8 silences → end on silence.
         PushN(seg, voiced: true, 10);
@@ -77,7 +91,7 @@ public class EnergySegmenterTests
     public void IntraPhrasePauseShorterThanHangoverDoesNotSplit()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 5);  // pause < hangover (8) → does not split
@@ -91,7 +105,7 @@ public class EnergySegmenterTests
     public void LongSilenceSeparatesTwoUtterances()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 8);   // → U0 (global frames 0..17)
@@ -106,28 +120,58 @@ public class EnergySegmenterTests
     }
 
     [Fact]
-    public void MaxDurationForcesFlushAndKeepsCapturing()
+    public void HangoverShrinksPastRampSoShortPauseCutsLongUtterance()
     {
         var got = new List<Utterance>();
-        // Max reduced to 500 ms (10 frames); min to 50 ms (1 frame) to avoid
-        // dropping the tail.
-        var settings = new EnergySegmenterSettings { MaxUtteranceMs = 500, MinUtteranceMs = 50 };
+        // Synthesis-sized ramp: max 400 ms (8 frames) → min 100 ms (2 frames),
+        // ramp 500 ms (10 frames) → 1000 ms (20 frames). Past 20 frames the
+        // required hangover is the floor (2 frames), so a 3-frame pause cuts
+        // where it normally wouldn't.
+        var settings = new EnergySegmenterSettings
+        {
+            HangoverMaxMs       = 400,
+            HangoverMinMs       = 100,
+            HangoverRampStartMs = 500,
+            HangoverRampEndMs   = 1_000,
+            MinUtteranceMs      = 50,
+        };
         var seg = new EnergySegmenter(settings, got.Add);
 
-        PushN(seg, voiced: true, 25); // parole continue, jamais de silence
-        seg.Flush();
+        PushN(seg, voiced: true, 25);  // length 25 ≥ 20 → at the floor
+        PushN(seg, voiced: false, 3);  // 3 ≥ 2 → cuts
 
-        Assert.Equal(3, got.Count);
-        Assert.Equal(10, FrameCount(got[0])); // forced flush at max
-        Assert.Equal(10, FrameCount(got[1])); // second forced flush
-        Assert.Equal(5, FrameCount(got[2]));  // reste, sorti au Flush
+        Assert.Single(got);
+    }
+
+    [Fact]
+    public void HangoverStaysAtMaxBeforeRamp()
+    {
+        var got = new List<Utterance>();
+        // Same max/min as the previous test, but the ramp anchors are pushed
+        // past any test length. A 5-frame pause (intra-phrase) must NOT split.
+        var settings = new EnergySegmenterSettings
+        {
+            HangoverMaxMs       = 400,
+            HangoverMinMs       = 100,
+            HangoverRampStartMs = 5_000,
+            HangoverRampEndMs   = 6_000,
+            MinUtteranceMs      = 50,
+        };
+        var seg = new EnergySegmenter(settings, got.Add);
+
+        PushN(seg, voiced: true, 10);
+        PushN(seg, voiced: false, 5);  // 5 < hangover max 8 → does not split
+        PushN(seg, voiced: true, 10);
+        PushN(seg, voiced: false, 8);  // real end
+
+        Assert.Single(got);
     }
 
     [Fact]
     public void FlushMidWordKeepsInProgressSpeech()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         PushN(seg, voiced: true, 10); // Stop en pleine parole, aucun silence
         seg.Flush();
@@ -140,7 +184,7 @@ public class EnergySegmenterTests
     public void FlushWithNoOpenUtteranceEmitsNothing()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(new EnergySegmenterSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 8); // → one utterance emitted, back to Silence

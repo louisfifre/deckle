@@ -1274,6 +1274,12 @@
   <data name="LoggingAmbientCard.Description" xml:space="preserve">
     <value>Per-tick Verbose lines from the ambient pipeline — engine pushes, heartbeats, Hue calls, screen capture diagnostics.</value>
   </data>
+  <data name="LoggingStreamingCard.Header" xml:space="preserve">
+    <value>Log streaming transcription activity</value>
+  </data>
+  <data name="LoggingStreamingCard.Description" xml:space="preserve">
+    <value>Per-second heartbeat and per-utterance Verbose lines from the streaming transcription pipeline. The milestones (started, drained) always pass.</value>
+  </data>
   <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
     <value>Telemetry</value>
   </data>

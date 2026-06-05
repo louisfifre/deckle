@@ -631,17 +631,56 @@
                                        Value="{x:Bind ViewModel.SegThresholdDbfs, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Name="SegHangoverCard"
-                                               x:Uid="WhisperSegHangoverCard"
+                        <controls:SettingsCard x:Name="SegHangoverMaxCard"
+                                               x:Uid="WhisperSegHangoverMaxCard"
                                                Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegHangoverBox"
-                                       Minimum="0"
+                            <NumberBox x:Name="SegHangoverMaxBox"
+                                       Minimum="500"
+                                       Maximum="15000"
+                                       SmallChange="100"
+                                       LargeChange="500"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverMaxMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverMinCard"
+                                               x:Uid="WhisperSegHangoverMinCard"
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverMinBox"
+                                       Minimum="100"
                                        Maximum="2000"
                                        SmallChange="50"
                                        LargeChange="100"
                                        SpinButtonPlacementMode="Hidden"
                                        MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegHangoverMs, Mode=TwoWay}" />
+                                       Value="{x:Bind ViewModel.SegHangoverMinMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverRampStartCard"
+                                               x:Uid="WhisperSegHangoverRampStartCard"
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverRampStartBox"
+                                       Minimum="30000"
+                                       Maximum="600000"
+                                       SmallChange="10000"
+                                       LargeChange="30000"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverRampStartMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverRampEndCard"
+                                               x:Uid="WhisperSegHangoverRampEndCard"
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverRampEndBox"
+                                       Minimum="60000"
+                                       Maximum="900000"
+                                       SmallChange="10000"
+                                       LargeChange="30000"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverRampEndMs, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                         <controls:SettingsCard x:Name="SegMarginCard"
@@ -668,19 +707,6 @@
                                        SpinButtonPlacementMode="Hidden"
                                        MinWidth="100"
                                        Value="{x:Bind ViewModel.SegMinUtteranceMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegMaxUtteranceCard"
-                                               x:Uid="WhisperSegMaxUtteranceCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegMaxUtteranceBox"
-                                       Minimum="1000"
-                                       Maximum="60000"
-                                       SmallChange="1000"
-                                       LargeChange="5000"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegMaxUtteranceMs, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                     </controls:SettingsExpander.Items>

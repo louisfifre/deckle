@@ -73,6 +73,11 @@
                     <ToggleSwitch IsOn="{x:Bind ViewModel.LogAmbientCaptureActivity, Mode=TwoWay}" />
                 </controls:SettingsCard>
 
+                <controls:SettingsCard x:Uid="LoggingStreamingCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Speech}}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.LogStreamingTranscriptionActivity, Mode=TwoWay}" />
+                </controls:SettingsCard>
+
                 <!-- ── Telemetry ───────────────────────────────────────────── -->
                 <Grid>
                     <Grid.ColumnDefinitions>

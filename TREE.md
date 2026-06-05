@@ -326,7 +326,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilter.cs
-│   │   └── LogWindowVisibilityMode.cs
+│   │   ├── LogWindowVisibilityMode.cs
+│   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── CLAUDE.md  — [agent-instructions] Structured JSONL persistence and consent gates.
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
