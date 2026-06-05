@@ -353,6 +353,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MessageKind.cs
 │   │   ├── ProximityRollupAggregator.cs
 │   │   └── WindowSlideAnimator.cs
+│   ├── Deckle.Inference.Onnx/
+│   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime inference home — today the Silero VAD v5 speech detector and the g…
+│   │   ├── Deckle.Inference.Onnx.csproj
+│   │   ├── SileroSpeechTimestamps.cs
+│   │   ├── SileroVad.cs
+│   │   ├── SileroVadModel.cs
+│   │   ├── SileroVadOptions.cs
+│   │   └── SpeechSegment.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
@@ -655,6 +663,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Inference.Onnx.Tests/
+│   │   ├── Deckle.Inference.Onnx.Tests.csproj
+│   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
