@@ -10,42 +10,39 @@ namespace Deckle.Diagnostics.Telemetry;
 //
 // Two static entry points :
 //
-//   - Configure(...) instancie les listeners JSONL canoniques : app,
-//     latency, microphone, puis deux routes corpus (ASR + rewrite).
-//     Doit être appelée une seule fois au boot.
-//   - ConfigureGates(...) câble le délégué qui lit les toggles
-//     utilisateur côté host. Peut être appelée avant ou après
-//     Configure ; les prédicates lisent la dernière valeur connue à
-//     chaque émission, donc une mise à jour du délégué propage sans
-//     reconstruction des listeners.
-//   - ConfigureApplicationLogDropFilter(...) câble les filtres runtime
-//     du journal applicatif (ex. Verbose ambient pendant capture). Le
-//     module Telemetry reste indépendant de Diagnostics.Logging : le
-//     host fournit le prédicat.
+//   - Configure(...) instantiates the canonical JSONL listeners: app, latency,
+//     microphone, then two corpus routes (ASR + rewrite). Must be called only
+//     once at boot.
+//   - ConfigureGates(...) wires the delegate that reads user toggles on the
+//     host side. May be called before or after Configure; predicates read the
+//     last known value at each emission, so a delegate update propagates
+//     without reconstructing listeners.
+//   - ConfigureApplicationLogDropFilter(...) wires runtime filters for the
+//     application log (e.g. ambient Verbose during capture). The Telemetry
+//     module remains independent from Diagnostics.Logging: the host supplies
+//     the predicate.
 //
-// Pourquoi séparer ? Configure crée les listeners avec leurs prédicates
-// figés ; les prédicates doivent consulter une variable mutable qui
-// peut changer après l'instanciation quand l'utilisateur modifie les
-// toggles de telemetry.
+// Why separate them? Configure creates listeners with their predicates frozen;
+// predicates must consult a mutable variable that can change after
+// instantiation when the user changes telemetry toggles.
 //
-// Destinations canoniques :
-//   app.jsonl                                      ← journal applicatif
-//                                                    rendu (ligne lisible
-//                                                    + payload), excluant les
-//                                                    télémétries structurées
-//                                                    dédiées
+// Canonical destinations:
+//   app.jsonl                                      ← rendered application log
+//                                                    (readable line + payload),
+//                                                    excluding dedicated
+//                                                    structured telemetry
 //   latency.jsonl                                  ← LatencyRecorded events
 //   microphone.jsonl                               ← MicrophoneTelemetryRecorded
-//                                                    events (brut)
+//                                                    events (raw)
 //   microphone.processed.jsonl                     ← PreprocessedTelemetryRecorded
-//                                                    events (miroir post-DSP)
+//                                                    events (post-DSP mirror)
 //   corpus/<bucket>/<tier>/corpus.jsonl            ← CorpusAsrRecorded events
-//                                                    (routés)
+//                                                    (routed)
 //   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
-//                                                    events (routés, pas de
-//                                                    tier — voir ADR-0006)
+//                                                    events (routed, no tier;
+//                                                    see ADR-0006)
 //
-// Sémantique des gates utilisateur :
+// User gate semantics:
 //   app.jsonl                  ← ApplicationLogToDisk == true
 //   latency.jsonl              ← LatencyEnabled == true
 //   microphone.jsonl,
@@ -53,10 +50,9 @@ namespace Deckle.Diagnostics.Telemetry;
 //   corpus/raw/…,
 //   corpus/rewrite-…/      ← CorpusEnabled == true
 //
-// Posture par défaut : gates closes (false). Tant que ConfigureGates
-// n'a pas été appelée, aucune ligne ne touche disque — fail-safe
-// reproduisant la posture de l'ancien JsonlFileSink quand AppSettings
-// n'était pas encore prêt.
+// Default posture: gates closed (false). Until ConfigureGates has been called,
+// no line touches disk: fail-safe behavior reproducing the old JsonlFileSink
+// posture when AppSettings was not ready yet.
 //
 // Validation sub-directory. Configure(...) accepts a
 // `validationSubdirectory` flag for isolated comparison runs. Production
@@ -67,10 +63,9 @@ public static class TelemetryListenerBootstrap
     private static readonly List<EventListener> _listeners = new();
     private static bool _configured;
 
-    // Source de vérité externe pour les gates utilisateur. Null = posture
-    // fermée (toute gate retourne false). Câblée par l'App via
-    // ConfigureGates ; lue à chaque émission pour que les flips du
-    // toggle dans Settings prennent effet immédiatement.
+    // External source of truth for user gates. Null = closed posture (every
+    // gate returns false). Wired by the App through ConfigureGates; read at
+    // every emission so toggle flips in Settings take effect immediately.
     private static Func<string, bool>? _gateReader;
     private static Func<EventEntry, bool>? _applicationLogDropFilter;
     private static Func<string, EventLevel, EventKeywords, bool>? _applicationLogProviderLevelDropFilter;
@@ -98,12 +93,12 @@ public static class TelemetryListenerBootstrap
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
             preEntryDropPredicate: ShouldDropApplicationLog,
-            // app.jsonl est le miroir persistant du journal live : enveloppe
-            // auto-descriptive (provider/event/level/source/message/line),
-            // roulé par tranches de lignes vers des générations numérotées
-            // dans archive/ (jamais renommées ni supprimées — l'utilisateur
-            // élague). Les datasets restent en PayloadOnly sans rotation.
-            // Principe journal-roulé / datasets-intouchés : ADR-0007.
+            // app.jsonl is the persistent mirror of the live log:
+            // self-describing envelope (provider/event/level/source/message/
+            // line), rotated by line chunks into numbered generations in
+            // archive/ (never renamed or deleted; the user prunes). Datasets
+            // stay PayloadOnly without rotation. Rolled-log /
+            // untouched-datasets principle: ADR-0007.
             schema:   JsonlSchema.SelfDescribing,
             rotation: new JsonlRotationPolicy(maxLines: 8000)));
 
@@ -119,30 +114,30 @@ public static class TelemetryListenerBootstrap
             predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
-        // Miroir post-DSP de microphone.jsonl : la distribution du signal
-        // traité, même schéma champ pour champ que le brut, dans un fichier
-        // frère qui trie à côté. Deux fichiers homogènes plutôt qu'un fichier
-        // mixte — chacun se charge tel quel sans filtrer un discriminant, et
-        // le traité n'existe que quand le DSP a tourné. Même consentement :
-        // l'émission gate déjà sur MicrophoneTelemetry côté orchestrateur.
+        // Post-DSP mirror of microphone.jsonl: the processed signal
+        // distribution, same field-for-field schema as raw, in a sibling file
+        // that sorts next to it. Two homogeneous files rather than one mixed
+        // file: each loads as-is without filtering a discriminant, and
+        // processed only exists when the DSP ran. Same consent: emission
+        // already gates on MicrophoneTelemetry on the orchestrator side.
         _listeners.Add(new JsonlEventListener(
             filePath:  Path.Combine(rootDirectory, "microphone.processed.jsonl"),
             kindLabel: "microphone_processed",
             predicate: e => e.EventName == "PreprocessedTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
-        // Corpus normalisé — voir ADR-0006. Deux listeners routés qui
-        // pulvérisent CorpusAsr/RewriteRecorded sur une arborescence
-        // bucketée. Le predicate des deux gate sur CorpusEnabled et le
-        // resolver compose le path à partir du payload de l'event.
+        // Normalized corpus: see ADR-0006. Two routed listeners spray
+        // CorpusAsr/RewriteRecorded over a bucketed tree. Both predicates gate
+        // on CorpusEnabled and the resolver composes the path from the event
+        // payload.
         string corpusRoot = Path.Combine(rootDirectory, "corpus");
 
         _listeners.Add(new RoutedJsonlEventListener(
             pathResolver: e =>
             {
-                // Le producer garantit la présence et la sanitation des
-                // composants ; un payload mal formé laisse le path vide
-                // et l'event est silencieusement skipé.
+                // The producer guarantees component presence and sanitization;
+                // a malformed payload leaves the path empty and the event is
+                // silently skipped.
                 string bucket = e.Payload.TryGetValue("bucket", out var b) ? b?.ToString() ?? "" : "";
                 string tier   = e.Payload.TryGetValue("tier",   out var t) ? t?.ToString() ?? "" : "";
                 if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(tier)) return "";
@@ -164,34 +159,33 @@ public static class TelemetryListenerBootstrap
                          && ReadGate("CorpusEnabled")));
     }
 
-    // Câble le délégué de lecture des gates utilisateur. Accepte un
-    // nom symbolique (« ApplicationLogToDisk », « LatencyEnabled »,
-    // « MicrophoneTelemetry », « CorpusEnabled ») et retourne le bool
-    // courant. Un nom inconnu doit retourner false côté caller.
+    // Wires the user gate reader delegate. Accepts a symbolic name
+    // ("ApplicationLogToDisk", "LatencyEnabled", "MicrophoneTelemetry",
+    // "CorpusEnabled") and returns the current bool. An unknown name must
+    // return false on the caller side.
     //
-    // Idempotent — réappeler ConfigureGates remplace le délégué. Utile
-    // si le host migre de la source legacy vers la nouvelle en un
-    // seul swap.
+    // Idempotent: calling ConfigureGates again replaces the delegate. Useful
+    // if the host migrates from the legacy source to the new one in a single
+    // swap.
     public static void ConfigureGates(Func<string, bool> gateReader)
     {
         if (gateReader is null) throw new ArgumentNullException(nameof(gateReader));
         _gateReader = gateReader;
     }
 
-    // Câble le prédicat qui retire certains events du journal applicatif
-    // persisté. Le prédicat lit le même EventEntry que le LogWindow
-    // drop filter, ce qui garde l'app.jsonl aligné avec la fenêtre live
-    // sans introduire de référence de Telemetry vers Logging.
+    // Wires the predicate that removes some events from the persisted
+    // application log. The predicate reads the same EventEntry as the LogWindow
+    // drop filter, which keeps app.jsonl aligned with the live window without
+    // introducing a Telemetry → Logging reference.
     public static void ConfigureApplicationLogDropFilter(Func<EventEntry, bool> filter)
     {
         if (filter is null) throw new ArgumentNullException(nameof(filter));
         _applicationLogDropFilter = filter;
     }
 
-    // Variante précoce du filtre app.jsonl, évaluée avant la création
-    // d'EventEntry quand provider + level suffisent. Le cas ambient
-    // l'utilise pour que le toggle coupe aussi le coût d'allocation des
-    // logs de boucle, pas seulement l'écriture finale.
+    // Early variant of the app.jsonl filter, evaluated before EventEntry
+    // creation when provider + level are enough. The ambient case uses it so
+    // the toggle also cuts loop log allocation cost, not only final writing.
     public static void ConfigureApplicationLogProviderLevelDropFilter(
         Func<string, EventLevel, EventKeywords, bool> filter)
     {

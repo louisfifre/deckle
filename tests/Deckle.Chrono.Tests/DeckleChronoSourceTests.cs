@@ -5,14 +5,14 @@ using Xunit;
 
 namespace Deckle.Chrono.Tests;
 
-// Test d'observabilité — exerce la chaîne EventSource depuis l'émission
-// jusqu'à la collecte par EventListener. Sert aussi de premier exemple
-// du pattern TestEventListener qui sera réutilisé pour tous les futurs
+// Observability test: exercises the EventSource chain from emission to
+// collection by EventListener. Also serves as the first example of the
+// TestEventListener pattern that will be reused for all future
 // providers Deckle.* (Audio, Vision, Whisp, etc.).
 //
 // Le provider DeckleChronoSource est un singleton process-wide. Le
-// listener s'abonne via son nom ETW "Deckle.Chrono" — il ne dépend pas
-// d'une instance, ce qui rend les tests isolés naturellement (chaque
+// listener subscribes through its ETW name "Deckle.Chrono"; it does not depend
+// on an instance, which makes tests naturally isolated (each
 // test instancie son propre listener via using).
 [Trait("Category", "observability")]
 public class DeckleChronoSourceTests

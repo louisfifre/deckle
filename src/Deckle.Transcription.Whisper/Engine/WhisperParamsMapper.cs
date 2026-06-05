@@ -10,17 +10,17 @@ namespace Deckle.Transcription.Whisper.Engine;
 
 // ── WhisperParamsMapper ───────────────────────────────────────────────────────
 //
-// Pont entre TranscriptionSettings (modèle orienté utilisateur) et WhisperFullParams
-// (struct C native). Appelé par TranscriptionEngine.Transcribe() juste avant
-// whisper_full(), après que la struct a été initialisée via
+// Bridge between TranscriptionSettings (user-oriented model) and
+// WhisperFullParams (native C struct). Called by TranscriptionEngine.Transcribe()
+// just before whisper_full(), after the struct has been initialized through
 // whisper_full_default_params_by_ref().
 //
-// Ne touche QUE les champs hot-reload : tout ce qui n'exige pas de relancer
-// le contexte whisper_init. Le choix du modèle et use_gpu sont appliqués
-// séparément au moment du LoadModelAsync() (voir TranscriptionEngine._modelPath).
+// ONLY touches hot-reload fields: anything that does not require relaunching the
+// whisper_init context. Model choice and use_gpu are applied separately at
+// LoadModelAsync() time (see TranscriptionEngine._modelPath).
 //
-// Allocations non managées retournées : le caller est responsable de les
-// libérer après whisper_full() via FreeAllocations().
+// Returned unmanaged allocations: the caller is responsible for freeing them
+// after whisper_full() through FreeAllocations().
 public static class WhisperParamsMapper
 {
     public readonly struct NativeAllocations
@@ -47,19 +47,19 @@ public static class WhisperParamsMapper
         }
     }
 
-    // Applique les paramètres utilisateur sur la struct native. La struct
-    // est passée par ref : on écrase les champs concernés, on laisse les
-    // autres (strategy, callbacks, n_threads...) tels que whisper.cpp les
-    // a initialisés par défaut.
+    // Applies user parameters to the native struct. The struct is passed by
+    // ref: overwrite the relevant fields, leave the others (strategy,
+    // callbacks, n_threads...) as initialized by whisper.cpp defaults.
     //
-    // `modelsDirectory` est le dossier où le modèle Silero VAD est cherché —
-    // résolu côté hôte (ITranscriptionEngineHost.ResolveModelsDirectory) pour que ce
-    // module reste indépendant du SettingsService de l'app.
+    // `modelsDirectory` is the folder where the Silero VAD model is looked up:
+    // resolved host-side (ITranscriptionEngineHost.ResolveModelsDirectory) so
+    // this module stays independent from the app SettingsService.
     //
-    // `promptOverride` (optionnel) remplace l'initial_prompt configuré pour CET
-    // appel : c'est le canal par lequel le socle streaming injecte son contexte
-    // inter-utterances (prompt fixe + queue de l'utterance précédente). Null =
-    // on garde le prompt stylistique des settings (chemin monolithique inchangé).
+    // `promptOverride` (optional) replaces the configured initial_prompt for
+    // THIS call: this is the channel through which the streaming base injects
+    // its inter-utterance context (fixed prompt + previous utterance tail).
+    // Null = keep the stylistic prompt from settings (unchanged monolithic
+    // path).
     public static NativeAllocations Apply(
         ref WhisperFullParams wparams,
         TranscriptionSettings whisp,
@@ -73,12 +73,12 @@ public static class WhisperParamsMapper
         wparams.initial_prompt = promptPtr;
         wparams.carry_initial_prompt = (byte)(whisp.Engine.CarryInitialPrompt ? 1 : 0);
 
-        // ── Seuils de confiance ───────────────────────────────────────────
+        // ── Confidence Thresholds ─────────────────────────────────────────
         wparams.entropy_thold = (float)whisp.Confidence.EntropyThreshold;
         wparams.logprob_thold = (float)whisp.Confidence.LogprobThreshold;
         wparams.no_speech_thold = (float)whisp.Confidence.NoSpeechThreshold;
 
-        // ── Décodage ──────────────────────────────────────────────────────
+        // ── Decoding ──────────────────────────────────────────────────────
         wparams.temperature = (float)whisp.Decoding.Temperature;
         wparams.temperature_inc = (float)whisp.Decoding.TemperatureIncrement;
 
@@ -91,7 +91,7 @@ public static class WhisperParamsMapper
             wparams.beam_search_beam_size = whisp.Decoding.BeamSize;
         }
 
-        // ── Filtres de sortie ─────────────────────────────────────────────
+        // ── Output Filters ────────────────────────────────────────────────
         wparams.suppress_blank = (byte)(whisp.OutputFilters.SuppressBlank ? 1 : 0);
         wparams.suppress_nst = (byte)(whisp.OutputFilters.SuppressNonSpeechTokens ? 1 : 0);
 
@@ -102,8 +102,8 @@ public static class WhisperParamsMapper
             wparams.suppress_regex = regexPtr;
         }
 
-        // ── Contexte et segmentation ──────────────────────────────────────
-        // UseContext (UI) = inverse de no_context (natif).
+        // ── Context and Segmentation ──────────────────────────────────────
+        // UseContext (UI) = inverse of no_context (native).
         wparams.no_context = (byte)(whisp.Context.UseContext ? 0 : 1);
         // MaxTokens <= 0 means "auto" — leave whisper.cpp's default (16384).
         // Writing -1 here makes whisper.cpp compute
@@ -119,9 +119,9 @@ public static class WhisperParamsMapper
 
         if (whisp.SpeechDetection.Enabled)
         {
-            // Modèle Silero cherché dans le dossier de modèles fourni par
-            // l'hôte. Si absent, VAD désactivé avec log warning — pas de
-            // crash natif. VAD filename + download URL sourced from the
+            // Silero model looked up in the models folder supplied by the
+            // host. If absent, VAD disabled with log warning; no native crash.
+            // VAD filename + download URL sourced from the
             // Setup catalog so the engine and the wizard agree on which
             // Silero version to ship.
             string vadModelPath = Path.Combine(

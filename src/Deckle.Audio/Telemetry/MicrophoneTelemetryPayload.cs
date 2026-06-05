@@ -17,11 +17,11 @@ namespace Deckle.Audio.Telemetry;
 // `TranscriptionEngine` also pins recent payloads to feed back into the HUD
 // thresholds, hence the public surface.
 //
-// Carry-over de la vague 6 : ce POCO vivait jadis dans `Deckle.Logging`
-// (avec `LatencyPayload`/`CorpusPayload` qui eux ont disparu avec le
-// module legacy). Relocalisé ici parce que c'est le seul payload encore
-// instancié post-migration EventSource, et son producteur naturel est
-// le calculator du module Audio.
+// Carry-over from wave 6: this POCO used to live in `Deckle.Logging` (with
+// `LatencyPayload`/`CorpusPayload`, which disappeared with the legacy module).
+// Relocated here because it is the only payload still instantiated after the
+// EventSource migration, and its natural producer is the Audio module
+// calculator.
 public sealed record MicrophoneTelemetryPayload(
     [property: JsonPropertyName("duration_seconds")] double DurationSeconds,
     [property: JsonPropertyName("samples")]          int    Samples,

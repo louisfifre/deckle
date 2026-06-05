@@ -5,15 +5,15 @@ namespace Deckle.TestSupport;
 
 // ── EventArgsExtensions ─────────────────────────────────────────────────────
 //
-// EventSource ajoute des bits système hauts (bits 44-47, sessions ETW
-// réservées) à `EventWrittenEventArgs.Keywords` en plus des keywords
-// déclarés sur l'event. Une assertion stricte
-// `Assert.Equal((EventKeywords)Keywords.Network, ev.Keywords)` échoue
-// parce que le membre droit porte les bits Deckle PLUS les bits système.
+// EventSource adds high system bits (bits 44-47, reserved ETW sessions) to
+// `EventWrittenEventArgs.Keywords` in addition to keywords declared on the
+// event. A strict assertion
+// `Assert.Equal((EventKeywords)Keywords.Network, ev.Keywords)` fails because
+// the right-hand member carries Deckle bits PLUS system bits.
 //
-// `HasKeyword` masque sur le bit Deckle pour répondre à la vraie question
-// posée par les tests : « cet event est-il sur ce keyword Deckle » sans
-// se soucier des bits ETW que le framework ajoute.
+// `HasKeyword` masks on the Deckle bit to answer the real question asked by
+// tests: "is this event on this Deckle keyword" without caring about ETW bits
+// added by the framework.
 public static class EventArgsExtensions
 {
     public static bool HasKeyword(this EventWrittenEventArgs ev, Keywords k)

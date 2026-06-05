@@ -10,9 +10,8 @@ namespace Deckle.Transcription;
 //
 // Used by `TranscriptionEngine` to fill the `text_words` field of the
 // `LatencyRecorded`, `CorpusAsrRecorded` and `CorpusRewriteRecorded`
-// events. Carry-over de la vague 6 : utilitaire jadis hébergé par
-// `Deckle.Logging` avec les payloads, relocalisé aux côtés de son seul
-// consommateur métier.
+// events. Carry-over from wave 6: utility formerly hosted by `Deckle.Logging`
+// with the payloads, relocated next to its only business consumer.
 internal static class TextMetrics
 {
     private static readonly Regex _token = new(@"\S+", RegexOptions.Compiled);

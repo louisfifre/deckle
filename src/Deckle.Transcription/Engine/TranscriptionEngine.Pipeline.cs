@@ -363,33 +363,32 @@ public sealed partial class TranscriptionEngine
             pasted:               pasteVerified,
             outcome:              outcome.ToString());
 
-        // Corpus normalisé — voir ADR-0006. Deux events distincts joints
-        // par _transcriptionId : CorpusAsrRecorded capte toujours la
-        // sortie ASR, CorpusRewriteRecorded n'est émis que si un profil
-        // rewrite a tourné. L'audio WAV plat sous audio/<id>.wav est
-        // partagé entre les deux côtés via audioFileName.
+        // Normalized corpus: see ADR-0006. Two distinct events joined by
+        // _transcriptionId: CorpusAsrRecorded always captures ASR output,
+        // CorpusRewriteRecorded is only emitted if a rewrite profile ran. The
+        // flat WAV audio under audio/<id>.wav is shared between both sides
+        // through audioFileName.
         var telemetrySettings = _host.Telemetry;
         if (telemetrySettings.CorpusEnabled)
         {
             var asrSettings = _host.Transcription.Engine;
 
-            // Bucket ASR : `raw` aujourd'hui (Whisper, et plus tard
-            // Voxtral en mode mot-pour-mot universel). Le futur mode
-            // Voxtral instruction-nommée prendra un bucket
-            // `voxtral-<instruction>` distinct quand le backend Voxtral
-            // sera branché.
+            // ASR bucket: `raw` today (Whisper, and later Voxtral in universal
+            // word-for-word mode). The future named-instruction Voxtral mode
+            // will take a distinct `voxtral-<instruction>` bucket when the
+            // Voxtral backend is wired.
             string asrTier   = CorpusTier.Resolve(rawWordCount);
             string asrBucket = "raw";
 
-            // Audio dédupliqué par transcription. Vide quand l'utilisateur
-            // n'a pas activé RecordAudioCorpus — la ligne JSONL reste
-            // utile sans WAV.
+            // Audio deduplicated per transcription. Empty when the user has
+            // not enabled RecordAudioCorpus; the JSONL line remains useful
+            // without a WAV.
             //
-            // Quel buffer atterrit dans le WAV — choix utilisateur (ADR-0006,
-            // amendement 2026-06-02). MatchTranscription stocke ce que le
-            // backend a réellement reçu (backendAudio : traité quand le DSP a
-            // tourné, brut sinon) ; AlwaysRaw force la capture intouchée pour
-            // garder une baseline ré-dérivable.
+            // Which buffer lands in the WAV: user choice (ADR-0006, 2026-06-02
+            // amendment). MatchTranscription stores what the backend actually
+            // received (backendAudio: processed when DSP ran, raw otherwise);
+            // AlwaysRaw forces the untouched capture to keep a re-derivable
+            // baseline.
             float[] corpusAudio =
                 telemetrySettings.AudioCorpusContent == AudioCorpusContent.AlwaysRaw
                     ? audio
@@ -423,11 +422,11 @@ public sealed partial class TranscriptionEngine
             if (profile is not null)
             {
                 int rewriteWordCount = TextMetrics.CountWords(fullText);
-                // Slugify normalise déjà en [a-z0-9-]+ ; Sanitize ajoute
-                // une ceinture-bretelles contre les composants problématiques
-                // qui pourraient se glisser dans Id (le suffixe n'est pas
-                // re-slugifié — un Id sortant de la fabrique est censé
-                // être 12 hex chars mais on ne le présume pas).
+                // Slugify already normalizes to [a-z0-9-]+; Sanitize adds
+                // belt-and-suspenders protection against problematic
+                // components that could slip into Id (the suffix is not
+                // re-slugified; an Id leaving the factory is expected to be 12
+                // hex chars, but we do not assume it).
                 string rewriteBucket = CorpusPaths.Sanitize(
                     $"rewrite-{CorpusPaths.Slugify(profile.Name)}-{profile.Id}");
 

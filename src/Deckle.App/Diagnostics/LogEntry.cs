@@ -3,21 +3,20 @@ using Deckle.Diagnostics;
 
 namespace Deckle.App.Diagnostics;
 
-// Wrapper UI-side autour d'un EventEntry produit par le listener
-// Deckle.Diagnostics. LogWindow consomme exclusivement des LogEntry —
-// le wrap précompute le texte affiché (`HH:mm:ss.fff [SOURCE] message`)
-// pour que la virtualisation ListView ne reformatte pas à chaque
-// realization de ligne.
+// UI-side wrapper around an EventEntry produced by the Deckle.Diagnostics
+// listener. LogWindow consumes only LogEntry instances; the wrapper
+// precomputes the displayed text (`HH:mm:ss.fff [SOURCE] message`) so
+// ListView virtualization does not reformat on every row realization.
 //
-// Le mapping `Provider` → label source ("Deckle.Whisp" → "WHISP",
-// "Deckle.App" → "APP") suit la convention courte uppercase héritée
-// du legacy LogSource. Il vit dans Deckle.Diagnostics.LogLineFormatter
-// pour que la LogWindow et app.jsonl produisent la même ligne rendue.
+// The `Provider` → source label mapping ("Deckle.Whisp" → "WHISP",
+// "Deckle.App" → "APP") follows the short uppercase convention inherited
+// from legacy LogSource. It lives in Deckle.Diagnostics.LogLineFormatter so
+// LogWindow and app.jsonl produce the same rendered line.
 //
-// `EventName` et `Level` sont exposés en proxy parce que le
-// DataTemplateSelector route ses templates sur ces deux propriétés —
-// par nom d'event pour les rows télémétrie spécialisées (Latency /
-// Corpus / Microphone), par EventLevel BCL pour le reste.
+// `EventName` and `Level` are exposed as proxies because DataTemplateSelector
+// routes its templates on these two properties: by event name for specialized
+// telemetry rows (Latency / Corpus / Microphone), by BCL EventLevel for the
+// rest.
 public sealed class LogEntry
 {
     public EventEntry Entry { get; }

@@ -50,9 +50,9 @@ public partial class App : Microsoft.UI.Xaml.Application
         System.Diagnostics.Tracing.EventLevel level,
         System.Diagnostics.Tracing.EventKeywords keywords)
     {
-        // Seul le Verbose des providers de capture est concerné. Les jalons
-        // (Info / Warning / Error) passent toujours — c'est par eux qu'on
-        // sait, même toggle off, que ça tourne et que ça s'arrête.
+        // Only Verbose events from capture providers are affected. Milestones
+        // (Info / Warning / Error) always pass through; they are how we know,
+        // even with the toggle off, that capture is running and stopping.
         if (level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
         if (!AmbientCaptureGate.IsActive) return false;
 
@@ -60,23 +60,23 @@ public partial class App : Microsoft.UI.Xaml.Application
             provider == "Deckle.Ambient"
             || provider == "Deckle.Vision"
             || provider == "Deckle.Lighting"
-            // Sub-provider transverse, mais pendant une capture c'est le
-            // firehose dominant : ResourceAcquired/Released par frame
-            // (textures D3D11 capture-loop + frame-sampler). Hors capture
-            // la gate est fermée, donc le Resource du HUD passe normalement.
+            // Cross-cutting sub-provider, but during capture it is the dominant
+            // firehose: ResourceAcquired/Released per frame (capture-loop D3D11
+            // textures + frame-sampler). Outside capture the gate is closed, so
+            // HUD Resource events pass normally.
             || provider == "Deckle.Diagnostics.Resource";
         if (!captureFamily) return false;
 
-        // Toggle off : la capture est muette. Aucun Verbose, heartbeat
-        // compris — on ne veut rien voir, juste savoir via les jalons si
-        // ça marche. (Le filet de vitalité passera par un watchdog dédié,
-        // pas par un battement permanent.)
+        // Toggle off: capture is silent. No Verbose events, including the
+        // heartbeat; we do not want to see anything, only know through
+        // milestones whether it works. (The liveness safety net will go
+        // through a dedicated watchdog, not through a permanent heartbeat.)
         if (!LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return true;
 
-        // Toggle on : on montre le heartbeat (rollup 5 s) et les Verbose
-        // occasionnels (détails start / stop), mais jamais le firehose
-        // haute fréquence — push par-tick (keyword Push) et acquire/release
-        // D3D11 par-frame (sous-provider Resource) restent tus, même opt-in.
+        // Toggle on: show the heartbeat (5 s rollup) and occasional Verbose
+        // events (start / stop details), but never the high-frequency firehose:
+        // per-tick push (Push keyword) and per-frame D3D11 acquire/release
+        // (Resource sub-provider) stay silent, even when opted in.
         if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) != 0) return true;
         if (provider == "Deckle.Diagnostics.Resource") return true;
         return false;
@@ -115,11 +115,10 @@ public partial class App : Microsoft.UI.Xaml.Application
             e.SetObserved();
         };
 
-        // Trace explicit du process-exit. Les listeners JSONL flushent à
-        // chaque écriture, donc les events précédents sont déjà sur disque —
-        // mais distinguer un shutdown propre d'un
-        // crash brut dans les logs aide le post-mortem. Pas un dump, juste
-        // un marqueur "on est sorti par cette voie".
+        // Explicit trace for process-exit. JSONL listeners flush on every
+        // write, so previous events are already on disk, but distinguishing a
+        // clean shutdown from a raw crash in the logs helps post-mortems. Not
+        // a dump, just a marker that says "we exited through this path".
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             DeckleAppSource.Log.ProcessExit();
@@ -152,27 +151,27 @@ public partial class App : Microsoft.UI.Xaml.Application
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
         Milestone("settings-bootstrap");
 
-        // Câblage `Deckle.Core.CorpusPaths` (relocalisé en sous-vague 6a) :
-        // le helper de paths storage avait besoin d'un getter sur le
-        // StorageDirectory utilisateur sans dépendre d'un module
-        // observabilité. La dep est inversée par injection — l'App câble
-        // le getter sur le nouveau TelemetrySettingsService.
+        // Wiring for `Deckle.Core.CorpusPaths` (relocated in sub-wave 6a):
+        // the storage paths helper needed a getter for the user
+        // StorageDirectory without depending on an observability module. The
+        // dependency is inverted through injection: App wires the getter to the
+        // new TelemetrySettingsService.
         Deckle.Core.CorpusPaths.ConfigureStorageDirectoryOverride(() =>
         {
             string s = TelemetrySettingsService.Instance.Current.StorageDirectory;
             return string.IsNullOrWhiteSpace(s) ? null : s;
         });
 
-        // EventSource observability pipeline. JsonlEventListeners écrivent
-        // directement aux paths canoniques `<TelemetryDir>/{app,latency,
-        // microphone,corpus}.jsonl`. Le LogWindow lazy s'attachera au
-        // listener via `AttachLogWindowSink` à sa première ouverture.
+        // EventSource observability pipeline. JsonlEventListeners write
+        // directly to canonical paths `<TelemetryDir>/{app,latency,
+        // microphone,corpus}.jsonl`. Lazy LogWindow will attach to the
+        // listener via `AttachLogWindowSink` on first open.
         AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
-        // Câblage des gates utilisateur côté JsonlEventListeners
-        // (Deckle.Diagnostics.Telemetry). Lecture directe sur le
-        // TelemetrySettingsService canonique.
+        // Wire user gates on the JsonlEventListeners side
+        // (Deckle.Diagnostics.Telemetry). Direct read from the canonical
+        // TelemetrySettingsService.
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
         {
             "ApplicationLogToDisk" => TelemetrySettingsService.Instance.Current.ApplicationLogToDisk,
@@ -182,13 +181,12 @@ public partial class App : Microsoft.UI.Xaml.Application
             _                      => false,
         });
 
-        // Drop filter ambient : silence les Verbose des providers
-        // Ambient / Vision / Lighting quand une capture loop est
-        // active ET que l'utilisateur n'a pas opt-in à LogAmbient-
-        // CaptureActivity. La capture gate (AmbientCaptureGate) vit
-        // dans Deckle.Diagnostics.Logging et est flippée par l'Ambient
-        // engine au Start / Stop. Le toggle utilisateur est lu sur
-        // LoggingSettingsService.
+        // Ambient drop filter: silence Verbose events from Ambient / Vision /
+        // Lighting providers when a capture loop is active AND the user has
+        // not opted in to LogAmbientCaptureActivity. The capture gate
+        // (AmbientCaptureGate) lives in Deckle.Diagnostics.Logging and is
+        // flipped by the Ambient engine on Start / Stop. The user toggle is
+        // read from LoggingSettingsService.
         AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(ShouldDropApplicationLogEntry);
@@ -198,12 +196,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // routing, and LogWindow listener routing during startup.
         Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted("wave 1 boot");
 
-        // Sub-provider transverse Network — capter les transitions
-        // d'état réseau de la machine pour corréler les échecs HTTP
-        // métier (Hue REST, Ollama) avec une coupure ou bascule au
-        // niveau OS. Émetteur unique, idempotent ; un event initial est
-        // émis à `Start()` pour capter l'état au boot, puis sur chaque
-        // broadcast `NetworkInformation.NetworkStatusChanged`.
+        // Cross-cutting Network sub-provider: capture machine network state
+        // transitions to correlate business HTTP failures (Hue REST, Ollama)
+        // with an OS-level outage or switch. Single idempotent emitter; an
+        // initial event is emitted at `Start()` to capture boot state, then on
+        // every `NetworkInformation.NetworkStatusChanged` broadcast.
         NetworkStatusEmitter.Start();
 
         // Resolved paths logged once at boot — useful for support: tells us
@@ -211,9 +208,9 @@ public partial class App : Microsoft.UI.Xaml.Application
         // telemetry. Touching any AppPaths member triggers the static ctor
         // that resolves <UserDataRoot> and creates the writable directories.
         //
-        // Doctrine logging : Info = jalon en phrase Capital courte ;
-        // détails techniques (chemins résolus) en Verbose miroir, lisible
-        // en filtre All sans polluer Activity.
+        // Logging doctrine: Info = short capitalized milestone sentence;
+        // technical details (resolved paths) in mirrored Verbose, readable
+        // under the All filter without polluting Activity.
         DeckleAppSource.Log.PathsInitialized();
         DeckleAppSource.Log.PathsDetail(
             AppPaths.UserDataRoot,
@@ -280,20 +277,18 @@ public partial class App : Microsoft.UI.Xaml.Application
         AmbientEngine.OpenPlaygroundRequested = () => ShowPlaygroundLazy();
         Milestone("ambient_engine");
 
-        // LogWindow lazy : instanciée à la première ouverture via
-        // ShowLogWindowLazy(). Le sink ILogWindowSink est attaché à ce
-        // moment-là via AppDiagnosticsBootstrap, qui rejoue dans
-        // l'opération atomique le buffer ring du LogWindowEventListener
-        // pour que le viewer soit complet dès l'ouverture. Évite de
-        // payer un swap chain DComp + visual tree DWM au boot pour une
-        // fenêtre dont l'utilisateur n'a pas systématiquement besoin.
-        // Les events boot sont préservés dans app.jsonl par le listener
-        // JSONL inscrit dès le boot.
+        // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
+        // The ILogWindowSink is attached at that point via
+        // AppDiagnosticsBootstrap, which replays the LogWindowEventListener
+        // ring buffer in the atomic operation so the viewer is complete as
+        // soon as it opens. Avoids paying for a DComp swap chain + DWM visual
+        // tree at boot for a window the user does not always need. Boot events
+        // are preserved in app.jsonl by the JSONL listener registered at boot.
 
-        // SettingsWindow lazy : instanciée à la première ouverture via
-        // ShowSettingsWindowLazy(). La branche --settings du boot
-        // (restart depuis Settings) crée + show direct par le même
-        // chemin lazy, donc le restart sur la bonne page reste fonctionnel.
+        // Lazy SettingsWindow: instantiated on first open via
+        // ShowSettingsWindowLazy(). The boot --settings branch (restart from
+        // Settings) creates + shows directly through the same lazy path, so
+        // restart on the right page stays functional.
 
         // PlaygroundWindow lazy: dev tool, instancied on first tray
         // open via ShowPlaygroundLazy(). Avoids paying a DComp swap
@@ -340,14 +335,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         // positions; reacts to main HUD show/hide via MainHudVisibilityChanged.
         _overlayManager = new HudOverlayManager(_hudWindow, _hudWindow.DispatcherQueue);
 
-        // HUD feedback sink unique (canal EventSource direct depuis la
-        // sous-vague 6b). `HudFeedbackEventListener` (Deckle.Diagnostics)
-        // filtre les events `UserFeedbackEmitted` de tout provider Deckle.*
-        // et passe une `FeedbackEntry(title, body, severity:int, role:int)`
-        // à ce sink. Le sink route vers la surface principale (`ShowUser-
-        // Feedback`) ou la stack (`HudOverlayManager.Enqueue`) selon role.
-        // Le double-câblage legacy (HudFeedbackSink + LegacyHudFeedback-
-        // Sink) a disparu — un seul pipeline.
+        // Unique HUD feedback sink (direct EventSource channel since
+        // sub-wave 6b). `HudFeedbackEventListener` (Deckle.Diagnostics)
+        // filters `UserFeedbackEmitted` events from any Deckle.* provider and
+        // passes a `FeedbackEntry(title, body, severity:int, role:int)` to
+        // this sink. The sink routes to the main surface (`ShowUserFeedback`)
+        // or the stack (`HudOverlayManager.Enqueue`) by role. Legacy double
+        // wiring (HudFeedbackSink + LegacyHudFeedbackSink) is gone; one
+        // pipeline remains.
         AppDiagnosticsBootstrap.AttachHudFeedbackSink(
             new AppHudFeedbackSink(
                 onReplacement: (sev, title, body) => _hudWindow.ShowUserFeedback(sev, title, body),
@@ -436,12 +431,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         _tray.UpdateStatus("Ready");
         DeckleAppSource.Log.StatusChanged("Ready");
 
-        // Force Ambient master toggle OFF at boot — explicit user
-        // action via Settings / tray re-enables the pipeline. Louis
-        // explicit preference : the app should not start screen
-        // capture + Hue traffic on its own at launch. Subscribe the
-        // observer AFTER the force-off so the Changed event doesn't
-        // bounce a Start call we just suppressed.
+        // Force Ambient master toggle OFF at boot; explicit user action via
+        // Settings / tray re-enables the pipeline. Louis's explicit
+        // preference: the app should not start screen capture + Hue traffic on
+        // its own at launch. Subscribe the observer AFTER the force-off so the
+        // Changed event does not bounce a Start call we just suppressed.
         if (AmbientSettingsService.Instance.Current.Enabled)
         {
             AmbientSettingsService.Instance.Current.Enabled = false;
@@ -492,17 +486,17 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         _tray.Register(_messageHost.Hwnd);
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey);
-        // Try/catch obligatoire : RegisterHotKey peut échouer avec err 1409
-        // (ERROR_HOTKEY_ALREADY_REGISTERED) quand un autre process possède
-        // déjà la combinaison — typiquement WhispInteropTest qui tourne
-        // encore via la tâche planifiée Whisp, ou PowerToys / une app
-        // tierce qui a pris Win+1. Sans ce filet, le throw d'HotkeyManager
-        // remonte à OnLaunched et l'app refuse de démarrer.
+        // Try/catch required: RegisterHotKey can fail with err 1409
+        // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns
+        // the chord; typically WhispInteropTest still running through the
+        // scheduled Whisp task, or PowerToys / a third-party app that took
+        // Win+1. Without this safety net, HotkeyManager's throw bubbles to
+        // OnLaunched and the app refuses to start.
         //
-        // Compromis : l'app continue de démarrer mais sans hotkeys. Le
-        // tray reste opérationnel (Settings, Quit, toggle recording via
-        // clic), donc l'utilisateur n'est pas verrouillé. UserFeedback
-        // Overlay informe visuellement via le HUD au boot.
+        // Compromise: the app continues to start but without hotkeys. The tray
+        // remains operational (Settings, Quit, toggle recording by click), so
+        // the user is not locked out. UserFeedback Overlay informs visually
+        // through the HUD at boot.
         try
         {
             _hotkeyManager.Register();
@@ -544,9 +538,9 @@ public partial class App : Microsoft.UI.Xaml.Application
                 ? cliArgs[settingsIdx + 1]
                 : null;
             DeckleAppSource.Log.CmdLineSettingsFlag(pageTag ?? "(default)");
-            // Voie lazy : crée la fenêtre + l'affiche sur la page demandée.
-            // Indistinct du chemin tray quand l'utilisateur ouvre Settings
-            // pour la première fois.
+            // Lazy path: creates the window + shows it on the requested page.
+            // Indistinguishable from the tray path when the user opens
+            // Settings for the first time.
             ShowSettingsWindowLazy(pageTag);
         }
 

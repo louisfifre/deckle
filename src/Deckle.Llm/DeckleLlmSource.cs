@@ -3,12 +3,11 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Llm;
 
-// LLM module provider. Couvre la réécriture du transcript via Ollama
-// (LlmService), la surface Settings → LLM (LlmPage), la communication
-// avec /api/tags, /api/show, /api/blobs, /api/create d'Ollama
-// (OllamaService), et l'import GGUF orchestré (GgufImportDialog).
-// La persistance settings du module (LlmSettingsService) passe par les
-// quatre events Settings* transitoires.
+// LLM module provider. Covers transcript rewriting through Ollama (LlmService),
+// the Settings → LLM surface (LlmPage), communication with Ollama's /api/tags,
+// /api/show, /api/blobs, /api/create (OllamaService), and orchestrated GGUF
+// import (GgufImportDialog). Module settings persistence (LlmSettingsService)
+// goes through the four transitional Settings* events.
 [EventSource(Name = "Deckle.Llm")]
 public sealed class DeckleLlmSource : DeckleEventSource
 {

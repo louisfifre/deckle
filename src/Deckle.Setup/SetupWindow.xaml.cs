@@ -75,11 +75,10 @@ public sealed partial class SetupWindow : Window
         Closed += OnWindowClosed;
         DeckleSetupSource.Log.SetupInfo("setup window opened");
 
-        // Theme — câble ActualThemeChanged sur la racine XAML. Le setup
-        // wizard est une fenêtre transient (vit le temps du first-run ou
-        // d'une session de re-setup depuis Settings) mais une bascule
-        // de thème pendant son affichage reste possible — utile pour
-        // diagnostiquer un glitch d'InfoBar ou de ProgressBar corrélé.
+        // Theme: wires ActualThemeChanged on the XAML root. The setup wizard
+        // is a transient window (lives for first-run or a re-setup session from
+        // Settings), but a theme switch during display is still possible:
+        // useful to diagnose a correlated InfoBar or ProgressBar glitch.
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -152,12 +151,11 @@ public sealed partial class SetupWindow : Window
                 int y = area.WorkArea.Y + (area.WorkArea.Height - h) / 2;
                 appWindow.MoveAndResize(new RectInt32(x, y, w, h));
 
-                // Windowing — émis post-MoveAndResize. SetupWindow se
-                // centre explicitement sur la work area du moniteur
-                // courant (calcul ci-dessus), donc l'ancrage logique
-                // est "Center" — distinct du "Center" implicite
-                // Windows-managed des Settings/Log qui sont juste
-                // Resize sans Move.
+                // Windowing: emitted post-MoveAndResize. SetupWindow
+                // explicitly centers itself on the current monitor work area
+                // (calculation above), so the logical anchor is "Center":
+                // distinct from the implicit Windows-managed "Center" of
+                // Settings/Log, which only Resize without Move.
                 WindowingProbe.EmitWindowPositioned(hwnd, "setup", "Center");
             }
 

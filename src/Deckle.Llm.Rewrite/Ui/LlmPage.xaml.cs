@@ -11,31 +11,31 @@ using Deckle.Catalog;
 
 namespace Deckle.Llm.Rewrite;
 
-// ─── LlmPage — host fin ────────────────────────────────────────────────────
+// ─── LlmPage — thin host ───────────────────────────────────────────────────
 //
-// Empile les cinq sections en UserControls autonomes (General, ShortcutSlots,
-// Rules, Profiles, Models) + l'InfoBar de statut Ollama. Tout le contenu
-// fonctionnel vit dans Settings/Llm/. Seules restent ici :
+// Stacks the five sections as autonomous UserControls (General, ShortcutSlots,
+// Rules, Profiles, Models) + the Ollama status InfoBar. All functional content
+// lives in Settings/Llm/. Only these remain here:
 //
-//  - l'orchestration (hydration + refresh Ollama)
-//  - l'état partagé Ollama via LlmOllamaContext
-//  - les événements inter-sections (EndpointChanged, ProfilesChanged,
-//    RefreshRequested) qui redéclenchent soit un refresh Ollama, soit un
-//    Reload ciblé des sections dépendantes
-//  - le Reset all global
+//  - orchestration (hydration + Ollama refresh)
+//  - shared Ollama state via LlmOllamaContext
+//  - inter-section events (EndpointChanged, ProfilesChanged, RefreshRequested)
+//    that retrigger either an Ollama refresh or a targeted Reload of dependent
+//    sections
+//  - global Reset all
 //
-// La section Models dépend d'Ollama et reçoit le context via Initialize()
-// + StateChanged. Les autres (General, Profiles, ShortcutSlots, Rules)
-// rechargent directement depuis SettingsService.
+// The Models section depends on Ollama and receives the context via
+// Initialize() + StateChanged. Others (General, Profiles, ShortcutSlots, Rules)
+// reload directly from SettingsService.
 
 public sealed partial class LlmPage : Page
 {
-    // Borne agressive sur les appels Ollama d'admin (list, show). Sans CTS,
-    // le HttpClient partagé d'OllamaService a un timeout de 30 min — adapté
-    // au push de blob GGUF, fatal pour un appel "rapide" dont on attend un
-    // retour quasi-instantané. Si Ollama est saturé (benchmark GPU concurrent,
-    // modèle qui crashe), on tombe en état "unavailable" plutôt que de geler
-    // la page Settings.
+    // Aggressive bound on Ollama admin calls (list, show). Without CTS, the
+    // shared OllamaService HttpClient has a 30 min timeout, appropriate for
+    // pushing a GGUF blob, fatal for a "quick" call expected to return almost
+    // instantly. If Ollama is saturated (concurrent GPU benchmark, crashing
+    // model), fall into "unavailable" state instead of freezing the Settings
+    // page.
     private static readonly TimeSpan OllamaAdminTimeout = TimeSpan.FromSeconds(5);
 
     private readonly LlmOllamaContext _context = new();
@@ -48,10 +48,10 @@ public sealed partial class LlmPage : Page
 
         ModelsSection.Initialize(_context);
 
-        // Handlers nommés (et non lambdas async inline) parce qu'une lambda
-        // async (_, _) => await ... est compilée comme async void : toute
-        // exception non attrapée remonte au dispatcher. Les méthodes nommées
-        // ci-dessous embarquent leur try/catch.
+        // Named handlers (not inline async lambdas) because an
+        // async (_, _) => await ... lambda is compiled as async void: any
+        // unhandled exception bubbles to the dispatcher. The named methods
+        // below carry their try/catch.
         GeneralSection.EndpointChanged += OnEndpointChanged;
         ProfilesSection.ProfilesChanged += OnProfilesChanged;
         ModelsSection.RefreshRequested += OnRefreshRequested;
@@ -59,10 +59,10 @@ public sealed partial class LlmPage : Page
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
-        // OnNavigatedTo doit être async void (signature override imposée par
-        // WinUI). Try/catch global obligatoire : sans ce filet, une exception
-        // non attrapée pendant Hydrate()/RefreshOllamaStateAsync() remonte au
-        // dispatcher et peut tuer l'app malgré Application.UnhandledException.
+        // OnNavigatedTo must be async void (WinUI-imposed override signature).
+        // Global try/catch required: without this safety net, an unhandled
+        // exception during Hydrate()/RefreshOllamaStateAsync() bubbles to the
+        // dispatcher and can kill the app despite Application.UnhandledException.
         base.OnNavigatedTo(e);
         try
         {
@@ -95,9 +95,9 @@ public sealed partial class LlmPage : Page
 
     private void OnProfilesChanged(object? sender, EventArgs e)
     {
-        // Synchrone, pas de try/catch nécessaire — Reload() ne touche que des
-        // collections en mémoire. Si un Reload lève, c'est un bug d'état
-        // ailleurs et l'UnhandledException global le capture.
+        // Synchronous, no try/catch needed: Reload() only touches in-memory
+        // collections. If a Reload throws, it is a state bug elsewhere and the
+        // global UnhandledException captures it.
         RulesSection.Reload();
         ShortcutSlotsSection.Reload();
     }
@@ -117,11 +117,11 @@ public sealed partial class LlmPage : Page
         bool available = false;
         IReadOnlyList<OllamaModel> models = Array.Empty<OllamaModel>();
 
-        // Try/catch englobant : IsAvailableAsync est déjà fail-soft (retourne
-        // false sur exception), mais ListModelsAsync peut lever (HttpRequest,
-        // TaskCanceled si CTS expire, JsonException si Ollama renvoie une
-        // erreur HTML). Tomber en état "unavailable" couvre tous les cas
-        // sans casser la page.
+        // Broad try/catch: IsAvailableAsync is already fail-soft (returns false
+        // on exception), but ListModelsAsync can throw (HttpRequest,
+        // TaskCanceled if CTS expires, JsonException if Ollama returns an HTML
+        // error). Falling into "unavailable" state covers every case without
+        // breaking the page.
         try
         {
             available = await service.IsAvailableAsync();
@@ -180,8 +180,8 @@ public sealed partial class LlmPage : Page
 
     private async void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        // Event handler async void — try/catch obligatoire pour éviter qu'une
-        // exception (Save IO, hydration UI) remonte au dispatcher.
+        // async void event handler: try/catch required to prevent an exception
+        // (Save IO, UI hydration) from bubbling to the dispatcher.
         try
         {
             var dialog = new ContentDialog

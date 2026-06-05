@@ -5,34 +5,32 @@ namespace Deckle.Shell;
 
 // ── AutostartService ─────────────────────────────────────────────────────────
 //
-// Registre la valeur HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Deckle
-// qui pointe vers l'exe courant. Windows démarre l'exe à la prochaine
-// ouverture de session.
+// Registers the HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Deckle
+// value pointing to the current exe. Windows starts the exe at the next logon.
 //
-// Pourquoi la Run key plutôt que schtasks.exe :
+// Why the Run key rather than schtasks.exe:
 //
-//   - Pas de UAC prompt : HKCU (current user) est accessible en user
-//     standard. Task Scheduler avec /RL HIGHEST exige l'élévation parce que
-//     la tâche s'exécute elevated.
-//   - Deckle n'a aucun besoin d'élévation : tray + hotkey global +
-//     transcription locale. Élever inutilement réduit la sécurité (BlueHat
-//     reports, privilege sprawl).
-//   - C'est la primitive que Windows 11 Settings → "Startup apps" expose
-//     à l'utilisateur. Toggle aligné avec le modèle mental système.
+//   - No UAC prompt: HKCU (current user) is accessible as a standard user.
+//     Task Scheduler with /RL HIGHEST requires elevation because the task runs
+//     elevated.
+//   - Deckle has no need for elevation: tray + global hotkey + local
+//     transcription. Unnecessary elevation reduces security (BlueHat reports,
+//     privilege sprawl).
+//   - This is the primitive Windows 11 Settings → "Startup apps" exposes to
+//     the user. Toggle aligned with the system mental model.
 //
-// Cohabitation multi-install (dev + publish sur la même machine) : la Run
-// key porte un nom fixe `Deckle`, donc une seule install peut être en
-// autostart à la fois. `IsEnabled` compare la valeur stockée à
-// `Environment.ProcessPath` : chaque install ne voit ON que si elle est
-// celle qui pointe dans le registre. `Disable` ne supprime que si la
-// valeur appartient à l'exe courant, pour éviter qu'une install en
-// désactive une autre. `Enable` écrase toujours — activer depuis une
-// install prend le relais sur l'autre. Deux instances simultanées
-// collisionneraient de toute façon sur RegisterHotKey (err 1409).
+// Multi-install coexistence (dev + publish on the same machine): the Run key
+// has a fixed `Deckle` name, so only one install can be in autostart at a time.
+// `IsEnabled` compares the stored value with `Environment.ProcessPath`: each
+// install only sees ON if it is the one pointed to by the registry. `Disable`
+// deletes only if the value belongs to the current exe, to avoid one install
+// disabling another. `Enable` always overwrites; enabling from one install
+// takes over from the other. Two simultaneous instances would collide on
+// RegisterHotKey anyway (err 1409).
 //
-// Tous les appels registry sont encapsulés avec try/catch : en cas de
-// refus (GPO machine, profil corrompu), on log + on retourne false/l'état
-// actuel sans propager — le toggle Settings ne doit jamais crasher l'UI.
+// All registry calls are wrapped in try/catch: on refusal (machine GPO,
+// corrupted profile), log + return false/current state without propagating;
+// the Settings toggle must never crash the UI.
 public static class AutostartService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";

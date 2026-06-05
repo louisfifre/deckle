@@ -1,17 +1,15 @@
 namespace Deckle.Hud;
 
-// Aggrégateur de la session de proximity du HUD. Folde min/max alpha
-// incrémentalement (pas de buffer pour alpha) et tient un ring buffer
-// borné de distances pour calcul de percentiles flush en fin de
-// session.
+// Aggregator for the HUD proximity session. Folds min/max alpha
+// incrementally (no alpha buffer) and keeps a bounded distance ring buffer
+// for percentile computation flushed at the end of the session.
 //
-// Pourquoi un ring plutôt qu'une fenêtre tronquée. WM_INPUT ~125 Hz
-// pendant une session HUD typique de ~10 s = ~1250 samples ; la
-// capacité 2048 couvre ~16 s en intégralité, soit la quasi-totalité
-// des sessions de visibilité réelles. Pour les rares sessions plus
-// longues, les percentiles reflètent les ~16 dernières secondes —
-// fenêtre toujours diagnostiquement représentative, contrairement à
-// un buffer tronqué qui figerait les samples du début.
+// Why a ring instead of a truncated window. WM_INPUT at ~125 Hz during a
+// typical ~10 s HUD session is ~1250 samples; capacity 2048 fully covers
+// ~16 s, i.e. almost all real visibility sessions. For the rare longer
+// sessions, percentiles reflect the last ~16 seconds: a still diagnostically
+// representative window, unlike a truncated buffer that would freeze the
+// samples from the beginning.
 internal sealed class ProximityRollupAggregator
 {
     internal const int Capacity = 2048;
@@ -45,12 +43,11 @@ internal sealed class ProximityRollupAggregator
         if (alpha > _maxAlpha) _maxAlpha = alpha;
     }
 
-    // Retourne (p50, p95) en DIP sur les min(TotalSamples, Capacity)
-    // derniers samples collectés. Appelé une seule fois en fin de
-    // session — l'allocation de la copie + tri est acceptable à cette
-    // cadence (une fois par show de HUD, pas par WM_INPUT). Lève
-    // InvalidOperationException si aucun sample n'a été ajouté — le
-    // caller doit gate sur TotalSamples > 0 avant.
+    // Returns (p50, p95) in DIPs over the min(TotalSamples, Capacity) latest
+    // collected samples. Called only once at the end of the session; the copy
+    // and sort allocation is acceptable at this cadence (once per HUD show,
+    // not per WM_INPUT). Throws InvalidOperationException if no sample was
+    // added; the caller must gate on TotalSamples > 0 first.
     public (int P50, int P95) ComputePercentiles()
     {
         if (_totalSamples == 0)

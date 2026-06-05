@@ -20,7 +20,7 @@ public static class NativeMethods
     public const uint MOD_CONTROL  = 0x0002;
     public const uint MOD_SHIFT    = 0x0004;
     public const uint MOD_WIN      = 0x0008;
-    public const uint MOD_NOREPEAT = 0x4000; // évite les WM_HOTKEY répétés par l'auto-repeat clavier
+    public const uint MOD_NOREPEAT = 0x4000; // avoids repeated WM_HOTKEY from keyboard auto-repeat
 
     // Scancode of the physical key to the left of "1" on every ANSI/ISO 104
     // keyboard. Stable across layouts — only the VK it maps to changes
@@ -55,7 +55,7 @@ public static class NativeMethods
     [DllImport("user32.dll")]
     public static extern IntPtr GetKeyboardLayout(uint idThread);
 
-    // ── Positionnement fenêtre ────────────────────────────────────────────────
+    // ── Window Positioning ───────────────────────────────────────────────────
 
     public static readonly IntPtr HWND_TOP      = new(0);
     public static readonly IntPtr HWND_TOPMOST  = new(-1);
@@ -68,7 +68,7 @@ public static class NativeMethods
     public const uint SWP_FRAMECHANGED = 0x0020;
     public const uint SWP_SHOWWINDOW   = 0x0040;
 
-    // SW_SHOWNOACTIVATE : affiche la fenêtre sans lui donner le focus
+    // SW_SHOWNOACTIVATE: shows the window without giving it focus.
     public const int SW_SHOWNOACTIVATE = 4;
     public const int SW_HIDE           = 0;
 
@@ -81,7 +81,7 @@ public static class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-    // ── Focus fenêtre ─────────────────────────────────────────────────────────
+    // ── Window Focus ─────────────────────────────────────────────────────────
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
@@ -89,7 +89,7 @@ public static class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
-    // ── Identification fenêtre / focus clavier (debug) ────────────────────────
+    // ── Window Identification / Keyboard Focus (debug) ───────────────────────
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
@@ -123,15 +123,15 @@ public static class NativeMethods
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int left, top, right, bottom; }
 
-    // Renvoie le DPI logique de la fenêtre (96 = 100%, 120 = 125%, 144 = 150%…).
-    // Per-monitor DPI aware : suit le moniteur sur lequel se trouve la fenêtre.
+    // Returns the logical window DPI (96 = 100%, 120 = 125%, 144 = 150%...).
+    // Per-monitor DPI aware: follows the monitor the window is on.
     [DllImport("user32.dll")]
     public static extern uint GetDpiForWindow(IntPtr hwnd);
 
     // ── SetWindowSubclass (comctl32 v6) ───────────────────────────────────────
-    // Requiert Common Controls v6 dans app.manifest.
-    // Ne pas utiliser SetWindowLongPtr(GWLP_WNDPROC) : remplacerait entièrement
-    // la chaîne de messages de WinUI 3 et casserait le compositor.
+    // Requires Common Controls v6 in app.manifest.
+    // Do not use SetWindowLongPtr(GWLP_WNDPROC): it would entirely replace the
+    // WinUI 3 message chain and break the compositor.
 
     public delegate IntPtr SubclassProc(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
@@ -182,7 +182,7 @@ public static class NativeMethods
     [DllImport("winmm.dll")]
     public static extern uint waveInClose(IntPtr hwi);
 
-    // ── waveIn : énumération des périphériques d'entrée ─────────────────────
+    // ── waveIn: Input Device Enumeration ────────────────────────────────────
 
     [DllImport("winmm.dll")]
     public static extern uint waveInGetNumDevs();
@@ -203,7 +203,7 @@ public static class NativeMethods
         public ushort wReserved1;
     }
 
-    // ── kernel32 (event, mémoire) ─────────────────────────────────────────────
+    // ── kernel32 (event, memory) ─────────────────────────────────────────────
 
     [DllImport("kernel32.dll")]
     public static extern IntPtr CreateEvent(
@@ -215,7 +215,7 @@ public static class NativeMethods
     [DllImport("kernel32.dll")]
     public static extern bool CloseHandle(IntPtr hObject);
 
-    // ── Icône tray (Shell32) ──────────────────────────────────────────────────
+    // ── Tray Icon (Shell32) ──────────────────────────────────────────────────
 
     public const uint NIM_ADD    = 0;
     public const uint NIM_MODIFY = 1;
@@ -234,15 +234,15 @@ public static class NativeMethods
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     public static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
 
-    // Retourne le rect en pixels physiques (screen coordinates) de l'icône tray
-    // identifiée par (hWnd, uID). Vista+. Le HRESULT retour est S_OK (0) en cas
-    // de succès ; toute valeur négative indique un échec (icône absente, dans
-    // l'overflow caché, ou shell occupé pendant un explorer.exe restart).
+    // Returns the tray icon rect in physical pixels (screen coordinates),
+    // identified by (hWnd, uID). Vista+. The returned HRESULT is S_OK (0) on
+    // success; any negative value indicates failure (missing icon, hidden in
+    // overflow, or shell busy during an explorer.exe restart).
     [DllImport("shell32.dll")]
     public static extern int Shell_NotifyIconGetRect(
         ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
 
-    // ── Icône (user32 / LoadImage) ────────────────────────────────────────────
+    // ── Icon (user32 / LoadImage) ────────────────────────────────────────────
 
     public const uint IMAGE_ICON      = 1;
     public const uint LR_LOADFROMFILE = 0x00000010;
@@ -258,7 +258,7 @@ public static class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
-    // ── Menu contextuel (user32) ──────────────────────────────────────────────
+    // ── Context Menu (user32) ────────────────────────────────────────────────
 
     public const uint MF_STRING    = 0x00000000;
     public const uint MF_CHECKED   = 0x00000008;
@@ -291,10 +291,10 @@ public static class NativeMethods
     public static extern bool GetCursorPos(out POINT lpPoint);
 
     // ── Raw Input (WM_INPUT) ──────────────────────────────────────────────────
-    // Approche event-driven : on s'abonne aux mouvements souris globaux via
-    // RegisterRawInputDevices avec RIDEV_INPUTSINK (reçoit même quand la fenêtre
-    // n'a pas le focus). Pour notre besoin proximité, on n'a pas besoin de parser
-    // le RAWINPUT — on appelle GetCursorPos pour avoir la position absolue à jour.
+    // Event-driven approach: subscribe to global mouse movement through
+    // RegisterRawInputDevices with RIDEV_INPUTSINK (receives even when the
+    // window has no focus). For our proximity need, we do not need to parse
+    // RAWINPUT; call GetCursorPos to get the current absolute position.
 
     public const uint WM_INPUT       = 0x00FF;
     public const uint RIDEV_INPUTSINK = 0x00000100;
@@ -311,10 +311,10 @@ public static class NativeMethods
     public static extern bool RegisterRawInputDevices(
         RAWINPUTDEVICE[] pRawInputDevices, uint uiNumDevices, uint cbSize);
 
-    // ── Layered Window (alpha global, Mica inclus) ────────────────────────────
-    // WS_EX_LAYERED + SetLayeredWindowAttributes(LWA_ALPHA) permet d'appliquer
-    // un alpha 0-255 à la fenêtre entière, par-dessus la composition WinUI 3
-    // (Mica compris). Sans ça, animer Content.Opacity ne touche pas le backdrop.
+    // ── Layered Window (global alpha, Mica included) ─────────────────────────
+    // WS_EX_LAYERED + SetLayeredWindowAttributes(LWA_ALPHA) applies a 0-255
+    // alpha to the whole window, over WinUI 3 composition (Mica included).
+    // Without it, animating Content.Opacity does not affect the backdrop.
 
     public const int  GWL_STYLE    = -16;
     public const int  GWL_EXSTYLE   = -20;
@@ -331,19 +331,19 @@ public static class NativeMethods
     public const uint WS_THICKFRAME = 0x00040000;
 
     public const uint WS_EX_LAYERED    = 0x00080000;
-    // WS_EX_TOOLWINDOW : exclut la fenêtre d'Alt+Tab et de la taskbar. Effet
-    // de bord observé (non documenté) : les fenêtres tool topmost apparaissent
-    // sur tous les bureaux virtuels. C'est le mécanisme qu'utilise PowerToys
-    // pour ses overlays. Best-effort, peut casser sur futures builds Windows.
+    // WS_EX_TOOLWINDOW: excludes the window from Alt+Tab and the taskbar.
+    // Observed side effect (undocumented): topmost tool windows appear on all
+    // virtual desktops. This is the mechanism PowerToys uses for its overlays.
+    // Best-effort; may break on future Windows builds.
     public const uint WS_EX_TOOLWINDOW = 0x00000080;
-    // WS_EX_TRANSPARENT : exclut la fenêtre du hit-testing. Les clics, le
-    // curseur et la sélection traversent la HUD et atteignent la fenêtre
-    // en dessous, quel que soit l'alpha layered appliqué.
+    // WS_EX_TRANSPARENT: excludes the window from hit-testing. Clicks, cursor,
+    // and selection pass through the HUD and reach the window below,
+    // regardless of the applied layered alpha.
     public const uint WS_EX_TRANSPARENT = 0x00000020;
-    // WS_EX_NOACTIVATE : la fenêtre ne devient pas foreground quand elle est
-    // affichée ou cliquée. Aligné avec le contrat HUD : information visible,
-    // jamais de vol de focus. Les futurs menus interactifs devront vivre sur
-    // une surface séparée, pas sur cette fenêtre passthrough.
+    // WS_EX_NOACTIVATE: the window does not become foreground when shown or
+    // clicked. Aligned with the HUD contract: visible information, never focus
+    // stealing. Future interactive menus must live on a separate surface, not
+    // on this passthrough window.
     public const uint WS_EX_NOACTIVATE = 0x08000000;
     public const uint LWA_ALPHA     = 0x00000002;
 

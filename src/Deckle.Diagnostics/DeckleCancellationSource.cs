@@ -2,54 +2,49 @@ using System.Diagnostics.Tracing;
 
 namespace Deckle.Diagnostics;
 
-// Sub-provider transverse — annulations applicatives explicites.
-// Capter les OperationCanceledException sur les sites où elles sont
-// sémantiquement intéressantes (moteur Whisper, capture Vision, rewrite
-// Llm, polling Ollama) permet de répondre à la question « pourquoi
-// l'opération s'est arrêtée » sans deviner — utilisateur, timeout,
-// shutdown, hotkey, restart engine, propagation amont. Sans cet event
-// transverse, un OCE silencieusement absorbé dans un catch ne laisse
-// aucune trace, et une cascade d'annulations en chaîne est impossible
-// à reconstituer après coup. La primitive est strictement non-métier
-// et consommée par plusieurs modules avec le même set de paramètres —
-// promotion en sub-provider transverse au sens du critère à deux
-// clauses de la fiche `reference--eventsource-convention--1.2.md`
-// §*Sub-providers transverses*.
+// Cross-cutting sub-provider: explicit application cancellations. Capturing
+// OperationCanceledException at sites where they are semantically interesting
+// (Whisper engine, Vision capture, Llm rewrite, Ollama polling) answers "why
+// did the operation stop" without guessing: user, timeout, shutdown, hotkey,
+// engine restart, upstream propagation. Without this cross-cutting event, an
+// OCE silently swallowed in a catch leaves no trace, and a chain of cascading
+// cancellations is impossible to reconstruct after the fact. The primitive is
+// strictly non-business and consumed by several modules with the same parameter
+// set: promotion to cross-cutting sub-provider under the two-clause criterion
+// in `reference--eventsource-convention--1.2.md`
+// §*Cross-cutting sub-providers*.
 //
-// Vocabulaire fermé `operation` (à étendre ici si un nouveau site
-// d'annulation émerge — pas d'opération ad-hoc côté call site) :
-//   "whisp-transcribe" — annulation pendant la transcription (warmup,
+// Closed `operation` vocabulary (extend here if a new cancellation site
+// emerges; no ad hoc operation on the call-site side):
+//   "whisp-transcribe" — cancellation during transcription (warmup,
 //                        VAD, whisper_run)
-//   "whisp-record"     — annulation pendant la capture audio
-//   "vision-capture"   — annulation de la boucle screen capture
-//   "vision-sample"    — annulation du frame sampler
-//   "llm-rewrite"      — annulation du rewrite Ollama (timeout user,
+//   "whisp-record"     — cancellation during audio capture
+//   "vision-capture"   — screen capture loop cancellation
+//   "vision-sample"    — frame sampler cancellation
+//   "llm-rewrite"      — Ollama rewrite cancellation (user timeout,
 //                        restart engine)
-//   "llm-warmup"       — annulation pendant le polling /api/ps en
-//                        attente prolongée
-//   "llm-models"       — annulation pendant une opération admin sur la
-//                        liste de modèles (delete, refresh)
-//   "ambient-pipeline" — annulation de la boucle de push ambient
+//   "llm-warmup"       — cancellation during prolonged /api/ps polling
+//   "llm-models"       — cancellation during an admin operation on the model
+//                        list (delete, refresh)
+//   "ambient-pipeline" — ambient push loop cancellation
 //                        (Stop user, capture lost upstream, external
 //                        Hue interference, DisposeAsync shutdown)
 //
-// Vocabulaire fermé `reason` :
-//   "user"           — l'utilisateur a déclenché l'annulation (Hide,
-//                      hotkey, stop button, close de surface)
-//   "timeout"        — un délai a expiré (REWRITE_HARD_CAP, etc.)
-//   "shutdown"       — l'app se ferme
-//   "hotkey"         — l'utilisateur a appuyé sur la hotkey de
-//                      hold-to-talk pour stopper
-//   "engine-restart" — l'engine est en cours de restart, annule les
-//                      opérations en vol
-//   "upstream"       — l'opération a été annulée parce qu'une étape
-//                      précédente l'a demandée (propagation de ct)
+// Closed `reason` vocabulary:
+//   "user"           — the user triggered cancellation (Hide, hotkey, stop
+//                      button, surface close)
+//   "timeout"        — a delay expired (REWRITE_HARD_CAP, etc.)
+//   "shutdown"       — the app is closing
+//   "hotkey"         — the user pressed the hold-to-talk hotkey to stop
+//   "engine-restart" — the engine is restarting, cancelling in-flight
+//                      operations
+//   "upstream"       — the operation was cancelled because a previous step
+//                      requested it (ct propagation)
 //
-// `age_ms` est calculé via Stopwatch.ElapsedMilliseconds entre le
-// démarrage de l'opération et la levée de l'OCE quand un Stopwatch
-// local est disponible au site d'appel. Quand l'age n'est pas
-// mesurable (pas de Stopwatch en scope, opération sans ancre
-// temporelle), passer -1 — c'est explicite et grep-able.
+// `age_ms` is computed through Stopwatch.ElapsedMilliseconds between operation
+// start and OCE throw when a local Stopwatch is available at the call site.
+// When the age is not measurable (no Stopwatch in scope, operation without a
+// time anchor), pass -1: it is explicit and grep-able.
 [EventSource(Name = "Deckle.Diagnostics.Cancellation")]
 public sealed class DeckleCancellationSource : DeckleEventSource
 {
@@ -60,16 +55,15 @@ public sealed class DeckleCancellationSource : DeckleEventSource
     // ── EventIds ────────────────────────────────────────────────────────
     public const int EvtOperationCancelled = 1;
 
-    // Émis sur tout site qui catche un OperationCanceledException (ou
-    // TaskCanceledException qui en hérite) sur une opération applicative
-    // dont l'annulation porte une intention. Verbose parce que les
-    // annulations sont par nature fréquentes (un Stop user typique va
-    // déclencher plusieurs OCE en cascade sur les threads worker) et
-    // que la grep-abilité passe par les paramètres typés plutôt que par
-    // le niveau. Keyword `Lifecycle` faute de keyword `Cancellation`
-    // dédié — la nature « cancellation » est portée par le provider
-    // lui-même (Deckle.Diagnostics.Cancellation), pas par un bit
-    // keyword supplémentaire.
+    // Emitted on every site that catches an OperationCanceledException (or
+    // TaskCanceledException, which inherits from it) on an application
+    // operation whose cancellation carries intent. Verbose because
+    // cancellations are frequent by nature (a typical user Stop will trigger
+    // several cascading OCEs on worker threads) and grep-ability goes through
+    // typed parameters rather than level. Keyword `Lifecycle` because there is
+    // no dedicated `Cancellation` keyword: the "cancellation" nature is
+    // carried by the provider itself (Deckle.Diagnostics.Cancellation), not by
+    // an additional keyword bit.
     [Event(EvtOperationCancelled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

@@ -73,7 +73,7 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     // Fired at the very end of Transcribe(), regardless of exit path
     // (model not ready, empty text, normal exit). The outcome tells the HUD
-    // whether text was actually delivered, so it can show a short "Copié"
+    // whether text was actually delivered, so it can show a short "Copied"
     // confirmation on success, a "Ctrl+V" reminder when the clipboard holds
     // the result but paste was refused, or hide silently when there's
     // nothing meaningful to report (errors, empty audio, empty text).
@@ -117,12 +117,12 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     // ── UserFeedback emission ───────────────────────────────────────────────
     //
-    // Wrapper minimaliste sur l'event EventSource `UserFeedbackEmitted` du
-    // provider Whisp. Severity et Role passent en primitives — conserve la
-    // sémantique de l'ancien enum `UserFeedback{Severity,Role}` (Wave 6b)
-    // sans pull sur Deckle.Logging. Le sink hôte `AppHudFeedbackSink` route
-    // chaque event vers la surface principale (Replacement) ou la stack
-    // (Overlay) selon `role`.
+    // Minimal wrapper over the Whisp provider's `UserFeedbackEmitted`
+    // EventSource event. Severity and Role pass as primitives, preserving the
+    // semantics of the old `UserFeedback{Severity,Role}` enum (Wave 6b)
+    // without pulling on Deckle.Logging. The host sink `AppHudFeedbackSink`
+    // routes each event to the main surface (Replacement) or stack (Overlay)
+    // according to `role`.
     private const int FB_INFO          = 0;
     private const int FB_WARN          = 1;
     private const int FB_ERROR         = 2;
@@ -195,7 +195,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     // per recording in WorkerRun (before the strategy runs); stamped on every
     // corpus event emitted for this transcription and on the WAV file basename
     // so the JSONL lines and the audio file join unambiguously. 32 hex chars
-    // (Guid "N" format) — voir ADR-0006.
+    // (Guid "N" format): see ADR-0006.
     private string          _transcriptionId   = "";
 
     // Model lifecycle: lazy load on first hotkey, unload after idle timeout.
@@ -285,9 +285,9 @@ public sealed partial class TranscriptionEngine : IDisposable
 
         _llm = new LlmService();
 
-        // MicrophoneCapture émet via DeckleAudioSource (vague 2). TranscriptionEngine
-        // émet via DeckleWhispSource (vague 5). Plus aucune dépendance sur
-        // LogService dans le moteur lui-même.
+        // MicrophoneCapture emits through DeckleAudioSource (wave 2).
+        // TranscriptionEngine emits through DeckleWhispSource (wave 5). No
+        // dependency on LogService remains in the engine itself.
         _capture = new MicrophoneCapture();
         _recordingHost = new RecordingHostAdapter(_host);
         // Forward the per-sub-window RMS to whoever subscribes to the engine

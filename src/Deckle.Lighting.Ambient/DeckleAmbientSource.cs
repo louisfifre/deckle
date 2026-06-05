@@ -3,15 +3,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Lighting.Ambient;
 
-// Ambient module provider. Couvre l'orchestrateur AmbientEngine (cycle
-// de vie pipeline + push tick group/multi + heartbeat + push failures),
-// le HuePairingService (pairing + restore + forget), la surface Settings
-// AmbientPage (Hue pair button + group list), et la persistance settings
-// du module (AmbientSettingsService).
+// Ambient module provider. Covers the AmbientEngine orchestrator (pipeline
+// lifecycle + group/multi push tick + heartbeat + push failures), the
+// HuePairingService (pairing + restore + forget), the Settings AmbientPage
+// surface (Hue pair button + group list), and module settings persistence
+// (AmbientSettingsService).
 //
-// Provider Name = "Deckle.Ambient" — choix court pour garder le tag
-// LogWindow [AMBIENT]. Le driver Hue bas niveau garde son provider
-// séparé dans Deckle.Lighting.
+// Provider Name = "Deckle.Ambient": short choice to keep the LogWindow
+// [AMBIENT] tag. The low-level Hue driver keeps its separate provider in
+// Deckle.Lighting.
 [EventSource(Name = "Deckle.Ambient")]
 public sealed class DeckleAmbientSource : DeckleEventSource
 {

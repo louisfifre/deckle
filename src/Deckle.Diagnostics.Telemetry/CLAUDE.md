@@ -1,33 +1,14 @@
 ---
-name: claude-deckle-diagnostics-telemetry
-description: "Doctrine for Deckle.Diagnostics.Telemetry (JSONL telemetry listeners and user gates). Read before wiring a new telemetry channel, adding a consent toggle, or touching listener configuration at boot."
+description: Structured JSONL persistence and consent gates.
 type: agent-instructions
-module: Deckle.Diagnostics.Telemetry
 ---
 
 # CLAUDE.md — Deckle.Diagnostics.Telemetry
 
-Child module of `Deckle.Diagnostics` that carries the **structured persistence** of Deckle telemetry. At boot it configures the parent's `JsonlEventListener` instances with their destination file paths and filter predicates, and exposes the user consent settings that gate those listeners (latency, microphone, corpus, application log).
+Carries the **structured persistence** of telemetry: configures the parent's JSONL listeners and owns the consent gates. Machine-consumer counterpart to Logging.
 
-The module depends on `Deckle.Diagnostics` (interfaces + JsonlEventListener) and `Deckle.Core` (AppPaths for file paths). No dependency on legacy `Deckle.Logging`.
+Notes that aren't obvious from the code:
 
-## Responsibilities
-
-`TelemetrySettings` carries the user consent toggles. Defaults are cautious — the posture stays closed until the user opts in.
-
-- **`LatencyEnabled`** — bool, off by default. Gates the write of `latency.jsonl`.
-- **`MicrophoneTelemetry`** — bool, off by default (GDPR: a microphone RMS summary is not voice content but remains a measurement of the user's microphone).
-- **`CorpusEnabled`** — bool, off by default. Gates the write of the two normalized corpus events (`CorpusAsrRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/<tier>/corpus.jsonl`, `CorpusRewriteRecorded` to `<UserDataRoot>/telemetry/corpus/<bucket>/corpus.jsonl`). Schema set by ADR-0006: the ASR layer is tier-bucketed by length (`raw/very-short/`, `raw/short/`, …) and rewrite is flat-bucketed by profile (`rewrite-<name>-<id>/`).
-- **`RecordAudioCorpus`** — bool, off by default. Gates the write of the raw WAV under `<UserDataRoot>/telemetry/audio/<transcription_id>.wav`, a flat directory deduplicated by invocation (the same WAV is referenced by both JSONL lines, ASR and rewrite). Non-trivial disk cost, consent to request.
-
-`TelemetrySettingsService` is the per-module persistence singleton. Storage under `<UserDataRoot>/modules/telemetry/settings.json`. Pattern aligned with the other `*SettingsService` instances.
-
-`TelemetryListenerBootstrap` is the listener registration API. The App calls `TelemetryListenerBootstrap.Configure(...)` at boot after `TelemetrySettingsService.Instance`; the bootstrap instantiates one `JsonlEventListener` per destination file (one general for `app.jsonl`, specialized listeners for latency / microphone / routed corpus) with the right predicate on the canonical event name. Each listener checks its gate via `TelemetrySettingsService.Instance.Current` on every emission — a toggle change propagates immediately without restart. The general `app.jsonl` listener excludes the dedicated structured telemetry events (`LatencyRecorded`, `MicrophoneTelemetryRecorded`, `CorpusAsrRecorded`, `CorpusRewriteRecorded`) and writes readable journal metadata (`provider`, `event_name`, `level`, `source`, `message`, `line`) alongside the raw payload. It also accepts application-log drop predicates supplied by the App so runtime logging filters owned by `Deckle.Diagnostics.Logging` can affect persistence without creating a module dependency from Telemetry to Logging.
-
-## Consent dialogs
-
-The consent request dialogs are still XAML surfaces in `Deckle.Settings`, because they need the Settings window `XamlRoot`. They write into `TelemetrySettingsService`; this module owns the settings and listener behaviour, not the dialog UI.
-
-## Boundary with `Deckle.Diagnostics.Logging`
-
-The live application journal projection (LogWindow selector/noise filter) lives in `Deckle.Diagnostics.Logging`. Structured telemetry and disk-persistence gates live here. Both modules depend independently on the parent; they do not reference each other. The `app.jsonl` channel is nominally an *application journal*, but its **persistence** goes through a `JsonlEventListener` — hence its configuration on the Telemetry side.
+- The general `app.jsonl` listener takes its application-log drop predicates from the App, not from Logging directly — a deliberate decoupling so Telemetry never depends on Logging.
+- Microphone telemetry defaults closed on a GDPR call: an RMS summary is not voice content but still measures the user's microphone.
+- Consent dialogs live in `Deckle.Settings`, not here — they need the Settings window `XamlRoot`. This module owns the gate state and listener behaviour, not the dialog UI.

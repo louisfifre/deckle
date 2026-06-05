@@ -115,7 +115,6 @@ $ShaPath    = Join-Path $OutDir $ShaName
 Step 'dotnet publish (Release, win-x64, self-contained folder)'
 & dotnet publish $Csproj `
     '-c:Release' `
-    '-m:1' `
     '-p:RuntimeIdentifierOverride=win-x64' `
     '-p:SelfContained=true' `
     '-p:Platform=x64' `

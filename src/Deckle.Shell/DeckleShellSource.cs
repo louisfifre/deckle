@@ -3,24 +3,22 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Shell;
 
-// Shell module provider. Couvre les capacités du shell système :
-// message-only Win32 host (tray callback + global hotkeys), autostart
-// HKCU\Run, gestion des hotkeys (registration + WM_INPUTLANGCHANGE).
+// Shell module provider. Covers system shell capabilities: message-only Win32
+// host (tray callback + global hotkeys), HKCU\Run autostart, hotkey management
+// (registration + WM_INPUTLANGCHANGE).
 //
-// La doctrine "l'observation s'attache au module qui contient
-// l'opération" fait converger plusieurs sources legacy
-// (`LogSource.Hotkey`, `LogSource.MsgHost`, `LogSource.Settings` pour
-// la branche autostart) vers un seul provider `Deckle.Shell` → tag SHELL
-// dans la LogWindow. Léger renommage côté UX, attendu pour la
-// migration ; les keywords distinguent les sous-domaines internes.
+// The "observation attaches to the module that contains the operation" doctrine
+// converges several legacy sources (`LogSource.Hotkey`, `LogSource.MsgHost`,
+// `LogSource.Settings` for the autostart branch) into a single `Deckle.Shell`
+// provider → SHELL tag in LogWindow. Slight UX-side renaming, expected for the
+// migration; keywords distinguish internal subdomains.
 //
-// L'event historique `DispatcherEnqueueRejected` (anciennement id 15
-// ici) a été migré sur `DeckleThreadingSource` dans la vague
-// d'instrumentation transverse — il ne décrivait pas une opération
-// shell, il décrivait un rejet de dispatcher transverse à tout module
-// qui marshale vers le UI thread. L'id 15 reste un trou intentionnel
-// ici pour préserver la stabilité des ids des events Shell restants
-// (les listeners qui filtreraient par id n'ont rien à mettre à jour).
+// The historical `DispatcherEnqueueRejected` event (formerly id 15 here) was
+// migrated to `DeckleThreadingSource` during the cross-cutting instrumentation
+// wave. It did not describe a shell operation; it described a dispatcher
+// rejection crossing any module that marshals to the UI thread. Id 15 remains
+// an intentional gap here to preserve stability for the remaining Shell event
+// ids (listeners filtering by id have nothing to update).
 [EventSource(Name = "Deckle.Shell")]
 public sealed class DeckleShellSource : DeckleEventSource
 {
@@ -42,8 +40,8 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtHotkeyRegistered            = 12;
     public const int EvtHotkeyLayoutChange          = 13;
     public const int EvtHotkeyReregisterFailed      = 14;
-    // Id 15 (DispatcherEnqueueRejected) migré sur DeckleThreadingSource —
-    // trou intentionnel pour ne pas renuméroter les ids restants.
+    // Id 15 (DispatcherEnqueueRejected) migrated to DeckleThreadingSource:
+    // intentional gap to avoid renumbering the remaining ids.
 
     // ── Message-only host ───────────────────────────────────────────────
 
@@ -177,8 +175,7 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed, message);
     }
 
-    // DispatcherEnqueueRejected vit désormais sur DeckleThreadingSource.
-    // Les callers passent par DispatcherQueueExtensions.TryEnqueueOrLog
-    // (qui repointe en interne) ou directement via la voie EventSource
-    // du provider Threading.
+    // DispatcherEnqueueRejected now lives on DeckleThreadingSource. Callers go
+    // through DispatcherQueueExtensions.TryEnqueueOrLog (which redirects
+    // internally) or directly through the Threading provider EventSource path.
 }

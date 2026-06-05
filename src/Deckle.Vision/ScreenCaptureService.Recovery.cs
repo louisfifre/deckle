@@ -81,13 +81,12 @@ public sealed partial class ScreenCaptureService
                     _lastSize = newSize;
                 }
 
-                // Sub-provider transverse Resource — re-acquire d'une
-                // nouvelle duplication après invalidation. Le handle
-                // diffère du précédent (Marshal.Release a déjà été
-                // appelé en amont sur l'ancienne valeur, l'event
-                // ResourceReleased correspondant a été émis dans le
-                // bras ACCESS_LOST / SECURE_DESKTOP de CaptureLoop ou
-                // par le finalizer d'attempt précédent ratée).
+                // Cross-cutting Resource sub-provider: re-acquire a new
+                // duplication after invalidation. The handle differs from the
+                // previous one (Marshal.Release was already called upstream on
+                // the old value; the matching ResourceReleased event was
+                // emitted in CaptureLoop's ACCESS_LOST / SECURE_DESKTOP branch
+                // or by the failed previous attempt finalizer).
                 _duplicationAcquiredTicks = Stopwatch.GetTimestamp();
                 DeckleResourceSource.Log.ResourceAcquired(
                     "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
@@ -122,9 +121,9 @@ public sealed partial class ScreenCaptureService
                 try { Task.Delay(RecreateBackoffMs, ct).Wait(ct); }
                 catch (OperationCanceledException)
                 {
-                    // Stop() a cancel pendant qu'on attendait le prochain
-                    // essai de recreate. age_ms relatif à la session — on
-                    // n'a pas d'ancre dédiée à TryRecreateDuplication.
+                    // Stop() cancelled while waiting for the next recreate
+                    // attempt. age_ms is relative to the session; there is no
+                    // dedicated anchor for TryRecreateDuplication.
                     long ageMs = _startTimestamp != 0
                         ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
                         : -1;

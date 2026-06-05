@@ -3,14 +3,13 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Setup;
 
-// Setup wizard provider. Couvre les pages du wizard first-run sous
-// src/Deckle/Shell/Setup/ : ChoicesPage (sélection des items à
-// télécharger), InstallingPage (orchestration des téléchargements +
-// vérifications), SummaryPage (récap final), SetupWindow (cycle de
-// vie de la fenêtre).
+// Setup wizard provider. Covers first-run wizard pages under
+// src/Deckle/Shell/Setup/: ChoicesPage (selection of items to download),
+// InstallingPage (download orchestration + verification), SummaryPage (final
+// summary), SetupWindow (window lifecycle).
 //
-// Provider Name = "Deckle.Setup" → tag [SETUP] via le bridge. Le legacy
-// utilisait LogSource.Setup (= "SETUP") pour exactement ce périmètre.
+// Provider Name = "Deckle.Setup" → [SETUP] tag through the bridge. Legacy used
+// LogSource.Setup (= "SETUP") for exactly this scope.
 [EventSource(Name = "Deckle.Setup")]
 public sealed class DeckleSetupSource : DeckleEventSource
 {
@@ -23,11 +22,10 @@ public sealed class DeckleSetupSource : DeckleEventSource
     public const int EvtSetupWarning    = 2;
     public const int EvtSetupError      = 3;
 
-    // ── Le wizard est une zone de prose technique : la doctrine
-    //    strict-typed ne s'applique pas par event mais par niveau.
-    //    Les messages restent typés au sens du payload (un event = un
-    //    rôle), mais le contenu est libre. C'est la même entorse que
-    //    DecklePlaygroundSource.
+    // ── The wizard is a technical prose area: the strict-typed doctrine
+    //    applies by level, not per event. Messages remain typed in the payload
+    //    sense (one event = one role), but content is free-form. This is the
+    //    same exception as DecklePlaygroundSource.
 
     [Event(EvtSetupInfo,
            Level = EventLevel.Informational,

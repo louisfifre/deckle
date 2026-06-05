@@ -9,6 +9,34 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). Versions `0.2.0` and later are reconstructed from the git history;
 earlier development predates this file.
 
+## [0.4.2] — 2026-06-05
+
+Maintenance release for the build and repository doctrine.
+
+### Changed
+
+- **Build layout.** Module `bin/` and `obj/` outputs now consolidate under the
+  root `artifacts/` tree, and the build/run, clean and stats scripts follow
+  that layout so source folders stay readable.
+- **Agent doctrine.** Root and module `CLAUDE.md` files now keep durable intent,
+  non-obvious decisions and silent pitfalls; the Deckle skills use the compact
+  Intent/How format, with `deckle-interface` replacing the older XAML-specific
+  doctrine.
+
+### Removed
+
+- **Obsolete agent material.** Removed stale generic agents, generic
+  senior/tdd skills, dated review notes, `SECURITY.md`, `deckle-workflow` and
+  journal detail that had become noise instead of durable context.
+
+### Fixed
+
+- **HUD z-order.** Delayed topmost probes no longer report stale state after
+  the HUD lifecycle has moved on.
+- **Self-contained builds.** Library project references are marked RID-agnostic
+  so self-contained app builds do not schedule duplicate project-reference
+  requests for the same outputs.
+
 ## [0.4.1] — 2026-06-04
 
 A downloadable installer.
@@ -91,6 +119,8 @@ Initial tracked release: hotkey voice transcription (whisper.cpp), the timer
 HUD, system tray and global hotkeys, settings, and EventSource-based
 observability.
 
+[0.4.2]: https://github.com/louisfifre/deckle/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/louisfifre/deckle/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/louisfifre/deckle/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/louisfifre/deckle/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/louisfifre/deckle/compare/v0.3.3...v0.3.4

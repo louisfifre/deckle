@@ -1,17 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Transcription.Whisper</RootNamespace>
-    <!-- WhisperStructs porte des structs C interop ; le P/Invoke ne fait pas
-         de fixed/unsafe directement mais on aligne sur le parent pour rester
-         libre d'introduire des spans/pointers natifs si le besoin émerge. -->
+    <!-- WhisperStructs carries C interop structs; P/Invoke does not use
+         fixed/unsafe directly, but we align with the parent to stay free to
+         introduce native spans/pointers if the need emerges. -->
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- AppPaths.NativeDirectory pour le résolveur DllImport, AppPaths.ModelsDirectory
-         pour le catalogue Setup. -->
+    <!-- AppPaths.NativeDirectory for the DllImport resolver,
+         AppPaths.ModelsDirectory for the Setup catalog. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <!-- Pour IAsrBackend, TranscriptionResult, TranscriptionSegment, TranscriptionSettings,
-         et DeckleWhispSource (provider EventSource transcription, partagé parent/enfant). -->
+    <!-- For IAsrBackend, TranscriptionResult, TranscriptionSegment,
+         TranscriptionSettings, and DeckleWhispSource (transcription
+         EventSource provider, shared parent/child). -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
   </ItemGroup>
 </Project>

@@ -4,37 +4,37 @@ using Deckle.Catalog;
 
 namespace Deckle.Shell;
 
-// ─── Icône dans la zone de notification système ───────────────────────────────
+// ─── System notification area icon ────────────────────────────────────────────
 //
-// Implémentation via Shell_NotifyIcon (Shell32) — pas de dépendance WinForms.
+// Implementation via Shell_NotifyIcon (Shell32), with no WinForms dependency.
 //
-// Flux des événements :
-//   Shell32 → WM_TRAY (WM_USER+1) envoyé au HWND principal
+// Event flow:
+//   Shell32 → WM_TRAY (WM_USER+1) sent to the main HWND
 //   SubclassCallback intercepte WM_TRAY
-//   → clic gauche → OnToggleRecording invoqué directement
-//   → clic droit  → RightClickRequested raised, l'abonné rend le menu
+//   → left click  → OnToggleRecording invoked directly
+//   → right click → RightClickRequested raised, subscriber renders the menu
 //
-// La responsabilité du menu contextuel vit dans le module sibling
-// Deckle.Shell.TrayMenu (TrayContextMenuHost) qui s'abonne à
-// RightClickRequested et présente un MenuFlyout WinUI 3 natif. Ce module
-// reste Win32-pur : il ne connaît pas le contenu du menu.
+// Context-menu responsibility lives in the sibling Deckle.Shell.TrayMenu
+// module (TrayContextMenuHost), which subscribes to RightClickRequested and
+// presents a native WinUI 3 MenuFlyout. This module stays Win32-pure: it does
+// not know the menu contents.
 
 public sealed class TrayIconManager : IDisposable
 {
     private IntPtr _hwnd;
     private IntPtr _hIconIdle;
     private IntPtr _hIconRecording;
-    private bool   _iconsOwned;   // false si fallback LoadIcon (icône partagée — pas de DestroyIcon)
+    private bool   _iconsOwned;   // false if fallback LoadIcon (shared icon: no DestroyIcon)
     private bool   _iconAdded;
     private bool   _disposed;
 
-    // Délégué SubclassProc — doit vivre dans un champ pour éviter la collecte GC
+    // SubclassProc delegate: must live in a field to avoid GC collection.
     private NativeMethods.SubclassProc? _subclassDelegate;
     private static readonly UIntPtr SubclassId = new(0x5752_4159); // "WRAY"
 
     /// <summary>
     /// Invoked on left-click of the tray icon. Marshaling to the UI thread is
-    /// the abonné's responsibility — this handler runs on the message pump
+    /// the subscriber's responsibility — this handler runs on the message pump
     /// thread of the host HWND.
     /// </summary>
     public Action? OnToggleRecording { get; set; }
@@ -42,13 +42,13 @@ public sealed class TrayIconManager : IDisposable
     /// <summary>
     /// Raised on right-click of the tray icon. The subscriber renders the
     /// context menu (typically TrayContextMenuHost from Deckle.Shell.TrayMenu).
-    /// No payload : the menu host reads the current cursor position itself
+    /// No payload: the menu host reads the current cursor position itself
     /// via GetCursorPos, since the cursor may move between WM_RBUTTONUP and
     /// the actual menu display.
     /// </summary>
     public event Action? RightClickRequested;
 
-    // ── Initialisation ────────────────────────────────────────────────────────
+    // ── Initialization ───────────────────────────────────────────────────────
 
     public void Register(IntPtr hwnd)
     {
@@ -65,24 +65,23 @@ public sealed class TrayIconManager : IDisposable
         bool ok = NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_ADD, ref data);
         if (!ok)
             throw new InvalidOperationException(
-                $"Shell_NotifyIcon(NIM_ADD) échoué — hWnd={_hwnd}, hIcon={_hIconIdle}");
+                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={_hIconIdle}");
         _iconAdded = true;
 
-        // Subclasser le HWND pour intercepter WM_TRAY
+        // Subclass the HWND to intercept WM_TRAY.
         _subclassDelegate = SubclassCallback;
         NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero);
     }
 
     // ── Position rect ─────────────────────────────────────────────────────────
     //
-    // Retourne le rect en pixels physiques (screen coordinates) de l'icône
-    // dans la zone de notification, ou null si l'icône n'a pas pu être
-    // localisée (encore non enregistrée, dans l'overflow caché, ou shell
-    // momentanément indisponible pendant un restart d'explorer.exe). Consommé
-    // par TrayContextMenuHost pour ancrer son MenuFlyout tangent à l'icône
-    // via CalculatePopupWindowPosition — ce qui rend la position
-    // automatiquement correcte quelle que soit l'orientation de la taskbar
-    // (gauche, droite, bas, haut) et indépendante du point de clic.
+    // Returns the notification-area icon rect in physical pixels (screen
+    // coordinates), or null if the icon could not be located (not yet
+    // registered, hidden in overflow, or shell temporarily unavailable during
+    // explorer.exe restart). Consumed by TrayContextMenuHost to anchor its
+    // MenuFlyout tangent to the icon through CalculatePopupWindowPosition,
+    // which makes positioning automatically correct regardless of taskbar
+    // orientation (left, right, bottom, top) and independent of click point.
     public NativeMethods.RECT? GetIconRect()
     {
         if (!_iconAdded) return null;
@@ -123,7 +122,7 @@ public sealed class TrayIconManager : IDisposable
         NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_MODIFY, ref data);
     }
 
-    // ── Interception des messages tray ────────────────────────────────────────
+    // ── Tray message interception ────────────────────────────────────────────
 
     private IntPtr SubclassCallback(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
@@ -141,9 +140,10 @@ public sealed class TrayIconManager : IDisposable
 
             if (mouseEvent == NativeMethods.WM_LBUTTONUP)
             {
-                // Clic gauche = toggle transcription (équivalent hotkey standard).
-                // Permet de lancer/arrêter à la souris quand une seule main est
-                // disponible. Logs et Settings passent par le clic droit.
+                // Left click = toggle transcription (standard hotkey
+                // equivalent). Allows starting/stopping with the mouse when
+                // only one hand is available. Logs and Settings go through
+                // right click.
                 OnToggleRecording?.Invoke();
                 return IntPtr.Zero;
             }
@@ -170,9 +170,10 @@ public sealed class TrayIconManager : IDisposable
         };
     }
 
-    // Retourne (hIcon, owned) : owned=true si chargé depuis fichier (→ DestroyIcon requis),
-    // owned=false si icône partagée système (→ NE PAS appeler DestroyIcon).
-    // Le chemin du .ico vient de IconAssets, source de vérité partagée avec LogWindow.
+    // Returns (hIcon, owned): owned=true if loaded from file (DestroyIcon
+    // required), owned=false if shared system icon (DO NOT call DestroyIcon).
+    // The .ico path comes from IconAssets, the source of truth shared with
+    // LogWindow.
     private static (IntPtr hIcon, bool owned) LoadIconFromFile(bool active)
     {
         string? path = IconAssets.ResolvePath(recording: active);
@@ -187,9 +188,9 @@ public sealed class TrayIconManager : IDisposable
                 return (hIcon, owned: true);
         }
 
-        // Fallback : icône Windows générique (IDI_APPLICATION = 32512).
-        // LoadIcon retourne une icône partagée — NE PAS appeler DestroyIcon dessus.
-        // Garantit un item tray visible même si les assets ne sont pas copiés.
+        // Fallback: generic Windows icon (IDI_APPLICATION = 32512). LoadIcon
+        // returns a shared icon: DO NOT call DestroyIcon on it. Guarantees a
+        // visible tray item even if assets are not copied.
         const nint IDI_APPLICATION = 32512;
         return (NativeMethods.LoadIcon(IntPtr.Zero, new IntPtr(IDI_APPLICATION)), owned: false);
     }
@@ -210,8 +211,8 @@ public sealed class TrayIconManager : IDisposable
             NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_DELETE, ref data);
         }
 
-        // Libérer uniquement les icônes chargées depuis fichier (owned).
-        // Les icônes système (LoadIcon) sont partagées — DestroyIcon interdit.
+        // Free only icons loaded from file (owned). System icons (LoadIcon) are
+        // shared; DestroyIcon is forbidden.
         if (_iconsOwned)
         {
             if (_hIconIdle != IntPtr.Zero)      NativeMethods.DestroyIcon(_hIconIdle);

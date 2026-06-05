@@ -40,15 +40,15 @@ public sealed partial class HudChrono : UserControl
     {
         InitializeComponent();
 
-        // Pre-init des tableaux _digitPrimary / _digitAccent dès le ctor.
-        // Sans ça, ClearDigitHeat() (appelé par ApplyCharging au cold boot
-        // pendant le chargement modèle) early-return sur son null check et
-        // ne reset pas les opacités → rendu blanc/vide au lieu de "00.00.00"
-        // en couleur tertiaire (régression introduite par 7707f09
-        // "fix(hud): complementary digit opacities", qui ajoute les accès
-        // sans garantir l'init préalable). EnsureSwipeInfra est idempotent
-        // (guard `if (_digitPrimary is null)`), donc l'appel ici n'a aucun
-        // coût quand StartSwipe() le rappelle.
+        // Pre-initialize the _digitPrimary / _digitAccent arrays from the
+        // ctor. Without this, ClearDigitHeat() (called by ApplyCharging on
+        // cold boot during model loading) early-returns on its null check and
+        // does not reset opacities, producing a white/empty render instead of
+        // "00.00.00" in tertiary color (regression introduced by 7707f09
+        // "fix(hud): complementary digit opacities", which adds the accesses
+        // without guaranteeing prior initialization). EnsureSwipeInfra is
+        // idempotent (guard `if (_digitPrimary is null)`), so this call has no
+        // cost when StartSwipe() calls it again.
         EnsureSwipeInfra();
 
         ChronoRoot.ActualThemeChanged += (_, _) =>

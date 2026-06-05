@@ -11,9 +11,9 @@ public struct POINT
 }
 
 // ── RAWINPUTDEVICE ────────────────────────────────────────────────────────────
-// Décrit un device source pour RegisterRawInputDevices.
-// Pour la souris : usUsagePage=0x01 (Generic Desktop), usUsage=0x02 (Mouse).
-// dwFlags=RIDEV_INPUTSINK : recevoir les events même sans focus (hwndTarget requis).
+// Describes a source device for RegisterRawInputDevices.
+// For the mouse: usUsagePage=0x01 (Generic Desktop), usUsage=0x02 (Mouse).
+// dwFlags=RIDEV_INPUTSINK: receive events even without focus (hwndTarget required).
 [StructLayout(LayoutKind.Sequential)]
 public struct RAWINPUTDEVICE
 {
@@ -25,9 +25,9 @@ public struct RAWINPUTDEVICE
 
 // ── NOTIFYICONDATA ────────────────────────────────────────────────────────────
 //
-// Structure Shell32 pour gérer l'icône dans la zone de notification.
-// CharSet.Unicode : les champs szTip/szInfo sont des WCHAR[].
-// cbSize doit être défini à Marshal.SizeOf<NOTIFYICONDATA>() avant tout appel.
+// Shell32 structure for managing the notification area icon.
+// CharSet.Unicode: szTip/szInfo fields are WCHAR[].
+// cbSize must be set to Marshal.SizeOf<NOTIFYICONDATA>() before any call.
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 public struct NOTIFYICONDATA
 {
@@ -53,10 +53,10 @@ public struct NOTIFYICONDATA
 
 // ── NOTIFYICONIDENTIFIER ──────────────────────────────────────────────────────
 //
-// Identifiant d'une icône tray pour Shell_NotifyIconGetRect (Vista+). cbSize
-// doit être Marshal.SizeOf<NOTIFYICONIDENTIFIER>() avant tout appel. Une icône
-// se désigne soit par (hWnd, uID), soit par guidItem — Deckle utilise la paire
-// (hWnd, uID) comme dans NOTIFYICONDATA.
+// Tray icon identifier for Shell_NotifyIconGetRect (Vista+). cbSize must be
+// Marshal.SizeOf<NOTIFYICONIDENTIFIER>() before any call. An icon is addressed
+// either by (hWnd, uID) or by guidItem; Deckle uses the (hWnd, uID) pair as in
+// NOTIFYICONDATA.
 [StructLayout(LayoutKind.Sequential)]
 public struct NOTIFYICONIDENTIFIER
 {
@@ -89,12 +89,12 @@ public struct WNDCLASSEX
     public IntPtr hIconSm;
 }
 
-// INPUT aplati : représente un événement clavier pour SendInput.
+// Flattened INPUT: represents a keyboard event for SendInput.
 //
-// La struct Windows INPUT contient une union C (clavier, souris, matériel).
-// Taille totale sur Windows 64 bits = 40 octets (MOUSEINPUT fixe la taille de l'union).
-// L'union est dimensionnée par MOUSEINPUT (le plus grand membre).
-// Le champ _pad à l'offset 32 force Marshal.SizeOf à retourner 40.
+// The Windows INPUT struct contains a C union (keyboard, mouse, hardware).
+// Total size on 64-bit Windows = 40 bytes (MOUSEINPUT fixes the union size).
+// The union is sized by MOUSEINPUT (the largest member).
+// The _pad field at offset 32 forces Marshal.SizeOf to return 40.
 [StructLayout(LayoutKind.Explicit)]
 public struct INPUT
 {
@@ -104,7 +104,7 @@ public struct INPUT
     [FieldOffset(12)] public uint   ki_dwFlags;
     [FieldOffset(16)] public uint   ki_time;
     [FieldOffset(24)] public IntPtr ki_dwExtraInfo;
-    [FieldOffset(32)] public long   _pad;            // padding pour atteindre 40 octets
+    [FieldOffset(32)] public long   _pad;            // padding to reach 40 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -122,13 +122,13 @@ public struct WAVEFORMATEX
 [StructLayout(LayoutKind.Sequential)]
 public struct WAVEHDR
 {
-    public IntPtr lpData;           // pointeur vers le buffer de données audio
-    public uint   dwBufferLength;   // taille totale du buffer (octets)
-    public uint   dwBytesRecorded;  // octets effectivement écrits par le driver
-    public IntPtr dwUser;           // donnée utilisateur libre (non utilisé ici)
-    public uint   dwFlags;          // flags : WHDR_DONE = buffer rempli par le driver
-    public uint   dwLoops;          // nombre de boucles (lecture seulement)
-    public IntPtr lpNext;           // usage interne driver
-    public IntPtr reserved;         // usage interne driver
+    public IntPtr lpData;           // pointer to audio data buffer
+    public uint   dwBufferLength;   // total buffer size (bytes)
+    public uint   dwBytesRecorded;  // bytes actually written by the driver
+    public IntPtr dwUser;           // free user data (not used here)
+    public uint   dwFlags;          // flags: WHDR_DONE = buffer filled by driver
+    public uint   dwLoops;          // loop count (playback only)
+    public IntPtr lpNext;           // internal driver use
+    public IntPtr reserved;         // internal driver use
 }
 

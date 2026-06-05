@@ -5,11 +5,11 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// Sub-provider transverse — marshalling dispatcher. Quatre events admis :
+// Cross-cutting sub-provider: dispatcher marshalling. Four accepted events:
 // MarshalQueued, MarshalCompleted, MarshalTimeout, DispatcherEnqueueRejected.
-// Les deux premiers et le timeout sont câblés à des sites actifs ; le
-// dernier (DispatcherEnqueueRejected) a migré depuis DeckleShellSource —
-// son contrat doit rester gelé pour ne pas casser les appelants existants
+// The first two and the timeout are wired to active sites; the last one
+// (DispatcherEnqueueRejected) migrated from DeckleShellSource, and its contract
+// must stay frozen to avoid breaking existing callers.
 // (cf. commentaires DeckleThreadingSource).
 [Trait("Category", "observability")]
 public class DeckleThreadingSourceTests

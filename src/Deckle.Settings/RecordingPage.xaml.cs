@@ -51,9 +51,9 @@ public sealed partial class RecordingPage : Page
 
     // ── Audio input ──────────────────────────────────────────────────────────
     //
-    // Peuplé dynamiquement via Win32 waveIn — reste dans le code-behind car
-    // c'est de l'énumération hardware, pas du setting. Le combo a "System
-    // default" en index 0, donc comboIndex ↔ deviceId nécessite une conversion.
+    // Dynamically populated through Win32 waveIn; stays in code-behind because
+    // this is hardware enumeration, not a setting. The combo has "System
+    // default" at index 0, so comboIndex ↔ deviceId requires conversion.
 
     private void PopulateAudioInputDevices()
     {

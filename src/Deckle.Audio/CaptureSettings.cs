@@ -45,8 +45,8 @@ public sealed class CaptureSettings
 //                   -97 dBFS digital floor / DSP gate.
 //   Max  -32 dBFS — measured peak ceiling for normal voice.
 //   Exp   1.0    — linear response. Higher = compress low end / expand
-//                  high end; lower = the opposite. The HUD reads "soit
-//                  là, soit pas là" with a linear ramp.
+//                  high end; lower = the opposite. The HUD reads "there
+//                  or not there" with a linear ramp.
 //
 // AutoCalibration runs a rolling heuristic over the last N microphone
 // telemetry samples: median(p25) - 5 dB -> MinDbfs, median(p90) + 5 dB

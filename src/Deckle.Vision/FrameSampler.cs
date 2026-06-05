@@ -110,10 +110,9 @@ public sealed partial class FrameSampler : IAsyncDisposable
     private readonly object _lock = new();
     private bool _disposed;
 
-    // Acquire timestamps des textures persistantes du sampler — lues
-    // par DisposeAsync pour calculer age_ms côté DeckleResourceSource.
-    // Chaque texture est créée une fois au ctor et release une fois
-    // au dispose.
+    // Acquire timestamps for the sampler's persistent textures: read by
+    // DisposeAsync to compute age_ms on the DeckleResourceSource side. Each
+    // texture is created once in the ctor and released once on dispose.
     private long _intermediateTexAcquiredTicks;
     private long _stagingTexAcquiredTicks;
 
@@ -179,20 +178,19 @@ public sealed partial class FrameSampler : IAsyncDisposable
 
         _intermediateTex = CreateIntermediateTexture();
         _intermediateTexAcquiredTicks = Stopwatch.GetTimestamp();
-        // Sub-provider transverse Resource — acquire des trois textures
-        // persistantes du sampler. owner="frame-sampler" pour les
-        // différencier des textures per-frame de "capture-loop".
-        // size_bytes approxime l'allocation mémoire (full mip chain
-        // pour l'intermédiaire ≈ 4/3 du mip 0, on simplifie à mip 0
-        // pour rester lisible).
+        // Cross-cutting Resource sub-provider: acquire the sampler's three
+        // persistent textures. owner="frame-sampler" to distinguish them from
+        // per-frame textures of "capture-loop". size_bytes approximates memory
+        // allocation (full mip chain for the intermediate ≈ 4/3 of mip 0; we
+        // simplify to mip 0 to stay readable).
         DeckleResourceSource.Log.ResourceAcquired(
             "d3d11-texture", (long)_intermediateTex,
             _sourceWidth * _sourceHeight * bytesPerPixel, "frame-sampler");
 
         _intermediateSrv = CreateIntermediateSrv();
-        // SRV : pas de mémoire propre, c'est une vue. On le trace en
-        // "dxgi-resource" générique avec size_bytes=0 pour distinguer
-        // le handle visiblement dans la trace.
+        // SRV: no own memory, it is a view. Trace it as generic
+        // "dxgi-resource" with size_bytes=0 to make the handle visible in the
+        // trace.
         DeckleResourceSource.Log.ResourceAcquired(
             "dxgi-resource", (long)_intermediateSrv, 0, "frame-sampler");
 

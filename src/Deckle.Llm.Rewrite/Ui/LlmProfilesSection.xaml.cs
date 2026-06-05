@@ -9,15 +9,15 @@ using Deckle.Catalog;
 
 namespace Deckle.Llm.Rewrite;
 
-// ─── Section Profiles de LlmPage ───────────────────────────────────────────
+// ─── LlmPage Profiles section ──────────────────────────────────────────────
 //
-// Liste des profils de réécriture. Tout le contenu est déclaratif (XAML
-// DataTemplate + ProfileViewModel). Le code-behind ne gère que :
-//  - Reload() → repopule l'ObservableCollection depuis le POCO
+// Lists rewrite profiles. All content is declarative (XAML DataTemplate +
+// ProfileViewModel). Code-behind only handles:
+//  - Reload() → repopulates the ObservableCollection from the POCO
 //  - Click handlers (Delete/Add) via Tag={x:Bind}
-//  - Model AutoSuggestBox handlers → push vers le VM + filtre la liste
-//  - ProfilesChanged event (fired on Name changes via PropertyChanged) pour
-//    notifier Rules et ManualShortcut de rafraîchir leurs listes
+//  - Model AutoSuggestBox handlers → push to VM + filter the list
+//  - ProfilesChanged event (fired on Name changes via PropertyChanged) to
+//    notify Rules and ManualShortcut to refresh their lists
 
 public sealed partial class LlmProfilesSection : UserControl
 {

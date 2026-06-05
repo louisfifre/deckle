@@ -5,19 +5,19 @@ using Deckle.Diagnostics.Telemetry;
 namespace Deckle.App.Diagnostics;
 
 // Boot-time wiring of the EventSource-based observability pipeline.
-// App.OnLaunched calls Initialize() pour que les listeners soient en
-// place avant la première emission de tout provider Deckle.*.
+// App.OnLaunched calls Initialize() so listeners are in place before the
+// first emission from any Deckle.* provider.
 //
 // What we wire here:
 //   1. JSONL listeners — via TelemetryListenerBootstrap.
-//      Écrit sous `<TelemetryDirectory>/{app,latency,microphone,corpus}
-//      .jsonl` (paths canoniques depuis la sous-vague 6e — le legacy
-//      JsonlFileSink qui les possédait jadis a disparu). Le corpus
-//      utilise deux listeners routés pour ASR et rewrite.
-//   2. LogWindowEventListener — buffer ring qui démarre vide au boot
-//      et accepte des sinks ILogWindowSink lazy. Le LogWindow s'y
-//      attache à sa première ouverture via AttachLogWindowSink et
-//      reçoit en replay tout l'historique bufferisé depuis le boot.
+//      Writes under `<TelemetryDirectory>/{app,latency,microphone,corpus}
+//      .jsonl` (canonical paths since sub-wave 6e; the legacy JsonlFileSink
+//      that used to own them is gone). The corpus uses two routed listeners
+//      for ASR and rewrite.
+//   2. LogWindowEventListener — ring buffer that starts empty at boot and
+//      accepts lazy ILogWindowSink sinks. LogWindow attaches to it on first
+//      open via AttachLogWindowSink and receives a replay of the full
+//      buffered history since boot.
 //
 // The listener instance is held as a static field so it survives for
 // the life of the process. EventListener.Dispose() unregisters cleanly;
@@ -29,16 +29,15 @@ internal static class AppDiagnosticsBootstrap
 
     public static void Initialize(string telemetryDirectory)
     {
-        // JSONL listeners — écrit aux paths canoniques (`<TelemetryDir>/
-        // {app,latency,microphone,corpus}.jsonl`). Le legacy `JsonlFile-
-        // Sink` qui les possédait jadis a été retiré en sous-vague 6e,
-        // ce pipeline prend la relève sur les mêmes fichiers.
+        // JSONL listeners: write to canonical paths (`<TelemetryDir>/
+        // {app,latency,microphone,corpus}.jsonl`). The legacy `JsonlFileSink`
+        // that used to own them was removed in sub-wave 6e; this pipeline
+        // takes over the same files.
         TelemetryListenerBootstrap.Configure(telemetryDirectory, validationSubdirectory: false);
 
-        // LogWindow listener — démarre le buffer dès le boot. Aucun
-        // sink attaché à ce stade ; le LogWindow lazy s'attachera
-        // via `AttachLogWindowSink` à sa première ouverture, recevra
-        // l'historique buffer en replay, puis sera live ensuite.
+        // LogWindow listener: starts buffering at boot. No sink is attached at
+        // this point; lazy LogWindow will attach via `AttachLogWindowSink` on
+        // first open, receive the buffered history as a replay, then stay live.
         _logWindowListener = new LogWindowEventListener();
     }
 
@@ -56,10 +55,9 @@ internal static class AppDiagnosticsBootstrap
         _hudFeedbackListener = new HudFeedbackEventListener(sink);
     }
 
-    // Attache un sink LogWindow et lui rejoue l'historique bufferisé
-    // depuis le boot. Appelée à la première ouverture du LogWindow
-    // (chemin lazy `App.ShowLogWindowLazy`) ; le sink reçoit live les
-    // events futurs jusqu'à `DetachLogWindowSink`.
+    // Attaches a LogWindow sink and replays the buffered history since boot.
+    // Called on first LogWindow open (lazy `App.ShowLogWindowLazy` path); the
+    // sink receives future events live until `DetachLogWindowSink`.
     public static void AttachLogWindowSink(ILogWindowSink sink)
     {
         _logWindowListener?.AttachSink(sink);
@@ -70,16 +68,14 @@ internal static class AppDiagnosticsBootstrap
         _logWindowListener?.DetachSink(sink);
     }
 
-    // Câble un drop filter sur le LogWindowEventListener. Appelée au
-    // boot de l'App pour que les Verbose ambient soient filtrés
-    // pendant la capture loop quand le toggle utilisateur est off.
-    // Le filter est conservé pour la vie du process — un seul filter
-    // actif à la fois.
+    // Wires a drop filter onto LogWindowEventListener. Called at App boot so
+    // ambient Verbose events are filtered during the capture loop when the
+    // user toggle is off. The filter is kept for the process lifetime; only
+    // one filter is active at a time.
     //
-    // Si Initialize n'a pas encore été appelée, l'appel est silencieux
-    // (no-op). En pratique l'App appelle Initialize d'abord, puis
-    // ConfigureLogWindowDropFilter immédiatement après — l'ordre est
-    // strict côté caller.
+    // If Initialize has not been called yet, the call is silent (no-op). In
+    // practice App calls Initialize first, then ConfigureLogWindowDropFilter
+    // immediately after; the order is strict on the caller side.
     public static void ConfigureLogWindowDropFilter(System.Func<EventEntry, bool> filter)
     {
         _logWindowListener?.ConfigureDropFilter(filter);

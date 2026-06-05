@@ -3,16 +3,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Lighting;
 
-// Lighting module provider. Couvre la découverte bridge Hue (cloud
-// endpoint), le pairing CLIP v1 (link-button), la liste des groupes,
-// la liste des entertainment configurations (CLIP v2), la liste des
-// lights par groupe, l'envoi de couleurs (REST PUT /state ou /action),
-// et les opérations d'identification visuelle (alert flash).
+// Lighting module provider. Covers Hue bridge discovery (cloud endpoint), CLIP
+// v1 pairing (link-button), group listing, entertainment configuration listing
+// (CLIP v2), lights by group listing, color sending (REST PUT /state or
+// /action), and visual identification operations (alert flash).
 //
-// Le module abstrait à terme plusieurs drivers (WLED, DMX, HomeAssist).
-// Pour V0 seul Hue est implémenté ; le provider est unique pour le
-// module entier, les futurs drivers ajouteront leurs events sous le
-// même provider plutôt que de créer un Deckle.Lighting.* enfant.
+// The module will eventually abstract several drivers (WLED, DMX, HomeAssist).
+// For V0 only Hue is implemented; the provider is unique for the whole module,
+// and future drivers will add their events under the same provider instead of
+// creating a child Deckle.Lighting.* provider.
 [EventSource(Name = "Deckle.Lighting")]
 public sealed class DeckleLightingSource : DeckleEventSource
 {

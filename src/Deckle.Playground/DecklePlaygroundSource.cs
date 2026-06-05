@@ -3,18 +3,16 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Playground;
 
-// Playground module provider. Couvre le shell Playground (navigation),
-// les pages de tuning (HomePage / HudPage / AmbientPage) avec leurs
-// nombreuses interactions diagnostic, le ViewModel AmbientViewModel
-// (sliders HDR tone-mapping + multi-light switch), et la fenêtre
-// hôte PlaygroundWindow elle-même.
+// Playground module provider. Covers the Playground shell (navigation), tuning
+// pages (HomePage / HudPage / AmbientPage) with their many diagnostic
+// interactions, the AmbientViewModel (HDR tone-mapping sliders + multi-light
+// switch), and the host PlaygroundWindow itself.
 //
-// Provider Name = "Deckle.Playground" → tag [PLAYGROUND] via le bridge
-// legacy. Le Playground est une surface dev/tuning : la doctrine
-// strict-typed est appliquée pour les transitions claires (nav, settings)
-// mais on accepte un canal générique pour les nombreuses chaînes
-// diagnostic d'interactions (essais de pairing Hue, scan de zones,
-// match entertainment areas) qui ne valent pas chacune un event typé.
+// Provider Name = "Deckle.Playground" → [PLAYGROUND] tag through the legacy
+// bridge. Playground is a dev/tuning surface: strict-typed doctrine is applied
+// to clear transitions (nav, settings), but a generic channel is accepted for
+// the many diagnostic interaction strings (Hue pairing attempts, zone scan,
+// match entertainment areas) that are not each worth a typed event.
 [EventSource(Name = "Deckle.Playground")]
 public sealed class DecklePlaygroundSource : DeckleEventSource
 {

@@ -3,11 +3,10 @@ using Xunit;
 
 namespace Deckle.Chrono.Tests;
 
-// Tests unit purs sur ChronoFormatter. Fonctions déterministes sans
-// dépendance externe — le filet idéal pour la première strate de tests
-// du projet. Couvre la décomposition d'un TimeSpan en (minutes, seconds,
-// centiseconds), le wrapping des minutes à 100, le comportement du cap,
-// et le format MM:SS.cc.
+// Pure unit tests on ChronoFormatter. Deterministic functions without external
+// dependency: the ideal net for the project's first test layer. Covers
+// decomposition of a TimeSpan into (minutes, seconds, centiseconds), wrapping
+// minutes at 100, cap behavior, and MM:SS.cc format.
 [Trait("Category", "unit")]
 public class ChronoFormatterTests
 {
@@ -24,8 +23,8 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeReturnsExpectedComponentsForMixedDuration()
     {
-        // 1h 23m 45s 670ms — couvre minutes au-dessus de 60, seconds non
-        // nuls, centiseconds = millisecondes / 10 (670ms → 67cs).
+        // 1h 23m 45s 670ms: covers minutes above 60, non-zero seconds,
+        // centiseconds = milliseconds / 10 (670ms → 67cs).
         var elapsed = new TimeSpan(0, 1, 23, 45, 670);
 
         var d = ChronoFormatter.Decompose(elapsed);
@@ -38,9 +37,8 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeWrapsMinutesPastOneHundred()
     {
-        // 105 min wrappées via % 100 → 5 min. Garde le slot deux digits
-        // stable pour les sessions longues sans changer la largeur du
-        // visuel HUD.
+        // 105 min wrapped via % 100 → 5 min. Keeps the two-digit slot stable
+        // for long sessions without changing HUD visual width.
         var elapsed = TimeSpan.FromMinutes(105);
 
         var d = ChronoFormatter.Decompose(elapsed);
@@ -51,7 +49,7 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeWithCapZeroAppliesNoCap()
     {
-        // capSeconds = 0 → aucun cap, l'elapsed remonte tel quel.
+        // capSeconds = 0 → no cap, elapsed is returned as-is.
         var elapsed = TimeSpan.FromSeconds(120);
 
         var d = ChronoFormatter.Decompose(elapsed, capSeconds: 0);
@@ -63,7 +61,7 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeClampsElapsedWhenAboveCap()
     {
-        // elapsed = 120s, cap = 60s → tronqué à 60s = 1min 00s.
+        // elapsed = 120s, cap = 60s → truncated to 60s = 1min 00s.
         var elapsed = TimeSpan.FromSeconds(120);
 
         var d = ChronoFormatter.Decompose(elapsed, capSeconds: 60);
@@ -75,7 +73,7 @@ public class ChronoFormatterTests
     [Fact]
     public void DecomposeLeavesElapsedUnchangedWhenBelowCap()
     {
-        // elapsed = 30s, cap = 60s → identique au cas sans cap.
+        // elapsed = 30s, cap = 60s → identical to the no-cap case.
         var elapsed = TimeSpan.FromSeconds(30);
 
         var d = ChronoFormatter.Decompose(elapsed, capSeconds: 60);

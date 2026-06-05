@@ -7,9 +7,9 @@ public sealed partial class DeckleWhispSource
 {
     // ── UserFeedback ────────────────────────────────────────────────────
     //
-    // Canal canonique pour les notifications utilisateur (HUD Replacement
-    // / Overlay). Sévérité 0/1/2 = Info/Warning/Error, rôle 0/1 =
-    // Replacement/Overlay. Filtré par HudFeedbackEventListener.
+    // Canonical channel for user notifications (HUD Replacement / Overlay).
+    // Severity 0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay.
+    // Filtered by HudFeedbackEventListener.
 
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,
@@ -20,7 +20,7 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtUserFeedbackEmitted, severity, title, body, role);
     }
 
-    // ── Llm-side observation depuis TranscriptionEngine ────────────────────────
+    // ── Llm-side observation from TranscriptionEngine ─────────────────────────
 
     [Event(EvtManualProfileNotFound,
            Level = EventLevel.Warning,
@@ -60,7 +60,7 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoined, join_ms);
     }
 
-    // ── Settings persistence (transitoire — voir DeckleAudioSource) ─────
+    // ── Settings persistence (transitional: see DeckleAudioSource) ──────
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,
@@ -99,10 +99,10 @@ public sealed partial class DeckleWhispSource
     }
 
     // ── TranscriptionSettings persistence ─────────────────────────────────
-    // Entorse identique à celle de DeckleAudioSource pour les delegates
-    // JsonSettingsStore — pas connu au site d'appel quelle opération
-    // exacte est en cours. Préservé séparé de SettingsLoaded* pour
-    // garder un événement dédié aux messages déjà préfixés côté module.
+    // Same exception as DeckleAudioSource for JsonSettingsStore delegates: the
+    // exact operation in progress is not known at the call site. Preserved
+    // separately from SettingsLoaded* to keep a dedicated event for messages
+    // already prefixed on the module side.
 
     [Event(EvtWhispSettingsPrefixed,
            Level = EventLevel.Informational,

@@ -4,33 +4,33 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Shell.TrayMenu;
 
-// ─── Tray switch menu item — composite réutilisable ───────────────────────────
+// ─── Tray switch menu item — reusable composite ───────────────────────────────
 //
-// Helper de création et de pilotage d'état pour un MenuFlyoutItem présentant
-// une pillule on/off à droite du libellé. Encapsule le wiring qu'il faudrait
-// sinon répéter à chaque item togglable du tray menu : application du Style
-// ToggleSwitchMenuItemStyle (Themes/TrayMenu.xaml) et bascule des états
-// visuels On/Off via VisualStateManager.GoToState.
+// Creation and state-driving helper for a MenuFlyoutItem presenting an on/off
+// pill to the right of the label. Encapsulates the wiring that would otherwise
+// be repeated for each togglable tray menu item: applying
+// ToggleSwitchMenuItemStyle (Themes/TrayMenu.xaml) and switching On/Off visual
+// states through VisualStateManager.GoToState.
 //
-// Le Style fournit une pillule dessinée à la main (Border arrondi + Ellipse),
-// pas un ToggleSwitch natif — le contrôle WinUI 3 est pensé pour vivre dans
-// une SettingsCard et ne se laisse pas centrer proprement greffé dans un
-// MenuFlyoutItem. La pillule custom suit les ThemeResource Win11
-// (ToggleSwitchFillOn/Off, ToggleSwitchStrokeOn/Off, ToggleSwitchKnobFillOn/Off)
-// pour rester alignée light/dark/contrast/accent.
+// The Style provides a hand-drawn pill (rounded Border + Ellipse), not a native
+// ToggleSwitch. The WinUI 3 control is designed to live in a SettingsCard and
+// cannot be centered cleanly when grafted into a MenuFlyoutItem. The custom
+// pill follows Win11 ThemeResources (ToggleSwitchFillOn/Off,
+// ToggleSwitchStrokeOn/Off, ToggleSwitchKnobFillOn/Off) to stay aligned with
+// light/dark/contrast/accent.
 //
-// Convention d'usage côté hôte : Create() au build du flyout, SetState() avant
-// chaque ouverture pour refléter l'état applicatif courant. Doit être appelé
-// sur le thread UI (accède à Application.Current.Resources).
+// Host-side usage convention: Create() when building the flyout, SetState()
+// before each open to reflect current application state. Must be called on the
+// UI thread (accesses Application.Current.Resources).
 
 public static class TraySwitchMenuItem
 {
     /// <summary>
-    /// Crée un MenuFlyoutItem stylé avec une pillule on/off à droite du libellé.
+    /// Creates a styled MenuFlyoutItem with an on/off pill to the right of the label.
     /// </summary>
-    /// <param name="text">Libellé affiché à gauche de la pillule.</param>
-    /// <param name="onActivate">Callback invoquée au Click sur l'item (le Hide
-    /// du flyout côté hôte reste à la charge de l'appelant).</param>
+    /// <param name="text">Label displayed to the left of the pill.</param>
+    /// <param name="onActivate">Callback invoked on item Click (flyout Hide on
+    /// the host side remains the caller's responsibility).</param>
     public static MenuFlyoutItem Create(string text, Action onActivate)
     {
         var item = new MenuFlyoutItem
@@ -43,11 +43,11 @@ public static class TraySwitchMenuItem
     }
 
     /// <summary>
-    /// Bascule l'état visuel de la pillule (On = knob à droite + rail accent,
-    /// Off = knob à gauche + rail neutre). À appeler avant chaque ouverture du
-    /// flyout pour synchroniser l'affichage avec l'état applicatif.
-    /// useTransitions=false : aligné sur AreOpenCloseAnimationsEnabled=false
-    /// du flyout, le menu apparaît et disparaît instantanément.
+    /// Switches the pill visual state (On = knob right + accent rail,
+    /// Off = knob left + neutral rail). Call before each flyout open to
+    /// synchronize display with application state. useTransitions=false:
+    /// aligned with the flyout's AreOpenCloseAnimationsEnabled=false, so the
+    /// menu appears and disappears instantly.
     /// </summary>
     public static void SetState(MenuFlyoutItem item, bool isOn)
     {

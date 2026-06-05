@@ -1,13 +1,11 @@
 namespace Deckle.Transcription.Corpus;
 
-// Cinq tiers de longueur appliqués à la sortie ASR, indexés sur le
-// word count. Hard-codés ici parce que la passe Settings ultérieure
-// décidera si ces seuils méritent d'être édités par l'utilisateur —
-// d'ici là, le point de centralisation existe et les analyses tier-
-// stratifiées du corpus restent cohérentes. Voir ADR-0006.
+// Five length tiers applied to ASR output, indexed on word count. Hardcoded
+// here because the later Settings pass will decide whether these thresholds
+// deserve user editing; until then, the centralization point exists and
+// tier-stratified corpus analyses remain consistent. See ADR-0006.
 //
-// Bornes : plancher inclus, plafond exclu. Un texte vide tombe dans
-// very-short.
+// Bounds: floor included, ceiling excluded. Empty text falls into very-short.
 //
 //   very-short → 0   ≤ words < 30
 //   short      → 30  ≤ words < 200

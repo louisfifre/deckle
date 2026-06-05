@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- Libraries do not produce RID-specific outputs in Deckle. Keeping them
+       RID-agnostic prevents self-contained app builds from scheduling the same
+       referenced project once with SelfContained=true and once without it. -->
+  <PropertyGroup Condition="'$(OutputType)' == '' or '$(OutputType)' == 'Library'">
+    <IsRidAgnostic>true</IsRidAgnostic>
+  </PropertyGroup>
+
+</Project>

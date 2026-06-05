@@ -4,10 +4,11 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// L'indicateur de niveau micro : on parle quelques secondes, il dit si le DSP
-// vaut le coup. Ces tests épinglent le verdict (recommandé / limite / pas utile)
-// selon l'écart au niveau cible, et le fait que le « après » atterrit bien sur
-// la cible — la mesure qui « parle d'elle-même », sans transcription ni WER.
+// Microphone level indicator: speak for a few seconds, it says whether the DSP
+// is worth it. These tests pin the verdict (recommended / borderline / not
+// useful) according to the gap from target level, and the fact that the "after"
+// lands on target: the measurement that speaks for itself, without
+// transcription or WER.
 [Trait("Category", "unit")]
 public class MicLevelCheckTests
 {

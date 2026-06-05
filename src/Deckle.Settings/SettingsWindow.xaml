@@ -10,8 +10,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- TitleBar natif : icône + titre uniquement. La navigation et le
-             contenu restent sous la barre de titre. -->
+        <!-- Native TitleBar: icon + title only. Navigation and content remain
+             below the title bar. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="SettingsTitleBar">
@@ -20,9 +20,9 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <!-- NavigationView. PaneDisplayMode=Auto (défaut) laisse WinUI choisir
-             Left / LeftCompact / LeftMinimal. Tag = nom complet du type de
-             Page, résolu via Type.GetType dans le handler. -->
+        <!-- NavigationView. PaneDisplayMode=Auto (default) lets WinUI choose
+             Left / LeftCompact / LeftMinimal. Tag = full Page type name,
+             resolved through Type.GetType in the handler. -->
         <NavigationView Grid.Row="1"
                         x:Name="Nav"
                         IsBackButtonVisible="Collapsed"
@@ -70,10 +70,9 @@
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>
-                <!-- Logs : ouvre la LogWindow partagée via callback App.
-                     SelectsOnInvoked=False → pas de sélection persistante,
-                     pas de navigation Frame, on récupère le clic via
-                     ItemInvoked. -->
+                <!-- Logs: opens the shared LogWindow through the App callback.
+                     SelectsOnInvoked=False → no persistent selection, no Frame
+                     navigation; the click is recovered through ItemInvoked. -->
                 <NavigationViewItem x:Uid="SettingsNavLogs"
                                     Tag="logs"
                                     SelectsOnInvoked="False">
@@ -83,12 +82,11 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 
-            <!-- Content area : le NavigationView pose déjà sa surface Layer
-                 avec coin supérieur-gauche arrondi DWM. Pas de Border wrapper,
-                 pas de CornerRadius custom, pas de sticky header/footer.
-                 Chaque Page gère son propre titre H1 et son ScrollViewer
-                 (pattern Win11 Settings). Auto-save partout → pas de
-                 Cancel/Save global. -->
+            <!-- Content area: NavigationView already places its Layer surface
+                 with a rounded DWM top-left corner. No Border wrapper, no
+                 custom CornerRadius, no sticky header/footer. Each Page
+                 manages its own H1 title and ScrollViewer (Win11 Settings
+                 pattern). Auto-save everywhere → no global Cancel/Save. -->
             <Frame x:Name="PageFrame" />
         </NavigationView>
     </Grid>

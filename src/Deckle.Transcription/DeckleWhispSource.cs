@@ -3,37 +3,33 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Transcription;
 
-// Whisp module provider. Couvre le moteur de transcription
-// (TranscriptionEngine), le cycle de vie du modèle Whisper natif (chargement
-// paresseux, idle unload), le warmup boot, la transcription elle-même
-// (params, prompt, segments, complétion), le clipboard, le paste, la
-// redirection des logs whisper.cpp, et les heartbeats structurés de
-// fin de pipeline (LatencyRecorded, CorpusAsrRecorded,
-// CorpusRewriteRecorded). La persistance settings du module passe par
-// les quatre events Settings* transitoires (entorse documentée — voir
-// DeckleAudioSource).
+// Whisp module provider. Covers the transcription engine (TranscriptionEngine),
+// the native Whisper model lifecycle (lazy load, idle unload), boot warmup,
+// transcription itself (params, prompt, segments, completion), clipboard,
+// paste, whisper.cpp log redirection, and structured end-of-pipeline heartbeats
+// (LatencyRecorded, CorpusAsrRecorded, CorpusRewriteRecorded). Module settings
+// persistence goes through the four transitional Settings* events (documented
+// exception: see DeckleAudioSource).
 //
-// Choix de design — entorses notables :
+// Design choices: notable exceptions:
 //
-//   1. Les anciens narratifs (`_log.Narrative`) sont abandonnés.
-//      EventLevel n'a pas de niveau "Narrative" — ces lignes étaient
-//      des reformulations de prose qui ne portaient pas d'info
-//      nouvelle par-dessus les jalons Info et les verbose structurés
-//      qui les précèdent.
+//   1. The old narrative lines (`_log.Narrative`) are abandoned. EventLevel has
+//      no "Narrative" level; these lines were prose reformulations that carried
+//      no new information beyond the Info milestones and structured verbose
+//      events preceding them.
 //
-//   2. LatencyRecorded et CorpusRecorded sont les events JSONL
-//      canoniques (filtrés par TelemetryListenerBootstrap). Les
-//      trois lignes humaines [DONE] timings / llm_metrics / outputs
-//      restent émises en parallèle sous PipelineTimings,
-//      PipelineLlmMetrics et PipelineOutputs : c'est la lecture
-//      pour humains côté LogWindow. JsonlEventListener latency.jsonl
-//      ne récupère que LatencyRecorded (24 champs aplatis), pas les
-//      trois lignes humaines.
+//   2. LatencyRecorded and CorpusRecorded are canonical JSONL events (filtered
+//      by TelemetryListenerBootstrap). The three human [DONE] timings /
+//      llm_metrics / outputs lines are still emitted in parallel under
+//      PipelineTimings, PipelineLlmMetrics, and PipelineOutputs: this is the
+//      human reading path on the LogWindow side. JsonlEventListener latency.jsonl
+//      only picks up LatencyRecorded (24 flattened fields), not the three human
+//      lines.
 //
-//   3. Les UserFeedback sont émises via le canal canonique
-//      UserFeedbackEmitted(severity, title, body, role) — sévérité
-//      0/1/2 = Info/Warning/Error, rôle 0/1 = Replacement/Overlay.
-//      Le mapping vit côté HudFeedbackEventListener.
+//   3. UserFeedback is emitted through the canonical
+//      UserFeedbackEmitted(severity, title, body, role) channel: severity
+//      0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay. The mapping
+//      lives on the HudFeedbackEventListener side.
 [EventSource(Name = "Deckle.Whisp")]
 public sealed partial class DeckleWhispSource : DeckleEventSource
 {
@@ -41,20 +37,20 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
 
     private DeckleWhispSource() { }
 
-    // ── EventIds — séquentiels à partir de 1, jamais réutilisés ─────────
+    // ── EventIds: sequential from 1, never reused ───────────────────────
     public const int EvtWarmupClipMissing                = 1;
     public const int EvtWarmupClipHeaderInvalid          = 2;
     public const int EvtWarmupClipSampleMismatch         = 3;
     public const int EvtWarmupClipLoadFailed             = 4;
     public const int EvtWarmupStart                      = 5;
     // 6–9 — EvtWarmupCancelledBeforeModel / AbortedModelLoad /
-    // CancelledBeforeTranscribe / CancelledDuringTranscribe retirés avec le
-    // passage du warmup boot au prime à la demande (synchrone sur le worker,
-    // sans phases d'annulation distinctes). IDs brûlés, jamais réutilisés.
+    // CancelledBeforeTranscribe / CancelledDuringTranscribe removed with the
+    // move from boot warmup to on-demand prime (synchronous on the worker,
+    // without distinct cancellation phases). IDs burned, never reused.
     public const int EvtWarmupComplete                   = 10;
     // 11–16 — EvtWarmupCompleteDetail / Failed / FlagModelKO / FlagOllamaKO /
-    // FlagOllamaRecovered / FlagMicKO retirés avec le même passage (plus de
-    // flags warmup consommés au premier hotkey). IDs brûlés, jamais réutilisés.
+    // FlagOllamaRecovered / FlagMicKO removed with the same move (no more
+    // warmup flags consumed on first hotkey). IDs burned, never reused.
     public const int EvtModelLoading                     = 17;
     public const int EvtModelLoadStart                   = 18;
     public const int EvtModelLoadAborted                 = 19;
@@ -115,8 +111,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPipelineLlmMetrics               = 74;
     public const int EvtPipelineOutputs                  = 75;
     public const int EvtLatencyRecorded                  = 76;
-    // 77 — EvtCorpusRecorded retiré au profit de CorpusAsr/RewriteRecorded
-    // (ADR-0006). L'ID est brûlé, jamais réutilisé.
+    // 77: EvtCorpusRecorded removed in favor of CorpusAsr/RewriteRecorded
+    // (ADR-0006). The ID is burned, never reused.
     public const int EvtUserFeedbackEmitted              = 78;
     public const int EvtManualProfileNotFound            = 79;
     public const int EvtDisposeWorkerJoinTimeout         = 80;

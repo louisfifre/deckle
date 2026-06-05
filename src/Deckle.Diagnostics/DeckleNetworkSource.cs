@@ -2,21 +2,19 @@ using System.Diagnostics.Tracing;
 
 namespace Deckle.Diagnostics;
 
-// Sub-provider transverse — transitions d'état réseau de la machine.
-// Capter la connectivité (présence / absence, profile, comptes NIC)
-// permet de corréler les échecs HTTP transverses (Hue REST, Ollama,
-// futurs services LLM ou drivers WLED) avec une coupure ou une bascule
-// de profil au niveau OS plutôt que de chercher la cause dans le
-// provider métier concerné. La primitive est strictement non-métier et
-// consommée par tout module qui parle au réseau — promotion en sub-
-// provider transverse au sens du critère à deux clauses de la fiche
-// `reference--eventsource-convention--1.2.md` §*Sub-providers
-// transverses*.
+// Cross-cutting sub-provider: machine network state transitions. Capturing
+// connectivity (presence / absence, profile, NIC counts) allows correlating
+// cross-cutting HTTP failures (Hue REST, Ollama, future LLM services or WLED
+// drivers) with an OS-level outage or profile switch instead of looking for the
+// cause in the relevant business provider. The primitive is strictly
+// non-business and consumed by every module that talks to the network:
+// promotion to cross-cutting sub-provider under the two-clause criterion in
+// `reference--eventsource-convention--1.2.md`
+// §*Cross-cutting sub-providers*.
 //
-// Un seul émetteur abonné à `NetworkInformation.NetworkStatusChanged`
-// au boot de l'App suffit — l'API Windows Runtime broadcast déjà à tout
-// le process, dupliquer l'abonnement ne ferait que dédoubler les
-// événements.
+// A single emitter subscribed to `NetworkInformation.NetworkStatusChanged` at
+// App boot is enough: the Windows Runtime API already broadcasts to the whole
+// process, duplicating the subscription would only duplicate events.
 [EventSource(Name = "Deckle.Diagnostics.Network")]
 public sealed class DeckleNetworkSource : DeckleEventSource
 {
@@ -27,16 +25,15 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     // ── EventIds ────────────────────────────────────────────────────────
     public const int EvtNetworkStatusChanged = 1;
 
-    // Transition d'état réseau. Émis une fois au boot pour capturer
-    // l'état initial, puis à chaque NetworkStatusChanged broadcast par
-    // Windows. Les paramètres sont aplatis et primitifs (contrainte
-    // EventSource) :
-    //   - connected : true si profile.ConnectivityLevel >= InternetAccess.
-    //   - profile   : nom de profil ("Wi-Fi …", "Ethernet …", "(none)"
-    //                 si aucun profile actif).
-    //   - ipv4_count / ipv6_count : nombre de hostnames IP de chaque
-    //                 famille (toutes interfaces confondues), utile pour
-    //                 repérer une bascule VPN ou une perte de NIC.
+    // Network state transition. Emitted once at boot to capture the initial
+    // state, then on each NetworkStatusChanged broadcast by Windows.
+    // Parameters are flattened and primitive (EventSource constraint):
+    //   - connected : true if profile.ConnectivityLevel >= InternetAccess.
+    //   - profile   : profile name ("Wi-Fi …", "Ethernet …", "(none)" if no
+    //                 active profile).
+    //   - ipv4_count / ipv6_count : number of IP hostnames in each family
+    //                 (across all interfaces), useful to spot a VPN switch or
+    //                 NIC loss.
     [Event(EvtNetworkStatusChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Network,

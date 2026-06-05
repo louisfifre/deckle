@@ -14,18 +14,18 @@ using Deckle.Shell;
 
 namespace Deckle.Settings;
 
-// ─── Fenêtre Settings ─────────────────────────────────────────────────────────
+// ─── Settings Window ──────────────────────────────────────────────────────────
 //
-// Mica + thème système, TitleBar natif (icône + titre). NavigationView en
-// PaneDisplayMode=Auto qui gère lui-même la bascule Left / LeftCompact /
-// LeftMinimal et son propre burger natif.
+// Mica + system theme, native TitleBar (icon + title). NavigationView in
+// PaneDisplayMode=Auto manages the Left / LeftCompact / LeftMinimal switch
+// and its own native hamburger.
 //
-// Navigation : Tag sur chaque item = nom complet du type de Page, résolu via
-// Type.GetType dans OnNavSelectionChanged (pattern du sample officiel
-// Microsoft Learn §"Code example").
+// Navigation: Tag on each item = full Page type name, resolved via
+// Type.GetType in OnNavSelectionChanged (pattern from the official Microsoft
+// Learn "Code example" sample).
 //
-// Auto-save partout, donc pas de Cancel/Save global. Close détruit la
-// fenêtre ; App recrée l'instance lazy à la prochaine ouverture.
+// Auto-save everywhere, so no global Cancel/Save. Close destroys the window;
+// App lazily recreates the instance on the next open.
 
 public sealed partial class SettingsWindow : Window
 {
@@ -34,8 +34,8 @@ public sealed partial class SettingsWindow : Window
     private BitmapImage? _iconIdle;
     private string? _iconIdlePath;
 
-    // Callback injecté par App pour ouvrir la LogWindow partagée depuis l'item
-    // footer "Logs" de la NavigationView. Laissé null = item sans effet.
+    // Callback injected by App to open the shared LogWindow from the
+    // NavigationView "Logs" footer item. Left null = item has no effect.
     public Action? OnShowLogsRequested { get; set; }
 
     public SettingsWindow()
@@ -43,7 +43,7 @@ public sealed partial class SettingsWindow : Window
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
-        // Icône app — partagée avec tray / LogWindow.
+        // App icon, shared with tray / LogWindow.
         _iconIdlePath = IconAssets.ResolvePath(recording: false);
         if (_iconIdlePath is not null)
         {
@@ -52,19 +52,19 @@ public sealed partial class SettingsWindow : Window
             AppWindow.SetIcon(_iconIdlePath);
         }
 
-        // Title bar natif : hauteur/drag/caption gérés par le contrôle.
-        // Standard garde une barre compacte puisque le titre ne contient
-        // aucun contenu interactif.
+        // Native title bar: height/drag/caption are managed by the control.
+        // Standard keeps a compact bar because the title contains no
+        // interactive content.
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
 
         SystemBackdrop = new MicaBackdrop();
 
-        // NavigationView : quand le mode bascule en Minimal (hamburger visible),
-        // le pane toggle button occupe ~48 px en haut de la zone contenu.
-        // On pousse le Frame vers le bas pour que le titre de page ne chevauche
-        // pas le hamburger (pattern Windows Terminal Settings).
+        // NavigationView: when mode switches to Minimal (hamburger visible),
+        // the pane toggle button occupies ~48 px at the top of the content
+        // area. Push the Frame downward so the page title does not overlap the
+        // hamburger (Windows Terminal Settings pattern).
         Nav.DisplayModeChanged += OnNavDisplayModeChanged;
 
         // Override the NavigationView pane-toggle tooltip. WinUI 3
@@ -91,8 +91,8 @@ public sealed partial class SettingsWindow : Window
         Nav.PaneOpened += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
         Nav.PaneClosed += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
 
-        // Sélection initiale → déclenche SelectionChanged → navigation vers
-        // GeneralPage. Un seul chemin de navigation, pas de double-nav.
+        // Initial selection → triggers SelectionChanged → navigates to
+        // GeneralPage. One navigation path, no double-navigation.
         Nav.SelectedItem = Nav.MenuItems[0];
 
         Title = Loc.Get("Settings_WindowTitle");
@@ -102,19 +102,18 @@ public sealed partial class SettingsWindow : Window
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
         presenter.IsResizable   = true;
-        // Min cohérent avec les breakpoints NavigationView Auto (640/1008).
-        // On descend sous 640 pour exposer le mode LeftMinimal natif.
+        // Minimum consistent with NavigationView Auto breakpoints (640/1008).
+        // Go below 640 to expose the native LeftMinimal mode.
         presenter.PreferredMinimumWidth  = 320;
         presenter.PreferredMinimumHeight = 400;
         AppWindow.SetPresenter(presenter);
 
-        // Theme — câble ActualThemeChanged sur la racine XAML pour
-        // tracer les transitions light/dark/HC. SettingsWindow est le
-        // déclencheur côté UI de toute bascule "user" (combo Appearance
-        // dans GeneralPage qui pousse via SettingsHost.ApplyTheme →
-        // App.ApplyTheme), donc cet event est particulièrement utile
-        // ici pour confirmer que la bascule a effectivement été reçue
-        // par la fenêtre qui l'a déclenchée.
+        // Theme: wire ActualThemeChanged on the XAML root to trace
+        // light/dark/HC transitions. SettingsWindow is the UI-side trigger for
+        // any "user" switch (Appearance combo in GeneralPage, pushed through
+        // SettingsHost.ApplyTheme → App.ApplyTheme), so this event is
+        // especially useful here to confirm that the switch was actually
+        // received by the window that triggered it.
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -143,8 +142,8 @@ public sealed partial class SettingsWindow : Window
             op.Restore();
         }
 
-        // Si un tag de page est demandé, sélectionner l'item nav correspondant.
-        // La sélection déclenche OnNavSelectionChanged → navigation Frame.
+        // If a page tag is requested, select the corresponding nav item. The
+        // selection triggers OnNavSelectionChanged → Frame navigation.
         if (pageTag is not null)
         {
             foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
@@ -161,22 +160,21 @@ public sealed partial class SettingsWindow : Window
         this.Activate();
         NativeMethods.SetForegroundWindow(_hwnd);
 
-        // Windowing — émis post-Show pour capturer le rect effectif
-        // après que DWM ait positionné la fenêtre. L'ancrage est
-        // "Center" : SettingsWindow ne fait qu'un AppWindow.Resize
-        // (960×1440) au ctor, le centrage initial est fait par
-        // Windows. Émis à chaque ShowAndActivate parce qu'un drag
-        // utilisateur entre deux ouvertures change le rect — la
-        // dernière trace reste la vérité courante.
+        // Windowing: emitted post-Show to capture the effective rect after DWM
+        // has positioned the window. The anchor is "Center": SettingsWindow
+        // only does an AppWindow.Resize (960×1440) in the ctor; initial
+        // centering is done by Windows. Emitted on every ShowAndActivate
+        // because a user drag between two openings changes the rect; the last
+        // trace remains the current truth.
         WindowingProbe.EmitWindowPositioned(_hwnd, "settings", "Center");
     }
 
-    // ── NavigationView : marge contenu selon le DisplayMode ──────────────
+    // ── NavigationView: content margin by DisplayMode ────────────────────
     //
-    // En mode Minimal, le pane toggle button (hamburger) est rendu en haut de
-    // la zone contenu et occupe ~48 px. On décale le Frame vers le bas pour
-    // que le titre H1 de la page ne soit pas à la même hauteur que le burger.
-    // Pattern identique à Windows Terminal Settings.
+    // In Minimal mode, the pane toggle button (hamburger) is rendered at the
+    // top of the content area and occupies ~48 px. Shift the Frame downward so
+    // the page H1 title is not at the same height as the hamburger. Same
+    // pattern as Windows Terminal Settings.
 
     private void OnNavDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
     {
@@ -186,7 +184,7 @@ public sealed partial class SettingsWindow : Window
             : new Thickness(0);
     }
 
-    // ── NavigationView : swap de page ────────────────────────────────────────
+    // ── NavigationView: page swap ────────────────────────────────────────────
     //
     // Canonical Microsoft Learn pattern (sample §"Code example"): the item's Tag
     // carries the full Page type name, resolved by Type.GetType.

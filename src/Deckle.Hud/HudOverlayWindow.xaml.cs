@@ -120,11 +120,10 @@ public sealed partial class HudOverlayWindow : Window
         // at 60 Hz from the proximity timer).
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
 
-        // Theme — câble ActualThemeChanged pour les overlays transient.
-        // Une overlay vit 2-8 s ; un changement de thème pendant son
-        // affichage est rare mais possible (l'utilisateur fait le swap
-        // pendant qu'une notification flotte). L'event reste utile pour
-        // corréler un glitch de stroke colorée avec une transition.
+        // Theme: wires ActualThemeChanged for transient overlays. An overlay
+        // lives 2-8 s; a theme change during display is rare but possible (the
+        // user swaps while a notification is floating). The event remains
+        // useful to correlate a colored stroke glitch with a transition.
         if (Content is Microsoft.UI.Xaml.FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -151,9 +150,9 @@ public sealed partial class HudOverlayWindow : Window
     // Duration field of MessagePayload is unused here (HudMessage ignores it);
     // the manager owns the per-card timer.
     //
-    // Sous-vague 6b : signature en primitives plutôt qu'en `UserFeedback`
-    // record. Severity convention 0=Info, 1=Warning, 2+=Error — alignée
-    // sur l'event EventSource `UserFeedbackEmitted(severity, ...)`.
+    // Sub-wave 6b: signature in primitives rather than a `UserFeedback`
+    // record. Severity convention 0=Info, 1=Warning, 2+=Error, aligned with
+    // the `UserFeedbackEmitted(severity, ...)` EventSource event.
     public void ApplyPayload(int severity, string title, string body)
     {
         MessageKind kind = severity switch
@@ -189,14 +188,14 @@ public sealed partial class HudOverlayWindow : Window
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
 
-        // Windowing — tronc commun émis ici après le MoveAndResize.
-        // L'ancrage est "absolute" : la position est calculée par
-        // HudOverlayManager.ComputeSlotPositionPx en fonction du HUD
-        // principal + slot, mais ce calcul est invisible côté window —
-        // on capture la position effective sans inventer un anchor
-        // logique qui appartient au manager. La spécialisation
-        // OverlaySlotAssigned (qui porte le slot) est émise côté
-        // manager où l'index slot est connu.
+        // Windowing: common trunk emitted here after MoveAndResize. The anchor
+        // is "absolute": the position is computed by
+        // HudOverlayManager.ComputeSlotPositionPx from the main HUD + slot, but
+        // that calculation is invisible on the window side. We capture the
+        // effective position without inventing a logical anchor that belongs
+        // to the manager. The OverlaySlotAssigned specialization (which
+        // carries the slot) is emitted on the manager side, where the slot
+        // index is known.
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud-overlay", "absolute");
     }
 
@@ -218,13 +217,13 @@ public sealed partial class HudOverlayWindow : Window
     // both the fade and the proximity arming are complete.
     public void FadeIn(Action? onComplete = null)
     {
-        // Axe 2 — FadeInStarted (scope="overlay"). Le from_alpha vient du
-        // ctor qui pose alpha=0 via SetLayeredWindowAttributes ; on lit
-        // _fade?.CurrentAlpha pour rester exact si un FadeIn subséquent
-        // est déclenché (le manager actuel ne le fait pas mais une future
-        // évolution pourrait). Durée 150 ms = LayeredAlphaAnimator.Duration
-        // privé du WindowSlideAnimator (Duration constante, mirror du
-        // FADE_IN_MS de HudWindow).
+        // Axis 2: FadeInStarted (scope="overlay"). from_alpha comes from the
+        // ctor, which sets alpha=0 through SetLayeredWindowAttributes; read
+        // _fade?.CurrentAlpha to stay exact if a subsequent FadeIn is
+        // triggered (the current manager does not do that, but a future
+        // evolution could). Duration 150 ms = private
+        // LayeredAlphaAnimator.Duration of WindowSlideAnimator (constant
+        // Duration, mirror of HudWindow's FADE_IN_MS).
         byte fromAlpha = _fade?.CurrentAlpha ?? 0;
         DeckleHudSource.Log.FadeInStarted("overlay", 150, fromAlpha, MAX_ALPHA);
 

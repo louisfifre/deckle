@@ -2,68 +2,66 @@ using System.Diagnostics.Tracing;
 
 namespace Deckle.Diagnostics;
 
-// Sub-provider transverse — marshalling dispatcher (`DispatcherQueue.
-// TryEnqueue`) significatif vers le UI thread. Sans cet event transverse,
-// un deadlock UI ou une latence anormale de marshalling se devine au mieux
-// par corrélation indirecte avec les jalons métier ; un site qui rate son
-// enqueue silencieusement (queue déjà fermée) n'a pas non plus de trace
-// systématique. La primitive est strictement non-métier (un wiring de
-// plateforme côté `Microsoft.UI.Dispatching`) et consommée par plusieurs
-// modules avec exactement le même set de paramètres — promotion en sub-
-// provider transverse au sens du critère à deux clauses de la fiche
-// `reference--eventsource-convention--1.2.md` §*Sub-providers transverses*.
+// Cross-cutting sub-provider: significant dispatcher marshalling
+// (`DispatcherQueue.TryEnqueue`) to the UI thread. Without this cross-cutting
+// event, a UI deadlock or abnormal marshalling latency can at best be guessed
+// through indirect correlation with business milestones; a site whose enqueue
+// silently fails (queue already closed) also has no systematic trace. The
+// primitive is strictly non-business (platform wiring on the
+// `Microsoft.UI.Dispatching` side) and consumed by several modules with
+// exactly the same parameter set: promotion to cross-cutting sub-provider
+// under the two-clause criterion in `reference--eventsource-convention--1.2.md`
+// §*Cross-cutting sub-providers*.
 //
-// Hérite aussi de l'event historique `DispatcherEnqueueRejected` migré
-// depuis `DeckleShellSource` — l'event ne décrivait pas une opération
-// shell, il décrivait un rejet de dispatcher transverse à tout module qui
-// marshale vers le UI thread. Sa place naturelle est ici, à côté du
-// tronc `MarshalQueued` / `MarshalCompleted`.
+// Also inherits the historical `DispatcherEnqueueRejected` event migrated from
+// `DeckleShellSource`: the event did not describe a shell operation, it
+// described a dispatcher rejection cross-cutting every module that marshals to
+// the UI thread. Its natural place is here, next to the
+// `MarshalQueued` / `MarshalCompleted` trunk.
 //
-// Pattern « tronc commun + events spécialisés » (cf. 1.2 §*Convention*).
-// `MarshalQueued` + `MarshalCompleted` sont le tronc émis par tout site
-// significatif autour d'un `TryEnqueue`. `MarshalTimeout` est l'event
-// spécialisé du cas anormal où le callback n'a jamais couru dans un
-// délai borné — aucun site câblé activement dans cette passe, déclaré
-// pour figer la signature avant que la détection ne soit ajoutée.
-// `DispatcherEnqueueRejected` est l'event spécialisé du cas où le
-// `TryEnqueue` retourne false (queue shut down) — l'event existait déjà
-// en legacy sous `DeckleShellSource`, simplement repositionné ici.
+// "Common trunk + specialized events" pattern (see 1.2 §*Convention*).
+// `MarshalQueued` + `MarshalCompleted` are the trunk emitted by every
+// significant site around a `TryEnqueue`. `MarshalTimeout` is the specialized
+// event for the abnormal case where the callback never ran within a bounded
+// delay: no site is actively wired in this pass; it is declared to freeze the
+// signature before detection is added. `DispatcherEnqueueRejected` is the
+// specialized event for the case where `TryEnqueue` returns false (queue shut
+// down): the event already existed in legacy under `DeckleShellSource`, simply
+// repositioned here.
 //
-// Vocabulaire fermé `operation` (à étendre ici si un nouveau site
-// significatif émerge — pas d'opération ad-hoc côté call site) :
-//   "ui-update"         — mise à jour d'un contrôle XAML depuis un
-//                         thread non-UI, ou tweak d'un template part
-//                         différé Low après matérialisation
-//   "window-show"       — affichage d'une fenêtre depuis un thread non-UI
-//   "feedback-display"  — affichage HUD ou overlay depuis un thread non-UI
-//   "log-append"        — append d'une entrée dans la LogWindow
-//   "settings-reload"   — rechargement des settings UI suite à un Changed
-//   "init-flag-clear"   — clear d'un flag `_initializing` après hydratation
-//                         des contrôles XAML par le constructeur de page,
-//                         différé Low pour attendre la fin du batch de
-//                         layout (pattern Settings/Playground pages)
-//   "engine-state-sync" — synchronisation UI suite à un événement engine
-//                         (état de pipeline, transition recording,
-//                         arrêt screen capture)
+// Closed `operation` vocabulary (extend here if a new significant site emerges;
+// no ad hoc operation on the call-site side):
+//   "ui-update"         — update of a XAML control from a non-UI thread, or a
+//                         Low-deferred template part tweak after materialization
+//   "window-show"       — showing a window from a non-UI thread
+//   "feedback-display"  — HUD or overlay display from a non-UI thread
+//   "log-append"        — appending an entry into the LogWindow
+//   "settings-reload"   — reloading settings UI after a Changed event
+//   "init-flag-clear"   — clearing an `_initializing` flag after page
+//                         constructor hydrates XAML controls, Low-deferred to
+//                         wait for the end of the layout batch
+//                         (Settings/Playground page pattern)
+//   "engine-state-sync" — UI synchronization after an engine event (pipeline
+//                         state, recording transition, screen capture stop)
 //   "warm-pass-tail"    — reserved legacy operation from the former HUD
 //                         composition warm pass. Do not reuse for a different
 //                         scheduling pattern.
 //
-// Convention `caller` : nom court du site logique
+// `caller` convention: short name of the logical site
 // ("transcription-engine", "ambient-pipeline", "hue-driver", "hud-window",
-// "log-window", "settings-window", etc.). Différencie deux marshallings
-// du même `operation` sur des sites distincts sans gonfler le schéma.
+// "log-window", "settings-window", etc.). Differentiates two marshallings of
+// the same `operation` on distinct sites without inflating the schema.
 //
-// Convention `queue_depth` : approximation de la profondeur de la queue
-// au moment du `TryEnqueue`. `DispatcherQueue` n'expose pas de getter
-// public — quand non-mesurable, passer `-1` comme sentinelle "unknown".
+// `queue_depth` convention: approximation of queue depth at `TryEnqueue` time.
+// `DispatcherQueue` exposes no public getter; when not measurable, pass `-1`
+// as the "unknown" sentinel.
 //
-// Convention `wait_ms` / `run_ms` :
-//   - `wait_ms` mesure le temps entre l'appel à `TryEnqueue` (Stopwatch
-//     démarré juste avant) et le début d'exécution du callback (Stopwatch
-//     lu en début de callback).
-//   - `run_ms` mesure le temps d'exécution du callback (Stopwatch
-//     redémarré en début de callback et lu en fin de callback).
+// `wait_ms` / `run_ms` convention:
+//   - `wait_ms` measures the time between the `TryEnqueue` call (Stopwatch
+//     started just before) and callback execution start (Stopwatch read at the
+//     beginning of the callback).
+//   - `run_ms` measures callback execution time (Stopwatch restarted at the
+//     beginning of the callback and read at the end).
 [EventSource(Name = "Deckle.Diagnostics.Threading")]
 public sealed class DeckleThreadingSource : DeckleEventSource
 {
@@ -77,11 +75,10 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     public const int EvtMarshalTimeout             = 3;
     public const int EvtDispatcherEnqueueRejected  = 4;
 
-    // Tronc — émis juste avant le `TryEnqueue` côté site appelant.
-    // Verbose parce que le marshalling est par nature fréquent (un Stop
-    // user typique enchaîne plusieurs marshals par état engine) et que
-    // la grep-abilité passe par les paramètres typés plutôt que par le
-    // niveau.
+    // Trunk: emitted just before `TryEnqueue` on the caller-site side. Verbose
+    // because marshalling is frequent by nature (a typical user Stop chains
+    // several marshals per engine state) and grep-ability goes through typed
+    // parameters rather than level.
     [Event(EvtMarshalQueued,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
@@ -92,11 +89,11 @@ public sealed class DeckleThreadingSource : DeckleEventSource
         WriteEvent(EvtMarshalQueued, operation, caller, queue_depth);
     }
 
-    // Tronc — émis en fin d'exécution du callback. `wait_ms` capture la
-    // latence de marshalling (temps que le callback a passé en queue),
-    // `run_ms` capture le temps d'exécution propre du callback. Une
-    // dérive de `wait_ms` signale un UI thread sous charge ; une dérive
-    // de `run_ms` signale un callback lourd qui devrait être découpé.
+    // Trunk: emitted at the end of callback execution. `wait_ms` captures
+    // marshalling latency (time the callback spent in the queue), `run_ms`
+    // captures the callback's own execution time. A `wait_ms` drift indicates
+    // a loaded UI thread; a `run_ms` drift indicates a heavy callback that
+    // should be split.
     [Event(EvtMarshalCompleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
@@ -107,12 +104,12 @@ public sealed class DeckleThreadingSource : DeckleEventSource
         WriteEvent(EvtMarshalCompleted, operation, caller, wait_ms, run_ms);
     }
 
-    // Spécialisé — cas anormal où le callback n'a jamais couru dans un
-    // délai borné (le marshal est resté en queue plus longtemps qu'un
-    // seuil applicatif). Warning parce que c'est une anomalie qui mérite
-    // une remontée même quand le Verbose n'est pas écouté. Aucun site
-    // actif aujourd'hui — déclaré pour figer la signature avant que la
-    // détection (timer dédié, watchdog par opération) ne soit câblée.
+    // Specialized: abnormal case where the callback never ran within a
+    // bounded delay (the marshal remained queued longer than an app threshold).
+    // Warning because this is an anomaly that deserves surfacing even when
+    // Verbose is not listened to. No active site today; declared to freeze the
+    // signature before detection (dedicated timer, per-operation watchdog) is
+    // wired.
     [Event(EvtMarshalTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
@@ -123,14 +120,13 @@ public sealed class DeckleThreadingSource : DeckleEventSource
         WriteEvent(EvtMarshalTimeout, operation, caller, waited_ms);
     }
 
-    // Spécialisé — `TryEnqueue` a retourné false (queue shut down).
-    // Migré depuis `DeckleShellSource.DispatcherEnqueueRejected` (event id
-    // 15 en legacy Shell). La signature publique reste identique pour ne
-    // pas casser les appelants existants — `caller_source` est le label
-    // libre que `DispatcherQueueExtensions.TryEnqueueOrLog` propage
-    // (ex. "HUD", "LOGWIN"), `reason` décrit la cause ou le contexte de
-    // l'enqueue perdu (ex. "queue-rejected", description courte de
-    // l'event qu'on tentait de marshaler).
+    // Specialized: `TryEnqueue` returned false (queue shut down). Migrated from
+    // `DeckleShellSource.DispatcherEnqueueRejected` (event id 15 in legacy
+    // Shell). The public signature stays identical to avoid breaking existing
+    // callers: `caller_source` is the free label propagated by
+    // `DispatcherQueueExtensions.TryEnqueueOrLog` (e.g. "HUD", "LOGWIN"),
+    // `reason` describes the cause or context of the lost enqueue (e.g.
+    // "queue-rejected", short description of the event being marshalled).
     [Event(EvtDispatcherEnqueueRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,

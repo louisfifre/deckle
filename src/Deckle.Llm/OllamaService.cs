@@ -5,32 +5,32 @@ using System.Text.Json.Serialization;
 
 namespace Deckle.Llm;
 
-// ─── Service d'administration Ollama ─────────────────────────────────────────
+// ─── Ollama Administration Service ──────────────────────────────────────────
 //
-// Wraps les endpoints REST d'Ollama pour la consultation et la gestion des
-// modèles installés : list, show, delete, health-check.
+// Wraps Ollama REST endpoints for viewing and managing installed models: list,
+// show, delete, health-check.
 //
-// Séparé de LlmService (qui ne fait que du /api/chat pour la réécriture).
+// Separate from LlmService (which only does /api/chat for rewriting).
 //
-// La création de modèles (`ollama create`, import GGUF) n'est pas wrappée :
-// elle se fait depuis le shell utilisateur via le CLI Ollama natif, puis la
-// section Models se rafraîchit pour les voir apparaître.
+// Model creation (`ollama create`, GGUF import) is not wrapped: it happens from
+// the user's shell through the native Ollama CLI, then the Models section
+// refreshes so they appear.
 //
-// La base URL est dérivée de LlmSettings.OllamaEndpoint en strippant
-// le path (/api/chat) pour ne garder que l'origin (http://localhost:11434).
+// The base URL is derived from LlmSettings.OllamaEndpoint by stripping the path
+// (/api/chat) to keep only the origin (http://localhost:11434).
 
 public sealed class OllamaService
 {
-    // Timeout généreux : DeleteModelAsync sur un gros modèle peut prendre
-    // du temps même en localhost. Les appels rapides utilisent leur propre
-    // CancellationTokenSource pour un timeout plus court.
+    // Generous timeout: DeleteModelAsync on a large model can take time even on
+    // localhost. Fast calls use their own CancellationTokenSource for a shorter
+    // timeout.
     static readonly HttpClient _http = new() { Timeout = TimeSpan.FromMinutes(2) };
 
     readonly Func<string> _getEndpoint;
 
     /// <param name="getEndpoint">
-    /// Callback qui retourne l'endpoint courant (ex. "http://localhost:11434/api/chat").
-    /// Appelé à chaque requête pour suivre les changements de config.
+    /// Callback returning the current endpoint (e.g. "http://localhost:11434/api/chat").
+    /// Called on each request to follow configuration changes.
     /// </param>
     public OllamaService(Func<string> getEndpoint)
     {
@@ -40,14 +40,14 @@ public sealed class OllamaService
     // ── Health check ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Vérifie qu'Ollama est joignable (timeout court). Opt-in retry via
-    /// <paramref name="maxAttempts"/> > 1 — couvre la race classique au boot
-    /// du PC où Deckle démarre avant qu'Ollama ait fini d'écouter sur 11434.
-    /// Default = 1 pour rester rapide sur les usages UI (Settings page),
-    /// le warmup engine demande explicitement maxAttempts=3.
+    /// Checks that Ollama is reachable (short timeout). Opt-in retry through
+    /// <paramref name="maxAttempts"/> > 1: covers the classic PC boot race
+    /// where Deckle starts before Ollama has finished listening on 11434.
+    /// Default = 1 to stay fast for UI uses (Settings page); engine warmup
+    /// explicitly requests maxAttempts=3.
     /// </summary>
-    /// <param name="maxAttempts">Nombre de tentatives. ≥ 1.</param>
-    /// <param name="retryDelay">Pause entre tentatives. Ignoré si maxAttempts=1.</param>
+    /// <param name="maxAttempts">Number of attempts. >= 1.</param>
+    /// <param name="retryDelay">Pause between attempts. Ignored if maxAttempts=1.</param>
     public async Task<bool> IsAvailableAsync(int maxAttempts = 1, TimeSpan? retryDelay = null)
     {
         if (maxAttempts < 1) maxAttempts = 1;
@@ -63,9 +63,8 @@ public sealed class OllamaService
             }
             catch
             {
-                // Retry sur exception (connection refused, timeout). Pas de
-                // log par essai pour ne pas polluer — le caller logge le
-                // résultat final.
+                // Retry on exception (connection refused, timeout). No log per
+                // attempt to avoid pollution; the caller logs the final result.
             }
 
             if (attempt < maxAttempts)
@@ -81,14 +80,13 @@ public sealed class OllamaService
     // ── Model listing ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Liste tous les modèles locaux. Le caller fournit un CancellationToken
-    /// pour borner la requête — le HttpClient partagé a un timeout de 30 min,
-    /// inadapté aux appels rapides comme list/show. Sans token, l'appel peut
-    /// pendre jusqu'à 30 min si Ollama est saturé (ex. benchmark GPU
-    /// concurrent).
-    /// HTTP errors et cancellation propagent au caller. JsonException est
-    /// trappée localement et retourne une liste vide — Ollama compromis ou
-    /// reverse proxy qui renvoie du HTML d'erreur ne doit pas casser l'UI.
+    /// Lists all local models. The caller provides a CancellationToken to bound
+    /// the request; the shared HttpClient has a 30 min timeout, unsuitable for
+    /// fast calls like list/show. Without a token, the call can hang up to
+    /// 30 min if Ollama is saturated (e.g. concurrent GPU benchmark).
+    /// HTTP errors and cancellation propagate to the caller. JsonException is
+    /// trapped locally and returns an empty list: compromised Ollama or a
+    /// reverse proxy returning error HTML must not break the UI.
     /// </summary>
     public async Task<List<OllamaModel>> ListModelsAsync(CancellationToken ct = default)
     {
@@ -111,9 +109,9 @@ public sealed class OllamaService
     // ── Model details ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Affiche les détails d'un modèle (template, system, params). Voir
-    /// ListModelsAsync pour la note sur le CancellationToken et le retour
-    /// fail-soft sur JSON invalide.
+    /// Shows details for a model (template, system, params). See
+    /// ListModelsAsync for the CancellationToken note and fail-soft return on
+    /// invalid JSON.
     /// </summary>
     public async Task<OllamaModelInfo?> ShowModelAsync(string name, CancellationToken ct = default)
     {
@@ -137,9 +135,9 @@ public sealed class OllamaService
     // ── Model deletion ──────────────────────────────────────────────────────
 
     /// <summary>
-    /// Supprime un modèle local. Voir ListModelsAsync pour la note sur le
-    /// CancellationToken — la suppression peut être lente sur gros modèles
-    /// donc le caller fournit un timeout généreux (10-30 s).
+    /// Deletes a local model. See ListModelsAsync for the CancellationToken
+    /// note: deletion can be slow on large models, so the caller provides a
+    /// generous timeout (10-30 s).
     /// </summary>
     public async Task DeleteModelAsync(string name, CancellationToken ct = default)
     {
@@ -153,7 +151,7 @@ public sealed class OllamaService
         resp.EnsureSuccessStatusCode();
     }
 
-    // ── Interne ─────────────────────────────────────────────────────────────
+    // ── Internal ────────────────────────────────────────────────────────────
 
     // Default fallback when the user-configured endpoint cannot be parsed
     // or is rejected by validation. Matches the Ollama out-of-the-box bind.
@@ -200,7 +198,7 @@ public sealed class OllamaService
         }
     }
 
-    // Options pour les endpoints qui sérialisent des DTOs typés (list, show, delete).
+    // Options for endpoints that serialize typed DTOs (list, show, delete).
     static readonly JsonSerializerOptions _jsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -210,7 +208,7 @@ public sealed class OllamaService
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
-// Requête générique avec champ "model" (API Ollama actuelle).
+// Generic request with "model" field (current Ollama API).
 public sealed class OllamaModelRequest
 {
     public string Model { get; set; } = "";

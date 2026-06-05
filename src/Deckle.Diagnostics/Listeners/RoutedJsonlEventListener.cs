@@ -9,37 +9,33 @@ using System.Text.Json;
 
 namespace Deckle.Diagnostics.Listeners;
 
-// Variante routée du JsonlEventListener. Identique en posture (un
-// listener, un predicate, un kindLabel, sérialisation JSON ligne-par-
-// événement, file lock pour éviter le tearing), sauf que la destination
-// n'est plus un chemin figé à l'instanciation : un `pathResolver` la
-// calcule par événement à partir de son EventEntry. Permet à un seul
-// listener de pulvériser un même flux d'events vers une arborescence
-// dynamique de `corpus.jsonl` bucketés (par exemple
+// Routed variant of JsonlEventListener. Same posture (one listener, one
+// predicate, one kindLabel, line-by-line JSON serialization, file lock to avoid
+// tearing), except the destination is no longer a path frozen at construction:
+// a `pathResolver` computes it per event from its EventEntry. Allows one
+// listener to spray the same event stream toward a dynamic tree of bucketed
+// `corpus.jsonl` files (for example
 // `corpus/raw/<tier>/corpus.jsonl` ou `corpus/rewrite-<name>-<id>/corpus.jsonl`
-// — voir ADR-0006).
+// — see ADR-0006).
 //
-// Pourquoi pas l'héritage du JsonlEventListener. Le brief de la refonte
-// corpus a tranché : pas d'héritage. Le mode "routé" n'est pas un
-// surcomportement du mode "plat" — c'est une autre stratégie de
-// destination. Exposer un mode mutable côté listener générique rendrait
-// l'API plus fragile pour zéro gain (les deux types portent une
-// poignée de lignes en commun et leur duplication contrôlée évite de
-// coupler leurs cycles d'évolution).
+// Why not inherit from JsonlEventListener. The corpus redesign brief decided:
+// no inheritance. The "routed" mode is not extra behavior over the "flat" mode;
+// it is another destination strategy. Exposing a mutable mode on the generic
+// listener side would make the API more fragile for zero gain (both types carry
+// a handful of lines in common, and their controlled duplication avoids
+// coupling their evolution cycles).
 //
-// Concurrence. Plusieurs paths résolus simultanément peuvent atterrir
-// sur des fichiers différents — un lock global sérialiserait des
-// écritures qui n'ont aucune raison de se bloquer mutuellement. Le
-// listener tient un `ConcurrentDictionary<string, object>` indexé par
-// path concret : chaque path a son propre lock, alloué paresseusement
-// au premier event qui y écrit. La création du dossier parent
-// piggyback sur ce même `GetOrAdd` — premier event d'un path crée
-// `Directory.CreateDirectory` une seule fois.
+// Concurrency. Several simultaneously resolved paths can land on different
+// files; a global lock would serialize writes that have no reason to block each
+// other. The listener keeps a `ConcurrentDictionary<string, object>` indexed by
+// concrete path: each path has its own lock, lazily allocated by the first
+// event that writes to it. Parent directory creation piggybacks on that same
+// `GetOrAdd`: the first event for a path calls `Directory.CreateDirectory`
+// once.
 //
-// Sécurité. Aucune validation des composants du path ici — c'est la
-// responsabilité du producer (ou du resolver) d'avoir sanitizé les
-// segments dynamiques avant qu'ils ne traversent. `CorpusPaths.Sanitize`
-// est l'utilitaire prévu à cet effet côté producer.
+// Safety. No path component validation here; it is the producer's (or
+// resolver's) responsibility to sanitize dynamic segments before they cross.
+// `CorpusPaths.Sanitize` is the intended producer-side utility for that.
 public sealed class RoutedJsonlEventListener : EventListener
 {
     private readonly Func<EventEntry, string> _pathResolver;
@@ -55,17 +51,16 @@ public sealed class RoutedJsonlEventListener : EventListener
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    // `pathResolver` — calcule la destination absolue à partir de
-    //                  l'EventEntry. Appelé pour chaque event qui passe
-    //                  le predicate. Doit retourner un chemin de fichier
-    //                  absolu et déjà sanitizé ; un retour null/vide
-    //                  fait silencieusement skiper l'event.
-    // `kindLabel`    — valeur écrite sous la clé "kind" du JSONL.
-    //                  Aligné sur les labels du JsonlEventListener
-    //                  classique ("log", "latency", …).
-    // `predicate`    — sélectionne quels events atterrissent dans ce
-    //                  listener. Reçoit l'EventEntry complète pour
-    //                  filtrer sur nom, niveau, keywords ou payload.
+    // `pathResolver` — computes the absolute destination from the EventEntry.
+    //                  Called for each event that passes the predicate. Must
+    //                  return an absolute, already-sanitized file path; a
+    //                  null/empty return silently skips the event.
+    // `kindLabel`    — value written under the JSONL "kind" key. Aligned with
+    //                  classic JsonlEventListener labels ("log", "latency",
+    //                  ...).
+    // `predicate`    — selects which events land in this listener. Receives
+    //                  the full EventEntry to filter on name, level, keywords,
+    //                  or payload.
     public RoutedJsonlEventListener(
         Func<EventEntry, string> pathResolver,
         string kindLabel,
@@ -116,10 +111,9 @@ public sealed class RoutedJsonlEventListener : EventListener
         }
         catch
         {
-            // Posture identique au JsonlEventListener : une I/O qui
-            // échoue ne doit pas faire crasher l'émetteur. Surfacer
-            // ce genre d'erreur (compteur, event dédié) est un futur
-            // chantier observabilité.
+            // Same posture as JsonlEventListener: failed I/O must not crash
+            // the emitter. Surfacing this kind of error (counter, dedicated
+            // event) is a future observability task.
         }
     }
 
@@ -145,12 +139,12 @@ public sealed class RoutedJsonlEventListener : EventListener
             jsonBytes = ms.ToArray();
         }
 
-        // Lock par path résolu — l'allocation paresseuse via GetOrAdd
-        // garantit qu'un même path est toujours associé au même
-        // object, et donc qu'un seul thread écrit à la fois dans ce
-        // fichier. Le delta création du dossier parent vit dans la
-        // factory du GetOrAdd : premier event d'un path crée
-        // Directory.CreateDirectory une fois, jamais re-vérifié.
+        // Lock by resolved path: lazy allocation through GetOrAdd guarantees
+        // that a given path is always associated with the same object, and
+        // therefore that only one thread writes to that file at a time. The
+        // parent directory creation delta lives in the GetOrAdd factory: the
+        // first event for a path calls Directory.CreateDirectory once, never
+        // re-checked.
         object lockObj = _pathLocks.GetOrAdd(path, p =>
         {
             string? parent = Path.GetDirectoryName(p);
@@ -187,9 +181,8 @@ public sealed class RoutedJsonlEventListener : EventListener
             case Guid g:                     writer.WriteString(name, g.ToString()); break;
             case DateTime dt:                writer.WriteString(name, dt.ToString("o", CultureInfo.InvariantCulture)); break;
             case DateTimeOffset dto:         writer.WriteString(name, dto.ToString("o", CultureInfo.InvariantCulture)); break;
-            // Fallback : EventSource ne permet qu'un set restreint de
-            // primitives dans les signatures [Event], donc on ne devrait
-            // jamais atteindre cette branche.
+            // Fallback: EventSource only allows a restricted set of primitives
+            // in [Event] signatures, so this branch should never be reached.
             default:                         writer.WriteString(name, value.ToString() ?? string.Empty); break;
         }
     }

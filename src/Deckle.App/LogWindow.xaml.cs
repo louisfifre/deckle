@@ -142,12 +142,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // Responsive TitleBar search (Task Manager pattern).
         SizeChanged += OnWindowSizeChanged;
 
-        // Theme — câble ActualThemeChanged sur la racine XAML. LogWindow
-        // est en thème système par défaut (pas de RequestedTheme forcé)
-        // mais reçoit le broadcast App.ApplyTheme via ApplyThemeToSingle
-        // au moment de sa création lazy, donc on observe à la fois les
-        // poses "app-init" du boot et les bascules system live (l'OS qui
-        // change Personalization pendant que la fenêtre est ouverte).
+        // Theme: wire ActualThemeChanged on the XAML root. LogWindow uses the
+        // system theme by default (no forced RequestedTheme) but receives the
+        // App.ApplyTheme broadcast through ApplyThemeToSingle when lazily
+        // created, so we observe both boot "app-init" applications and live
+        // system switches (the OS changing Personalization while the window is
+        // open).
         if (Content is FrameworkElement root)
         {
             _lastTheme = root.ActualTheme;
@@ -172,31 +172,30 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     public void Write(EventEntry entry)
     {
-        // Le listener émet sur le thread d'origine de l'EventSource ;
-        // wrap immédiat en LogEntry pour précomputer Text une seule
-        // fois (mêmes raisons que sur le pipeline legacy : éviter le
-        // formatage répété pendant la virtualisation ListView).
+        // The listener emits on the EventSource origin thread; immediately
+        // wrap as LogEntry to precompute Text once (same reasons as the legacy
+        // pipeline: avoid repeated formatting during ListView virtualization).
         var le = new LogEntry(entry);
         if (DispatcherQueue.HasThreadAccess) AddEntrySafe(le);
         else
         {
-            // Cross-thread (listener EventSource depuis un thread worker
-            // vers UI). On N'instrumente PAS ce marshalling : observer
-            // l'append du LogWindow réinjecte MarshalQueued/Completed
-            // dans le LogWindow, qui ré-append, qui ré-observe — effet
-            // observateur. La garde _emittingMarshal bride la récursion à
-            // ×3 au lieu du stack overflow, mais ×3 sur le firehose de
-            // capture suffit à noyer la fenêtre. TryEnqueueOrLog garde le
-            // warning de rejet utile, sans la paire Verbose.
+            // Cross-thread (EventSource listener from a worker thread to UI).
+            // Do NOT instrument this marshalling: observing the LogWindow
+            // append reinjects MarshalQueued/Completed into LogWindow, which
+            // re-appends, then re-observes: observer effect. The
+            // _emittingMarshal guard limits recursion to ×3 instead of stack
+            // overflow, but ×3 on the capture firehose is enough to drown the
+            // window. TryEnqueueOrLog keeps the useful rejection warning
+            // without the Verbose pair.
             DispatcherQueue.TryEnqueueOrLog(
                 () => AddEntrySafe(le),
                 "LOGWIN", "log entry");
         }
     }
 
-    // Pas exposé sur l'interface — ILogWindowSink est un canal write-only.
-    // Conservé en méthode publique pour l'usage interne (OnClearClick et
-    // futur reset programmatique). Marshalling identique à Write.
+    // Not exposed on the interface; ILogWindowSink is a write-only channel.
+    // Kept as a public method for internal use (OnClearClick and future
+    // programmatic reset). Same marshalling as Write.
     public void Clear()
     {
         if (DispatcherQueue.HasThreadAccess) ClearAll();
@@ -210,8 +209,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
         else
         {
-            // Threading — site cross-thread real (engine worker thread
-            // via StatusChanged vers UI). Même pattern que Write.
+            // Threading: real cross-thread site (engine worker thread through
+            // StatusChanged to UI). Same pattern as Write.
             DispatcherQueue.TryEnqueueObserved(
                 "ui-update", "log-window",
                 () => ApplyRecordingState(isRecording),
@@ -278,12 +277,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // process is allowed (the message-only tray host is same-process).
         NativeMethods.SetForegroundWindow(_hwnd);
 
-        // Windowing — émis post-Show pour capturer le rect effectif
-        // après que DWM ait positionné la fenêtre. L'ancrage est
-        // "Center" : LogWindow fait un AppWindow.Resize (960×1440) au
-        // ctor, Windows applique le centrage initial. Émis à chaque
-        // ShowAndActivate parce qu'un drag utilisateur entre deux
-        // ouvertures change le rect.
+        // Windowing: emitted post-Show to capture the effective rect after DWM
+        // has positioned the window. The anchor is "Center": LogWindow does an
+        // AppWindow.Resize (960×1440) in the ctor, Windows applies initial
+        // centering. Emitted on every ShowAndActivate because a user drag
+        // between two opens changes the rect.
         WindowingProbe.EmitWindowPositioned(_hwnd, "log", "Center");
     }
 
@@ -298,8 +296,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         {
             var removed = _entries[0];
             _entries.RemoveAt(0);
-            // Ref equality (LogEntry est une class) → pas de collision
-            // possible entre deux entries au même Text.
+            // Ref equality (LogEntry is a class) → no possible collision
+            // between two entries with the same Text.
             _visible.Remove(removed);
         }
 
@@ -313,13 +311,13 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private bool Matches(LogEntry e)
     {
-        // Progressive event + level filter (All > Activity > Alerts) :
-        //   All       → tout passe (events de n'importe quel niveau,
-        //               + rows télémétrie)
+        // Progressive event + level filter (All > Activity > Alerts):
+        //   All       → everything passes (events at any level
+        //               + telemetry rows)
         //   Activity  → Informational + Warning + Error + Critical,
-        //               hors Verbose et hors rows télémétrie
+        //               excluding Verbose and telemetry rows
         //   Alerts    → Warning + Error + Critical uniquement,
-        //               hors rows télémétrie
+        //               excluding telemetry rows
         if (!LogWindowFilter.IsVisible(e.Level, e.EventName, _filterMode)) return false;
 
         if (_currentSearch.Length > 0 &&

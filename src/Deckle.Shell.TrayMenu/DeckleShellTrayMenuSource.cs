@@ -3,22 +3,20 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Shell.TrayMenu;
 
-// Sub-provider du module Shell.TrayMenu — événements spécifiques au cycle
-// de vie et au pipeline d'ouverture du tray menu WinUI 3. Les événements
-// strictement de positionnement de fenêtre (anchor, monitor, popup
-// position, move-and-resize, foreground set) sont émis par le sub-provider
-// transverse `DeckleWindowingSource` via `WindowingProbe.Emit*` côté
-// `TrayContextMenuHost` — pas redoublés ici, conformément à la doctrine
-// `reference--eventsource-convention` qui réserve le positionnement
-// transverse au tronc commun Windowing.
+// Shell.TrayMenu module sub-provider: events specific to the WinUI 3 tray menu
+// lifecycle and open pipeline. Strict window-positioning events (anchor,
+// monitor, popup position, move-and-resize, foreground set) are emitted by the
+// cross-cutting `DeckleWindowingSource` sub-provider through
+// `WindowingProbe.Emit*` on the `TrayContextMenuHost` side, not duplicated
+// here, in line with the `reference--eventsource-convention` doctrine that
+// reserves cross-cutting positioning for the common Windowing trunk.
 //
-// Ce qui reste ici est tray-menu-spécifique et n'a pas d'équivalent dans
-// les sub-providers transverses : amorce du visual tree (prime cycle),
-// mesure individuelle des items du flyout, qualification du dismiss
-// (deactivated / flyout_closed / item_click:<libellé>), clic sur item.
-// Ces traces permettent de diagnostiquer les bugs propres au flyout
-// (mesure à 0, surplus de hauteur, dismiss intempestif) sans noyer le
-// signal sous le bruit Windowing.
+// What remains here is tray-menu-specific and has no equivalent in
+// cross-cutting sub-providers: visual tree priming (prime cycle), individual
+// flyout item measurement, dismiss qualification (deactivated / flyout_closed /
+// item_click:<label>), item click. These traces diagnose flyout-specific bugs
+// (zero measurement, excess height, unexpected dismiss) without drowning the
+// signal in Windowing noise.
 [EventSource(Name = "Deckle.Shell.TrayMenu")]
 public sealed class DeckleShellTrayMenuSource : DeckleEventSource
 {
@@ -129,7 +127,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtAmbientStateRead, is_on);
     }
 
-    // ── Mesure du flyout ──────────────────────────────────────────────────────
+    // ── Flyout measurement ───────────────────────────────────────────────────
 
     [Event(EvtItemMeasured,
            Level = EventLevel.Verbose,

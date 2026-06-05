@@ -1,35 +1,33 @@
 ---
-name: adr-0000-template
-description: "Fill-in template and worked example for Deckle ADRs. Not a decision — copy it to start one. Defers the format rules to session-save-context/format.md and the warrant test to grill-with-docs/ADR-FORMAT.md."
+description: Fill-in template for a Deckle ADR — copy it to start one, record no decision here.
 type: adr
 ---
 
-# ADR-0000 — Template (copy me; record no decision here)
+# ADR-NNNN — {short decision title}
 
 **Status** — template (never accepted)
 
-> In-repo example of the Deckle ADR shape. Copy this file to `NNNN-kebab-title.md`,
-> take the next free number, fill the four sections, delete this blockquote.
->
-> - Frontmatter, closed H2 vocabulary, file naming, RFC 2119 wording → [`session-save-context/format.md`](../../.claude/skills/session-save-context/format.md).
-> - When an ADR is warranted — **hard to reverse · surprising without context · a real trade-off** — → `grill-with-docs/ADR-FORMAT.md`.
-> - What is *not* an ADR — obvious choices visible in the code, temporary states, workarounds, POCs, experiments. The value of an ADR is the *why*, never the *what*.
-> - The log is append-only: never edit an accepted ADR. A reversed decision is a *new* ADR that supersedes the old one (`**Status** — superseded by ADR-NNNN`), the two linked.
+> Copy this file to `NNNN-kebab-title.md`, take the next free number, fill the sections, delete this
+> blockquote. Keep it pithy — an ADR is a decision and its *why*, not a design guide. Numbers are never
+> reused. Never edit an accepted ADR: a reversed decision is a **new** ADR that supersedes the old one
+> (flip the old to `**Status** — superseded by ADR-NNNN`, link both).
 
 ## Context
 
-The situation forcing a decision; the constraints; the why. Written for a reader who lacks the conversation that produced it.
-
-## Options considered
-
-- **A. …** — what it buys, what it costs.
-- **B. …** — …
-- **C. …** — …
+The forces in tension and the constraint that forces a decision — written for a reader who lacks the
+conversation that produced it. Value-neutral.
 
 ## Decision
 
-The retained option, stated plainly. MUST / SHOULD / MAY for normative weight. Record a low confidence level when the decision is made with one — it helps future reconsideration.
+The retained choice, in full sentences, active voice (« We will… »). MUST / SHOULD / MAY for normative
+weight. Record a low confidence level when the call is made with one — it helps future reconsideration.
 
 ## Consequences
 
-What becomes easier, harder, impossible. Reversibility and re-evaluation conditions when they exist.
+What becomes easier, harder, impossible — the negative consequences too. Reversibility and
+re-evaluation conditions when they exist.
+
+## Options considered  <!-- optional: only when the rejected alternative is the whole point -->
+
+- **A. …** — what it buys, what it costs.
+- **B. …** — …

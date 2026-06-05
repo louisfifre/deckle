@@ -6,26 +6,25 @@ using Deckle.Llm.Rewrite;
 
 namespace Deckle.Transcription.Corpus;
 
-// Fingerprint stable du template effectif d'un RewriteProfile, retournée
-// en hex SHA256 tronqué à 16 caractères. Permet aux analyses du corpus
-// rewrite d'invalider une cohorte quand l'utilisateur retouche le
-// SystemPrompt (ou un paramètre de génération) sans changer l'ID du
-// profil. L'ID identifie l'instance ; le hash identifie le contenu.
+// Stable fingerprint of a RewriteProfile's effective template, returned as
+// SHA256 hex truncated to 16 characters. Allows rewrite corpus analyses to
+// invalidate a cohort when the user edits the SystemPrompt (or a generation
+// parameter) without changing the profile ID. The ID identifies the instance;
+// the hash identifies the content.
 //
-// Champs inclus : Model, SystemPrompt, Temperature, NumCtxK, TopP,
-// RepeatPenalty. C'est l'ensemble des entrées qui modifient
-// sémantiquement la sortie d'Ollama pour une même entrée. Id et Name
-// ne sont pas inclus — ils sont déjà émis comme champs distincts de
-// l'event, et un rename ne change pas le contenu généré.
+// Included fields: Model, SystemPrompt, Temperature, NumCtxK, TopP,
+// RepeatPenalty. This is the set of inputs that semantically change Ollama
+// output for the same input. Id and Name are not included; they are already
+// emitted as distinct event fields, and a rename does not change generated
+// content.
 //
-// Séparateur  (US, Unit Separator) entre champs : caractère
-// non-imprimable réservé historiquement à ce rôle, ne peut pas
-// apparaître dans un texte saisi normalement, évite toute collision
-// avec un caractère présent dans le SystemPrompt.
+// Separator  (US, Unit Separator) between fields: a non-printable character
+// historically reserved for this role, cannot appear in normally typed text,
+// avoids any collision with a character present in the SystemPrompt.
 //
-// 16 chars hex = 8 octets de hash = 64 bits, largement assez pour
-// distinguer deux templates dans un corpus utilisateur (collision
-// 50% à ~5 milliards de templates distincts — hors de portée).
+// 16 hex chars = 8 hash bytes = 64 bits, easily enough to distinguish two
+// templates in a user corpus (50% collision at ~5 billion distinct templates:
+// out of reach).
 internal static class PromptTemplateHash
 {
     private const char Separator = '';
