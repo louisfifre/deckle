@@ -67,9 +67,13 @@ public sealed partial class TranscriptionEngine
         // instance. Null when disabled or when the model isn't present yet (a
         // missing model kicks off a one-time background download — this take runs
         // untrimmed, a later one picks it up).
-        SileroVad? vad = _host.Transcription.Streaming.SpeechTrim.Enabled
-            ? EnsureVadReady()
-            : null;
+        var trimCfg = _host.Transcription.Streaming.SpeechTrim;
+        SileroVad? vad = trimCfg.Enabled ? EnsureVadReady() : null;
+        // Surface the transient "enabled but the model isn't ready yet" state, so a
+        // take that ran untrimmed for that reason is explicit rather than inferred
+        // from absent SpeechTrimmed lines.
+        if (trimCfg.Enabled && vad is null)
+            DeckleWhispSource.Log.SpeechTrimNotReady();
 
         var channel = Channel.CreateUnbounded<Utterance>(new UnboundedChannelOptions
         {

@@ -119,4 +119,13 @@ public sealed partial class DeckleWhispSource
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadComplete, model_path);
     }
+
+    [Event(EvtSpeechTrimNotReady,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "SpeechTrim enabled but the VAD model isn't ready — this take runs untrimmed")]
+    public void SpeechTrimNotReady()
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimNotReady);
+    }
 }

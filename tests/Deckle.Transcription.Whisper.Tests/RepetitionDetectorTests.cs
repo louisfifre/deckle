@@ -80,4 +80,20 @@ public class RepetitionDetectorTests
         // three real segments still abort as period-1.
         Assert.Equal((5, 1), FirstAbort("stop", "", "stop", "   ", "stop"));
     }
+
+    [Fact]
+    public void ResetRestartsStreaksAcrossUtterances()
+    {
+        // The detector is reset between backend calls (one per utterance); a
+        // partial streak must not carry over, or the next utterance would abort on
+        // a single repeated word.
+        var detector = new RepetitionDetector();
+        Assert.False(detector.ObserveAndShouldAbort("stop", out _, out _)); // streak 1
+        Assert.False(detector.ObserveAndShouldAbort("stop", out _, out _)); // streak 2
+        detector.Reset();
+        // Without the reset, this third "stop" in a row would reach the threshold
+        // of 3 and abort; after it, the streak restarts and two more never do.
+        Assert.False(detector.ObserveAndShouldAbort("stop", out _, out _)); // streak 1
+        Assert.False(detector.ObserveAndShouldAbort("stop", out _, out _)); // streak 2
+    }
 }
