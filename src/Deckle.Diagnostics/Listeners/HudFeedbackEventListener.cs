@@ -50,7 +50,7 @@ public sealed class HudFeedbackEventListener : EventListener
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
         if (eventSource.Name is null) return;
-        if (!eventSource.Name.StartsWith("Deckle.", System.StringComparison.Ordinal)) return;
+        if (!eventSource.Name.StartsWith("Deckle-", System.StringComparison.Ordinal)) return;
 
         lock (_earlySources)
         {

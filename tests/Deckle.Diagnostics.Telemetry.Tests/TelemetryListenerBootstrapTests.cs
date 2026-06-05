@@ -9,7 +9,7 @@ namespace Deckle.Diagnostics.Telemetry.Tests;
 [Trait("Category", "regression")]
 public sealed class TelemetryListenerBootstrapTests
 {
-    [EventSource(Name = "Deckle.Diagnostics.Telemetry.Tests")]
+    [EventSource(Name = "Deckle-TelemetryTests")]
     private sealed class TestTelemetrySource : EventSource
     {
         public static readonly TestTelemetrySource Log = new();
@@ -61,7 +61,7 @@ public sealed class TelemetryListenerBootstrapTests
             TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
             TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(
-                (provider, _, _) => provider == "Deckle.Diagnostics.Telemetry.Tests");
+                (provider, _, _) => provider == "Deckle-TelemetryTests");
 
             TestTelemetrySource.Log.InfoLine("dropped-by-filter");
 
@@ -100,11 +100,11 @@ public sealed class TelemetryListenerBootstrapTests
 
             Assert.True(File.Exists(appLog));
             JsonObject json = JsonNode.Parse(File.ReadAllText(appLog))!.AsObject();
-            Assert.Equal("Deckle.Diagnostics.Telemetry.Tests", json["provider"]!.GetValue<string>());
+            Assert.Equal("Deckle-TelemetryTests", json["provider"]!.GetValue<string>());
             Assert.Equal("InfoLine", json["event"]!.GetValue<string>());
             Assert.Equal("Informational", json["level"]!.GetValue<string>());
-            Assert.Equal("DIAGNOSTICS.TELEMETRY.TESTS", json["source"]!.GetValue<string>());
-            Assert.Contains("[DIAGNOSTICS.TELEMETRY.TESTS]", json["line"]!.GetValue<string>());
+            Assert.Equal("TELEMETRYTESTS", json["source"]!.GetValue<string>());
+            Assert.Contains("[TELEMETRYTESTS]", json["line"]!.GetValue<string>());
             Assert.Contains("journal-metadata", json["line"]!.GetValue<string>());
         }
         finally

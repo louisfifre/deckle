@@ -190,7 +190,7 @@ public class DispatcherQueueExtensionsTests
     // via the queue): exactly the value the guard must bound to 1.
     private sealed class ReentrantThreadingListener : EventListener
     {
-        private const string ProviderName = "Deckle.Diagnostics.Threading";
+        private const string ProviderName = "Deckle-Threading";
 
         private readonly DispatcherQueue _queue;
         private readonly int _maxReentry;

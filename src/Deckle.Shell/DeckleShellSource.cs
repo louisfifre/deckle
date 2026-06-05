@@ -19,7 +19,7 @@ namespace Deckle.Shell;
 // rejection crossing any module that marshals to the UI thread. Id 15 remains
 // an intentional gap here to preserve stability for the remaining Shell event
 // ids (listeners filtering by id have nothing to update).
-[EventSource(Name = "Deckle.Shell")]
+[EventSource(Name = "Deckle-Shell")]
 public sealed class DeckleShellSource : DeckleEventSource
 {
     public static readonly DeckleShellSource Log = new();

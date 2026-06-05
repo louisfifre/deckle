@@ -16,7 +16,7 @@ public class DeckleVisionSourceTests
     [Fact]
     public void HeartbeatEmitsVerboseOnHeartbeatKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Vision");
+        using var listener = new TestEventListener("Deckle-Vision");
 
         DeckleVisionSource.Log.Heartbeat(
             period_ms: 1000, frames_acquired: 60, frames_dropped: 0,
@@ -32,7 +32,7 @@ public class DeckleVisionSourceTests
     [Fact]
     public void HeartbeatCarriesPercentilesInOrder()
     {
-        using var listener = new TestEventListener("Deckle.Vision");
+        using var listener = new TestEventListener("Deckle-Vision");
 
         DeckleVisionSource.Log.Heartbeat(
             period_ms: 1000, frames_acquired: 15, frames_dropped: 2,

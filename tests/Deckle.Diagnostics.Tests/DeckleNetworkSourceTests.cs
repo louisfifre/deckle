@@ -17,7 +17,7 @@ public class DeckleNetworkSourceTests
     [Fact]
     public void NetworkStatusChangedEmitsVerboseOnNetworkKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Network");
+        using var listener = new TestEventListener("Deckle-Network");
 
         DeckleNetworkSource.Log.NetworkStatusChanged(
             connected: true, profile: "Wi-Fi Home", ipv4_count: 2, ipv6_count: 1);
@@ -31,7 +31,7 @@ public class DeckleNetworkSourceTests
     [Fact]
     public void NetworkStatusChangedCarriesAllFourParametersInOrder()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Network");
+        using var listener = new TestEventListener("Deckle-Network");
 
         DeckleNetworkSource.Log.NetworkStatusChanged(
             connected: false, profile: "(none)", ipv4_count: 0, ipv6_count: 0);

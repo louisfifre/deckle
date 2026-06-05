@@ -45,7 +45,7 @@ namespace Deckle.Diagnostics;
 // start and OCE throw when a local Stopwatch is available at the call site.
 // When the age is not measurable (no Stopwatch in scope, operation without a
 // time anchor), pass -1: it is explicit and grep-able.
-[EventSource(Name = "Deckle.Diagnostics.Cancellation")]
+[EventSource(Name = "Deckle-Cancellation")]
 public sealed class DeckleCancellationSource : DeckleEventSource
 {
     public static readonly DeckleCancellationSource Log = new();
@@ -62,7 +62,7 @@ public sealed class DeckleCancellationSource : DeckleEventSource
     // several cascading OCEs on worker threads) and grep-ability goes through
     // typed parameters rather than level. Keyword `Lifecycle` because there is
     // no dedicated `Cancellation` keyword: the "cancellation" nature is
-    // carried by the provider itself (Deckle.Diagnostics.Cancellation), not by
+    // carried by the provider itself (Deckle-Cancellation), not by
     // an additional keyword bit.
     [Event(EvtOperationCancelled,
            Level = EventLevel.Verbose,

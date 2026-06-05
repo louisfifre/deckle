@@ -12,7 +12,7 @@ public class DeckleAmbientSourceTests
     [Fact]
     public void ExternalChangeStoppedSeparatesInfoFromTechnicalDetail()
     {
-        using var listener = new TestEventListener("Deckle.Ambient");
+        using var listener = new TestEventListener("Deckle-Ambient");
 
         DeckleAmbientSource.Log.ExternalChangeStopped();
         DeckleAmbientSource.Log.ExternalChangeStoppedDetail(
@@ -39,7 +39,7 @@ public class DeckleAmbientSourceTests
     [Fact]
     public void EchoIgnoredEmitsVerboseDetail()
     {
-        using var listener = new TestEventListener("Deckle.Ambient");
+        using var listener = new TestEventListener("Deckle-Ambient");
 
         DeckleAmbientSource.Log.EchoIgnored(
             v1_id: "5",

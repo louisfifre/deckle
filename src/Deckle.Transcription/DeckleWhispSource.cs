@@ -30,7 +30,7 @@ namespace Deckle.Transcription;
 //      UserFeedbackEmitted(severity, title, body, role) channel: severity
 //      0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay. The mapping
 //      lives on the HudFeedbackEventListener side.
-[EventSource(Name = "Deckle.Whisp")]
+[EventSource(Name = "Deckle-Whisp")]
 public sealed partial class DeckleWhispSource : DeckleEventSource
 {
     public static readonly DeckleWhispSource Log = new();

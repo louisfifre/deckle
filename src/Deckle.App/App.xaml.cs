@@ -57,14 +57,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (!AmbientCaptureGate.IsActive) return false;
 
         bool captureFamily =
-            provider == "Deckle.Ambient"
-            || provider == "Deckle.Vision"
-            || provider == "Deckle.Lighting"
+            provider == "Deckle-Ambient"
+            || provider == "Deckle-Vision"
+            || provider == "Deckle-Lighting"
             // Cross-cutting sub-provider, but during capture it is the dominant
             // firehose: ResourceAcquired/Released per frame (capture-loop D3D11
             // textures + frame-sampler). Outside capture the gate is closed, so
             // HUD Resource events pass normally.
-            || provider == "Deckle.Diagnostics.Resource";
+            || provider == "Deckle-Resource";
         if (!captureFamily) return false;
 
         // Toggle off: capture is silent. No Verbose events, including the
@@ -78,7 +78,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // per-tick push (Push keyword) and per-frame D3D11 acquire/release
         // (Resource sub-provider) stay silent, even when opted in.
         if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) != 0) return true;
-        if (provider == "Deckle.Diagnostics.Resource") return true;
+        if (provider == "Deckle-Resource") return true;
         return false;
     }
 

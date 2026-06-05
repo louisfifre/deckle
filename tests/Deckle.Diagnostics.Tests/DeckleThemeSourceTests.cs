@@ -17,7 +17,7 @@ public class DeckleThemeSourceTests
     [Fact]
     public void ThemeChangedEmitsVerboseOnThemeKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Theme");
+        using var listener = new TestEventListener("Deckle-Theme");
 
         DeckleThemeSource.Log.ThemeChanged(
             surface: "settings", from: "Light", to: "Dark", source: "user");

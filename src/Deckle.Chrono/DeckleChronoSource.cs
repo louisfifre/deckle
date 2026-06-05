@@ -12,7 +12,7 @@ namespace Deckle.Chrono;
 // instrument the chronometer (for example when the surface wave redesigns the
 // HUD), this will be extended with additional [Event] entries while respecting
 // the brief's doctrine: one [Event] per distinct operation.
-[EventSource(Name = "Deckle.Chrono")]
+[EventSource(Name = "Deckle-Chrono")]
 public sealed class DeckleChronoSource : DeckleEventSource
 {
     public static readonly DeckleChronoSource Log = new();

@@ -82,7 +82,7 @@ public sealed class RoutedJsonlEventListener : EventListener
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
         if (eventSource.Name is null) return;
-        if (!eventSource.Name.StartsWith("Deckle.", StringComparison.Ordinal)) return;
+        if (!eventSource.Name.StartsWith("Deckle-", StringComparison.Ordinal)) return;
 
         lock (_earlySources)
         {

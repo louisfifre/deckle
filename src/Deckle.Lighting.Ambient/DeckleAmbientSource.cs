@@ -9,10 +9,10 @@ namespace Deckle.Lighting.Ambient;
 // surface (Hue pair button + group list), and module settings persistence
 // (AmbientSettingsService).
 //
-// Provider Name = "Deckle.Ambient": short choice to keep the LogWindow
+// Provider Name = "Deckle-Ambient": short choice to keep the LogWindow
 // [AMBIENT] tag. The low-level Hue driver keeps its separate provider in
 // Deckle.Lighting.
-[EventSource(Name = "Deckle.Ambient")]
+[EventSource(Name = "Deckle-Ambient")]
 public sealed class DeckleAmbientSource : DeckleEventSource
 {
     public static readonly DeckleAmbientSource Log = new();

@@ -62,7 +62,7 @@ namespace Deckle.Diagnostics;
 //     beginning of the callback).
 //   - `run_ms` measures callback execution time (Stopwatch restarted at the
 //     beginning of the callback and read at the end).
-[EventSource(Name = "Deckle.Diagnostics.Threading")]
+[EventSource(Name = "Deckle-Threading")]
 public sealed class DeckleThreadingSource : DeckleEventSource
 {
     public static readonly DeckleThreadingSource Log = new();

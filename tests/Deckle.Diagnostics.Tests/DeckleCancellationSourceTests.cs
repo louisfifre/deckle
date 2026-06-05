@@ -15,7 +15,7 @@ public class DeckleCancellationSourceTests
     [Fact]
     public void OperationCancelledEmitsVerboseOnLifecycleKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Cancellation");
+        using var listener = new TestEventListener("Deckle-Cancellation");
 
         DeckleCancellationSource.Log.OperationCancelled(
             operation: "whisp-transcribe", reason: "user", age_ms: 1500);
@@ -32,7 +32,7 @@ public class DeckleCancellationSourceTests
     [Fact]
     public void OperationCancelledAcceptsUnknownAgeSentinel()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Cancellation");
+        using var listener = new TestEventListener("Deckle-Cancellation");
 
         DeckleCancellationSource.Log.OperationCancelled(
             operation: "llm-warmup", reason: "shutdown", age_ms: -1);

@@ -9,10 +9,10 @@ namespace Deckle.Vision;
 // DEVICE_REMOVED, timeout, backoff), and resilience (duplication recreate,
 // resize detected).
 //
-// The source label in LogWindow remains "SCREEN" through "Deckle.Vision" →
+// The source label in LogWindow remains "SCREEN" through "Deckle-Vision" →
 // "VISION" derivation: slight display-side rename compared with legacy
 // `LogSource.Screen`, expected for the migration.
-[EventSource(Name = "Deckle.Vision")]
+[EventSource(Name = "Deckle-Vision")]
 public sealed class DeckleVisionSource : DeckleEventSource
 {
     public static readonly DeckleVisionSource Log = new();

@@ -16,7 +16,7 @@ public class DeckleResourceSourceTests
     [Fact]
     public void ResourceAcquiredEmitsVerboseOnResourceKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Resource");
+        using var listener = new TestEventListener("Deckle-Resource");
 
         DeckleResourceSource.Log.ResourceAcquired(
             kind: "d3d11-texture", handle: 0xDEADBEEF, size_bytes: 1024, owner: "capture-loop");
@@ -34,7 +34,7 @@ public class DeckleResourceSourceTests
     [Fact]
     public void ResourceReleasedEmitsVerboseOnResourceKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Resource");
+        using var listener = new TestEventListener("Deckle-Resource");
 
         DeckleResourceSource.Log.ResourceReleased(
             kind: "composition-visual", handle: 0xCAFEL, age_ms: 250, owner: "hud-message");
@@ -48,7 +48,7 @@ public class DeckleResourceSourceTests
     [Fact]
     public void ResourceLeakSuspectEmitsWarningOnResourceKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Resource");
+        using var listener = new TestEventListener("Deckle-Resource");
 
         DeckleResourceSource.Log.ResourceLeakSuspect(
             kind: "dxgi-resource", handle: 0x1234L, age_ms: 60000,

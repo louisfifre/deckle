@@ -17,7 +17,7 @@ public class DeckleThreadingSourceTests
     [Fact]
     public void MarshalQueuedEmitsVerboseOnThreadingKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Threading");
+        using var listener = new TestEventListener("Deckle-Threading");
 
         DeckleThreadingSource.Log.MarshalQueued(
             operation: "log-append", caller: "log-window", queue_depth: -1);
@@ -34,7 +34,7 @@ public class DeckleThreadingSourceTests
     [Fact]
     public void MarshalCompletedCarriesWaitMsAndRunMsInOrder()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Threading");
+        using var listener = new TestEventListener("Deckle-Threading");
 
         DeckleThreadingSource.Log.MarshalCompleted(
             operation: "ui-update", caller: "hud-window", wait_ms: 3, run_ms: 12);
@@ -49,7 +49,7 @@ public class DeckleThreadingSourceTests
     [Fact]
     public void MarshalTimeoutEmitsWarningOnThreadingKeyword()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Threading");
+        using var listener = new TestEventListener("Deckle-Threading");
 
         DeckleThreadingSource.Log.MarshalTimeout(
             operation: "feedback-display", caller: "hud-window", waited_ms: 5000);
@@ -63,7 +63,7 @@ public class DeckleThreadingSourceTests
     [Fact]
     public void DispatcherEnqueueRejectedKeepsLegacyShellSignature()
     {
-        using var listener = new TestEventListener("Deckle.Diagnostics.Threading");
+        using var listener = new TestEventListener("Deckle-Threading");
 
         DeckleThreadingSource.Log.DispatcherEnqueueRejected(
             caller_source: "LOGWIN", reason: "log entry");

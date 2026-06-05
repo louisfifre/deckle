@@ -17,7 +17,7 @@ namespace Deckle.Shell.TrayMenu;
 // item_click:<label>), item click. These traces diagnose flyout-specific bugs
 // (zero measurement, excess height, unexpected dismiss) without drowning the
 // signal in Windowing noise.
-[EventSource(Name = "Deckle.Shell.TrayMenu")]
+[EventSource(Name = "Deckle-TrayMenu")]
 public sealed class DeckleShellTrayMenuSource : DeckleEventSource
 {
     public static readonly DeckleShellTrayMenuSource Log = new();

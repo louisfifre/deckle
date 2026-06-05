@@ -8,8 +8,8 @@ namespace Deckle.App.Diagnostics;
 // precomputes the displayed text (`HH:mm:ss.fff [SOURCE] message`) so
 // ListView virtualization does not reformat on every row realization.
 //
-// The `Provider` → source label mapping ("Deckle.Whisp" → "WHISP",
-// "Deckle.App" → "APP") follows the short uppercase convention inherited
+// The `Provider` → source label mapping ("Deckle-Whisp" → "WHISP",
+// "Deckle-App" → "APP") follows the short uppercase convention inherited
 // from legacy LogSource. It lives in Deckle.Diagnostics.LogLineFormatter so
 // LogWindow and app.jsonl produce the same rendered line.
 //

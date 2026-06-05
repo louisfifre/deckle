@@ -16,7 +16,7 @@ namespace Deckle.Diagnostics.Tests;
 [Trait("Category", "integration")]
 public sealed class JsonlEventListenerRotationTests
 {
-    [EventSource(Name = "Deckle.RotationTest")]
+    [EventSource(Name = "Deckle-RotationTest")]
     private sealed class RotationTestSource : EventSource
     {
         public static readonly RotationTestSource Log = new();
@@ -34,7 +34,7 @@ public sealed class JsonlEventListenerRotationTests
         new(
             filePath:  active,
             kindLabel: "log",
-            predicate: e => e.Provider == "Deckle.RotationTest",
+            predicate: e => e.Provider == "Deckle-RotationTest",
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines));
 

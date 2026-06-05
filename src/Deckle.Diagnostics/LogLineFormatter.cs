@@ -20,7 +20,7 @@ public static class LogLineFormatter
 
     public static string MapSource(string providerName)
     {
-        const string prefix = "Deckle.";
+        const string prefix = "Deckle-";
 
         if (string.Equals(providerName, "Deckle", StringComparison.Ordinal))
             return "APP";
