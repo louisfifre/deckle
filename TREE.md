@@ -3,10 +3,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 
 ```
 ├── .claude/
-│   ├── agents/
-│   │   ├── expert-dotnet-software-engineer.agent.md
-│   │   ├── plan.agent.md
-│   │   └── winui3-expert.agent.md
 │   └── skills/
 │       ├── deckle-commits/
 │       │   └── SKILL.md  — deckle-commits [skill] Commit grain and the few deviations from the universal convention. Invoke befor…
@@ -31,43 +27,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   └── SKILL.md  — deckle-versioning [skill] How versions are numbered and the changelog written. Invoke before cutting a ve…
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — microsoft-docs Query official Microsoft documentation to find concepts, tutorials, and code ex…
-│       ├── senior-architect/
-│       │   ├── references/
-│       │   │   ├── architecture_patterns.md
-│       │   │   ├── system_design_workflows.md
-│       │   │   └── tech_decision_guide.md
-│       │   ├── scripts/
-│       │   │   ├── architecture_diagram_generator.py
-│       │   │   ├── dependency_analyzer.py
-│       │   │   └── project_architect.py
-│       │   └── SKILL.md
-│       ├── senior-frontend/
-│       │   ├── references/
-│       │   │   ├── frontend_best_practices.md
-│       │   │   ├── nextjs_optimization_guide.md
-│       │   │   └── react_patterns.md
-│       │   ├── scripts/
-│       │   │   ├── bundle_analyzer.py
-│       │   │   ├── component_generator.py
-│       │   │   └── frontend_scaffolder.py
-│       │   └── SKILL.md
-│       ├── senior-fullstack/
-│       │   ├── references/
-│       │   │   ├── architecture_patterns.md
-│       │   │   ├── development_workflows.md
-│       │   │   └── tech_stack_guide.md
-│       │   ├── scripts/
-│       │   │   ├── code_quality_analyzer.py
-│       │   │   ├── fullstack_scaffolder.py
-│       │   │   └── project_scaffolder.py
-│       │   └── SKILL.md
-│       ├── tdd/
-│       │   ├── deep-modules.md
-│       │   ├── interface-design.md
-│       │   ├── mocking.md
-│       │   ├── refactoring.md
-│       │   ├── SKILL.md
-│       │   └── tests.md
 │       ├── ux-copy/
 │       │   └── SKILL.md  — ux-copy Write or review UX copy — microcopy, error messages, empty states, CTAs. Trigge…
 │       ├── ux-designer/
@@ -202,24 +161,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── __init__.py
 │   │   └── build_html.py
 │   ├── build_corpus_voxtral_val_30.py
-│   ├── CLAUDE.md  — claude-benchmark [agent-instructions] Doctrine for the benchmark/ suite — an autonomous box that measures quality and…
+│   ├── CLAUDE.md  — [agent-instructions] Autonomous box measuring ASR backend quality and performance on private corpora…
 │   ├── Directory.Build.props
-│   ├── JOURNAL.md  — journal-benchmark [module-journal] Journal daté du module benchmark : décisions intermédiaires, hypothèses, learni…
+│   ├── JOURNAL.md  — [module-journal] Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
 │   ├── pregenerate_groundtruth_gemini.py
 │   └── README.md  — readme-benchmark [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
 ├── docs/
-│   ├── adr/
-│   │   ├── 0000-template.md  — adr-0000-template [adr] Fill-in template and worked example for Deckle ADRs. Not a decision — copy it t…
-│   │   ├── 0001-lazy-secondary-windows.md  — adr-0001-lazy-secondary-windows [adr] Records that Deckle builds its secondary WinUI 3 windows (Settings, Logs, Playg…
-│   │   ├── 0002-resolve-assets-via-userdataroot.md  — adr-0002-resolve-assets-via-userdataroot [adr] Records that Deckle resolves native runtime assets and speech models from UserD…
-│   │   ├── 0003-adopt-eventsource-for-observability.md  — adr-0003-adopt-eventsource-for-observability [adr] Records the move of Deckle's observability pillar from a home-grown TelemetrySe…
-│   │   ├── 0004-diagnostics-parent-logging-telemetry-children.md  — adr-0004-diagnostics-parent-logging-telemetry-children [adr] Records the three-module split of observability: a Deckle.Diagnostics parent ca…
-│   │   ├── 0005-pluggable-asr-backend-via-iasrbackend.md  — adr-0005-pluggable-asr-backend-via-iasrbackend [adr] Records the split of transcription into a backend-agnostic Deckle.Transcription…
-│   │   ├── 0006-normalized-corpus-as-ml-dataset.md  — adr-0006-normalized-corpus-as-ml-dataset [adr] Records the corpus redesign into a normalized ML dataset: separate ASR and rewr…
-│   │   ├── 0007-self-describing-app-journal-with-rotation.md  — adr-0007-self-describing-app-journal-with-rotation [adr] Records that the persisted app journal (app.jsonl) becomes the self-describing…
-│   │   └── 0008-raw-capture-and-in-house-dsp.md  — adr-0008-raw-capture-and-in-house-dsp [adr] Records that Deckle keeps raw mic capture (waveInOpen) and conditions the signa…
-│   └── reviews/
-│       └── review--commentaires-code--2026-06-01.md
+│   └── adr/
+│       ├── 0000-template.md  — adr-0000-template [adr] Fill-in template and worked example for Deckle ADRs. Not a decision — copy it t…
+│       ├── 0001-lazy-secondary-windows.md  — adr-0001-lazy-secondary-windows [adr] Records that Deckle builds its secondary WinUI 3 windows (Settings, Logs, Playg…
+│       ├── 0002-resolve-assets-via-userdataroot.md  — adr-0002-resolve-assets-via-userdataroot [adr] Records that Deckle resolves native runtime assets and speech models from UserD…
+│       ├── 0003-adopt-eventsource-for-observability.md  — adr-0003-adopt-eventsource-for-observability [adr] Records the move of Deckle's observability pillar from a home-grown TelemetrySe…
+│       ├── 0004-diagnostics-parent-logging-telemetry-children.md  — adr-0004-diagnostics-parent-logging-telemetry-children [adr] Records the three-module split of observability: a Deckle.Diagnostics parent ca…
+│       ├── 0005-pluggable-asr-backend-via-iasrbackend.md  — adr-0005-pluggable-asr-backend-via-iasrbackend [adr] Records the split of transcription into a backend-agnostic Deckle.Transcription…
+│       ├── 0006-normalized-corpus-as-ml-dataset.md  — adr-0006-normalized-corpus-as-ml-dataset [adr] Records the corpus redesign into a normalized ML dataset: separate ASR and rewr…
+│       ├── 0007-self-describing-app-journal-with-rotation.md  — adr-0007-self-describing-app-journal-with-rotation [adr] Records that the persisted app journal (app.jsonl) becomes the self-describing…
+│       └── 0008-raw-capture-and-in-house-dsp.md  — adr-0008-raw-capture-and-in-house-dsp [adr] Records that Deckle keeps raw mic capture (waveInOpen) and conditions the signa…
 ├── scripts/
 │   ├── hooks/
 │   │   ├── pre-commit
@@ -273,7 +230,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
-│   │   ├── CLAUDE.md  — claude-deckle-app [agent-instructions] Doctrine for Deckle.App, the WinUI 3 host module that composes all Deckle.* mod…
+│   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
 │   │   ├── LogWindow.xaml
@@ -300,7 +257,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
-│   │   ├── CLAUDE.md  — claude-deckle-audio [agent-instructions] Doctrine for Deckle.Audio, the microphone capture and audio telemetry module. R…
+│   │   ├── CLAUDE.md  — [agent-instructions] Audio module — the home for capturing and analyzing sound: microphone capture,…
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
@@ -310,7 +267,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Catalog/
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
-│   │   ├── CLAUDE.md  — claude-deckle-catalog [agent-instructions] Doctrine for Deckle.Catalog, the UI resource catalog module (localized strings…
+│   │   ├── CLAUDE.md  — [agent-instructions] UI resource catalog — localized strings (Loc / x:Uid) and Segoe Fluent glyphs,…
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
 │   │   └── Loc.cs
@@ -384,7 +341,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
-│   │   ├── CLAUDE.md  — claude-deckle-hud [agent-instructions] Doctrine for Deckle.Hud, the HUD window, overlay manager, and composite shadow…
+│   │   ├── CLAUDE.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
 │   │   ├── HudChrono.xaml
@@ -417,7 +374,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
 │   │   │   └── ConsoleUi.cs
-│   │   ├── CLAUDE.md
+│   │   ├── CLAUDE.md  — [agent-instructions] NativeAOT console stub that downloads, installs, and uninstalls Deckle per-user…
 │   │   ├── Deckle.Installer.csproj
 │   │   └── Program.cs
 │   ├── Deckle.Lighting/
@@ -436,7 +393,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueProjectedState.cs
 │   │   │   └── HueRestLightOutput.cs
-│   │   ├── CLAUDE.md  — claude-deckle-lighting [agent-instructions] Doctrine for Deckle.Lighting, the Philips Hue driver (REST CLIP v1/v2) and colo…
+│   │   ├── CLAUDE.md  — [agent-instructions] Generalist light-output driver — the ILightOutput abstraction and the REST Hue…
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── ILightOutput.cs
@@ -524,7 +481,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudPage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
 │   │   │   └── PlaygroundWindow.xaml.cs
-│   │   ├── CLAUDE.md  — claude-deckle-playground [agent-instructions] Doctrine for Deckle.Playground, the dev-only tuning and diagnostics sandbox sur…
+│   │   ├── CLAUDE.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
 │   │   ├── Deckle.Playground.csproj
 │   │   ├── DecklePlaygroundSource.cs
 │   │   └── PlaygroundShell.cs
@@ -539,7 +496,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ApplicationLogConsentDialog.cs
 │   │   ├── AppSettings.cs
 │   │   ├── AudioCorpusConsentDialog.cs
-│   │   ├── CLAUDE.md  — claude-deckle-settings [agent-instructions] Doctrine for Deckle.Settings, the settings UI shell and per-module persistence…
+│   │   ├── CLAUDE.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
 │   │   ├── CorpusConsentDialog.cs
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
@@ -566,7 +523,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
-│   │   ├── CLAUDE.md  — claude-deckle-setup [agent-instructions] Doctrine for Deckle.Setup, the first-run wizard and provisioning primitives (na…
+│   │   ├── CLAUDE.md  — [agent-instructions] First-run wizard provisioning ASR runtimes and models — owns the flow, delegate…
 │   │   ├── Deckle.Setup.csproj
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── InstallingPage.xaml
@@ -594,7 +551,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
-│   │   ├── JOURNAL.md  — [module-journal] Dated journal for Deckle.Shell.TrayMenu — in-flight diagnostics, observations m…
+│   │   ├── JOURNAL.md  — [module-journal] Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and f…
 │   │   ├── TrayContextMenuHost.cs
 │   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Transcription/
@@ -624,7 +581,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   └── WhisperViewModel.cs
-│   │   ├── CLAUDE.md  — claude-deckle-transcription [agent-instructions] Doctrine for Deckle.Transcription, the backend-agnostic transcription orchestra…
+│   │   ├── CLAUDE.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
@@ -648,13 +605,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Setup/
 │   │   │   ├── NativeRuntime.cs
 │   │   │   └── SpeechModels.cs
-│   │   ├── CLAUDE.md  — claude-deckle-transcription-whisper [agent-instructions] Doctrine for Deckle.Transcription.Whisper, the IAsrBackend implementation via w…
+│   │   ├── CLAUDE.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── RepetitionDetector.cs
 │   │   └── WhisperBackend.cs
 │   └── Deckle.Vision/
 │       ├── CapturedFrame.cs
-│       ├── CLAUDE.md  — claude-deckle-vision [agent-instructions] Doctrine for Deckle.Vision, the DXGI screen capture and frame analysis module (…
+│       ├── CLAUDE.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
@@ -663,7 +620,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── FrameSampler.Readback.cs
 │       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
-│       ├── JOURNAL.md  — journal-vision [module-journal] Journal daté du module Deckle.Vision — diagnostics de la capture DXGI Output Du…
+│       ├── JOURNAL.md  — [module-journal] Dated diagnostics for Deckle.Vision — the DXGI capture freeze on an HDR toggle…
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
 │       ├── ScreenCaptureInterop.D3D11.cs
@@ -725,9 +682,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
-├── AGENTS.md  — codex-deckle-bridge [agent-instructions] Minimal Codex bridge for Deckle. Claude-maintained files remain the source of t…
+├── AGENTS.md  — [agent-instructions] Minimal Codex bridge for Deckle — Claude-maintained files remain the source of…
 ├── CHANGELOG.md
-├── CLAUDE.md  — claude-deckle-root [agent-instructions] Root agent-instructions for Deckle (local Windows utility, .NET 10 / WinUI 3).…
+├── CLAUDE.md  — [agent-instructions] Root agent-instructions for Deckle — identity, hard rules, posture, and where t…
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
@@ -735,10 +692,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── Directory.Build.props
 ├── Directory.Packages.props
 ├── INSTALL.md
-├── JOURNAL.md  — journal-deckle [project-journal] Journal daté du projet Deckle : avancées techniques validées, observations en c…
+├── JOURNAL.md  — [project-journal] Dated project notes for Deckle — cross-cutting findings too dated for a CLAUDE.…
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
-├── SECURITY.md
 └── TREE.md
 ```
