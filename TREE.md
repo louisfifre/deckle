@@ -685,6 +685,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TranscriptionPreprocessorTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
+│   │   ├── ChronoTimerTests.cs
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   └── DeckleChronoSourceTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
