@@ -4,9 +4,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ```
 ├── .claude/
 │   ├── agents/
-│   │   ├── expert-dotnet-software-engineer.agent.md  — Expert .NET software engineer mode instructions Provide expert .NET software engineering guidance using modern software design…
-│   │   ├── plan.agent.md  — Plan Mode - Strategic Planning & Architecture Strategic planning and architecture assistant focused on thoughtful analysis be…
-│   │   └── winui3-expert.agent.md  — WinUI 3 Expert Expert agent for WinUI 3 and Windows App SDK development. Prevents common UWP-t…
+│   │   ├── expert-dotnet-software-engineer.agent.md
+│   │   ├── plan.agent.md
+│   │   └── winui3-expert.agent.md
 │   └── skills/
 │       ├── deckle-commits/
 │       │   └── SKILL.md  — deckle-commits [skill] Commit grain and the few deviations from the universal convention. Invoke befor…
@@ -40,7 +40,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   │   ├── architecture_diagram_generator.py
 │       │   │   ├── dependency_analyzer.py
 │       │   │   └── project_architect.py
-│       │   └── SKILL.md  — senior-architect Complete toolkit for senior architect with modern tools and best practices.
+│       │   └── SKILL.md
 │       ├── senior-frontend/
 │       │   ├── references/
 │       │   │   ├── frontend_best_practices.md
@@ -50,7 +50,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   │   ├── bundle_analyzer.py
 │       │   │   ├── component_generator.py
 │       │   │   └── frontend_scaffolder.py
-│       │   └── SKILL.md  — senior-frontend Frontend development skill for React, Next.js, TypeScript, and Tailwind CSS app…
+│       │   └── SKILL.md
 │       ├── senior-fullstack/
 │       │   ├── references/
 │       │   │   ├── architecture_patterns.md
@@ -60,13 +60,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   │   ├── code_quality_analyzer.py
 │       │   │   ├── fullstack_scaffolder.py
 │       │   │   └── project_scaffolder.py
-│       │   └── SKILL.md  — senior-fullstack Complete toolkit for senior fullstack with modern tools and best practices.
+│       │   └── SKILL.md
 │       ├── tdd/
 │       │   ├── deep-modules.md
 │       │   ├── interface-design.md
 │       │   ├── mocking.md
 │       │   ├── refactoring.md
-│       │   ├── SKILL.md  — tdd Test-driven development with red-green-refactor loop. Use when user wants to bu…
+│       │   ├── SKILL.md
 │       │   └── tests.md
 │       ├── ux-copy/
 │       │   └── SKILL.md  — ux-copy Write or review UX copy — microcopy, error messages, empty states, CTAs. Trigge…
@@ -578,7 +578,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SummaryPage.xaml.cs
 │   ├── Deckle.Shell/
 │   │   ├── AutostartService.cs
-│   │   ├── CLAUDE.md  — claude-deckle-shell [agent-instructions] Doctrine for Deckle.Shell, the system shell module (message-only host, tray, gl…
+│   │   ├── CLAUDE.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs

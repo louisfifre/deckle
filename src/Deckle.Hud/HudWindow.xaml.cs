@@ -70,6 +70,7 @@ public sealed partial class HudWindow : Window
 
     private HudState _state = HudState.Hidden;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _messageHideTimer;
+    private int _zOrderProbeGeneration;
 
     // Proximity rollup: sample-by-sample collection through UpdateProximity
     // (WM_INPUT, ~125 Hz) over the full HUD visibility window. A summary is
@@ -557,8 +558,9 @@ public sealed partial class HudWindow : Window
         WindowingProbe.EmitWindowZOrderState(
             _hwnd, "hud", "after_setwindowpos_topmost",
             setposOk, setposError);
-        EmitDelayedZOrderState("after_setwindowpos_topmost_50ms", 50, setposOk, setposError);
-        EmitDelayedZOrderState("after_setwindowpos_topmost_250ms", 250, setposOk, setposError);
+        int zOrderProbeGeneration = ++_zOrderProbeGeneration;
+        EmitDelayedZOrderState("after_setwindowpos_topmost_50ms", 50, zOrderProbeGeneration, setposOk, setposError);
+        EmitDelayedZOrderState("after_setwindowpos_topmost_250ms", 250, zOrderProbeGeneration, setposOk, setposError);
 
         // Windowing: emitted after MoveAndResize + ShowWindow to capture the
         // effective post-DWM rect. `anchor` reflects the
@@ -571,7 +573,7 @@ public sealed partial class HudWindow : Window
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud", anchor);
     }
 
-    private void EmitDelayedZOrderState(string stage, int delayMs, bool setposOk, int setposError)
+    private void EmitDelayedZOrderState(string stage, int delayMs, int generation, bool setposOk, int setposError)
     {
         var timer = DispatcherQueue.CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(delayMs);
@@ -579,6 +581,7 @@ public sealed partial class HudWindow : Window
         timer.Tick += (sender, _) =>
         {
             sender.Stop();
+            if (generation != _zOrderProbeGeneration) return;
             WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", stage, setposOk, setposError);
         };
         timer.Start();
