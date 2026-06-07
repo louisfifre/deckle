@@ -9,6 +9,25 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). Versions `0.2.0` and later are reconstructed from the git history;
 earlier development predates this file.
 
+## [0.4.3] — 2026-06-07
+
+Silence-aware streaming transcription.
+
+### Added
+
+- **Voice-activity detection.** An external Silero VAD becomes the
+  speech-detection toggle on the Recording page: it trims silence from each
+  streaming utterance, with its parameters exposed and a dynamic hangover ramp
+  that holds the tail of speech before closing a span. The model is downloaded
+  on demand, SHA-256–verified and self-heals if the on-disk file is corrupt.
+- **Repetition guard.** Transcription output now detects AB-AB period-2
+  repetition loops.
+
+### Fixed
+
+- **Inference robustness.** A failed Silero session construction disposes its
+  options cleanly instead of leaking them.
+
 ## [0.4.2] — 2026-06-05
 
 Maintenance release for the build and repository doctrine.
@@ -119,6 +138,7 @@ Initial tracked release: hotkey voice transcription (whisper.cpp), the timer
 HUD, system tray and global hotkeys, settings, and EventSource-based
 observability.
 
+[0.4.3]: https://github.com/louisfifre/deckle/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/louisfifre/deckle/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/louisfifre/deckle/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/louisfifre/deckle/compare/v0.3.5...v0.4.0
