@@ -39,7 +39,7 @@ public sealed class SileroVad : IDisposable
 
     public SileroVad(string modelPath)
     {
-        _options = new SessionOptions
+        var options = new SessionOptions
         {
             // Tiny recurrent model — thread-pool overhead would dominate; run it
             // single-threaded and sequential.
@@ -47,7 +47,20 @@ public sealed class SileroVad : IDisposable
             InterOpNumThreads = 1,
             ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
         };
-        _session = new InferenceSession(modelPath, _options);
+        try
+        {
+            _session = new InferenceSession(modelPath, options);
+        }
+        catch
+        {
+            // A malformed/corrupt model makes the InferenceSession ctor throw. The
+            // instance is never returned, so Dispose() never runs — release the
+            // native SessionOptions handle here instead of leaking it to the
+            // finalizer, then let the failure propagate to EnsureVadReady.
+            options.Dispose();
+            throw;
+        }
+        _options = options;
     }
 
     // Detects the speech spans within a 16 kHz mono buffer, in sample indices
