@@ -3,8 +3,10 @@ using System.Collections.Generic;
 
 namespace Deckle.Inference.Onnx;
 
-// Pure port of Silero's get_speech_timestamps decision logic (snakers4/silero-vad
-// v5, the default max_speech_duration_s = inf path). The reference function is two
+// Pure port of Silero's get_speech_timestamps decision logic (snakers4/silero-vad,
+// the default max_speech_duration_s = inf path). This is the model-independent
+// post-processing, so it is unaffected by which silero_vad.onnx the wrapper loads.
+// The reference function is two
 // phases: phase 1 runs the ONNX model per window to get one speech probability
 // each (that lives in SileroVad), phase 2 — this — turns the probability sequence
 // into padded speech [start,end) sample ranges. Kept model-free so it is unit

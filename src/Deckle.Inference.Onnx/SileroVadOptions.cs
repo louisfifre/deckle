@@ -1,7 +1,7 @@
 namespace Deckle.Inference.Onnx;
 
 // Tunables for the Silero VAD speech-timestamp extraction, defaulting to the
-// reference get_speech_timestamps values (snakers4/silero-vad v5). The transcription
+// reference get_speech_timestamps values (snakers4/silero-vad). The transcription
 // module surfaces these four upstream (Streaming.SpeechTrim, Whisper settings page),
 // so a take builds an instance from the user's values rather than the static Default.
 // Durations are milliseconds; the state machine converts them to 16 kHz sample counts.

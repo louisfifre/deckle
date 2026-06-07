@@ -35,24 +35,31 @@ public sealed partial class TranscriptionEngine
 
         if (File.Exists(modelPath))
         {
-            try
+            if (FileMatchesExpectedSha(modelPath))
             {
-                _vad = new SileroVad(modelPath);
-                DeckleWhispSource.Log.SpeechTrimVadLoaded(modelPath);
-                return _vad;
+                try
+                {
+                    _vad = new SileroVad(modelPath);
+                    DeckleWhispSource.Log.SpeechTrimVadLoaded(modelPath);
+                    return _vad;
+                }
+                catch (Exception ex)
+                {
+                    _vadLoadFailed = true;
+                    DeckleWhispSource.Log.SpeechTrimVadUnavailable($"load failed: {ex.GetType().Name}: {ex.Message}");
+                    // Bytes match the pinned build yet it won't construct — should not
+                    // happen, but delete defensively so a later launch retries clean.
+                    try { File.Delete(modelPath); } catch { /* best effort */ }
+                    return null;
+                }
             }
-            catch (Exception ex)
-            {
-                _vadLoadFailed = true;
-                DeckleWhispSource.Log.SpeechTrimVadUnavailable($"load failed: {ex.GetType().Name}: {ex.Message}");
-                // A model that fails to load is corrupt or incompatible. Delete it so
-                // the next launch re-downloads (now checksum-verified) instead of
-                // re-finding the same bad file forever — File.Exists above would
-                // otherwise short-circuit the download for good. Best effort: if the
-                // delete itself fails the feature simply stays off, never worse.
-                try { File.Delete(modelPath); } catch { /* best effort */ }
-                return null;
-            }
+
+            // Present but not the pinned build — an older model version (so a version
+            // bump actually takes effect instead of silently keeping the old file) or
+            // a corrupt copy. File.Exists alone can't tell the difference; drop it and
+            // fall through to the verified download.
+            DeckleWhispSource.Log.SpeechTrimVadUnavailable("on-disk model checksum mismatch — re-fetching");
+            try { File.Delete(modelPath); } catch { /* best effort */ }
         }
 
         // Model absent — provision it once in the background; this take runs
@@ -87,6 +94,27 @@ public sealed partial class TranscriptionEngine
         catch (Exception ex)
         {
             DeckleWhispSource.Log.SpeechTrimVadUnavailable($"download failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    // True when the on-disk file hashes to the pinned SHA-256. Reading + hashing a
+    // ~2.3 MB file is milliseconds and happens at most once per engine (the loaded
+    // session is cached), so it is cheap insurance that the file on disk is exactly
+    // the build we expect — not an older version or a corrupt copy.
+    private static bool FileMatchesExpectedSha(string modelPath)
+    {
+        try
+        {
+            using FileStream stream = File.OpenRead(modelPath);
+            byte[] hash = System.Security.Cryptography.SHA256.HashData(stream);
+            return string.Equals(
+                Convert.ToHexString(hash), SileroVadModel.Sha256, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            // Can't read or hash it — treat as a mismatch so it gets replaced.
+            DeckleWhispSource.Log.SpeechTrimVadUnavailable($"checksum read failed: {ex.GetType().Name}: {ex.Message}");
+            return false;
         }
     }
 

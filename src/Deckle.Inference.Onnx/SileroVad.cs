@@ -6,12 +6,12 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 
 namespace Deckle.Inference.Onnx;
 
-// Silero VAD v5 over ONNX Runtime (CPU). Wraps a long-lived InferenceSession and
+// Silero VAD v6.2 over ONNX Runtime (CPU). Wraps a long-lived InferenceSession and
 // the recurrent state Silero threads window-to-window. Loaded once and reused
 // across utterances; Reset() (called at the start of every detection) clears the
 // recurrent state so each buffer is independent.
 //
-// The model is the unified v5 silero_vad.onnx (16 kHz / 8 kHz in one file), run
+// The model is the unified v6.2 silero_vad.onnx (16 kHz / 8 kHz in one file), run
 // at 16 kHz: 512-sample windows, each fed with a 64-sample context prefix carried
 // from the previous window (the reference OnnxWrapper behaviour — feeding the bare
 // 512 reportedly runs too but is expected to shift the probabilities off the
