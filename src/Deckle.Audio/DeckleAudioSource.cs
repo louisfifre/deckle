@@ -118,13 +118,16 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtLowAudioDetected, recording_ms, min_sustained_ms, dbfs_threshold);
     }
 
+    // gc0/gc1/gc2 are the collections that happened DURING the lagging
+    // iteration (the one whose body caused the pile-up), not a running total
+    // since recording start — so a non-zero value indicts that GC directly.
     [Event(EvtCaptureLagDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "capture lag | buffers_ready={0} iter={1} wait_ms={2} prev_iter_ms={3} gc0={4}->{5} gc1={6}->{7} gc2={8}->{9}")]
-    public void CaptureLagDetected(int buffers_ready, long iter, long wait_ms, long prev_iter_ms, int gc0_start, int gc0_now, int gc1_start, int gc1_now, int gc2_start, int gc2_now)
+           Message = "capture lag | buffers_ready={0} iter={1} wait_ms={2} prev_iter_ms={3} gc0={4} gc1={5} gc2={6}")]
+    public void CaptureLagDetected(int buffers_ready, long iter, long wait_ms, long prev_iter_ms, int gc0, int gc1, int gc2)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected, buffers_ready, iter, wait_ms, prev_iter_ms, gc0_start, gc0_now, gc1_start, gc1_now, gc2_start, gc2_now);
+        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected, buffers_ready, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
     }
 
     [Event(EvtDurationCapReached,

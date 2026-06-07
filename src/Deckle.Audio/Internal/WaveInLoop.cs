@@ -43,10 +43,11 @@ internal static class WaveInLoop
     // emission via EmitSubWindows. Returns the full byte buffer +
     // DrainDuration measured around the post-Stop drain phase.
     //
-    // The TEMP DIAG capture-lag instrumentation block (iter / wait_ms /
-    // prev_iter_ms / gc deltas) is preserved verbatim from the legacy
-    // Record() body — it's referenced in
-    // memory/project_capture_lag and is sacred. Do not "clean up".
+    // The capture-lag instrumentation block (iter / wait_ms / prev_iter_ms /
+    // gc deltas) exists to attribute a cause when the consumer falls behind
+    // the producer — see the CaptureLagDetected emission below for how each
+    // field decodes. Keep it: the lag is intermittent, so the probe earns its
+    // place until the cause is pinned and fixed.
     public static PumpResult Pump(
         IntPtr            hWaveIn,
         IntPtr            hEvent,
@@ -100,17 +101,23 @@ internal static class WaveInLoop
         int  recordingMs               = 0;
         bool userVoiceConfirmed        = false;
         bool lowAudioWarned            = false;
-        bool captureLagWarned          = false;
+        int  captureLagCount           = 0;
 
         // TEMP DIAG (capture-lag investigation) — strip after collecting
         // 5–10 occurrences in the wild. Tells us which of GC pause /
         // CPU preemption / cold-start / heavy inline work caused the
         // 3-buffer pile-up.
+        //
+        // diagLastIterMs / diagLastIterGcN hold the PREVIOUS iteration's body
+        // cost (duration + per-generation GC count), measured around the scan
+        // loop only — the wait is excluded (it surfaces in wait_ms instead).
+        // The lag check reads them, so a fired line describes the iteration
+        // that actually let the buffers pile up.
         long diagIterationCount = 0;
         long diagLastIterMs     = 0;
-        int  diagGcStart0       = System.GC.CollectionCount(0);
-        int  diagGcStart1       = System.GC.CollectionCount(1);
-        int  diagGcStart2       = System.GC.CollectionCount(2);
+        int  diagLastIterGc0    = 0;
+        int  diagLastIterGc1    = 0;
+        int  diagLastIterGc2    = 0;
         var  diagWaitWatch      = new System.Diagnostics.Stopwatch();
         var  diagIterWatch      = new System.Diagnostics.Stopwatch();
 
@@ -122,6 +129,13 @@ internal static class WaveInLoop
 
             diagIterWatch.Restart();
             diagIterationCount++;
+
+            // Per-iteration GC snapshot — counted over this body only, so the
+            // delta stored at the end attributes a GC to the exact iteration
+            // that lagged rather than to the whole take.
+            int diagIterGc0 = System.GC.CollectionCount(0);
+            int diagIterGc1 = System.GC.CollectionCount(1);
+            int diagIterGc2 = System.GC.CollectionCount(2);
 
             int bufferDoneCount = 0;
             for (int i = 0; i < nBuffers; i++)
@@ -193,27 +207,24 @@ internal static class WaveInLoop
                 }
             }
 
-            // Capture lag — fire once per recording when the ring buffer is
-            // really under pressure. With 4 buffers × 50 ms and a 100 ms
-            // wait, finding 1-2 buffers WHDR_DONE per iteration is normal;
-            // 3+ means the consumer fell at least 150 ms behind the producer.
+            // Capture lag — fire up to 10 times per recording when the ring
+            // buffer is really under pressure. With 4 buffers × 50 ms and a
+            // 100 ms wait, finding 1-2 buffers WHDR_DONE per iteration is
+            // normal; 3+ means the consumer fell at least 150 ms behind the
+            // producer. A handful of samples (not one) lets us see whether the
+            // cause recurs and whether it always wears the same signature.
             //
             // TEMP DIAG fields decode the cause:
             //   iter         — iteration index when the lag fires (low → cold-start)
             //   wait_ms      — time spent in WaitForSingleObject (high → GC pause / CPU preemption during sleep)
             //   prev_iter_ms — time the previous scan loop took (high → heavy inline work let buffers pile up)
-            //   gcN          — GC count delta from start of recording (gen1/gen2 bump → STW pause)
-            if (!captureLagWarned && bufferDoneCount >= 3)
+            //   gcN          — collections during that lagging iteration (non-zero, esp. gen2 → a STW pause caused it; all zero → inline work did)
+            if (captureLagCount < 10 && bufferDoneCount >= 3)
             {
-                captureLagWarned = true;
-                int diagGcNow0 = System.GC.CollectionCount(0);
-                int diagGcNow1 = System.GC.CollectionCount(1);
-                int diagGcNow2 = System.GC.CollectionCount(2);
+                captureLagCount++;
                 DeckleAudioSource.Log.CaptureLagDetected(
                     bufferDoneCount, diagIterationCount, diagWaitMs, diagLastIterMs,
-                    diagGcStart0, diagGcNow0,
-                    diagGcStart1, diagGcNow1,
-                    diagGcStart2, diagGcNow2);
+                    diagLastIterGc0, diagLastIterGc1, diagLastIterGc2);
             }
 
             // Duration cap — forces a stop as if the user had pressed the
@@ -235,7 +246,10 @@ internal static class WaveInLoop
                 break;
             }
 
-            diagLastIterMs = diagIterWatch.ElapsedMilliseconds;
+            diagLastIterMs  = diagIterWatch.ElapsedMilliseconds;
+            diagLastIterGc0 = System.GC.CollectionCount(0) - diagIterGc0;
+            diagLastIterGc1 = System.GC.CollectionCount(1) - diagIterGc1;
+            diagLastIterGc2 = System.GC.CollectionCount(2) - diagIterGc2;
         }
 
         // Drain phase starts here — measured separately from the in-loop
