@@ -9,6 +9,17 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). Versions `0.2.0` and later are reconstructed from the git history;
 earlier development predates this file.
 
+## [0.4.4] — 2026-06-07
+
+A recording chrono that starts on your voice.
+
+### Fixed
+
+- **Recording chrono.** The on-screen timer started a touch before capture
+  actually began, drifting ahead of the audio by the microphone's open latency;
+  it now starts the instant capture goes live, so the elapsed time matches the
+  recording.
+
 ## [0.4.3] — 2026-06-07
 
 Silence-aware streaming transcription.
@@ -138,6 +149,7 @@ Initial tracked release: hotkey voice transcription (whisper.cpp), the timer
 HUD, system tray and global hotkeys, settings, and EventSource-based
 observability.
 
+[0.4.4]: https://github.com/louisfifre/deckle/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/louisfifre/deckle/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/louisfifre/deckle/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/louisfifre/deckle/compare/v0.4.0...v0.4.1
