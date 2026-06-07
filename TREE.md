@@ -38,33 +38,31 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   │   └── visual-design.md
 │       │   ├── AGENTS.md
 │       │   └── SKILL.md  — ux-designer Expert UX design assistance for user research, wireframing, prototyping, and de…
-│       ├── winui-app/
-│       │   ├── agents/
-│       │   │   └── openai.yaml
-│       │   ├── assets/
-│       │   │   └── winui.png
-│       │   ├── references/
-│       │   │   ├── _sections.md
-│       │   │   ├── accessibility-input-and-localization.md
-│       │   │   ├── build-run-and-launch-verification.md
-│       │   │   ├── community-toolkit-controls-and-helpers.md
-│       │   │   ├── controls-layout-and-adaptive-ui.md
-│       │   │   ├── foundation-environment-audit-and-remediation.md
-│       │   │   ├── foundation-setup-and-project-selection.md
-│       │   │   ├── foundation-template-first-recovery.md
-│       │   │   ├── foundation-winui-app-structure.md
-│       │   │   ├── motion-animations-and-polish.md
-│       │   │   ├── performance-diagnostics-and-responsiveness.md
-│       │   │   ├── sample-source-map.md
-│       │   │   ├── shell-navigation-and-windowing.md
-│       │   │   ├── styling-theming-materials-and-icons.md
-│       │   │   ├── testing-debugging-and-review-checklists.md
-│       │   │   └── windows-app-sdk-lifecycle-notifications-and-deployment.md
-│       │   ├── config.yaml
-│       │   ├── LICENSE.txt
-│       │   └── SKILL.md  — winui-app Bootstrap, develop, and design modern WinUI 3 desktop applications with C# and…
-│       └── write-a-skill/
-│           └── SKILL.md  — write-a-skill Create new agent skills with proper structure, progressive disclosure, and bund…
+│       └── winui-app/
+│           ├── agents/
+│           │   └── openai.yaml
+│           ├── assets/
+│           │   └── winui.png
+│           ├── references/
+│           │   ├── _sections.md
+│           │   ├── accessibility-input-and-localization.md
+│           │   ├── build-run-and-launch-verification.md
+│           │   ├── community-toolkit-controls-and-helpers.md
+│           │   ├── controls-layout-and-adaptive-ui.md
+│           │   ├── foundation-environment-audit-and-remediation.md
+│           │   ├── foundation-setup-and-project-selection.md
+│           │   ├── foundation-template-first-recovery.md
+│           │   ├── foundation-winui-app-structure.md
+│           │   ├── motion-animations-and-polish.md
+│           │   ├── performance-diagnostics-and-responsiveness.md
+│           │   ├── sample-source-map.md
+│           │   ├── shell-navigation-and-windowing.md
+│           │   ├── styling-theming-materials-and-icons.md
+│           │   ├── testing-debugging-and-review-checklists.md
+│           │   └── windows-app-sdk-lifecycle-notifications-and-deployment.md
+│           ├── config.yaml
+│           ├── LICENSE.txt
+│           └── SKILL.md  — winui-app Bootstrap, develop, and design modern WinUI 3 desktop applications with C# and…
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
