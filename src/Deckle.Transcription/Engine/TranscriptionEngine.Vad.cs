@@ -45,6 +45,12 @@ public sealed partial class TranscriptionEngine
             {
                 _vadLoadFailed = true;
                 DeckleWhispSource.Log.SpeechTrimVadUnavailable($"load failed: {ex.GetType().Name}: {ex.Message}");
+                // A model that fails to load is corrupt or incompatible. Delete it so
+                // the next launch re-downloads (now checksum-verified) instead of
+                // re-finding the same bad file forever — File.Exists above would
+                // otherwise short-circuit the download for good. Best effort: if the
+                // delete itself fails the feature simply stays off, never worse.
+                try { File.Delete(modelPath); } catch { /* best effort */ }
                 return null;
             }
         }
@@ -64,8 +70,13 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.SpeechTrimVadDownloadStart(SileroVadModel.Url);
         try
         {
+            // expectedSha256 guards against a corrupt/truncated transfer: the
+            // downloader verifies the bytes and discards the .partial on mismatch,
+            // so a bad file is never published. CancellationToken.None is deliberate
+            // — this fire-and-forget transfer (a couple of MB) outlives Dispose
+            // rather than being torn down mid-flight; the OS reclaims it at exit.
             Downloader.DownloadResult result = await Downloader.DownloadAsync(
-                SileroVadModel.Url, modelPath, expectedSha256: null,
+                SileroVadModel.Url, modelPath, expectedSha256: SileroVadModel.Sha256,
                 progress: null, CancellationToken.None).ConfigureAwait(false);
 
             if (result.Success)
@@ -81,6 +92,11 @@ public sealed partial class TranscriptionEngine
 
     private void DisposeVad()
     {
+        // Safe without a lock against an in-flight Trim, unlike the backend: Dispose()
+        // cancels the drain token and joins the worker (which blocks on the consumer)
+        // before disposing the backend, and only then calls this. The consumer is the
+        // sole Trim caller, so by the time we get here it has already exited — no
+        // thread is inside vad.Trim when the session is disposed.
         _vad?.Dispose();
         _vad = null;
     }
