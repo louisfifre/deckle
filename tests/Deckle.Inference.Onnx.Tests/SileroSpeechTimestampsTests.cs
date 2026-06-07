@@ -100,4 +100,81 @@ public class SileroSpeechTimestampsTests
         Assert.Equal((6400, 12800), segs[1]);
         Assert.True(segs[0].end <= segs[1].start);
     }
+
+    // ── Boundary cases ──────────────────────────────────────────────────────
+    //
+    // The tests above sit comfortably on each side of the decision edges; these
+    // pin the exact crossing window so an off-by-one in the silence countdown, the
+    // min-speech filter, the tail flush, or the hysteresis operators can't slip
+    // through. Frame step is 512 samples, so the diffs land just under / just over.
+
+    [Fact]
+    public void FourWindowSilenceBridgesBelowMinSilence()
+    {
+        // The close fires when cur - tempEnd >= min-silence (1600). With tempEnd
+        // anchored at the first silent window, a 4-window gap reaches only 1536
+        // (< 1600) before speech resumes, so it must NOT split — it brackets the
+        // 5-window gap of LongSilenceSplitsIntoTwoSpans on the stay-open side.
+        var segs = Compute(Probs((0.9f, 10), (0.1f, 4), (0.9f, 10)));
+        Assert.Single(segs);
+        Assert.Equal((0, 12288), segs[0]);
+    }
+
+    [Fact]
+    public void SevenWindowSpeechBelowMinSpeechIsDropped()
+    {
+        // Closed extent = first silent window = 512*7 = 3584, under the 4000-sample
+        // min-speech (strict >), so the span is dropped at close.
+        Assert.Empty(Compute(Probs((0.9f, 7), (0.1f, 5))));
+    }
+
+    [Fact]
+    public void EightWindowSpeechAboveMinSpeechIsKept()
+    {
+        // One window more: extent 512*8 = 4096 > 4000, so the span survives. Pins
+        // the keep/drop edge at window granularity against the case above.
+        var segs = Compute(Probs((0.9f, 8), (0.1f, 5)));
+        Assert.Single(segs);
+        Assert.Equal((0, 4576), segs[0]);   // (0,4096) padded by 480 at the tail
+    }
+
+    [Fact]
+    public void ShortSpeechTailAtEndOfBufferIsDropped()
+    {
+        // A late onset that runs to the end of the buffer goes through the tail
+        // flush, which applies the same min-speech filter: 4096-2560 = 1536 < 4000,
+        // so the trailing blip is dropped (the drop side of the tail flush).
+        Assert.Empty(Compute(Probs((0.0f, 5), (0.9f, 3))));
+    }
+
+    [Fact]
+    public void SpeechTailAtEndOfBufferAboveMinSpeechIsKept()
+    {
+        // A longer tail clears min-speech and is kept — and its start is padded off
+        // a non-zero onset (2560 - 480), exercising the interior start-pad clamp.
+        var segs = Compute(Probs((0.0f, 5), (0.9f, 10)));
+        Assert.Single(segs);
+        Assert.Equal((2080, 7680), segs[0]);
+    }
+
+    [Fact]
+    public void TriggerThresholdExactlyStartsSpan()
+    {
+        // p == threshold counts as speech (p >= threshold), so an exactly-0.5 run
+        // opens and sustains a span. Pins the >= edge against a > regression.
+        var segs = Compute(Probs((0.5f, 20)));
+        Assert.Single(segs);
+        Assert.Equal((0, 10240), segs[0]);
+    }
+
+    [Fact]
+    public void ReleaseThresholdExactlyStaysInDeadBand()
+    {
+        // p == release-threshold (0.35) is NOT silence (close uses p < negThreshold),
+        // so it sits in the dead-band and bridges the span. Pins the < edge against
+        // a <= regression.
+        var segs = Compute(Probs((0.9f, 10), (0.35f, 3), (0.9f, 10)));
+        Assert.Single(segs);
+        Assert.Equal((0, 11776), segs[0]);
+    }
 }
