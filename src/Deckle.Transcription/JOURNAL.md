@@ -14,3 +14,15 @@ The earlier model warmup ran at boot on its own detached thread. It raced a real
 The fix moved priming onto the worker thread, synchronously, ahead of recording (`EnsurePrimed` at the top of `WorkerRun`). Synchronous-on-worker removes the race structurally — there is no second thread to collide with. The prime now also bypasses the pipeline entirely: it calls `IAsrBackend.TranscribeAsync` directly with an empty segment sink, so there is no user-facing tail to suppress and nothing to gate. `t_isWarmup` was removed as unnecessary.
 
 Not to be confused with the former HUD *composition* warm (`PrimeAndHide` in `Deckle.App` / `Deckle.Hud`) — a boot-time hidden window show, since removed. The model prime described here is the only warmup left on the first-hotkey path.
+
+## 2026-06-07 — Les trois mécanismes « silence », et pourquoi init/whisper est dégénéré
+
+Le VAD interne de whisper a été tué de bout en bout (modèle ggml retiré du wizard, parser de logs `whisper_vad` + event `VadParsed` supprimés de `WhisperBackend`, `wparams.vad = 0` conservé comme interrupteur). Restent trois mécanismes que le mot « silence » fait confondre — à garder distincts (destination : un `CLAUDE.md` du module, à écrire lors de la passe Settings, pas avant) :
+
+- **VAD externe Silero** (`Deckle.Vad`, toggle « Voice activity detection ») — agit sur la forme d'onde *avant* Whisper, découpe le silence. Le seul VAD actif.
+- **Confidence thresholds** (`entropy_thold` / `logprob_thold` / `no_speech_thold`) — agissent sur la *sortie du décodeur* : retry à température montante, ou drop d'un segment flaggé no-speech. Garde-fous anti-hallucination, vivants. Ce n'est pas du VAD malgré le « treats it as silence ».
+- **VAD interne de whisper** — ex-`wparams.vad` + Silero ggml intégré. Mort, plus aucun réglage exposé.
+
+Conséquence télémétrie : `whisper_init_ms` / `whisper_ms` sont **dégénérés**. Le stopwatch d'init se fermait sur la première ligne de log du VAD interne (le signal « init terminée »). Sans ce VAD, il court jusqu'à la fin de `whisper_full` → `init ≈ total`, `whisper ≈ 0`, en monolithique comme en streaming (la roadmap ne le notait qu'en streaming). Les rendre justes demande un autre marqueur « init terminée » (une ligne de log whisper.cpp). Au passage, les colonnes mortes `vad_ms` / `vad_inference_ms` (et toute la chaîne `VadDurationMs` → `PipelineProduction.VadMs`) ont été retirées du schéma `latency.jsonl`.
+
+Note logging : au split d'un provider EventSource, les consommateurs de noms de provider **en dur** doivent suivre. Ici le gate anti-firehose (`App.ShouldDropCaptureVerbose`) ne filtrait que `Deckle-Whisp` ; les events VAD Verbose ayant migré vers `Deckle-Vad`, il fallait les y ajouter, sinon le firehose par-utterance fuyait dans le log toggle OFF.
