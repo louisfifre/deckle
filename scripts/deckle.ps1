@@ -60,7 +60,8 @@ $actions = @(
     [pscustomobject]@{ Label = 'Build only (no run)';               Value = 'build-norun'                       }
 
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Publish app (self-contained ZIP)';  Value = 'publish-app'                       }
+    [pscustomobject]@{ Label = 'Publish app - build local ZIP';     Value = 'publish-app'                       }
+    [pscustomobject]@{ Label = 'Publish app - GitHub Release';      Value = 'publish-release'                   }
 
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Clean bin/obj';                     Value = 'clean'                             }
@@ -101,10 +102,35 @@ switch ($action) {
     }
 
     # ----- Release — per-worktree ----------------------------------------
+    # 'publish-app' builds the self-contained ZIP locally for inspection.
+    # 'publish-release' ALSO creates the public GitHub Release (tag + upload)
+    # via gh — the maintainer's act, gated behind an explicit confirmation.
     'publish-app' {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
+    }
+    'publish-release' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        # Read <Version> from the target worktree so the confirmation names the
+        # exact release. publish-app.ps1 -Publish runs `gh release create vX.Y.Z`,
+        # which creates the tag and a PUBLIC release — never silent, always behind
+        # this y/N gate (project hard rule: publish is the maintainer's act).
+        $csproj = Join-Path $wt 'src\Deckle.App\Deckle.App.csproj'
+        $ver    = $null
+        $m = Select-String -Path $csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
+        if ($m) { $ver = $m.Matches[0].Groups[1].Value.Trim() }
+        if (-not $ver) {
+            Write-Host "Could not read <Version> from $csproj" -ForegroundColor Red
+            return
+        }
+        Write-Host "This publishes a PUBLIC GitHub Release v$ver (creates tag v$ver, uploads the app ZIP + sha256)." -ForegroundColor Yellow
+        if (-not (Read-YesNo -Question "Publish Deckle v$ver to GitHub now?" -Default $false)) {
+            Write-Host "Cancelled." -ForegroundColor Yellow
+            return
+        }
+        & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
     }
 
     # ----- Worktree maintenance ------------------------------------------

@@ -23,6 +23,8 @@ dev action by purpose:
 | **Build** | Build & run (Debug) | yes | `lib/build-run.ps1 -Configuration Debug` |
 |  | Build & run (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
 |  | Build only (no run) | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
+| **Release** | Publish app - build local ZIP | yes | `lib/publish-app.ps1` |
+|  | Publish app - GitHub Release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
 | **Worktree maintenance** | Clean bin/obj | yes | `lib/clean.ps1` |
 |  | Stats (files, LOC, long files) | yes | `lib/stats.ps1` |
 | **Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
