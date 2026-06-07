@@ -897,7 +897,7 @@
     <value>Voice activity detection</value>
   </data>
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
-    <value>Keep only the speech in each captured chunk and drop the internal pauses and silence, so phantom text from quiet stretches disappears. Default: on.</value>
+    <value>The on/off for speech filtering; the settings below tune how it decides. When off, raw audio goes straight to the model. Default: on.</value>
   </data>
   <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
     <value>Speech threshold</value>
