@@ -26,14 +26,12 @@ public static class WhisperParamsMapper
         public readonly IntPtr Language;
         public readonly IntPtr InitialPrompt;
         public readonly IntPtr SuppressRegex;
-        public readonly IntPtr VadModelPath;
 
-        public NativeAllocations(IntPtr lang, IntPtr prompt, IntPtr regex, IntPtr vadPath)
+        public NativeAllocations(IntPtr lang, IntPtr prompt, IntPtr regex)
         {
             Language = lang;
             InitialPrompt = prompt;
             SuppressRegex = regex;
-            VadModelPath = vadPath;
         }
 
         public void Free()
@@ -41,7 +39,6 @@ public static class WhisperParamsMapper
             if (Language != IntPtr.Zero) Marshal.FreeCoTaskMem(Language);
             if (InitialPrompt != IntPtr.Zero) Marshal.FreeCoTaskMem(InitialPrompt);
             if (SuppressRegex != IntPtr.Zero) Marshal.FreeCoTaskMem(SuppressRegex);
-            if (VadModelPath != IntPtr.Zero) Marshal.FreeCoTaskMem(VadModelPath);
         }
     }
 
@@ -112,17 +109,12 @@ public static class WhisperParamsMapper
             wparams.n_max_text_ctx = whisp.Context.MaxTokens;
 
         // ── VAD ───────────────────────────────────────────────────────────
-        // Whisper's built-in Silero VAD is intentionally left unplugged. In the
-        // streaming path it would re-run per utterance on audio the energy
-        // segmenter already cut — redundant and slow — and the external Silero
-        // ONNX VAD (Deckle.Inference.Onnx, Streaming.SpeechTrim) now owns chunk
-        // cleaning on the consumer side. Forcing vad = 0 here is the unplug; the
-        // SpeechDetection POCO and its ggml model are kept but inert pending a
-        // later revisit of the built-in path. vadPathPtr stays Zero so
-        // NativeAllocations.Free() is a no-op for it.
-        IntPtr vadPathPtr = IntPtr.Zero;
+        // Whisper's built-in Silero VAD stays unplugged: the external VAD
+        // (Deckle.Vad, Streaming.SpeechTrim) owns chunk cleaning on the consumer
+        // side, so re-running whisper's VAD per utterance would be redundant and
+        // slow. Forcing vad = 0 is the unplug.
         wparams.vad = 0;
 
-        return new NativeAllocations(langPtr, promptPtr, regexPtr, vadPathPtr);
+        return new NativeAllocations(langPtr, promptPtr, regexPtr);
     }
 }

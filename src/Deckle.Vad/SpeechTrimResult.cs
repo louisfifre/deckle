@@ -1,4 +1,4 @@
-namespace Deckle.Inference.Onnx;
+namespace Deckle.Vad;
 
 // Result of SileroVad.Trim: the speech-only audio, plus how many distinct speech
 // spans Silero found in the input. The count is an observability signal — it says

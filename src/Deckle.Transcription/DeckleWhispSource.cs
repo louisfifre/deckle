@@ -68,7 +68,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtWhisperLogWarning                = 31;
     public const int EvtWhisperLogError                  = 32;
     public const int EvtWhisperLogSetUnavailable         = 33;
-    public const int EvtVadParsed                        = 34;
+    // 34 — was EvtVadParsed (whisper-internal VAD log parser, removed with the
+    // unplug of whisper's built-in VAD). ID burned, never reused.
     public const int EvtHotkeyToggleIgnored              = 35;
     public const int EvtHotkeyStartingCASLost            = 36;
     public const int EvtRecordingProbeFailed             = 37;
@@ -152,14 +153,10 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtStreamingPipelineStarted         = 114;
     public const int EvtSegmenterSettingsSnapshot        = 115;
     public const int EvtSegmenterBlipDropped             = 116;
-    public const int EvtSpeechTrimmed                    = 117;
-    public const int EvtUtteranceDroppedNoSpeech         = 118;
-    public const int EvtSpeechTrimVadLoaded              = 119;
-    public const int EvtSpeechTrimVadUnavailable         = 120;
-    public const int EvtSpeechTrimVadDownloadStart       = 121;
-    public const int EvtSpeechTrimVadDownloadComplete    = 122;
-    public const int EvtSpeechTrimNotReady               = 123;
-    public const int EvtSpeechTrimSettingsSnapshot       = 124;
+    // 117–124 — the external Silero VAD events (SpeechTrimmed, UtteranceDroppedNoSpeech,
+    // SpeechTrimVadLoaded/Unavailable/DownloadStart/DownloadComplete, SpeechTrimNotReady,
+    // SpeechTrimSettingsSnapshot) moved to the Deckle-Vad provider when the VAD became
+    // its own module. IDs burned, never reused.
 
 
 }

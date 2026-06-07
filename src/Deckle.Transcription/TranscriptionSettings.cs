@@ -16,7 +16,6 @@ public sealed class TranscriptionSettings
     public string ModelsDirectory { get; set; } = "";
 
     public EngineSettings          Engine          { get; set; } = new();
-    public SpeechDetectionSettings SpeechDetection { get; set; } = new();
     public ConfidenceSettings      Confidence      { get; set; } = new();
     public OutputFilterSettings    OutputFilters   { get; set; } = new();
     public DecodingSettings        Decoding        { get; set; } = new();
@@ -42,7 +41,7 @@ public sealed class StreamingSettings
     public SpeechTrimSettings      SpeechTrim { get; set; } = new();
 }
 
-// External Silero VAD pre-trim (Deckle.Inference.Onnx) — the active VAD now that
+// External Silero VAD pre-trim (Deckle.Vad) — the active VAD now that
 // the whisper-internal SpeechDetection VAD is unplugged. Streaming path only: it
 // cleans each big chunk the energy segmenter cut, keeping only the speech spans
 // (so a mid-utterance pause the energy threshold didn't split is removed) and
@@ -94,21 +93,6 @@ public sealed class EngineSettings
     // Prepend initial_prompt to every 30s decode window (not just the first).
     // Stabilizes punctuation and register across long recordings.
     public bool CarryInitialPrompt { get; set; } = true;
-}
-
-// Whisper's built-in Silero VAD (a whisper_full parameter). Inert: the engine
-// forces vad = 0 (see WhisperParamsMapper) and no UI binds to it anymore — the
-// external Silero ONNX VAD (Streaming.SpeechTrim) replaced it. Kept, not removed,
-// pending a later revisit of the built-in path; until then nothing reads these.
-public sealed class SpeechDetectionSettings
-{
-    public bool Enabled { get; set; } = true;
-    public float Threshold { get; set; } = 0.5f;
-    public int MinSpeechDurationMs { get; set; } = 250;
-    public int MinSilenceDurationMs { get; set; } = 500;
-    public float MaxSpeechDurationSec { get; set; } = 30.0f;
-    public int SpeechPadMs { get; set; } = 200;
-    public float SamplesOverlap { get; set; } = 0.1f;
 }
 
 // Thresholds that trigger whisper.cpp temperature fallback. Stored as double

@@ -289,6 +289,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── UIAutomation.cs
 │   │   │   ├── Win32Clipboard.cs
 │   │   │   └── Win32Util.cs
+│   │   ├── Io/
+│   │   │   └── Downloader.cs
 │   │   ├── Paths/
 │   │   │   └── AppPaths.cs
 │   │   ├── CorpusPaths.cs
@@ -355,14 +357,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProximityRollupAggregator.cs
 │   │   └── WindowSlideAnimator.cs
 │   ├── Deckle.Inference.Onnx/
-│   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime inference home — today the Silero VAD v5 speech detector and the g…
+│   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
 │   │   ├── Deckle.Inference.Onnx.csproj
-│   │   ├── SileroSpeechTimestamps.cs
-│   │   ├── SileroVad.cs
-│   │   ├── SileroVadModel.cs
-│   │   ├── SileroVadOptions.cs
-│   │   ├── SpeechSegment.cs
-│   │   └── SpeechTrimResult.cs
+│   │   └── OnnxModelSession.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
@@ -574,10 +571,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
-│   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
-│   │   │   └── TranscriptionEngine.Vad.cs
+│   │   │   └── TranscriptionEngine.StreamingPipeline.cs
 │   │   ├── Setup/
-│   │   │   ├── Downloader.cs
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
 │   │   │   ├── EnergySegmenter.cs
@@ -617,6 +612,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── RepetitionDetector.cs
 │   │   └── WhisperBackend.cs
+│   ├── Deckle.Vad/
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Vad.csproj
+│   │   ├── DeckleVadSource.cs
+│   │   ├── SileroSpeechTimestamps.cs
+│   │   ├── SileroVad.cs
+│   │   ├── SileroVadModel.cs
+│   │   ├── SileroVadOptions.cs
+│   │   ├── SpeechSegment.cs
+│   │   ├── SpeechTrimResult.cs
+│   │   └── VadService.cs
 │   └── Deckle.Vision/
 │       ├── CapturedFrame.cs
 │       ├── CLAUDE.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
@@ -667,9 +673,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
-│   ├── Deckle.Inference.Onnx.Tests/
-│   │   ├── Deckle.Inference.Onnx.Tests.csproj
-│   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
@@ -690,6 +693,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   └── RepetitionDetectorTests.cs
+│   ├── Deckle.Vad.Tests/
+│   │   ├── Deckle.Vad.Tests.csproj
+│   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs

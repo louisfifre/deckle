@@ -5,14 +5,14 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Deckle.Transcription.Setup;
+namespace Deckle.Core.Io;
 
 // ── Downloader ───────────────────────────────────────────────────────────────
 //
 // Streams an HTTP download to disk while reporting progress and computing
-// SHA-256 incrementally. Used by the first-run wizard for HuggingFace
-// model downloads — same code path for a 700 KB Silero file and a 3 GB
-// Whisper model.
+// SHA-256 incrementally. The shared file-fetch primitive — same code path for a
+// 700 KB model and a 3 GB one — used by the first-run wizard and by any module
+// that provisions its own model on demand.
 //
 // Three guarantees:
 //
@@ -26,8 +26,8 @@ namespace Deckle.Transcription.Setup;
 //      second full read of the file.
 //
 //   3. Cancellation — every async call honours the CancellationToken so
-//      the wizard's Cancel button stops the transfer in milliseconds,
-//      not at the next megabyte boundary.
+//      the caller's Cancel stops the transfer in milliseconds, not at the
+//      next megabyte boundary.
 //
 // HttpClient is reused as a static field (Microsoft Learn guidance:
 // instantiating per-call exhausts sockets under load). The default 100 s

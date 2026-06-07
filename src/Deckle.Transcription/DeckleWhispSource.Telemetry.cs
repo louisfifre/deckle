@@ -31,7 +31,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtLatencyRecorded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "audio={0:F1}s hotkey={2}ms vad={6}ms whisper={8}ms llm={9}ms outcome={23}")]
+           Message = "audio={0:F1}s hotkey={2}ms whisper={6}ms llm={7}ms outcome={21}")]
     public void LatencyRecorded(
         double audio_sec,
         long   model_load_ms,
@@ -39,8 +39,6 @@ public sealed partial class DeckleWhispSource
         long   record_drain_ms,
         long   stop_to_pipeline_ms,
         long   whisper_init_ms,
-        long   vad_ms,
-        long   vad_inference_ms,
         long   whisper_ms,
         long   llm_ms,
         long   ollama_load_ms,
@@ -61,7 +59,7 @@ public sealed partial class DeckleWhispSource
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtLatencyRecorded,
             audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms,
-            stop_to_pipeline_ms, whisper_init_ms, vad_ms, vad_inference_ms,
+            stop_to_pipeline_ms, whisper_init_ms,
             whisper_ms, llm_ms, ollama_load_ms, llm_prompt_eval_ms, llm_eval_ms,
             llm_prompt_tokens, llm_eval_tokens, clipboard_ms, paste_ms,
             strategy, n_segments, text_chars, text_words, profile, pasted, outcome);

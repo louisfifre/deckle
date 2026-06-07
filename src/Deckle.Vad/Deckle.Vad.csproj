@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Vad</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SileroSpeechTimestamps (the pure state machine) is internal; the test
+         project reaches it through this InternalsVisibleTo. -->
+    <InternalsVisibleTo Include="Deckle.Vad.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Inference substrate. The VAD runs its model through OnnxModelSession; the
+         OnnxRuntime dependency stays isolated in that module. -->
+    <ProjectReference Include="..\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
+  </ItemGroup>
+</Project>

@@ -303,22 +303,14 @@ public sealed partial class TranscriptionEngine
         // coerce so the payload stays well-formed.
         //
         // Timing sourcing after the IAsrBackend split:
-        //   • prod.InitMs, prod.VadMs  ← TranscriptionResult phase timings,
+        //   • prod.InitMs              ← TranscriptionResult phase timing,
         //                                carried on PipelineProduction
-        //   • whisperMs (pure decode)  ← total - init - vad (clamped to 0)
-        //   • vadInferenceMs (Silero
-        //     CPU time, distinct from
-        //     wall-clock vad)          ← no longer surfaced after the split,
-        //                                kept in the payload as 0 until a
-        //                                backend exposes it through the
-        //                                interface.
+        //   • whisperMs (pure decode)  ← total - init (clamped to 0)
         long hotkeyToCaptureMs = _hotkeySw?.ElapsedMilliseconds ?? 0;
         long recordDrainMs     = (long)_recordDrainDuration.TotalMilliseconds;
         long stopToPipelineMs  = _stopToPipelineSw?.ElapsedMilliseconds ?? 0;
         long whisperInitMs     = prod.InitMs;
-        long vadMs             = prod.VadMs;
-        long whisperMs         = System.Math.Max(0, transcribeMsTotal - whisperInitMs - vadMs);
-        long vadInferenceMs    = 0;
+        long whisperMs         = System.Math.Max(0, transcribeMsTotal - whisperInitMs);
         // Backend name is the closest stable analogue to the old
         // _strategyLabel for the telemetry surface.
         string strategyLabel = _backend.Name;
@@ -326,7 +318,7 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.PipelineCompleted(outcome.ToString());
         DeckleWhispSource.Log.PipelineTimings(
             recDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
-            stopToPipelineMs, whisperInitMs, vadMs, vadInferenceMs,
+            stopToPipelineMs, whisperInitMs,
             whisperMs, llmMs, swClip.ElapsedMilliseconds, pasteMs);
         DeckleWhispSource.Log.PipelineLlmMetrics(
             ollamaLoadMs, llmPromptEvalMs, llmEvalMs, llmPromptTokens, llmEvalTokens);
@@ -344,8 +336,6 @@ public sealed partial class TranscriptionEngine
             record_drain_ms:      recordDrainMs,
             stop_to_pipeline_ms:  stopToPipelineMs,
             whisper_init_ms:      whisperInitMs,
-            vad_ms:               vadMs,
-            vad_inference_ms:     vadInferenceMs,
             whisper_ms:           whisperMs,
             llm_ms:               llmMs,
             ollama_load_ms:       ollamaLoadMs,

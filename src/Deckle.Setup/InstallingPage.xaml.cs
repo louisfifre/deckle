@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Core.Io;
 using Deckle.Transcription.Setup;
 using Deckle.Transcription.Whisper.Setup;
 
@@ -17,14 +18,13 @@ namespace Deckle.Setup;
 // ── InstallingPage ───────────────────────────────────────────────────────────
 //
 // Runs the installs in bulk (sequential V1) and reports per-item progress.
-// Three rows now: native runtime (whisper.cpp + Vulkan + MinGW DLLs),
-// the chosen Whisper model, and the mandatory Silero VAD model. The
-// native row was added when the wizard moved away from forcing the user
-// to Browse... for a folder of DLLs — the auto-download path fetches the
-// versioned zip from the Deckle GitHub Release defined in
-// NativeRuntime.CurrentBundle.
+// Two rows now: native runtime (whisper.cpp + Vulkan + MinGW DLLs) and
+// the chosen Whisper model. The native row was added when the wizard
+// moved away from forcing the user to Browse... for a folder of DLLs —
+// the auto-download path fetches the versioned zip from the Deckle GitHub
+// Release defined in NativeRuntime.CurrentBundle.
 //
-// Already-installed shortcut applies to all three: a row that detects an
+// Already-installed shortcut applies to both: a row that detects an
 // existing valid install renders as "already installed" green check
 // without consuming bandwidth.
 //
@@ -40,7 +40,7 @@ namespace Deckle.Setup;
 // without the runtime.
 public sealed partial class InstallingPage : Page
 {
-    private const int TotalSteps = 3;
+    private const int TotalSteps = 2;
     private const string NativeRuntimeItemId = "native-runtime";
 
     private SetupWindow? _setup;
@@ -139,30 +139,6 @@ public sealed partial class InstallingPage : Page
                 ct:        ct);
         }
 
-        // Step 3 — Silero VAD (only if not already there — saves a redundant ~700 KB).
-        if (SpeechModels.IsVadInstalled())
-        {
-            _context.Results.Add(new InstallResult(
-                ItemId:      SpeechModels.VadModel.Id,
-                DisplayName: SpeechModels.VadModel.DisplayName,
-                Success:     true,
-                ErrorMessage: null,
-                Bytes:        new FileInfo(Path.Combine(AppPaths.ModelsDirectory, SpeechModels.VadModelFileName)).Length));
-            UpdateGlobalStep(TotalSteps, Loc.Get("Setup_Install_VadAlreadyInstalledStatus"));
-            SetItemDone(VadIcon, VadProgress, VadStatus, Loc.Get("Setup_Install_AlreadyInstalled"));
-        }
-        else
-        {
-            await DownloadModelStepAsync(
-                entry:     SpeechModels.VadModel,
-                stepIndex: 2,
-                icon:      VadIcon,
-                label:     VadLabel,
-                bar:       VadProgress,
-                status:    VadStatus,
-                ct:        ct);
-        }
-
         UpdateGlobalStep(TotalSteps, Loc.Get("Setup_Install_Done"));
 
         // Hand off to the summary page. Frame.Navigate is UI-thread-safe
@@ -227,7 +203,7 @@ public sealed partial class InstallingPage : Page
 
         var bundle = NativeRuntime.CurrentBundle;
 
-        UpdateGlobalStep(0, Loc.Format("Setup_Install_Step1Of3_Format", bundle.DisplayName));
+        UpdateGlobalStep(0, Loc.Format("Setup_Install_Step1Of2_Format", bundle.DisplayName));
         SetItemRunning(NativeIcon, NativeProgress, NativeStatus, Loc.Get("Setup_Install_Connecting"));
 
         // Stage to <NativeDirectory>/_bundle.zip — same drive as the final
@@ -385,9 +361,7 @@ public sealed partial class InstallingPage : Page
 
     private static string FormatStepLabel(int stepIndex, string itemName) => stepIndex switch
     {
-        0 => Loc.Format("Setup_Install_Step1Of3_Format", itemName),
-        1 => Loc.Format("Setup_Install_Step2Of3_Format", itemName),
-        2 => Loc.Format("Setup_Install_Step3Of3_Format", itemName),
+        1 => Loc.Format("Setup_Install_Step2Of2_Format", itemName),
         _ => itemName,
     };
 

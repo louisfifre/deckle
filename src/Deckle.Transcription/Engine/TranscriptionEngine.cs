@@ -8,6 +8,7 @@ using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription.Corpus;
 using Deckle.Transcription.Engine;
+using Deckle.Vad;
 
 namespace Deckle.Transcription;
 
@@ -278,10 +279,15 @@ public sealed partial class TranscriptionEngine : IDisposable
     // would not have wanted that coupling).
     private readonly RecordingHostAdapter _recordingHost;
 
+    // External Silero VAD lifecycle (load / verify / background-download / dispose),
+    // owned by Deckle.Vad. Resolved lazily per streaming take.
+    private readonly VadService _vadService;
+
     public TranscriptionEngine(ITranscriptionEngineHost host, IAsrBackend backend)
     {
         _host = host;
         _backend = backend;
+        _vadService = new VadService(_host.ResolveModelsDirectory);
 
         _llm = new LlmService();
 
@@ -411,6 +417,6 @@ public sealed partial class TranscriptionEngine : IDisposable
 
         _capture.Dispose();
 
-        DisposeVad();
+        _vadService.Dispose();
     }
 }

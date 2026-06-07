@@ -41,7 +41,7 @@ public sealed class SetupContext
 
     // Per-item results captured by the Installing page, displayed on the
     // Summary page. Populated in order: native runtime first, then the
-    // chosen model, then the VAD model.
+    // chosen model.
     public List<InstallResult> Results { get; } = new();
 
     // True when every Results entry is Success — drives the Summary page's

@@ -1,21 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.ML.OnnxRuntime;
-using Microsoft.ML.OnnxRuntime.Tensors;
+using Deckle.Inference.Onnx;
 
-namespace Deckle.Inference.Onnx;
+namespace Deckle.Vad;
 
-// Silero VAD v6.2 over ONNX Runtime (CPU). Wraps a long-lived InferenceSession and
-// the recurrent state Silero threads window-to-window. Loaded once and reused
-// across utterances; Reset() (called at the start of every detection) clears the
+// Silero VAD over ONNX Runtime (CPU). Wraps a long-lived OnnxModelSession and the
+// recurrent state Silero threads window-to-window. Loaded once and reused across
+// utterances; Reset() (called at the start of every detection) clears the
 // recurrent state so each buffer is independent.
 //
-// The model is the unified v6.2 silero_vad.onnx (16 kHz / 8 kHz in one file), run
-// at 16 kHz: 512-sample windows, each fed with a 64-sample context prefix carried
-// from the previous window (the reference OnnxWrapper behaviour — feeding the bare
-// 512 reportedly runs too but is expected to shift the probabilities off the
-// reference thresholds; inherited from the reference, not measured here).
+// Runs at 16 kHz over 512-sample windows, each fed with a 64-sample context prefix
+// carried from the previous window (the reference OnnxWrapper behaviour).
 //
 // Inference (this class) and the decision logic (SileroSpeechTimestamps) are kept
 // separate on purpose: the state machine is pure and unit-tested, this is the thin
@@ -27,40 +22,18 @@ public sealed class SileroVad : IDisposable
     private const int ContextSamples = 64;
     private const int StateLength    = 2 * 1 * 128;
 
-    private readonly SessionOptions _options;
-    private readonly InferenceSession _session;
+    private readonly OnnxModelSession _session;
 
     // Recurrent state (zeros = initial) and the rolling context prefix, both
     // reused across windows. The 'sr' input never changes, so build it once.
     private readonly float[] _state   = new float[StateLength];
     private readonly float[] _context = new float[ContextSamples];
     private readonly float[] _input   = new float[ContextSamples + WindowSamples];
-    private readonly DenseTensor<long> _srTensor = new(new long[] { SampleRate }, new[] { 1 });
+    private readonly long[]  _sr      = new long[] { SampleRate };
 
     public SileroVad(string modelPath)
     {
-        var options = new SessionOptions
-        {
-            // Tiny recurrent model — thread-pool overhead would dominate; run it
-            // single-threaded and sequential.
-            IntraOpNumThreads = 1,
-            InterOpNumThreads = 1,
-            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
-        };
-        try
-        {
-            _session = new InferenceSession(modelPath, options);
-        }
-        catch
-        {
-            // A malformed/corrupt model makes the InferenceSession ctor throw. The
-            // instance is never returned, so Dispose() never runs — release the
-            // native SessionOptions handle here instead of leaking it to the
-            // finalizer, then let the failure propagate to EnsureVadReady.
-            options.Dispose();
-            throw;
-        }
-        _options = options;
+        _session = new OnnxModelSession(modelPath);
     }
 
     // Detects the speech spans within a 16 kHz mono buffer, in sample indices
@@ -115,23 +88,20 @@ public sealed class SileroVad : IDisposable
 
     private float RunWindow()
     {
-        var inputTensor = new DenseTensor<float>(_input, new[] { 1, _input.Length });
-        var stateTensor = new DenseTensor<float>(_state, new[] { 2, 1, 128 });
         var inputs = new[]
         {
-            NamedOnnxValue.CreateFromTensor("input", inputTensor),
-            NamedOnnxValue.CreateFromTensor("state", stateTensor),
-            NamedOnnxValue.CreateFromTensor("sr", _srTensor),
+            OnnxTensorInput.Float("input", _input, new[] { 1, _input.Length }),
+            OnnxTensorInput.Float("state", _state, new[] { 2, 1, 128 }),
+            OnnxTensorInput.Int64("sr", _sr, new[] { 1 }),
         };
 
-        using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = _session.Run(inputs);
+        IReadOnlyList<float[]> outputs = _session.Run(inputs);
 
-        // Read by position (probability, new state) — the order the v5 graph and
-        // the reference Python (`out, state = ort_outs`) use; robust to the exact
-        // output node names. Copy the state OUT before the result collection is
-        // disposed, then feed it back next window.
-        float prob = results.ElementAt(0).AsTensor<float>()[0];
-        results.ElementAt(1).AsTensor<float>().ToArray().CopyTo(_state, 0);
+        // Read by position (probability, new state) — the order the graph and the
+        // reference Python (`out, state = ort_outs`) use; robust to the exact
+        // output node names. Copy the new state back for the next window.
+        float prob = outputs[0][0];
+        outputs[1].CopyTo(_state, 0);
         return prob;
     }
 
@@ -142,9 +112,5 @@ public sealed class SileroVad : IDisposable
         Array.Clear(_context);
     }
 
-    public void Dispose()
-    {
-        _session.Dispose();
-        _options.Dispose();
-    }
+    public void Dispose() => _session.Dispose();
 }

@@ -5,8 +5,8 @@ using Deckle.Audio;
 using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
 using Deckle.Diagnostics.Logging;
-using Deckle.Inference.Onnx;
 using Deckle.Transcription.Engine;
+using Deckle.Vad;
 using Deckle.Transcription.Streaming;
 
 namespace Deckle.Transcription;
@@ -68,12 +68,12 @@ public sealed partial class TranscriptionEngine
         // missing model kicks off a one-time background download — this take runs
         // untrimmed, a later one picks it up).
         var trimCfg = _host.Transcription.Streaming.SpeechTrim;
-        SileroVad? vad = trimCfg.Enabled ? EnsureVadReady() : null;
+        SileroVad? vad = trimCfg.Enabled ? _vadService.EnsureReady() : null;
         // Surface the transient "enabled but the model isn't ready yet" state, so a
         // take that ran untrimmed for that reason is explicit rather than inferred
         // from absent SpeechTrimmed lines.
         if (trimCfg.Enabled && vad is null)
-            DeckleWhispSource.Log.SpeechTrimNotReady();
+            DeckleVadSource.Log.SpeechTrimNotReady();
 
         // The user's detection parameters, mapped onto the options the trim runs with.
         // Resolved once per take; the snapshot records them (only when the VAD will
@@ -86,7 +86,7 @@ public sealed partial class TranscriptionEngine
             SpeechPadMs          = trimCfg.SpeechPadMs,
         };
         if (vad is not null)
-            DeckleWhispSource.Log.SpeechTrimSettingsSnapshot(
+            DeckleVadSource.Log.SpeechTrimSettingsSnapshot(
                 vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
                 vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
 
@@ -271,7 +271,6 @@ public sealed partial class TranscriptionEngine
             BackendAudio:      backendAudio,
             TotalTranscribeMs: consumed.TotalMs,
             InitMs:            consumed.InitMs,
-            VadMs:             consumed.VadMs,
             NSegments:         consumed.NSegments);
     }
 
@@ -286,7 +285,7 @@ public sealed partial class TranscriptionEngine
         SileroVad? vad, SileroVadOptions vadOptions)
     {
         var sb = new StringBuilder();
-        long totalMs = 0, initMs = 0, vadMs = 0;
+        long totalMs = 0, initMs = 0;
         int nSeg = 0, nUtt = 0;
 
         string fixedPrompt = _host.Transcription.Engine.InitialPrompt ?? "";
@@ -354,7 +353,7 @@ public sealed partial class TranscriptionEngine
                     long trimStart = Stopwatch.GetTimestamp();
                     SpeechTrimResult trim = vad.Trim(samples, vadOptions);
                     long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
-                    DeckleWhispSource.Log.SpeechTrimmed(
+                    DeckleVadSource.Log.SpeechTrimmed(
                         u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
                     if (trim.Samples.Length == 0)
                     {
@@ -362,7 +361,7 @@ public sealed partial class TranscriptionEngine
                         // rather than feed near-silence to whisper, which hallucinates on
                         // it. The previous tail is left intact: a dropped utterance adds
                         // no text and must not sever the continuity of the real ones.
-                        DeckleWhispSource.Log.UtteranceDroppedNoSpeech(u.Index);
+                        DeckleVadSource.Log.UtteranceDroppedNoSpeech(u.Index);
                         continue;
                     }
                     samples = trim.Samples;
@@ -378,7 +377,7 @@ public sealed partial class TranscriptionEngine
                     // so on any error log it once, stop trimming for the rest of this
                     // take (vad = null), and let this utterance through UNtrimmed rather
                     // than dropping it or crashing the consumer.
-                    DeckleWhispSource.Log.SpeechTrimVadUnavailable($"trim failed: {ex.GetType().Name}: {ex.Message}");
+                    DeckleVadSource.Log.SpeechTrimVadUnavailable($"trim failed: {ex.GetType().Name}: {ex.Message}");
                     vad = null;
                 }
             }
@@ -409,7 +408,6 @@ public sealed partial class TranscriptionEngine
 
             totalMs += result.TotalDurationMs;
             initMs  += result.InitDurationMs;
-            vadMs   += result.VadDurationMs;
             nSeg    += result.Segments.Count;
 
             string text = result.FullText?.Trim() ?? "";
@@ -429,7 +427,7 @@ public sealed partial class TranscriptionEngine
         }
 
         float[]? backendAudio = backendChunks is null ? null : ConcatSamples(backendChunks);
-        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, vadMs, nSeg, nUtt, backendAudio);
+        return new StreamingConsumeResult(sb.ToString(), totalMs, initMs, nSeg, nUtt, backendAudio);
     }
 
     // Flatten the per-utterance processed buffers into one contiguous take. A
@@ -480,6 +478,6 @@ public sealed partial class TranscriptionEngine
     // processed utterances for the corpus. BackendAudio is null when the DSP was
     // off, so the caller falls back to the raw take.
     private readonly record struct StreamingConsumeResult(
-        string Text, long TotalMs, long InitMs, long VadMs, int NSegments, int NUtterances,
+        string Text, long TotalMs, long InitMs, int NSegments, int NUtterances,
         float[]? BackendAudio);
 }

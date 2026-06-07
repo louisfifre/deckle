@@ -4,12 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- SileroSpeechTimestamps (the pure state machine) is internal; the test
-         project reaches it through the SDK InternalsVisibleTo item. -->
-    <InternalsVisibleTo Include="Deckle.Inference.Onnx.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />
   </ItemGroup>
 </Project>
