@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Deckle.Inference.Onnx;
+namespace Deckle.Vad;
 
 // Pure port of Silero's get_speech_timestamps decision logic (snakers4/silero-vad,
 // the default max_speech_duration_s = inf path). This is the model-independent
@@ -24,7 +24,7 @@ namespace Deckle.Inference.Onnx;
 internal static class SileroSpeechTimestamps
 {
     public const int SampleRate = 16000;
-    public const int WindowSamples = 512;   // the v5 16 kHz chunk size
+    public const int WindowSamples = 512;   // the 16 kHz chunk size
 
     // probs[i] is the speech probability of the window starting at sample
     // i * WindowSamples. audioLengthSamples bounds the tail span and the padding.

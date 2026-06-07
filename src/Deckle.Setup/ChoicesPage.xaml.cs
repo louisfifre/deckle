@@ -22,7 +22,7 @@ namespace Deckle.Setup;
 //
 // The Install button is enabled only when both the runtime is installed
 // and a model is selected. Clicking Install navigates to InstallingPage,
-// which downloads the chosen model + Silero VAD.
+// which downloads the chosen model.
 public sealed partial class ChoicesPage : Page
 {
     private SetupWindow? _setup;
@@ -173,7 +173,7 @@ public sealed partial class ChoicesPage : Page
         // SelectedModel is initialized by SetupWindow construction — null
         // here would mean a code path bypassed the wizard host, which we
         // surface as a developer error rather than silently coercing.
-        long modelsBytes = _context.SelectedModel!.SizeBytes + SpeechModels.VadModel.SizeBytes;
+        long modelsBytes = _context.SelectedModel!.SizeBytes;
         bool nativeInstalled  = NativeRuntime.IsInstalled();
         bool autoDownloadable = !nativeInstalled && !NativeRuntime.BundleUrlIsPlaceholder;
 

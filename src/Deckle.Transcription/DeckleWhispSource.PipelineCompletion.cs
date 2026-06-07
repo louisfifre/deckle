@@ -19,11 +19,11 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineTimings,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "timings | audio_sec={0:F1} | model_load_ms={1} | hotkey_to_capture_ms={2} | record_drain_ms={3} | stop_to_pipeline_ms={4} | whisper_init_ms={5} | vad_ms={6} | vad_inference_ms={7} | whisper_ms={8} | llm_ms={9} | clipboard_ms={10} | paste_ms={11}")]
-    public void PipelineTimings(double audio_sec, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long vad_ms, long vad_inference_ms, long whisper_ms, long llm_ms, long clipboard_ms, long paste_ms)
+           Message = "timings | audio_sec={0:F1} | model_load_ms={1} | hotkey_to_capture_ms={2} | record_drain_ms={3} | stop_to_pipeline_ms={4} | whisper_init_ms={5} | whisper_ms={6} | llm_ms={7} | clipboard_ms={8} | paste_ms={9}")]
+    public void PipelineTimings(double audio_sec, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms, long paste_ms)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtPipelineTimings, audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, vad_ms, vad_inference_ms, whisper_ms, llm_ms, clipboard_ms, paste_ms);
+        WriteEvent(EvtPipelineTimings, audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, whisper_ms, llm_ms, clipboard_ms, paste_ms);
     }
 
     [Event(EvtPipelineLlmMetrics,

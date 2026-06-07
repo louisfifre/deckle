@@ -459,16 +459,13 @@
     <value>Installing</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
-    <value>Downloading the speech runtime, model, and VAD. This can take a while on a slow link.</value>
+    <value>Downloading the speech runtime and model. This can take a while on a slow link.</value>
   </data>
-  <data name="Setup_Install_Step1Of3_Format" xml:space="preserve">
-    <value>Step 1 of 3 — installing {0}...</value>
+  <data name="Setup_Install_Step1Of2_Format" xml:space="preserve">
+    <value>Step 1 of 2 — installing {0}...</value>
   </data>
-  <data name="Setup_Install_Step2Of3_Format" xml:space="preserve">
-    <value>Step 2 of 3 — downloading {0}...</value>
-  </data>
-  <data name="Setup_Install_Step3Of3_Format" xml:space="preserve">
-    <value>Step 3 of 3 — downloading {0}...</value>
+  <data name="Setup_Install_Step2Of2_Format" xml:space="preserve">
+    <value>Step 2 of 2 — downloading {0}...</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
     <value>Connecting...</value>
@@ -490,9 +487,6 @@
   </data>
   <data name="Setup_Install_NativePlaceholderUrl" xml:space="preserve">
     <value>Auto-download not configured. Please use the Browse... button on the previous step.</value>
-  </data>
-  <data name="Setup_Install_VadAlreadyInstalledStatus" xml:space="preserve">
-    <value>Silero VAD already installed.</value>
   </data>
   <data name="Setup_Install_AlreadyInstalled" xml:space="preserve">
     <value>Already installed</value>

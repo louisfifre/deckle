@@ -186,7 +186,6 @@ public sealed partial class TranscriptionEngine
             BackendAudio:      backendAudio,
             TotalTranscribeMs: result.TotalDurationMs,
             InitMs:            result.InitDurationMs,
-            VadMs:             result.VadDurationMs,
             NSegments:         nSeg);
     }
 }

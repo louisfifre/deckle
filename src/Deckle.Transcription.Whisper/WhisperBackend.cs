@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,8 +19,8 @@ namespace Deckle.Transcription.Whisper;
 //
 // IAsrBackend implementation backed by whisper.cpp through the WhisperPInvoke
 // surface. Encapsulates every P/Invoke detail and every whisper.cpp idiom
-// (native log callback, segment callback, VAD log parsing) so the orchestrator
-// in Deckle.Transcription only deals with the IAsrBackend contract.
+// (native log callback, segment callback) so the orchestrator in
+// Deckle.Transcription only deals with the IAsrBackend contract.
 //
 // Threading. LoadModelAsync runs synchronously inside Task.Run-friendly code
 // (whisper_init is blocking); the orchestrator calls it from a background
@@ -226,13 +224,13 @@ public sealed class WhisperBackend : IAsrBackend
         if (ctx == IntPtr.Zero)
         {
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", 0, 0, 0, false, -1);
+                Array.Empty<TranscriptionSegment>(), "", 0, 0, false, -1);
         }
         if (pcmSamples.Length == 0)
         {
             DeckleWhispSource.Log.TranscribeEmpty();
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", 0, 0, 0, false, 0);
+                Array.Empty<TranscriptionSegment>(), "", 0, 0, false, 0);
         }
 
         // Reset per-call accumulators before any callback may fire.
@@ -240,7 +238,6 @@ public sealed class WhisperBackend : IAsrBackend
         _segmentSink = segmentSink;
         _abortRequested = false;
         _repetitionDetector.Reset();
-        ResetVadParsingState();
 
         IntPtr fullParamsPtr = WhisperPInvoke.whisper_full_default_params_by_ref(0);
         WhisperFullParams wparams = Marshal.PtrToStructure<WhisperFullParams>(fullParamsPtr);
@@ -294,7 +291,6 @@ public sealed class WhisperBackend : IAsrBackend
             }
         }
 
-        _vadCapturing = true;
         _transcribeSw = Stopwatch.StartNew();
         _whisperInitSw = Stopwatch.StartNew();
 
@@ -311,22 +307,8 @@ public sealed class WhisperBackend : IAsrBackend
         _transcribeSw.Stop();
         long totalMs = _transcribeSw.ElapsedMilliseconds;
 
-        _vadCapturing = false;
-        if (_vadSw is { IsRunning: true }) _vadSw.Stop();
         if (_whisperInitSw is { IsRunning: true }) _whisperInitSw.Stop();
-        long vadMs = _vadSw?.ElapsedMilliseconds ?? 0;
         long whisperInitMs = _whisperInitSw?.ElapsedMilliseconds ?? 0;
-
-        // No-speech short-circuit fallback — whisper.cpp bails before the
-        // "Reduced audio from" marker when VAD finds 0 segments, so the hook
-        // never closes the cycle. Force-emit here so the consolidated Verbose
-        // line still surfaces.
-        if (_vadSw is not null && !_vadEnded)
-        {
-            _vadEnded = true;
-            if (_vadSegments < 0) _vadSegments = 0;
-            EmitVadSummary(_vadSw.Elapsed.TotalSeconds);
-        }
 
         nativeAllocs.Free();
 
@@ -336,7 +318,7 @@ public sealed class WhisperBackend : IAsrBackend
         {
             DeckleWhispSource.Log.TranscribeFailed(result);
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, vadMs, aborted, result);
+                Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result);
         }
 
         // Snapshot segments accumulated by the callback. Build full text by
@@ -350,7 +332,7 @@ public sealed class WhisperBackend : IAsrBackend
         foreach (var seg in segments) sb.Append(seg.Text);
         string fullText = sb.ToString().Trim();
 
-        return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, vadMs, aborted, result);
+        return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, aborted, result);
     }
 
     private void OnNewSegment(IntPtr ctx, IntPtr state, int n_new, IntPtr user_data)
@@ -427,14 +409,11 @@ public sealed class WhisperBackend : IAsrBackend
     // ── Whisper native log hook ──────────────────────────────────────────────
     //
     // Redirects whisper.cpp internal logs (ggml_log) to the LogWindow. Handles
-    // three concerns at once:
+    // two concerns at once:
     //
     //   1. Backend detection — the first ggml_vulkan: / ggml_cuda: / ggml_metal:
     //      prefix wins and is captured into _detectedBackend.
-    //   2. VAD parsing — whisper.cpp's VAD module emits per-segment chatter
-    //      that would flood the log; we accumulate the relevant numbers and
-    //      emit a single VadParsed summary line at the end of the cycle.
-    //   3. Init-phase compaction — four phases of whisper.cpp init each emit
+    //   2. Init-phase compaction — four phases of whisper.cpp init each emit
     //      ~3 to 17 separate lines; we accumulate per-phase values and emit
     //      one consolidated event per phase as soon as the prefix changes.
     //
@@ -461,19 +440,6 @@ public sealed class WhisperBackend : IAsrBackend
                     else if (msg.StartsWith("ggml_metal_init:", StringComparison.Ordinal) ||
                              msg.StartsWith("ggml_metal:", StringComparison.Ordinal))
                         _detectedBackend = "Metal";
-                }
-
-                // ── VAD parsing (suppress raw lines, emit summary) ───────
-                if (_vadCapturing && msg.StartsWith("whisper_vad", StringComparison.Ordinal))
-                {
-                    AccumulateVadLine(msg);
-                    if (!_vadEnded && msg.IndexOf("Reduced audio from", StringComparison.Ordinal) >= 0)
-                    {
-                        _vadSw?.Stop();
-                        _vadEnded = true;
-                        EmitVadSummary(_vadSw?.Elapsed.TotalSeconds ?? 0);
-                    }
-                    return;
                 }
 
                 // ── Init-phase compaction ────────────────────────────────
@@ -595,114 +561,11 @@ public sealed class WhisperBackend : IAsrBackend
         _phaseIndex = -1;
     }
 
-    // ── VAD parsing ──────────────────────────────────────────────────────────
-
-    private Stopwatch? _vadSw;
+    // ── Init-phase timing ─────────────────────────────────────────────────────
+    //
+    // Wall-clock for whisper.cpp's pre-decode setup: started just before
+    // whisper_full and stopped when it returns. Surfaced as whisper_init_ms.
     private Stopwatch? _whisperInitSw;
-    private volatile bool _vadCapturing;
-    private bool _vadEnded;
-    private float _vadSpeechSec = -1f;
-    private int _vadSegments = -1;
-    private float _vadReductionPct = -1f;
-    private float _vadInferenceMs = -1f;
-    private int _vadMappingPoints = -1;
-
-    private static readonly Regex s_vadSpeechRegex = new(
-        @"total duration of speech segments:\s*([\d.]+)\s*s",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private static readonly Regex s_vadSegmentsRegex = new(
-        @"detected\s+(\d+)\s+speech segments",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private static readonly Regex s_vadReductionRegex = new(
-        @"\(([\d.]+)%\s*reduction\)",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private static readonly Regex s_vadInferenceRegex = new(
-        @"vad time\s*=\s*([\d.]+)\s*ms",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private static readonly Regex s_vadMappingRegex = new(
-        @"mapping table with\s+(\d+)\s+points",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
-    private void ResetVadParsingState()
-    {
-        _vadSw = null;
-        _whisperInitSw = null;
-        _vadEnded = false;
-        _vadSpeechSec = -1f;
-        _vadSegments = -1;
-        _vadReductionPct = -1f;
-        _vadInferenceMs = -1f;
-        _vadMappingPoints = -1;
-    }
-
-    private void AccumulateVadLine(string msg)
-    {
-        if (_vadSw is null)
-        {
-            _vadSw = Stopwatch.StartNew();
-            // First VAD line is also the cue that whisper_init pre-VAD setup
-            // is done — close the init stopwatch on the same signal.
-            _whisperInitSw?.Stop();
-        }
-
-        if (_vadSpeechSec < 0)
-        {
-            var m = s_vadSpeechRegex.Match(msg);
-            if (m.Success && float.TryParse(m.Groups[1].Value,
-                NumberStyles.Float, CultureInfo.InvariantCulture, out float sp))
-            {
-                _vadSpeechSec = sp;
-            }
-        }
-        if (_vadSegments < 0)
-        {
-            var m = s_vadSegmentsRegex.Match(msg);
-            if (m.Success && int.TryParse(m.Groups[1].Value,
-                NumberStyles.Integer, CultureInfo.InvariantCulture, out int segs))
-            {
-                _vadSegments = segs;
-            }
-        }
-        if (_vadReductionPct < 0)
-        {
-            var m = s_vadReductionRegex.Match(msg);
-            if (m.Success && float.TryParse(m.Groups[1].Value,
-                NumberStyles.Float, CultureInfo.InvariantCulture, out float pct))
-            {
-                _vadReductionPct = pct;
-            }
-        }
-        if (_vadInferenceMs < 0)
-        {
-            var m = s_vadInferenceRegex.Match(msg);
-            if (m.Success && float.TryParse(m.Groups[1].Value,
-                NumberStyles.Float, CultureInfo.InvariantCulture, out float ms))
-            {
-                _vadInferenceMs = ms;
-            }
-        }
-        if (_vadMappingPoints < 0)
-        {
-            var m = s_vadMappingRegex.Match(msg);
-            if (m.Success && int.TryParse(m.Groups[1].Value,
-                NumberStyles.Integer, CultureInfo.InvariantCulture, out int pts))
-            {
-                _vadMappingPoints = pts;
-            }
-        }
-    }
-
-    private void EmitVadSummary(double vadSec)
-    {
-        var parts = new List<string>();
-        if (_vadSegments >= 0) parts.Add($"{_vadSegments} segments");
-        if (_vadSpeechSec >= 0) parts.Add($"speech {_vadSpeechSec:F1} s");
-        if (_vadReductionPct >= 0) parts.Add($"reduction {_vadReductionPct:F1}%");
-        if (_vadInferenceMs >= 0) parts.Add($"inference {_vadInferenceMs:F0} ms");
-        if (_vadMappingPoints >= 0) parts.Add($"mapping {_vadMappingPoints} pts");
-        parts.Add($"wall {vadSec:F1} s");
-        DeckleWhispSource.Log.VadParsed(string.Join(" | ", parts));
-    }
 
     // ── Dispose ──────────────────────────────────────────────────────────────
 

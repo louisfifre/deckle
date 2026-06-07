@@ -131,8 +131,6 @@ public sealed record ModelLoadResult(
 //   • TotalDurationMs covers the entire backend call (setup + inference).
 //   • InitDurationMs is the pre-inference setup window (mel computation,
 //     GPU upload, etc.) — 0 when the backend cannot distinguish phases.
-//   • VadDurationMs is the time spent inside VAD when enabled — 0 when
-//     VAD is off or the backend has no VAD step.
 //   • Aborted=true means cancellation or backend-internal abort (e.g. a
 //     repetition guard) fired; the segments already produced are still
 //     usable, the consumer decides whether to keep them.
@@ -143,7 +141,6 @@ public sealed record TranscriptionResult(
     string FullText,
     long TotalDurationMs,
     long InitDurationMs,
-    long VadDurationMs,
     bool Aborted,
     int ResultCode);
 

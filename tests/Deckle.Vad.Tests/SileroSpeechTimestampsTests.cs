@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace Deckle.Inference.Onnx.Tests;
+namespace Deckle.Vad.Tests;
 
 // SileroSpeechTimestamps is the pure, model-free half of the Silero VAD port —
 // the get_speech_timestamps hysteresis state machine. We drive it with synthetic

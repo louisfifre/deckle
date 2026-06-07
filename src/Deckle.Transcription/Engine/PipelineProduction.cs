@@ -18,5 +18,4 @@ internal readonly record struct PipelineProduction(
     float[] BackendAudio,
     long    TotalTranscribeMs,
     long    InitMs,
-    long    VadMs,
     int     NSegments);

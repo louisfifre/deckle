@@ -220,15 +220,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWhisperLogSetUnavailable, ex_message);
     }
 
-    [Event(EvtVadParsed,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "vad: {0}")]
-    public void VadParsed(string summary)
-    {
-        if (IsEnabled()) WriteEvent(EvtVadParsed, summary);
-    }
-
     // ── Whisper init-phase compaction ────────────────────────────────────
     //
     // Each event consolidates one phase of whisper.cpp's init flow that

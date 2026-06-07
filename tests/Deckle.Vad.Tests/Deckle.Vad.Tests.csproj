@@ -3,6 +3,6 @@
     <!-- SileroSpeechTimestamps is internal; access goes through InternalsVisibleTo
          declared in the module csproj. The xunit.v3 / MTP harness comes from
          tests\Directory.Build.props. -->
-    <ProjectReference Include="..\..\src\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
+    <ProjectReference Include="..\..\src\Deckle.Vad\Deckle.Vad.csproj" />
   </ItemGroup>
 </Project>

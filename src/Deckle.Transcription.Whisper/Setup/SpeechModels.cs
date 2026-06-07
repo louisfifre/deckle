@@ -13,20 +13,16 @@ namespace Deckle.Transcription.Whisper.Setup;
 // TranscriptionEngine, the wizard, Settings — they all read filenames, default
 // IDs, and download URLs from this catalog instead of hard-coding them.
 //
-// V1 catalog: two Whisper models (base, large-v3) plus the mandatory
-// Silero VAD model. SHA-256 fields are placeholders — HuggingFace doesn't
-// publish a canonical hash format compatible with our verifier yet.
-// They'll be filled when the redist pipeline computes them.
+// V1 catalog: two Whisper models (base, large-v3). SHA-256 fields are
+// placeholders — HuggingFace doesn't publish a canonical hash format
+// compatible with our verifier yet. They'll be filled when the redist
+// pipeline computes them.
 public static class SpeechModels
 {
     // Default Whisper model the engine targets when no override is set.
     // Single source of truth — TranscriptionEngine reads this rather than its
     // own copy of the filename. Swap it here when bumping the default.
     public const string DefaultModelFileName = "ggml-large-v3.bin";
-
-    // VAD model used by SpeechDetection. Required for voice activity
-    // detection inside whisper_full when SpeechDetection.Enabled = true.
-    public const string VadModelFileName = "ggml-silero-v6.2.0.bin";
 
     public static IReadOnlyList<ModelEntry> WhisperModels { get; } = new[]
     {
@@ -43,13 +39,6 @@ public static class SpeechModels
             Url:         "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
             SizeBytes:   3_094_623_691L),
     };
-
-    public static ModelEntry VadModel { get; } = new(
-        Id:          "silero-vad",
-        FileName:    VadModelFileName,
-        DisplayName: "Silero VAD",
-        Url:         "https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin",
-        SizeBytes:   716_800L);
 
     // Catalog handle for the engine's default model. The wizard surfaces
     // this as the pre-selected radio in the Choices page.
@@ -71,6 +60,4 @@ public static class SpeechModels
     }
 
     public static bool IsDefaultInstalled() => IsInstalled(DefaultWhisperModel);
-
-    public static bool IsVadInstalled() => IsInstalled(VadModel);
 }
