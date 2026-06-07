@@ -42,18 +42,21 @@ public sealed class StreamingSettings
     public SpeechTrimSettings      SpeechTrim { get; set; } = new();
 }
 
-// External Silero VAD pre-trim (Deckle.Inference.Onnx), distinct from the
-// whisper-internal SpeechDetection VAD. Streaming path only: each utterance is
-// trimmed to its speech spans before the backend, and an utterance with no speech
-// (an energy-segmenter false positive on noise/silence) is dropped outright — the
-// main guard against whisper hallucinating on near-silence. The model
-// (silero_vad.onnx) is provisioned on demand; until it is present the trim is a
-// silent no-op. Opt-in (default off) so an upgrade changes nothing until the user
-// asks for it, mirroring Strategy. Detection parameters use the Silero reference
-// defaults (SileroVadOptions) and are not exposed.
+// External Silero VAD pre-trim (Deckle.Inference.Onnx) — the active VAD now that
+// the whisper-internal SpeechDetection VAD is unplugged. Streaming path only: it
+// cleans each big chunk the energy segmenter cut, keeping only the speech spans
+// (so a mid-utterance pause the energy threshold didn't split is removed) and
+// dropping an utterance with no speech at all (an energy false positive on
+// noise/silence) — the main guard against whisper hallucinating on near-silence.
+// Surfaced as the single "Voice activity detection" toggle in the Whisper
+// settings. The model (silero_vad.onnx) is provisioned on demand; until it is
+// present the trim is a silent no-op (the first take after enabling triggers a
+// one-time background download and runs untrimmed). Default on; detection
+// parameters use the Silero reference defaults (SileroVadOptions) and are not
+// exposed.
 public sealed class SpeechTrimSettings
 {
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; } = true;
 }
 
 // Bootstrap parameters for the active ASR engine. The first three (Model /
@@ -77,8 +80,10 @@ public sealed class EngineSettings
     public bool CarryInitialPrompt { get; set; } = true;
 }
 
-// Silero VAD: pre-filter that detects speech segments before Whisper.
-// When Enabled=false, all other fields are ignored by the engine.
+// Whisper's built-in Silero VAD (a whisper_full parameter). Inert: the engine
+// forces vad = 0 (see WhisperParamsMapper) and no UI binds to it anymore — the
+// external Silero ONNX VAD (Streaming.SpeechTrim) replaced it. Kept, not removed,
+// pending a later revisit of the built-in path; until then nothing reads these.
 public sealed class SpeechDetectionSettings
 {
     public bool Enabled { get; set; } = true;

@@ -46,7 +46,7 @@ public sealed partial class WhisperPage : Page
     // (it migrated off PathsSettings into the Whisp module's POCO).
     private static readonly TranscriptionSettings _transcriptionDefaults = new();
     private static readonly EngineSettings _engineDefaults = new();
-    private static readonly SpeechDetectionSettings _speechDefaults = new();
+    private static readonly SpeechTrimSettings _speechTrimDefaults = new();
     private static readonly DecodingSettings _decodingDefaults = new();
     private static readonly ConfidenceSettings _confidenceDefaults = new();
     private static readonly OutputFilterSettings _outputDefaults = new();
@@ -68,7 +68,6 @@ public sealed partial class WhisperPage : Page
             // valid with Minimum=0 and default Maximum, so no clamping issue
             // except for LogprobSlider (VM default -1.0 gets clamped to 0,
             // then to -0.4 when Maximum is set; Load() corrects it).
-            VadMaxSpeechSlider.Minimum = 5;
             EntropySlider.Minimum = 1.5;
             LogprobSlider.Minimum = -1.5;
             LogprobSlider.Maximum = -0.4;
@@ -122,14 +121,7 @@ public sealed partial class WhisperPage : Page
                 // resolved path instead). Set once on first load; the value
                 // is stable for the lifetime of the process.
                 ModelsDirectoryPicker.DefaultPath = AppPaths.ModelsDirectory;
-                VadEnabledCard.PointerEntered += (_, _) => VadEnabledReset.Opacity = 1;
-                VadEnabledCard.PointerExited += (_, _) => VadEnabledReset.Opacity = 0;
-                WireHover(VadThresholdCard, VadThresholdReset);
-                WireHover(VadMinSpeechCard, VadMinSpeechReset);
-                WireHover(VadMinSilenceCard, VadMinSilenceReset);
-                WireHover(VadMaxSpeechCard, VadMaxSpeechReset);
-                WireHover(VadSpeechPadCard, VadSpeechPadReset);
-                WireHover(VadOverlapCard, VadOverlapReset);
+                WireHover(VadEnabledCard, VadEnabledReset);
                 WireHover(TemperatureCard, TemperatureReset);
                 WireHover(TemperatureIncrementCard, TemperatureIncrementReset);
                 WireHover(EntropyCard, EntropyReset);
@@ -206,21 +198,6 @@ public sealed partial class WhisperPage : Page
 
     private static string FmtTwo(double v) =>
         v.ToString("0.00", CultureInfo.InvariantCulture);
-
-    private static string FmtSeconds(double v) =>
-        ((int)v).ToString(CultureInfo.InvariantCulture) + "s";
-
-    private void VadThresholdSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadThresholdValue.Text = FmtTwo(e.NewValue);
-
-    private void VadMaxSpeechSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadMaxSpeechValue.Text = FmtSeconds(e.NewValue);
-
-    private void VadOverlapSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadOverlapValue.Text = FmtTwo(e.NewValue);
 
     private void TemperatureSlider_ValueChanged(object sender,
         Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
@@ -417,25 +394,7 @@ public sealed partial class WhisperPage : Page
         ViewModel.InitialPrompt = _engineDefaults.InitialPrompt;
 
     private void VadEnabledReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadEnabled = _speechDefaults.Enabled;
-
-    private void VadThresholdReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadThreshold = _speechDefaults.Threshold;
-
-    private void VadMinSpeechReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadMinSpeechDurationMs = _speechDefaults.MinSpeechDurationMs;
-
-    private void VadMinSilenceReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadMinSilenceDurationMs = _speechDefaults.MinSilenceDurationMs;
-
-    private void VadMaxSpeechReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadMaxSpeechDurationSec = _speechDefaults.MaxSpeechDurationSec;
-
-    private void VadSpeechPadReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadSpeechPadMs = _speechDefaults.SpeechPadMs;
-
-    private void VadOverlapReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadSamplesOverlap = _speechDefaults.SamplesOverlap;
+        ViewModel.VadEnabled = _speechTrimDefaults.Enabled;
 
     private void TemperatureReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.Temperature = _decodingDefaults.Temperature;

@@ -62,7 +62,7 @@ public sealed partial class TranscriptionEngine
             segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
             segCfg.MarginMs, segCfg.MinUtteranceMs);
 
-        // External Silero VAD pre-trim (opt-in). Resolved here on the worker
+        // External Silero VAD pre-trim (default on). Resolved here on the worker
         // thread, before the consumer launches, so the consumer captures a ready
         // instance. Null when disabled or when the model isn't present yet (a
         // missing model kicks off a one-time background download — this take runs
@@ -334,20 +334,37 @@ public sealed partial class TranscriptionEngine
             }
             if (vad is not null)
             {
-                long trimStart = Stopwatch.GetTimestamp();
-                float[] trimmed = vad.Trim(samples, SileroVadOptions.Default);
-                long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
-                DeckleWhispSource.Log.SpeechTrimmed(u.Index, samples.Length, trimmed.Length, trimMs);
-                if (trimmed.Length == 0)
+                try
                 {
-                    // No speech — an energy false positive on noise/silence. Drop it
-                    // rather than feed near-silence to whisper, which hallucinates on
-                    // it. The previous tail is left intact: a dropped utterance adds
-                    // no text and must not sever the continuity of the real ones.
-                    DeckleWhispSource.Log.UtteranceDroppedNoSpeech(u.Index);
-                    continue;
+                    long trimStart = Stopwatch.GetTimestamp();
+                    float[] trimmed = vad.Trim(samples, SileroVadOptions.Default);
+                    long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
+                    DeckleWhispSource.Log.SpeechTrimmed(u.Index, samples.Length, trimmed.Length, trimMs);
+                    if (trimmed.Length == 0)
+                    {
+                        // No speech — an energy false positive on noise/silence. Drop it
+                        // rather than feed near-silence to whisper, which hallucinates on
+                        // it. The previous tail is left intact: a dropped utterance adds
+                        // no text and must not sever the continuity of the real ones.
+                        DeckleWhispSource.Log.UtteranceDroppedNoSpeech(u.Index);
+                        continue;
+                    }
+                    samples = trimmed;
                 }
-                samples = trimmed;
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Resilience (the first goal): a VAD runtime failure must not lose
+                    // the dictation. The ONNX binding is the never-runtime-verified part,
+                    // so on any error log it once, stop trimming for the rest of this
+                    // take (vad = null), and let this utterance through UNtrimmed rather
+                    // than dropping it or crashing the consumer.
+                    DeckleWhispSource.Log.SpeechTrimVadUnavailable($"trim failed: {ex.GetType().Name}: {ex.Message}");
+                    vad = null;
+                }
             }
             backendChunks?.Add(samples);
 

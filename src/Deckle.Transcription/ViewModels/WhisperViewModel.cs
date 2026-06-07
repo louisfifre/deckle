@@ -75,75 +75,19 @@ public partial class WhisperViewModel : ObservableObject
         PushToSettings();
     }
 
-    // ── Speech Detection ─────────────────────────────────────────────────────
+    // ── Voice activity detection ─────────────────────────────────────────────
 
+    // The single "Voice activity detection" toggle. Drives the external Silero
+    // ONNX VAD (Streaming.SpeechTrim) — the whisper-internal VAD it used to bind
+    // is unplugged. The Silero detection parameters are not exposed (reference
+    // defaults), so this is the only VAD knob.
     [ObservableProperty]
     public partial bool VadEnabled { get; set; }
-
-    [ObservableProperty]
-    public partial double VadThreshold { get; set; }
-
-    [ObservableProperty]
-    public partial double VadMinSpeechDurationMs { get; set; }
-
-    [ObservableProperty]
-    public partial double VadMinSilenceDurationMs { get; set; }
-
-    [ObservableProperty]
-    public partial double VadMaxSpeechDurationSec { get; set; }
-
-    [ObservableProperty]
-    public partial double VadSpeechPadMs { get; set; }
-
-    [ObservableProperty]
-    public partial double VadSamplesOverlap { get; set; }
 
     partial void OnVadEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.Enabled", value.ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadThresholdChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.Threshold", value.ToString("0.00"));
-        PushToSettings();
-    }
-
-    partial void OnVadMinSpeechDurationMsChanged(double value)
-    {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MinSpeechDurationMs", ((int)value).ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadMinSilenceDurationMsChanged(double value)
-    {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MinSilenceDurationMs", ((int)value).ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadMaxSpeechDurationSecChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MaxSpeechDurationSec", ((int)value).ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadSpeechPadMsChanged(double value)
-    {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.SpeechPadMs", ((int)value).ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadSamplesOverlapChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.SamplesOverlap", value.ToString("0.00"));
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Enabled", value.ToString());
         PushToSettings();
     }
 
@@ -355,12 +299,6 @@ public partial class WhisperViewModel : ObservableObject
         Language = "fr";
         InitialPrompt = "Bonjour. Voici une transcription en français, avec une ponctuation soignée et des phrases complètes.";
         VadEnabled = true;
-        VadThreshold = 0.5;
-        VadMinSpeechDurationMs = 250;
-        VadMinSilenceDurationMs = 500;
-        VadMaxSpeechDurationSec = 30.0;
-        VadSpeechPadMs = 200;
-        VadSamplesOverlap = 0.1;
         Temperature = 0.0;
         TemperatureIncrement = 0.2;
         EntropyThreshold = 2.4;
@@ -399,13 +337,7 @@ public partial class WhisperViewModel : ObservableObject
             UseGpu = s.Engine.UseGpu;
             Language = s.Engine.Language;
             InitialPrompt = s.Engine.InitialPrompt;
-            VadEnabled = s.SpeechDetection.Enabled;
-            VadThreshold = s.SpeechDetection.Threshold;
-            VadMinSpeechDurationMs = s.SpeechDetection.MinSpeechDurationMs;
-            VadMinSilenceDurationMs = s.SpeechDetection.MinSilenceDurationMs;
-            VadMaxSpeechDurationSec = s.SpeechDetection.MaxSpeechDurationSec;
-            VadSpeechPadMs = s.SpeechDetection.SpeechPadMs;
-            VadSamplesOverlap = s.SpeechDetection.SamplesOverlap;
+            VadEnabled = s.Streaming.SpeechTrim.Enabled;
             Temperature = s.Decoding.Temperature;
             TemperatureIncrement = s.Decoding.TemperatureIncrement;
             EntropyThreshold = s.Confidence.EntropyThreshold;
@@ -441,16 +373,7 @@ public partial class WhisperViewModel : ObservableObject
         s.Engine.Language = Language;
         s.Engine.InitialPrompt = InitialPrompt;
 
-        s.SpeechDetection.Enabled = VadEnabled;
-        s.SpeechDetection.Threshold = (float)VadThreshold;
-        if (!double.IsNaN(VadMinSpeechDurationMs))
-            s.SpeechDetection.MinSpeechDurationMs = (int)VadMinSpeechDurationMs;
-        if (!double.IsNaN(VadMinSilenceDurationMs))
-            s.SpeechDetection.MinSilenceDurationMs = (int)VadMinSilenceDurationMs;
-        s.SpeechDetection.MaxSpeechDurationSec = (float)VadMaxSpeechDurationSec;
-        if (!double.IsNaN(VadSpeechPadMs))
-            s.SpeechDetection.SpeechPadMs = (int)VadSpeechPadMs;
-        s.SpeechDetection.SamplesOverlap = (float)VadSamplesOverlap;
+        s.Streaming.SpeechTrim.Enabled = VadEnabled;
 
         s.Decoding.Temperature = Temperature;
         s.Decoding.TemperatureIncrement = TemperatureIncrement;

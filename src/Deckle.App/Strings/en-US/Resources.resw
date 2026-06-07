@@ -923,42 +923,6 @@
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
     <value>Pre-filter audio so only speech reaches the model. Reduces phantom text caused by silence or background noise. Default: on.</value>
   </data>
-  <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
-    <value>Detection threshold</value>
-  </data>
-  <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How confident Deckle must be that a sound is speech. Higher values filter more noise but may miss quiet speech. Default: 0.5.</value>
-  </data>
-  <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
-    <value>Minimum speech duration</value>
-  </data>
-  <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
-    <value>Sounds shorter than this (in milliseconds) are ignored. Raise to filter out short clicks and pops. Default: 250 ms.</value>
-  </data>
-  <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
-    <value>Minimum silence duration</value>
-  </data>
-  <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
-    <value>Gaps shorter than this (in milliseconds) are kept as part of the same speech segment. Default: 500 ms.</value>
-  </data>
-  <data name="WhisperVadMaxSpeechCard.Header" xml:space="preserve">
-    <value>Maximum segment length</value>
-  </data>
-  <data name="WhisperVadMaxSpeechCard.Description" xml:space="preserve">
-    <value>Force-split a continuous speech segment after this many seconds. Default: 30 s.</value>
-  </data>
-  <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
-    <value>Speech padding</value>
-  </data>
-  <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
-    <value>Extra audio (in milliseconds) kept before and after each detected segment, so words aren't clipped at the edges. Default: 200 ms.</value>
-  </data>
-  <data name="WhisperVadOverlapCard.Header" xml:space="preserve">
-    <value>Window overlap</value>
-  </data>
-  <data name="WhisperVadOverlapCard.Description" xml:space="preserve">
-    <value>Fraction of overlap between consecutive analysis windows. Higher values catch fast transitions at a small CPU cost. Default: 0.1.</value>
-  </data>
   <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
     <value>Suppress non-speech tokens</value>
   </data>
