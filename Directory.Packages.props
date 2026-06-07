@@ -35,6 +35,12 @@
     <!-- Direct2D-backed drawing on a CompositionDrawingSurface (HUD rewriting stroke). -->
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
 
+    <!-- ONNX Runtime (CPU EP) for Deckle.Inference.Onnx — the external Silero VAD.
+         Plain Microsoft.ML.OnnxRuntime, NOT the .DirectML/.Gpu/genai variants: the
+         VAD model is tiny and runs single-threaded on CPU, off the GPU that whisper
+         holds. The native onnxruntime.dll resolves at the App's win-x64 build. -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
+
     <!-- Test stack (tests/Deckle.*.Tests): xUnit v3 on the Microsoft Testing Platform,
          VSTest bridge for the Test Explorer. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />

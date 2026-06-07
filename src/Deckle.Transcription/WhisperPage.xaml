@@ -208,17 +208,24 @@
 
                 <!-- ── Speech filtering ────────────────────────────────────── -->
                 <TextBlock x:Uid="WhisperPageSpeechFilteringHeaderLabel"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}" />
 
                 <TextBlock x:Uid="WhisperPageSpeechFilteringBodyLabel"
                            Style="{StaticResource BodyTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            TextWrapping="Wrap"
-                           Margin="1,0,0,8" />
+                           Margin="1,0,0,8"
+                           Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}" />
 
+                <!-- VAD is a SettingsExpander : the on/off toggle lives in the
+                     header, the four Silero detection parameters are revealed as
+                     inline children (gated on the toggle, same as the streaming
+                     segmenter cards below). -->
                 <controls:SettingsExpander x:Name="VadEnabledCard"
                                            x:Uid="WhisperVadEnabledCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}">
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}"
+                                           Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <ToggleSwitch x:Name="VadEnabledToggle"
                                       IsOn="{x:Bind ViewModel.VadEnabled, Mode=TwoWay}" />
@@ -232,12 +239,12 @@
 
                         <controls:SettingsCard x:Name="VadThresholdCard"
                                                x:Uid="WhisperVadThresholdCard"
-                                               IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
+                                               ContentAlignment="Vertical"
+                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                                 <Slider x:Name="VadThresholdSlider"
                                         Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="1"
+                                        Maximum="0.9"
                                         StepFrequency="0.05"
                                         TickFrequency="0.1"
                                         Value="{x:Bind ViewModel.VadThreshold, Mode=TwoWay}"
@@ -254,16 +261,19 @@
 
                         <controls:SettingsCard x:Name="VadMinSpeechCard"
                                                x:Uid="WhisperVadMinSpeechCard"
-                                               IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <NumberBox x:Name="VadMinSpeechBox"
-                                           Minimum="0"
-                                           Maximum="5000"
-                                           SmallChange="50"
-                                           LargeChange="250"
-                                           SpinButtonPlacementMode="Hidden"
-                                           MinWidth="100"
-                                           Value="{x:Bind ViewModel.VadMinSpeechDurationMs, Mode=TwoWay}" />
+                                               ContentAlignment="Vertical"
+                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Slider x:Name="VadMinSpeechSlider"
+                                        Style="{StaticResource SettingSliderStyle}"
+                                        Minimum="0"
+                                        Maximum="1000"
+                                        StepFrequency="50"
+                                        TickFrequency="100"
+                                        Value="{x:Bind ViewModel.VadMinSpeechDurationMs, Mode=TwoWay}"
+                                        ValueChanged="VadMinSpeechSlider_ValueChanged" />
+                                <TextBlock x:Name="VadMinSpeechValue"
+                                           Style="{StaticResource SliderValueTextStyle}" />
                                 <Button x:Name="VadMinSpeechReset"
                                         Style="{StaticResource ResetButtonStyle}"
                                         Click="VadMinSpeechReset_Click">
@@ -274,16 +284,19 @@
 
                         <controls:SettingsCard x:Name="VadMinSilenceCard"
                                                x:Uid="WhisperVadMinSilenceCard"
-                                               IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <NumberBox x:Name="VadMinSilenceBox"
-                                           Minimum="0"
-                                           Maximum="5000"
-                                           SmallChange="50"
-                                           LargeChange="250"
-                                           SpinButtonPlacementMode="Hidden"
-                                           MinWidth="100"
-                                           Value="{x:Bind ViewModel.VadMinSilenceDurationMs, Mode=TwoWay}" />
+                                               ContentAlignment="Vertical"
+                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Slider x:Name="VadMinSilenceSlider"
+                                        Style="{StaticResource SettingSliderStyle}"
+                                        Minimum="0"
+                                        Maximum="1000"
+                                        StepFrequency="50"
+                                        TickFrequency="100"
+                                        Value="{x:Bind ViewModel.VadMinSilenceDurationMs, Mode=TwoWay}"
+                                        ValueChanged="VadMinSilenceSlider_ValueChanged" />
+                                <TextBlock x:Name="VadMinSilenceValue"
+                                           Style="{StaticResource SliderValueTextStyle}" />
                                 <Button x:Name="VadMinSilenceReset"
                                         Style="{StaticResource ResetButtonStyle}"
                                         Click="VadMinSilenceReset_Click">
@@ -292,74 +305,24 @@
                             </StackPanel>
                         </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Name="VadMaxSpeechCard"
-                                               x:Uid="WhisperVadMaxSpeechCard"
-                                               IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <!-- WinUI 3 release bug (net10 / trimming):
-                                     setting Minimum="5" or Value="5" in XAML
-                                     makes the parser throw at InitializeComponent
-                                     ("Failed to assign to property RangeBase.
-                                     Minimum/Value"). Only Slider in the file
-                                     with Minimum > defaultValue. Fix: leave
-                                     only Maximum and steps in XAML; Minimum
-                                     and Value are set in code-behind in the
-                                     ctor via ConfigureMinValueSlider() (after
-                                     InitializeComponent). -->
-                                <Slider x:Name="VadMaxSpeechSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Maximum="60"
-                                        StepFrequency="1"
-                                        TickFrequency="5"
-                                        Value="{x:Bind ViewModel.VadMaxSpeechDurationSec, Mode=TwoWay}"
-                                        ValueChanged="VadMaxSpeechSlider_ValueChanged" />
-                                <TextBlock x:Name="VadMaxSpeechValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="VadMaxSpeechReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="VadMaxSpeechReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
                         <controls:SettingsCard x:Name="VadSpeechPadCard"
                                                x:Uid="WhisperVadSpeechPadCard"
-                                               IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <NumberBox x:Name="VadSpeechPadBox"
-                                           Minimum="0"
-                                           Maximum="2000"
-                                           SmallChange="25"
-                                           LargeChange="100"
-                                           SpinButtonPlacementMode="Hidden"
-                                           MinWidth="100"
-                                           Value="{x:Bind ViewModel.VadSpeechPadMs, Mode=TwoWay}" />
+                                               ContentAlignment="Vertical"
+                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Slider x:Name="VadSpeechPadSlider"
+                                        Style="{StaticResource SettingSliderStyle}"
+                                        Minimum="0"
+                                        Maximum="200"
+                                        StepFrequency="10"
+                                        TickFrequency="20"
+                                        Value="{x:Bind ViewModel.VadSpeechPadMs, Mode=TwoWay}"
+                                        ValueChanged="VadSpeechPadSlider_ValueChanged" />
+                                <TextBlock x:Name="VadSpeechPadValue"
+                                           Style="{StaticResource SliderValueTextStyle}" />
                                 <Button x:Name="VadSpeechPadReset"
                                         Style="{StaticResource ResetButtonStyle}"
                                         Click="VadSpeechPadReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="VadOverlapCard"
-                                               x:Uid="WhisperVadOverlapCard"
-                                               IsEnabled="{x:Bind ViewModel.VadEnabled, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="VadOverlapSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="0.5"
-                                        StepFrequency="0.05"
-                                        TickFrequency="0.1"
-                                        Value="{x:Bind ViewModel.VadSamplesOverlap, Mode=TwoWay}"
-                                        ValueChanged="VadOverlapSlider_ValueChanged" />
-                                <TextBlock x:Name="VadOverlapValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="VadOverlapReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="VadOverlapReset_Click">
                                     <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
                                 </Button>
                             </StackPanel>
@@ -631,17 +594,56 @@
                                        Value="{x:Bind ViewModel.SegThresholdDbfs, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Name="SegHangoverCard"
-                                               x:Uid="WhisperSegHangoverCard"
+                        <controls:SettingsCard x:Name="SegHangoverMaxCard"
+                                               x:Uid="WhisperSegHangoverMaxCard"
                                                Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegHangoverBox"
-                                       Minimum="0"
+                            <NumberBox x:Name="SegHangoverMaxBox"
+                                       Minimum="500"
+                                       Maximum="15000"
+                                       SmallChange="100"
+                                       LargeChange="500"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverMaxMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverMinCard"
+                                               x:Uid="WhisperSegHangoverMinCard"
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverMinBox"
+                                       Minimum="100"
                                        Maximum="2000"
                                        SmallChange="50"
                                        LargeChange="100"
                                        SpinButtonPlacementMode="Hidden"
                                        MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegHangoverMs, Mode=TwoWay}" />
+                                       Value="{x:Bind ViewModel.SegHangoverMinMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverRampStartCard"
+                                               x:Uid="WhisperSegHangoverRampStartCard"
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverRampStartBox"
+                                       Minimum="30000"
+                                       Maximum="600000"
+                                       SmallChange="10000"
+                                       LargeChange="30000"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverRampStartMs, Mode=TwoWay}" />
+                        </controls:SettingsCard>
+
+                        <controls:SettingsCard x:Name="SegHangoverRampEndCard"
+                                               x:Uid="WhisperSegHangoverRampEndCard"
+                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
+                            <NumberBox x:Name="SegHangoverRampEndBox"
+                                       Minimum="60000"
+                                       Maximum="900000"
+                                       SmallChange="10000"
+                                       LargeChange="30000"
+                                       SpinButtonPlacementMode="Hidden"
+                                       MinWidth="100"
+                                       Value="{x:Bind ViewModel.SegHangoverRampEndMs, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                         <controls:SettingsCard x:Name="SegMarginCard"
@@ -668,19 +670,6 @@
                                        SpinButtonPlacementMode="Hidden"
                                        MinWidth="100"
                                        Value="{x:Bind ViewModel.SegMinUtteranceMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegMaxUtteranceCard"
-                                               x:Uid="WhisperSegMaxUtteranceCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegMaxUtteranceBox"
-                                       Minimum="1000"
-                                       Maximum="60000"
-                                       SmallChange="1000"
-                                       LargeChange="5000"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegMaxUtteranceMs, Mode=TwoWay}" />
                         </controls:SettingsCard>
 
                     </controls:SettingsExpander.Items>

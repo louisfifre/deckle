@@ -388,16 +388,17 @@ public sealed class WhisperBackend : IAsrBackend
                 var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp);
                 lock (_segmentsLock) _segmentsLocal.Add(segment);
 
-                // Repetition-loop guard: if the last N segments are identical,
-                // ask whisper to stop. abort_callback is probed between decoder
-                // steps, so one more segment may surface — that's expected.
+                // Repetition-loop guard: if recent segments repeat — one phrase
+                // (A A A) or an alternating pair (A B A B) — ask whisper to stop.
+                // abort_callback is probed between decoder steps, so one more
+                // segment may surface — that's expected.
                 if (!_abortRequested &&
-                    _repetitionDetector.ObserveAndShouldAbort(segText, out int streak))
+                    _repetitionDetector.ObserveAndShouldAbort(segText, out int streak, out int period))
                 {
                     _abortRequested = true;
                     string preview = segText.Trim();
                     if (preview.Length > 60) preview = preview[..60] + "…";
-                    DeckleWhispSource.Log.TranscribeRepetitionLoop(streak, preview);
+                    DeckleWhispSource.Log.TranscribeRepetitionLoop(streak, period, preview);
                 }
 
                 _segmentSink?.Invoke(segment);

@@ -1,8 +1,11 @@
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
 using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
+using Deckle.Diagnostics.Logging;
+using Deckle.Inference.Onnx;
 using Deckle.Transcription.Engine;
 using Deckle.Transcription.Streaming;
 
@@ -40,22 +43,109 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt)
     {
+        // Streaming-activity gate: held open for the lifetime of this method
+        // through `using`, so any early return / throw / cancellation still
+        // closes it on the way out. The listener-side drop filter (App)
+        // combines this gate with the LogStreamingTranscriptionActivity
+        // toggle to silence Whisp Verbose events during streaming.
+        using var _ = StreamingCaptureScope.Open();
+
+        // Milestone + verbose snapshot pair: the LogWindow gets a human jalon
+        // (StreamingPipelineStarted), then the structured line that says under
+        // which segmenter parameters this take ran (so a reread of the log
+        // never has to wonder which threshold or hangover was active).
+        var segCfg = _host.Transcription.Streaming.Segmenter;
+        DeckleWhispSource.Log.StreamingPipelineStarted();
+        DeckleWhispSource.Log.SegmenterSettingsSnapshot(
+            segCfg.ThresholdDbfs,
+            segCfg.HangoverMaxMs, segCfg.HangoverMinMs,
+            segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
+            segCfg.MarginMs, segCfg.MinUtteranceMs);
+
+        // External Silero VAD pre-trim (default on). Resolved here on the worker
+        // thread, before the consumer launches, so the consumer captures a ready
+        // instance. Null when disabled or when the model isn't present yet (a
+        // missing model kicks off a one-time background download — this take runs
+        // untrimmed, a later one picks it up).
+        var trimCfg = _host.Transcription.Streaming.SpeechTrim;
+        SileroVad? vad = trimCfg.Enabled ? EnsureVadReady() : null;
+        // Surface the transient "enabled but the model isn't ready yet" state, so a
+        // take that ran untrimmed for that reason is explicit rather than inferred
+        // from absent SpeechTrimmed lines.
+        if (trimCfg.Enabled && vad is null)
+            DeckleWhispSource.Log.SpeechTrimNotReady();
+
+        // The user's detection parameters, mapped onto the options the trim runs with.
+        // Resolved once per take; the snapshot records them (only when the VAD will
+        // actually run) the way SegmenterSettingsSnapshot does for the producer.
+        var vadOptions = new SileroVadOptions
+        {
+            Threshold            = trimCfg.Threshold,
+            MinSpeechDurationMs  = trimCfg.MinSpeechDurationMs,
+            MinSilenceDurationMs = trimCfg.MinSilenceDurationMs,
+            SpeechPadMs          = trimCfg.SpeechPadMs,
+        };
+        if (vad is not null)
+            DeckleWhispSource.Log.SpeechTrimSettingsSnapshot(
+                vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
+                vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
+
         var channel = Channel.CreateUnbounded<Utterance>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = true,
         });
 
-        var segmenter = new EnergySegmenter(
-            _host.Transcription.Streaming.Segmenter,
-            u => channel.Writer.TryWrite(u)); // unbounded → never blocks the producer
+        // Backlog: channel depth (utterances queued, not yet transcribed). Held
+        // in a one-cell array so producer (Interlocked.Increment on enqueue) and
+        // consumer (Interlocked.Decrement after dequeue) share the same address
+        // through closures. The heartbeat reads it with Volatile.Read.
+        int[] backlogBox = new int[1];
 
-        void OnFrame(CaptureFrame f) => segmenter.Push(f);
+        // Frame-rate clock for the 1 Hz heartbeat (20 × 50 ms frames per tick)
+        // and for the recording_sec field. Stopwatch starts now, OnFrame trips
+        // the heartbeat once per second.
+        var recordSw = Stopwatch.StartNew();
+        int hbFrames = 0;
+        // Last per-frame RMS, kept so the heartbeat can report a live mic level
+        // without spamming an event for every 50 ms frame.
+        float lastRmsLinear = 0f;
+
+        var segmenter = new EnergySegmenter(
+            segCfg,
+            u =>
+            {
+                Interlocked.Increment(ref backlogBox[0]);
+                channel.Writer.TryWrite(u); // unbounded → never blocks the producer
+            });
+
+        void OnFrame(CaptureFrame f)
+        {
+            lastRmsLinear = f.Rms;
+            segmenter.Push(f);
+            if (++hbFrames >= 20)
+            {
+                hbFrames = 0;
+                var snap = segmenter.Snapshot();
+                double rmsDbfs = lastRmsLinear > 1e-6f
+                    ? 20.0 * Math.Log10(lastRmsLinear)
+                    : -120.0;
+                DeckleWhispSource.Log.StreamingHeartbeat(
+                    snap.State,
+                    rmsDbfs,
+                    snap.CurrentUtteranceFrames * 50,
+                    snap.RequiredHangoverFrames * 50,
+                    Volatile.Read(ref backlogBox[0]),
+                    snap.TotalUtterancesEmitted,
+                    (int)(recordSw.ElapsedMilliseconds / 1000));
+            }
+        }
 
         // The consumer must be live BEFORE capture starts — frames (and the
         // utterances they yield) arrive during Record.
         Task<StreamingConsumeResult> consumer =
-            Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt));
+            Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt,
+                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad, vadOptions));
 
         _capture.Frame += OnFrame;
 
@@ -192,7 +282,8 @@ public sealed partial class TranscriptionEngine
     // throw on cancellation), and ReadAllAsync may still yield a ready item after
     // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
-        ChannelReader<Utterance> reader, CancellationToken drainCt)
+        ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue,
+        SileroVad? vad, SileroVadOptions vadOptions)
     {
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0, vadMs = 0;
@@ -214,13 +305,21 @@ public sealed partial class TranscriptionEngine
         // chunks are accumulated so BackendAudio is exactly what the backend
         // received — the kept utterances, not the continuous take (ADR-0006).
         var pp = _host.Audio.Preprocessing;
-        List<float[]>? backendChunks = pp.Enabled ? new List<float[]>() : null;
+        // Capture the backend audio (ADR-0006) whenever a stage transforms it — the
+        // DSP or the VAD trim — so BackendAudio mirrors exactly what the backend
+        // received.
+        List<float[]>? backendChunks = (pp.Enabled || vad is not null) ? new List<float[]>() : null;
 
         await foreach (Utterance u in reader.ReadAllAsync(drainCt).ConfigureAwait(false))
         {
             // Deterministic Dispose stop — see the method remark.
             drainCt.ThrowIfCancellationRequested();
             nUtt++;
+            // Decrement the shared backlog now: heartbeat readings between here
+            // and the end of this iteration reflect the in-flight utterance as
+            // dequeued, regardless of whether the backend call ahead succeeds
+            // or fails.
+            int backlogAfter = onDequeue();
 
             // Inter-utterance context, rebuilt by hand: the fixed stylistic prompt
             // plus the tail of the previous utterance, so continuity carries
@@ -237,17 +336,53 @@ public sealed partial class TranscriptionEngine
                 EmitPreamble:      nUtt == 1,
                 TimelineOffsetSec: u.StartSec);
 
-            // Run the opt-in DSP on this utterance and feed the processed buffer to
-            // the backend; accumulate it so BackendAudio mirrors what was sent.
+            // Resolve the buffer the backend will see: optional DSP, then the
+            // optional external VAD trim. Accumulate the final buffer so
+            // BackendAudio mirrors exactly what was sent (ADR-0006).
             float[] samples = u.Samples;
-            if (backendChunks is not null)
+            if (pp.Enabled)
             {
                 var processed = TranscriptionPreprocessor.Process(u.Samples, pp);
                 samples = processed.Pcm;
-                backendChunks.Add(samples);
                 DeckleWhispSource.Log.TranscriptionPreprocessed(
                     processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
             }
+            if (vad is not null)
+            {
+                try
+                {
+                    long trimStart = Stopwatch.GetTimestamp();
+                    SpeechTrimResult trim = vad.Trim(samples, vadOptions);
+                    long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
+                    DeckleWhispSource.Log.SpeechTrimmed(
+                        u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+                    if (trim.Samples.Length == 0)
+                    {
+                        // No speech — an energy false positive on noise/silence. Drop it
+                        // rather than feed near-silence to whisper, which hallucinates on
+                        // it. The previous tail is left intact: a dropped utterance adds
+                        // no text and must not sever the continuity of the real ones.
+                        DeckleWhispSource.Log.UtteranceDroppedNoSpeech(u.Index);
+                        continue;
+                    }
+                    samples = trim.Samples;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Resilience (the first goal): a VAD runtime failure must not lose
+                    // the dictation. The ONNX binding is the never-runtime-verified part,
+                    // so on any error log it once, stop trimming for the rest of this
+                    // take (vad = null), and let this utterance through UNtrimmed rather
+                    // than dropping it or crashing the consumer.
+                    DeckleWhispSource.Log.SpeechTrimVadUnavailable($"trim failed: {ex.GetType().Name}: {ex.Message}");
+                    vad = null;
+                }
+            }
+            backendChunks?.Add(samples);
 
             TranscriptionResult result;
             try
@@ -283,6 +418,10 @@ public sealed partial class TranscriptionEngine
                 if (sb.Length > 0) sb.Append(' ');
                 sb.Append(text);
             }
+
+            DeckleWhispSource.Log.ConsumerUtterance(
+                u.Index, result.TotalDurationMs, TextMetrics.CountWords(text),
+                result.Segments.Count, backlogAfter, result.Aborted);
 
             // Carry the tail forward unless the utterance looped (Aborted with the
             // repetition guard) — then a contaminated tail must not prime the next.

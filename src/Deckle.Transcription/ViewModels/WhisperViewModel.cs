@@ -75,8 +75,12 @@ public partial class WhisperViewModel : ObservableObject
         PushToSettings();
     }
 
-    // ── Speech Detection ─────────────────────────────────────────────────────
+    // ── Voice activity detection ─────────────────────────────────────────────
 
+    // The "Voice activity detection" toggle and its four Silero detection
+    // parameters. All drive the external Silero ONNX VAD (Streaming.SpeechTrim) —
+    // the whisper-internal VAD they used to bind is unplugged. The parameters are
+    // double for the Slider; cast to the POCO's float/int on push.
     [ObservableProperty]
     public partial bool VadEnabled { get; set; }
 
@@ -90,60 +94,40 @@ public partial class WhisperViewModel : ObservableObject
     public partial double VadMinSilenceDurationMs { get; set; }
 
     [ObservableProperty]
-    public partial double VadMaxSpeechDurationSec { get; set; }
-
-    [ObservableProperty]
     public partial double VadSpeechPadMs { get; set; }
-
-    [ObservableProperty]
-    public partial double VadSamplesOverlap { get; set; }
 
     partial void OnVadEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.Enabled", value.ToString());
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Enabled", value.ToString());
         PushToSettings();
     }
 
     partial void OnVadThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.Threshold", value.ToString("0.00"));
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Threshold", value.ToString("0.00"));
         PushToSettings();
     }
 
     partial void OnVadMinSpeechDurationMsChanged(double value)
     {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MinSpeechDurationMs", ((int)value).ToString());
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.MinSpeechDurationMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadMinSilenceDurationMsChanged(double value)
     {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MinSilenceDurationMs", ((int)value).ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadMaxSpeechDurationSecChanged(double value)
-    {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.MaxSpeechDurationSec", ((int)value).ToString());
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.MinSilenceDurationMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadSpeechPadMsChanged(double value)
     {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.SpeechPadMs", ((int)value).ToString());
-        PushToSettings();
-    }
-
-    partial void OnVadSamplesOverlapChanged(double value)
-    {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("SpeechDetection.SamplesOverlap", value.ToString("0.00"));
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.SpeechPadMs", ((int)value).ToString());
         PushToSettings();
     }
 
@@ -258,8 +242,10 @@ public partial class WhisperViewModel : ObservableObject
     // ── Streaming pipeline ───────────────────────────────────────────────────
     //
     // StreamingEnabled is the user-facing on/off mapped onto the two-value
-    // PipelineStrategyKind (Streaming / Monolithic). The five Seg* values are the
-    // energy-segmenter parameters, consulted only when streaming is on.
+    // PipelineStrategyKind (Streaming / Monolithic). The Seg* values are the
+    // energy-segmenter parameters, consulted only when streaming is on. The
+    // hangover is dynamic: HangoverMax at the start of an utterance, decaying
+    // log-linearly to HangoverMin between RampStart and RampEnd lengths.
 
     [ObservableProperty]
     public partial bool StreamingEnabled { get; set; }
@@ -268,16 +254,22 @@ public partial class WhisperViewModel : ObservableObject
     public partial double SegThresholdDbfs { get; set; }
 
     [ObservableProperty]
-    public partial double SegHangoverMs { get; set; }
+    public partial double SegHangoverMaxMs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegHangoverMinMs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegHangoverRampStartMs { get; set; }
+
+    [ObservableProperty]
+    public partial double SegHangoverRampEndMs { get; set; }
 
     [ObservableProperty]
     public partial double SegMarginMs { get; set; }
 
     [ObservableProperty]
     public partial double SegMinUtteranceMs { get; set; }
-
-    [ObservableProperty]
-    public partial double SegMaxUtteranceMs { get; set; }
 
     partial void OnStreamingEnabledChanged(bool value)
     {
@@ -293,10 +285,31 @@ public partial class WhisperViewModel : ObservableObject
         PushToSettings();
     }
 
-    partial void OnSegHangoverMsChanged(double value)
+    partial void OnSegHangoverMaxMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverMs", ((int)value).ToString());
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverMaxMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnSegHangoverMinMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverMinMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnSegHangoverRampStartMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverRampStartMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnSegHangoverRampEndMsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverRampEndMs", ((int)value).ToString());
         PushToSettings();
     }
 
@@ -314,13 +327,6 @@ public partial class WhisperViewModel : ObservableObject
         PushToSettings();
     }
 
-    partial void OnSegMaxUtteranceMsChanged(double value)
-    {
-        if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.MaxUtteranceMs", ((int)value).ToString());
-        PushToSettings();
-    }
-
     // ── Constructor ──────────────────────────────────────────────────────────
 
     public WhisperViewModel()
@@ -335,10 +341,8 @@ public partial class WhisperViewModel : ObservableObject
         VadEnabled = true;
         VadThreshold = 0.5;
         VadMinSpeechDurationMs = 250;
-        VadMinSilenceDurationMs = 500;
-        VadMaxSpeechDurationSec = 30.0;
-        VadSpeechPadMs = 200;
-        VadSamplesOverlap = 0.1;
+        VadMinSilenceDurationMs = 100;
+        VadSpeechPadMs = 30;
         Temperature = 0.0;
         TemperatureIncrement = 0.2;
         EntropyThreshold = 2.4;
@@ -351,10 +355,12 @@ public partial class WhisperViewModel : ObservableObject
         MaxTokens = -1;
         StreamingEnabled = false;
         SegThresholdDbfs = -45.0;
-        SegHangoverMs = 400;
+        SegHangoverMaxMs = 5_000;
+        SegHangoverMinMs = 500;
+        SegHangoverRampStartMs = 60_000;
+        SegHangoverRampEndMs = 180_000;
         SegMarginMs = 150;
         SegMinUtteranceMs = 250;
-        SegMaxUtteranceMs = 25000;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -375,13 +381,11 @@ public partial class WhisperViewModel : ObservableObject
             UseGpu = s.Engine.UseGpu;
             Language = s.Engine.Language;
             InitialPrompt = s.Engine.InitialPrompt;
-            VadEnabled = s.SpeechDetection.Enabled;
-            VadThreshold = s.SpeechDetection.Threshold;
-            VadMinSpeechDurationMs = s.SpeechDetection.MinSpeechDurationMs;
-            VadMinSilenceDurationMs = s.SpeechDetection.MinSilenceDurationMs;
-            VadMaxSpeechDurationSec = s.SpeechDetection.MaxSpeechDurationSec;
-            VadSpeechPadMs = s.SpeechDetection.SpeechPadMs;
-            VadSamplesOverlap = s.SpeechDetection.SamplesOverlap;
+            VadEnabled = s.Streaming.SpeechTrim.Enabled;
+            VadThreshold = s.Streaming.SpeechTrim.Threshold;
+            VadMinSpeechDurationMs = s.Streaming.SpeechTrim.MinSpeechDurationMs;
+            VadMinSilenceDurationMs = s.Streaming.SpeechTrim.MinSilenceDurationMs;
+            VadSpeechPadMs = s.Streaming.SpeechTrim.SpeechPadMs;
             Temperature = s.Decoding.Temperature;
             TemperatureIncrement = s.Decoding.TemperatureIncrement;
             EntropyThreshold = s.Confidence.EntropyThreshold;
@@ -394,10 +398,12 @@ public partial class WhisperViewModel : ObservableObject
             MaxTokens = s.Context.MaxTokens;
             StreamingEnabled = s.Streaming.Strategy == PipelineStrategyKind.Streaming;
             SegThresholdDbfs = s.Streaming.Segmenter.ThresholdDbfs;
-            SegHangoverMs = s.Streaming.Segmenter.HangoverMs;
+            SegHangoverMaxMs = s.Streaming.Segmenter.HangoverMaxMs;
+            SegHangoverMinMs = s.Streaming.Segmenter.HangoverMinMs;
+            SegHangoverRampStartMs = s.Streaming.Segmenter.HangoverRampStartMs;
+            SegHangoverRampEndMs = s.Streaming.Segmenter.HangoverRampEndMs;
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
             SegMinUtteranceMs = s.Streaming.Segmenter.MinUtteranceMs;
-            SegMaxUtteranceMs = s.Streaming.Segmenter.MaxUtteranceMs;
         }
         finally
         {
@@ -415,16 +421,11 @@ public partial class WhisperViewModel : ObservableObject
         s.Engine.Language = Language;
         s.Engine.InitialPrompt = InitialPrompt;
 
-        s.SpeechDetection.Enabled = VadEnabled;
-        s.SpeechDetection.Threshold = (float)VadThreshold;
-        if (!double.IsNaN(VadMinSpeechDurationMs))
-            s.SpeechDetection.MinSpeechDurationMs = (int)VadMinSpeechDurationMs;
-        if (!double.IsNaN(VadMinSilenceDurationMs))
-            s.SpeechDetection.MinSilenceDurationMs = (int)VadMinSilenceDurationMs;
-        s.SpeechDetection.MaxSpeechDurationSec = (float)VadMaxSpeechDurationSec;
-        if (!double.IsNaN(VadSpeechPadMs))
-            s.SpeechDetection.SpeechPadMs = (int)VadSpeechPadMs;
-        s.SpeechDetection.SamplesOverlap = (float)VadSamplesOverlap;
+        s.Streaming.SpeechTrim.Enabled = VadEnabled;
+        s.Streaming.SpeechTrim.Threshold = (float)VadThreshold;
+        s.Streaming.SpeechTrim.MinSpeechDurationMs = (int)VadMinSpeechDurationMs;
+        s.Streaming.SpeechTrim.MinSilenceDurationMs = (int)VadMinSilenceDurationMs;
+        s.Streaming.SpeechTrim.SpeechPadMs = (int)VadSpeechPadMs;
 
         s.Decoding.Temperature = Temperature;
         s.Decoding.TemperatureIncrement = TemperatureIncrement;
@@ -445,10 +446,12 @@ public partial class WhisperViewModel : ObservableObject
             ? PipelineStrategyKind.Streaming
             : PipelineStrategyKind.Monolithic;
         s.Streaming.Segmenter.ThresholdDbfs = SegThresholdDbfs;
-        if (!double.IsNaN(SegHangoverMs))     s.Streaming.Segmenter.HangoverMs     = (int)SegHangoverMs;
-        if (!double.IsNaN(SegMarginMs))       s.Streaming.Segmenter.MarginMs       = (int)SegMarginMs;
-        if (!double.IsNaN(SegMinUtteranceMs)) s.Streaming.Segmenter.MinUtteranceMs = (int)SegMinUtteranceMs;
-        if (!double.IsNaN(SegMaxUtteranceMs)) s.Streaming.Segmenter.MaxUtteranceMs = (int)SegMaxUtteranceMs;
+        if (!double.IsNaN(SegHangoverMaxMs))       s.Streaming.Segmenter.HangoverMaxMs       = (int)SegHangoverMaxMs;
+        if (!double.IsNaN(SegHangoverMinMs))       s.Streaming.Segmenter.HangoverMinMs       = (int)SegHangoverMinMs;
+        if (!double.IsNaN(SegHangoverRampStartMs)) s.Streaming.Segmenter.HangoverRampStartMs = (int)SegHangoverRampStartMs;
+        if (!double.IsNaN(SegHangoverRampEndMs))   s.Streaming.Segmenter.HangoverRampEndMs   = (int)SegHangoverRampEndMs;
+        if (!double.IsNaN(SegMarginMs))            s.Streaming.Segmenter.MarginMs            = (int)SegMarginMs;
+        if (!double.IsNaN(SegMinUtteranceMs))      s.Streaming.Segmenter.MinUtteranceMs      = (int)SegMinUtteranceMs;
 
         TranscriptionSettingsService.Instance.Save();
     }

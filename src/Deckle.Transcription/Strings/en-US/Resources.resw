@@ -897,43 +897,31 @@
     <value>Voice activity detection</value>
   </data>
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
-    <value>Pre-filter audio so only speech reaches the model. Reduces phantom text caused by silence or background noise. Default: on.</value>
+    <value>Keep only the speech in each captured chunk and drop the internal pauses and silence, so phantom text from quiet stretches disappears. Default: on.</value>
   </data>
   <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
-    <value>Detection threshold</value>
+    <value>Speech threshold</value>
   </data>
   <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How confident Deckle must be that a sound is speech. Higher values filter more noise but may miss quiet speech. Default: 0.5.</value>
+    <value>How sure the detector must be that a window contains speech before keeping it. Higher trims more aggressively but can clip soft speech. Default: 0.50.</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
-    <value>Minimum speech duration</value>
+    <value>Minimum speech</value>
   </data>
   <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
-    <value>Sounds shorter than this (in milliseconds) are ignored. Raise to filter out short clicks and pops. Default: 250 ms.</value>
+    <value>Speech shorter than this is discarded as a blip, so a stray click or tap is not kept. Default: 250 ms.</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
-    <value>Minimum silence duration</value>
+    <value>Minimum silence</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
-    <value>Gaps shorter than this (in milliseconds) are kept as part of the same speech segment. Default: 500 ms.</value>
-  </data>
-  <data name="WhisperVadMaxSpeechCard.Header" xml:space="preserve">
-    <value>Maximum segment length</value>
-  </data>
-  <data name="WhisperVadMaxSpeechCard.Description" xml:space="preserve">
-    <value>Force-split a continuous speech segment after this many seconds. Default: 30 s.</value>
+    <value>A pause shorter than this does not split speech, so a breath mid-sentence is bridged rather than cut. Default: 100 ms.</value>
   </data>
   <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
     <value>Speech padding</value>
   </data>
   <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
-    <value>Extra audio (in milliseconds) kept before and after each detected segment, so words aren't clipped at the edges. Default: 200 ms.</value>
-  </data>
-  <data name="WhisperVadOverlapCard.Header" xml:space="preserve">
-    <value>Window overlap</value>
-  </data>
-  <data name="WhisperVadOverlapCard.Description" xml:space="preserve">
-    <value>Fraction of overlap between consecutive analysis windows. Higher values catch fast transitions at a small CPU cost. Default: 0.1.</value>
+    <value>Audio kept on each side of a detected span, so a word's onset or tail is not clipped. Default: 30 ms.</value>
   </data>
   <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
     <value>Suppress non-speech tokens</value>
@@ -1425,11 +1413,29 @@
   <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
     <value>Audio at or above this raw level (in dBFS) counts as speech. Lower is more sensitive; raise it if quiet background noise keeps a segment open. Default: -45 dBFS.</value>
   </data>
-  <data name="WhisperSegHangoverCard.Header" xml:space="preserve">
-    <value>Hangover</value>
+  <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
+    <value>Hangover (max)</value>
   </data>
-  <data name="WhisperSegHangoverCard.Description" xml:space="preserve">
-    <value>How much trailing silence (in milliseconds) to wait after the last word before deciding an utterance has ended. Longer avoids splitting on a short pause. Default: 400 ms.</value>
+  <data name="WhisperSegHangoverMaxCard.Description" xml:space="preserve">
+    <value>How much trailing silence (in milliseconds) to wait after the last word at the start of an utterance, before deciding it has ended. Long by default so only a paragraph-break silence cuts. Default: 5000 ms.</value>
+  </data>
+  <data name="WhisperSegHangoverMinCard.Header" xml:space="preserve">
+    <value>Hangover (min)</value>
+  </data>
+  <data name="WhisperSegHangoverMinCard.Description" xml:space="preserve">
+    <value>Floor the hangover decays to once the utterance has grown past the ramp end. Never below this — a shorter micro-pause is treated as intra-word. Default: 500 ms.</value>
+  </data>
+  <data name="WhisperSegHangoverRampStartCard.Header" xml:space="preserve">
+    <value>Hangover ramp start</value>
+  </data>
+  <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
+    <value>Utterance length (in milliseconds) at which the hangover starts shrinking from the max toward the min. Below this, the hangover stays at the max. Default: 60000 ms (1 min).</value>
+  </data>
+  <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
+    <value>Hangover ramp end</value>
+  </data>
+  <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
+    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover decays sharply (cubic ease-in). Default: 180000 ms (3 min).</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>
@@ -1442,12 +1448,6 @@
   </data>
   <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
     <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
-  </data>
-  <data name="WhisperSegMaxUtteranceCard.Header" xml:space="preserve">
-    <value>Maximum utterance</value>
-  </data>
-  <data name="WhisperSegMaxUtteranceCard.Description" xml:space="preserve">
-    <value>Safety ceiling (in milliseconds): an utterance this long is cut and sent even mid-speech, then a new one starts. Recording is not stopped. Default: 25000 ms.</value>
   </data>
 
 </root>

@@ -45,40 +45,53 @@ public partial class App : Microsoft.UI.Xaml.Application
     // transition.
     private bool _lastRecordingState;
 
-    private static bool ShouldDropAmbientCaptureVerbose(
+    private static bool ShouldDropCaptureVerbose(
         string provider,
         System.Diagnostics.Tracing.EventLevel level,
         System.Diagnostics.Tracing.EventKeywords keywords)
     {
-        // Only Verbose events from capture providers are affected. Milestones
-        // (Info / Warning / Error) always pass through; they are how we know,
-        // even with the toggle off, that capture is running and stopping.
+        // Only Verbose events are affected. Milestones (Info / Warning / Error)
+        // always pass through; they are how we know, even with both toggles off,
+        // that an activity is running and stopping.
         if (level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
-        if (!AmbientCaptureGate.IsActive) return false;
 
-        bool captureFamily =
-            provider == "Deckle-Ambient"
-            || provider == "Deckle-Vision"
-            || provider == "Deckle-Lighting"
-            // Cross-cutting sub-provider, but during capture it is the dominant
-            // firehose: ResourceAcquired/Released per frame (capture-loop D3D11
-            // textures + frame-sampler). Outside capture the gate is closed, so
-            // HUD Resource events pass normally.
-            || provider == "Deckle-Resource";
-        if (!captureFamily) return false;
+        // ── Ambient capture family ─────────────────────────────────────────
+        if (AmbientCaptureGate.IsActive)
+        {
+            bool ambientFamily =
+                provider == "Deckle-Ambient"
+                || provider == "Deckle-Vision"
+                || provider == "Deckle-Lighting"
+                // Cross-cutting sub-provider, but during capture it is the
+                // dominant firehose: ResourceAcquired/Released per frame
+                // (capture-loop D3D11 textures + frame-sampler). Outside
+                // capture the gate is closed, so HUD Resource events pass.
+                || provider == "Deckle-Resource";
+            if (ambientFamily)
+            {
+                // Toggle off: capture is silent. No Verbose events, including
+                // the heartbeat; only milestones tell whether it works.
+                if (!LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return true;
 
-        // Toggle off: capture is silent. No Verbose events, including the
-        // heartbeat; we do not want to see anything, only know through
-        // milestones whether it works. (The liveness safety net will go
-        // through a dedicated watchdog, not through a permanent heartbeat.)
-        if (!LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return true;
+                // Toggle on: show the 5 s heartbeat and occasional Verbose
+                // events, but never the high-frequency firehose (per-tick push,
+                // per-frame D3D11 acquire/release).
+                if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) != 0) return true;
+                if (provider == "Deckle-Resource") return true;
+                return false;
+            }
+        }
 
-        // Toggle on: show the heartbeat (5 s rollup) and occasional Verbose
-        // events (start / stop details), but never the high-frequency firehose:
-        // per-tick push (Push keyword) and per-frame D3D11 acquire/release
-        // (Resource sub-provider) stay silent, even when opted in.
-        if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) != 0) return true;
-        if (provider == "Deckle-Resource") return true;
+        // ── Streaming transcription family ─────────────────────────────────
+        if (StreamingCaptureGate.IsActive && provider == "Deckle-Whisp")
+        {
+            // Toggle off: streaming is silent. The 1 Hz heartbeat and per-
+            // utterance details are dropped; milestones still tell whether
+            // the pipeline ran (StreamingPipelineStarted, StreamingDrained).
+            if (!LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity) return true;
+            return false;
+        }
+
         return false;
     }
 
@@ -181,14 +194,16 @@ public partial class App : Microsoft.UI.Xaml.Application
             _                      => false,
         });
 
-        // Ambient drop filter: silence Verbose events from Ambient / Vision /
-        // Lighting providers when a capture loop is active AND the user has
-        // not opted in to LogAmbientCaptureActivity. The capture gate
-        // (AmbientCaptureGate) lives in Deckle.Diagnostics.Logging and is
-        // flipped by the Ambient engine on Start / Stop. The user toggle is
-        // read from LoggingSettingsService.
-        AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
-        TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropAmbientCaptureVerbose);
+        // Capture drop filter: silence Verbose events from the two capture
+        // families when their respective gates are active AND the user has
+        // not opted into the matching toggle. Ambient family (Ambient /
+        // Vision / Lighting / Resource sub-provider) gated by
+        // AmbientCaptureGate + LogAmbientCaptureActivity; streaming
+        // transcription gated by StreamingCaptureGate +
+        // LogStreamingTranscriptionActivity. Both gates live in
+        // Deckle.Diagnostics.Logging; the engines flip them on Start / Stop.
+        AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropCaptureVerbose);
+        TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(ShouldDropApplicationLogEntry);
 
         // Boot-time sanity marker for the EventSource pipeline. It has no

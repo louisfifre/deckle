@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- RepetitionDetector is internal in Deckle.Transcription.Whisper; access
+         goes through InternalsVisibleTo declared in that module's csproj. The
+         xunit.v3 / MTP harness comes from tests\Directory.Build.props. -->
+    <ProjectReference Include="..\..\src\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
+  </ItemGroup>
+</Project>

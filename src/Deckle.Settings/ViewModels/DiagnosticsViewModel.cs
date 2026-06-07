@@ -47,6 +47,14 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LogAmbientCaptureActivity { get; set; }
 
+    // Streaming transcription Verbose toggle: when off, the 1 Hz heartbeat and
+    // the per-utterance details from the Whisp provider are dropped during a
+    // streaming take. Milestones (StreamingPipelineStarted, StreamingDrained)
+    // always pass. Sister to LogAmbientCaptureActivity; same closed-by-default
+    // posture.
+    [ObservableProperty]
+    public partial bool LogStreamingTranscriptionActivity { get; set; }
+
     // ── Telemetry — opt-in disk persistence ─────────────────────────────────
 
     // Application log — mirrors every in-app log line to app.jsonl. Top of
@@ -95,6 +103,13 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
+        PushLoggingToSettings();
+    }
+
+    partial void OnLogStreamingTranscriptionActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
         PushLoggingToSettings();
     }
 
@@ -167,6 +182,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         // off until the user explicitly opts in to where their data
         // lands.
         LogAmbientCaptureActivity = false;
+        LogStreamingTranscriptionActivity = false;
         ApplicationLogToDisk = false;
         MicrophoneTelemetry = false;
         TelemetryLatencyEnabled = false;
@@ -185,6 +201,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         {
             var l = LoggingSettingsService.Instance.Current;
             LogAmbientCaptureActivity = l.LogAmbientCaptureActivity;
+            LogStreamingTranscriptionActivity = l.LogStreamingTranscriptionActivity;
 
             var t = TelemetrySettingsService.Instance.Current;
             ApplicationLogToDisk = t.ApplicationLogToDisk;
@@ -205,6 +222,7 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         var l = LoggingSettingsService.Instance.Current;
         l.LogAmbientCaptureActivity = LogAmbientCaptureActivity;
+        l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
         LoggingSettingsService.Instance.Save();
     }
 
@@ -231,6 +249,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             LogAmbientCaptureActivity = false;
+            LogStreamingTranscriptionActivity = false;
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();

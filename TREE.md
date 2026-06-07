@@ -324,7 +324,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilter.cs
-│   │   └── LogWindowVisibilityMode.cs
+│   │   ├── LogWindowVisibilityMode.cs
+│   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── CLAUDE.md  — [agent-instructions] Structured JSONL persistence and consent gates.
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
@@ -353,6 +354,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MessageKind.cs
 │   │   ├── ProximityRollupAggregator.cs
 │   │   └── WindowSlideAnimator.cs
+│   ├── Deckle.Inference.Onnx/
+│   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime inference home — today the Silero VAD v5 speech detector and the g…
+│   │   ├── Deckle.Inference.Onnx.csproj
+│   │   ├── SileroSpeechTimestamps.cs
+│   │   ├── SileroVad.cs
+│   │   ├── SileroVadModel.cs
+│   │   ├── SileroVadOptions.cs
+│   │   ├── SpeechSegment.cs
+│   │   └── SpeechTrimResult.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
@@ -564,7 +574,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
-│   │   │   └── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   └── TranscriptionEngine.Vad.cs
 │   │   ├── Setup/
 │   │   │   ├── Downloader.cs
 │   │   │   └── ModelEntry.cs
@@ -656,6 +667,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Inference.Onnx.Tests/
+│   │   ├── Deckle.Inference.Onnx.Tests.csproj
+│   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
@@ -673,6 +687,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
 │   │   └── StreamingBackendAudioTests.cs
+│   ├── Deckle.Transcription.Whisper.Tests/
+│   │   ├── Deckle.Transcription.Whisper.Tests.csproj
+│   │   └── RepetitionDetectorTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs

@@ -657,7 +657,7 @@
                              code-behind to avoid the WinUI 3 release
                              parser bug (Minimum > default Value=0
                              throws ; same workaround as
-                             VadMaxSpeechSlider on WhisperPage). -->
+                             EntropySlider on WhisperPage). -->
                         <StackPanel x:Name="PlaygroundBorderShareRow" Spacing="6">
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>

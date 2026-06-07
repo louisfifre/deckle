@@ -146,6 +146,20 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtStreamingDrained                 = 108;
     public const int EvtUtteranceSkipped                 = 109;
     public const int EvtPreprocessedTelemetryRecorded    = 110;
+    public const int EvtSegmenterUtteranceEmitted        = 111;
+    public const int EvtStreamingHeartbeat               = 112;
+    public const int EvtConsumerUtterance                = 113;
+    public const int EvtStreamingPipelineStarted         = 114;
+    public const int EvtSegmenterSettingsSnapshot        = 115;
+    public const int EvtSegmenterBlipDropped             = 116;
+    public const int EvtSpeechTrimmed                    = 117;
+    public const int EvtUtteranceDroppedNoSpeech         = 118;
+    public const int EvtSpeechTrimVadLoaded              = 119;
+    public const int EvtSpeechTrimVadUnavailable         = 120;
+    public const int EvtSpeechTrimVadDownloadStart       = 121;
+    public const int EvtSpeechTrimVadDownloadComplete    = 122;
+    public const int EvtSpeechTrimNotReady               = 123;
+    public const int EvtSpeechTrimSettingsSnapshot       = 124;
 
 
 }

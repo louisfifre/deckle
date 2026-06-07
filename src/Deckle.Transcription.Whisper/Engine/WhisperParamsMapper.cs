@@ -1,10 +1,8 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using Deckle.Core.Interop;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper.Pinvoke;
-using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.Transcription.Whisper.Engine;
 
@@ -51,9 +49,9 @@ public static class WhisperParamsMapper
     // ref: overwrite the relevant fields, leave the others (strategy,
     // callbacks, n_threads...) as initialized by whisper.cpp defaults.
     //
-    // `modelsDirectory` is the folder where the Silero VAD model is looked up:
-    // resolved host-side (ITranscriptionEngineHost.ResolveModelsDirectory) so
-    // this module stays independent from the app SettingsService.
+    // `modelsDirectory` is currently unused: it fed the built-in Silero VAD model
+    // lookup, now unplugged (see the VAD section below). Kept on the signature for
+    // when the built-in path is revisited.
     //
     // `promptOverride` (optional) replaces the configured initial_prompt for
     // THIS call: this is the channel through which the streaming base injects
@@ -114,39 +112,16 @@ public static class WhisperParamsMapper
             wparams.n_max_text_ctx = whisp.Context.MaxTokens;
 
         // ── VAD ───────────────────────────────────────────────────────────
+        // Whisper's built-in Silero VAD is intentionally left unplugged. In the
+        // streaming path it would re-run per utterance on audio the energy
+        // segmenter already cut — redundant and slow — and the external Silero
+        // ONNX VAD (Deckle.Inference.Onnx, Streaming.SpeechTrim) now owns chunk
+        // cleaning on the consumer side. Forcing vad = 0 here is the unplug; the
+        // SpeechDetection POCO and its ggml model are kept but inert pending a
+        // later revisit of the built-in path. vadPathPtr stays Zero so
+        // NativeAllocations.Free() is a no-op for it.
         IntPtr vadPathPtr = IntPtr.Zero;
-        wparams.vad = (byte)(whisp.SpeechDetection.Enabled ? 1 : 0);
-
-        if (whisp.SpeechDetection.Enabled)
-        {
-            // Silero model looked up in the models folder supplied by the
-            // host. If absent, VAD disabled with log warning; no native crash.
-            // VAD filename + download URL sourced from the
-            // Setup catalog so the engine and the wizard agree on which
-            // Silero version to ship.
-            string vadModelPath = Path.Combine(
-                modelsDirectory,
-                SpeechModels.VadModelFileName);
-
-            if (File.Exists(vadModelPath))
-            {
-                vadPathPtr = Marshal.StringToCoTaskMemUTF8(vadModelPath);
-                wparams.vad_model_path = vadPathPtr;
-                wparams.vad_threshold = whisp.SpeechDetection.Threshold;
-                wparams.vad_min_speech_duration_ms = whisp.SpeechDetection.MinSpeechDurationMs;
-                wparams.vad_min_silence_duration_ms = whisp.SpeechDetection.MinSilenceDurationMs;
-                wparams.vad_max_speech_duration_s = whisp.SpeechDetection.MaxSpeechDurationSec;
-                wparams.vad_speech_pad_ms = whisp.SpeechDetection.SpeechPadMs;
-                wparams.vad_samples_overlap = whisp.SpeechDetection.SamplesOverlap;
-            }
-            else
-            {
-                wparams.vad = 0;
-                DeckleWhispSource.Log.WhisperLogWarning(
-                    $"Silero VAD model not found at {vadModelPath} — VAD disabled. " +
-                    $"Download from {SpeechModels.VadModel.Url}");
-            }
-        }
+        wparams.vad = 0;
 
         return new NativeAllocations(langPtr, promptPtr, regexPtr, vadPathPtr);
     }

@@ -56,4 +56,88 @@ public sealed partial class DeckleWhispSource
             min_dbfs, p10_dbfs, p25_dbfs, p50_dbfs, p75_dbfs, p90_dbfs, max_dbfs,
             mean_rms, mean_dbfs, tail_rms, tail_dbfs, tail_state);
     }
+
+    // ── External Silero VAD pre-trim (Deckle.Inference.Onnx) ────────────────
+    //
+    // Distinct from the whisper-internal SpeechDetection VAD: this is the
+    // orchestrator's own pass that trims each streaming utterance to its speech
+    // before the backend and drops a no-speech utterance outright. Same Pipeline
+    // family as the DSP above; emitted on this provider because the trim is the
+    // orchestrator's concern. The VAD-lifecycle events (load / download) ride here
+    // too so the whole external-VAD story reads under one provider.
+
+    [Event(EvtSpeechTrimmed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Speech trim | utt #{0} | {1} → {2} samples | {3} spans | {4} ms")]
+    public void SpeechTrimmed(int utterance_index, int in_samples, int out_samples, int speech_segments, long trim_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimmed, utterance_index, in_samples, out_samples, speech_segments, trim_ms);
+    }
+
+    // Per-take config line for the external VAD — the SpeechTrim mirror of
+    // SegmenterSettingsSnapshot. Verbose precedes the trim activity so a reread of
+    // the log never has to wonder which threshold or duration was active for the take.
+    [Event(EvtSpeechTrimSettingsSnapshot,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Speech trim settings | threshold={0:F2} | min-speech={1} ms | min-silence={2} ms | pad={3} ms")]
+    public void SpeechTrimSettingsSnapshot(double threshold, int min_speech_ms, int min_silence_ms, int speech_pad_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimSettingsSnapshot, threshold, min_speech_ms, min_silence_ms, speech_pad_ms);
+    }
+
+    [Event(EvtUtteranceDroppedNoSpeech,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Utterance #{0} dropped — no speech detected")]
+    public void UtteranceDroppedNoSpeech(int utterance_index)
+    {
+        if (IsEnabled()) WriteEvent(EvtUtteranceDroppedNoSpeech, utterance_index);
+    }
+
+    [Event(EvtSpeechTrimVadLoaded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Silero VAD loaded ({0})")]
+    public void SpeechTrimVadLoaded(string model_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoaded, model_path);
+    }
+
+    [Event(EvtSpeechTrimVadUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Silero VAD unavailable — {0}")]
+    public void SpeechTrimVadUnavailable(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailable, reason);
+    }
+
+    [Event(EvtSpeechTrimVadDownloadStart,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Downloading Silero VAD model… ({0})")]
+    public void SpeechTrimVadDownloadStart(string url)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStart, url);
+    }
+
+    [Event(EvtSpeechTrimVadDownloadComplete,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Silero VAD model downloaded ({0})")]
+    public void SpeechTrimVadDownloadComplete(string model_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadComplete, model_path);
+    }
+
+    [Event(EvtSpeechTrimNotReady,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "SpeechTrim enabled but the VAD model isn't ready — this take runs untrimmed")]
+    public void SpeechTrimNotReady()
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimNotReady);
+    }
 }

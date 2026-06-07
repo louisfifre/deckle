@@ -410,5 +410,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         _backend.Dispose();
 
         _capture.Dispose();
+
+        DisposeVad();
     }
 }

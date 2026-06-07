@@ -37,8 +37,42 @@ public enum PipelineStrategyKind { Monolithic, Streaming }
 // active). Auto-properties round-trip cleanly through JsonSettingsStore.
 public sealed class StreamingSettings
 {
-    public PipelineStrategyKind   Strategy  { get; set; } = PipelineStrategyKind.Monolithic;
-    public EnergySegmenterSettings Segmenter { get; set; } = new();
+    public PipelineStrategyKind    Strategy   { get; set; } = PipelineStrategyKind.Monolithic;
+    public EnergySegmenterSettings Segmenter  { get; set; } = new();
+    public SpeechTrimSettings      SpeechTrim { get; set; } = new();
+}
+
+// External Silero VAD pre-trim (Deckle.Inference.Onnx) — the active VAD now that
+// the whisper-internal SpeechDetection VAD is unplugged. Streaming path only: it
+// cleans each big chunk the energy segmenter cut, keeping only the speech spans
+// (so a mid-utterance pause the energy threshold didn't split is removed) and
+// dropping an utterance with no speech at all (an energy false positive on
+// noise/silence) — the main guard against whisper hallucinating on near-silence.
+// Surfaced as the "Voice activity detection" toggle in the Whisper settings, with
+// the four detection parameters below it. The model (silero_vad.onnx) is provisioned
+// on demand; until it is present the trim is a silent no-op (the first take after
+// enabling triggers a one-time background download and runs untrimmed). Default on.
+// The four parameters default to the Silero reference values (SileroVadOptions) and
+// map straight onto a SileroVadOptions built per take.
+public sealed class SpeechTrimSettings
+{
+    public bool Enabled { get; set; } = true;
+
+    // Speech probability at/above which a window counts as speech. Higher trims more
+    // aggressively (risks clipping soft speech); the release threshold is derived
+    // (Threshold - 0.15, hysteresis).
+    public float Threshold { get; set; } = 0.5f;
+
+    // A detected speech span shorter than this is discarded as a blip.
+    public int MinSpeechDurationMs { get; set; } = 250;
+
+    // A silence shorter than this does not close an open span, so an intra-phrase
+    // pause is bridged rather than cut.
+    public int MinSilenceDurationMs { get; set; } = 100;
+
+    // Each kept span is padded by this much on both sides, so a word onset or tail
+    // is not clipped.
+    public int SpeechPadMs { get; set; } = 30;
 }
 
 // Bootstrap parameters for the active ASR engine. The first three (Model /
@@ -62,8 +96,10 @@ public sealed class EngineSettings
     public bool CarryInitialPrompt { get; set; } = true;
 }
 
-// Silero VAD: pre-filter that detects speech segments before Whisper.
-// When Enabled=false, all other fields are ignored by the engine.
+// Whisper's built-in Silero VAD (a whisper_full parameter). Inert: the engine
+// forces vad = 0 (see WhisperParamsMapper) and no UI binds to it anymore — the
+// external Silero ONNX VAD (Streaming.SpeechTrim) replaced it. Kept, not removed,
+// pending a later revisit of the built-in path; until then nothing reads these.
 public sealed class SpeechDetectionSettings
 {
     public bool Enabled { get; set; } = true;

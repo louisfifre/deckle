@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- RepetitionDetector is internal; the test project reaches it through the
+         SDK InternalsVisibleTo item (MSBuild→Roslyn), same pattern as the parent
+         Deckle.Transcription / Deckle.Hud. -->
+    <InternalsVisibleTo Include="Deckle.Transcription.Whisper.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- AppPaths.NativeDirectory for the DllImport resolver,
          AppPaths.ModelsDirectory for the Setup catalog. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
