@@ -899,6 +899,30 @@
   <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
     <value>Keep only the speech in each captured chunk and drop the internal pauses and silence, so phantom text from quiet stretches disappears. Default: on.</value>
   </data>
+  <data name="WhisperVadThresholdCard.Header" xml:space="preserve">
+    <value>Speech threshold</value>
+  </data>
+  <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
+    <value>How sure the detector must be that a window contains speech before keeping it. Higher trims more aggressively but can clip soft speech. Default: 0.50.</value>
+  </data>
+  <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
+    <value>Minimum speech</value>
+  </data>
+  <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
+    <value>Speech shorter than this is discarded as a blip, so a stray click or tap is not kept. Default: 250 ms.</value>
+  </data>
+  <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
+    <value>Minimum silence</value>
+  </data>
+  <data name="WhisperVadMinSilenceCard.Description" xml:space="preserve">
+    <value>A pause shorter than this does not split speech, so a breath mid-sentence is bridged rather than cut. Default: 100 ms.</value>
+  </data>
+  <data name="WhisperVadSpeechPadCard.Header" xml:space="preserve">
+    <value>Speech padding</value>
+  </data>
+  <data name="WhisperVadSpeechPadCard.Description" xml:space="preserve">
+    <value>Audio kept on each side of a detected span, so a word's onset or tail is not clipped. Default: 30 ms.</value>
+  </data>
   <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
     <value>Suppress non-speech tokens</value>
   </data>

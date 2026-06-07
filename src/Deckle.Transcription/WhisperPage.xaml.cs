@@ -27,6 +27,12 @@ public sealed partial class WhisperPage : Page
     private Visibility VisibleWhenStreaming(bool on) =>
         on ? Visibility.Visible : Visibility.Collapsed;
 
+    // Same doctrine for the Silero detection parameters: they only apply when the
+    // VAD toggle is on, so they appear under it only then (mirrors the segmenter
+    // cards gating on the streaming toggle).
+    private Visibility VisibleWhenVad(bool on) =>
+        on ? Visibility.Visible : Visibility.Collapsed;
+
     // Guards the Language combo's SelectionChanged and the model
     // AutoSuggestBox's SuggestionChosen during initial sync — these handlers
     // set VM properties which would trigger PushToSettings() needlessly.
@@ -72,6 +78,7 @@ public sealed partial class WhisperPage : Page
             LogprobSlider.Minimum = -1.5;
             LogprobSlider.Maximum = -0.4;
             NoSpeechSlider.Minimum = 0.05;
+            VadThresholdSlider.Minimum = 0.1;
 
             DeckleWhispSource.Log.PageBuggedSliderSet();
         }
@@ -121,7 +128,15 @@ public sealed partial class WhisperPage : Page
                 // resolved path instead). Set once on first load; the value
                 // is stable for the lifetime of the process.
                 ModelsDirectoryPicker.DefaultPath = AppPaths.ModelsDirectory;
-                WireHover(VadEnabledCard, VadEnabledReset);
+                // VadEnabledCard is a SettingsExpander (header toggle + the four
+                // Silero parameter children) — hook the pointer directly for the
+                // header reset, then WireHover each child card for its own reset.
+                VadEnabledCard.PointerEntered += (_, _) => VadEnabledReset.Opacity = 1;
+                VadEnabledCard.PointerExited += (_, _) => VadEnabledReset.Opacity = 0;
+                WireHover(VadThresholdCard, VadThresholdReset);
+                WireHover(VadMinSpeechCard, VadMinSpeechReset);
+                WireHover(VadMinSilenceCard, VadMinSilenceReset);
+                WireHover(VadSpeechPadCard, VadSpeechPadReset);
                 WireHover(TemperatureCard, TemperatureReset);
                 WireHover(TemperatureIncrementCard, TemperatureIncrementReset);
                 WireHover(EntropyCard, EntropyReset);
@@ -199,6 +214,9 @@ public sealed partial class WhisperPage : Page
     private static string FmtTwo(double v) =>
         v.ToString("0.00", CultureInfo.InvariantCulture);
 
+    private static string FmtInt(double v) =>
+        ((int)v).ToString(CultureInfo.InvariantCulture);
+
     private void TemperatureSlider_ValueChanged(object sender,
         Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
         TemperatureValue.Text = Fmt(e.NewValue);
@@ -221,6 +239,22 @@ public sealed partial class WhisperPage : Page
     private void NoSpeechSlider_ValueChanged(object sender,
         Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
         NoSpeechValue.Text = FmtTwo(e.NewValue);
+
+    private void VadThresholdSlider_ValueChanged(object sender,
+        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
+        VadThresholdValue.Text = FmtTwo(e.NewValue);
+
+    private void VadMinSpeechSlider_ValueChanged(object sender,
+        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
+        VadMinSpeechValue.Text = FmtInt(e.NewValue);
+
+    private void VadMinSilenceSlider_ValueChanged(object sender,
+        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
+        VadMinSilenceValue.Text = FmtInt(e.NewValue);
+
+    private void VadSpeechPadSlider_ValueChanged(object sender,
+        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
+        VadSpeechPadValue.Text = FmtInt(e.NewValue);
 
     // ── Combo handlers (Model, Language) ────────────────────────────────────
     //
@@ -395,6 +429,18 @@ public sealed partial class WhisperPage : Page
 
     private void VadEnabledReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.VadEnabled = _speechTrimDefaults.Enabled;
+
+    private void VadThresholdReset_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.VadThreshold = _speechTrimDefaults.Threshold;
+
+    private void VadMinSpeechReset_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.VadMinSpeechDurationMs = _speechTrimDefaults.MinSpeechDurationMs;
+
+    private void VadMinSilenceReset_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.VadMinSilenceDurationMs = _speechTrimDefaults.MinSilenceDurationMs;
+
+    private void VadSpeechPadReset_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.VadSpeechPadMs = _speechTrimDefaults.SpeechPadMs;
 
     private void TemperatureReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.Temperature = _decodingDefaults.Temperature;

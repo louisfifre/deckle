@@ -77,17 +77,57 @@ public partial class WhisperViewModel : ObservableObject
 
     // ── Voice activity detection ─────────────────────────────────────────────
 
-    // The single "Voice activity detection" toggle. Drives the external Silero
-    // ONNX VAD (Streaming.SpeechTrim) — the whisper-internal VAD it used to bind
-    // is unplugged. The Silero detection parameters are not exposed (reference
-    // defaults), so this is the only VAD knob.
+    // The "Voice activity detection" toggle and its four Silero detection
+    // parameters. All drive the external Silero ONNX VAD (Streaming.SpeechTrim) —
+    // the whisper-internal VAD they used to bind is unplugged. The parameters are
+    // double for the Slider; cast to the POCO's float/int on push.
     [ObservableProperty]
     public partial bool VadEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial double VadThreshold { get; set; }
+
+    [ObservableProperty]
+    public partial double VadMinSpeechDurationMs { get; set; }
+
+    [ObservableProperty]
+    public partial double VadMinSilenceDurationMs { get; set; }
+
+    [ObservableProperty]
+    public partial double VadSpeechPadMs { get; set; }
 
     partial void OnVadEnabledChanged(bool value)
     {
         if (_isSyncing) return;
         DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Enabled", value.ToString());
+        PushToSettings();
+    }
+
+    partial void OnVadThresholdChanged(double value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Threshold", value.ToString("0.00"));
+        PushToSettings();
+    }
+
+    partial void OnVadMinSpeechDurationMsChanged(double value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.MinSpeechDurationMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnVadMinSilenceDurationMsChanged(double value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.MinSilenceDurationMs", ((int)value).ToString());
+        PushToSettings();
+    }
+
+    partial void OnVadSpeechPadMsChanged(double value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.SpeechPadMs", ((int)value).ToString());
         PushToSettings();
     }
 
@@ -299,6 +339,10 @@ public partial class WhisperViewModel : ObservableObject
         Language = "fr";
         InitialPrompt = "Bonjour. Voici une transcription en français, avec une ponctuation soignée et des phrases complètes.";
         VadEnabled = true;
+        VadThreshold = 0.5;
+        VadMinSpeechDurationMs = 250;
+        VadMinSilenceDurationMs = 100;
+        VadSpeechPadMs = 30;
         Temperature = 0.0;
         TemperatureIncrement = 0.2;
         EntropyThreshold = 2.4;
@@ -338,6 +382,10 @@ public partial class WhisperViewModel : ObservableObject
             Language = s.Engine.Language;
             InitialPrompt = s.Engine.InitialPrompt;
             VadEnabled = s.Streaming.SpeechTrim.Enabled;
+            VadThreshold = s.Streaming.SpeechTrim.Threshold;
+            VadMinSpeechDurationMs = s.Streaming.SpeechTrim.MinSpeechDurationMs;
+            VadMinSilenceDurationMs = s.Streaming.SpeechTrim.MinSilenceDurationMs;
+            VadSpeechPadMs = s.Streaming.SpeechTrim.SpeechPadMs;
             Temperature = s.Decoding.Temperature;
             TemperatureIncrement = s.Decoding.TemperatureIncrement;
             EntropyThreshold = s.Confidence.EntropyThreshold;
@@ -374,6 +422,10 @@ public partial class WhisperViewModel : ObservableObject
         s.Engine.InitialPrompt = InitialPrompt;
 
         s.Streaming.SpeechTrim.Enabled = VadEnabled;
+        s.Streaming.SpeechTrim.Threshold = (float)VadThreshold;
+        s.Streaming.SpeechTrim.MinSpeechDurationMs = (int)VadMinSpeechDurationMs;
+        s.Streaming.SpeechTrim.MinSilenceDurationMs = (int)VadMinSilenceDurationMs;
+        s.Streaming.SpeechTrim.SpeechPadMs = (int)VadSpeechPadMs;
 
         s.Decoding.Temperature = Temperature;
         s.Decoding.TemperatureIncrement = TemperatureIncrement;

@@ -159,6 +159,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtSpeechTrimVadDownloadStart       = 121;
     public const int EvtSpeechTrimVadDownloadComplete    = 122;
     public const int EvtSpeechTrimNotReady               = 123;
+    public const int EvtSpeechTrimSettingsSnapshot       = 124;
 
 
 }

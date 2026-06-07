@@ -360,7 +360,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SileroVad.cs
 │   │   ├── SileroVadModel.cs
 │   │   ├── SileroVadOptions.cs
-│   │   └── SpeechSegment.cs
+│   │   ├── SpeechSegment.cs
+│   │   └── SpeechTrimResult.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs

@@ -75,6 +75,21 @@ public sealed partial class TranscriptionEngine
         if (trimCfg.Enabled && vad is null)
             DeckleWhispSource.Log.SpeechTrimNotReady();
 
+        // The user's detection parameters, mapped onto the options the trim runs with.
+        // Resolved once per take; the snapshot records them (only when the VAD will
+        // actually run) the way SegmenterSettingsSnapshot does for the producer.
+        var vadOptions = new SileroVadOptions
+        {
+            Threshold            = trimCfg.Threshold,
+            MinSpeechDurationMs  = trimCfg.MinSpeechDurationMs,
+            MinSilenceDurationMs = trimCfg.MinSilenceDurationMs,
+            SpeechPadMs          = trimCfg.SpeechPadMs,
+        };
+        if (vad is not null)
+            DeckleWhispSource.Log.SpeechTrimSettingsSnapshot(
+                vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
+                vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
+
         var channel = Channel.CreateUnbounded<Utterance>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -130,7 +145,7 @@ public sealed partial class TranscriptionEngine
         // utterances they yield) arrive during Record.
         Task<StreamingConsumeResult> consumer =
             Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt,
-                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad));
+                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad, vadOptions));
 
         _capture.Frame += OnFrame;
 
@@ -268,7 +283,7 @@ public sealed partial class TranscriptionEngine
     // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
         ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue,
-        SileroVad? vad)
+        SileroVad? vad, SileroVadOptions vadOptions)
     {
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0, vadMs = 0;
@@ -337,10 +352,11 @@ public sealed partial class TranscriptionEngine
                 try
                 {
                     long trimStart = Stopwatch.GetTimestamp();
-                    float[] trimmed = vad.Trim(samples, SileroVadOptions.Default);
+                    SpeechTrimResult trim = vad.Trim(samples, vadOptions);
                     long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
-                    DeckleWhispSource.Log.SpeechTrimmed(u.Index, samples.Length, trimmed.Length, trimMs);
-                    if (trimmed.Length == 0)
+                    DeckleWhispSource.Log.SpeechTrimmed(
+                        u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+                    if (trim.Samples.Length == 0)
                     {
                         // No speech — an energy false positive on noise/silence. Drop it
                         // rather than feed near-silence to whisper, which hallucinates on
@@ -349,7 +365,7 @@ public sealed partial class TranscriptionEngine
                         DeckleWhispSource.Log.UtteranceDroppedNoSpeech(u.Index);
                         continue;
                     }
-                    samples = trimmed;
+                    samples = trim.Samples;
                 }
                 catch (OperationCanceledException)
                 {

@@ -78,13 +78,14 @@ public sealed class SileroVad : IDisposable
     }
 
     // Trims a 16 kHz mono buffer to its speech, concatenating the detected spans.
-    // Returns an empty array when no speech is found — the caller drops the
-    // utterance rather than handing silence/noise to the ASR backend.
-    public float[] Trim(float[] samples, SileroVadOptions options)
+    // Returns an empty buffer (SpeechSegments = 0) when no speech is found — the
+    // caller drops the utterance rather than handing silence/noise to the ASR
+    // backend. SpeechSegments carries the span count for observability.
+    public SpeechTrimResult Trim(float[] samples, SileroVadOptions options)
     {
         IReadOnlyList<SpeechSegment> segments = DetectSpeech(samples, options);
         if (segments.Count == 0)
-            return Array.Empty<float>();
+            return new SpeechTrimResult(Array.Empty<float>(), 0);
 
         int total = 0;
         for (int i = 0; i < segments.Count; i++) total += segments[i].LengthSamples;
@@ -96,7 +97,7 @@ public sealed class SileroVad : IDisposable
             Array.Copy(samples, s.StartSample, trimmed, o, s.LengthSamples);
             o += s.LengthSamples;
         }
-        return trimmed;
+        return new SpeechTrimResult(trimmed, segments.Count);
     }
 
     private float RunWindow()

@@ -69,10 +69,22 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSpeechTrimmed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Speech trim | utt #{0} | {1} → {2} samples | {3} ms")]
-    public void SpeechTrimmed(int utterance_index, int in_samples, int out_samples, long trim_ms)
+           Message = "Speech trim | utt #{0} | {1} → {2} samples | {3} spans | {4} ms")]
+    public void SpeechTrimmed(int utterance_index, int in_samples, int out_samples, int speech_segments, long trim_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimmed, utterance_index, in_samples, out_samples, trim_ms);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimmed, utterance_index, in_samples, out_samples, speech_segments, trim_ms);
+    }
+
+    // Per-take config line for the external VAD — the SpeechTrim mirror of
+    // SegmenterSettingsSnapshot. Verbose precedes the trim activity so a reread of
+    // the log never has to wonder which threshold or duration was active for the take.
+    [Event(EvtSpeechTrimSettingsSnapshot,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Speech trim settings | threshold={0:F2} | min-speech={1} ms | min-silence={2} ms | pad={3} ms")]
+    public void SpeechTrimSettingsSnapshot(double threshold, int min_speech_ms, int min_silence_ms, int speech_pad_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimSettingsSnapshot, threshold, min_speech_ms, min_silence_ms, speech_pad_ms);
     }
 
     [Event(EvtUtteranceDroppedNoSpeech,
