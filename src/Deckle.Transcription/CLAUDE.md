@@ -9,7 +9,7 @@ Backend-agnostic voice-transcription orchestrator: hotkey → capture → ASR �
 
 ## Model lifecycle
 
-A model is never loaded at boot — nothing sits in VRAM (3 GB+) while idle. It loads and primes on the first hotkey, then unloads after an idle timeout. The prime — a dummy inference before recording — pays the cold-start cost once so the user's first real dictation never does. Invariant: nothing user-visible may imply "recording" until the model is warm — capture begins only when the engine emits `"Recording"`, after the prime returns.
+A model is never loaded at boot — nothing sits in VRAM (3 GB+) while idle. It loads and primes on the first hotkey, then unloads after an idle timeout. The prime — a dummy inference before recording — pays the cold-start cost once so the user's first real dictation never does. Invariant: nothing user-visible may imply "recording" until the model is warm. The prime runs first with the HUD in Charging; the engine then raises `"Recording"` only when capture actually starts, so the on-screen chrono is glued to the first real audio rather than leading it.
 
 ## Clipboard — two states max
 

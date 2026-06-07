@@ -251,10 +251,12 @@ public sealed partial class TranscriptionEngine
                 return;
             }
 
-            // Only now does the recording actually begin: start the chrono and
-            // flip the HUD Charging → Recording through the "Recording" status.
-            _recordingSw = System.Diagnostics.Stopwatch.StartNew();
-            RaiseStatus(Loc.Get("Status_Recording"));
+            // The recording-duration stopwatch and the "Recording" status are no
+            // longer raised here. They fire from OnCaptureStarted — the instant
+            // waveInStart confirms the mic is live — so the HUD chrono is glued to
+            // the first real PCM instead of leading it by the device-open latency.
+            // Charging holds until then. Invariant preserved: Record runs only
+            // after EnsurePrimed, so "Recording" still cannot precede a warm model.
 
             // One id per recording (corpus join key, ADR-0006), shared by
             // whichever strategy runs and consumed only in FinalizeTranscription.
@@ -358,6 +360,25 @@ public sealed partial class TranscriptionEngine
                 RaiseStatus(Loc.Get("Status_Ready"));
             }
         }
+    }
+
+    // Fired by MicrophoneCapture the instant waveInStart confirms the mic is
+    // live (the first real PCM is on its way). Everything that must be glued to
+    // the actual start of capture happens here, not before the strategy runs, so
+    // the HUD chrono no longer leads the audio by the device-open latency:
+    //  - close the hotkey→capture latency stopwatch;
+    //  - start the recording-duration stopwatch (read in FinalizeTranscription);
+    //  - raise "Recording", which flips the HUD Charging → Recording and starts
+    //    the on-screen chrono.
+    // Runs on the capture/worker thread, inside Record (the same thread that
+    // raised "Recording" here before). Invariant preserved: Record is entered
+    // only after EnsurePrimed, so "Recording" still cannot appear before the
+    // model is warm.
+    private void OnCaptureStarted()
+    {
+        _hotkeySw?.Stop();
+        _recordingSw = System.Diagnostics.Stopwatch.StartNew();
+        RaiseStatus(Loc.Get("Status_Recording"));
     }
 
 }

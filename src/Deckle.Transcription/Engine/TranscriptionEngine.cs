@@ -299,11 +299,11 @@ public sealed partial class TranscriptionEngine : IDisposable
         // Forward the per-sub-window RMS to whoever subscribes to the engine
         // (HUD chrono today). Capture stays unaware of UI consumers.
         _capture.AudioLevel += rms => AudioLevel?.Invoke(rms);
-        // Close the hotkey-to-capture latency stopwatch the moment waveInStart
-        // confirms the mic is live. The legacy code did this directly inside
-        // Record(); the event keeps the orchestrator in charge of its own
-        // stopwatches.
-        _capture.CaptureStarted += () => _hotkeySw?.Stop();
+        // The instant waveInStart confirms the mic is live, OnCaptureStarted
+        // closes the hotkey→capture latency stopwatch, starts the recording-
+        // duration stopwatch and raises "Recording" — so the HUD chrono is glued
+        // to the first real PCM instead of leading it by the device-open latency.
+        _capture.CaptureStarted += OnCaptureStarted;
         // Surface the localized low-audio overlay when the live tracker
         // detects no sustained healthy voice in the first 5 s. Capture only
         // emits a technical log; the localized UserFeedback is built here.
