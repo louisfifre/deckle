@@ -83,7 +83,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         }
 
         // ── Streaming transcription family ─────────────────────────────────
-        if (StreamingCaptureGate.IsActive && provider == "Deckle-Whisp")
+        // Two Verbose streams the streaming pipeline emits per utterance:
+        // Deckle-Whisp (decode firehose) and Deckle-Vad (speech-trim activity,
+        // split out of Whisp when the VAD became its own module). Both ride the
+        // same toggle so the gate stays whole after the split.
+        if (StreamingCaptureGate.IsActive && (provider == "Deckle-Whisp" || provider == "Deckle-Vad"))
         {
             // Toggle off: streaming is silent. The 1 Hz heartbeat and per-
             // utterance details are dropped; milestones still tell whether
