@@ -62,6 +62,7 @@ $actions = @(
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Publish app - build local ZIP';     Value = 'publish-app'                       }
     [pscustomobject]@{ Label = 'Publish app - GitHub Release';      Value = 'publish-release'                   }
+    [pscustomobject]@{ Label = 'Changelog - regenerate from history'; Value = 'changelog'                       }
 
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Clean bin/obj';                     Value = 'clean'                             }
@@ -131,6 +132,13 @@ switch ($action) {
             return
         }
         & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
+    }
+    # 'changelog' regenerates CHANGELOG.md from the commit history (no publish,
+    # no confirmation — it only rewrites a tracked file the maintainer reviews).
+    'changelog' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'changelog.ps1') -Target $wt
     }
 
     # ----- Worktree maintenance ------------------------------------------

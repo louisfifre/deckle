@@ -177,6 +177,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── _menu.psm1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
+│   │   ├── changelog.ps1
 │   │   ├── clean.ps1
 │   │   ├── install-hooks.ps1
 │   │   ├── publish-app.ps1

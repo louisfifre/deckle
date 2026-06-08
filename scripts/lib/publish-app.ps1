@@ -40,7 +40,8 @@ param(
     [switch]$Publish,
 
     # Optional release-notes file passed to `gh release create --notes-file`.
-    # Without it, gh's --generate-notes is used.
+    # Without it, the notes are generated from the commit history by
+    # changelog.ps1 (home-grown, plain git log, no GitHub API).
     [string]$Notes
 )
 
@@ -181,8 +182,15 @@ if ($Publish) {
     # Every 0.x cut is a pre-release (versioning convention): the phase is
     # pre-stable, so the release must not claim the repo's "Latest" badge.
     if ($Version -like '0.*') { $ghArgs += '--prerelease' }
-    if ($Notes) { $ghArgs += @('--notes-file', $Notes) }
-    else        { $ghArgs += '--generate-notes' }
+    # Release notes come from changelog.ps1 (plain git log, no API). -Notes
+    # overrides with a hand-written file when a release needs special wording.
+    if (-not $Notes) {
+        $Notes = Join-Path $OutDir 'release-notes.md'
+        & (Join-Path $ScriptDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
+        if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 notes generation failed (code $LASTEXITCODE)" }
+        Ok "Release notes generated from history: $Notes"
+    }
+    $ghArgs += @('--notes-file', $Notes)
     & gh @ghArgs
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
     Ok "Released as $tag"

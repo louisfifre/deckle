@@ -25,6 +25,7 @@ dev action by purpose:
 |  | Build only (no run) | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
 | **Release** | Publish app - build local ZIP | yes | `lib/publish-app.ps1` |
 |  | Publish app - GitHub Release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
+|  | Changelog - regenerate from history | yes | `lib/changelog.ps1` |
 | **Worktree maintenance** | Clean bin/obj | yes | `lib/clean.ps1` |
 |  | Stats (files, LOC, long files) | yes | `lib/stats.ps1` |
 | **Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
@@ -47,6 +48,7 @@ profile — `deckle.ps1` is purely additive.
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
 | [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Runtime assets are left to the app's first-run wizard unless explicitly requested. | `-DryRun`, `-Full`, `-Yes`, `-IncludeAssets`, `-AssetsRelease X.Y.Z` |
 | [`lib/install-hooks.ps1`](lib/install-hooks.ps1) | Install the local git hooks sourced from `scripts/hooks/` into `.git/hooks/` and register the local `merge.ours` driver used by `TREE.md`. | |
+| [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from the Conventional-Commit history — plain `git log` + PowerShell, no external tool or API. Default regenerates the whole `CHANGELOG.md` from the `v0.4.0` floor forward; `-NotesFor X.Y.Z` emits a single version's section for `gh … --notes-file` (consumed by `publish-app.ps1`). | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
 | [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`. **Not an entry point.** |
 
