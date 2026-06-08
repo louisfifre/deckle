@@ -4,7 +4,8 @@
 # a PowerShell 7+ terminal. The menu groups actions by purpose:
 #
 #   Build             — daily compile + run loop, per-worktree.
-#   Release           — publish the self-contained app ZIP, per-worktree.
+#   Release           — cut a GitHub release (installer exe + app payload),
+#                       per-worktree.
 #   Worktree maint    — clean artefacts, gather stats, per-worktree.
 #   Setup             — bootstrap a fresh dev machine (global, no
 #                       worktree picker), install local git hooks. Runtime
@@ -60,8 +61,7 @@ $actions = @(
     [pscustomobject]@{ Label = 'Build only (no run)';               Value = 'build-norun'                       }
 
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Publish app - build local ZIP';     Value = 'publish-app'                       }
-    [pscustomobject]@{ Label = 'Publish app - GitHub Release';      Value = 'publish-release'                   }
+    [pscustomobject]@{ Label = 'Publish - GitHub Release';          Value = 'publish-release'                   }
     [pscustomobject]@{ Label = 'Changelog - regenerate from history'; Value = 'changelog'                       }
 
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
@@ -103,14 +103,10 @@ switch ($action) {
     }
 
     # ----- Release — per-worktree ----------------------------------------
-    # 'publish-app' builds the self-contained ZIP locally for inspection.
-    # 'publish-release' ALSO creates the public GitHub Release (tag + upload)
-    # via gh — the maintainer's act, gated behind an explicit confirmation.
-    'publish-app' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
-    }
+    # 'publish-release' builds both release artefacts (installer exe + app
+    # payload ZIP) and creates the public GitHub Release (tag + upload) via gh —
+    # the maintainer's act, gated behind an explicit confirmation. To build the
+    # artefacts locally WITHOUT publishing, call publish-app.ps1 (no -Publish).
     'publish-release' {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
@@ -126,7 +122,7 @@ switch ($action) {
             Write-Host "Could not read <Version> from $csproj" -ForegroundColor Red
             return
         }
-        Write-Host "This publishes a PUBLIC GitHub Release v$ver (creates tag v$ver, uploads the app ZIP + sha256)." -ForegroundColor Yellow
+        Write-Host "This publishes a PUBLIC GitHub Release v$ver (creates tag v$ver, uploads the installer exe + app ZIP + sha256)." -ForegroundColor Yellow
         if (-not (Read-YesNo -Question "Publish Deckle v$ver to GitHub now?" -Default $false)) {
             Write-Host "Cancelled." -ForegroundColor Yellow
             return
