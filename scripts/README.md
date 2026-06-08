@@ -104,11 +104,15 @@ gated on the EventSource logging refactor.
 
 ## What is *not* here
 
-- **App installer / MSIX.** Deckle is distributed as source only —
-  there is no `Deckle.exe` GitHub Release. Build via `lib/build-run.ps1`
-  (or the launcher) and run from the build output.
-- **CI / GitHub Actions.** None for now — personal project. The native
-  runtime publish flow is run manually by the maintainer.
+- **MSIX / packaged installer.** No MSIX or Store package — Deckle ships
+  *unpackaged*: a self-contained app ZIP (`Deckle-vX.Y.Z.zip` + `.sha256`)
+  published as a GitHub Release (a pre-release while on 0.x) by
+  `lib/publish-app.ps1 -Publish`, then resolved and downloaded by the
+  `Deckle.Installer` stub. Building from source via `lib/build-run.ps1`
+  (or the launcher) stays the dev path.
+- **CI / GitHub Actions.** None for now — personal project. Both publish
+  flows — the app ZIP and the native runtime — are cut manually by the
+  maintainer.
 - **Source mirror of whisper.cpp.** The repo no longer carries a
   `whisper.cpp/` clone. Rebuilders clone it themselves alongside the
   Deckle repo, build it locally, and point `-WhisperRepo` at it.
