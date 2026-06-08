@@ -23,8 +23,7 @@ dev action by purpose:
 | **Build** | Build & run (Debug) | yes | `lib/build-run.ps1 -Configuration Debug` |
 |  | Build & run (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
 |  | Build only (no run) | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
-| **Release** | Publish app - build local ZIP | yes | `lib/publish-app.ps1` |
-|  | Publish app - GitHub Release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
+| **Release** | Publish - GitHub Release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
 |  | Changelog - regenerate from history | yes | `lib/changelog.ps1` |
 | **Worktree maintenance** | Clean bin/obj | yes | `lib/clean.ps1` |
 |  | Stats (files, LOC, long files) | yes | `lib/stats.ps1` |
@@ -105,11 +104,14 @@ gated on the EventSource logging refactor.
 ## What is *not* here
 
 - **MSIX / packaged installer.** No MSIX or Store package — Deckle ships
-  *unpackaged*: a self-contained app ZIP (`Deckle-vX.Y.Z.zip` + `.sha256`)
-  published as a GitHub Release (a pre-release while on 0.x) by
-  `lib/publish-app.ps1 -Publish`, then resolved and downloaded by the
-  `Deckle.Installer` stub. Building from source via `lib/build-run.ps1`
-  (or the launcher) stays the dev path.
+  *unpackaged*. The GitHub Release (a pre-release while on 0.x), cut by
+  `lib/publish-app.ps1 -Publish`, carries two assets: the headline
+  `Deckle-Setup-vX.Y.Z-win-x64.exe` — the installer stub the end user downloads
+  and runs — and the self-contained app payload it fetches (`Deckle-vX.Y.Z.zip`
+  + `.sha256`). The `Deckle.Installer` stub resolves the latest release via the
+  GitHub API, downloads the payload, sha256-verifies it, and installs per-user
+  (GitHub auto-attaches the source-code archives too). Building from source via
+  `lib/build-run.ps1` (or the launcher) stays the dev path.
 - **CI / GitHub Actions.** None for now — personal project. Both publish
   flows — the app ZIP and the native runtime — are cut manually by the
   maintainer.
