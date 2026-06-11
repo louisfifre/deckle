@@ -175,20 +175,53 @@ public sealed class MicrophoneCapture : System.IDisposable
         var hdrPtrs = new System.IntPtr[N_BUFFERS];
         var bufPtrs = new System.IntPtr[N_BUFFERS];
 
-        for (int i = 0; i < N_BUFFERS; i++)
+        // Buffer-prep + start guarded on its own. The device is open from here
+        // on; if AllocHGlobal OOMs, StructureToPtr/Prepare/AddBuffer faults on a
+        // driver, or waveInStart throws, the main try/finally below has not been
+        // entered yet — so we'd leak the open device (keeping the mic 'in use'
+        // until process exit) plus every buffer allocated so far. We unwind
+        // exactly the state acquired and rethrow. `prepared` counts headers that
+        // cleared waveInPrepareHeader, so we never unprepare a header that was
+        // only allocated by a partial last iteration; FreeHGlobal(IntPtr.Zero)
+        // is a documented no-op, so freeing the whole array stays safe.
+        int prepared = 0;
+        try
         {
-            bufPtrs[i] = Marshal.AllocHGlobal(BYTES_PER_BUF);
-            hdrPtrs[i] = Marshal.AllocHGlobal((int)hdrSize);
-            Marshal.StructureToPtr(new WAVEHDR
+            for (int i = 0; i < N_BUFFERS; i++)
             {
-                lpData         = bufPtrs[i],
-                dwBufferLength = BYTES_PER_BUF,
-            }, hdrPtrs[i], fDeleteOld: false);
-            NativeMethods.waveInPrepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
-            NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
-        }
+                bufPtrs[i] = Marshal.AllocHGlobal(BYTES_PER_BUF);
+                hdrPtrs[i] = Marshal.AllocHGlobal((int)hdrSize);
+                Marshal.StructureToPtr(new WAVEHDR
+                {
+                    lpData         = bufPtrs[i],
+                    dwBufferLength = BYTES_PER_BUF,
+                }, hdrPtrs[i], fDeleteOld: false);
+                NativeMethods.waveInPrepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+                prepared = i + 1;
+                NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
+            }
 
-        NativeMethods.waveInStart(hWaveIn);
+            NativeMethods.waveInStart(hWaveIn);
+        }
+        catch
+        {
+            // Unprepare only headers that cleared waveInPrepareHeader (mirrors
+            // Pump's own drain unprepare). waveInReset is unnecessary: on this
+            // path the device was never successfully started — waveInStart is
+            // the last guarded statement, and if it threw no buffer ran.
+            for (int i = 0; i < prepared; i++)
+            {
+                NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+            }
+            for (int i = 0; i < N_BUFFERS; i++)
+            {
+                Marshal.FreeHGlobal(bufPtrs[i]);
+                Marshal.FreeHGlobal(hdrPtrs[i]);
+            }
+            NativeMethods.waveInClose(hWaveIn);
+            NativeMethods.CloseHandle(hEvent);
+            throw;
+        }
         // Hotkey-to-capture latency closes here — the mic is now live and the
         // first 50 ms buffer is on its way. The orchestrator's stopwatch
         // (_hotkeySw in TranscriptionEngine) is closed via the CaptureStarted event.
