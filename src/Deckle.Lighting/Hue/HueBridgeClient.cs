@@ -1,5 +1,7 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -14,7 +16,11 @@ namespace Deckle.Lighting.Hue;
 // certificate rooted on its own private CA. We accept any certificate
 // presented by the bridge IP we explicitly asked for — MITM risk
 // exists in theory on the LAN but is comparable to any other LAN
-// service the user trusts implicitly. The alternative (importing the
+// service the user trusts implicitly. The accept-all callback's scope
+// is bounded by construction : the constructor rejects any bridge IP
+// outside the private LAN ranges (see IsPrivateBridgeIp), so the
+// trusted certificate can only ever come from an RFC1918 / APIPA host,
+// never a public address. The remaining alternative (importing the
 // bridge CA into the system store, or pinning the SubjectPublicKeyInfo
 // at first pair) is a polish item for a later milestone.
 //
@@ -38,6 +44,21 @@ public sealed partial class HueBridgeClient : IDisposable
 
     public HueBridgeClient(HueBridge bridge)
     {
+        // The bridge is a LAN-only device. Reject any address outside
+        // the private ranges before we build the HttpClient (and before
+        // the accept-all TLS callback can ever fire) so no caller —
+        // manual entry, cloud discovery, a tampered settings.json — can
+        // point this client at an attacker-controlled host on the
+        // internet (SSRF / data exfil through the PUT-state payload).
+        if (!IsPrivateBridgeIp(bridge.InternalIpAddress))
+        {
+            throw new ArgumentException(
+                $"Hue bridge IP '{bridge.InternalIpAddress}' is not on a private LAN range " +
+                "(RFC1918 or 169.254/16) — the bridge is a local device and any other " +
+                "address is rejected to avoid SSRF.",
+                nameof(bridge));
+        }
+
         _bridge = bridge;
         _http = CreateBridgeHttpClient(bridge.InternalIpAddress, bridge.Port);
     }
@@ -322,6 +343,32 @@ public sealed partial class HueBridgeClient : IDisposable
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
+
+    // RFC1918 + APIPA validation for a Hue bridge address. The bridge
+    // is a LAN-only device ; accepting an arbitrary IP would let any
+    // untrusted source (manual entry, cloud discovery, a corrupted or
+    // tampered settings.json) point a client at an attacker-controlled
+    // server on the internet (SSRF / data exfil through the PUT-state
+    // payload). The single home for this rule — the constructor calls
+    // it before building the HttpClient, and the ambient push loop
+    // re-checks the persisted IP through the same method for an early,
+    // friendly message. V0 accepts only IPv4 in the canonical private
+    // ranges and 169.254/16 link-local. IPv6 + hostnames are out of
+    // scope for V0 ; revisit when a user requests it with a justified
+    // setup.
+    public static bool IsPrivateBridgeIp(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        if (!IPAddress.TryParse(s, out var ip)) return false;
+        if (ip.AddressFamily != AddressFamily.InterNetwork) return false;
+
+        var b = ip.GetAddressBytes();
+        return
+            b[0] == 10                                          // 10.0.0.0/8     class A private
+         || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)           // 172.16.0.0/12  class B private
+         || (b[0] == 192 && b[1] == 168)                        // 192.168.0.0/16 class C private
+         || (b[0] == 169 && b[1] == 254);                       // 169.254.0.0/16 APIPA link-local
+    }
 
     // Internal so HueEventStreamClient can reuse the exact same TLS
     // handling (self-signed cert callback) instead of duplicating the

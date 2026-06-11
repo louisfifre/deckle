@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 using Deckle.Composition;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
@@ -422,28 +420,6 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     {
         if (_startAbortReason is { } reason)
             throw new InvalidOperationException($"Ambient start aborted by upstream stop: {reason}");
-    }
-
-    // RFC1918 + APIPA validation for the Hue bridge address persisted
-    // in AmbientSettings.HueBridgeIp. The bridge is a LAN-only device ;
-    // accepting an arbitrary IP would let a corrupted (or tampered)
-    // settings.json point the engine at an attacker-controlled server
-    // on the internet (SSRF / data exfil through the SetColorAsync
-    // payload). V0 accepts only IPv4 in the canonical private ranges
-    // and 169.254/16 link-local. IPv6 + hostnames are out of scope for
-    // V0 ; revisit when a user requests it with a justified setup.
-    private static bool IsAcceptableBridgeIp(string s)
-    {
-        if (string.IsNullOrWhiteSpace(s)) return false;
-        if (!IPAddress.TryParse(s, out var ip)) return false;
-        if (ip.AddressFamily != AddressFamily.InterNetwork) return false;
-
-        var b = ip.GetAddressBytes();
-        return
-            b[0] == 10                                          // 10.0.0.0/8     class A private
-         || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)           // 172.16.0.0/12  class B private
-         || (b[0] == 192 && b[1] == 168)                        // 192.168.0.0/16 class C private
-         || (b[0] == 169 && b[1] == 254);                       // 169.254.0.0/16 APIPA link-local
     }
 
 }

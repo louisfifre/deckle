@@ -31,12 +31,18 @@ namespace Deckle.Transcription.Whisper.Pinvoke;
 // attribute, so the duplication is unavoidable — keep PInvokeKey as the
 // documented match-target.
 //
-// Falls through to default resolution when NativeDirectory doesn't hold
-// the DLLs yet: the first-run wizard catches the missing-deps state and
-// prompts the user before the engine boots, so a DllNotFoundException
-// shouldn't happen in practice. The fallback exists for the edge case
-// where the wizard is bypassed (env var override, manual DLL placement
-// next to the exe in dev).
+// Fails closed when NativeDirectory doesn't hold libwhisper.dll: the
+// resolver throws DllNotFoundException rather than returning IntPtr.Zero.
+// Returning Zero would hand control back to the CLR's default search
+// order, which probes the application base directory — silently widening
+// the load surface to a per-user-writable install dir (DLL-planting
+// exposure). The first-run wizard gates on NativeRuntime.IsInstalled()
+// before WhisperBackend is ever constructed, so this throw is a
+// defence-in-depth backstop, not an expected runtime path: by the time
+// any [DllImport("libwhisper")] fires, the entry DLL is guaranteed
+// present in NativeDirectory. The throw only surfaces if that invariant
+// is somehow violated (the gate bypassed) — and then it names the
+// expected path instead of loading an attacker-planted DLL.
 public static class WhisperPInvoke
 {
     private const string PInvokeKey = "libwhisper";
@@ -49,13 +55,31 @@ public static class WhisperPInvoke
 
     private static IntPtr ResolveNativeLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {
+        // Non-libwhisper names are not ours: return Zero so the CLR resolves
+        // them through its normal search order. Today every [DllImport] in this
+        // assembly targets "libwhisper", so this branch is dead in practice —
+        // it keeps the contract correct for any future DllImport added here.
         if (libraryName != PInvokeKey) return IntPtr.Zero;
 
+        // Fail closed: only ever load libwhisper by its absolute path under
+        // NativeDirectory. If the file is absent, throw instead of returning
+        // Zero — returning Zero would let the CLR fall back to default search
+        // order and probe the application base directory, a per-user-writable
+        // location where a planted libwhisper.dll could be loaded.
         string candidate = Path.Combine(AppPaths.NativeDirectory, EntryDll);
-        if (File.Exists(candidate) && NativeLibrary.TryLoad(candidate, out IntPtr handle))
-            return handle;
+        if (!File.Exists(candidate))
+            throw new DllNotFoundException(
+                $"The Whisper native runtime is not provisioned: expected '{EntryDll}' " +
+                $"at '{candidate}'. Run the first-run setup to install it. " +
+                $"Default DLL search is deliberately not used (DLL-planting hardening).");
 
-        return IntPtr.Zero;
+        if (!NativeLibrary.TryLoad(candidate, out IntPtr handle))
+            throw new DllNotFoundException(
+                $"Found '{EntryDll}' at '{candidate}' but it could not be loaded " +
+                $"(corrupt, locked, or an unmet transitive dependency such as a " +
+                $"missing ggml-*.dll alongside it).");
+
+        return handle;
     }
 
     // ── libwhisper.dll ────────────────────────────────────────────────────────

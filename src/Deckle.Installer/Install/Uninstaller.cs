@@ -63,8 +63,25 @@ internal static class Uninstaller
     // Spawns a detached cmd that waits ~1 s for this process to release its image,
     // then recursively removes the install folder (this exe included). ping is the
     // universally-present delay primitive.
+    //
+    // The path is interpolated into a cmd.exe command line, so any cmd metacharacter
+    // it carries (" & | < > ^ %) would break out of the quoting — botching the
+    // uninstall, and in theory appending a trailing command. ProcessStartInfo's
+    // ArgumentList can't help: it quotes with the MSVCRT rules, which cmd.exe's /c
+    // parser does not follow. The path is our own running exe's directory, never an
+    // adversarial input, so a legitimate install path never holds those characters;
+    // we validate and, on the (pathological) miss, fall back to an in-process delete
+    // that clears everything except the still-locked exe rather than emit an unsafe
+    // command line.
     private static void ScheduleFolderDeletion(string installDir)
     {
+        if (installDir.IndexOfAny(CmdMetacharacters) >= 0)
+        {
+            ConsoleUi.Warn($"install path holds shell metacharacters, skipping delayed delete: {installDir}");
+            TryDeleteTree(installDir);
+            return;
+        }
+
         var psi = new ProcessStartInfo("cmd.exe",
             $"/c ping 127.0.0.1 -n 2 >nul & rmdir /s /q \"{installDir}\"")
         {
@@ -74,6 +91,10 @@ internal static class Uninstaller
         };
         Process.Start(psi);
     }
+
+    // Characters cmd.exe treats specially on a /c command line (quotes plus the
+    // redirection/pipe/escape/expansion metacharacters).
+    private static readonly char[] CmdMetacharacters = { '"', '&', '|', '<', '>', '^', '%' };
 
     private static void TryDeleteTree(string dir)
     {
