@@ -71,7 +71,7 @@ public sealed partial class AmbientEngine
                     "Hue bridge not paired or no group selected — open the Playground and complete the Hue pair + group selection first.");
             }
 
-            if (!IsAcceptableBridgeIp(ambient.HueBridgeIp))
+            if (!HueBridgeClient.IsPrivateBridgeIp(ambient.HueBridgeIp))
             {
                 throw new InvalidOperationException(
                     $"Hue bridge IP '{ambient.HueBridgeIp}' is not on a private LAN range (RFC1918 or 169.254/16) — the bridge is a local device and any other address is rejected to avoid SSRF.");

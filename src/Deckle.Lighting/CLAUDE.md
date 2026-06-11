@@ -15,4 +15,4 @@ Deliberate: REST CLIP v1 (~10–20 Hz), not the Entertainment v2 DTLS-PSK path �
 
 ## Security
 
-The `clientkey` (DTLS PSK) is never emitted in clear nor persisted to plain JSON without warning; the `username` is truncated to 8 chars in emissions. The bridge IP is validated (RFC1918 + APIPA) before any `PUT`, to prevent SSRF.
+The `clientkey` (DTLS PSK) is never emitted in clear nor persisted to plain JSON without warning; the `username` is truncated to 8 chars in emissions. The bridge IP is validated (RFC1918 + APIPA) at `HueBridgeClient` construction — every path that builds a client (pairing, restore-from-settings, discovery, the ambient push loop) rejects a non-private address before any network call, to prevent SSRF. SubjectPublicKeyInfo pinning of the bridge certificate is a documented future milestone.
