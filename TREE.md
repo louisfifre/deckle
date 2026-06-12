@@ -363,9 +363,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Inference.Onnx.csproj
 │   │   └── OnnxModelSession.cs
 │   ├── Deckle.Input/
+│   │   ├── Injection/
+│   │   │   └── MouseInjector.cs
 │   │   ├── Interop/
 │   │   │   ├── HidInterop.cs
-│   │   │   └── RawInputInterop.cs
+│   │   │   ├── RawInputInterop.cs
+│   │   │   └── SendInputInterop.cs
 │   │   ├── Telemetry/
 │   │   │   └── ContactFrameRecorder.cs
 │   │   ├── Touchpad/
