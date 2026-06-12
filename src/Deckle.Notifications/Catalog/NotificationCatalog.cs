@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
+using Deckle.Diagnostics;
 
 namespace Deckle.Notifications;
 
@@ -62,7 +64,7 @@ public sealed class NotificationCatalog
                 _byId.Add(descriptor.Id, descriptor);
             }
 
-            if (DeckleNotificationsSource.Log.IsEnabled())
+            if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
             {
                 DeckleNotificationsSource.Log.CatalogRegistered(
                     string.Join(",", descriptors.Select(d => d.Id)),

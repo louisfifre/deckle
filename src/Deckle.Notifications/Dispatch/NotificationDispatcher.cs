@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
+using Deckle.Diagnostics;
 
 namespace Deckle.Notifications;
 
@@ -10,8 +12,8 @@ namespace Deckle.Notifications;
 // Instance and ask the user something via PromptAsync. The dispatcher owns the
 // catalogue, validates the descriptor is known, routes to the channel matching
 // descriptor.Channel, and emits the observability narrative (shown / responded
-// / dropped / cancelled). It holds no UI and no platform knowledge — that lives
-// in the channels.
+// / dropped / cancelled / unanswered / failed). It holds no UI and no platform
+// knowledge — that lives in the channels.
 public sealed class NotificationDispatcher
 {
     private readonly IReadOnlyDictionary<NotificationChannel, INotificationChannel> _channels;
@@ -42,7 +44,7 @@ public sealed class NotificationDispatcher
         Instance = dispatcher;
 
         DeckleNotificationsSource.Log.DispatcherInitialized();
-        if (DeckleNotificationsSource.Log.IsEnabled())
+        if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
         {
             var names = new string[channels.Length];
             for (int i = 0; i < channels.Length; i++)
@@ -57,11 +59,13 @@ public sealed class NotificationDispatcher
 
     // Shows a registered notification and awaits the user's answer.
     //
-    // Returns null when the notification could not be shown (no channel for the
-    // requested kind, or the channel is unavailable) — for enrollment-prompt
-    // semantics where "ignoring is a valid answer", callers tolerate null.
-    // An unregistered descriptor is a programmer error and throws. Cancellation
-    // propagates as TaskCanceledException.
+    // Returns null for two distinct no-answer cases the narrative tells apart:
+    // the notification could not be shown (no channel for the requested kind, or
+    // the channel is unavailable → dropped), or it was shown but never answered
+    // (e.g. the toast expired unseen → unanswered). For enrollment-prompt
+    // semantics where "ignoring is a valid answer", callers tolerate null in
+    // both. An unregistered descriptor is a programmer error and throws.
+    // Cancellation propagates as TaskCanceledException.
     public async Task<NotificationResponse?> PromptAsync(
         NotificationDescriptor descriptor,
         object?[]? bodyArgs = null,
@@ -87,7 +91,7 @@ public sealed class NotificationDispatcher
         }
 
         DeckleNotificationsSource.Log.NotificationShown();
-        if (DeckleNotificationsSource.Log.IsEnabled())
+        if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
         {
             DeckleNotificationsSource.Log.NotificationShownDetail(
                 descriptor.Id, descriptor.Channel.ToString(), descriptor.Severity.ToString());
@@ -96,6 +100,20 @@ public sealed class NotificationDispatcher
         try
         {
             var response = await channel.PromptAsync(descriptor, bodyArgs, ct).ConfigureAwait(false);
+
+            // Null means the prompt ended without an answer (e.g. the toast
+            // expired unseen). The step still closes at Info, mirrored Verbose
+            // carries the id/channel.
+            if (response is null)
+            {
+                DeckleNotificationsSource.Log.NotificationUnanswered();
+                if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
+                {
+                    DeckleNotificationsSource.Log.NotificationUnansweredDetail(
+                        descriptor.Id, descriptor.Channel.ToString());
+                }
+                return null;
+            }
 
             DeckleNotificationsSource.Log.NotificationResponded();
             if (DeckleNotificationsSource.Log.IsEnabled())
@@ -108,9 +126,25 @@ public sealed class NotificationDispatcher
         }
         catch (OperationCanceledException)
         {
+            // Closing Info for the step NotificationShown opened — cancellation
+            // is caller-initiated and benign, so Info, not Warning. The Verbose
+            // mirror follows.
+            DeckleNotificationsSource.Log.NotificationCancelled();
             if (DeckleNotificationsSource.Log.IsEnabled())
             {
                 DeckleNotificationsSource.Log.PromptCancelled(descriptor.Id);
+            }
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // A channel threw while delivering. Without this catch the exception
+            // escapes with NotificationShown as the last trace and the step never
+            // closes. Warning closes it; the Verbose mirror carries the error.
+            DeckleNotificationsSource.Log.NotificationFailed();
+            if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
+            {
+                DeckleNotificationsSource.Log.NotificationFailedDetail(descriptor.Id, ex.Message);
             }
             throw;
         }

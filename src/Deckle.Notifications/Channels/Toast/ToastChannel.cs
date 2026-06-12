@@ -13,13 +13,21 @@ namespace Deckle.Notifications;
 // when the user answers — correlated by the per-show nonce held in
 // ToastActivation.
 //
-// Availability has two gates. (1) Registration must have succeeded. (2) The
+// Availability has three gates. (1) Registration must have succeeded. (2) The
 // process must not be elevated: Windows silently drops toasts raised from an
 // elevated app, so an elevated Deckle reports the channel unavailable and the
 // dispatcher routes around it. The elevation check runs once at construction;
-// the Warning is emitted once when detected.
+// the Warning is emitted once when detected. (3) The platform setting must be
+// AppNotificationSetting.Enabled — read live, because the user can toggle
+// notifications off at runtime, and Windows would then make Show succeed
+// silently with nothing presented.
 public sealed class ToastChannel : INotificationChannel
 {
+    // How long a shown prompt stays live before it settles itself as unanswered.
+    // Module constant, not configurable: it bounds the await and the toast's own
+    // Expiration so neither outlives the other.
+    private static readonly TimeSpan PromptLifetime = TimeSpan.FromMinutes(15);
+
     private readonly ToastActivation _activation = new();
     private readonly bool _isElevated;
 
@@ -34,15 +42,23 @@ public sealed class ToastChannel : INotificationChannel
 
     public NotificationChannel Channel => NotificationChannel.Toast;
 
-    // Registration succeeded AND the process is not elevated.
-    public bool IsAvailable => _activation.RegistrationSucceeded && !_isElevated;
+    // Registration succeeded AND the process is not elevated AND notifications
+    // are enabled in Windows. The setting is read live (not cached) so a
+    // runtime toggle is honored on the next prompt.
+    public bool IsAvailable
+        => _activation.RegistrationSucceeded
+           && !_isElevated
+           && _activation.Setting == AppNotificationSetting.Enabled;
 
-    public Task<NotificationResponse> PromptAsync(
+    public Task<NotificationResponse?> PromptAsync(
         NotificationDescriptor descriptor,
         object?[]? bodyArgs,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
+
+        // An already-cancelled token must not Show a toast nobody awaits.
+        ct.ThrowIfCancellationRequested();
 
         var title = Loc.Get(descriptor.TitleKey);
         var body = bodyArgs is { Length: > 0 }
@@ -57,7 +73,7 @@ public sealed class ToastChannel : INotificationChannel
             // Body click → BodyActionId. Every element also carries the nonce so
             // any activation routes back to this show.
             .AddArgument("action", NotificationResponse.BodyActionId)
-            .AddArgument("pid", nonce)
+            .AddArgument("nonce", nonce)
             .AddText(title)
             .AddText(body);
 
@@ -73,7 +89,7 @@ public sealed class ToastChannel : INotificationChannel
             var action = descriptor.Actions[i];
             var button = new AppNotificationButton(Loc.Get(action.LabelKey))
                 .AddArgument("action", action.Id)
-                .AddArgument("pid", nonce);
+                .AddArgument("nonce", nonce);
 
             // v1 simplification: when the descriptor has an inline text box, we
             // pin it beside the FIRST action's button only (the Windows
@@ -89,7 +105,12 @@ public sealed class ToastChannel : INotificationChannel
 
         var notification = builder.BuildNotification();
 
-        var tcs = new TaskCompletionSource<NotificationResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Bound the toast's own life so a prompt nobody answers does not linger
+        // in the Notification Center past the window we still await it for. The
+        // internal expiry below settles the await on the same horizon.
+        notification.Expiration = DateTimeOffset.Now + PromptLifetime;
+
+        var tcs = new TaskCompletionSource<NotificationResponse?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Register the pending TCS BEFORE Show, so an activation that races the
         // show still finds its target.
@@ -114,6 +135,27 @@ public sealed class ToastChannel : INotificationChannel
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
         }
+
+        // The prompt MUST always settle. AppNotificationManager raises
+        // NotificationInvoked only on user interaction — there is no dismiss,
+        // expiry, or timeout event — so a toast nobody clicks would leave this
+        // await and its pending entry hanging for process life. We settle it
+        // ourselves: a CTS fired after PromptLifetime drops the pending entry
+        // and completes the prompt as unanswered (null). Disposed via a
+        // continuation when the task settles, mirroring the ct registration
+        // above, so nothing outlives the prompt.
+        var expiry = new CancellationTokenSource(PromptLifetime);
+        expiry.Token.Register(() =>
+        {
+            _activation.RemovePending(nonce);
+            tcs.TrySetResult(null);
+        });
+        _ = tcs.Task.ContinueWith(
+            static (_, state) => ((CancellationTokenSource)state!).Dispose(),
+            expiry,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
         _activation.Manager.Show(notification);
 

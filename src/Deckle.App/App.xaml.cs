@@ -248,9 +248,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // registered into the central catalogue at this point — Playground's
         // manual test surface among them; duplicate ids fail the boot fast.
         var toastChannel = new Deckle.Notifications.ToastChannel();
-        Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
-        Deckle.Notifications.NotificationDispatcher.Instance!.Catalog.Register(
-            PlaygroundNotifications.All);
+        var dispatcher = Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
+        dispatcher.Catalog.Register(PlaygroundNotifications.All);
         Milestone("notifications");
 
         // First-run gate — the engine ctor below loads the model immediately

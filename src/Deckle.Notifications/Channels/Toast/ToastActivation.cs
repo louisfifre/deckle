@@ -16,7 +16,7 @@ namespace Deckle.Notifications;
 //      already-running process.
 //
 //   2. The activation carries only the arguments baked into the toast at build
-//      time. We thread a per-show nonce ("pid") through every AddArgument so
+//      time. We thread a per-show nonce ("nonce") through every AddArgument so
 //      the handler can route the activation back to the exact TaskCompletionSource
 //      that the show is awaiting — Windows gives no other correlation token.
 //
@@ -29,7 +29,7 @@ internal sealed class ToastActivation
     // Pending prompts keyed by the per-show nonce. RunContinuationsAsynchronously
     // so the awaiting PromptAsync continuation never runs inline on the
     // AppNotificationManager callback thread.
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<NotificationResponse>> _pending = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<NotificationResponse?>> _pending = new();
 
     // True once Register() succeeded. The channel folds this into IsAvailable.
     public bool RegistrationSucceeded { get; private set; }
@@ -57,9 +57,14 @@ internal sealed class ToastActivation
 
     public AppNotificationManager Manager => _manager;
 
+    // Live platform setting for the channel's IsAvailable gate. Read fresh on
+    // every access — the user can toggle notifications at runtime, so a value
+    // cached at construction would go stale.
+    public AppNotificationSetting Setting => _manager.Setting;
+
     // Registers the awaiting TCS under its nonce before the toast is shown, so
     // an activation that races the Show call still finds its target.
-    public void RegisterPending(string nonce, TaskCompletionSource<NotificationResponse> tcs)
+    public void RegisterPending(string nonce, TaskCompletionSource<NotificationResponse?> tcs)
         => _pending[nonce] = tcs;
 
     // Drops a pending entry without completing it — used on cancellation.
@@ -68,10 +73,10 @@ internal sealed class ToastActivation
 
     private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
-        // The nonce ("pid") routes the activation to its awaiting show. An
+        // The nonce ("nonce") routes the activation to its awaiting show. An
         // activation with no nonce (or an unknown one) is an orphan — a cold
         // activation after process exit, deliberately out of scope for v1.
-        if (!args.Arguments.TryGetValue("pid", out var nonce) || string.IsNullOrEmpty(nonce))
+        if (!args.Arguments.TryGetValue("nonce", out var nonce) || string.IsNullOrEmpty(nonce))
         {
             return;
         }
@@ -98,6 +103,13 @@ internal sealed class ToastActivation
                 textInput = pair.Value;
                 break;
             }
+        }
+
+        // A button clicked with an empty box yields UserInput[""]; normalize it
+        // to null so callers see "no text", same as a descriptor with no box.
+        if (string.IsNullOrEmpty(textInput))
+        {
+            textInput = null;
         }
 
         tcs.TrySetResult(new NotificationResponse(actionId, textInput));

@@ -34,10 +34,13 @@ public sealed partial class HomePage : Page
 
     // Manual probe for the notification toast channel. Fires the Playground
     // TestPrompt descriptor through the dispatcher and reports the answer.
-    // PromptAsync completes on a background thread (the channel awaits the OS
-    // toast callback), so the outcome TextBlock is updated only after marshalling
-    // back to the UI thread — touching a XAML control off-thread throws
-    // COMException (RPC_E_WRONG_THREAD).
+    // The TaskCompletionSource is SET on the OS activation callback thread, but
+    // this is an async-void UI handler: the await resumes on the captured
+    // DispatcherQueueSynchronizationContext (the UI thread), so the line after
+    // the await already runs on it. The dispatcher's internal ConfigureAwait(false)
+    // does not propagate to this caller. SetNotificationOutcome's HasThreadAccess
+    // guard stays as defense-in-depth — not exercised on this path. Same model
+    // as InstallingPage.xaml.cs:144-147.
     private async void OnSendTestPromptClick(object sender, RoutedEventArgs e)
     {
         var dispatcher = NotificationDispatcher.Instance;
@@ -50,11 +53,12 @@ public sealed partial class HomePage : Page
         NotificationResponse? response = await dispatcher.PromptAsync(
             PlaygroundNotifications.TestPrompt);
 
-        // null = the notification could not be shown (no channel / channel
-        // unavailable). For the enrollment-prompt semantics, ignoring is a
-        // valid answer, so a dropped prompt is a normal outcome, not an error.
+        // null = the notification was not shown (no channel / channel
+        // unavailable) OR shown but never answered (the toast expired unseen).
+        // For the enrollment-prompt semantics, ignoring is a valid answer, so
+        // both are normal outcomes, not errors.
         string outcome = response is null
-            ? "dropped (no channel available)"
+            ? "no answer (dropped or expired)"
             : $"{response.ActionId} | reply: {response.TextInput ?? "(none)"}";
 
         SetNotificationOutcome(outcome);

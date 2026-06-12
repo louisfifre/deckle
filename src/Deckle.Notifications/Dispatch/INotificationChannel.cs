@@ -21,5 +21,9 @@ public interface INotificationChannel
     // Shows the notification and completes when the user answers. bodyArgs feed
     // Loc.Format for a composite-format BodyKey. Cancellation propagates as
     // TaskCanceledException.
-    Task<NotificationResponse> PromptAsync(NotificationDescriptor descriptor, object?[]? bodyArgs, CancellationToken ct);
+    //
+    // Null means the prompt ended without an answer — e.g. the toast expired
+    // unseen. A channel must always settle the returned task: it never leaks a
+    // pending await for a prompt nobody acts on.
+    Task<NotificationResponse?> PromptAsync(NotificationDescriptor descriptor, object?[]? bodyArgs, CancellationToken ct);
 }

@@ -5,8 +5,9 @@ namespace Deckle.Notifications;
 
 // EventSource provider for the Deckle.Notifications module. Observes the
 // notification lifecycle — dispatcher boot, catalogue registration, and the
-// show / responded / dropped / cancelled path of each prompt — plus the toast
-// channel's two failure modes (elevated process, registration failure).
+// show / responded / dropped / cancelled / unanswered / failed path of each
+// prompt — plus the toast channel's two failure modes (elevated process,
+// registration failure).
 //
 // Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a short
 // Capital sentence with no IDs and no k=v; the technical detail (notification
@@ -36,6 +37,11 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     public const int EvtToastsUnavailable           = 11;
     public const int EvtToastRegistrationFailed     = 12;
     public const int EvtToastRegistrationFailedDetail = 13;
+    public const int EvtNotificationCancelled       = 14;
+    public const int EvtNotificationUnanswered      = 15;
+    public const int EvtNotificationUnansweredDetail = 16;
+    public const int EvtNotificationFailed          = 17;
+    public const int EvtNotificationFailedDetail    = 18;
 
     // ─── Dispatcher boot ───────────────────────────────────────────────
     [Event(EvtDispatcherInitialized,
@@ -72,7 +78,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationShown,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Showing a toast notification")]
+           Message = "Showing a notification")]
     public void NotificationShown()
     {
         if (IsEnabled()) WriteEvent(EvtNotificationShown);
@@ -137,6 +143,56 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtPromptCancelled, notification_id);
+    }
+
+    // ─── Cancelled (closes the step a caller cancelled) ────────────────
+    [Event(EvtNotificationCancelled,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "A notification prompt was cancelled")]
+    public void NotificationCancelled()
+    {
+        if (IsEnabled()) WriteEvent(EvtNotificationCancelled);
+    }
+
+    // ─── Unanswered (the prompt ended without an answer) ───────────────
+    [Event(EvtNotificationUnanswered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "A notification went unanswered")]
+    public void NotificationUnanswered()
+    {
+        if (IsEnabled()) WriteEvent(EvtNotificationUnanswered);
+    }
+
+    [Event(EvtNotificationUnansweredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "notification unanswered | notification_id={0} | channel={1}")]
+    public void NotificationUnansweredDetail(string notification_id, string channel)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtNotificationUnansweredDetail, notification_id, channel);
+    }
+
+    // ─── Failed (a channel threw while delivering) ─────────────────────
+    [Event(EvtNotificationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "A notification channel failed to deliver")]
+    public void NotificationFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtNotificationFailed);
+    }
+
+    [Event(EvtNotificationFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "notification failed | notification_id={0} | error={1}")]
+    public void NotificationFailedDetail(string notification_id, string error)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtNotificationFailedDetail, notification_id, error);
     }
 
     // ─── Toast channel failure modes ───────────────────────────────────
