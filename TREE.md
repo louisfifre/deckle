@@ -530,6 +530,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   └── LlmSettingsService.cs
+│   ├── Deckle.Notifications/
+│   │   ├── Catalog/
+│   │   │   ├── NotificationAction.cs
+│   │   │   ├── NotificationCatalog.cs
+│   │   │   └── NotificationDescriptor.cs
+│   │   ├── Channels/
+│   │   │   └── Toast/
+│   │   │       ├── ToastActivation.cs
+│   │   │       └── ToastChannel.cs
+│   │   ├── Dispatch/
+│   │   │   ├── INotificationChannel.cs
+│   │   │   ├── NotificationDispatcher.cs
+│   │   │   └── NotificationResponse.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Notification catalogue, dispatcher, and delivery channels — modules declare des…
+│   │   ├── Deckle.Notifications.csproj
+│   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
 │   │   │   └── TuningModel.cs
@@ -558,6 +574,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
 │   │   ├── Deckle.Playground.csproj
 │   │   ├── DecklePlaygroundSource.cs
+│   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Settings/
 │   │   ├── Strings/
@@ -765,6 +782,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   └── DeckleAmbientSourceTests.cs
+│   ├── Deckle.Notifications.Tests/
+│   │   ├── Deckle.Notifications.Tests.csproj
+│   │   ├── DeckleNotificationsSourceTests.cs
+│   │   ├── Descriptors.cs
+│   │   ├── FakeNotificationChannel.cs
+│   │   ├── NotificationCatalogTests.cs
+│   │   └── NotificationDispatcherTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   └── DispatcherQueueExtensionsTests.cs

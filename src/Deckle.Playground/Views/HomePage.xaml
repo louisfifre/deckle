@@ -51,6 +51,24 @@
                                            Click="OnAmbientCardClick" />
                 </StackPanel>
 
+                <!-- Notifications test surface. Manual probe for the toast
+                     channel : fires the Playground TestPrompt descriptor
+                     through the dispatcher and reports the answer. Section
+                     header uses BodyStrongTextBlockStyle, the Win11 settings
+                     section-title convention, so it reads as a distinct group
+                     below the routing cards without competing with the H1. -->
+                <StackPanel Spacing="8">
+                    <TextBlock x:Uid="PlaygroundHomeNotificationsHeader"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                    <Button x:Name="SendTestPromptButton"
+                            x:Uid="PlaygroundHomeSendTestPrompt"
+                            Click="OnSendTestPromptClick" />
+                    <TextBlock x:Name="NotificationOutcomeText"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

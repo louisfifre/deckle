@@ -1477,4 +1477,25 @@
     <value>Already off</value>
   </data>
 
+
+  <!-- Deckle.Playground notification descriptor strings, mirrored per the
+       block above : Loc resolves the root resource map only, so the
+       PlaygroundNotifications.cs keys must live here. The module copy is
+       the source of truth for wording. -->
+  <data name="PlaygroundNotifications_TestPrompt_Title" xml:space="preserve">
+    <value>Deckle test notification</value>
+  </data>
+  <data name="PlaygroundNotifications_TestPrompt_Body" xml:space="preserve">
+    <value>Interactive prompt from the Playground — reply or pick an action.</value>
+  </data>
+  <data name="PlaygroundNotifications_TestPrompt_Accept" xml:space="preserve">
+    <value>Accept</value>
+  </data>
+  <data name="PlaygroundNotifications_TestPrompt_Decline" xml:space="preserve">
+    <value>Decline</value>
+  </data>
+  <data name="PlaygroundNotifications_TestPrompt_Placeholder" xml:space="preserve">
+    <value>Optional reply</value>
+  </data>
+
 </root>
