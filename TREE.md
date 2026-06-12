@@ -636,6 +636,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
 │   │   └── TrayIconManager.cs
+│   ├── Deckle.Shell.TaskbarCover/
+│   │   ├── Interop/
+│   │   │   └── TaskbarCoverNativeMethods.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Taskbar cover module — an opaque topmost band that masks the taskbar until the…
+│   │   ├── CoverGeometry.cs
+│   │   ├── Deckle.Shell.TaskbarCover.csproj
+│   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── TaskbarCoverHost.cs
+│   │   ├── TaskbarCoverSettings.cs
+│   │   └── TaskbarCoverSettingsService.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs

@@ -1,0 +1,71 @@
+---
+description: Taskbar cover module — an opaque topmost band that masks the taskbar until the cursor approaches its edge, cursor signal via WinEvent hook (not Raw Input — contended).
+type: agent-instructions
+---
+
+# CLAUDE.md — Deckle.Shell.TaskbarCover
+
+Masks the taskbar behind an opaque black band so it stays out of sight
+until the cursor approaches the screen edge it is anchored to; leaving
+the edge re-covers it after a fixed delay. Built for a Windhawk vertical
+taskbar whose native auto-hide doesn't work, but edge-agnostic by
+construction: the band is the exact `ABM_GETTASKBARPOS` rect, whatever
+the anchored edge, rebuilt on `WM_SETTINGCHANGE` / `WM_DISPLAYCHANGE` /
+`TaskbarCreated`. Port of the standalone `taskbar-overlay-cs` utility
+(its state machine was calibrated in daily use); lives as a sibling of
+[Deckle.Shell](../Deckle.Shell/CLAUDE.md) like TrayMenu, since it is a
+domain module with its own runtime state, not a shell primitive.
+
+## The cursor signal — why a WinEvent hook
+
+A `RIDEV_INPUTSINK` Raw Input mouse registration is **per process per
+usage**: `HudWindow` owns the only one (proximity fade) and a second
+registration would silently steal it — the same constraint that pushed
+`HudOverlayWindow` to a 60 Hz poll for its transient cards. A permanent
+module can't poll, so the cursor arrives through
+`SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE)` filtered on
+`OBJID_CURSOR`: additive (hooks coexist), asynchronous (no input-chain
+latency, unlike `WH_MOUSE_LL`), delivered on the registering thread's
+message pump. Constraints that shape the code: the callback must stay
+trivial (it runs at input cadence, events queue without coalescing),
+`UnhookWinEvent` must run on the hooking thread, the delegate must stay
+rooted. `WINEVENT_OUTOFCONTEXT` alone — `SKIPOWNPROCESS` could lose
+moves over our own windows (cursor-event process attribution is
+undocumented). If a third consumer of global mouse movement ever
+appears, consolidating one multiplexed Raw Input registration in
+`Deckle.Input` (and migrating HudWindow onto it) is the known
+alternative.
+
+## Threading
+
+One dedicated thread (mirrors `RawInputHost`) owns everything: the band
+window, the hook, the timers, every state field — the machine runs
+without a lock. The band is a real top-level window (not message-only)
+because the broadcasts it lives on — `WM_SETTINGCHANGE`,
+`TaskbarCreated`, `WM_POWERBROADCAST` — never reach message-only
+windows. `WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW`, shown with
+`SW_SHOWNOACTIVATE`, never focused, deliberately *not* click-through: a
+click on the band is swallowed, that's the masking.
+
+## State machine
+
+`UpdateCover` is the sole `ShowWindow` site; visible =
+layout known ∧ ¬in-reveal-zone ∧ ¬fullscreen-suppressed ∧ ¬suspended.
+Zone exit arms one 5 s one-shot; re-entry disarms it; the timer re-checks
+the cursor before committing (fixes a standalone flicker where re-entry
+followed by stillness let the band re-cover under the cursor).
+Fullscreen suppression is the standalone's proven two-stage probe
+(`SHQueryUserNotificationState`, then DWM extended-frame-bounds vs
+monitor) on a 5 s poll — kept as a poll because F11 fullscreen changes
+no foreground window, so no event exists; the same tick re-asserts
+HWND_TOPMOST while visible (the taskbar is topmost too, last-positioned
+wins). Sleep and session lock park everything. The reveal-zone depth
+(192 px) and re-cover delay (5 s) are frozen constants, deliberately not
+settings.
+
+## Failure posture
+
+No fabricated geometry: when `ABM_GETTASKBARPOS` fails the cover stays
+hidden until `TaskbarCreated` or the retry tick finds the taskbar — a
+wrong band is worse than no band. A dead cursor hook fails the whole
+start (the band would mask the taskbar forever).
