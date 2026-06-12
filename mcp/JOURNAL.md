@@ -7,6 +7,26 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-12 — Bootstrap: auth and real-space discovery
+
+Interactive bootstrap done against the live local API (Anytype Desktop, challenge auth). The anyproto vendor reference actually lives at `D:\skills\global\anytype-agents-skill-main\` (the old `D:\projects\ai\anytype` path is gone). API version header `2025-11-08` works.
+
+**Credentials home (decided):** `%LOCALAPPDATA%\Deckle\modules\anytype\credentials.json` — `api_url` + `api_version` + `api_key` (long-lived bearer). Follows the AppPaths module-data convention.
+
+**The PM space is `Dev`** (`bafyreibaltekf6yw32suoj3g57ot7gxgmpjwi37k7mx5y6mdd4f3i7p4fa.54yhp4w3lgp`). `Perso` holds unrelated personal types; `Test MCP` is an empty sandbox without the PM types.
+
+**PM types found in Dev:** `epic` (layout collection — projects are members of the collection, no link property on either side), `project`, `task`, `rapport` (note layout), `idee`, `document` — plus a dormant `session` type with zero objects (links tasks + rapports; left untouched).
+
+**Key traps found** (display name ≠ key; the core library owns this map, frozen as code):
+- `charge_estimee_(jours)` is the key for **Charge réelle**; `charge_estimee` is Charge estimée; `budget_reel_(` is the truncated key for Budget réel.
+- Priorité lives under the opaque property id `67c6d714341c1628147d7b1d`; its options `0` and `4` are opaque tag ids too (`67cc1782…`, `67c6d722…`); options 1/2/3/5 have literal keys.
+- Task's « Rapport(s) lié(s) » key is misspelled: `rpport(s)_lie(s)`.
+- Tag keys diverge from display names: `production`→Produire, `recherche`→Chercher, `gestion`→Gérer (type_de_tache); `rapport`→Recherche (type_de_document); `document_de_cadrage`→Texte (livrable(s)).
+
+**`rapport` has no task-link property.** It carries `date_du_journal`, `session(s)_liee(s)`, `relation_projet`, `contact_lie`, `fichier(s)_lie(s)`. The task→rapport link lives on the task side. The 47 existing rapports link only to the project in practice.
+
+**Decision (Louis): reports anchor to tasks from the task side, schema intact.** `session_start` creates the rapport (journal date + project link); the server writes the report into each touched task's « Rapport(s) lié(s) ». This amends the founding-grilling line "linked to every task it ended up touching" — the link is written on the tasks, not on the report.
+
 ## 2026-06-12 — Founding grilling (grill-with-docs session)
 
 Module founded: a custom MCP server over the local Anytype REST API, tailored to Louis's project-management space (epics → projects → tasks → session reports, plus ideas and documentation). Consumers: Claude Desktop / Claude Code now; later a Deckle in-app assistant running a small local instruct model (Ministral 3B class) — that future path is why the architecture below matters. The old connector plan at `D:\projects\ai\anytype` is superseded by this journal.

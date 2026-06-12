@@ -222,6 +222,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.Theme.cs
+│   │   ├── App.Trackpad.cs
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
@@ -364,6 +365,47 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
 │   │   ├── Deckle.Inference.Onnx.csproj
 │   │   └── OnnxModelSession.cs
+│   ├── Deckle.Input/
+│   │   ├── Injection/
+│   │   │   └── MouseInjector.cs
+│   │   ├── Interop/
+│   │   │   ├── HidInterop.cs
+│   │   │   ├── RawInputInterop.cs
+│   │   │   └── SendInputInterop.cs
+│   │   ├── Telemetry/
+│   │   │   └── ContactFrameRecorder.cs
+│   │   ├── Touchpad/
+│   │   │   ├── ContactFrame.cs
+│   │   │   ├── ContactFrameAssembler.cs
+│   │   │   ├── TouchpadCapabilities.cs
+│   │   │   ├── TouchpadContact.cs
+│   │   │   ├── TouchpadParser.cs
+│   │   │   └── TouchpadReport.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, contact…
+│   │   ├── Deckle.Input.csproj
+│   │   ├── DeckleInputSource.cs
+│   │   └── RawInputHost.cs
+│   ├── Deckle.Input.Trackpad/
+│   │   ├── Acts/
+│   │   │   ├── ConnectionRepair.cs
+│   │   │   ├── repair-trackpad-connection.ps1
+│   │   │   └── WindowsGestureNeutralizer.cs
+│   │   ├── Engine/
+│   │   │   ├── ThreeFingerDragRecognizer.cs
+│   │   │   └── TrackpadEngine.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── TrackpadPage.xaml
+│   │   │   └── TrackpadPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   └── TrackpadViewModel.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
+│   │   ├── Deckle.Input.Trackpad.csproj
+│   │   ├── DeckleTrackpadSource.cs
+│   │   ├── TrackpadSettings.cs
+│   │   └── TrackpadSettingsService.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
@@ -546,6 +588,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs
+│   │   ├── ElevatedStartupService.cs
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
@@ -677,6 +720,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Input.Tests/
+│   │   ├── ContactFrameAssemblerTests.cs
+│   │   └── Deckle.Input.Tests.csproj
+│   ├── Deckle.Input.Trackpad.Tests/
+│   │   ├── Deckle.Input.Trackpad.Tests.csproj
+│   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
