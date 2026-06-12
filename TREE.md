@@ -379,6 +379,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TouchpadContact.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, contact…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   └── RawInputHost.cs
@@ -398,6 +399,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   └── TrackpadViewModel.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
 │   │   ├── TrackpadSettings.cs
