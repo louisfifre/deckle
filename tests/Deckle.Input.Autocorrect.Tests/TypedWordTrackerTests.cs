@@ -354,6 +354,62 @@ public class TypedWordTrackerTests
         Assert.Equal("mot", rec.Commits[1].PreviousWord);
     }
 
+    // Le moteur réagit à un commit DEPUIS le handler WordCommitted (réentrance) :
+    // il injecte la correction puis appelle ReplaceLastCommitted pour réaligner
+    // le tracker sur l'écran. L'état du commit doit donc être posé AVANT que
+    // l'événement parte, et rien ne doit écraser le réalignement après.
+    [Fact]
+    public void ReplaceLastCommittedFromTheCommitHandlerRealignsTheChain()
+    {
+        var t = new TypedWordTracker();
+        var commits = new List<WordCommit>();
+        t.WordCommitted += c =>
+        {
+            commits.Add(c);
+            if (c.Word == "francais")
+                t.ReplaceLastCommitted("français");
+        };
+
+        Type(t, "francais ");
+        Type(t, "ecole ");
+
+        // Le mot suivant chaîne sur la forme corrigée — celle de l'écran.
+        Assert.Equal(2, commits.Count);
+        Assert.Equal("français", commits[1].PreviousWord);
+    }
+
+    [Fact]
+    public void ReplaceLastCommittedFromTheCommitHandlerReopensTheReplacement()
+    {
+        var t = new TypedWordTracker();
+        t.WordCommitted += c =>
+        {
+            if (c.Word == "francais")
+                t.ReplaceLastCommitted("français");
+        };
+
+        Type(t, "francais ");
+        Backspace(t); // rouvre le mot tel qu'il est à l'écran : la forme corrigée
+
+        Assert.Equal("français", t.CurrentWord);
+    }
+
+    [Fact]
+    public void BoundaryOnEmptyBufferClosesTheEditWindow()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "mot  ");    // commit, puis un espace surnuméraire
+        Backspace(t);        // mange l'espace de bruit — ne rouvre PAS « mot »
+        Assert.Equal(string.Empty, t.CurrentWord);
+
+        Type(t, "deux ");
+        Assert.Equal(2, rec.Commits.Count);               // aucun commit fantôme
+        Assert.Equal("mot", rec.Commits[1].PreviousWord); // la chaîne survit
+        Assert.Empty(rec.Edits);
+    }
+
     [Fact]
     public void CommitTimestampPassesThrough()
     {

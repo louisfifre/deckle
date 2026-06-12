@@ -160,7 +160,10 @@ public sealed class TypedWordTracker
             return;
         }
 
-        // Empty buffer: boundary noise — commits nothing, clears nothing.
+        // Empty buffer: boundary noise — commits nothing, clears nothing, but
+        // closes the edit window like any other empty-buffer boundary.
+        if (_editWindowOpen)
+            CloseEditWindow();
     }
 
     private void ProcessBoundary(char boundary, double timestampMs)
@@ -168,7 +171,11 @@ public sealed class TypedWordTracker
         if (_buffer.Length == 0)
         {
             // Consecutive boundaries are noise; a boundary never clears the
-            // previousWord context.
+            // previousWord context. It DOES push the committed word away from
+            // the caret, so the re-open gesture no longer concerns it — a
+            // Backspace here eats this extra boundary, not the commit's.
+            if (_editWindowOpen)
+                CloseEditWindow();
             return;
         }
 
@@ -210,17 +217,17 @@ public sealed class TypedWordTracker
 
     // Commits the current buffer as a word, raises WordCommitted, and (when
     // re-editing) WordEdited. Opens a fresh edit window on the committed word.
+    //
+    // State lands BEFORE the events fire: a WordCommitted handler may react by
+    // injecting a correction and calling ReplaceLastCommitted — it must find
+    // the window already open, and nothing here may overwrite its realignment
+    // afterward.
     private void Commit(char boundary, double timestampMs)
     {
         string word = _buffer.ToString();
         string? wordBeforeThis = _previousWord;
         bool wasReopened = _reopened;
         string? original = _originalForEdit;
-
-        WordCommitted?.Invoke(new WordCommit(word, boundary, _previousWord, timestampMs));
-
-        if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
-            WordEdited?.Invoke(new WordEdit(original, word, timestampMs));
 
         // Chain: this word becomes the previous one for whatever comes next.
         _previousWord = word;
@@ -233,6 +240,11 @@ public sealed class TypedWordTracker
         _originalForEdit = null;
         _editWindowOpen = true;
         _reopened = false;
+
+        WordCommitted?.Invoke(new WordCommit(word, boundary, wordBeforeThis, timestampMs));
+
+        if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
+            WordEdited?.Invoke(new WordEdit(original, word, timestampMs));
     }
 
     private void CloseEditWindow()
