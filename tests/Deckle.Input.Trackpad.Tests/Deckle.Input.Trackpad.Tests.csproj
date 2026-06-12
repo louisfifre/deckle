@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
+  </ItemGroup>
+</Project>
