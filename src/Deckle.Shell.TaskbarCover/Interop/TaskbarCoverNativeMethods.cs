@@ -25,16 +25,20 @@ internal static class TaskbarCoverNativeMethods
 
     public const uint WM_QUIT = 0x0012;
 
-    [DllImport("user32.dll")]
+    // Unicode pinned explicitly: without CharSet these resolve to the *A
+    // exports (user32 exports no bare names), an ANSI pump in front of a
+    // window registered through RegisterClassExW. TranslateMessage has a
+    // single export, no variant to pin.
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
     [DllImport("user32.dll")]
     public static extern bool TranslateMessage(ref MSG lpMsg);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr DispatchMessage(ref MSG lpMsg);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool PostThreadMessage(uint idThread, uint msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("kernel32.dll")]
@@ -176,6 +180,6 @@ internal static class TaskbarCoverNativeMethods
         public uint dwFlags;
     }
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 }
