@@ -7,8 +7,13 @@ type: module-journal
 
 ## 2026-06-12 — Founding decisions
 
-- Observation fork closed with Louis: Raw Input + UIA, repair after commit, Enter = reset (ADR-0018,
-  proposed). The revision-window question (correcting words behind the caret with later context) is
+- Observation fork closed with Louis: Raw Input + targeted UIA reads, repair via SendInput after the
+  word commits, Enter = a pure reset. The low-level hook (`WH_KEYBOARD_LL`) was rejected — it pays
+  permanent system-wide latency and Windows silently removes it after timeouts (the PowerToys Quick
+  Accent failure class) for a gain confined to send contexts; a TSF text service is in-proc COM C++
+  loaded into every GUI process, out of reach for a managed v1. Accepted cost: the word right before
+  an Enter leaves uncorrected — to re-open if live usage shows it is the dominant miss.
+  The revision-window question (correcting words behind the caret with later context) is
   **deferred to the context stage** — at the lexical-gate stage only the just-committed word is
   touched, so nothing is revised behind the caret in v1.
 - Module named `Deckle.Input.Autocorrect`, domain module of the input pillar, mirroring
@@ -58,3 +63,16 @@ Deferred, noted while wiring: the « come back later » variant of the correctio
 position knowledge (v1 arms the revert for the immediately-next keystroke only); the enrollment
 prompt waits on the notifications brick (CLI `enroll` stands in); a *relative* EN guard (block only
 when the EN frequency dwarfs the FR variant's) could recover the borrowed-word class — unmeasured.
+
+## 2026-06-13 — First live run (Louis)
+
+- The observation layer held up live (Notepad, Explorer, Terminal): surfaces, password gate,
+  commits, edits and resets all matched the model — including a `;` boundary from a slip next to
+  `l` on QWERTY. Louis ran `watch` (observe-only by design); the correction path (`run`) is still
+  unexercised live.
+- Direction from Louis: the focused-surface detection must be reusable by the transcription
+  autopaste. The UIA primitive already sits in `Deckle.Core` (`TryDescribeFocusedElement`);
+  `FocusedSurface`/`SurfaceProber` are module-local today and would move down when autopaste
+  consumes them.
+- The self-initiated ADR was withdrawn (ADRs are the maintainer's act — `docs/adr/CLAUDE.md`); its
+  rationale is folded into the 2026-06-12 entry above.

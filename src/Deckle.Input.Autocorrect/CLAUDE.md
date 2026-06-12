@@ -11,9 +11,9 @@ typo correction second. Consumes `Deckle.Input` (raw keyboard stream)
 and the shared injection interop; owns word tracking, the correction
 engine, the personal dictionary, learning, and the enrollment policy.
 Vocabulary is normative in `CONTEXT.md` § Autocorrect. The observation
-posture is frozen in ADR-0018: Raw Input + targeted UIA reads, repair
-by SendInput after the word commits, Enter is a reset, no low-level
-hook.
+posture: Raw Input + targeted UIA reads, repair by SendInput after the
+word commits, Enter is a reset, no low-level hook — the why lives in
+the module `JOURNAL.md` (2026-06-12).
 
 ## Hard rules
 

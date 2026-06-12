@@ -8,8 +8,8 @@ namespace Deckle.Input.Autocorrect.Tracking;
 // rides in on the keystrokes, effects go out as events, so every quality
 // decision is testable keystroke by keystroke (mirrors the trackpad recognizer).
 //
-// The edit window is the subtle part. ADR-0018: the autocorrect observes and
-// repairs AFTER a word commits; the same window that lets the engine fix a word
+// The edit window is the subtle part. The autocorrect observes and repairs
+// AFTER a word commits; the same window that lets the engine fix a word
 // also lets the tracker watch the user fix it. After a commit the screen holds
 // « word » + boundary; the first Backspace eats the boundary and RE-OPENS the
 // committed word as the live buffer, with previousWord reverted one step (a
