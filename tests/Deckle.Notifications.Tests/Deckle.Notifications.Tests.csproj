@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Notifications\Deckle.Notifications.csproj" />
+  </ItemGroup>
+</Project>

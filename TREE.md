@@ -751,6 +751,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   └── DeckleAmbientSourceTests.cs
+│   ├── Deckle.Notifications.Tests/
+│   │   ├── Deckle.Notifications.Tests.csproj
+│   │   ├── DeckleNotificationsSourceTests.cs
+│   │   ├── Descriptors.cs
+│   │   ├── FakeNotificationChannel.cs
+│   │   ├── NotificationCatalogTests.cs
+│   │   └── NotificationDispatcherTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   └── DispatcherQueueExtensionsTests.cs
