@@ -28,6 +28,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSystemResumed       = 10;
     public const int EvtCursorHookFailed    = 11;
     public const int EvtSessionNotifyFailed = 12;
+    public const int EvtHostStopTimedOut    = 13;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -59,6 +60,16 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtHostStopped);
+    }
+
+    [Event(EvtHostStopTimedOut,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "taskbar cover thread did not exit in time — restart refused until it does")]
+    public void HostStopTimedOut()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtHostStopTimedOut);
     }
 
     // ── Taskbar layout ────────────────────────────────────────────────────────

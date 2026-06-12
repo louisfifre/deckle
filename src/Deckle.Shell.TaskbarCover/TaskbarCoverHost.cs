@@ -49,6 +49,10 @@ public sealed class TaskbarCoverHost : IDisposable
     private readonly object _stateLock = new();
 
     private Thread? _thread;
+    // Worker that outlived its Join in Stop() — it still owns the window
+    // class, the delegates and the native handles, so Start() refuses to
+    // run over it until it has fully exited and torn itself down.
+    private Thread? _defunctThread;
     private uint _threadId;
     private IntPtr _hwnd;
     private ushort _classAtom;
@@ -95,6 +99,20 @@ public sealed class TaskbarCoverHost : IDisposable
         {
             if (_running) return true;
 
+            if (_defunctThread is { } defunct)
+            {
+                // Join(0) succeeding means the stuck worker completed its own
+                // TearDown and exited: the shared native fields are clean
+                // again. Until then, restarting would corrupt them.
+                if (!defunct.Join(TimeSpan.Zero))
+                {
+                    DeckleShellTaskbarCoverSource.Log.HostStartFailed(
+                        "DefunctWorker", "previous cover thread has not exited yet");
+                    return false;
+                }
+                _defunctThread = null;
+            }
+
             using var ready = new ManualResetEventSlim(false);
             Exception? startError = null;
             bool started = false;
@@ -118,6 +136,7 @@ public sealed class TaskbarCoverHost : IDisposable
 
                 if (started)
                 {
+                    BootstrapState();
                     RunPump();
                     TearDown();
                 }
@@ -146,16 +165,26 @@ public sealed class TaskbarCoverHost : IDisposable
     public void Stop()
     {
         Thread? thread;
+        uint threadId;
         lock (_stateLock)
         {
             if (!_running || _thread is null) return;
             _running = false;
             thread = _thread;
+            threadId = _threadId;
             _thread = null;
         }
 
-        PostThreadMessage(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
-        thread.Join(TimeSpan.FromSeconds(3));
+        PostThreadMessage(threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+        if (!thread.Join(TimeSpan.FromSeconds(3)))
+        {
+            // Stuck worker — realistically SHAppBarMessage sent to a hung
+            // Explorer. The queued WM_QUIT will kill it the moment the send
+            // returns; until then Start() must not reuse its native state.
+            lock (_stateLock) { _defunctThread = thread; }
+            DeckleShellTaskbarCoverSource.Log.HostStopTimedOut();
+            return;
+        }
         DeckleShellTaskbarCoverSource.Log.HostStopped();
     }
 
@@ -224,6 +253,16 @@ public sealed class TaskbarCoverHost : IDisposable
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();
 
+        DeckleShellTaskbarCoverSource.Log.HostStarted(_hwnd.ToInt64(), (int)_threadId);
+    }
+
+    // First layout and gate probes, off Start()'s critical path: the gated
+    // section (SetupWindow) makes local calls exclusively — the profile
+    // RawInputHost set — while SHAppBarMessage is a synchronous send to
+    // Explorer's tray window. Against a hung Explorer it blocks this thread
+    // only, never the caller of Start().
+    private void BootstrapState()
+    {
         RebuildLayout("boot");
         ResetZoneStateFromCursor();
         EvaluateAppSuppressed();
@@ -231,7 +270,6 @@ public sealed class TaskbarCoverHost : IDisposable
         SetTimer(_hwnd, TIMER_SUPPRESSION, SuppressionPollMs, IntPtr.Zero);
 
         UpdateCover("boot");
-        DeckleShellTaskbarCoverSource.Log.HostStarted(_hwnd.ToInt64(), (int)_threadId);
     }
 
     private void RunPump()
