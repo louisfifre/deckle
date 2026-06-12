@@ -94,12 +94,54 @@ public class NotificationDispatcherTests
     }
 
     [Fact]
+    public async Task WhenTwoChannelsClaimTheSameKindTheLastWiredWins()
+    {
+        // Both channels claim Toast; the dispatcher's wiring map keeps the last
+        // writer, so the prompt must route to the second and never touch the
+        // first. A distinct canned response per channel makes the winner visible
+        // in the returned value as well as in the recorded calls.
+        var first = new FakeNotificationChannel(
+            cannedResponse: new NotificationResponse("first", null));
+        var second = new FakeNotificationChannel(
+            cannedResponse: new NotificationResponse("second", null));
+        var dispatcher = NotificationDispatcher.Initialize(first, second);
+        var descriptor = Descriptors.Make("playground.last_writer");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        var response = await dispatcher.PromptAsync(
+            descriptor, ct: TestContext.Current.CancellationToken);
+
+        Assert.Equal("second", response?.ActionId);
+        Assert.Single(second.Calls);
+        Assert.Empty(first.Calls);
+    }
+
+    [Fact]
+    public async Task AnUnansweredChannelReturnsNullWithoutThrowing()
+    {
+        // The channel was shown but settled with no answer (toast expired
+        // unseen). The dispatcher passes that null straight through — same
+        // observable outcome as a drop for the caller, no throw.
+        var channel = new FakeNotificationChannel(returnsNull: true);
+        var dispatcher = NotificationDispatcher.Initialize(channel);
+        var descriptor = Descriptors.Make("playground.unanswered");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        var response = await dispatcher.PromptAsync(
+            descriptor, ct: TestContext.Current.CancellationToken);
+
+        Assert.Null(response);
+        // Unlike a drop, the channel WAS prompted — the null came from it.
+        Assert.Single(channel.Calls);
+    }
+
+    [Fact]
     public async Task CancellationPropagatesAsTaskCanceledException()
     {
         var channel = new FakeNotificationChannel
         {
             // Park the prompt so the token has a window to fire.
-            PendingCompletion = new TaskCompletionSource<NotificationResponse>(),
+            PendingCompletion = new TaskCompletionSource<NotificationResponse?>(),
         };
         var dispatcher = NotificationDispatcher.Initialize(channel);
         var descriptor = Descriptors.Make("playground.cancel");

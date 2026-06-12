@@ -125,6 +125,143 @@ public class DeckleNotificationsSourceTests
         Assert.Equal("no_channel", droppedDetail.Payload?[1]); // reason
     }
 
+    [Fact]
+    public async Task CancellingAShownPromptClosesTheStepWithCancelledThenItsVerboseMirror()
+    {
+        // Park the channel so the token has a window to fire while the prompt is
+        // shown-but-unanswered — the exact moment the cancellation narrative is
+        // meant to cover.
+        var channel = new FakeNotificationChannel
+        {
+            PendingCompletion = new TaskCompletionSource<NotificationResponse?>(),
+        };
+        var dispatcher = NotificationDispatcher.Initialize(channel);
+        var descriptor = Descriptors.Make("playground.cancel_obs");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        using var listener = new TestEventListener("Deckle-Notifications");
+        using var cts = new CancellationTokenSource();
+        var prompt = dispatcher.PromptAsync(descriptor, ct: cts.Token);
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => prompt);
+
+        // The closing Info: cancellation is caller-initiated and benign.
+        var cancelled = Single(listener, DeckleNotificationsSource.EvtNotificationCancelled);
+        Assert.Equal(EventLevel.Informational, cancelled.Level);
+        Assert.True(cancelled.HasKeyword(Keywords.Push));
+
+        // Its Verbose mirror carries the id.
+        var promptCancelled = Single(listener, DeckleNotificationsSource.EvtPromptCancelled);
+        Assert.Equal(EventLevel.Verbose, promptCancelled.Level);
+        Assert.True(promptCancelled.HasKeyword(Keywords.Push));
+        Assert.Equal("playground.cancel_obs", promptCancelled.Payload?[0]); // notification_id
+
+        // The step opened at Shown and closes at Cancelled, the mirror last.
+        AssertOrdered(listener,
+            DeckleNotificationsSource.EvtNotificationShown,
+            DeckleNotificationsSource.EvtNotificationCancelled,
+            DeckleNotificationsSource.EvtPromptCancelled);
+    }
+
+    [Fact]
+    public async Task AnUnansweredPromptClosesTheStepWithUnansweredAndNoResponded()
+    {
+        // The channel was shown but settled with null — shown-but-never-answered,
+        // distinct from a drop (which never shows).
+        var dispatcher = NotificationDispatcher.Initialize(
+            new FakeNotificationChannel(returnsNull: true));
+        var descriptor = Descriptors.Make("playground.unanswered_obs");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        using var listener = new TestEventListener("Deckle-Notifications");
+        var response = await dispatcher.PromptAsync(
+            descriptor, ct: TestContext.Current.CancellationToken);
+
+        Assert.Null(response);
+
+        var unanswered = Single(listener, DeckleNotificationsSource.EvtNotificationUnanswered);
+        Assert.Equal(EventLevel.Informational, unanswered.Level);
+        Assert.True(unanswered.HasKeyword(Keywords.Push));
+
+        var unansweredDetail = Single(listener, DeckleNotificationsSource.EvtNotificationUnansweredDetail);
+        Assert.Equal(EventLevel.Verbose, unansweredDetail.Level);
+        Assert.True(unansweredDetail.HasKeyword(Keywords.Push));
+        Assert.Equal("playground.unanswered_obs", unansweredDetail.Payload?[0]); // notification_id
+        Assert.Equal("Toast", unansweredDetail.Payload?[1]);                     // channel
+
+        // Shown still opens the step; the unanswered close follows it.
+        AssertOrdered(listener,
+            DeckleNotificationsSource.EvtNotificationShown,
+            DeckleNotificationsSource.EvtNotificationUnanswered,
+            DeckleNotificationsSource.EvtNotificationUnansweredDetail);
+
+        // A no-answer outcome is never a response.
+        Assert.DoesNotContain(listener.Events,
+            e => e.EventId == DeckleNotificationsSource.EvtNotificationResponded);
+        Assert.DoesNotContain(listener.Events,
+            e => e.EventId == DeckleNotificationsSource.EvtNotificationRespondedDetail);
+    }
+
+    [Fact]
+    public async Task AChannelThatThrowsClosesTheStepWithFailedAndRethrows()
+    {
+        // The channel fails while delivering. The dispatcher closes the open
+        // step at Warning and lets the exception escape.
+        var channel = new FakeNotificationChannel
+        {
+            ThrowOnPrompt = new InvalidOperationException("boom"),
+        };
+        var dispatcher = NotificationDispatcher.Initialize(channel);
+        var descriptor = Descriptors.Make("playground.failed_obs");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        using var listener = new TestEventListener("Deckle-Notifications");
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            dispatcher.PromptAsync(descriptor, ct: TestContext.Current.CancellationToken));
+
+        var failed = Single(listener, DeckleNotificationsSource.EvtNotificationFailed);
+        Assert.Equal(EventLevel.Warning, failed.Level);
+        Assert.True(failed.HasKeyword(Keywords.Push));
+
+        var failedDetail = Single(listener, DeckleNotificationsSource.EvtNotificationFailedDetail);
+        Assert.Equal(EventLevel.Verbose, failedDetail.Level);
+        Assert.True(failedDetail.HasKeyword(Keywords.Push));
+        Assert.Equal("playground.failed_obs", failedDetail.Payload?[0]); // notification_id
+        Assert.Equal("boom", failedDetail.Payload?[1]);                  // error
+
+        AssertOrdered(listener,
+            DeckleNotificationsSource.EvtNotificationShown,
+            DeckleNotificationsSource.EvtNotificationFailed,
+            DeckleNotificationsSource.EvtNotificationFailedDetail);
+
+        // A failure is never a response.
+        Assert.DoesNotContain(listener.Events,
+            e => e.EventId == DeckleNotificationsSource.EvtNotificationResponded);
+    }
+
+    [Fact]
+    public void RegisteringDescriptorsEmitsTheCatalogAuditWithItsIdsAndCount()
+    {
+        var dispatcher = NotificationDispatcher.Initialize(new FakeNotificationChannel());
+
+        // Attach BEFORE Register so the catalogue audit lands on this listener —
+        // the other suites deliberately attach after, to keep init/registration
+        // noise out of their assertions.
+        using var listener = new TestEventListener("Deckle-Notifications");
+        dispatcher.Catalog.Register(new[]
+        {
+            Descriptors.Make("playground.cat_a"),
+            Descriptors.Make("playground.cat_b"),
+        });
+
+        var registered = Single(listener, DeckleNotificationsSource.EvtCatalogRegistered);
+        Assert.Equal(EventLevel.Verbose, registered.Level);
+        Assert.True(registered.HasKeyword(Keywords.Push));
+        Assert.Equal("playground.cat_a,playground.cat_b", registered.Payload?[0]); // notification_ids
+        Assert.Equal(2, registered.Payload?[1]);                                   // descriptor_count
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────
 
     // The provider is a process-wide singleton; concurrent tests in other
