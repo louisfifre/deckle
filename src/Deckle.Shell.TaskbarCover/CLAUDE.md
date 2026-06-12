@@ -40,7 +40,13 @@ alternative.
 
 One dedicated thread (mirrors `RawInputHost`) owns everything: the band
 window, the hook, the timers, every state field — the machine runs
-without a lock. The band is a real top-level window (not message-only)
+without a lock. `Start()` gates only on local calls (window, hook,
+registrations); the first `SHAppBarMessage` — a synchronous send to
+Explorer's tray window, unbounded against a hung Explorer — runs on the
+worker after the ready signal, never on the caller. A worker that
+outlives `Stop()`'s join is kept as defunct and `Start()` refuses to run
+over its native state until it has exited; the queued `WM_QUIT` makes
+that self-healing. The band is a real top-level window (not message-only)
 because the broadcasts it lives on — `WM_SETTINGCHANGE`,
 `TaskbarCreated`, `WM_POWERBROADCAST` — never reach message-only
 windows. `WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW`, shown with
@@ -61,7 +67,10 @@ no foreground window, so no event exists; the same tick re-asserts
 HWND_TOPMOST while visible (the taskbar is topmost too, last-positioned
 wins). Sleep and session lock park everything. The reveal-zone depth
 (192 px) and re-cover delay (5 s) are frozen constants, deliberately not
-settings.
+settings. The whole user surface is the tray switch — no Settings page,
+deliberately: with the tunables frozen, a page would carry a single
+boolean the tray pill already does; one earns its place the day a real
+parameter appears.
 
 ## Failure posture
 
