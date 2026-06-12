@@ -18,6 +18,8 @@ public static class UIAutomation
 {
     // https://learn.microsoft.com/windows/win32/winauto/uiauto-automation-element-propids
     private const int UIA_ControlTypePropertyId = 30003;
+    private const int UIA_ProcessIdPropertyId   = 30002;
+    private const int UIA_IsPasswordPropertyId  = 30019;
 
     // https://learn.microsoft.com/windows/win32/winauto/uiauto-controltype-ids
     private const int UIA_EditControlTypeId     = 50004;
@@ -60,6 +62,51 @@ public static class UIAutomation
                    || controlType == UIA_DocumentControlTypeId;
             diagnostic = $"ControlType={controlType} (editable={ok})";
             return ok;
+        }
+        catch (Exception ex)
+        {
+            diagnostic = $"UIA exception: {ex.GetType().Name}: {ex.Message}";
+            return false;
+        }
+    }
+
+    // Describes the system-focused element for the autocorrect surface gate:
+    // IsPassword (UIA's own flag — defaults to FALSE on unmarked fields, so a
+    // false here is "not known to be a password", never a guarantee),
+    // text-editability (ControlType Edit or Document), and the owning process.
+    // Returns false when UIA cannot answer at all — the caller treats that as
+    // an unknown surface (observe, never correct).
+    public static bool TryDescribeFocusedElement(
+        out bool isPassword, out bool isTextEditable, out int processId, out string diagnostic)
+    {
+        isPassword = false;
+        isTextEditable = false;
+        processId = 0;
+        try
+        {
+            var ua = GetInstance();
+            int hr = ua.GetFocusedElement(out var el);
+            if (hr != 0 || el is null)
+            {
+                diagnostic = $"GetFocusedElement hr=0x{hr:X} el={(el is null ? "null" : "ok")}";
+                return false;
+            }
+
+            if (el.GetCurrentPropertyValue(UIA_IsPasswordPropertyId, out var pw) == 0 && pw is bool b)
+                isPassword = b;
+
+            if (el.GetCurrentPropertyValue(UIA_ControlTypePropertyId, out var ct) == 0 && ct is not null)
+            {
+                int controlType = Convert.ToInt32(ct);
+                isTextEditable = controlType == UIA_EditControlTypeId
+                              || controlType == UIA_DocumentControlTypeId;
+            }
+
+            if (el.GetCurrentPropertyValue(UIA_ProcessIdPropertyId, out var pid) == 0 && pid is not null)
+                processId = Convert.ToInt32(pid);
+
+            diagnostic = $"password={isPassword} editable={isTextEditable} pid={processId}";
+            return true;
         }
         catch (Exception ex)
         {
