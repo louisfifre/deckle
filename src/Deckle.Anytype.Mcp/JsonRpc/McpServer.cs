@@ -27,8 +27,12 @@ public sealed class McpServer
         + "session_start on the anchor task, then journal the why with log as "
         + "you go; plain reads need no session. Shared vocabulary — états: "
         + "termine, ouvert, en_cours, dormant, en_attente, abandonne; priority "
-        + "0-5, 5 highest; content is French. Names resolve to objects; an "
-        + "ambiguous name returns candidate ids so you can retry with one.";
+        + "0-5, 5 highest; content is French. Fill properties at creation: "
+        + "date cible and définition de fini everywhere, plus estimated budget "
+        + "and charge on projects — their 'réel' counterparts are set at "
+        + "validation, so the estimate/actual delta stays readable. Names "
+        + "resolve to objects; an ambiguous name returns candidate ids so you "
+        + "can retry with one.";
 
     private readonly Dictionary<string, ToolDescriptor> _tools;
     private readonly JsonArray _toolListing;

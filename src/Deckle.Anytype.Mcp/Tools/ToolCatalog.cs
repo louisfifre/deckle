@@ -89,7 +89,7 @@ public static class ToolCatalog
 
             new(
                 "link",
-                "Link an object to one or more targets via the one relation its type carries: task -> rapport(s), rapport -> project, project -> project (depend_de). No other pairs exist — it cannot attach anything to an epic.",
+                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, task -> rapport(s), rapport -> project, project -> project (depend_de — the source depends on the target). Targets are appended, never replaced. No other pairs exist — it cannot attach anything to an epic.",
                 Schema(
                     required:
                     [
