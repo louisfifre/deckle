@@ -417,6 +417,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.Autocorrect/
 │   │   ├── Engine/
+│   │   │   ├── AutocorrectEngine.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CorrectionDecision.cs
@@ -441,14 +442,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
 │   │   │   └── FrequencyLexicon.cs
+│   │   ├── Surfaces/
+│   │   │   ├── FocusedSurface.cs
+│   │   │   └── SurfaceProber.cs
 │   │   ├── Tracking/
 │   │   │   ├── KeyDecoder.cs
 │   │   │   ├── Keystroke.cs
 │   │   │   ├── TypedWordTracker.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
+│   │   ├── AutocorrectSettings.cs
+│   │   ├── AutocorrectSettingsService.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── Deckle.Input.Autocorrect.csproj
+│   │   ├── DeckleAutocorrectSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, c…
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
