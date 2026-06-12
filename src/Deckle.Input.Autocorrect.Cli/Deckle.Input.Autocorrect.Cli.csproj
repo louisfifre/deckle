@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Deckle.Input.Autocorrect.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The host pulls the whole autocorrect stack transitively through
+         this one reference; Input + Core + Diagnostics ride along. -->
+    <ProjectReference Include="..\Deckle.Input.Autocorrect\Deckle.Input.Autocorrect.csproj" />
+  </ItemGroup>
+</Project>

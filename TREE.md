@@ -458,6 +458,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, c…
+│   ├── Deckle.Input.Autocorrect.Cli/
+│   │   ├── Commands/
+│   │   │   ├── BuildDataCommand.cs
+│   │   │   ├── CliArgs.cs
+│   │   │   ├── DataSet.cs
+│   │   │   ├── DictCommand.cs
+│   │   │   ├── EnrollCommand.cs
+│   │   │   ├── EvalCommand.cs
+│   │   │   ├── InjectCommand.cs
+│   │   │   ├── RepoPaths.cs
+│   │   │   ├── RunCommand.cs
+│   │   │   ├── TrainPairsCommand.cs
+│   │   │   └── WatchCommand.cs
+│   │   ├── Deckle.Input.Autocorrect.Cli.csproj
+│   │   └── Program.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
