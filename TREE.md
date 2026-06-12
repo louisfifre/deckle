@@ -362,6 +362,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
 │   │   ├── Deckle.Inference.Onnx.csproj
 │   │   └── OnnxModelSession.cs
+│   ├── Deckle.Input/
+│   │   ├── Interop/
+│   │   │   ├── HidInterop.cs
+│   │   │   └── RawInputInterop.cs
+│   │   ├── Telemetry/
+│   │   │   └── ContactFrameRecorder.cs
+│   │   ├── Touchpad/
+│   │   │   ├── ContactFrame.cs
+│   │   │   ├── ContactFrameAssembler.cs
+│   │   │   ├── TouchpadCapabilities.cs
+│   │   │   ├── TouchpadContact.cs
+│   │   │   ├── TouchpadParser.cs
+│   │   │   └── TouchpadReport.cs
+│   │   ├── Deckle.Input.csproj
+│   │   ├── DeckleInputSource.cs
+│   │   └── RawInputHost.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
