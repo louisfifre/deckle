@@ -50,8 +50,19 @@ public sealed partial class HomePage : Page
             return;
         }
 
-        NotificationResponse? response = await dispatcher.PromptAsync(
-            PlaygroundNotifications.TestPrompt);
+        NotificationResponse? response;
+        try
+        {
+            response = await dispatcher.PromptAsync(PlaygroundNotifications.TestPrompt);
+        }
+        catch (Exception ex)
+        {
+            // A channel failure rethrows after the NotificationFailed narrative.
+            // This is a probe surface: report it on the outcome line instead of
+            // letting the async-void escape to the App safety nets.
+            SetNotificationOutcome($"failed: {ex.Message}");
+            return;
+        }
 
         // null = the notification was not shown (no channel / channel
         // unavailable) OR shown but never answered (the toast expired unseen).

@@ -39,14 +39,27 @@ public static class Loc
     /// </summary>
     public static string Get(string key)
     {
-        var s = _loader.Value.GetString(key);
+        string? s;
+        try
+        {
+            s = _loader.Value.GetString(key);
+        }
+        catch (Exception)
+        {
+            // Unpackaged MRT throws ("NamedResource Not Found") instead of
+            // returning empty when the key is absent from the root map — the
+            // typical cause is a code-style key left in a module's own .resw
+            // without its Deckle.App mirror. Fold the throw into the documented
+            // miss contract so the caller sees the marker, not a crash.
+            s = null;
+        }
 #if DEBUG
         if (string.IsNullOrEmpty(s))
         {
             return "[!" + key + "]";
         }
 #endif
-        return s;
+        return s ?? string.Empty;
     }
 
     /// <summary>
