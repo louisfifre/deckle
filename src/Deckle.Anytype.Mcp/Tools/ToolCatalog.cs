@@ -26,7 +26,7 @@ public static class ToolCatalog
         {
             new(
                 "session_start",
-                "Open a work session on a task: create its journal report and surface the task with its recent reports.",
+                "Open a work session on a task: create its journal report and surface the task with its recent reports. Call it once before work that will modify the space; plain reads need no session. The report becomes the default target of log.",
                 Schema(
                     required: [Prop("task", "string", "Anchor task, name or id.")]),
                 async (args, ct) =>
@@ -34,7 +34,7 @@ public static class ToolCatalog
 
             new(
                 "log",
-                "Append one journal line to the current session report (or a named one).",
+                "Append one journal line to the current session report (or a named one). Without a prior session_start, name the report explicitly.",
                 Schema(
                     required: [Prop("line", "string", "Journal line to append (the why of what you just did).")],
                     optional: [Prop("report", "string", "Target report, name or id; omit for the session's current report.")]),
@@ -46,7 +46,8 @@ public static class ToolCatalog
                 "Read one object in full: its properties and markdown body.",
                 Schema(
                     required: [Prop("name_or_id", "string", "Object to read, name or id.")],
-                    optional: [Prop("type", "string", "Type key to disambiguate a name (epic, project, task, rapport, idee, document).")]),
+                    optional: [Prop("type", "string", "Type key to disambiguate a name.",
+                                    oneOf: ["epic", "project", "task", "rapport", "idee", "document"])]),
                 async (args, ct) =>
                     await query.GetAsync(Str(args, "name_or_id"), StrOpt(args, "type"), ct)),
 
@@ -60,18 +61,18 @@ public static class ToolCatalog
 
             new(
                 "create_task",
-                "Create a task under a project.",
+                "Create a task under a project; it is born from the task template.",
                 Schema(
                     required:
                     [
                         Prop("project", "string", "Parent project, name or id."),
                         Prop("name", "string", "Task title."),
-                        Prop("type", "string", "Task type: key or display name (production, recherche, organiser, echanger, gestion)."),
+                        Prop("type", "string", "Task type, key or display name. Keys: production (build, deliver), recherche (investigate), organiser (structure, tidy), echanger (discuss, decide with someone), gestion (manage, admin)."),
                     ],
                     optional:
                     [
-                        Prop("priority", "integer", "Priority 0-5.", minimum: 0, maximum: 5),
-                        Prop("body", "string", "Markdown body, e.g. a checklist of subtasks."),
+                        Prop("priority", "integer", "Priority 0-5, 5 = highest.", minimum: 0, maximum: 5),
+                        Prop("body", "string", "Markdown body; subtasks go here as inline '- [ ]' checklist items."),
                     ]),
                 async (args, ct) =>
                     await tasks.CreateAsync(
@@ -80,7 +81,7 @@ public static class ToolCatalog
 
             new(
                 "task_done",
-                "Mark a task as done.",
+                "Mark a task done by checking its built-in done checkbox. Nothing is archived and the task's checklist items are untouched.",
                 Schema(
                     required: [Prop("task", "string", "Task, name or id.")]),
                 async (args, ct) =>
@@ -88,7 +89,7 @@ public static class ToolCatalog
 
             new(
                 "link",
-                "Link an object to one or more targets via the natural relation of its type.",
+                "Link an object to one or more targets via the one relation its type carries: task -> rapport(s), rapport -> project, project -> project (depend_de). No other pairs exist — it cannot attach anything to an epic.",
                 Schema(
                     required:
                     [
@@ -102,7 +103,7 @@ public static class ToolCatalog
                 "list_projects",
                 "List projects, grouped by état; filter to one state if given.",
                 Schema(
-                    optional: [Prop("state", "string", "État to filter on: key or display name; omit for all non-archived.")]),
+                    optional: [Prop("state", "string", "État to filter on, key or display name: termine, ouvert, en_cours, dormant, en_attente, abandonne. Omit for all non-archived.")]),
                 async (args, ct) =>
                     await projects.ListAsync(StrOpt(args, "state"), ct)),
 
@@ -111,13 +112,14 @@ public static class ToolCatalog
                 "Search objects by text; returns compact hits (type, name, id, snippet).",
                 Schema(
                     required: [Prop("text", "string", "Free-text query.")],
-                    optional: [ArrayProp("types", "Type keys to restrict the search; omit for any type.")]),
+                    optional: [ArrayProp("types", "Type keys to restrict the search; omit for any type.",
+                                         itemEnum: ["epic", "project", "task", "rapport", "idee", "document"])]),
                 async (args, ct) =>
                     await query.SearchAsync(Str(args, "text"), StrArrayOpt(args, "types"), ct)),
 
             new(
                 "subtask",
-                "Add or toggle an inline checklist item in a task body; matches the label case-insensitively.",
+                "Add or toggle an inline '- [ ]' checklist item in a task body; the label matches case-insensitively, and a new item is appended when none matches.",
                 Schema(
                     required:
                     [
@@ -131,13 +133,13 @@ public static class ToolCatalog
 
             new(
                 "create_project",
-                "Create a project, optionally inside an epic collection and with a starting état.",
+                "Create a project from the project template, optionally with a starting état.",
                 Schema(
                     required: [Prop("name", "string", "Project title.")],
                     optional:
                     [
-                        Prop("epic", "string", "Epic collection to add the project to, name or id."),
-                        Prop("state", "string", "Starting état: key or display name."),
+                        Prop("epic", "string", "Epic collection to add the project to, name or id — at creation only; an existing project cannot join an epic later."),
+                        Prop("state", "string", "Starting état, key or display name: termine, ouvert, en_cours, dormant, en_attente, abandonne."),
                     ]),
                 async (args, ct) =>
                     await projects.CreateAsync(
@@ -153,7 +155,7 @@ public static class ToolCatalog
 
             new(
                 "update",
-                "Set properties on an object; keys or display names map to values.",
+                "Set properties on an object; keys or display names map to values. Properties only — the markdown body is not a property and cannot be written with this tool.",
                 Schema(
                     required:
                     [
@@ -199,21 +201,38 @@ public static class ToolCatalog
     }
 
     static (string, JsonObject) Prop(string name, string type, string description,
-                                     int? minimum = null, int? maximum = null)
+                                     int? minimum = null, int? maximum = null,
+                                     IReadOnlyList<string>? oneOf = null)
     {
         var schema = new JsonObject { ["type"] = type, ["description"] = description };
         if (minimum is not null) schema["minimum"] = minimum;
         if (maximum is not null) schema["maximum"] = maximum;
+        if (oneOf is not null) schema["enum"] = ToEnum(oneOf);
         return (name, schema);
     }
 
-    static (string, JsonObject) ArrayProp(string name, string description) =>
-        (name, new JsonObject
+    static (string, JsonObject) ArrayProp(string name, string description,
+                                          IReadOnlyList<string>? itemEnum = null)
+    {
+        var items = new JsonObject { ["type"] = "string" };
+        if (itemEnum is not null) items["enum"] = ToEnum(itemEnum);
+        return (name, new JsonObject
         {
             ["type"] = "array",
-            ["items"] = new JsonObject { ["type"] = "string" },
+            ["items"] = items,
             ["description"] = description,
         });
+    }
+
+    // Hard enums are reserved for strictly-keyed vocabularies (type keys). The
+    // select vocabularies (état, type de tâche) accept key OR display name, so
+    // they stay prose-enumerated — an enum would reject the display-name form.
+    static JsonArray ToEnum(IReadOnlyList<string> values)
+    {
+        var array = new JsonArray();
+        foreach (string value in values) array.Add(value);
+        return array;
+    }
 
     static (string, JsonObject) ObjectProp(string name, string description) =>
         (name, new JsonObject { ["type"] = "object", ["description"] = description });
