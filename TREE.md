@@ -422,10 +422,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   └── RestorerOptions.cs
+│   │   ├── Injection/
+│   │   │   ├── InjectionPlan.cs
+│   │   │   └── TextInjector.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
 │   │   ├── Learning/
-│   │   │   └── IPersonalLexicon.cs
+│   │   │   ├── IPersonalLexicon.cs
+│   │   │   ├── PersonalDictionary.cs
+│   │   │   └── PersonalDictionaryData.cs
 │   │   ├── Lexicon/
 │   │   │   ├── AccentFolding.cs
 │   │   │   ├── AccentIndex.cs
@@ -792,7 +797,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
+│   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
+│   │   ├── PersonalDictionaryTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Input.Tests/
