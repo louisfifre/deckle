@@ -7,6 +7,12 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-12 — First live migration: list-add answers a bare string
+
+Found while migrating the roadmap into the space: `POST /lists/{id}/objects` answers 200 with the bare JSON string `"Objects added successfully"` — not an object, not an empty body as the client comment assumed. `ParseRoot` threw on it *after* the membership was posted, so every `create_project(epic:…)` failed its report while having fully succeeded. Fixed by skipping body parsing on that endpoint (`parseBody: false`); pinned in `ProjectGesturesTests`.
+
+Also surfaced by live use: an *existing* project cannot join an epic through the MCP — `create_project` only attaches at creation and `link` has no project→epic edge (collection membership, not a property). Logged as a task in the PM space; the two pre-existing projects were attached by direct API call.
+
 ## 2026-06-12 — First build: API facts measured, module placed
 
 Module placed per repo shape: `src/Deckle.Anytype` (core, domain) + `src/Deckle.Anytype.Mcp` (stdio host); this journal moved here from `mcp/`. The space schema is frozen as code in `Schema/DevSpace.cs` — single source for keys; the live API is the re-verification path, no doc duplicate.

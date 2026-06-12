@@ -21,8 +21,9 @@ namespace Deckle.Anytype.Api;
 // Wire facts (verified against the live API 2026-06-12 and the vendor JS
 // reference): base http://localhost:31009; headers Anytype-Version +
 // Authorization: Bearer on every call; single object is wrapped in {object:…};
-// search/list roots carry {data, pagination}. The Bearer token is held only in
-// the Authorization header and never logged.
+// search/list roots carry {data, pagination}; list-add answers a bare JSON
+// string ("Objects added successfully"), not an object. The Bearer token is
+// held only in the Authorization header and never logged.
 public sealed class AnytypeApiClient : IDisposable
 {
     private readonly HttpClient _http;
@@ -106,6 +107,7 @@ public sealed class AnytypeApiClient : IDisposable
 
     // POST list members. A collection IS a list: members are added through
     // /lists/{id}/objects with body {objects:[ids]} (vendor addToCollection).
+    // The success body is a bare JSON string, not an object — skip parsing it.
     public async Task AddToCollectionAsync(
         string collectionId,
         IReadOnlyList<string> objectIds,
@@ -117,21 +119,23 @@ public sealed class AnytypeApiClient : IDisposable
         foreach (string oid in objectIds) arr.Add(oid);
         var body = new JsonObject { ["objects"] = arr };
 
-        await SendAsync(HttpMethod.Post, $"{_spacePath}/lists/{collectionId}/objects", body, ct)
-            .ConfigureAwait(false);
+        await SendAsync(HttpMethod.Post, $"{_spacePath}/lists/{collectionId}/objects", body, ct,
+            parseBody: false).ConfigureAwait(false);
     }
 
     // ── Transport core ──────────────────────────────────────────────────
 
     // Serialized send with one transient retry. Returns the parsed root object
-    // (empty JsonObject when the body is empty — e.g. list-add returns no
-    // content). Throws HttpRequestException on a non-retryable or
+    // (empty JsonObject when the body is empty). parseBody:false skips parsing
+    // entirely, for endpoints whose success body is not a JSON object — list-add
+    // answers a bare string. Throws HttpRequestException on a non-retryable or
     // retry-exhausted failure, after emitting ApiRequestFailed.
     private async Task<JsonObject> SendAsync(
         HttpMethod method,
         string path,
         JsonObject? body,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool parseBody = true)
     {
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -157,6 +161,7 @@ public sealed class AnytypeApiClient : IDisposable
                 if (response.IsSuccessStatusCode)
                 {
                     DeckleAnytypeSource.Log.ApiRequestCompleted(method.Method, path, status, elapsedMs);
+                    if (!parseBody) return new JsonObject();
                     string json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                     return ParseRoot(json);
                 }

@@ -726,6 +726,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
+│   │   ├── ProjectGesturesTests.cs
 │   │   ├── SessionGesturesTests.cs
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
