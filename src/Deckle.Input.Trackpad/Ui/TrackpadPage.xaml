@@ -12,10 +12,9 @@
          StackPanel max 1000 inside a Grid, Spacing=4 between cards, and
          section headers in BodyStrong with Margin 1,30,0,6.
 
-         Disclosure pattern : the master switch sits on a SettingsExpander
-         header card ; the speed slider is revealed (IsExpanded bound to
-         Enabled, OneWay) only while the feature is on — the decided pattern
-         for the fine configuration of an activatable feature.
+         The drag speed is the module's primary control, so it gets its
+         own always-visible card (greyed while the feature is off) rather
+         than hiding in a disclosure.
 
          The Tuning expander at the bottom is TEMPORARY — it disappears once
          the calibrated defaults are frozen into engine constants. -->
@@ -64,25 +63,27 @@
                 <TextBlock x:Uid="TrackpadPage_Section_Drag"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsExpander x:Uid="TrackpadPage_DragExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}"
-                                           IsExpanded="{x:Bind ViewModel.Enabled, Mode=OneWay}">
+                <controls:SettingsCard x:Uid="TrackpadPage_DragCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
                     <ToggleSwitch IsOn="{x:Bind ViewModel.Enabled, Mode=TwoWay}" />
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Uid="TrackpadPage_SpeedCard"
-                                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider Width="220"
-                                        Minimum="0.25"
-                                        Maximum="3.0"
-                                        StepFrequency="0.05"
-                                        Value="{x:Bind ViewModel.DragSpeed, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                           Text="{x:Bind ViewModel.DragSpeed, Mode=OneWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                </controls:SettingsCard>
+
+                <!-- The primary control of the module — always visible,
+                     greyed while the drag is off. -->
+                <controls:SettingsCard x:Uid="TrackpadPage_SpeedCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}"
+                                       IsEnabled="{x:Bind ViewModel.Enabled, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Slider Width="220"
+                                Minimum="0.25"
+                                Maximum="3.0"
+                                StepFrequency="0.05"
+                                SnapsTo="StepValues"
+                                Value="{x:Bind ViewModel.DragSpeed, Mode=TwoWay}" />
+                        <TextBlock Style="{StaticResource SliderValueTextStyle}"
+                                   Text="{x:Bind ViewModel.DragSpeedLabel, Mode=OneWay}" />
+                    </StackPanel>
+                </controls:SettingsCard>
 
                 <!-- ── Windows integration ──────────────────────────────────── -->
                 <TextBlock x:Uid="TrackpadPage_Section_Windows"
@@ -136,12 +137,13 @@
                         <controls:SettingsCard x:Uid="TrackpadPage_GraceDelayCard">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                                 <Slider Width="220"
-                                        Minimum="50"
+                                        Minimum="0"
                                         Maximum="1000"
                                         StepFrequency="10"
+                                        SnapsTo="StepValues"
                                         Value="{x:Bind ViewModel.GraceDelayMs, Mode=TwoWay}" />
                                 <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                           Text="{x:Bind ViewModel.GraceDelayMs, Mode=OneWay}" />
+                                           Text="{x:Bind ViewModel.GraceDelayLabel, Mode=OneWay}" />
                             </StackPanel>
                         </controls:SettingsCard>
                         <controls:SettingsCard x:Uid="TrackpadPage_StartThresholdCard">
@@ -150,20 +152,10 @@
                                         Minimum="0.1"
                                         Maximum="5.0"
                                         StepFrequency="0.1"
+                                        SnapsTo="StepValues"
                                         Value="{x:Bind ViewModel.StartThresholdPercent, Mode=TwoWay}" />
                                 <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                           Text="{x:Bind ViewModel.StartThresholdPercent, Mode=OneWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Uid="TrackpadPage_BaseScaleCard">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider Width="220"
-                                        Minimum="0.05"
-                                        Maximum="1.0"
-                                        StepFrequency="0.05"
-                                        Value="{x:Bind ViewModel.BaseScale, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                           Text="{x:Bind ViewModel.BaseScale, Mode=OneWay}" />
+                                           Text="{x:Bind ViewModel.StartThresholdLabel, Mode=OneWay}" />
                             </StackPanel>
                         </controls:SettingsCard>
                     </controls:SettingsExpander.Items>

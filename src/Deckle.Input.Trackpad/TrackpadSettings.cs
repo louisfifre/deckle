@@ -36,18 +36,16 @@ public sealed class TrackpadSettings
 // these are settings at all.
 public sealed class TrackpadTuning
 {
-    /// <summary>Grace delay after fingers lift before the drag releases, in milliseconds.</summary>
-    public int GraceDelayMs { get; set; } = 350;
+    /// <summary>
+    /// Grace delay after fingers lift before the drag releases, in
+    /// milliseconds. 0 releases immediately — the maintainer's preferred
+    /// behavior, hence the default.
+    /// </summary>
+    public int GraceDelayMs { get; set; } = 0;
 
     /// <summary>
     /// Travel before a three-finger touch commits to a drag instead of a
     /// tap, as a fraction of the device's logical X range.
     /// </summary>
     public double StartThresholdRatio { get; set; } = 0.01;
-
-    /// <summary>
-    /// Baseline logical-units → mickeys factor the speed multiplier
-    /// applies on top of.
-    /// </summary>
-    public double BaseScale { get; set; } = 0.25;
 }

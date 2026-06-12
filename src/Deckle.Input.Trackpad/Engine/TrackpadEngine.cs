@@ -19,6 +19,11 @@ public sealed class TrackpadEngine : IDisposable
     // in-engine constant by decision (smoothing is never exposed).
     private const double MaxFrameDeltaRatio = 0.08;
 
+    // Baseline logical-units → mickeys factor the drag-speed multiplier
+    // rides on. In-engine constant by decision: sensitivity is the one
+    // linear drag-speed slider, nothing else.
+    private const double BaseScale = 0.25;
+
     private readonly RawInputHost _host;
     private readonly MouseInjector _injector = new();
     private readonly ThreeFingerDragRecognizer _recognizer = new();
@@ -135,7 +140,7 @@ public sealed class TrackpadEngine : IDisposable
     private void OnDragMoved(double dx, double dy)
     {
         var settings = TrackpadSettingsService.Instance.Current;
-        double scale = settings.Tuning.BaseScale * settings.DragSpeed;
+        double scale = BaseScale * settings.DragSpeed;
 
         if (!_injector.MoveRelative(dx * scale, dy * scale))
             LogInjectionFailure("move");
@@ -198,7 +203,6 @@ public sealed class TrackpadEngine : IDisposable
         DeckleTrackpadSource.Log.TuningApplied(
             settings.Tuning.GraceDelayMs,
             Math.Round(_recognizer.StartThresholdUnits, 1),
-            settings.Tuning.BaseScale,
             settings.DragSpeed);
     }
 }

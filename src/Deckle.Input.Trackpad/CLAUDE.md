@@ -59,8 +59,10 @@ always enough.
 
 ## Status — value freeze pending
 
-The tuning expander on the page (grace delay, start threshold, base
-scale) is TEMPORARY: defaults are engineering guesses awaiting
-calibration on real Bluetooth sessions recorded by the `Deckle.Input`
-frame recorder. Once frozen, the values become engine constants and the
-expander is removed.
+The tuning expander on the page (grace delay, start threshold) is
+TEMPORARY: defaults are engineering guesses awaiting calibration on real
+Bluetooth sessions recorded by the `Deckle.Input` frame recorder. Once
+frozen, the values become engine constants and the expander is removed.
+The baseline scale is already an engine constant — sensitivity is the
+one drag-speed slider, by decision. Grace defaults to 0 (immediate
+release), the maintainer's preference.

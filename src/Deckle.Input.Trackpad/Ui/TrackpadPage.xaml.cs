@@ -65,14 +65,33 @@ public sealed partial class TrackpadPage : Page
         finally { _suppressElevatedToggle = false; }
     }
 
-    // ── Windows three-finger gestures : Neutralize / Restore ────────────────
+    // ── Windows three-finger gestures : turn off / restore ──────────────────
 
+    // Three states, because "restore" is only honest when Deckle holds the
+    // backup. Gestures active → offer to turn them off. Gestures off with a
+    // Deckle backup → offer to restore that backup. Gestures off with no
+    // backup (the user turned them off themselves, in Windows Settings) →
+    // nothing Deckle can restore ; the button reports the state, disabled.
     private void RefreshGesturesLabel()
     {
         bool neutralized = SafeAreNeutralized();
-        GesturesButtonLabel.Text = neutralized
-            ? Loc.Get("TrackpadPage_GesturesButton_Restore")
-            : Loc.Get("TrackpadPage_GesturesButton_Neutralize");
+        bool hasBackup   = SafeHasBackup();
+
+        if (!neutralized)
+        {
+            GesturesButtonLabel.Text = Loc.Get("TrackpadPage_GesturesButton_Neutralize");
+            GesturesButton.IsEnabled = true;
+        }
+        else if (hasBackup)
+        {
+            GesturesButtonLabel.Text = Loc.Get("TrackpadPage_GesturesButton_Restore");
+            GesturesButton.IsEnabled = true;
+        }
+        else
+        {
+            GesturesButtonLabel.Text = Loc.Get("TrackpadPage_GesturesButton_AlreadyOff");
+            GesturesButton.IsEnabled = false;
+        }
     }
 
     private void GesturesButton_Click(object sender, RoutedEventArgs e)
@@ -80,15 +99,13 @@ public sealed partial class TrackpadPage : Page
         GesturesButton.IsEnabled = false;
         try
         {
-            // Flip based on the current state : if Windows' gestures are
-            // already neutralized, restore them ; otherwise neutralize.
-            if (SafeAreNeutralized())
-            {
-                WindowsGestureNeutralizer.TryRestore();
-            }
-            else
+            if (!SafeAreNeutralized())
             {
                 WindowsGestureNeutralizer.TryNeutralize();
+            }
+            else if (SafeHasBackup())
+            {
+                WindowsGestureNeutralizer.TryRestore();
             }
         }
         catch
@@ -98,8 +115,8 @@ public sealed partial class TrackpadPage : Page
         }
         finally
         {
+            // Re-reads the real state and re-enables (or not) accordingly.
             RefreshGesturesLabel();
-            GesturesButton.IsEnabled = true;
         }
     }
 
@@ -168,6 +185,12 @@ public sealed partial class TrackpadPage : Page
     private static bool SafeAreNeutralized()
     {
         try { return WindowsGestureNeutralizer.AreNeutralized(); }
+        catch { return false; }
+    }
+
+    private static bool SafeHasBackup()
+    {
+        try { return WindowsGestureNeutralizer.HasBackup(); }
         catch { return false; }
     }
 

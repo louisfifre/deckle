@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Input.Trackpad.ViewModels;
@@ -9,6 +10,11 @@ namespace Deckle.Input.Trackpad.ViewModels;
 // Push() + Save(), and the _isSyncing flag suppresses the write-back while
 // Load() seeds the properties so re-hydration never re-saves.
 //
+// Each slider value is mirrored by a formatted *Label string for the
+// readout next to the slider — raw doubles must never reach a TextBlock
+// (a snapped slider value can carry float noise like 1.3666670…).
+// Push() rounds before persisting for the same reason.
+//
 // The Windows-integration acts (neutralize / repair / start elevated) are
 // NOT modelled here : they are imperative commands with their own success
 // reporting, driven straight from the page code-behind. Only the persisted
@@ -19,17 +25,18 @@ public partial class TrackpadViewModel : ObservableObject
 
     // ── Three-finger drag ───────────────────────────────────────────────────
 
-    // Master switch — the recognizer runs only when on. Doubles as the
-    // SettingsExpander's IsExpanded source (OneWay) so the speed slider is
-    // revealed exactly when the feature is on.
+    // Master switch — the recognizer runs only when on. Also greys the
+    // drag-speed card (IsEnabled, OneWay).
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
     // Linear speed multiplier applied to contact deltas before injection —
-    // the single user-facing sensitivity control. DragSpeedLabel mirrors it
-    // as a formatted string for the slider's value display.
+    // the single user-facing sensitivity control.
     [ObservableProperty]
     public partial double DragSpeed { get; set; }
+
+    public string DragSpeedLabel =>
+        DragSpeed.ToString("0.00", CultureInfo.CurrentCulture) + "×";
 
     // ── Diagnostics ─────────────────────────────────────────────────────────
 
@@ -43,8 +50,12 @@ public partial class TrackpadViewModel : ObservableObject
     // frozen into engine constants (and removed from the page) afterwards.
 
     // Grace delay after the fingers lift before the drag releases, in ms.
+    // 0 releases immediately.
     [ObservableProperty]
     public partial double GraceDelayMs { get; set; }
+
+    public string GraceDelayLabel =>
+        GraceDelayMs.ToString("0", CultureInfo.CurrentCulture) + " ms";
 
     // Start threshold shown to the user as a percentage of the pad width but
     // stored as a 0..1 ratio in TrackpadTuning.StartThresholdRatio. The ×100 /
@@ -53,9 +64,8 @@ public partial class TrackpadViewModel : ObservableObject
     [ObservableProperty]
     public partial double StartThresholdPercent { get; set; }
 
-    // Baseline logical-units → mickeys factor the speed multiplier rides on.
-    [ObservableProperty]
-    public partial double BaseScale { get; set; }
+    public string StartThresholdLabel =>
+        StartThresholdPercent.ToString("0.0", CultureInfo.CurrentCulture) + " %";
 
     partial void OnEnabledChanged(bool value)
     {
@@ -65,6 +75,7 @@ public partial class TrackpadViewModel : ObservableObject
 
     partial void OnDragSpeedChanged(double value)
     {
+        OnPropertyChanged(nameof(DragSpeedLabel));
         if (_isSyncing) return;
         Push();
     }
@@ -77,18 +88,14 @@ public partial class TrackpadViewModel : ObservableObject
 
     partial void OnGraceDelayMsChanged(double value)
     {
+        OnPropertyChanged(nameof(GraceDelayLabel));
         if (_isSyncing) return;
         Push();
     }
 
     partial void OnStartThresholdPercentChanged(double value)
     {
-        if (_isSyncing) return;
-        Push();
-    }
-
-    partial void OnBaseScaleChanged(double value)
-    {
+        OnPropertyChanged(nameof(StartThresholdLabel));
         if (_isSyncing) return;
         Push();
     }
@@ -113,8 +120,7 @@ public partial class TrackpadViewModel : ObservableObject
             DragSpeed = s.DragSpeed;
             RecordFrames = s.RecordFrames;
             GraceDelayMs = s.Tuning.GraceDelayMs;
-            StartThresholdPercent = s.Tuning.StartThresholdRatio * 100.0;
-            BaseScale = s.Tuning.BaseScale;
+            StartThresholdPercent = Math.Round(s.Tuning.StartThresholdRatio * 100.0, 1);
         }
         finally
         {
@@ -126,11 +132,10 @@ public partial class TrackpadViewModel : ObservableObject
     {
         var s = TrackpadSettingsService.Instance.Current;
         s.Enabled = Enabled;
-        s.DragSpeed = DragSpeed;
+        s.DragSpeed = Math.Round(DragSpeed, 2);
         s.RecordFrames = RecordFrames;
-        s.Tuning.GraceDelayMs = (int)GraceDelayMs;
-        s.Tuning.StartThresholdRatio = StartThresholdPercent / 100.0;
-        s.Tuning.BaseScale = BaseScale;
+        s.Tuning.GraceDelayMs = (int)Math.Round(GraceDelayMs);
+        s.Tuning.StartThresholdRatio = Math.Round(StartThresholdPercent, 1) / 100.0;
         TrackpadSettingsService.Instance.Save();
     }
 }

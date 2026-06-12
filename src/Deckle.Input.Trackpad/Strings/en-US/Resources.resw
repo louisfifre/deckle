@@ -119,47 +119,52 @@
   <!-- ─── TrackpadPage ───────────────────────────────────────────────
        Settings page for the Trackpad module. Title + subtitle, then
        three sections in order: Three-finger drag, Windows integration,
-       Diagnostics. x:Uid keys follow TrackpadPage_<Element>; code-behind
-       flip-labels use the Surface_Purpose form resolved via Loc.Get. -->
-  <data name="TrackpadPage_Title" xml:space="preserve">
+       Diagnostics. x:Uid keys follow TrackpadPage_<Element>.<Property>
+       (plain TextBlocks bind .Text); code-behind flip-labels use the
+       Surface_Purpose form resolved via Loc.Get — those three are
+       mirrored in Deckle.App's resw (Loc-mirror-pattern). -->
+  <data name="TrackpadPage_Title.Text" xml:space="preserve">
     <value>Trackpad</value>
   </data>
-  <data name="TrackpadPage_Subtitle" xml:space="preserve">
-    <value>Drag with three fingers on a Magic Trackpad 2 — press nothing, just move three fingers to pick up a window or selection and drop it where they lift.</value>
+  <data name="TrackpadPage_Subtitle.Text" xml:space="preserve">
+    <value>Drag with three fingers on a Magic Trackpad 2 — no click needed: move three fingers to pick something up, lift them to drop it.</value>
   </data>
 
   <!-- Three-finger drag -->
-  <data name="TrackpadPage_Section_Drag" xml:space="preserve">
+  <data name="TrackpadPage_Section_Drag.Text" xml:space="preserve">
     <value>Three-finger drag</value>
   </data>
-  <data name="TrackpadPage_DragExpander.Header" xml:space="preserve">
+  <data name="TrackpadPage_DragCard.Header" xml:space="preserve">
     <value>Three-finger drag</value>
   </data>
-  <data name="TrackpadPage_DragExpander.Description" xml:space="preserve">
-    <value>Move three fingers to drag what's under the pointer. Turn on to reveal the speed control.</value>
+  <data name="TrackpadPage_DragCard.Description" xml:space="preserve">
+    <value>Move three fingers to drag what's under the pointer.</value>
   </data>
   <data name="TrackpadPage_SpeedCard.Header" xml:space="preserve">
     <value>Drag speed</value>
   </data>
   <data name="TrackpadPage_SpeedCard.Description" xml:space="preserve">
-    <value>How far the drag travels for the same finger movement. Higher is faster.</value>
+    <value>How far the drag travels for the same finger movement.</value>
   </data>
 
   <!-- Windows integration -->
-  <data name="TrackpadPage_Section_Windows" xml:space="preserve">
+  <data name="TrackpadPage_Section_Windows.Text" xml:space="preserve">
     <value>Windows integration</value>
   </data>
   <data name="TrackpadPage_GesturesCard.Header" xml:space="preserve">
     <value>Windows three-finger gestures</value>
   </data>
   <data name="TrackpadPage_GesturesCard.Description" xml:space="preserve">
-    <value>Sets Windows' built-in three-finger gestures to nothing so the drag has room to work. Your original gestures are backed up and can be restored at any time. Applying the change may require the trackpad to reconnect.</value>
+    <value>Turns Windows' own three-finger gestures off so they can't fire during a drag. Your current choices are backed up first and come back exactly as they were.</value>
   </data>
   <data name="TrackpadPage_GesturesButton_Neutralize" xml:space="preserve">
-    <value>Neutralize</value>
+    <value>Turn off gestures</value>
   </data>
   <data name="TrackpadPage_GesturesButton_Restore" xml:space="preserve">
-    <value>Restore</value>
+    <value>Restore gestures</value>
+  </data>
+  <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
+    <value>Already off</value>
   </data>
   <data name="TrackpadPage_RepairCard.Header" xml:space="preserve">
     <value>Repair Bluetooth connection</value>
@@ -178,7 +183,7 @@
   </data>
 
   <!-- Diagnostics -->
-  <data name="TrackpadPage_Section_Diagnostics" xml:space="preserve">
+  <data name="TrackpadPage_Section_Diagnostics.Text" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="TrackpadPage_RecordFramesCard.Header" xml:space="preserve">
@@ -194,21 +199,15 @@
     <value>These defaults are still being calibrated on real sessions. This section will disappear once they're frozen.</value>
   </data>
   <data name="TrackpadPage_GraceDelayCard.Header" xml:space="preserve">
-    <value>Grace delay (ms)</value>
+    <value>Grace delay</value>
   </data>
   <data name="TrackpadPage_GraceDelayCard.Description" xml:space="preserve">
-    <value>How long the drag holds on after your fingers lift, so a brief slip doesn't drop it.</value>
+    <value>How long the drag holds on after the fingers lift. Zero releases immediately.</value>
   </data>
   <data name="TrackpadPage_StartThresholdCard.Header" xml:space="preserve">
-    <value>Start threshold (% of pad width)</value>
+    <value>Start threshold</value>
   </data>
   <data name="TrackpadPage_StartThresholdCard.Description" xml:space="preserve">
-    <value>How far three fingers must travel before a drag begins instead of a tap.</value>
-  </data>
-  <data name="TrackpadPage_BaseScaleCard.Header" xml:space="preserve">
-    <value>Base scale</value>
-  </data>
-  <data name="TrackpadPage_BaseScaleCard.Description" xml:space="preserve">
-    <value>Baseline movement factor that the drag speed above multiplies.</value>
+    <value>How far three fingers must travel before a drag begins instead of a tap, as a share of the pad's width.</value>
   </data>
 </root>

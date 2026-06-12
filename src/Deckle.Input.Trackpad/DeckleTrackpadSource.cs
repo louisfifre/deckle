@@ -55,10 +55,10 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtTuningApplied,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tuning | grace_ms={0} | start_threshold_units={1} | base_scale={2} | speed={3}")]
-    public void TuningApplied(int grace_ms, double start_threshold_units, double base_scale, double speed)
+           Message = "tuning | grace_ms={0} | start_threshold_units={1} | speed={2}")]
+    public void TuningApplied(int grace_ms, double start_threshold_units, double speed)
     {
-        if (IsEnabled()) WriteEvent(EvtTuningApplied, grace_ms, start_threshold_units, base_scale, speed);
+        if (IsEnabled()) WriteEvent(EvtTuningApplied, grace_ms, start_threshold_units, speed);
     }
 
     // ── Gestures ─────────────────────────────────────────────────────────
