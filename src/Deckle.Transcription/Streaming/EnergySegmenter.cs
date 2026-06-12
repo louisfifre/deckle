@@ -185,20 +185,20 @@ internal sealed class EnergySegmenter
     public void Flush()
     {
         if (_state == State.Silence) return;
-        EmitKept();
+        EmitKept(endedOnSilence: false);
         ResetToSilence();
     }
 
     // Silence-bounded end: cut at lastVoiced + margin, drop the rest, reset.
     private void EmitOnSilence()
     {
-        EmitKept();
+        EmitKept(endedOnSilence: true);
         ResetToSilence();
     }
 
     // Emit the kept span (voiced extent + margin, clamped) unless the voiced
     // extent is below the min-duration floor (then drop as a blip).
-    private void EmitKept()
+    private void EmitKept(bool endedOnSilence)
     {
         int voicedExtent = _lastVoicedIdx + 1;
         int keptCount    = Math.Min(_frames.Count, voicedExtent + _marginFrames);
@@ -209,15 +209,15 @@ internal sealed class EnergySegmenter
             return; // blip — dropped
         }
 
-        Emit(keptCount, voicedExtent, _hangoverCount);
+        Emit(keptCount, voicedExtent, _hangoverCount, endedOnSilence);
     }
 
-    private void Emit(int frameCount, int voicedFrames, int hangoverUsedFrames)
+    private void Emit(int frameCount, int voicedFrames, int hangoverUsedFrames, bool endedOnSilence)
     {
         double startSec = _utteranceStartFrame * FrameSec;
         double endSec   = startSec + frameCount * FrameSec;
         int index = _nextIndex++;
-        _onUtterance(new Utterance(Concat(frameCount), index, startSec, endSec));
+        _onUtterance(new Utterance(Concat(frameCount), index, startSec, endSec, endedOnSilence));
 
         DeckleWhispSource.Log.SegmenterUtteranceEmitted(
             index, voicedFrames, frameCount, startSec, endSec,

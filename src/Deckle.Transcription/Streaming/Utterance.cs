@@ -11,8 +11,13 @@ namespace Deckle.Transcription.Streaming;
 //   Index    — 0-based emission order within one recording, for ordering/logs.
 //   StartSec — onset of the utterance relative to the start of capture.
 //   EndSec   — end of the kept span (StartSec + kept duration).
+//   EndedOnSilence — true when the segmenter cut on a detected silence (a real
+//              pause the speaker made), false when the span was closed by the
+//              end-of-capture Flush. A silence cut marks a paragraph boundary
+//              in the assembled text; a Flush cut does not.
 public sealed record Utterance(
     float[] Samples,
     int Index,
     double StartSec,
-    double EndSec);
+    double EndSec,
+    bool EndedOnSilence);

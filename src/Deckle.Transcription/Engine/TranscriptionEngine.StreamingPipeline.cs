@@ -288,6 +288,12 @@ public sealed partial class TranscriptionEngine
         long totalMs = 0, initMs = 0;
         int nSeg = 0, nUtt = 0;
 
+        // A silence cut is a real pause the speaker made — render it as a
+        // paragraph break in the assembled text instead of flattening it into a
+        // space. Pending until the NEXT utterance that contributes text, so a
+        // dropped or empty utterance in between does not swallow the break.
+        bool pendingParagraphBreak = false;
+
         string fixedPrompt = _host.Transcription.Engine.InitialPrompt ?? "";
         string? previousTail = null;
 
@@ -413,8 +419,9 @@ public sealed partial class TranscriptionEngine
             string text = result.FullText?.Trim() ?? "";
             if (text.Length > 0)
             {
-                if (sb.Length > 0) sb.Append(' ');
+                if (sb.Length > 0) sb.Append(pendingParagraphBreak ? "\n\n" : " ");
                 sb.Append(text);
+                pendingParagraphBreak = u.EndedOnSilence;
             }
 
             DeckleWhispSource.Log.ConsumerUtterance(
