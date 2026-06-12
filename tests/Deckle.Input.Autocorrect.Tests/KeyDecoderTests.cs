@@ -166,6 +166,33 @@ public class KeyDecoderTests
     }
 
     [Fact]
+    public void CtrlChordedEditingKeysAreShortcuts()
+    {
+        // Ctrl+Backspace supprime un mot entier à l'écran : le modéliser comme
+        // un Backspace simple (un caractère) désynchroniserait tracker et écran
+        // — et, revert armé, déclencherait une injection sous un Ctrl
+        // physiquement tenu, que l'application relirait en suppressions de mots.
+        var d = DecoderWithFakeLayout();
+        d.Decode(Key(VkControl, down: true));
+        Assert.Equal(KeystrokeKind.Shortcut, d.Decode(Key(VkBack, down: true))!.Value.Kind);
+        Assert.Equal(KeystrokeKind.Shortcut, d.Decode(Key(0x2E, down: true))!.Value.Kind); // Ctrl+Delete
+        Assert.Equal(KeystrokeKind.Shortcut, d.Decode(Key(0x0D, down: true))!.Value.Kind); // Ctrl+Enter
+        Assert.Equal(KeystrokeKind.Shortcut, d.Decode(Key(VkLeft, down: true))!.Value.Kind); // Ctrl+Left
+
+        // Relâché, les touches d'édition retrouvent leur classification simple.
+        d.Decode(Key(VkControl, down: false));
+        Assert.Equal(KeystrokeKind.Backspace, d.Decode(Key(VkBack, down: true))!.Value.Kind);
+    }
+
+    [Fact]
+    public void WinChordedEditingKeyIsShortcut()
+    {
+        var d = DecoderWithFakeLayout();
+        d.Decode(Key(VkLWin, down: true));
+        Assert.Equal(KeystrokeKind.Shortcut, d.Decode(Key(VkBack, down: true))!.Value.Kind);
+    }
+
+    [Fact]
     public void ToUnicodeZeroIsOtherAndMinusOneIsDeadKey()
     {
         var dOther = new KeyDecoder((_, _, _, _) => 0);

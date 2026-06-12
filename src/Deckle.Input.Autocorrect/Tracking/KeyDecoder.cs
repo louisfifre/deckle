@@ -85,6 +85,23 @@ public sealed class KeyDecoder
         // Caps is decoded as a modifier above only for its latch; the down
         // edge also flips the toggle. Handled in TryUpdateModifier.
 
+        // Chords the application owns — we cannot predict their text effect,
+        // and that includes the editing keys: Ctrl+Backspace deletes a whole
+        // word on screen, so it must NOT decode as a plain Backspace (which
+        // models one character — and, revert armed, would trigger an injection
+        // under a physically held Ctrl). Win + anything is always a shortcut.
+        // Ctrl is a shortcut UNLESS it is the Ctrl+Alt (AltGr) chord, which on
+        // many layouts is a legitimate character composition and must be
+        // decoded. Alt without Ctrl is a menu/accelerator chord, also a
+        // shortcut.
+        bool altGr = CtrlDown && AltDown;
+        if (WinDown)
+            return Keystroke.Of(KeystrokeKind.Shortcut, t);
+        if (CtrlDown && !altGr)
+            return Keystroke.Of(KeystrokeKind.Shortcut, t);
+        if (AltDown && !CtrlDown)
+            return Keystroke.Of(KeystrokeKind.Shortcut, t);
+
         // Editing / navigation keys win before any character translation.
         switch (vk)
         {
@@ -97,19 +114,6 @@ public sealed class KeyDecoder
               or VK_LEFT or VK_UP or VK_RIGHT or VK_DOWN:
                 return Keystroke.Of(KeystrokeKind.Navigation, t);
         }
-
-        // Chords the application owns — we cannot predict their text effect.
-        // Win + anything is always a shortcut. Ctrl is a shortcut UNLESS it is
-        // the Ctrl+Alt (AltGr) chord, which on many layouts is a legitimate
-        // character composition and must be decoded. Alt without Ctrl is a
-        // menu/accelerator chord, also a shortcut.
-        bool altGr = CtrlDown && AltDown;
-        if (WinDown)
-            return Keystroke.Of(KeystrokeKind.Shortcut, t);
-        if (CtrlDown && !altGr)
-            return Keystroke.Of(KeystrokeKind.Shortcut, t);
-        if (AltDown && !CtrlDown)
-            return Keystroke.Of(KeystrokeKind.Shortcut, t);
 
         // Otherwise resolve the character under the foreground layout.
         return Translate(vk, e.ScanCode, altGr, t);
