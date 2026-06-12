@@ -8,7 +8,8 @@ namespace Deckle.Notifications;
 // Owns the AppNotificationManager wiring and the correlation between a shown
 // toast and the activation that comes back when the user interacts with it.
 //
-// Two non-negotiable traps, both proven by spikes/InteractiveToast/Program.cs:
+// Two non-negotiable traps, both proven by the disposable InteractiveToast
+// spike (removed after hand-validation; in git history):
 //
 //   1. NotificationInvoked MUST be subscribed BEFORE Register(). If Register
 //      runs first, Windows treats the activation as a cold launch and spawns a
@@ -16,7 +17,7 @@ namespace Deckle.Notifications;
 //      already-running process.
 //
 //   2. The activation carries only the arguments baked into the toast at build
-//      time. We thread a per-show nonce ("nonce") through every AddArgument so
+//      time. We thread a per-show nonce through every AddArgument so
 //      the handler can route the activation back to the exact TaskCompletionSource
 //      that the show is awaiting — Windows gives no other correlation token.
 //
