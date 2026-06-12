@@ -13,7 +13,17 @@ A prompt returns the user's `NotificationResponse`, or **null** for either of tw
 
 `NotificationDescriptor.Id` is `point.snake_case`, stable from day one. It keys the catalogue, threads through the toast activation as the routing token, and may surface in user preferences later. Never rename it, never recycle a retired Id for a different notification — a stale Id in a delivered toast or a persisted preference would silently mis-route.
 
-The descriptor's Title/Body/label/placeholder keys are resolved by the channel through `Loc`, which reads the **root resource map only**: every descriptor string key must be mirrored into Deckle.App's `Resources.resw` (the owning module's `.resw` copy is the wording source of truth, but serves `x:Uid` alone). A key left un-mirrored fails the prompt at show time — see Deckle.Catalog/CLAUDE.md.
+The descriptor's Title/Body/label/placeholder keys are resolved by the channel through `Loc`, which reads the **root resource map only**: every descriptor string key must be mirrored into Deckle.App's `Resources.resw` (the owning module's `.resw` copy is the wording source of truth, but serves `x:Uid` alone). A key left un-mirrored does not fail — the toast still shows, with the `[!key]` marker in DEBUG and *blank text* in RELEASE — so the marker on a DEBUG toast is the one visible symptom; see Deckle.Catalog/CLAUDE.md.
+
+## Adding a consumer module
+
+Five steps, in order — `PlaygroundNotifications.cs` and its HomePage call site are the canonical example:
+
+1. `ProjectReference` to `Deckle.Notifications` in the module's csproj.
+2. Declare the descriptors in a `static class <Module>Notifications` exposing each descriptor plus an `All` list.
+3. Mirror every string key into Deckle.App's `Resources.resw` (see above).
+4. Register the batch at boot: `dispatcher.Catalog.Register(<Module>Notifications.All)` in `App.OnLaunched`, next to the existing Register calls — skipping this makes every prompt throw `InvalidOperationException`.
+5. Prompt via `NotificationDispatcher.Instance` — it is **null before the boot wiring runs**, so null-check it — and tolerate a null response.
 
 ## Toast traps
 
