@@ -92,6 +92,25 @@ _Avoid_ : detector, gesture engine.
 The one gesture Deckle owns — three fingers moving together hold the primary button and drag; lifting releases after a grace delay. Every other touchpad gesture stays native to Windows; the native three-finger gestures are set to nothing so this one can exist.
 _Avoid_ : three-finger swipe (the native Windows gesture Deckle disables).
 
+## Autocorrect — where correction may act
+
+Vocabulary of the system-autocorrect workstream (machine-wide diacritics restoration first, conservative typo correction second).
+
+**Correctable surface** :
+A text-input context where the system autocorrect is allowed to act. Two gates, both required. First, the *surface class* must be correctable: password fields are outside the system entirely — never corrected, keystrokes never observed or buffered (hard rule, not a setting) — and non-prose contexts (terminals, code editors, full-screen games) are excluded by default. Classes are judged per surface (the focused control), not per application: an embedded terminal inside an otherwise prose app is still excluded, to the extent the surface can be identified. The exact class inventory follows the background research. Second, the *application* must be enrolled.
+_Avoid_ : blocklist-only framing (exclusion classes are the safety net, enrollment is the activation gate — they are different gates).
+
+**Enrolled app** :
+An application where autocorrect is active because the user accepted the enrollment prompt there. Enrollment is asked once per app and remembered; an app never asked, or never answered, stays non-enrolled and untouched.
+
+**Enrollment prompt** :
+The notification raised the first time the system *could* correct something in a non-enrolled app — never on mere app launch, so apps where no prose is ever typed never see it. It does not block, steal focus, or rewrite anything; corrections stay withheld until the user opts in, and ignoring the prompt is a valid answer. Candidate refinement, noted not committed: applying the withheld corrections retroactively when consent arrives late.
+_Avoid_ : popup, dialog (it is a passive notification, not a modal).
+
+**Correction revert** :
+The single gesture that takes a correction back: the Backspace that deletes the space sitting right after a corrected word also restores the original word — whether it comes immediately after the correction fired, or later, after moving the caret back to that spot. Backspaces beyond that one delete normally, into the text before. Ctrl+Z is never intercepted — it belongs to the apps. Kept deliberately simple by decision; open questions: whether a space is re-added after restoring, and what removing letters *inside* a corrected word should do.
+_Avoid_ : undo (Ctrl+Z semantics).
+
 ## Speech segmentation — detection vs cutting
 
 Two devices carry the word "VAD" and are constantly conflated, yet they are different in kind: one is a model that finds speech in a finished buffer, the other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
