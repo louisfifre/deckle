@@ -29,5 +29,14 @@ public partial class App
         else                                                      _taskbarCover.Stop();
     }
 
-    private void ShutdownTaskbarCover() => _taskbarCover?.Dispose();
+    // Unhook before disposing: a debounced settings flush landing during
+    // shutdown would otherwise restart the host behind Dispose. The flush
+    // then persists a toggle still sitting in the debounce window — QuitApp
+    // only flushes the main settings store, never the module stores.
+    private void ShutdownTaskbarCover()
+    {
+        TaskbarCoverSettingsService.Instance.Changed -= ReconcileTaskbarCover;
+        TaskbarCoverSettingsService.Instance.Flush();
+        _taskbarCover?.Dispose();
+    }
 }
