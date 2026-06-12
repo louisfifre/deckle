@@ -22,30 +22,7 @@ public sealed class TrackpadSettings
     /// </summary>
     public bool RecordFrames { get; set; } = false;
 
-    /// <summary>
-    /// TEMPORARY tuning knobs, exposed in the page's diagnostics expander
-    /// while defaults get calibrated on real sessions. Frozen into engine
-    /// constants (and removed from the page) at the value-freeze
-    /// milestone.
-    /// </summary>
-    public TrackpadTuning Tuning { get; set; } = new();
-}
-
-// Defaults are engineering guesses pending calibration on real Magic
-// Trackpad 2 Bluetooth sessions — that calibration is the whole reason
-// these are settings at all.
-public sealed class TrackpadTuning
-{
-    /// <summary>
-    /// Grace delay after fingers lift before the drag releases, in
-    /// milliseconds. 0 releases immediately — the maintainer's preferred
-    /// behavior, hence the default.
-    /// </summary>
-    public int GraceDelayMs { get; set; } = 0;
-
-    /// <summary>
-    /// Travel before a three-finger touch commits to a drag instead of a
-    /// tap, as a fraction of the device's logical X range.
-    /// </summary>
-    public double StartThresholdRatio { get; set; } = 0.01;
+    // The tuning knobs (grace delay, start threshold) were frozen into
+    // TrackpadEngine constants on 2026-06-12 after hands-on calibration —
+    // a stale "Tuning" object in an existing settings.json is ignored.
 }

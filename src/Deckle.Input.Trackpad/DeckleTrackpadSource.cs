@@ -20,7 +20,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
 
     public const int EvtEngineStarted            = 1;
     public const int EvtEngineStopped            = 2;
-    public const int EvtTuningApplied            = 3;
+    // 3 retired — TuningApplied, removed at the value freeze (2026-06-12).
     public const int EvtDragStarted              = 4;
     public const int EvtDragEnded                = 5;
     public const int EvtTapIgnored               = 6;
@@ -50,15 +50,6 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public void EngineStopped()
     {
         if (IsEnabled()) WriteEvent(EvtEngineStopped);
-    }
-
-    [Event(EvtTuningApplied,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tuning | grace_ms={0} | start_threshold_units={1} | speed={2}")]
-    public void TuningApplied(int grace_ms, double start_threshold_units, double speed)
-    {
-        if (IsEnabled()) WriteEvent(EvtTuningApplied, grace_ms, start_threshold_units, speed);
     }
 
     // ── Gestures ─────────────────────────────────────────────────────────

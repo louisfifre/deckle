@@ -4,8 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Deckle.Input.Trackpad.ViewModels;
 
 // ViewModel for TrackpadPage — bridges TrackpadSettings (master switch,
-// drag speed, raw-frame recording, and the temporary tuning knobs) to the
-// XAML via x:Bind. Same shape as Deckle.Settings' DiagnosticsViewModel :
+// drag speed, raw-frame recording) to the XAML via x:Bind. Same shape as
+// Deckle.Settings' DiagnosticsViewModel :
 // Load() pulls from the store, each property change pushes back via
 // Push() + Save(), and the _isSyncing flag suppresses the write-back while
 // Load() seeds the properties so re-hydration never re-saves.
@@ -45,28 +45,6 @@ public partial class TrackpadViewModel : ObservableObject
     [ObservableProperty]
     public partial bool RecordFrames { get; set; }
 
-    // ── Tuning (temporary) ──────────────────────────────────────────────────
-    // Knobs exposed only while the defaults are calibrated on real sessions ;
-    // frozen into engine constants (and removed from the page) afterwards.
-
-    // Grace delay after the fingers lift before the drag releases, in ms.
-    // 0 releases immediately.
-    [ObservableProperty]
-    public partial double GraceDelayMs { get; set; }
-
-    public string GraceDelayLabel =>
-        GraceDelayMs.ToString("0", CultureInfo.CurrentCulture) + " ms";
-
-    // Start threshold shown to the user as a percentage of the pad width but
-    // stored as a 0..1 ratio in TrackpadTuning.StartThresholdRatio. The ×100 /
-    // ÷100 conversion lives in Load / Push so the slider can bind a plain
-    // percent value with no converter in the XAML.
-    [ObservableProperty]
-    public partial double StartThresholdPercent { get; set; }
-
-    public string StartThresholdLabel =>
-        StartThresholdPercent.ToString("0.0", CultureInfo.CurrentCulture) + " %";
-
     partial void OnEnabledChanged(bool value)
     {
         if (_isSyncing) return;
@@ -82,20 +60,6 @@ public partial class TrackpadViewModel : ObservableObject
 
     partial void OnRecordFramesChanged(bool value)
     {
-        if (_isSyncing) return;
-        Push();
-    }
-
-    partial void OnGraceDelayMsChanged(double value)
-    {
-        OnPropertyChanged(nameof(GraceDelayLabel));
-        if (_isSyncing) return;
-        Push();
-    }
-
-    partial void OnStartThresholdPercentChanged(double value)
-    {
-        OnPropertyChanged(nameof(StartThresholdLabel));
         if (_isSyncing) return;
         Push();
     }
@@ -119,8 +83,6 @@ public partial class TrackpadViewModel : ObservableObject
             Enabled = s.Enabled;
             DragSpeed = s.DragSpeed;
             RecordFrames = s.RecordFrames;
-            GraceDelayMs = s.Tuning.GraceDelayMs;
-            StartThresholdPercent = Math.Round(s.Tuning.StartThresholdRatio * 100.0, 1);
         }
         finally
         {
@@ -134,8 +96,6 @@ public partial class TrackpadViewModel : ObservableObject
         s.Enabled = Enabled;
         s.DragSpeed = Math.Round(DragSpeed, 2);
         s.RecordFrames = RecordFrames;
-        s.Tuning.GraceDelayMs = (int)Math.Round(GraceDelayMs);
-        s.Tuning.StartThresholdRatio = Math.Round(StartThresholdPercent, 1) / 100.0;
         TrackpadSettingsService.Instance.Save();
     }
 }

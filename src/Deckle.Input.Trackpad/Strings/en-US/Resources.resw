@@ -192,22 +192,4 @@
   <data name="TrackpadPage_RecordFramesCard.Description" xml:space="preserve">
     <value>Writes every contact frame to a JSONL file in the telemetry folder. Works whether or not three-finger drag is on.</value>
   </data>
-  <data name="TrackpadPage_TuningExpander.Header" xml:space="preserve">
-    <value>Tuning (temporary)</value>
-  </data>
-  <data name="TrackpadPage_TuningExpander.Description" xml:space="preserve">
-    <value>These defaults are still being calibrated on real sessions. This section will disappear once they're frozen.</value>
-  </data>
-  <data name="TrackpadPage_GraceDelayCard.Header" xml:space="preserve">
-    <value>Grace delay</value>
-  </data>
-  <data name="TrackpadPage_GraceDelayCard.Description" xml:space="preserve">
-    <value>How long the drag holds on after the fingers lift. Zero releases immediately.</value>
-  </data>
-  <data name="TrackpadPage_StartThresholdCard.Header" xml:space="preserve">
-    <value>Start threshold</value>
-  </data>
-  <data name="TrackpadPage_StartThresholdCard.Description" xml:space="preserve">
-    <value>How far three fingers must travel before a drag begins instead of a tap, as a share of the pad's width.</value>
-  </data>
 </root>

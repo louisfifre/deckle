@@ -14,10 +14,7 @@
 
          The drag speed is the module's primary control, so it gets its
          own always-visible card (greyed while the feature is off) rather
-         than hiding in a disclosure.
-
-         The Tuning expander at the bottom is TEMPORARY — it disappears once
-         the calibrated defaults are frozen into engine constants. -->
+         than hiding in a disclosure. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -128,38 +125,6 @@
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AudioRecording}}">
                     <ToggleSwitch IsOn="{x:Bind ViewModel.RecordFrames, Mode=TwoWay}" />
                 </controls:SettingsCard>
-
-                <!-- TEMPORARY tuning knobs. Removed from the page once the
-                     defaults are frozen on real sessions. -->
-                <controls:SettingsExpander x:Uid="TrackpadPage_TuningExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Uid="TrackpadPage_GraceDelayCard">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider Width="220"
-                                        Minimum="0"
-                                        Maximum="1000"
-                                        StepFrequency="10"
-                                        SnapsTo="StepValues"
-                                        Value="{x:Bind ViewModel.GraceDelayMs, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                           Text="{x:Bind ViewModel.GraceDelayLabel, Mode=OneWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Uid="TrackpadPage_StartThresholdCard">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider Width="220"
-                                        Minimum="0.1"
-                                        Maximum="5.0"
-                                        StepFrequency="0.1"
-                                        SnapsTo="StepValues"
-                                        Value="{x:Bind ViewModel.StartThresholdPercent, Mode=TwoWay}" />
-                                <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                           Text="{x:Bind ViewModel.StartThresholdLabel, Mode=OneWay}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
 
             </StackPanel>
         </Grid>

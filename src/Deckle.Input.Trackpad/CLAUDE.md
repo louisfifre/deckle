@@ -57,12 +57,14 @@ encodes the proven driver-store procedure; its cardinal rule: never
 "Remove device" in Bluetooth settings — power-cycling the trackpad is
 always enough.
 
-## Status — value freeze pending
+## Values frozen (hands-on calibration, 2026-06-12)
 
-The tuning expander on the page (grace delay, start threshold) is
-TEMPORARY: defaults are engineering guesses awaiting calibration on real
-Bluetooth sessions recorded by the `Deckle.Input` frame recorder. Once
-frozen, the values become engine constants and the expander is removed.
-The baseline scale is already an engine constant — sensitivity is the
-one drag-speed slider, by decision. Grace defaults to 0 (immediate
-release), the maintainer's preference.
+All recognizer/engine values are constants in `TrackpadEngine`; the only
+user-facing knob is the drag-speed slider. Grace delay 0 — the drag
+releases the instant the fingers lift, the maintainer's preference.
+Start threshold 0.1 % of the pad width — the calibrated minimum,
+perceptually instant; deliberately not zero, because at exactly 0 the
+drag would commit without any movement and a three-finger tap would
+become a left click, contradicting "tap is nothing". Base scale 0.25.
+The tuning expander and the `TrackpadTuning` settings block are gone; a
+stale `Tuning` object in an existing `settings.json` is ignored.

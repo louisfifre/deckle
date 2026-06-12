@@ -15,9 +15,9 @@ namespace Deckle.Input.Trackpad;
 //
 // Two kinds of surface, two persistence styles :
 //
-//   • Persisted settings (master switch, drag speed, raw-frame recording,
-//     the temporary tuning knobs) bind through TrackpadViewModel — auto-save
-//     on every change, no OK/Cancel.
+//   • Persisted settings (master switch, drag speed, raw-frame recording)
+//     bind through TrackpadViewModel — auto-save on every change, no
+//     OK/Cancel.
 //
 //   • Windows-integration acts (neutralize / restore gestures, repair the
 //     Bluetooth pairing bug, toggle elevated startup) are imperative commands

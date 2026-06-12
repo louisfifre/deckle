@@ -33,8 +33,8 @@ internal enum DragPhase
 //     beyond the hard anti-jump clamp moves nothing.
 internal sealed class ThreeFingerDragRecognizer
 {
-    /// <summary>Release delay after fingers lift, in milliseconds (tunable until value freeze).</summary>
-    public double GraceDelayMs { get; set; } = 350;
+    /// <summary>Release delay after fingers lift, in milliseconds. The engine sets the frozen value; settable for tests.</summary>
+    public double GraceDelayMs { get; set; }
 
     /// <summary>Travel (logical units) before three fingers commit to a drag.</summary>
     public double StartThresholdUnits { get; set; } = 50;

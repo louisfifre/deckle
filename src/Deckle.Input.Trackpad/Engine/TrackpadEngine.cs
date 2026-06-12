@@ -10,9 +10,8 @@ namespace Deckle.Input.Trackpad;
 // never stay held).
 //
 // Threading: frames arrive on the input thread, the grace timer on a
-// pool thread, settings changes on the store's flush path — every entry
-// point funnels through one gate lock; the work inside is microseconds
-// (state machine + SendInput).
+// pool thread — every entry point funnels through one gate lock; the
+// work inside is microseconds (state machine + SendInput).
 public sealed class TrackpadEngine : IDisposable
 {
     // Anti-jump clamp as a fraction of the device's logical X range —
@@ -23,6 +22,17 @@ public sealed class TrackpadEngine : IDisposable
     // rides on. In-engine constant by decision: sensitivity is the one
     // linear drag-speed slider, nothing else.
     private const double BaseScale = 0.25;
+
+    // Values frozen 2026-06-12 after hands-on calibration (maintainer's
+    // choices). No grace: the drag releases the instant the fingers lift.
+    private const double GraceDelayMs = 0;
+
+    // Start threshold as a fraction of the X range — the calibrated
+    // minimum, perceptually instant. Not zero on purpose: at exactly 0 the
+    // drag would commit on the first frame even without movement, turning
+    // a three-finger tap into a left click — and tap is deliberately
+    // nothing (framing decision).
+    private const double StartThresholdRatio = 0.001;
 
     private readonly RawInputHost _host;
     private readonly MouseInjector _injector = new();
@@ -54,11 +64,10 @@ public sealed class TrackpadEngine : IDisposable
             if (_running) return;
             _running = true;
 
-            ApplyTuning();
+            ApplyThresholds();
             _host.FrameAssembled      += OnFrame;
             _host.TouchpadConnected   += OnTouchpadConnected;
             _host.TouchpadDisconnected += OnTouchpadDisconnected;
-            TrackpadSettingsService.Instance.Changed += OnSettingsChanged;
         }
         DeckleTrackpadSource.Log.EngineStarted();
     }
@@ -73,7 +82,6 @@ public sealed class TrackpadEngine : IDisposable
             _host.FrameAssembled      -= OnFrame;
             _host.TouchpadConnected   -= OnTouchpadConnected;
             _host.TouchpadDisconnected -= OnTouchpadDisconnected;
-            TrackpadSettingsService.Instance.Changed -= OnSettingsChanged;
 
             _graceTimer.Change(Timeout.Infinite, Timeout.Infinite);
             _recognizer.Cancel("engine-stopped");
@@ -169,7 +177,7 @@ public sealed class TrackpadEngine : IDisposable
 
     private void OnTouchpadConnected(TouchpadCapabilities caps)
     {
-        lock (_gate) { if (_running) ApplyTuning(); }
+        lock (_gate) { if (_running) ApplyThresholds(); }
     }
 
     private void OnTouchpadDisconnected()
@@ -182,27 +190,17 @@ public sealed class TrackpadEngine : IDisposable
         }
     }
 
-    private void OnSettingsChanged()
-    {
-        lock (_gate) { if (_running) ApplyTuning(); }
-    }
-
     // Thresholds are expressed relative to the device's logical range —
-    // no absolute magic units; the tuning expander calibrates the ratios
-    // until the value freeze.
-    private void ApplyTuning()
+    // no absolute magic units. Re-applied on device connect because the
+    // range comes from the device's capabilities. Drag speed needs no
+    // re-apply hook: OnDragMoved reads it from the settings live.
+    private void ApplyThresholds()
     {
-        var settings = TrackpadSettingsService.Instance.Current;
         var caps = _host.Touchpad;
         int xRange = caps?.XRange > 0 ? caps.XRange : 4096;
 
-        _recognizer.GraceDelayMs        = settings.Tuning.GraceDelayMs;
-        _recognizer.StartThresholdUnits = settings.Tuning.StartThresholdRatio * xRange;
+        _recognizer.GraceDelayMs        = GraceDelayMs;
+        _recognizer.StartThresholdUnits = StartThresholdRatio * xRange;
         _recognizer.MaxFrameDeltaUnits  = MaxFrameDeltaRatio * xRange;
-
-        DeckleTrackpadSource.Log.TuningApplied(
-            settings.Tuning.GraceDelayMs,
-            Math.Round(_recognizer.StartThresholdUnits, 1),
-            settings.DragSpeed);
     }
 }
