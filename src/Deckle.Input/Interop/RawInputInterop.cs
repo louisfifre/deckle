@@ -51,10 +51,13 @@ public static class RawInputInterop
     // learn.microsoft.com/windows/win32/api/winuser/ns-winuser-rawkeyboard
     // Read by pointer arithmetic off the RAWINPUT buffer, right after the
     // header: MakeCode (USHORT) @ +0, Flags (USHORT) @ +2, Reserved @ +4,
-    // VKey (USHORT) @ +6. Field offsets are relative to RAWKEYBOARD start.
-    public const int KeyboardMakeCodeOffset = 0;
-    public const int KeyboardFlagsOffset    = 2;
-    public const int KeyboardVKeyOffset     = 6;
+    // VKey (USHORT) @ +6, Message (UINT) @ +8, ExtraInformation (ULONG)
+    // @ +12 — the dwExtraInfo a sender stamped via SendInput, surfaced
+    // back on the receive side. Offsets are relative to RAWKEYBOARD start.
+    public const int KeyboardMakeCodeOffset  = 0;
+    public const int KeyboardFlagsOffset     = 2;
+    public const int KeyboardVKeyOffset      = 6;
+    public const int KeyboardExtraInfoOffset = 12;
 
     // RAWKEYBOARD.Flags bits. RI_KEY_MAKE (0) is key-down by absence of
     // RI_KEY_BREAK. RI_KEY_E0 marks the E0-prefixed (extended) scan code.

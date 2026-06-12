@@ -7,6 +7,7 @@ using Deckle.Input.Autocorrect.Lexicon;
 using Deckle.Input.Autocorrect.Surfaces;
 using Deckle.Input.Autocorrect.Injection;
 using Deckle.Input.Autocorrect.Tracking;
+using Deckle.Input.Interop;
 using Deckle.Input.Keyboard;
 
 namespace Deckle.Input.Autocorrect.Cli.Commands;
@@ -22,6 +23,7 @@ internal static class RunCommand
     public static int Run(CliArgs args)
     {
         bool toy = args.Has("--toy");
+        bool trace = args.Has("--trace");
 
         string root = RepoPaths.RepoRoot();
         string dataDir = args.ValueOr("--data", RepoPaths.DefaultDataDir(root));
@@ -46,8 +48,7 @@ internal static class RunCommand
         var dictionary = new PersonalDictionary(dictPath);
 
         // personalVariants delegate: fold the adopted words into AccentVariant
-        // candidate lists. Caching keyed on AdoptedWords.Count — cheap, and a
-        // count change is the only event that alters the adopted set in a run.
+        // candidate lists, rebuilt per lookup (see BuildPersonalVariants).
         var personalVariants = BuildPersonalVariants(dictionary);
 
         ICorrectionPolicy policy = toy
@@ -61,8 +62,31 @@ internal static class RunCommand
                 personal: dictionary,
                 personalVariants: personalVariants);
 
+        var host = new KeyboardInputHost();
+
+        // Forensic mode: print every keyboard transition the system delivers,
+        // attributed by origin — physical, injected by Deckle (InjectionTag in
+        // ExtraInformation), or synthetic from a third party (remapper, RDP,
+        // on-screen keyboard). This is how a mangled repair is pinned on the
+        // stage that mangled it: our burst echoes back here exactly as sent;
+        // anything extra or missing is someone else's hand. Console writes on
+        // the input thread — diagnostic runs only.
+        if (trace)
+        {
+            uint deckleTag = unchecked((uint)SendInputInterop.InjectionTag.ToInt64());
+            host.KeyReceived += e =>
+            {
+                string origin = !e.IsInjected ? "phys"
+                    : e.ExtraInfo == deckleTag ? "inj:deckle"
+                    : e.ExtraInfo == 0 ? "inj:other"
+                    : $"inj:other(0x{e.ExtraInfo:X8})";
+                Console.WriteLine(
+                    $"trace:     vk=0x{e.VirtualKey:X2} scan=0x{e.ScanCode:X4} {(e.IsKeyDown ? "down" : "up  ")} {origin}");
+            };
+        }
+
         var engine = new AutocorrectEngine(
-            host: new KeyboardInputHost(),
+            host: host,
             decoder: new KeyDecoder(),
             tracker: new TypedWordTracker(),
             prober: new SurfaceProber(),

@@ -364,6 +364,9 @@ public sealed class KeyboardInputHost : IDisposable
         ushort flags = (ushort)Marshal.ReadInt16(
             _rawBuffer, dataOffset + RawInputInterop.KeyboardFlagsOffset);
 
+        uint extraInfo = (uint)Marshal.ReadInt32(
+            _rawBuffer, dataOffset + RawInputInterop.KeyboardExtraInfoOffset);
+
         var evt = new KeyboardKeyEvent(
             VirtualKey:  vkey,
             ScanCode:    makeCode,
@@ -371,7 +374,8 @@ public sealed class KeyboardInputHost : IDisposable
             IsExtended:  (flags & RawInputInterop.RI_KEY_E0) != 0,
             // SendInput-synthesized events carry no source device.
             IsInjected:  header.hDevice == IntPtr.Zero,
-            TimestampMs: RawInputHost.NowMs);
+            TimestampMs: RawInputHost.NowMs,
+            ExtraInfo:   extraInfo);
 
         _rollupKeys++;
         if (evt.IsInjected) _rollupInjectedFiltered++;
