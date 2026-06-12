@@ -716,6 +716,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Input.Tests/
+│   │   ├── ContactFrameAssemblerTests.cs
+│   │   └── Deckle.Input.Tests.csproj
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientHueEchoClassifierTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
