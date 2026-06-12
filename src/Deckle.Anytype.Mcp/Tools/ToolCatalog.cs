@@ -155,7 +155,7 @@ public static class ToolCatalog
 
             new(
                 "update",
-                "Set properties on an object; keys or display names map to values. Properties only — the markdown body is not a property and cannot be written with this tool.",
+                "Set properties on an object; keys or display names map to values. Select and multi-select values must name existing options — an unknown value is rejected with the valid options listed; options are created by hand in Anytype, never through this tool. Properties only — the markdown body is not a property and cannot be written with this tool.",
                 Schema(
                     required:
                     [

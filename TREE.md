@@ -193,6 +193,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   └── AnytypeCredentials.cs
 │   │   ├── Gestures/
+│   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── Resolution.cs
@@ -744,6 +745,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── ProjectGesturesTests.cs
+│   │   ├── QueryGesturesTests.cs
 │   │   ├── SessionGesturesTests.cs
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/

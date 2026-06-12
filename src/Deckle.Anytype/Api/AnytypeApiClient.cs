@@ -105,6 +105,29 @@ public sealed class AnytypeApiClient : IDisposable
         return Inner(root, "object");
     }
 
+    // GET the space's properties (one page) → returns the root node
+    // ({data, pagination}). Each item is {object, id, key, name, format}. The
+    // property's ID — not its key — is what the tag-options endpoint addresses, so
+    // a caller resolving a free-vocabulary select first reads this to map key→id.
+    public async Task<JsonObject> ListPropertiesAsync(
+        int offset = 0, int limit = 100, CancellationToken ct = default)
+    {
+        string path = $"{_spacePath}/properties?offset={offset}&limit={limit}";
+        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+    }
+
+    // GET a property's existing tag options (one page) → returns the root node
+    // ({data, pagination}). Each item is {object, id, key, name, color}. The path
+    // takes the property ID (the key form 404s, verified against the live API);
+    // resolve the key to an id through ListPropertiesAsync first.
+    public async Task<JsonObject> ListPropertyTagsAsync(
+        string propertyId, int offset = 0, int limit = 100, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
+        string path = $"{_spacePath}/properties/{propertyId}/tags?offset={offset}&limit={limit}";
+        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+    }
+
     // POST list members. A collection IS a list: members are added through
     // /lists/{id}/objects with body {objects:[ids]} (vendor addToCollection).
     // The success body is a bare JSON string, not an object — skip parsing it.

@@ -384,18 +384,29 @@ public static class DevSpace
         return null;
     }
 
-    // Resolve a tag value (key or display name) for a property's vocabulary.
-    // PUBLIC: gestures call this when building select/multi_select payloads.
-    // Throws ArgumentException listing the valid options on a miss — that error
-    // text is the model-facing affordance, not a failure to hide.
+    // Resolve a tag value (key or display name) against a property's FROZEN
+    // vocabulary. PUBLIC: gestures call this when building select/multi_select
+    // payloads for a property whose options are pinned in this map.
     //
-    // A property with no frozen vocabulary (e.g. « tag », a free multi_select)
-    // has nothing to match against: the value passes through unchanged, since
-    // such tags are space-managed, not enumerable here.
+    // Returns the wire key on a match. Throws ArgumentException listing the valid
+    // options on a miss — that error text is the model-facing affordance, not a
+    // failure to hide.
+    //
+    // Calling this on a property with NO frozen vocabulary (e.g. « tag », a free
+    // multi_select the space manages) is a programming error: such properties have
+    // no enumerable options here, so their values must be resolved against the
+    // live space, not this map. The gesture checks HasFrozenVocabulary first and
+    // routes free-vocabulary properties to the live resolver; reaching this method
+    // for one would silently let an unknown option through, the very hole the
+    // owner forbids. So it throws InvalidOperationException rather than passing the
+    // value on.
     public static string ResolveTag(string propKey, string nameOrKey)
     {
         TagOption[]? options = OptionsForProperty(propKey);
-        if (options is null) return nameOrKey;
+        if (options is null)
+            throw new InvalidOperationException(
+                $"« {propKey} » n'a pas de vocabulaire figé : ses options doivent être " +
+                "résolues sur l'espace, pas via DevSpace.ResolveTag.");
 
         string? key = ResolveOption(options, nameOrKey);
         if (key is not null) return key;
@@ -405,6 +416,13 @@ public static class DevSpace
             $"Valeur « {nameOrKey} » inconnue pour « {propKey} ». Options : {valid}.",
             nameof(nameOrKey));
     }
+
+    // Whether the property carries a frozen vocabulary in this map. False for a
+    // free select/multi_select the space manages live (e.g. « tag »): the gesture
+    // resolves those against the live space instead of ResolveTag. This is the
+    // fork that keeps an unknown free-vocabulary option from ever reaching the wire.
+    public static bool HasFrozenVocabulary(string propKey) =>
+        OptionsForProperty(propKey) is not null;
 
     // ── Internal derivation helpers ───────────────────────────────────────────
 

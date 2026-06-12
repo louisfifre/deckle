@@ -85,11 +85,24 @@ public class DevSpaceTests
     }
 
     [Fact]
-    public void ResolveTagOnOpenTagPropertyPassesTheValueThrough()
+    public void ResolveTagOnFreeVocabularyThrowsRatherThanPassingThrough()
     {
-        // « tag » is a free multi_select with no frozen vocabulary: an arbitrary
-        // value passes through unchanged.
-        Assert.Equal("anything-goes", DevSpace.ResolveTag(DevSpace.Props.Tag, "anything-goes"));
+        // « tag » is a free multi_select with no frozen vocabulary. ResolveTag must
+        // NOT pass an arbitrary value through (the old hole that could let the API
+        // auto-create an option): reaching it for a free vocabulary is a routing
+        // error, so it throws. The gesture resolves such properties live instead.
+        Assert.Throws<InvalidOperationException>(
+            () => DevSpace.ResolveTag(DevSpace.Props.Tag, "anything-goes"));
+    }
+
+    [Fact]
+    public void HasFrozenVocabularyDistinguishesClosedFromFreeProperties()
+    {
+        // The fork the gesture branches on: closed vocabularies resolve in memory,
+        // free ones go to the live resolver.
+        Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.Etat));
+        Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.TypeDeTache));
+        Assert.False(DevSpace.HasFrozenVocabulary(DevSpace.Props.Tag));
     }
 
     [Fact]

@@ -10,6 +10,11 @@ namespace Deckle.Anytype.Gestures;
 // gesture families, each returns a terse French plain-string digest.
 public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 {
+    // Resolves free-vocabulary (space-managed) select/multi_select values against
+    // the live space. Frozen vocabularies are resolved in-memory by DevSpace; this
+    // covers the rest without ever letting an unknown option reach the wire.
+    readonly LiveTagResolver _liveTags = new(api);
+
     // Full read: header facts (known schema properties only) + the markdown body.
     public async Task<string> GetAsync(string selector, string? typeKey = null, CancellationToken ct = default)
     {
@@ -144,7 +149,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
                     $"Propriété inconnue « {nameOrKey} » pour le type {objType}. " +
                     $"Connues : {string.Join(", ", DevSpace.PropertiesFor(objType).Select(p => p.Label))}.");
 
-            entries.Add(BuildEntry(key, format, value));
+            entries.Add(await BuildEntryAsync(key, format, value, ct));
             applied.Add(DevSpace.PropertyLabel(key) ?? key);
         }
 
@@ -195,26 +200,37 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         $"Liaison non supportée : {sourceType} → {targetType}. " +
         "Paires supportées : tâche→projet, tâche→rapport, rapport→projet, projet→projet.";
 
-    static JsonObject BuildEntry(string key, string format, JsonNode? value) => format switch
+    // select/multi_select are async because a free (space-managed) vocabulary is
+    // resolved against the live space; every other format is built in-memory.
+    async Task<JsonObject> BuildEntryAsync(string key, string format, JsonNode? value, CancellationToken ct) => format switch
     {
         "number"       => new JsonObject { ["key"] = key, ["number"] = AsNumber(value) },
         "checkbox"     => new JsonObject { ["key"] = key, ["checkbox"] = AsBool(value) },
-        "select"       => new JsonObject { ["key"] = key, ["select"] = DevSpace.ResolveTag(key, AsString(value)) },
-        "multi_select" => new JsonObject { ["key"] = key, ["multi_select"] = MultiTags(key, value) },
+        "select"       => new JsonObject { ["key"] = key, ["select"] = await ResolveTagAsync(key, AsString(value), ct) },
+        "multi_select" => new JsonObject { ["key"] = key, ["multi_select"] = await MultiTagsAsync(key, value, ct) },
         "objects"      => new JsonObject { ["key"] = key, ["objects"] = AsStringArray(value) },
         "date"         => new JsonObject { ["key"] = key, ["date"] = AsString(value) },
         _              => new JsonObject { ["key"] = key, ["text"] = AsString(value) },
     };
 
-    static JsonArray MultiTags(string key, JsonNode? value)
+    async Task<JsonArray> MultiTagsAsync(string key, JsonNode? value, CancellationToken ct)
     {
         var arr = new JsonArray();
         if (value is JsonArray src)
-            foreach (JsonNode? n in src) arr.Add(DevSpace.ResolveTag(key, AsString(n)));
+            foreach (JsonNode? n in src) arr.Add(await ResolveTagAsync(key, AsString(n), ct));
         else if (value is not null)
-            arr.Add(DevSpace.ResolveTag(key, AsString(value)));
+            arr.Add(await ResolveTagAsync(key, AsString(value), ct));
         return arr;
     }
+
+    // A select/multi_select value resolves to an EXISTING option's wire key, never
+    // a fresh one: a frozen vocabulary matches in DevSpace, a free (space-managed)
+    // one against the live options. Either way an unknown value throws (listing the
+    // valid options) before any PATCH — the library cannot mint a tag option.
+    Task<string> ResolveTagAsync(string key, string value, CancellationToken ct) =>
+        DevSpace.HasFrozenVocabulary(key)
+            ? Task.FromResult(DevSpace.ResolveTag(key, value))
+            : _liveTags.ResolveAsync(key, value, ct);
 
     static JsonArray AsStringArray(JsonNode? value)
     {

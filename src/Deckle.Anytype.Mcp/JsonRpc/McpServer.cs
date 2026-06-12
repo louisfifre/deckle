@@ -30,7 +30,9 @@ public sealed class McpServer
         + "0-5, 5 highest; content is French. Fill properties at creation: "
         + "date cible and définition de fini everywhere, plus estimated budget "
         + "and charge on projects — their 'réel' counterparts are set at "
-        + "validation, so the estimate/actual delta stays readable. Names "
+        + "validation, so the estimate/actual delta stays readable. Select "
+        + "options are applied, never created: new options come from the user, "
+        + "in Anytype. Names "
         + "resolve to objects; an ambiguous name returns candidate ids so you "
         + "can retry with one.";
 

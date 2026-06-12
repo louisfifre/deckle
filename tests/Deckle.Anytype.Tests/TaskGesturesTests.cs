@@ -208,6 +208,16 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostListObjects(string listId, string rawJson) =>
         _routes.Add(new("POST", $"{SpacePath}/lists/{listId}/objects", 200, rawJson));
 
+    // GET .../properties — the space's property list (key→id map source). The
+    // serve loop routes on AbsolutePath, so the ?offset&limit query is ignored.
+    public void OnListProperties(JsonObject response) =>
+        _routes.Add(new("GET", $"{SpacePath}/properties", 200, response.ToJsonString()));
+
+    // GET .../properties/{id}/tags — a property's existing options. Same path-only
+    // routing; the query string is dropped before the match.
+    public void OnListPropertyTags(string propertyId, JsonObject response) =>
+        _routes.Add(new("GET", $"{SpacePath}/properties/{propertyId}/tags", 200, response.ToJsonString()));
+
     // ── Request introspection ─────────────────────────────────────────────────
 
     // The parsed JSON body of the last request with the given method. Throws if
