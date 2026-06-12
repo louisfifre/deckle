@@ -40,6 +40,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtFlyoutClosed          = 13;
     public const int EvtItemClicked           = 14;
     public const int EvtDisposed              = 15;
+    public const int EvtTaskbarCoverStateRead = 16;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -125,6 +126,16 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtAmbientStateRead, is_on);
+    }
+
+    [Event(EvtTaskbarCoverStateRead,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "taskbar cover state read | is_on={0}")]
+    public void TaskbarCoverStateRead(bool is_on)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtTaskbarCoverStateRead, is_on);
     }
 
     // ── Flyout measurement ───────────────────────────────────────────────────

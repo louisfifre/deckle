@@ -66,6 +66,7 @@ public sealed class TrayContextMenuHost : IDisposable
     private Frame? _frame;
     private MenuFlyout? _flyout;
     private MenuFlyoutItem? _ambientItem;
+    private MenuFlyoutItem? _taskbarCoverItem;
     private IntPtr _hwnd;
     private AppWindow? _appWindow;
 
@@ -100,9 +101,11 @@ public sealed class TrayContextMenuHost : IDisposable
     public Action? OnShowSettings    { get; set; }
     public Action? OnShowPlayground  { get; set; }
     public Action? OnToggleAmbient   { get; set; }
+    public Action? OnToggleTaskbarCover { get; set; }
     public Action? OnRestart         { get; set; }
     public Action? OnQuit            { get; set; }
     public Func<bool>? IsAmbientOn   { get; set; }
+    public Func<bool>? IsTaskbarCoverOn { get; set; }
 
     /// <summary>
     /// Optional accessor for the tray icon's screen rect. When provided, the
@@ -214,6 +217,16 @@ public sealed class TrayContextMenuHost : IDisposable
                 OnToggleAmbient?.Invoke();
             });
         _flyout.Items.Add(_ambientItem);
+
+        _taskbarCoverItem = TraySwitchMenuItem.Create(
+            Loc.Get("TrayMenu_TaskbarCover"),
+            () =>
+            {
+                DeckleShellTrayMenuSource.Log.ItemClicked(_taskbarCoverItem!.Text);
+                Hide("item_click:TaskbarCover");
+                OnToggleTaskbarCover?.Invoke();
+            });
+        _flyout.Items.Add(_taskbarCoverItem);
 
         _flyout.Items.Add(new MenuFlyoutSeparator());
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
@@ -327,6 +340,13 @@ public sealed class TrayContextMenuHost : IDisposable
             bool ambientOn = IsAmbientOn();
             TraySwitchMenuItem.SetState(_ambientItem, ambientOn);
             DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
+        }
+
+        if (_taskbarCoverItem is not null && IsTaskbarCoverOn is not null)
+        {
+            bool coverOn = IsTaskbarCoverOn();
+            TraySwitchMenuItem.SetState(_taskbarCoverItem, coverOn);
+            DeckleShellTrayMenuSource.Log.TaskbarCoverStateRead(coverOn);
         }
 
         // Anchor + exclude: prefer the real tray icon rect

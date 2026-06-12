@@ -247,6 +247,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
+│   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
 │   │   ├── App.Windows.cs
@@ -636,6 +637,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
 │   │   └── TrayIconManager.cs
+│   ├── Deckle.Shell.TaskbarCover/
+│   │   ├── Interop/
+│   │   │   └── TaskbarCoverNativeMethods.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Taskbar cover module — an opaque topmost band that masks the taskbar until the…
+│   │   ├── CoverGeometry.cs
+│   │   ├── Deckle.Shell.TaskbarCover.csproj
+│   │   ├── DeckleShellTaskbarCoverSource.cs
+│   │   ├── TaskbarCoverHost.cs
+│   │   ├── TaskbarCoverSettings.cs
+│   │   └── TaskbarCoverSettingsService.cs
 │   ├── Deckle.Shell.TrayMenu/
 │   │   ├── Interop/
 │   │   │   └── TrayMenuNativeMethods.cs
@@ -791,6 +802,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
+│   ├── Deckle.Shell.TaskbarCover.Tests/
+│   │   ├── CoverGeometryTests.cs
+│   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   └── DispatcherQueueExtensionsTests.cs

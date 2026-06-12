@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Shell.TaskbarCover\Deckle.Shell.TaskbarCover.csproj" />
+  </ItemGroup>
+</Project>
