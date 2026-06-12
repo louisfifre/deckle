@@ -111,6 +111,10 @@ _Avoid_ : popup, dialog (it is a passive notification, not a modal).
 The single gesture that takes a correction back: the Backspace that deletes the space sitting right after a corrected word also restores the original word — whether it comes immediately after the correction fired, or later, after moving the caret back to that spot. Backspaces beyond that one delete normally, into the text before. Ctrl+Z is never intercepted — it belongs to the apps. Kept deliberately simple by decision; open questions: whether a space is re-added after restoring, and what removing letters *inside* a corrected word should do.
 _Avoid_ : undo (Ctrl+Z semantics).
 
+**Personal dictionary** :
+The user-visible surface of everything autocorrect has learned — adopted words and suppressed corrections. Inspectable and editable by principle: a consultable list, per-word removal, full purge. Suppression is an explicit entry (a blocklist), never the mere erasure of a counter — a removed word must not come back on its own. Candidate bridge to the ASR personal lexicon (shared learning, not yet committed).
+_Avoid_ : learning store (the internal mechanism; this term names the visible surface).
+
 ## Speech segmentation — detection vs cutting
 
 Two devices carry the word "VAD" and are constantly conflated, yet they are different in kind: one is a model that finds speech in a finished buffer, the other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
