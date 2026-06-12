@@ -718,6 +718,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── ScreenCaptureService.Loop.cs
 │       └── ScreenCaptureService.Recovery.cs
 ├── tests/
+│   ├── Deckle.Anytype.Tests/
+│   │   ├── Deckle.Anytype.Tests.csproj
+│   │   ├── DevSpaceTests.cs
+│   │   ├── SessionGesturesTests.cs
+│   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── MicLevelCheckTests.cs

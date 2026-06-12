@@ -1,0 +1,243 @@
+using System.Collections.Concurrent;
+using System.Net;
+using System.Text;
+using System.Text.Json.Nodes;
+using Deckle.Anytype.Api;
+using Deckle.Anytype.Gestures;
+using Deckle.Anytype.Schema;
+using Xunit;
+
+namespace Deckle.Anytype.Tests;
+
+// Integration tests for TaskGestures over a loopback HttpListener fake (no
+// existing HTTP test helper in tests/, so FakeAnytypeServer is the minimal local
+// one — see its file). These assert the WIRE EFFECT of a gesture: the exact
+// payload the API receives, not the digest string. The task selector is always a
+// bafy* id so the resolver short-circuits and no /search route is needed.
+[Trait("Category", "integration")]
+public class TaskGesturesTests
+{
+    // A plausible Anytype object id: >40 chars and "bafy"-prefixed so the resolver
+    // treats it as an id directly instead of searching.
+    const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static TaskGestures NewGestures(FakeAnytypeServer server)
+    {
+        var client = new AnytypeApiClient(server.Credentials);
+        return new TaskGestures(client, new NameResolver(client));
+    }
+
+    // GET response for the anchor task carrying the given markdown body.
+    static JsonObject TaskObject(string markdown) => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = TaskId,
+            ["name"] = "Ma tâche",
+            ["markdown"] = markdown,
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    // ── SubtaskAsync ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SubtaskWithNoMatchAppendsAnUncheckedItemAtTheEnd()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = "# Notes\n\n- [ ] déjà là";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body)); // PATCH echoes an object
+
+        await NewGestures(server).SubtaskAsync(TaskId, "nouvelle étape");
+
+        // The PATCH rewrites the whole markdown: original body preserved verbatim,
+        // a new "- [ ] label" line tacked on at the end.
+        JsonObject patched = server.LastBodyFor("PATCH");
+        string next = patched["markdown"]!.GetValue<string>();
+        Assert.Equal("# Notes\n\n- [ ] déjà là\n- [ ] nouvelle étape", next);
+    }
+
+    [Fact]
+    public async Task SubtaskMatchesAnExistingItemCaseInsensitivelyAndChecksIt()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = "- [ ] Rédiger le BRIEF\n- [ ] relire";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body));
+
+        // Label "brief" matches "Rédiger le BRIEF" by case-insensitive contains
+        // (the differing-case portion is ASCII, so the fold is unambiguous).
+        await NewGestures(server).SubtaskAsync(TaskId, "brief");
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        string next = patched["markdown"]!.GetValue<string>();
+        // First line toggled to [x]; the second line is untouched.
+        Assert.Equal("- [x] Rédiger le BRIEF\n- [ ] relire", next);
+    }
+
+    [Fact]
+    public async Task SubtaskWithDoneTrueOnAnAlreadyCheckedItemKeepsItChecked()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = "- [x] terminé\n- [ ] reste";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body));
+
+        await NewGestures(server).SubtaskAsync(TaskId, "terminé", done: true);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        string next = patched["markdown"]!.GetValue<string>();
+        // Idempotent: the checked item stays checked, the rest is verbatim.
+        Assert.Equal("- [x] terminé\n- [ ] reste", next);
+    }
+
+    [Fact]
+    public async Task SubtaskPreservesNonChecklistBodyVerbatim()
+    {
+        using var server = new FakeAnytypeServer();
+        string body = "# Titre\nUn paragraphe libre.\n\n- [ ] une étape\nUne note finale.";
+        server.OnGetObject(TaskId, TaskObject(body));
+        server.OnPatchObject(TaskId, TaskObject(body));
+
+        await NewGestures(server).SubtaskAsync(TaskId, "une étape", done: true);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        string next = patched["markdown"]!.GetValue<string>();
+        // Only the checkbox glyph changes; every other line is identical.
+        Assert.Equal("# Titre\nUn paragraphe libre.\n\n- [x] une étape\nUne note finale.", next);
+    }
+
+    // ── DoneAsync ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DoneSendsThePatchWithTheDoneCheckboxTrue()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPatchObject(TaskId, TaskObject(""));
+
+        await NewGestures(server).DoneAsync(TaskId);
+
+        // The PATCH carries properties:[{key:"done", checkbox:true}].
+        JsonObject patched = server.LastBodyFor("PATCH");
+        var props = patched["properties"] as JsonArray;
+        Assert.NotNull(props);
+        JsonObject doneProp = Assert.IsType<JsonObject>(props!.Single());
+        Assert.Equal(DevSpace.Props.Done, doneProp["key"]!.GetValue<string>());
+        Assert.True(doneProp["checkbox"]!.GetValue<bool>());
+    }
+}
+
+// ─── FakeAnytypeServer ─────────────────────────────────────────────────────────
+//
+// Minimal loopback HTTP server standing in for the local Anytype REST API. No
+// HttpListener helper existed in tests/, so this is the minimal local one the
+// integration tests share (TaskGesturesTests + SessionGesturesTests). It:
+//   • binds an HttpListener on a free loopback port,
+//   • routes a request to the first matching canned (method, path) response,
+//   • records every received request (method, path, parsed JSON body) so a test
+//     can assert on the exact payload the gesture sent.
+//
+// Routing is registration-order; OnGetObject/OnPostObject/etc. register the
+// canned responses a given test needs. An unmatched request gets 404 — a test
+// hitting an unexpected route fails loudly rather than hanging.
+internal sealed class FakeAnytypeServer : IDisposable
+{
+    // Fixed space id so the path prefix is deterministic in assertions.
+    public const string Space = "test-space";
+
+    readonly HttpListener _listener;
+    readonly string _prefix;
+    readonly List<Route> _routes = new();
+    readonly ConcurrentQueue<Received> _received = new();
+    readonly Task _loop;
+
+    sealed record Route(string Method, string Path, int Status, string Json);
+    public readonly record struct Received(string Method, string Path, string Body);
+
+    public FakeAnytypeServer()
+    {
+        int port = FreePort();
+        _prefix = $"http://localhost:{port}/";
+        _listener = new HttpListener();
+        _listener.Prefixes.Add(_prefix);
+        _listener.Start();
+        _loop = Task.Run(ServeAsync);
+    }
+
+    public AnytypeCredentials Credentials =>
+        new(_prefix.TrimEnd('/'), "2025-11-08", "test-key", Space);
+
+    string SpacePath => $"/v1/spaces/{Space}";
+
+    // ── Route registration ────────────────────────────────────────────────────
+
+    public void OnGetObject(string id, JsonObject response) =>
+        _routes.Add(new("GET", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
+
+    public void OnPatchObject(string id, JsonObject response) =>
+        _routes.Add(new("PATCH", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
+
+    public void OnPostObject(JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/objects", 200, response.ToJsonString()));
+
+    public void OnSearch(JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/search", 200, response.ToJsonString()));
+
+    // ── Request introspection ─────────────────────────────────────────────────
+
+    // The parsed JSON body of the last request with the given method. Throws if
+    // no such request was recorded — a missing call is a test failure, not null.
+    public JsonObject LastBodyFor(string method)
+    {
+        Received last = _received.Where(r => r.Method == method).LastOrDefault();
+        if (last.Method is null)
+            throw new InvalidOperationException($"No {method} request was received.");
+        return (JsonObject)JsonNode.Parse(last.Body)!;
+    }
+
+    public IReadOnlyList<Received> Requests => _received.ToArray();
+
+    // ── Serve loop ────────────────────────────────────────────────────────────
+
+    async Task ServeAsync()
+    {
+        while (_listener.IsListening)
+        {
+            HttpListenerContext ctx;
+            try { ctx = await _listener.GetContextAsync(); }
+            catch { return; } // listener stopped
+
+            string method = ctx.Request.HttpMethod;
+            string path = ctx.Request.Url!.AbsolutePath;
+            string body;
+            using (var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8))
+                body = await reader.ReadToEndAsync();
+            _received.Enqueue(new Received(method, path, body));
+
+            Route? route = _routes.FirstOrDefault(r => r.Method == method && r.Path == path);
+            byte[] payload = Encoding.UTF8.GetBytes(route?.Json ?? "{}");
+            ctx.Response.StatusCode = route?.Status ?? 404;
+            ctx.Response.ContentType = "application/json";
+            ctx.Response.ContentLength64 = payload.Length;
+            await ctx.Response.OutputStream.WriteAsync(payload);
+            ctx.Response.Close();
+        }
+    }
+
+    static int FreePort()
+    {
+        var l = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        l.Start();
+        int port = ((IPEndPoint)l.LocalEndpoint).Port;
+        l.Stop();
+        return port;
+    }
+
+    public void Dispose()
+    {
+        _listener.Stop();
+        _listener.Close();
+        try { _loop.Wait(TimeSpan.FromSeconds(2)); } catch { }
+    }
+}
