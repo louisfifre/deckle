@@ -801,6 +801,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
+│   ├── Deckle.Shell.TaskbarCover.Tests/
+│   │   ├── CoverGeometryTests.cs
+│   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   └── DispatcherQueueExtensionsTests.cs
