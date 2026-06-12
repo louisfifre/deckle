@@ -417,6 +417,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleInputSource.cs
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.Autocorrect/
+│   │   ├── Data/
+│   │   │   ├── lexicon-en.tsv.gz
+│   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   └── pair-bigrams-fr.tsv.gz
 │   │   ├── Engine/
 │   │   │   ├── AutocorrectEngine.cs
 │   │   │   ├── BigramPairDisambiguator.cs
