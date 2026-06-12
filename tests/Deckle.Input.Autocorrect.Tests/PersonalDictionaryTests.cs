@@ -59,17 +59,35 @@ public sealed class PersonalDictionaryTests : IDisposable
     {
         using var dict = New();
 
-        // Revert ⇒ poids 3.0 (adopté tout de suite).
+        // Revert ⇒ poids 3.5 (adopté tout de suite, au-dessus du seuil).
         dict.RecordRevert("café", "cafe");
         Assert.True(dict.IsAdopted("café"));
 
-        // Avance d'une demi-vie (14 jours) : effectif 3.0 → 1.5, sous le seuil.
+        // Avance d'une demi-vie (14 jours) : effectif 3.5 → 1.75, sous le seuil.
         _now = _now.AddDays(14);
         Assert.False(dict.IsAdopted("café"));
 
         var snap = dict.SnapshotWords().Single(w => w.Word == "café");
-        Assert.Equal(1.5, snap.EffectiveWeight, precision: 3);
+        Assert.Equal(1.75, snap.EffectiveWeight, precision: 3);
         Assert.False(snap.Adopted);
+    }
+
+    [Fact]
+    public void RevertAdoptionSurvivesTheClockAdvancing()
+    {
+        using var dict = New();
+
+        dict.RecordRevert("café", "cafe");
+
+        // Le boost (3.5) dépasse le seuil (3.0) : l'adoption tient encore le
+        // lendemain — un boost ÉGAL au seuil la perdrait à la première lecture
+        // décayée, des millisecondes plus tard.
+        _now = _now.AddDays(1);
+        Assert.True(dict.IsAdopted("café"));
+
+        // 7 jours au total : 3.5 × 2^(-7/14) ≈ 2.47, sous le seuil.
+        _now = _now.AddDays(6);
+        Assert.False(dict.IsAdopted("café"));
     }
 
     [Fact]

@@ -201,10 +201,21 @@ public sealed class AutocorrectEngine : IDisposable
             return;
         }
 
-        RecordCommitLearning(commit.Word);
-
         var decision = _policy.Evaluate(commit.Word, commit.PreviousWord);
-        if (decision is not null)
+
+        // A reverted pair stays suppressed whatever the policy says — enforced
+        // here so even a policy without dictionary access (the CLI toy) honors
+        // the gesture.
+        if (decision is not null
+            && _dictionary?.IsSuppressed(decision.Original, decision.Replacement) == true)
+            decision = null;
+
+        // Learning feeds on words the engine leaves alone. A corrected commit
+        // must NOT reinforce the bare typo, or a few repetitions would adopt it
+        // and silently disable its own correction.
+        if (decision is null)
+            RecordCommitLearning(commit.Word);
+        else
             ApplyCorrection(commit, decision);
 
         MaybeRollup(commit.TimestampMs);

@@ -14,8 +14,9 @@ namespace Deckle.Input.Autocorrect.Learning;
 public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
 {
     // Calibration (JOURNAL 2026-06-12): adoption at effective weight ≥ 3.0
-    // (~3 reinforcements), 14-day half-life, 5 000-entry cap. An entry decayed
-    // below 0.05 is dust — dropped opportunistically on the next mutation.
+    // (3-4 reinforcements in practice — decay runs between occurrences), 14-day
+    // half-life, 5 000-entry cap. An entry decayed below 0.05 is dust — dropped
+    // opportunistically on the next mutation.
     private const double AdoptionThreshold = 3.0;
     private const double HalfLifeDays      = 14.0;
     private const double DustThreshold     = 0.05;
@@ -23,10 +24,13 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
 
     // Signal boosts: commit is weak repeated evidence; a hand-fixed accent is
     // stronger ("the user went back for it"); a revert is instant adoption
-    // ("my word") — one revert clears the threshold on its own.
+    // ("my word") — one revert clears the threshold on its own. The revert
+    // boost sits ABOVE the threshold: equal to it, the very next decayed read
+    // would already fall short; 3.5 keeps a fresh revert adopted for ~3 days
+    // without reinforcement.
     private const double CommitBoost      = 1.0;
     private const double ManualAccentBoost = 1.5;
-    private const double RevertBoost      = 3.0;
+    private const double RevertBoost      = 3.5;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
