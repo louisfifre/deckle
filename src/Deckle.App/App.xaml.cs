@@ -238,6 +238,21 @@ public partial class App : Microsoft.UI.Xaml.Application
             AppPaths.ModelsDirectory,
             AppPaths.NativeDirectory);
 
+        // Notification dispatcher — composition root for user messages. Wired
+        // here, right after the diagnostics listeners are live (above), so the
+        // audit events the dispatcher emits route from the very first emission;
+        // and before any surface that could raise a notification exists (the
+        // first-run wizard, the engine, the windows below). The toast channel
+        // is the only channel today (the autocorrect enrollment prompt needs
+        // native Windows 11 interactive toasts). Each module's descriptors are
+        // registered into the central catalogue at this point — Playground's
+        // manual test surface among them; duplicate ids fail the boot fast.
+        var toastChannel = new Deckle.Notifications.ToastChannel();
+        Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
+        Deckle.Notifications.NotificationDispatcher.Instance!.Catalog.Register(
+            PlaygroundNotifications.All);
+        Milestone("notifications");
+
         // First-run gate — the engine ctor below loads the model immediately
         // and would throw DllNotFoundException without the native runtime
         // (libwhisper + ggml backends). There's no graceful degradation:
