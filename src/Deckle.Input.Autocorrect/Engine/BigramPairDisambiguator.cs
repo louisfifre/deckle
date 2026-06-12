@@ -218,12 +218,14 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
     }
 }
 
-// Tuning for the context decision. Defaults are an engineer's conservative
-// starting point, to be ground by the offline eval — not measured optima.
+// Tuning for the context decision. Defaults are the measured optimum of the
+// 2026-06-13 eval matrix (see the module JOURNAL): margin is the lever that
+// kills wrong-variant picks (342→116 from 3× to 10× for −0.6 pt of recall);
+// the evidence floor barely moves anything past 5.
 public sealed record DisambiguatorOptions
 {
     // The winner's smoothed score must beat the runner-up's by this factor.
-    public double MarginRatio { get; init; } = 3.0;
+    public double MarginRatio { get; init; } = 10.0;
 
     // Multiplier on the bare folded form's score — the cost of correcting away
     // from a word that is itself valid French.

@@ -37,13 +37,14 @@ public class BigramPairDisambiguatorTests
     [Fact]
     public void ChoosesBareFormAfterFavoringContext()
     {
-        // "a" dominates after "il"; even before the literal bias it wins clear.
+        // "a" dominates after "il". The subject is the bigram preference, not
+        // the margin default — pinned explicitly to keep the arithmetic legible.
         var d = FromRows(new[]
         {
             ("a", "a", "il", 10L),
             ("a", "a", "", 10L),
             ("a", "à", "", 5L),
-        });
+        }, new DisambiguatorOptions { MarginRatio = 3.0 });
 
         Assert.Equal("a", d.Choose("il", Candidates));
     }
@@ -78,7 +79,7 @@ public class BigramPairDisambiguatorTests
     public void ReturnsNullWhenMarginNotMet()
     {
         // Bigrams after "x" are near-even (6 vs 6): even with the literal bias
-        // the winner does not clear the 3× margin.
+        // the winner does not clear the margin.
         var d = FromRows(new[]
         {
             ("a", "a", "x", 6L),
@@ -125,12 +126,13 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 4L),
         };
 
+        // The subject is the bias lever alone — margin pinned at 3× both sides.
         // No bias (1.0): smoothed 13 vs 5 — below the 3× margin → null.
-        var noBias = FromRows(rows, new DisambiguatorOptions { LiteralBias = 1.0 });
+        var noBias = FromRows(rows, new DisambiguatorOptions { MarginRatio = 3.0, LiteralBias = 1.0 });
         Assert.Null(noBias.Choose("z", Candidates));
 
-        // Default bias (2.0): the bare form's score doubles to 26 vs 5 → "a".
-        var biased = FromRows(rows, new DisambiguatorOptions { LiteralBias = 2.0 });
+        // Bias 2.0: the bare form's score doubles to 26 vs 5 → "a".
+        var biased = FromRows(rows, new DisambiguatorOptions { MarginRatio = 3.0, LiteralBias = 2.0 });
         Assert.Equal("a", biased.Choose("z", Candidates));
     }
 
