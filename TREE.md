@@ -165,6 +165,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
+│   │   ├── 0018-autocorrect-observes-raw-input-repairs-after-commit.md  — [adr] Autocorrect observes via Raw Input + UIA and repairs after the word commits; no…
 │   │   └── CLAUDE.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   ├── research/
 │   │   ├── 2026-06-12--notifications-catalogue.md
@@ -396,7 +397,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Interop/
 │   │   │   ├── HidInterop.cs
 │   │   │   ├── RawInputInterop.cs
-│   │   │   └── SendInputInterop.cs
+│   │   │   ├── SendInputInterop.cs
+│   │   │   └── WinEventInterop.cs
+│   │   ├── Keyboard/
+│   │   │   ├── KeyboardInputHost.cs
+│   │   │   └── KeyboardKeyEvent.cs
 │   │   ├── Telemetry/
 │   │   │   └── ContactFrameRecorder.cs
 │   │   ├── Touchpad/

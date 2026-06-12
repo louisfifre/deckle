@@ -35,6 +35,10 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtRecordingStopped       = 14;
     public const int EvtRecordingStoppedDetail = 15;
     public const int EvtRecordingFailed        = 16;
+    public const int EvtKeyboardHostStarted     = 17;
+    public const int EvtKeyboardHostStopped     = 18;
+    public const int EvtKeyboardHostStartFailed = 19;
+    public const int EvtKeyboardRollup          = 20;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -193,5 +197,50 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void RecordingFailed(string ex_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, message);
+    }
+
+    // ── Keyboard host lifecycle ──────────────────────────────────────────
+    // Second Raw Input host (keyboard + mouse buttons + focus signals) for
+    // the autocorrect observation layer. Separate from the touchpad host's
+    // own thread and window.
+
+    [Event(EvtKeyboardHostStarted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "keyboard input host started | hwnd={0} | thread={1}")]
+    public void KeyboardHostStarted(long hwnd, int thread_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStarted, hwnd, thread_id);
+    }
+
+    [Event(EvtKeyboardHostStopped,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "keyboard input host stopped")]
+    public void KeyboardHostStopped()
+    {
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStopped);
+    }
+
+    [Event(EvtKeyboardHostStartFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "keyboard input host start failed | error={0}: {1}")]
+    public void KeyboardHostStartFailed(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed, ex_type, message);
+    }
+
+    // ── Keyboard activity rollup (30 s aggregate while input flows) ──────
+    // Never carries typed text. Counters only — key transitions seen,
+    // injected events filtered out, pointer button-downs, focus changes.
+
+    [Event(EvtKeyboardRollup,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | focus_changes={3}")]
+    public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int focus_changes)
+    {
+        if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, focus_changes);
     }
 }
