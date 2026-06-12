@@ -247,6 +247,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
+│   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
 │   │   ├── App.Windows.cs

@@ -8,6 +8,7 @@ using Deckle.Lighting.Ambient;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
+using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
@@ -317,6 +318,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         InitializeTrackpad();
         Milestone("trackpad");
 
+        // Taskbar cover module — dedicated band thread reconciled with the
+        // persisted module settings (off by default; the thread only spins
+        // up when the master switch is on).
+        InitializeTaskbarCover();
+        Milestone("taskbar_cover");
+
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
         // The ILogWindowSink is attached at that point via
         // AppDiagnosticsBootstrap, which replays the LogWindowEventListener
@@ -514,6 +521,17 @@ public partial class App : Microsoft.UI.Xaml.Application
                 var s = AmbientSettingsService.Instance.Current;
                 s.Enabled = !s.Enabled;
                 AmbientSettingsService.Instance.Save();
+            },
+            // Taskbar cover tray entry — same posture as Ambient: the pill
+            // mirrors the persisted TaskbarCoverSettings.Enabled, click flips
+            // it, the host start/stop reacts via the settings observer wired
+            // in InitializeTaskbarCover.
+            IsTaskbarCoverOn      = () => TaskbarCoverSettingsService.Instance.Current.Enabled,
+            OnToggleTaskbarCover  = () =>
+            {
+                var s = TaskbarCoverSettingsService.Instance.Current;
+                s.Enabled = !s.Enabled;
+                TaskbarCoverSettingsService.Instance.Save();
             },
             OnRestart        = () => RestartAppFromTray(),
             OnQuit           = () => QuitApp(),
