@@ -203,6 +203,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
+│   ├── Deckle.Anytype.Mcp/
+│   │   ├── JsonRpc/
+│   │   │   ├── JsonRpcEndpoint.cs
+│   │   │   └── McpServer.cs
+│   │   ├── Tools/
+│   │   │   ├── ToolCatalog.cs
+│   │   │   └── ToolDescriptor.cs
+│   │   ├── Deckle.Anytype.Mcp.csproj
+│   │   ├── Program.cs
+│   │   └── StderrEventListener.cs
 │   ├── Deckle.App/
 │   │   ├── Assets/
 │   │   │   ├── Fonts/
