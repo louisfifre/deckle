@@ -386,6 +386,9 @@
   <data name="TrayMenu_AmbientLight" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
+  <data name="TrayMenu_TaskbarCover" xml:space="preserve">
+    <value>Taskbar cover</value>
+  </data>
   <data name="TrayMenu_Restart" xml:space="preserve">
     <value>Restart</value>
   </data>
