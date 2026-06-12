@@ -415,6 +415,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   └── RawInputHost.cs
+│   ├── Deckle.Input.Autocorrect/
+│   │   ├── Interop/
+│   │   │   └── KeyboardStateInterop.cs
+│   │   ├── Tracking/
+│   │   │   ├── KeyDecoder.cs
+│   │   │   ├── Keystroke.cs
+│   │   │   ├── TypedWordTracker.cs
+│   │   │   ├── WordBoundaries.cs
+│   │   │   └── WordCommit.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
+│   │   ├── Deckle.Input.Autocorrect.csproj
+│   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, c…
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
@@ -760,6 +772,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Input.Autocorrect.Tests/
+│   │   ├── Deckle.Input.Autocorrect.Tests.csproj
+│   │   ├── KeyDecoderTests.cs
+│   │   ├── TypedWordTrackerTests.cs
+│   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   └── Deckle.Input.Tests.csproj
