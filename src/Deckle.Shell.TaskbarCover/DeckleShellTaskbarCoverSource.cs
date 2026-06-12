@@ -29,6 +29,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtCursorHookFailed    = 11;
     public const int EvtSessionNotifyFailed = 12;
     public const int EvtHostStopTimedOut    = 13;
+    public const int EvtTimerArmFailed      = 14;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -172,5 +173,15 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtSessionNotifyFailed);
+    }
+
+    [Event(EvtTimerArmFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "timer failed to arm | timer={0} win32_error={1}")]
+    public void TimerArmFailed(string timer, int win32_error)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtTimerArmFailed, timer, win32_error);
     }
 }

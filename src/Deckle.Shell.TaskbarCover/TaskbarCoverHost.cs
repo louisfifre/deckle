@@ -82,6 +82,7 @@ public sealed class TaskbarCoverHost : IDisposable
 
     private bool _layoutKnown;
     private bool _layoutFailureLogged;
+    private bool _recoverArmFailureLogged;
     private TaskbarEdge _edge;
     private NativeMethods.RECT _band;
     private NativeMethods.RECT _zone;
@@ -267,9 +268,18 @@ public sealed class TaskbarCoverHost : IDisposable
         ResetZoneStateFromCursor();
         EvaluateAppSuppressed();
 
-        SetTimer(_hwnd, TIMER_SUPPRESSION, SuppressionPollMs, IntPtr.Zero);
+        ArmSuppressionTimer();
 
         UpdateCover("boot");
+    }
+
+    // Observed-only: on failure the fullscreen poll, the layout retry and
+    // the topmost re-assertion stay dead until the next resume or restart —
+    // degraded but visible in the logs instead of silent.
+    private void ArmSuppressionTimer()
+    {
+        if (SetTimer(_hwnd, TIMER_SUPPRESSION, SuppressionPollMs, IntPtr.Zero) == UIntPtr.Zero)
+            DeckleShellTaskbarCoverSource.Log.TimerArmFailed("suppression", Marshal.GetLastWin32Error());
     }
 
     private void RunPump()
@@ -317,6 +327,7 @@ public sealed class TaskbarCoverHost : IDisposable
         _systemSuspended    = false;
         _layoutKnown        = false;
         _layoutFailureLogged = false;
+        _recoverArmFailureLogged = false;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -388,9 +399,19 @@ public sealed class TaskbarCoverHost : IDisposable
         else if (_cursorInRevealZone && !_recoverTimerArmed)
         {
             // Zone exit: arm the one-shot once; the flag keeps every
-            // further movement from re-arming it.
-            _recoverTimerArmed = true;
-            SetTimer(_hwnd, TIMER_RECOVER, RecoverDelayMs, IntPtr.Zero);
+            // further movement from re-arming it. On SetTimer failure the
+            // flag stays false so the next movement retries — only the
+            // first failure is logged, this path runs at input cadence.
+            if (SetTimer(_hwnd, TIMER_RECOVER, RecoverDelayMs, IntPtr.Zero) != UIntPtr.Zero)
+            {
+                _recoverTimerArmed = true;
+                _recoverArmFailureLogged = false;
+            }
+            else if (!_recoverArmFailureLogged)
+            {
+                _recoverArmFailureLogged = true;
+                DeckleShellTaskbarCoverSource.Log.TimerArmFailed("recover", Marshal.GetLastWin32Error());
+            }
         }
     }
 
@@ -510,7 +531,7 @@ public sealed class TaskbarCoverHost : IDisposable
 
         ResetZoneStateFromCursor();
         EvaluateAppSuppressed();
-        SetTimer(_hwnd, TIMER_SUPPRESSION, SuppressionPollMs, IntPtr.Zero);
+        ArmSuppressionTimer();
 
         UpdateCover("resumed");
         DeckleShellTaskbarCoverSource.Log.SystemResumed(reason);
