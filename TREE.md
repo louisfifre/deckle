@@ -416,8 +416,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleInputSource.cs
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.Autocorrect/
+│   │   ├── Engine/
+│   │   │   ├── CasePattern.cs
+│   │   │   ├── CorrectionDecision.cs
+│   │   │   ├── DiacriticsRestorer.cs
+│   │   │   ├── IPairDisambiguator.cs
+│   │   │   └── RestorerOptions.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
+│   │   ├── Learning/
+│   │   │   └── IPersonalLexicon.cs
+│   │   ├── Lexicon/
+│   │   │   ├── AccentFolding.cs
+│   │   │   ├── AccentIndex.cs
+│   │   │   ├── AccentVariant.cs
+│   │   │   └── FrequencyLexicon.cs
 │   │   ├── Tracking/
 │   │   │   ├── KeyDecoder.cs
 │   │   │   ├── Keystroke.cs
@@ -773,7 +786,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
 │   ├── Deckle.Input.Autocorrect.Tests/
+│   │   ├── AccentFoldingTests.cs
+│   │   ├── AccentIndexTests.cs
+│   │   ├── CasePatternTests.cs
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
+│   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── FrequencyLexiconTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
