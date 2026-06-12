@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Notifications</RootNamespace>
+    <!-- EventSource [Event] parameters intentionally use snake_case
+         so the ETW payload keys land directly in the JSONL output.
+         Suppress the naming-style warning — the convention is
+         documented in Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Diagnostics for the EventSource; Catalog for Loc string resolution
+         on the channel side. -->
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- AppNotificationManager / AppNotificationBuilder (the unpackaged
+         interactive-toast channel). Versionless under CPM; the single
+         WindowsAppSDK runtime is loaded once per process. No UseWinUI —
+         this module ships no XAML, only the notification API surface. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <!-- Notification catalogue + dispatcher + channels. Owning modules declare
+       their NotificationDescriptors; the catalogue indexes them at boot and the
+       dispatcher routes a prompt to the channel matching descriptor.Channel.
+       The only channel today is the interactive Windows toast. -->
+</Project>

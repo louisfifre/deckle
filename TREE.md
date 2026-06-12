@@ -509,6 +509,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   └── LlmSettingsService.cs
+│   ├── Deckle.Notifications/
+│   │   ├── Catalog/
+│   │   │   ├── NotificationAction.cs
+│   │   │   ├── NotificationCatalog.cs
+│   │   │   └── NotificationDescriptor.cs
+│   │   ├── Channels/
+│   │   │   └── Toast/
+│   │   │       ├── ToastActivation.cs
+│   │   │       └── ToastChannel.cs
+│   │   ├── Dispatch/
+│   │   │   ├── INotificationChannel.cs
+│   │   │   ├── NotificationDispatcher.cs
+│   │   │   └── NotificationResponse.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Notification catalogue, dispatcher, and delivery channels — modules declare des…
+│   │   ├── Deckle.Notifications.csproj
+│   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
 │   │   │   └── TuningModel.cs
