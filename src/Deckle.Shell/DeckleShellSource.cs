@@ -4,8 +4,9 @@ using Deckle.Diagnostics;
 namespace Deckle.Shell;
 
 // Shell module provider. Covers system shell capabilities: message-only Win32
-// host (tray callback + global hotkeys), HKCU\Run autostart, hotkey management
-// (registration + WM_INPUTLANGCHANGE).
+// host (tray callback + global hotkeys), HKCU\Run autostart, elevated startup
+// (Task Scheduler vehicle), hotkey management (registration +
+// WM_INPUTLANGCHANGE).
 //
 // The "observation attaches to the module that contains the operation" doctrine
 // converges several legacy sources (`LogSource.Hotkey`, `LogSource.MsgHost`,
@@ -42,6 +43,11 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtHotkeyReregisterFailed      = 14;
     // Id 15 (DispatcherEnqueueRejected) migrated to DeckleThreadingSource:
     // intentional gap to avoid renumbering the remaining ids.
+    public const int EvtElevatedStartupEnabled      = 16;
+    public const int EvtElevatedStartupEnableFailed  = 17;
+    public const int EvtElevatedStartupDisabled     = 18;
+    public const int EvtElevatedStartupDisableFailed = 19;
+    public const int EvtElevatedStartupProbeFailed   = 20;
 
     // ── Message-only host ───────────────────────────────────────────────
 
@@ -135,6 +141,53 @@ public sealed class DeckleShellSource : DeckleEventSource
     public void AutostartDisableFailed(string ex_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed, ex_type, message);
+    }
+
+    // ── Elevated startup (Task Scheduler) ───────────────────────────────
+
+    [Event(EvtElevatedStartupEnabled,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Elevated startup enabled")]
+    public void ElevatedStartupEnabled()
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnabled);
+    }
+
+    [Event(EvtElevatedStartupEnableFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "elevated startup enable failed | error={0}: {1}")]
+    public void ElevatedStartupEnableFailed(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed, ex_type, message);
+    }
+
+    [Event(EvtElevatedStartupDisabled,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Elevated startup disabled")]
+    public void ElevatedStartupDisabled()
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisabled);
+    }
+
+    [Event(EvtElevatedStartupDisableFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "elevated startup disable failed | error={0}: {1}")]
+    public void ElevatedStartupDisableFailed(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed, ex_type, message);
+    }
+
+    [Event(EvtElevatedStartupProbeFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "elevated startup probe failed | error={0}: {1}")]
+    public void ElevatedStartupProbeFailed(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed, ex_type, message);
     }
 
     // ── Hotkeys ─────────────────────────────────────────────────────────

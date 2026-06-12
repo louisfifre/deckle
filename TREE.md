@@ -563,6 +563,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs
+│   │   ├── ElevatedStartupService.cs
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
