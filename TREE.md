@@ -381,6 +381,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   └── RawInputHost.cs
+│   ├── Deckle.Input.Trackpad/
+│   │   ├── Acts/
+│   │   │   ├── ConnectionRepair.cs
+│   │   │   ├── repair-trackpad-connection.ps1
+│   │   │   └── WindowsGestureNeutralizer.cs
+│   │   ├── Engine/
+│   │   │   ├── ThreeFingerDragRecognizer.cs
+│   │   │   └── TrackpadEngine.cs
+│   │   ├── Deckle.Input.Trackpad.csproj
+│   │   ├── DeckleTrackpadSource.cs
+│   │   ├── TrackpadSettings.cs
+│   │   └── TrackpadSettingsService.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
