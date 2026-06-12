@@ -718,6 +718,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── ScreenCaptureService.Loop.cs
 │       └── ScreenCaptureService.Recovery.cs
 ├── tests/
+│   ├── Deckle.Anytype.Mcp.Tests/
+│   │   ├── Deckle.Anytype.Mcp.Tests.csproj
+│   │   ├── McpServerTests.cs
+│   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
