@@ -169,8 +169,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
 │   │   └── CLAUDE.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   └── pipeline-hud-sync.md  — [reference] Carte du pipeline de transcription et de la synchronisation HUD — étapes, threa…
-├── mcp/
-│   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
 ├── scripts/
 │   ├── hooks/
 │   │   ├── pre-commit
@@ -189,6 +187,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── deckle.ps1
 │   └── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
 ├── src/
+│   ├── Deckle.Anytype/
+│   │   ├── Api/
+│   │   │   ├── AnytypeApiClient.cs
+│   │   │   └── AnytypeCredentials.cs
+│   │   ├── Gestures/
+│   │   │   ├── ProjectGestures.cs
+│   │   │   ├── QueryGestures.cs
+│   │   │   ├── Resolution.cs
+│   │   │   ├── SessionGestures.cs
+│   │   │   └── TaskGestures.cs
+│   │   ├── Schema/
+│   │   │   └── DevSpace.cs
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Anytype.csproj
+│   │   ├── DeckleAnytypeSource.cs
+│   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
 │   ├── Deckle.App/
 │   │   ├── Assets/
 │   │   │   ├── Fonts/
