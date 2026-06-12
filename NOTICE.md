@@ -55,6 +55,6 @@ redistributed in this repository.
 
 - Repository : https://github.com/snakers4/silero-vad
 - License : MIT — Copyright (c) 2020-present Silero Team.
-- Used as : the `silero_vad.onnx` v5 model, downloaded on demand to the
+- Used as : the `silero_vad.onnx` v6.2 model, downloaded on demand to the
   models directory and run by `Deckle.Inference.Onnx` for external voice
   activity detection. Not redistributed in this repository.

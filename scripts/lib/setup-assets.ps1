@@ -239,11 +239,11 @@ if ($WithLarge) {
 }
 
 Step 'download Silero VAD'
-$vadDst = Join-Path $TargetModels 'ggml-silero-v6.2.0.bin'
+$vadDst = Join-Path $TargetModels 'silero_vad.onnx'
 Download `
-    'https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin' `
+    'https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx' `
     $vadDst `
-    700KB
+    2200KB
 
 # Final summary.
 $nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count

@@ -82,8 +82,9 @@ Vulkan + 3 MinGW C++ runtime) through one of three paths:
    native step is skipped with a warning. Useful when only models need
    refreshing on a machine without a build tree.
 
-The Whisper + Silero VAD models are always pulled from HuggingFace
-afterwards (regardless of mode).
+The Whisper models are pulled from HuggingFace; the Silero VAD model is
+pulled from GitHub (snakers4/silero-vad, pinned to the v6.2 tag).
+Both happen regardless of native runtime sourcing mode.
 
 ## Post-build HUD topmost mitigation
 
