@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Anytype</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload keys
+         land directly in the JSONL output. Convention documented in
+         ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+</Project>

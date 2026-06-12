@@ -7,6 +7,17 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-12 — First build: API facts measured, module placed
+
+Module placed per repo shape: `src/Deckle.Anytype` (core, domain) + `src/Deckle.Anytype.Mcp` (stdio host); this journal moved here from `mcp/`. The space schema is frozen as code in `Schema/DevSpace.cs` — single source for keys; the live API is the re-verification path, no doc duplicate.
+
+API facts measured during the build:
+- The done state of an action-layout task is the built-in checkbox property `done` (read live on a completed task; the vendor JS does not model it).
+- Asymmetry: object **creation** carries the markdown under `body` (POST), **update** under `markdown` (PATCH) — vendor-confirmed, the PATCH side exercised against the live host in the smoke test.
+- Collection add: `POST /v1/spaces/{space}/lists/{collectionId}/objects` body `{"objects":[ids]}` — how a project joins an epic.
+
+MCP host implemented against spec revision **2025-11-25** (verified at the source before writing): newline-delimited JSON-RPC 2.0, no batches, mandatory `ping`, version negotiation echoes any of 2025-03-26 / 2025-06-18 / 2025-11-25 and answers 2025-11-25 otherwise. Execution failures (including name-resolution ambiguity, which lists candidates) return `isError:true` results — the channel the model can self-correct on; JSON-RPC errors stay protocol-only.
+
 ## 2026-06-12 — Bootstrap: auth and real-space discovery
 
 Interactive bootstrap done against the live local API (Anytype Desktop, challenge auth). The anyproto vendor reference actually lives at `D:\skills\global\anytype-agents-skill-main\` (the old `D:\projects\ai\anytype` path is gone). API version header `2025-11-08` works.
