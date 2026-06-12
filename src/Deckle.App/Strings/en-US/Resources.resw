@@ -1461,4 +1461,20 @@
     <value>Cancel</value>
   </data>
 
+  <!-- ── TrackpadPage code-behind (Loc.Get) ──────
+       Duplicated from src/Deckle.Input.Trackpad/Strings/en-US/
+       Resources.resw — same Loc-mirror-pattern as the AmbientPage
+       block above : the default ResourceLoader binds to the main
+       app's PRI, so module code-behind keys must be mirrored here.
+       The module copy is the source of truth for wording. -->
+  <data name="TrackpadPage_GesturesButton_Neutralize" xml:space="preserve">
+    <value>Turn off gestures</value>
+  </data>
+  <data name="TrackpadPage_GesturesButton_Restore" xml:space="preserve">
+    <value>Restore gestures</value>
+  </data>
+  <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
+    <value>Already off</value>
+  </data>
+
 </root>

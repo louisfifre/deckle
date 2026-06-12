@@ -27,6 +27,27 @@ are reproduced from the upstream projects.
 - Used at runtime via the system-installed Vulkan ICD when GPU
   acceleration is requested by whisper.cpp.
 
+## Referenced implementations
+
+### RawInput.Touchpad
+
+- Repository : https://github.com/emoacht/RawInput.Touchpad
+- License : MIT — Copyright (c) emoacht.
+- Used as : reference implementation for the Precision Touchpad HID
+  parsing in `Deckle.Input` (preparsed-data approach, value-caps
+  traversal, interop signatures). Reimplemented and extended (tip
+  switch/confidence via the button path, hybrid-mode reassembly,
+  per-device caching); no source file is vendored.
+
+### ThreeFingerDragOnWindows
+
+- Repository : https://github.com/ClementGre/ThreeFingerDragOnWindows
+- License : MIT — Copyright (c) Clément Grennerat.
+- Used as : studied reference for the three-finger drag mechanics
+  (relative SendInput injection, fractional delta accumulation).
+  Deckle's recognizer is an independent design; no source file is
+  vendored.
+
 ## .NET / NuGet packages
 
 The following packages are referenced via `src/Deckle.App/Deckle.App.csproj`.

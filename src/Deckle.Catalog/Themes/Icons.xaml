@@ -26,6 +26,7 @@
     <x:String x:Key="Icon.Speech">&#xF61F;</x:String>
     <x:String x:Key="Icon.Sparkle">&#xF6C7;</x:String>
     <x:String x:Key="Icon.Lightbulb">&#xEA80;</x:String>
+    <x:String x:Key="Icon.Trackpad">&#xEFA5;</x:String>
     <x:String x:Key="Icon.Diagnostics">&#xE9D9;</x:String>
     <x:String x:Key="Icon.Logs">&#xEC7A;</x:String>
 

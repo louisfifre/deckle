@@ -296,6 +296,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         AmbientEngine.OpenPlaygroundRequested = () => ShowPlaygroundLazy();
         Milestone("ambient_engine");
 
+        // Trackpad module — Raw Input host + three-finger drag engine +
+        // frame recorder, reconciled with the persisted module settings
+        // (off by default: the host thread only spins up when the master
+        // switch or the frame-recording diagnostic is on).
+        InitializeTrackpad();
+        Milestone("trackpad");
+
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
         // The ILogWindowSink is attached at that point via
         // AppDiagnosticsBootstrap, which replays the LogWindowEventListener

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Deckle.Input.Trackpad.TrackpadPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:vm="using:Deckle.Input.Trackpad.ViewModels">
+
+    <!-- Canonical Settings page layout, identical to DiagnosticsPage /
+         AmbientPage / GeneralPage : ScrollViewer Padding 32,24, a
+         StackPanel max 1000 inside a Grid, Spacing=4 between cards, and
+         section headers in BodyStrong with Margin 1,30,0,6.
+
+         The drag speed is the module's primary control, so it gets its
+         own always-visible card (greyed while the feature is off) rather
+         than hiding in a disclosure. -->
+    <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+        <Style x:Key="SettingsSectionHeaderTextBlockStyle"
+               BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+               TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="1,30,0,6" />
+            </Style.Setters>
+        </Style>
+
+        <!-- Slider value readout, sitting to the right of each slider so
+             the current value is always visible in its unit. Mirrors
+             AmbientPage's SliderValueTextStyle. -->
+        <Style x:Key="SliderValueTextStyle"
+               BasedOn="{StaticResource BodyTextBlockStyle}"
+               TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="MinWidth" Value="48" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <TextBlock x:Uid="TrackpadPage_Title"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           Margin="0,0,0,8" />
+
+                <TextBlock x:Uid="TrackpadPage_Subtitle"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12" />
+
+                <!-- ── Three-finger drag ────────────────────────────────────── -->
+                <TextBlock x:Uid="TrackpadPage_Section_Drag"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <controls:SettingsCard x:Uid="TrackpadPage_DragCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.Enabled, Mode=TwoWay}" />
+                </controls:SettingsCard>
+
+                <!-- The primary control of the module — always visible,
+                     greyed while the drag is off. -->
+                <controls:SettingsCard x:Uid="TrackpadPage_SpeedCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}"
+                                       IsEnabled="{x:Bind ViewModel.Enabled, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Slider Width="220"
+                                Minimum="0.25"
+                                Maximum="3.0"
+                                StepFrequency="0.05"
+                                SnapsTo="StepValues"
+                                Value="{x:Bind ViewModel.DragSpeed, Mode=TwoWay}" />
+                        <TextBlock Style="{StaticResource SliderValueTextStyle}"
+                                   Text="{x:Bind ViewModel.DragSpeedLabel, Mode=OneWay}" />
+                    </StackPanel>
+                </controls:SettingsCard>
+
+                <!-- ── Windows integration ──────────────────────────────────── -->
+                <TextBlock x:Uid="TrackpadPage_Section_Windows"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <!-- Neutralize / Restore Windows' native three-finger
+                     gestures. The single button's label flips between the
+                     two states from AreNeutralized(), re-read after each
+                     click. -->
+                <controls:SettingsCard x:Uid="TrackpadPage_GesturesCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
+                    <Button x:Name="GesturesButton"
+                            Click="GesturesButton_Click">
+                        <TextBlock x:Name="GesturesButtonLabel" />
+                    </Button>
+                </controls:SettingsCard>
+
+                <!-- Repair the Apple driver pairing bug via the elevated
+                     script (UAC prompt + interactive console). -->
+                <controls:SettingsCard x:Uid="TrackpadPage_RepairCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Refresh}}">
+                    <Button x:Name="RepairButton"
+                            x:Uid="TrackpadPage_RepairButton"
+                            Click="RepairButton_Click" />
+                </controls:SettingsCard>
+
+                <!-- Start elevated : reflects ElevatedStartupService.IsEnabled().
+                     The toggle never assumes success — Enable/Disable can fail
+                     or be UAC-cancelled, so the actual state is re-read back
+                     into the switch after the call. -->
+                <controls:SettingsCard x:Uid="TrackpadPage_ElevatedCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
+                    <ToggleSwitch x:Name="ElevatedToggle"
+                                  Toggled="ElevatedToggle_Toggled" />
+                </controls:SettingsCard>
+
+                <!-- ── Diagnostics ──────────────────────────────────────────── -->
+                <TextBlock x:Uid="TrackpadPage_Section_Diagnostics"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <controls:SettingsCard x:Uid="TrackpadPage_RecordFramesCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AudioRecording}}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.RecordFrames, Mode=TwoWay}" />
+                </controls:SettingsCard>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>
