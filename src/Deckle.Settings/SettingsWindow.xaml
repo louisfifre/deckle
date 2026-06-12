@@ -61,6 +61,12 @@
                         <FontIcon Glyph="{StaticResource Icon.Lightbulb}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Uid="SettingsNavTrackpad"
+                                    Tag="Deckle.Input.Trackpad.TrackpadPage, Deckle.Input.Trackpad">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Trackpad}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem x:Uid="SettingsNavDiagnostics"
                                     Tag="Deckle.Settings.DiagnosticsPage">
                     <NavigationViewItem.Icon>

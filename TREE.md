@@ -390,6 +390,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Engine/
 │   │   │   ├── ThreeFingerDragRecognizer.cs
 │   │   │   └── TrackpadEngine.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── TrackpadPage.xaml
+│   │   │   └── TrackpadPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   └── TrackpadViewModel.cs
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
 │   │   ├── TrackpadSettings.cs

@@ -583,6 +583,9 @@
   <data name="SettingsNavAmbient.Content" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
+  <data name="SettingsNavTrackpad.Content" xml:space="preserve">
+    <value>Trackpad</value>
+  </data>
   <data name="SettingsNavDiagnostics.Content" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
