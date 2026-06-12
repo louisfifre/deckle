@@ -1,0 +1,150 @@
+using Deckle.Input.Autocorrect.Engine;
+using Deckle.Input.Autocorrect.Lexicon;
+using Xunit;
+
+namespace Deckle.Input.Autocorrect.Tests;
+
+// The context model: a guarded argmax over per-candidate scores (bigram when
+// the prev is known, unigram otherwise), with add-one smoothing, a literal-bias
+// defense on the bare form, an evidence gate, and a margin. Null — leave the
+// literal — is the expected outcome whenever evidence is thin or the race close.
+[Trait("Category", "unit")]
+public class BigramPairDisambiguatorTests
+{
+    // The a/à slot: both fold to "a". The Form is all Choose reads; frequency
+    // is carried but unused, so the values are illustrative.
+    private static readonly AccentVariant Bare = new("a", 10000);
+    private static readonly AccentVariant Grave = new("à", 9000);
+    private static readonly IReadOnlyList<AccentVariant> Candidates = new[] { Bare, Grave };
+
+    private static BigramPairDisambiguator FromRows(
+        (string, string, string, long)[] rows, DisambiguatorOptions? options = null) =>
+        new(rows, options);
+
+    [Fact]
+    public void ChoosesAccentedFormAfterFavoringContext()
+    {
+        // "à" dominates after "va"; the bare form has no support there.
+        var d = FromRows(new[]
+        {
+            ("a", "à", "va", 20L),
+            ("a", "à", "", 20L),
+        });
+
+        Assert.Equal("à", d.Choose("va", Candidates));
+    }
+
+    [Fact]
+    public void ChoosesBareFormAfterFavoringContext()
+    {
+        // "a" dominates after "il"; even before the literal bias it wins clear.
+        var d = FromRows(new[]
+        {
+            ("a", "a", "il", 10L),
+            ("a", "a", "", 10L),
+            ("a", "à", "", 5L),
+        });
+
+        Assert.Equal("a", d.Choose("il", Candidates));
+    }
+
+    [Fact]
+    public void FallsBackToUnigramWhenPrevIsNull()
+    {
+        // No context — the per-slot unigram totals decide. "a" overwhelms "à".
+        var d = FromRows(new[]
+        {
+            ("a", "a", "", 100L),
+            ("a", "à", "", 10L),
+        });
+
+        Assert.Equal("a", d.Choose(null, Candidates));
+    }
+
+    [Fact]
+    public void FallsBackToUnigramWhenPrevIsUnseen()
+    {
+        // "qux" was never seen: no bigram row, so the unigram totals decide.
+        var d = FromRows(new[]
+        {
+            ("a", "a", "", 100L),
+            ("a", "à", "", 10L),
+        });
+
+        Assert.Equal("a", d.Choose("qux", Candidates));
+    }
+
+    [Fact]
+    public void ReturnsNullWhenMarginNotMet()
+    {
+        // Bigrams after "x" are near-even (6 vs 6): even with the literal bias
+        // the winner does not clear the 3× margin.
+        var d = FromRows(new[]
+        {
+            ("a", "a", "x", 6L),
+            ("a", "à", "x", 6L),
+            ("a", "a", "", 6L),
+            ("a", "à", "", 6L),
+        });
+
+        Assert.Null(d.Choose("x", Candidates));
+    }
+
+    [Fact]
+    public void ReturnsNullWhenEvidenceBelowMinimum()
+    {
+        // Total raw evidence is 2 (< MinEvidence 5): never guess from thin air,
+        // however lopsided the smoothed ratio looks.
+        var d = FromRows(new[]
+        {
+            ("a", "a", "", 1L),
+            ("a", "à", "", 1L),
+        });
+
+        Assert.Null(d.Choose(null, Candidates));
+    }
+
+    [Fact]
+    public void ReturnsNullForFewerThanTwoCandidates()
+    {
+        var d = FromRows(new[] { ("a", "a", "", 100L) });
+
+        Assert.Null(d.Choose("il", new[] { Bare }));
+    }
+
+    [Fact]
+    public void LiteralBiasFlipsABorderlineCaseTowardTheBareForm()
+    {
+        // After "z": "a" leads "à" 12 to 4 — enough that the literal bias pushes
+        // the legal bare form over the margin, not enough on its own.
+        var rows = new[]
+        {
+            ("a", "a", "z", 12L),
+            ("a", "à", "z", 4L),
+            ("a", "a", "", 12L),
+            ("a", "à", "", 4L),
+        };
+
+        // No bias (1.0): smoothed 13 vs 5 — below the 3× margin → null.
+        var noBias = FromRows(rows, new DisambiguatorOptions { LiteralBias = 1.0 });
+        Assert.Null(noBias.Choose("z", Candidates));
+
+        // Default bias (2.0): the bare form's score doubles to 26 vs 5 → "a".
+        var biased = FromRows(rows, new DisambiguatorOptions { LiteralBias = 2.0 });
+        Assert.Equal("a", biased.Choose("z", Candidates));
+    }
+
+    [Fact]
+    public void ExposesSlotAndRowCounts()
+    {
+        var d = FromRows(new[]
+        {
+            ("a", "a", "il", 10L),
+            ("a", "a", "", 10L),
+            ("a", "à", "", 5L),
+        });
+
+        Assert.Equal(1, d.SlotCount);  // one folded key: "a"
+        Assert.Equal(3L, d.RowCount);  // three (folded,variant,prev) triples
+    }
+}

@@ -417,11 +417,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.Autocorrect/
 │   │   ├── Engine/
+│   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── IPairDisambiguator.cs
+│   │   │   ├── PairModelTrainer.cs
 │   │   │   └── RestorerOptions.cs
+│   │   ├── Evaluation/
+│   │   │   ├── RestorationEvaluator.cs
+│   │   │   └── RestorationReport.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   └── TextInjector.cs
@@ -793,13 +798,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
+│   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
+│   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Input.Tests/
