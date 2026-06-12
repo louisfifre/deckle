@@ -21,7 +21,7 @@ public sealed class McpServer
         new(StringComparer.Ordinal) { "2025-03-26", "2025-06-18", "2025-11-25" };
 
     private const string Instructions =
-        "This server manages Louis's Anytype project-management space "
+        "This server manages the user's Anytype project-management space "
         + "(projects -> tasks -> session reports). Start a work session with "
         + "session_start, then journal the why with log as you go. Names resolve "
         + "to objects; an ambiguous name returns candidate ids so you can retry "

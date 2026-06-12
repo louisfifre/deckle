@@ -47,6 +47,19 @@ public static class DevSpace
     public const string DevSpaceId =
         "bafyreibaltekf6yw32suoj3g57ot7gxgmpjwi37k7mx5y6mdd4f3i7p4fa.54yhp4w3lgp";
 
+    // ── Default templates ─────────────────────────────────────────────────────
+    //
+    // The REST API does NOT apply a type's default template on creation: POST
+    // /objects builds a bare object unless the body carries `template_id`, which
+    // copies the template's block/view structure. Measured live 2026-06-12 on the
+    // Dev space: only project and task carry a template (idee and rapport have
+    // none), so only their creations pass an id.
+    public static class Templates
+    {
+        public const string Project = "bafyreib5ganxcahinie6cnbdfvchxfosclfvq6pggi57r7fwfylazemr5a";
+        public const string Task    = "bafyreibhy53jvgxp6euzxrn3bmchbtty5eq555m5ybf2mw43wsrwcawzre";
+    }
+
     // ── Type keys ────────────────────────────────────────────────────────────
     //
     // Layout in parentheses is the Anytype object layout backing the type.

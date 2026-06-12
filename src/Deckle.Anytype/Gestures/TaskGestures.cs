@@ -59,6 +59,9 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         {
             ["type_key"] = DevSpace.Types.Task,
             ["name"] = name,
+            // The API ignores the type's default template unless we name it; pass
+            // it so the task is born with the template's blocks and views.
+            ["template_id"] = DevSpace.Templates.Task,
             ["properties"] = props,
         };
 

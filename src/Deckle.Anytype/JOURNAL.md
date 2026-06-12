@@ -7,6 +7,12 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-13 — Templates are not applied by the API; the PM model pivots
+
+Found while rebuilding the space: POST /objects does not apply the type's default template — the optional `template_id` field does, and without it objects are born bare (no template blocks, no inline views). Every object of the first migration was bare. `create_project` and `create_task` now pass the space's default-template ids, frozen in `Schema/DevSpace.cs`. `template_id` composes with `body`: the template blocks come first, the body follows.
+
+Decided (Louis): Deckle is a *project*, not an epic — one project per app/repo, the modules become tasks under it, their detail lives as inline `- [ ]` subtasks in the task body. The space was restructured live: 11 module tasks created from the task template under the project « Deckle » (born from the project template, inline task views intact); the old 63 tasks, 11 module projects and the epic archived. The epic level drops out of use for Deckle; revisiting the 13-tool surface (create_project's epic param, link, the host copy) is logged as a task in the space.
+
 ## 2026-06-12 — First live migration: list-add answers a bare string
 
 Found while migrating the roadmap into the space: `POST /lists/{id}/objects` answers 200 with the bare JSON string `"Objects added successfully"` — not an object, not an empty body as the client comment assumed. `ParseRoot` threw on it *after* the membership was posted, so every `create_project(epic:…)` failed its report while having fully succeeded. Fixed by skipping body parsing on that endpoint (`parseBody: false`); pinned in `ProjectGesturesTests`.

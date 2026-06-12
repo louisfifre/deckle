@@ -39,6 +39,25 @@ public class TaskGesturesTests
         },
     };
 
+    // ── CreateAsync ─────────────────────────────────────────────────────────────
+
+    // A bafy* project id so the resolver short-circuits (no /search route needed).
+    const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    [Fact]
+    public async Task CreatePassesTheTaskTemplateIdSoTheTaskIsBornFromItsTemplate()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPostObject(TaskObject(""));
+
+        await NewGestures(server).CreateAsync(ProjectId, "Ma tâche", type: "production");
+
+        // The API ignores the default template unless template_id is named; the
+        // creation POST must carry the task type's frozen template id.
+        JsonObject created = server.LastBodyFor("POST");
+        Assert.Equal(DevSpace.Templates.Task, created["template_id"]!.GetValue<string>());
+    }
+
     // ── SubtaskAsync ──────────────────────────────────────────────────────────
 
     [Fact]

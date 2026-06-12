@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Deckle.Anytype.Api;
 using Deckle.Anytype.Gestures;
+using Deckle.Anytype.Schema;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;
@@ -18,6 +19,25 @@ public class ProjectGesturesTests
     {
         var client = new AnytypeApiClient(server.Credentials);
         return new ProjectGestures(client, new NameResolver(client));
+    }
+
+    [Fact]
+    public async Task CreatePassesTheProjectTemplateIdSoTheProjectIsBornFromItsTemplate()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPostObject(new JsonObject
+        {
+            ["object"] = new JsonObject { ["id"] = ProjectId, ["name"] = "Mon projet" },
+        });
+
+        // No epic, so the only POST is the object creation — LastBodyFor("POST")
+        // is the creation body (with an epic, the trailing POST is the list-add).
+        await NewGestures(server).CreateAsync("Mon projet");
+
+        // The API ignores the default template unless template_id is named; the
+        // creation POST must carry the project type's frozen template id.
+        JsonObject created = server.LastBodyFor("POST");
+        Assert.Equal(DevSpace.Templates.Project, created["template_id"]!.GetValue<string>());
     }
 
     // The live list-add endpoint answers 200 with a bare JSON string, not an

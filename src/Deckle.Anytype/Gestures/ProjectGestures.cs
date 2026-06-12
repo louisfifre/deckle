@@ -108,6 +108,9 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         {
             ["type_key"] = DevSpace.Types.Project,
             ["name"] = name,
+            // The API ignores the type's default template unless we name it; pass
+            // it so the project is born with the template's blocks and views.
+            ["template_id"] = DevSpace.Templates.Project,
             ["properties"] = new JsonArray
             {
                 new JsonObject { ["key"] = DevSpace.Props.Etat, ["select"] = etatKey },
