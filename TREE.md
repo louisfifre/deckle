@@ -553,6 +553,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
 │   │   ├── Deckle.Playground.csproj
 │   │   ├── DecklePlaygroundSource.cs
+│   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Settings/
 │   │   ├── Strings/
