@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Disposable spike — proves the interactive toast channel (AppNotificationManager,
+       unpackaged) before any architecture: Register() without MSIX, text box + buttons,
+       in-process NotificationInvoked carrying arguments and user input. Not referenced
+       by any solution; build and run it directly. Dies with the spike phase. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>InteractiveToast</RootNamespace>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Built straight from the CLI, outside any solution: no platform mapping
+         exists, so the architecture self-contained needs is pinned here. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+</Project>

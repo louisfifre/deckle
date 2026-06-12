@@ -188,6 +188,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── stats.ps1
 │   ├── deckle.ps1
 │   └── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
+├── spikes/
+│   └── InteractiveToast/
+│       ├── InteractiveToast.csproj
+│       └── Program.cs
 ├── src/
 │   ├── Deckle.App/
 │   │   ├── Assets/
