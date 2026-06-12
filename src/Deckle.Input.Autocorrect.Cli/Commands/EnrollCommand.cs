@@ -26,17 +26,20 @@ internal static class EnrollCommand
 
             case "add":
                 if (args.Positional.Count < 2) { return Usage(); }
-                AddDistinct(current.EnrolledProcesses, args.Positional[1]);
+                AddDistinct(current.EnrolledProcesses, Normalize(args.Positional[1]));
                 settings.Save();
                 settings.Flush();
+                PrintRestartHint();
                 break;
 
             case "remove":
                 if (args.Positional.Count < 2) { return Usage(); }
                 current.EnrolledProcesses.RemoveAll(p =>
-                    string.Equals(p, args.Positional[1], StringComparison.OrdinalIgnoreCase));
+                    string.Equals(Normalize(p), Normalize(args.Positional[1]),
+                                  StringComparison.OrdinalIgnoreCase));
                 settings.Save();
                 settings.Flush();
+                PrintRestartHint();
                 break;
 
             default:
@@ -55,6 +58,20 @@ internal static class EnrollCommand
                 return;
         list.Add(process);
     }
+
+    // The engine matches against Process.ProcessName, which never carries an
+    // extension — honor the "stored without extension" contract so a natural
+    // `enroll add notepad.exe` does not produce an entry that can never match.
+    private static string Normalize(string process)
+    {
+        string p = process.Trim();
+        return p.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? p[..^4] : p;
+    }
+
+    // A live `run` reads settings once at startup through its in-process
+    // singleton — the file write alone does not reach it.
+    private static void PrintRestartHint() =>
+        Console.WriteLine("(a running `run` loads enrollment at startup — restart it to apply)");
 
     private static void PrintList(IReadOnlyList<string> processes)
     {

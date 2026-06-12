@@ -73,12 +73,18 @@ internal static class RunCommand
             french: data.French,
             english: data.English);
 
+        // The surface line mirrors watch: editable/password make a silently
+        // gated surface (enrolled but not editable) diagnosable at a glance.
         engine.SurfaceChanged += (s, enrolled) =>
-            Console.WriteLine($"surface:   process=\"{NameOrUnknown(s.ProcessName)}\"  enrolled={enrolled}");
+            Console.WriteLine($"surface:   process=\"{NameOrUnknown(s.ProcessName)}\"  "
+                            + $"editable={s.IsTextEditable}  password={s.IsPassword}  enrolled={enrolled}");
         engine.CorrectionApplied += d =>
             Console.WriteLine($"corrected: {d.Original} -> {d.Replacement} [{d.Reason}]");
         engine.CorrectionReverted += (original, replacement) =>
             Console.WriteLine($"reverted:  {replacement} -> {original}");
+        engine.InjectionFailed += (original, replacement, revert) =>
+            Console.WriteLine($"inject-fail: {(revert ? "revert " : "")}{original} -> {replacement}"
+                            + "  (burst did not land — elevated target? partial send?)");
 
         Console.WriteLine("Engine running. Ctrl+C to stop.");
         Console.WriteLine();
@@ -99,35 +105,25 @@ internal static class RunCommand
 
     // Builds the personalVariants delegate over the dictionary's adopted words.
     // It maps a folded key to the adopted surface forms that fold to it — the
-    // personal counterpart of the accent index. The folded map is rebuilt only
-    // when AdoptedWords.Count changes (the doctrine's good-enough cache key).
+    // personal counterpart of the accent index. Rebuilt on every lookup:
+    // adoption shifts with the decay clock, not only with mutations, so any
+    // cache key short of time itself serves stale variants — and AdoptedWords
+    // is already a decayed O(n) snapshot per call, cheap at commit granularity.
     private static Func<string, IReadOnlyList<AccentVariant>> BuildPersonalVariants(
         PersonalDictionary dictionary)
     {
-        Dictionary<string, List<AccentVariant>>? folded = null;
-        int builtForCount = -1;
-
         return key =>
         {
-            var adopted = dictionary.AdoptedWords;
-            if (folded is null || adopted.Count != builtForCount)
+            List<AccentVariant>? match = null;
+            foreach (string word in dictionary.AdoptedWords)
             {
-                folded = new Dictionary<string, List<AccentVariant>>(StringComparer.Ordinal);
-                foreach (string word in adopted)
-                {
-                    string f = AccentFolding.Fold(word);
-                    if (!folded.TryGetValue(f, out var list))
-                        folded[f] = list = new List<AccentVariant>();
-                    // Personal forms have no corpus frequency; a high constant
-                    // lets the engine's "personal wins ties" merge prefer them.
-                    list.Add(new AccentVariant(word, double.MaxValue));
-                }
-                builtForCount = adopted.Count;
+                if (AccentFolding.Fold(word) != key)
+                    continue;
+                // Personal forms have no corpus frequency; a high constant
+                // lets the engine's "personal wins ties" merge prefer them.
+                (match ??= new List<AccentVariant>()).Add(new AccentVariant(word, double.MaxValue));
             }
-
-            return folded.TryGetValue(key, out var variants)
-                ? variants
-                : (IReadOnlyList<AccentVariant>)Array.Empty<AccentVariant>();
+            return match ?? (IReadOnlyList<AccentVariant>)Array.Empty<AccentVariant>();
         };
     }
 

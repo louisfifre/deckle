@@ -9,7 +9,9 @@ namespace Deckle.Input.Autocorrect.Injection;
 // scancodes. The whole burst goes out in ONE SendInput call — atomicity is the
 // anti-interleave defense: nothing the user types can slip between our
 // keystrokes mid-correction. Every event is stamped with SendInputInterop's
-// InjectionTag so the keyboard host can recognise and ignore our own synthesis.
+// InjectionTag in dwExtraInfo for downstream consumers; the keyboard host
+// actually filters our synthesis by the Raw Input hDevice==0 signature of
+// SendInput events — the tag is not read back on the receive side today.
 public sealed class TextInjector
 {
     // INPUT.type for a keyboard event (INPUT_KEYBOARD).

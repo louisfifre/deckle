@@ -60,6 +60,13 @@ public sealed class AutocorrectEngine : IDisposable
     /// <summary>Raised on the input thread after a revert restored the literal (original, replacement).</summary>
     public event Action<string, string>? CorrectionReverted;
 
+    /// <summary>
+    /// Raised on the input thread when an injection burst did not land
+    /// (original, replacement, isRevert) — UIPI-blocked elevated target,
+    /// partial send. The screen may hold anything between the two forms.
+    /// </summary>
+    public event Action<string, string, bool>? InjectionFailed;
+
     public FocusedSurface CurrentSurface => _surface;
 
     public AutocorrectEngine(
@@ -163,6 +170,15 @@ public sealed class AutocorrectEngine : IDisposable
             DeckleAutocorrectSource.Log.CorrectionReverted();
             CorrectionReverted?.Invoke(armed.Original, armed.Replacement);
         }
+        else
+        {
+            // The boundary is already gone (physical Backspace) and the word
+            // still shows corrected: leave a trace, the tracker re-opened the
+            // ORIGINAL and now disagrees with the screen.
+            var plan = InjectionPlan.Compute(armed.Replacement, armed.Original);
+            DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
+            InjectionFailed?.Invoke(armed.Original, armed.Replacement, true);
+        }
     }
 
     private void OnPointerInteraction()
@@ -242,6 +258,7 @@ public sealed class AutocorrectEngine : IDisposable
         else
         {
             DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
+            InjectionFailed?.Invoke(decision.Original, decision.Replacement, false);
         }
     }
 
