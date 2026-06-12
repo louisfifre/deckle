@@ -76,3 +76,51 @@ when the EN frequency dwarfs the FR variant's) could recover the borrowed-word c
   consumes them.
 - The self-initiated ADR was withdrawn (ADRs are the maintainer's act — `docs/adr/CLAUDE.md`); its
   rationale is folded into the 2026-06-12 entry above.
+
+## 2026-06-13 — Adversarial audit of the correction path (before the second live run)
+
+Four parallel auditors read the never-live-tested `run` path. Cleared as sound: RAWKEYBOARD offsets
+and the flattened INPUT struct (x64, 40 bytes — the same proven path as the transcription paste),
+the hDevice==0 self-filter for our own burst (filtered before decode and before the revert check),
+in-order delivery (the system input queue is FIFO: a burst cannot precede its boundary on screen),
+the MTA/COM apartment shape (identical in watch and run), and the elision/apostrophe chain.
+
+Found and fixed (commits `12c5a66`, `3f50cbb`, `0eea9bc`, `96560e8`):
+
+- `WordCommitted` fired before the edit-window state landed, so the engine's realignment
+  (`ReplaceLastCommitted`) was a proven no-op by re-entrancy: after every correction the tracker
+  kept the bare form as last/previous word — the context model's `prev` diverged from its own
+  calibration, and the revert held only by coincidence. State now lands before the events.
+- A boundary on an empty buffer left the edit window open: Backspace after « mot␣␣ » re-opened a
+  word no longer adjacent to the caret (phantom commits, screen/tracker divergence).
+- Ctrl+Backspace decoded as a plain Backspace (the editing-key switch preceded the chord guards):
+  one modeled character versus a whole word deleted on screen — and with a revert armed, an
+  injection under a physically held Ctrl that the target reads back as word deletions.
+- Commit learning ran before the policy: every corrected commit reinforced the bare typo, adopting
+  it after 3-4 repetitions and silently disabling its own correction (« etait » at 0.07 ppm EN
+  passes eligibility; « francais »/« ecole » escape only via EN-count pollution — per-word lottery).
+  Learning now feeds only on words the engine leaves alone.
+- Suppression was policy-internal: the CLI toy re-corrected immediately after a revert. The engine
+  now drops any suppressed (original, replacement) pair, policy-independent.
+- RevertBoost equaled the adoption threshold (3.0): the next decayed read already fell short, so
+  « instant adoption » never held. Now 3.5 (~3 days of adoption without reinforcement).
+- The count-keyed personalVariants cache served stale variants (adoption shifts with the decay
+  clock, not only mutations) — rebuilt per lookup. `enroll add notepad.exe` could never match
+  (`Process.ProcessName` is extensionless) — the extension is stripped. Injection failures were
+  ETW-only (revert failures not even that) and `run` hid editable/password — all surfaced on the
+  console now.
+
+Known live risks, deliberately left for after the first validated run: the surface read between
+commit and injection can be stale (worst case: a burst lands in a field clicked milliseconds
+earlier — re-probe before inject is the candidate fix); the UIA probe runs inside the WinEvent
+callback on the input-thread pump (a UIA-slow foreground app stalls the pump and widens the
+injection race; console quick-edit selection freezes the same thread); UIPI silently swallows
+bursts into elevated windows (SendInput can report success — « corrected: » printed, screen
+unchanged); a keystroke in flight between the boundary and the burst corrupts the rewrite (no
+read-back defense; Windows 11 Notepad's own autocorrect is the same class — disable it for tests);
+the hDevice==0 filter is blind to ALL synthetic input (RDP, AutoHotkey, PowerToys remaps → silent
+no-op environments; the InjectionTag is readable at RAWKEYBOARD.ExtraInformation, dataOffset+12,
+unread today); two concurrent `run` instances double-inject, and the `dict` CLI flushes even on
+`list` (last-writer-wins against a live run — purge with run stopped). The engine itself has no
+test seam (concrete host/injector) — extracting interfaces is the prerequisite for pinning the
+gate order in tests.

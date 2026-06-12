@@ -23,8 +23,8 @@ buffered, nor counted — a hard rule, not a setting.
 
 Typed text never crosses the EventSource: events carry counts, lengths
 and reasons only. The only persisted text is the personal dictionary,
-inspectable and removable by design. The CLI `watch` command prints
-words to the live console alone.
+inspectable and removable by design. The CLI commands print words to
+the live console alone.
 
 ## Engine doctrine
 
