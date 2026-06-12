@@ -220,6 +220,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.Theme.cs
+│   │   ├── App.Trackpad.cs
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
