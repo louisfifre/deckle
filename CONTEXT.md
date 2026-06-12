@@ -76,6 +76,22 @@ _Avoid_ : gain, volume (those are signal operations, not display).
 A transform of the captured signal (filtering, compression, gain) applied to the `float[]` buffer between `MicrophoneCapture.Record()` and the ASR backend, for the sole purpose of maximizing machine intelligibility — not listening quality. Operates on the samples themselves, downstream of capture and upstream of transcription. Distinct from display level, and independent of how the buffer is windowed for the backend. Implemented as a post-capture two-pass DSP chain in `Deckle.Audio.Preprocessing` (`TranscriptionPreprocessor`); off by default and user-toggled, with a mic level check on the Recording page that advises whether it helps.
 _Avoid_ : AGC (it is not real-time automatic gain — it runs once, post-capture), normalization (it is a dynamics chain, not a single peak/RMS scale).
 
+## Input — contacts and gestures
+
+Vocabulary of the trackpad workstream. The chain reads bottom-up: the device emits reports, the input layer assembles contact frames, the recognizer turns frames into intentions.
+
+**Contact frame** :
+The complete snapshot of touchpad contacts assembled from one Raw Input read — per finger an identifier and a position, plus the device's own contact count and scan time. The unit the recognizer consumes. Reassembled when the device fragments it across several HID messages.
+_Avoid_ : report (the HID transport message, possibly partial), sample.
+
+**Recognizer** :
+The state machine that turns the stream of contact frames into gesture intentions — drag start, drag continuation, release. Owns every quality-defining decision: tap vs drag, the grace delay on finger lift, robustness to Bluetooth report cadence. Reads what the frame states (contact count) rather than inferring from inter-frame silence.
+_Avoid_ : detector, gesture engine.
+
+**Three-finger drag** :
+The one gesture Deckle owns — three fingers moving together hold the primary button and drag; lifting releases after a grace delay. Every other touchpad gesture stays native to Windows; the native three-finger gestures are set to nothing so this one can exist.
+_Avoid_ : three-finger swipe (the native Windows gesture Deckle disables).
+
 ## Speech segmentation — detection vs cutting
 
 Two devices carry the word "VAD" and are constantly conflated, yet they are different in kind: one is a model that finds speech in a finished buffer, the other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
