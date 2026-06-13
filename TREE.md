@@ -209,7 +209,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
 │   │   │   └── DevSpace.cs
-│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
