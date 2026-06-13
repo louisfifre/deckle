@@ -49,40 +49,87 @@ public sealed class DeckleAppSource : DeckleEventSource
     public const int EvtHudWarning                = 26;
     public const int EvtLogWindowWarning          = 27;
     public const int EvtUserFeedbackEmitted       = 28;
+    // Verbose mirrors appended for the Verbose/Info separation: each milestone
+    // above whose message carried a placeholder (exception, status text,
+    // forwarded warning line) now emits a short Capital sentence, and the
+    // technical detail moves to one of these fresh ids. IDs are public in the
+    // ETW manifest; never reuse an id.
+    public const int EvtCrashUnhandledDetail        = 29;
+    public const int EvtCrashAppDomainDetail        = 30;
+    public const int EvtCrashTaskSchedulerDetail    = 31;
+    public const int EvtStatusChangedDetail         = 32;
+    public const int EvtShutdownWarningDetail       = 33;
+    public const int EvtPostBuildRelaunchFailedDetail = 34;
+    public const int EvtAmbientPipelineStateDetail  = 35;
+    public const int EvtAmbientStartFailedDetail    = 36;
+    public const int EvtHotkeyStartDetail           = 37;
+    public const int EvtHotkeyNoProfileDetail       = 38;
+    public const int EvtHudWarningDetail            = 39;
+    public const int EvtLogWindowWarningDetail      = 40;
 
     // ── Crash safety net ────────────────────────────────────────────────
 
     [Event(EvtCrashUnhandled,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}: {1}")]
-    public void CrashUnhandled(string ex_type, string ex_message)
+           Message = "Unhandled exception caught")]
+    public void CrashUnhandled()
     {
-        if (IsEnabled()) WriteEvent(EvtCrashUnhandled, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtCrashUnhandled);
+    }
+
+    [Event(EvtCrashUnhandledDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "unhandled exception | error={0} | message={1}")]
+    public void CrashUnhandledDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCrashUnhandledDetail, ex_type, ex_message);
     }
 
     [Event(EvtCrashAppDomain,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "[AppDomain] {0}: {1}")]
-    public void CrashAppDomain(string ex_type, string ex_message)
+           Message = "Unhandled exception caught on the AppDomain")]
+    public void CrashAppDomain()
     {
-        if (IsEnabled()) WriteEvent(EvtCrashAppDomain, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtCrashAppDomain);
+    }
+
+    [Event(EvtCrashAppDomainDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "appdomain unhandled exception | error={0} | message={1}")]
+    public void CrashAppDomainDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCrashAppDomainDetail, ex_type, ex_message);
     }
 
     [Event(EvtCrashTaskScheduler,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "[TaskScheduler] {0}: {1}")]
-    public void CrashTaskScheduler(string ex_type, string ex_message)
+           Message = "An unobserved task exception was caught")]
+    public void CrashTaskScheduler()
     {
-        if (IsEnabled()) WriteEvent(EvtCrashTaskScheduler, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtCrashTaskScheduler);
     }
 
-    [Event(EvtCrashStackTrace,
-           Level = EventLevel.Error,
+    [Event(EvtCrashTaskSchedulerDetail,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "task scheduler unobserved exception | error={0} | message={1}")]
+    public void CrashTaskSchedulerDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCrashTaskSchedulerDetail, ex_type, ex_message);
+    }
+
+    // Demoted to Verbose: a bare stack trace carries no user-facing value on
+    // its own — it is the technical companion of the crash milestones above.
+    // Kept at its frozen id (no rename, no mirror).
+    [Event(EvtCrashStackTrace,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "crash stack trace | stack={0}")]
     public void CrashStackTrace(string stack_trace)
     {
         if (IsEnabled()) WriteEvent(EvtCrashStackTrace, stack_trace);
@@ -134,10 +181,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtStatusChanged,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void StatusChanged(string status)
+           Message = "Status changed")]
+    public void StatusChanged()
     {
-        if (IsEnabled()) WriteEvent(EvtStatusChanged, status);
+        if (IsEnabled()) WriteEvent(EvtStatusChanged);
+    }
+
+    [Event(EvtStatusChangedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "status changed | status={0}")]
+    public void StatusChangedDetail(string status)
+    {
+        if (IsEnabled()) WriteEvent(EvtStatusChangedDetail, status);
     }
 
     // ── Shutdown / Restart ──────────────────────────────────────────────
@@ -154,10 +210,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtShutdownWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void ShutdownWarning(string message)
+           Message = "A shutdown step failed")]
+    public void ShutdownWarning()
     {
-        if (IsEnabled()) WriteEvent(EvtShutdownWarning, message);
+        if (IsEnabled()) WriteEvent(EvtShutdownWarning);
+    }
+
+    [Event(EvtShutdownWarningDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "shutdown step failed | message={0}")]
+    public void ShutdownWarningDetail(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownWarningDetail, message);
     }
 
     [Event(EvtRestartRequested,
@@ -208,10 +273,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtPostBuildRelaunchFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shell-execute relaunch failed: {0}")]
-    public void PostBuildRelaunchFailed(string ex_message)
+           Message = "Could not relaunch after build")]
+    public void PostBuildRelaunchFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailed, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailed);
+    }
+
+    [Event(EvtPostBuildRelaunchFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "shell-execute relaunch failed | message={0}")]
+    public void PostBuildRelaunchFailedDetail(string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailedDetail, ex_message);
     }
 
     // ── Command-line ────────────────────────────────────────────────────
@@ -239,10 +313,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtAmbientPipelineState,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ambient pipeline state: {0}")]
-    public void AmbientPipelineState(string state)
+           Message = "Ambient pipeline state changed")]
+    public void AmbientPipelineState()
     {
-        if (IsEnabled()) WriteEvent(EvtAmbientPipelineState, state);
+        if (IsEnabled()) WriteEvent(EvtAmbientPipelineState);
+    }
+
+    [Event(EvtAmbientPipelineStateDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "ambient pipeline state | state={0}")]
+    public void AmbientPipelineStateDetail(string state)
+    {
+        if (IsEnabled()) WriteEvent(EvtAmbientPipelineStateDetail, state);
     }
 
     [Event(EvtAmbientMasterForcedOff,
@@ -257,10 +340,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtAmbientStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ambient start observer failed — {0}: {1}")]
-    public void AmbientStartFailed(string ex_type, string ex_message)
+           Message = "Ambient lighting could not start")]
+    public void AmbientStartFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtAmbientStartFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtAmbientStartFailed);
+    }
+
+    [Event(EvtAmbientStartFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "ambient start failed | error={0} | message={1}")]
+    public void AmbientStartFailedDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtAmbientStartFailedDetail, ex_type, ex_message);
     }
 
     // ── Hotkey (App-side observer) ──────────────────────────────────────
@@ -268,10 +360,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtHotkeyStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Start ({0})")]
-    public void HotkeyStart(string hotkey_label)
+           Message = "Recording started")]
+    public void HotkeyStart()
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyStart, hotkey_label);
+        if (IsEnabled()) WriteEvent(EvtHotkeyStart);
+    }
+
+    [Event(EvtHotkeyStartDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "recording started | hotkey={0}")]
+    public void HotkeyStartDetail(string hotkey_label)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyStartDetail, hotkey_label);
     }
 
     [Event(EvtHotkeyStop,
@@ -286,10 +387,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtHotkeyNoProfile,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "{0} pressed — no profile bound, ignoring")]
-    public void HotkeyNoProfile(string hotkey_name)
+           Message = "A rewrite hotkey was pressed with no profile bound")]
+    public void HotkeyNoProfile()
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfile, hotkey_name);
+        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfile);
+    }
+
+    [Event(EvtHotkeyNoProfileDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "hotkey ignored, no profile bound | hotkey={0}")]
+    public void HotkeyNoProfileDetail(string hotkey_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyNoProfileDetail, hotkey_name);
     }
 
     // ── HUD / LogWindow surfaces (host-owned) ───────────────────────────
@@ -297,19 +407,37 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void HudWarning(string message)
+           Message = "The HUD reported a warning")]
+    public void HudWarning()
     {
-        if (IsEnabled()) WriteEvent(EvtHudWarning, message);
+        if (IsEnabled()) WriteEvent(EvtHudWarning);
+    }
+
+    [Event(EvtHudWarningDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "hud warning | message={0}")]
+    public void HudWarningDetail(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtHudWarningDetail, message);
     }
 
     [Event(EvtLogWindowWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void LogWindowWarning(string message)
+           Message = "The log window reported a warning")]
+    public void LogWindowWarning()
     {
-        if (IsEnabled()) WriteEvent(EvtLogWindowWarning, message);
+        if (IsEnabled()) WriteEvent(EvtLogWindowWarning);
+    }
+
+    [Event(EvtLogWindowWarningDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "log window warning | message={0}")]
+    public void LogWindowWarningDetail(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLogWindowWarningDetail, message);
     }
 
     // ── UserFeedback (HUD bridge) ───────────────────────────────────────

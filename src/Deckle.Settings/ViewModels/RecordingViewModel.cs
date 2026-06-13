@@ -140,7 +140,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMinDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChangedDetail("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
+        DeckleSettingsSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -148,7 +148,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMaxDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChangedDetail("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
+        DeckleSettingsSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -156,7 +156,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowExponentChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChangedDetail("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
+        DeckleSettingsSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -233,6 +233,7 @@ public partial class RecordingViewModel : ObservableObject
         finally { _isSyncing = false; }
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
-        DeckleSettingsSource.Log.SectionReset("Recording");
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Recording");
     }
 }

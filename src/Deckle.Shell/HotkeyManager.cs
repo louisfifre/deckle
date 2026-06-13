@@ -70,7 +70,8 @@ public sealed class HotkeyManager : IDisposable
 
         if (vk == 0)
         {
-            DeckleShellSource.Log.HotkeyVkResolveFailed(hkl.ToInt64());
+            DeckleShellSource.Log.HotkeyVkResolveFailed();
+            DeckleShellSource.Log.HotkeyVkResolveFailedDetail(hkl.ToInt64());
             return;
         }
 
@@ -118,7 +119,11 @@ public sealed class HotkeyManager : IDisposable
             // chaining so other subclasses / DefWindowProc still see the message.
             DeckleShellSource.Log.HotkeyLayoutChange();
             try { RegisterAll(); }
-            catch (Exception ex) { DeckleShellSource.Log.HotkeyReregisterFailed(ex.Message); }
+            catch (Exception ex)
+            {
+                DeckleShellSource.Log.HotkeyReregisterFailed();
+                DeckleShellSource.Log.HotkeyReregisterFailedDetail(ex.Message);
+            }
         }
 
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);

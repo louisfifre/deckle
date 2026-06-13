@@ -46,7 +46,8 @@ public static class AutostartService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.AutostartProbeFailed(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.AutostartProbeFailed();
+            DeckleShellSource.Log.AutostartProbeFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -69,7 +70,8 @@ public static class AutostartService
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
             if (key is null)
             {
-                DeckleShellSource.Log.AutostartEnableFailedAcl(RunKeyPath);
+                DeckleShellSource.Log.AutostartEnableFailedAcl();
+                DeckleShellSource.Log.AutostartEnableFailedAclDetail(RunKeyPath);
                 return false;
             }
             key.SetValue(ValueName, command, RegistryValueKind.String);
@@ -79,7 +81,8 @@ public static class AutostartService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.AutostartEnableFailed(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.AutostartEnableFailed();
+            DeckleShellSource.Log.AutostartEnableFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -106,7 +109,8 @@ public static class AutostartService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.AutostartDisableFailed(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.AutostartDisableFailed();
+            DeckleShellSource.Log.AutostartDisableFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }

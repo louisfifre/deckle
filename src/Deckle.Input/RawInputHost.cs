@@ -118,7 +118,8 @@ public sealed class RawInputHost : IDisposable
 
             if (!started)
             {
-                DeckleInputSource.Log.HostStartFailed(
+                DeckleInputSource.Log.HostStartFailed();
+                DeckleInputSource.Log.HostStartFailedDetail(
                     startError?.GetType().Name ?? "(unknown)", startError?.Message ?? "(no message)");
                 _thread = null;
                 return false;
@@ -207,7 +208,8 @@ public sealed class RawInputHost : IDisposable
                 registration, 1, (uint)Marshal.SizeOf<RAWINPUTDEVICE>()))
         {
             int err = Marshal.GetLastWin32Error();
-            DeckleInputSource.Log.RegistrationFailed(err);
+            DeckleInputSource.Log.RegistrationFailed();
+            DeckleInputSource.Log.RegistrationFailedDetail(err);
             TearDownWindow();
             throw new InvalidOperationException($"RegisterRawInputDevices failed (Win32 err {err})");
         }
@@ -322,7 +324,10 @@ public sealed class RawInputHost : IDisposable
             // actual touchpad page that could not be parsed is worth a
             // warning — TryCreate distinguishes via the failure text.
             if (failure is not null && !failure.StartsWith("not a touchpad collection"))
-                DeckleInputSource.Log.ParserCreateFailed(failure);
+            {
+                DeckleInputSource.Log.ParserCreateFailed();
+                DeckleInputSource.Log.ParserCreateFailedDetail(failure);
+            }
             _failedDevices.Add(hDevice);
             return false;
         }

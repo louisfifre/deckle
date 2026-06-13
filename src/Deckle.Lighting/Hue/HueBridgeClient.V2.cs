@@ -183,7 +183,8 @@ public sealed partial class HueBridgeClient
         var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.ClipV2GetFailed(path, (int)response.StatusCode);
+            DeckleLightingSource.Log.ClipV2GetFailed();
+            DeckleLightingSource.Log.ClipV2GetFailedDetail(path, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
         return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct).ConfigureAwait(false);

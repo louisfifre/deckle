@@ -37,7 +37,8 @@ public sealed partial class TranscriptionEngine
         if (capture.Outcome == CaptureOutcome.MicError)
         {
             var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
-            DeckleWhispSource.Log.RecordingMicError(capture.MmsysErr, title);
+            DeckleWhispSource.Log.RecordingMicError();
+            DeckleWhispSource.Log.RecordingMicErrorDetail(capture.MmsysErr, title);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
             RaiseFinished(TranscriptionOutcome.None);
             return null;
@@ -141,14 +142,16 @@ public sealed partial class TranscriptionEngine
                 DeckleCancellationSource.Log.OperationCancelled(
                     "whisp-transcribe", "upstream", -1);
             }
-            DeckleWhispSource.Log.TranscribeFailed(-1);
+            DeckleWhispSource.Log.TranscribeFailed();
+            DeckleWhispSource.Log.TranscribeFailedDetail(-1);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
                 FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
             RaiseFinished(TranscriptionOutcome.None);
-            DeckleWhispSource.Log.SegmentCallbackThrew(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.SegmentCallbackThrew();
+            DeckleWhispSource.Log.SegmentCallbackThrewDetail(ex.GetType().Name, ex.Message);
             return null;
         }
 
@@ -157,7 +160,8 @@ public sealed partial class TranscriptionEngine
         // fall through. A non-zero result without an abort is a real failure.
         if (result.ResultCode != 0 && !result.Aborted)
         {
-            DeckleWhispSource.Log.TranscribeFailed(result.ResultCode);
+            DeckleWhispSource.Log.TranscribeFailed();
+            DeckleWhispSource.Log.TranscribeFailedDetail(result.ResultCode);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
@@ -170,7 +174,7 @@ public sealed partial class TranscriptionEngine
         string fullText = result.FullText;
         int nSeg = result.Segments.Count;
 
-        DeckleWhispSource.Log.TranscribeCompleted(nSeg);
+        DeckleWhispSource.Log.TranscribeCompleted();
         DeckleWhispSource.Log.TranscribeCompleteDetail(result.TotalDurationMs, nSeg, fullText.Length);
 
         if (string.IsNullOrWhiteSpace(fullText))

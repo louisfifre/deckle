@@ -50,7 +50,8 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.ModelLoadFailed(ex.Message);
+            DeckleWhispSource.Log.ModelLoadFailed();
+            DeckleWhispSource.Log.ModelLoadFailedDetail(ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Get("Engine_ModelLoadFailed_Body"),
@@ -183,7 +184,8 @@ public sealed partial class TranscriptionEngine
                 || bytes[12] != 'f' || bytes[13] != 'm' || bytes[14] != 't' || bytes[15] != ' '
                 || bytes[36] != 'd' || bytes[37] != 'a' || bytes[38] != 't' || bytes[39] != 'a')
             {
-                DeckleWhispSource.Log.WarmupClipHeaderInvalid(path);
+                DeckleWhispSource.Log.WarmupClipHeaderInvalid();
+                DeckleWhispSource.Log.WarmupClipHeaderInvalidDetail(path);
                 return null;
             }
 
@@ -195,7 +197,8 @@ public sealed partial class TranscriptionEngine
 
             if (audioFormat != 1 || numChannels != 1 || sampleRate != 16000 || bitsPerSample != 16)
             {
-                DeckleWhispSource.Log.WarmupClipSampleMismatch(audioFormat, numChannels, sampleRate, bitsPerSample);
+                DeckleWhispSource.Log.WarmupClipSampleMismatch();
+                DeckleWhispSource.Log.WarmupClipSampleMismatchDetail(audioFormat, numChannels, sampleRate, bitsPerSample);
                 return null;
             }
 
@@ -212,7 +215,8 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.WarmupClipLoadFailed(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.WarmupClipLoadFailed();
+            DeckleWhispSource.Log.WarmupClipLoadFailedDetail(ex.GetType().Name, ex.Message);
             return null;
         }
     }

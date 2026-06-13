@@ -394,7 +394,8 @@ public sealed partial class TranscriptionEngine : IDisposable
             swJoin.Stop();
             if (!joined)
             {
-                DeckleWhispSource.Log.DisposeWorkerJoinTimeout(swJoin.ElapsedMilliseconds);
+                DeckleWhispSource.Log.DisposeWorkerJoinTimeout();
+                DeckleWhispSource.Log.DisposeWorkerJoinTimeoutDetail(swJoin.ElapsedMilliseconds);
             }
             else
             {

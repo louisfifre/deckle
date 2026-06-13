@@ -88,7 +88,8 @@ public static class DispatcherQueueExtensions
             _logging = true;
             try
             {
-                DeckleThreadingSource.Log.DispatcherEnqueueRejected(source, what);
+                DeckleThreadingSource.Log.DispatcherEnqueueRejected();
+                DeckleThreadingSource.Log.DispatcherEnqueueRejectedDetail(source, what);
             }
             finally { _logging = false; }
         }
@@ -167,7 +168,8 @@ public static class DispatcherQueueExtensions
                 _logging = true;
                 try
                 {
-                    DeckleThreadingSource.Log.DispatcherEnqueueRejected(
+                    DeckleThreadingSource.Log.DispatcherEnqueueRejected();
+                    DeckleThreadingSource.Log.DispatcherEnqueueRejectedDetail(
                         rejectSource, rejectWhat);
                 }
                 finally { _logging = false; }

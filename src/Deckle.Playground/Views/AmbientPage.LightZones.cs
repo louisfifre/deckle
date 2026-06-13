@@ -71,22 +71,21 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueWarning(
-                $"Listing lights failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailedDetail("list lights", $"{ex.GetType().Name}: {ex.Message}");
             _placementLights = null;
             BuildLightZonesUi();
             return;
         }
 
-        DecklePlaygroundSource.Log.AmbientVerbose(
-            $"resolve lights | group_id={group.Id} | group_name={group.Name} | from_group={lights.Count}");
+        DecklePlaygroundSource.Log.ResolveLights(group.Id, group.Name, lights.Count);
 
         var matchedArea = await FindMatchingEntertainmentAreaAsync(group, lights).ConfigureAwait(true);
 
         if (lights.Count == 0 && matchedArea is { LightPlacements.Count: > 0 })
         {
-            DecklePlaygroundSource.Log.HueInfo(
-                $"Using entertainment area '{matchedArea.Name}' as the lights source ({matchedArea.LightPlacements.Count} lights)");
+            DecklePlaygroundSource.Log.EntertainmentAreaUsed();
+            DecklePlaygroundSource.Log.EntertainmentAreaUsedDetail(matchedArea.Name, matchedArea.LightPlacements.Count);
             foreach (var p in matchedArea.LightPlacements)
             {
                 lights.Add(new LightDescriptor(p.LightId, p.Name, IsReachable: true));
@@ -115,14 +114,13 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueVerbose(
-                $"List entertainment configs failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailedDetail("list ent configs", $"{ex.GetType().Name}: {ex.Message}");
             return null;
         }
 
         if (areas.Count == 0)
         {
-            DecklePlaygroundSource.Log.AmbientVerbose("match ent area | result=no_areas");
+            DecklePlaygroundSource.Log.MatchEntertainmentArea("no_areas", "", "", 0);
             return null;
         }
 
@@ -130,8 +128,7 @@ public sealed partial class AmbientPage
         {
             if (string.Equals(a.Name, group.Name, StringComparison.OrdinalIgnoreCase))
             {
-                DecklePlaygroundSource.Log.AmbientVerbose(
-                    $"match ent area | result=name | ent_id={a.Id} | name={a.Name}");
+                DecklePlaygroundSource.Log.MatchEntertainmentArea("name", a.Id, a.Name, 0);
                 return a;
             }
         }
@@ -151,13 +148,12 @@ public sealed partial class AmbientPage
             }
             if (best is not null)
             {
-                DecklePlaygroundSource.Log.AmbientVerbose(
-                    $"match ent area | result=overlap | ent_id={best.Id} | name={best.Name} | overlap={bestOverlap}");
+                DecklePlaygroundSource.Log.MatchEntertainmentArea("overlap", best.Id, best.Name, bestOverlap);
                 return best;
             }
         }
 
-        DecklePlaygroundSource.Log.AmbientVerbose("match ent area | result=no_match");
+        DecklePlaygroundSource.Log.MatchEntertainmentArea("no_match", "", "", 0);
         return null;
     }
 
@@ -173,8 +169,7 @@ public sealed partial class AmbientPage
             if (!lightIdSet.Contains(p.LightId)) continue;
             var zone = LightZoneSuggester.Suggest(p);
             suggestions[p.LightId] = zone;
-            DecklePlaygroundSource.Log.AmbientVerbose(
-                $"zone suggest | id={p.LightId} | zone={zone} | from=ent_config | ent_name={area.Name} | xyz={p.X:F2},{p.Y:F2},{p.Z:F2}");
+            DecklePlaygroundSource.Log.ZoneSuggested(p.LightId, zone.ToString(), area.Name, p.X, p.Y, p.Z);
         }
         return suggestions;
     }
@@ -320,8 +315,8 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueWarning(
-                $"Identify failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailedDetail("identify", $"{ex.GetType().Name}: {ex.Message}");
         }
         finally
         {
@@ -491,12 +486,8 @@ public sealed partial class AmbientPage
         }
         AmbientSettingsService.Instance.Save();
 
-        string zoneSummary = tag.Zone == LightZone.None
-            ? $"Zone cleared on {tag.LightName}"
-            : $"Zone {tag.Zone} assigned to {tag.LightName}";
-        DecklePlaygroundSource.Log.AmbientInfo(zoneSummary);
-        DecklePlaygroundSource.Log.AmbientVerbose(
-            $"zone assign | id={tag.LightId} | zone={tag.Zone}");
+        DecklePlaygroundSource.Log.LightZoneUpdated();
+        DecklePlaygroundSource.Log.LightZoneUpdatedDetail(tag.LightId, tag.Zone.ToString());
 
         UpdateZoneOverlayHighlight();
     }

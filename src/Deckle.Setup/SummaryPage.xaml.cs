@@ -52,8 +52,8 @@ public sealed partial class SummaryPage : Page
 
         RenderResults();
 
-        DeckleSetupSource.Log.SetupInfo(
-            $"setup summary | success={ok} | items={_context.Results.Count}");
+        DeckleSetupSource.Log.SummaryShown();
+        DeckleSetupSource.Log.SummaryShownDetail(ok, _context.Results.Count);
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)

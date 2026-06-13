@@ -243,12 +243,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (_iconIdlePath is not null)
             _iconIdle = new BitmapImage(new Uri(_iconIdlePath));
         else
-            DeckleAppSource.Log.LogWindowWarning("idle icon not found");
+        {
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail("idle icon not found");
+        }
 
         if (_iconRecordingPath is not null)
             _iconRecording = new BitmapImage(new Uri(_iconRecordingPath));
         else
-            DeckleAppSource.Log.LogWindowWarning("recording icon not found");
+        {
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail("recording icon not found");
+        }
     }
 
     private void ClearAll()
@@ -344,7 +350,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning($"scroll err: {ex.Message}");
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail($"scroll err: {ex.Message}");
         }
     }
 
@@ -593,12 +600,16 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         ClipboardWriteResult r = Win32Clipboard.TryCopyText(text);
         if (!r.Landed)
         {
-            DeckleAppSource.Log.LogWindowWarning($"copy failed: {r.Status} ({r.ExpectedChars} chars)");
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail($"copy failed: {r.Status} ({r.ExpectedChars} chars)");
             return false;
         }
         if (r.Status is ClipboardWriteStatus.VerifyMissing or ClipboardWriteStatus.VerifyLengthMismatch)
-            DeckleAppSource.Log.LogWindowWarning(
+        {
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail(
                 $"copy verify {r.Status}: expected {r.ExpectedChars}, clipboard {r.ActualChars}");
+        }
         return true;
     }
 
@@ -661,7 +672,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning($"save err: {ex.Message}");
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail($"save err: {ex.Message}");
         }
     }
 }

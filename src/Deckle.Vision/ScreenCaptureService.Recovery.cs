@@ -96,7 +96,7 @@ public sealed partial class ScreenCaptureService
 
                 if (formatChanged)
                 {
-                    DeckleVisionSource.Log.CaptureFormatRenegotiated(_isHdrSession ? "HDR" : "SDR");
+                    DeckleVisionSource.Log.CaptureFormatRenegotiated();
                     DeckleVisionSource.Log.CaptureFormatRenegotiatedDetail(
                         MapDxgiFormat(oldDxgiFormat).ToString(),
                         _activeFormat.ToString(),
@@ -116,7 +116,8 @@ public sealed partial class ScreenCaptureService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
+                DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+                DeckleVisionSource.Log.DuplicationRecreateAttemptFailedDetail(
                     attempt, ex.GetType().Name, ex.Message);
                 try { Task.Delay(RecreateBackoffMs, ct).Wait(ct); }
                 catch (OperationCanceledException)

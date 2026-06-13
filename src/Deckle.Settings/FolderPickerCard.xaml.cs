@@ -104,7 +104,8 @@ public sealed partial class FolderPickerCard : UserControl
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.FolderPickerFailed();
+            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -150,7 +151,8 @@ public sealed partial class FolderPickerCard : UserControl
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.FolderPickerFailed();
+            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 }

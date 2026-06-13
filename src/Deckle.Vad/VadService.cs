@@ -45,13 +45,15 @@ public sealed class VadService : IDisposable
                 try
                 {
                     _vad = new SileroVad(modelPath);
-                    DeckleVadSource.Log.SpeechTrimVadLoaded(modelPath);
+                    DeckleVadSource.Log.SpeechTrimVadLoaded();
+                    DeckleVadSource.Log.SpeechTrimVadLoadedDetail(modelPath);
                     return _vad;
                 }
                 catch (Exception ex)
                 {
                     _loadFailed = true;
-                    DeckleVadSource.Log.SpeechTrimVadUnavailable($"load failed: {ex.GetType().Name}: {ex.Message}");
+                    DeckleVadSource.Log.SpeechTrimVadUnavailable();
+                    DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"load failed: {ex.GetType().Name}: {ex.Message}");
                     // Bytes match the pinned build yet it won't construct — should not
                     // happen, but delete defensively so a later launch retries clean.
                     try { File.Delete(modelPath); } catch { /* best effort */ }
@@ -63,7 +65,8 @@ public sealed class VadService : IDisposable
             // bump actually takes effect instead of silently keeping the old file) or
             // a corrupt copy. File.Exists alone can't tell the difference; drop it and
             // fall through to the verified download.
-            DeckleVadSource.Log.SpeechTrimVadUnavailable("on-disk model checksum mismatch — re-fetching");
+            DeckleVadSource.Log.SpeechTrimVadUnavailable();
+            DeckleVadSource.Log.SpeechTrimVadUnavailableDetail("on-disk model checksum mismatch — re-fetching");
             try { File.Delete(modelPath); } catch { /* best effort */ }
         }
 
@@ -79,7 +82,8 @@ public sealed class VadService : IDisposable
 
     private static async Task DownloadModelAsync(string modelPath)
     {
-        DeckleVadSource.Log.SpeechTrimVadDownloadStart(SileroVadModel.Url);
+        DeckleVadSource.Log.SpeechTrimVadDownloadStart();
+        DeckleVadSource.Log.SpeechTrimVadDownloadStartDetail(SileroVadModel.Url);
         try
         {
             // expectedSha256 guards against a corrupt/truncated transfer: the
@@ -92,13 +96,20 @@ public sealed class VadService : IDisposable
                 progress: null, CancellationToken.None).ConfigureAwait(false);
 
             if (result.Success)
-                DeckleVadSource.Log.SpeechTrimVadDownloadComplete(modelPath);
+            {
+                DeckleVadSource.Log.SpeechTrimVadDownloadComplete();
+                DeckleVadSource.Log.SpeechTrimVadDownloadCompleteDetail(modelPath);
+            }
             else
-                DeckleVadSource.Log.SpeechTrimVadUnavailable($"download failed: {result.ErrorMessage}");
+            {
+                DeckleVadSource.Log.SpeechTrimVadUnavailable();
+                DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"download failed: {result.ErrorMessage}");
+            }
         }
         catch (Exception ex)
         {
-            DeckleVadSource.Log.SpeechTrimVadUnavailable($"download failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleVadSource.Log.SpeechTrimVadUnavailable();
+            DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"download failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -118,7 +129,8 @@ public sealed class VadService : IDisposable
         catch (Exception ex)
         {
             // Can't read or hash it — treat as a mismatch so it gets replaced.
-            DeckleVadSource.Log.SpeechTrimVadUnavailable($"checksum read failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleVadSource.Log.SpeechTrimVadUnavailable();
+            DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"checksum read failed: {ex.GetType().Name}: {ex.Message}");
             return false;
         }
     }

@@ -181,8 +181,8 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueWarning(
-                $"Listing groups failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailedDetail("list groups", $"{ex.GetType().Name}: {ex.Message}");
         }
         finally
         {
@@ -228,8 +228,8 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueWarning(
-                $"Selecting group failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailedDetail("select group", $"{ex.GetType().Name}: {ex.Message}");
             SetHueColorButtonsEnabled(false);
             SetPipelineNotReady();
         }
@@ -256,8 +256,8 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueWarning(
-                $"Push colour failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailedDetail("push colour", $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -290,8 +290,8 @@ public sealed partial class AmbientPage
         catch (OperationCanceledException) { /* expected */ }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueWarning(
-                $"Test rotation failed — {ex.GetType().Name}: {ex.Message}");
+            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailedDetail("test rotation", $"{ex.GetType().Name}: {ex.Message}");
         }
         finally
         {

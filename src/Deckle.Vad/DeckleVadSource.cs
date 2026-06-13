@@ -15,14 +15,20 @@ public sealed class DeckleVadSource : DeckleEventSource
     private DeckleVadSource() { }
 
     // ── EventIds: sequential from 1, never reused ───────────────────────
-    public const int EvtSpeechTrimmed                 = 1;
-    public const int EvtUtteranceDroppedNoSpeech      = 2;
-    public const int EvtSpeechTrimVadLoaded           = 3;
-    public const int EvtSpeechTrimVadUnavailable      = 4;
-    public const int EvtSpeechTrimVadDownloadStart    = 5;
-    public const int EvtSpeechTrimVadDownloadComplete = 6;
-    public const int EvtSpeechTrimNotReady            = 7;
-    public const int EvtSpeechTrimSettingsSnapshot    = 8;
+    // Milestones keep their original id; the Verbose mirrors added for the
+    // Verbose/Info separation take fresh ids 9-12 at the end of the sequence.
+    public const int EvtSpeechTrimmed                       = 1;
+    public const int EvtUtteranceDroppedNoSpeech            = 2;
+    public const int EvtSpeechTrimVadLoaded                 = 3;
+    public const int EvtSpeechTrimVadUnavailable            = 4;
+    public const int EvtSpeechTrimVadDownloadStart          = 5;
+    public const int EvtSpeechTrimVadDownloadComplete       = 6;
+    public const int EvtSpeechTrimNotReady                  = 7;
+    public const int EvtSpeechTrimSettingsSnapshot          = 8;
+    public const int EvtSpeechTrimVadLoadedDetail           = 9;
+    public const int EvtSpeechTrimVadUnavailableDetail      = 10;
+    public const int EvtSpeechTrimVadDownloadStartDetail    = 11;
+    public const int EvtSpeechTrimVadDownloadCompleteDetail = 12;
 
     [Event(EvtSpeechTrimmed,
            Level = EventLevel.Verbose,
@@ -56,37 +62,73 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Silero VAD loaded ({0})")]
-    public void SpeechTrimVadLoaded(string model_path)
+           Message = "Silero VAD loaded")]
+    public void SpeechTrimVadLoaded()
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoaded, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoaded);
+    }
+
+    [Event(EvtSpeechTrimVadLoadedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "model loaded | model_path={0}")]
+    public void SpeechTrimVadLoadedDetail(string model_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, model_path);
     }
 
     [Event(EvtSpeechTrimVadUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Silero VAD unavailable — {0}")]
-    public void SpeechTrimVadUnavailable(string reason)
+           Message = "Silero VAD unavailable")]
+    public void SpeechTrimVadUnavailable()
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailable, reason);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailable);
+    }
+
+    [Event(EvtSpeechTrimVadUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "model unavailable | reason={0}")]
+    public void SpeechTrimVadUnavailableDetail(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadUnavailableDetail, reason);
     }
 
     [Event(EvtSpeechTrimVadDownloadStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Downloading Silero VAD model… ({0})")]
-    public void SpeechTrimVadDownloadStart(string url)
+           Message = "Downloading the Silero VAD model")]
+    public void SpeechTrimVadDownloadStart()
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStart, url);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStart);
+    }
+
+    [Event(EvtSpeechTrimVadDownloadStartDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "model download started | url={0}")]
+    public void SpeechTrimVadDownloadStartDetail(string url)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStartDetail, url);
     }
 
     [Event(EvtSpeechTrimVadDownloadComplete,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Silero VAD model downloaded ({0})")]
-    public void SpeechTrimVadDownloadComplete(string model_path)
+           Message = "Silero VAD model downloaded")]
+    public void SpeechTrimVadDownloadComplete()
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadComplete, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadComplete);
+    }
+
+    [Event(EvtSpeechTrimVadDownloadCompleteDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "model download complete | model_path={0}")]
+    public void SpeechTrimVadDownloadCompleteDetail(string model_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, model_path);
     }
 
     [Event(EvtSpeechTrimNotReady,

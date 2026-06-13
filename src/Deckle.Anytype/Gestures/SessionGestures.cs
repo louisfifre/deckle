@@ -59,8 +59,8 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
         _currentReportId = reportId;
 
-        DeckleAnytypeSource.Log.SessionReportCreated(reportId);
         DeckleAnytypeSource.Log.SessionStarted();
+        DeckleAnytypeSource.Log.SessionReportCreated(reportId);
 
         string digest = await BuildStartDigestAsync(taskObj, ct);
         DeckleAnytypeSource.Log.GestureCompleted("session_start", Elapsed(t0));

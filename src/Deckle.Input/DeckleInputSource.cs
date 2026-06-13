@@ -19,22 +19,27 @@ public sealed class DeckleInputSource : DeckleEventSource
 
     private DeckleInputSource() { }
 
-    public const int EvtHostStarted            = 1;
-    public const int EvtHostStopped            = 2;
-    public const int EvtHostStartFailed        = 3;
-    public const int EvtTouchpadDetected       = 4;
-    public const int EvtTouchpadDetectedDetail = 5;
-    public const int EvtTouchpadAbsent         = 6;
-    public const int EvtTouchpadArrived        = 7;
-    public const int EvtTouchpadRemoved        = 8;
-    public const int EvtRegistrationFailed     = 9;
-    public const int EvtParserCreateFailed     = 10;
-    public const int EvtFrameRollup            = 11;
-    public const int EvtRecordingStarted       = 12;
-    public const int EvtRecordingStartedDetail = 13;
-    public const int EvtRecordingStopped       = 14;
-    public const int EvtRecordingStoppedDetail = 15;
-    public const int EvtRecordingFailed        = 16;
+    public const int EvtHostStarted              = 1;
+    public const int EvtHostStopped              = 2;
+    public const int EvtHostStartFailed          = 3;
+    public const int EvtTouchpadDetected         = 4;
+    public const int EvtTouchpadDetectedDetail   = 5;
+    public const int EvtTouchpadAbsent           = 6;
+    public const int EvtTouchpadArrived          = 7;
+    public const int EvtTouchpadRemoved          = 8;
+    public const int EvtRegistrationFailed       = 9;
+    public const int EvtParserCreateFailed       = 10;
+    public const int EvtFrameRollup              = 11;
+    public const int EvtRecordingStarted         = 12;
+    public const int EvtRecordingStartedDetail   = 13;
+    public const int EvtRecordingStopped         = 14;
+    public const int EvtRecordingStoppedDetail   = 15;
+    public const int EvtRecordingFailed          = 16;
+    // Verbose mirrors appended for the Verbose/Info separation (ids 17-20).
+    public const int EvtHostStartFailedDetail    = 17;
+    public const int EvtRegistrationFailedDetail = 18;
+    public const int EvtParserCreateFailedDetail = 19;
+    public const int EvtRecordingFailedDetail    = 20;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -59,10 +64,19 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtHostStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "raw input host start failed | error={0}: {1}")]
-    public void HostStartFailed(string ex_type, string message)
+           Message = "Raw input host failed to start")]
+    public void HostStartFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtHostStartFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtHostStartFailed);
+    }
+
+    [Event(EvtHostStartFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "host start failed | error={0}: {1}")]
+    public void HostStartFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtHostStartFailedDetail, ex_type, message);
     }
 
     // ── Touchpad presence ────────────────────────────────────────────────
@@ -119,19 +133,37 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "raw input registration failed | win32_error={0}")]
-    public void RegistrationFailed(int win32_error)
+           Message = "Raw input device registration failed")]
+    public void RegistrationFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtRegistrationFailed, win32_error);
+        if (IsEnabled()) WriteEvent(EvtRegistrationFailed);
+    }
+
+    [Event(EvtRegistrationFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "registration failed | win32_error={0}")]
+    public void RegistrationFailedDetail(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtRegistrationFailedDetail, win32_error);
     }
 
     [Event(EvtParserCreateFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "touchpad parser creation failed | reason={0}")]
-    public void ParserCreateFailed(string reason)
+           Message = "Touchpad parser could not be created")]
+    public void ParserCreateFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtParserCreateFailed, reason);
+        if (IsEnabled()) WriteEvent(EvtParserCreateFailed);
+    }
+
+    [Event(EvtParserCreateFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "parser creation failed | reason={0}")]
+    public void ParserCreateFailedDetail(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtParserCreateFailedDetail, reason);
     }
 
     // ── Frame rollup (5 s aggregate while frames flow) ───────────────────
@@ -189,9 +221,18 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "frame recording failed | error={0}: {1}")]
-    public void RecordingFailed(string ex_type, string message)
+           Message = "Frame recording encountered an error")]
+    public void RecordingFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtRecordingFailed);
+    }
+
+    [Event(EvtRecordingFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "recording failed | error={0}: {1}")]
+    public void RecordingFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRecordingFailedDetail, ex_type, message);
     }
 }

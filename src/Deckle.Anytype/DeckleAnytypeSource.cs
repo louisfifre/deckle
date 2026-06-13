@@ -22,13 +22,16 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     private const EventKeywords Gesture = (EventKeywords)0x400;
 
     // ── EventIds ─────────────────────────────────────────────────────────
-    public const int EvtApiRequestStarted   = 1;
-    public const int EvtApiRequestCompleted = 2;
-    public const int EvtApiRequestRetried   = 3;
-    public const int EvtGestureCompleted    = 4;
-    public const int EvtSessionReportCreated = 5;
-    public const int EvtSessionStarted      = 6;
-    public const int EvtApiRequestFailed    = 7;
+    public const int EvtApiRequestStarted         = 1;
+    public const int EvtApiRequestCompleted       = 2;
+    public const int EvtApiRequestRetried         = 3;
+    public const int EvtGestureCompleted          = 4;
+    public const int EvtSessionReportCreated      = 5;
+    public const int EvtSessionStarted            = 6;
+    public const int EvtApiRequestFailed          = 7;
+    // Verbose mirrors added for the Verbose/Info separation (ids 8-9).
+    public const int EvtApiRequestRetriedDetail   = 8;
+    public const int EvtApiRequestFailedDetail    = 9;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -56,19 +59,37 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtApiRequestRetried,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "api request retried | method={0} | path={1} | status={2} | backoff_ms={3:F0}")]
-    public void ApiRequestRetried(string method, string path, int status_code, double backoff_ms)
+           Message = "An API request was retried")]
+    public void ApiRequestRetried()
     {
-        if (IsEnabled()) WriteEvent(EvtApiRequestRetried, method, path, status_code, backoff_ms);
+        if (IsEnabled()) WriteEvent(EvtApiRequestRetried);
+    }
+
+    [Event(EvtApiRequestRetriedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Network,
+           Message = "api request retried | method={0} | path={1} | status={2} | backoff_ms={3:F0}")]
+    public void ApiRequestRetriedDetail(string method, string path, int status_code, double backoff_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtApiRequestRetriedDetail, method, path, status_code, backoff_ms);
     }
 
     [Event(EvtApiRequestFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "API request failed: {0} {1} ({2})")]
-    public void ApiRequestFailed(string method, string path, int status_code, string error)
+           Message = "An API request failed")]
+    public void ApiRequestFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtApiRequestFailed, method, path, status_code, error);
+        if (IsEnabled()) WriteEvent(EvtApiRequestFailed);
+    }
+
+    [Event(EvtApiRequestFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Network,
+           Message = "api request failed | method={0} | path={1} | status={2} | error={3}")]
+    public void ApiRequestFailedDetail(string method, string path, int status_code, string error)
+    {
+        if (IsEnabled()) WriteEvent(EvtApiRequestFailedDetail, method, path, status_code, error);
     }
 
     // ── Gestures ────────────────────────────────────────────────────────

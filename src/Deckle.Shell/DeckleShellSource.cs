@@ -48,6 +48,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtElevatedStartupDisabled     = 18;
     public const int EvtElevatedStartupDisableFailed = 19;
     public const int EvtElevatedStartupProbeFailed   = 20;
+    // Verbose mirrors appended for the Verbose/Info separation: each milestone
+    // above whose message carried an error / path / handle now emits a short
+    // Capital sentence, and the technical detail moves to one of these fresh
+    // ids. IDs are public in the ETW manifest; never reuse an id.
+    public const int EvtAutostartProbeFailedDetail        = 21;
+    public const int EvtAutostartEnableFailedAclDetail    = 22;
+    public const int EvtAutostartEnableFailedDetail       = 23;
+    public const int EvtAutostartDisableFailedDetail      = 24;
+    public const int EvtHotkeyVkResolveFailedDetail       = 25;
+    public const int EvtElevatedStartupEnableFailedDetail  = 26;
+    public const int EvtElevatedStartupDisableFailedDetail = 27;
+    public const int EvtElevatedStartupProbeFailedDetail   = 28;
+    public const int EvtHotkeyReregisterFailedDetail      = 29;
 
     // ── Message-only host ───────────────────────────────────────────────
 
@@ -65,16 +78,27 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart probe failed | error={0}: {1}")]
-    public void AutostartProbeFailed(string ex_type, string message)
+           Message = "Could not read the autostart setting")]
+    public void AutostartProbeFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartProbeFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtAutostartProbeFailed);
     }
 
+    [Event(EvtAutostartProbeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "autostart probe failed | error={0} | message={1}")]
+    public void AutostartProbeFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtAutostartProbeFailedDetail, ex_type, message);
+    }
+
+    // Constant reason (Environment.ProcessPath empty) documented at the call
+    // site; the milestone carries no detail, so no Verbose mirror is needed.
     [Event(EvtAutostartEnableSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart enable skipped | reason=Environment.ProcessPath empty")]
+           Message = "Autostart was not enabled because the program path is unknown")]
     public void AutostartEnableSkipped()
     {
         if (IsEnabled()) WriteEvent(EvtAutostartEnableSkipped);
@@ -83,10 +107,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnableFailedAcl,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart enable failed | reason=cannot open HKCU\\{0}")]
-    public void AutostartEnableFailedAcl(string run_key_path)
+           Message = "Could not enable autostart because the registry was not writable")]
+    public void AutostartEnableFailedAcl()
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailedAcl, run_key_path);
+        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailedAcl);
+    }
+
+    [Event(EvtAutostartEnableFailedAclDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "autostart enable failed | reason=cannot_open | run_key_path={0}")]
+    public void AutostartEnableFailedAclDetail(string run_key_path)
+    {
+        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailedAclDetail, run_key_path);
     }
 
     [Event(EvtAutostartEnabled,
@@ -110,10 +143,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart enable failed | error={0}: {1}")]
-    public void AutostartEnableFailed(string ex_type, string message)
+           Message = "Could not enable autostart")]
+    public void AutostartEnableFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailed);
+    }
+
+    [Event(EvtAutostartEnableFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "autostart enable failed | error={0} | message={1}")]
+    public void AutostartEnableFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtAutostartEnableFailedDetail, ex_type, message);
     }
 
     [Event(EvtAutostartDisableSkipped,
@@ -137,10 +179,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart disable failed | error={0}: {1}")]
-    public void AutostartDisableFailed(string ex_type, string message)
+           Message = "Could not disable autostart")]
+    public void AutostartDisableFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed);
+    }
+
+    [Event(EvtAutostartDisableFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "autostart disable failed | error={0} | message={1}")]
+    public void AutostartDisableFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtAutostartDisableFailedDetail, ex_type, message);
     }
 
     // ── Elevated startup (Task Scheduler) ───────────────────────────────
@@ -157,10 +208,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup enable failed | error={0}: {1}")]
-    public void ElevatedStartupEnableFailed(string ex_type, string message)
+           Message = "Could not enable elevated startup")]
+    public void ElevatedStartupEnableFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed);
+    }
+
+    [Event(EvtElevatedStartupEnableFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "elevated startup enable failed | error={0} | message={1}")]
+    public void ElevatedStartupEnableFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailedDetail, ex_type, message);
     }
 
     [Event(EvtElevatedStartupDisabled,
@@ -175,19 +235,37 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup disable failed | error={0}: {1}")]
-    public void ElevatedStartupDisableFailed(string ex_type, string message)
+           Message = "Could not disable elevated startup")]
+    public void ElevatedStartupDisableFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed);
+    }
+
+    [Event(EvtElevatedStartupDisableFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "elevated startup disable failed | error={0} | message={1}")]
+    public void ElevatedStartupDisableFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailedDetail, ex_type, message);
     }
 
     [Event(EvtElevatedStartupProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup probe failed | error={0}: {1}")]
-    public void ElevatedStartupProbeFailed(string ex_type, string message)
+           Message = "Could not read the elevated startup setting")]
+    public void ElevatedStartupProbeFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed);
+    }
+
+    [Event(EvtElevatedStartupProbeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "elevated startup probe failed | error={0} | message={1}")]
+    public void ElevatedStartupProbeFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailedDetail, ex_type, message);
     }
 
     // ── Hotkeys ─────────────────────────────────────────────────────────
@@ -195,10 +273,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyVkResolveFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "MapVirtualKeyExW returned 0 for scancode 0x29 (HKL {0:X}) — skipping register")]
-    public void HotkeyVkResolveFailed(long hkl)
+           Message = "Could not resolve the hotkey for the current keyboard layout")]
+    public void HotkeyVkResolveFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailed, hkl);
+        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailed);
+    }
+
+    [Event(EvtHotkeyVkResolveFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "hotkey vk resolve failed | scancode=0x29 | hkl=0x{0:X}")]
+    public void HotkeyVkResolveFailedDetail(long hkl)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailedDetail, hkl);
     }
 
     [Event(EvtHotkeyRegistered,
@@ -222,10 +309,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyReregisterFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "re-register failed: {0}")]
-    public void HotkeyReregisterFailed(string message)
+           Message = "Could not re-register the hotkeys after a keyboard layout change")]
+    public void HotkeyReregisterFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed, message);
+        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed);
+    }
+
+    [Event(EvtHotkeyReregisterFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "hotkey re-register failed | message={0}")]
+    public void HotkeyReregisterFailedDetail(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailedDetail, message);
     }
 
     // DispatcherEnqueueRejected now lives on DeckleThreadingSource. Callers go

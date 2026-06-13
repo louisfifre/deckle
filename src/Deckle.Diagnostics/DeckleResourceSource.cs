@@ -49,9 +49,13 @@ public sealed class DeckleResourceSource : DeckleEventSource
     private DeckleResourceSource() { }
 
     // ── EventIds ────────────────────────────────────────────────────────
-    public const int EvtResourceAcquired    = 1;
-    public const int EvtResourceReleased    = 2;
-    public const int EvtResourceLeakSuspect = 3;
+    // The milestone keeps its original id; the Verbose mirror added for the
+    // Verbose/Info separation takes a fresh id 4 at the end of the sequence.
+    // IDs are public in the ETW manifest; never reuse an id after deleting an event.
+    public const int EvtResourceAcquired        = 1;
+    public const int EvtResourceReleased        = 2;
+    public const int EvtResourceLeakSuspect     = 3;
+    public const int EvtResourceLeakSuspectDetail = 4;
 
     // Acquire: emitted when taking a native handle or creating a managed
     // Composition object. Verbose because it carries an opaque identifier (hex
@@ -84,14 +88,28 @@ public sealed class DeckleResourceSource : DeckleEventSource
     // detected at finalization or by watchdog). Warning because this is an
     // anomaly that deserves surfacing even when Verbose is not listened to. No
     // active site today; declared to freeze the signature before detection is
-    // wired.
+    // wired. The milestone carries no detail; the resource kind, handle, age,
+    // owner and symptom live in the Verbose mirror that follows it.
     [Event(EvtResourceLeakSuspect,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Resource,
-           Message = "resource leak suspect | kind={0} | handle=0x{1:X} | age_ms={2} | owner={3} | symptom={4}")]
-    public void ResourceLeakSuspect(string kind, long handle, int age_ms, string owner, string symptom)
+           Message = "A native resource may have leaked")]
+    public void ResourceLeakSuspect()
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Resource)) return;
-        WriteEvent(EvtResourceLeakSuspect, kind, handle, age_ms, owner, symptom);
+        WriteEvent(EvtResourceLeakSuspect);
+    }
+
+    // Verbose mirror of the leak-suspect milestone: carries the opaque handle
+    // and the diagnostic context (kind, age, owner, symptom) for greppable
+    // correlation. Same keyword as the milestone; follows it at the call site.
+    [Event(EvtResourceLeakSuspectDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Resource,
+           Message = "resource leak suspect | kind={0} | handle=0x{1:X} | age_ms={2} | owner={3} | symptom={4}")]
+    public void ResourceLeakSuspectDetail(string kind, long handle, int age_ms, string owner, string symptom)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Resource)) return;
+        WriteEvent(EvtResourceLeakSuspectDetail, kind, handle, age_ms, owner, symptom);
     }
 }

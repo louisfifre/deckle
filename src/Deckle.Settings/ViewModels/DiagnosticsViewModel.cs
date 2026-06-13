@@ -253,7 +253,8 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();
-        DeckleSettingsSource.Log.SectionReset("Logging");
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Logging");
     }
 
     public void ResetTelemetryDefaults()
@@ -271,6 +272,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushTelemetryToSettings();
-        DeckleSettingsSource.Log.SectionReset("Telemetry");
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Telemetry");
     }
 }

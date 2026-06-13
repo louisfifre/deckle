@@ -90,10 +90,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         // same toggle so the gate stays whole after the split.
         if (StreamingCaptureGate.IsActive && (provider == "Deckle-Whisp" || provider == "Deckle-Vad"))
         {
-            // Toggle off: streaming is silent. The 1 Hz heartbeat and per-
-            // utterance details are dropped; milestones still tell whether
-            // the pipeline ran (StreamingPipelineStarted, StreamingDrained).
-            if (!LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity) return true;
+            // Toggle off: the chatty stream is silent — the 1 Hz heartbeat
+            // and per-utterance details are dropped — but the recognized
+            // transcript text (KwTranscript) always surfaces. It is the
+            // signal, not the firehose. Milestones still pass on their own
+            // (StreamingPipelineStarted, StreamingDrained).
+            if (!LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity)
+                return (keywords & DeckleWhispSource.KwTranscript) == 0;
             return false;
         }
 
@@ -117,19 +120,22 @@ public partial class App : Microsoft.UI.Xaml.Application
         // are none of those in practice.
         this.UnhandledException += (_, e) =>
         {
-            DeckleAppSource.Log.CrashUnhandled(e.Exception.GetType().Name, e.Exception.Message);
+            DeckleAppSource.Log.CrashUnhandled();
+            DeckleAppSource.Log.CrashUnhandledDetail(e.Exception.GetType().Name, e.Exception.Message);
             DeckleAppSource.Log.CrashStackTrace(e.Exception.StackTrace ?? "(no stack)");
             e.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             var ex = e.ExceptionObject as Exception;
-            DeckleAppSource.Log.CrashAppDomain(ex?.GetType().Name ?? "(unknown)", ex?.Message ?? "(no message)");
+            DeckleAppSource.Log.CrashAppDomain();
+            DeckleAppSource.Log.CrashAppDomainDetail(ex?.GetType().Name ?? "(unknown)", ex?.Message ?? "(no message)");
             DeckleAppSource.Log.CrashStackTrace(ex?.StackTrace ?? "(no stack)");
         };
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            DeckleAppSource.Log.CrashTaskScheduler(e.Exception.GetType().Name, e.Exception.Message);
+            DeckleAppSource.Log.CrashTaskScheduler();
+            DeckleAppSource.Log.CrashTaskSchedulerDetail(e.Exception.GetType().Name, e.Exception.Message);
             e.SetObserved();
         };
 
@@ -214,7 +220,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Boot-time sanity marker for the EventSource pipeline. It has no
         // product behaviour; it simply proves provider discovery, JSONL
         // routing, and LogWindow listener routing during startup.
-        Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted("wave 1 boot");
+        Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted();
+        Deckle.Chrono.DeckleChronoSource.Log.PilotEmittedDetail("wave 1 boot");
 
         // Cross-cutting Network sub-provider: capture machine network state
         // transitions to correlate business HTTP failures (Hue REST, Ollama)
@@ -264,16 +271,15 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (!NativeRuntime.IsInstalled() ||
             !SpeechModels.IsDefaultInstalled())
         {
-            DeckleSetupSource.Log.SetupInfo(
-                $"first-run gate | natives_installed={NativeRuntime.IsInstalled()}" +
-                $" | default_model_installed={SpeechModels.IsDefaultInstalled()}");
+            DeckleSetupSource.Log.WizardOpening();
+            DeckleSetupSource.Log.WizardOpeningDetail(NativeRuntime.IsInstalled(), SpeechModels.IsDefaultInstalled());
             var setup = new Deckle.Setup.SetupWindow();
             setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
             setup.Activate();
             bool success = await setup.Completion;
             if (!success)
             {
-                DeckleSetupSource.Log.SetupInfo("wizard cancelled — exiting");
+                DeckleSetupSource.Log.WizardCancelled();
                 Environment.Exit(0);
                 return;
             }
@@ -304,7 +310,10 @@ public partial class App : Microsoft.UI.Xaml.Application
         // event ; we don't relay through tray UpdateStatus to avoid
         // squatting the Whisp recording tooltip.
         _ambientEngine.StateChanged += s =>
-            DeckleAppSource.Log.AmbientPipelineState(s.ToString());
+        {
+            DeckleAppSource.Log.AmbientPipelineState();
+            DeckleAppSource.Log.AmbientPipelineStateDetail(s.ToString());
+        };
         // AmbientPage's NotPaired InfoBar action button needs to open
         // the Playground (where Hue pairing lives in V0). Lighting.
         // Ambient cannot reference Deckle, so the App fills the slot.
@@ -416,7 +425,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         _engine.StatusChanged += status =>
         {
             _tray.UpdateStatus(status);
-            DeckleAppSource.Log.StatusChanged(status);
+            DeckleAppSource.Log.StatusChanged();
+            DeckleAppSource.Log.StatusChangedDetail(status);
             // Beacon app icon in LogWindow + PlaygroundWindow: red =
             // recording, grey = idle. Single source of truth driven
             // from the engine status transition. StartsWith covers the
@@ -476,7 +486,8 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         // Initial status — model loads on-demand at first hotkey, not at startup.
         _tray.UpdateStatus("Ready");
-        DeckleAppSource.Log.StatusChanged("Ready");
+        DeckleAppSource.Log.StatusChanged();
+        DeckleAppSource.Log.StatusChangedDetail("Ready");
 
         // Force Ambient master toggle OFF at boot; explicit user action via
         // Settings / tray re-enables the pipeline. Louis's explicit
@@ -561,7 +572,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.HudWarning($"Hotkey registration failed: {ex.Message}");
+            DeckleAppSource.Log.HudWarning();
+            DeckleAppSource.Log.HudWarningDetail($"Hotkey registration failed: {ex.Message}");
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
                 "Hotkeys unavailable",

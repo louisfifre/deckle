@@ -109,7 +109,8 @@ public sealed partial class ScreenCaptureService
                 // Fatal — GPU gone or hung. Surface Stopped so the
                 // engine can clean up ; recovery would need a full
                 // D3D device rebuild that lives outside this loop.
-                DeckleVisionSource.Log.DeviceLost(hr);
+                DeckleVisionSource.Log.DeviceLost();
+                DeckleVisionSource.Log.DeviceLostDetail(hr);
                 break;
             }
 
@@ -172,7 +173,8 @@ public sealed partial class ScreenCaptureService
                 }
                 catch (Exception ex)
                 {
-                    DeckleVisionSource.Log.TextureQueryFailed(ex.GetType().Name, ex.Message);
+                    DeckleVisionSource.Log.TextureQueryFailed();
+                    DeckleVisionSource.Log.TextureQueryFailedDetail(ex.GetType().Name, ex.Message);
                     continue;
                 }
 
@@ -209,7 +211,8 @@ public sealed partial class ScreenCaptureService
                     }
                     catch (Exception ex)
                     {
-                        DeckleVisionSource.Log.FrameConsumerThrew(ex.GetType().Name, ex.Message);
+                        DeckleVisionSource.Log.FrameConsumerThrew();
+                        DeckleVisionSource.Log.FrameConsumerThrewDetail(ex.GetType().Name, ex.Message);
                     }
                     if (heartbeatGateOpen)
                     {

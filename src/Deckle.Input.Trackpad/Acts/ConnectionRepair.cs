@@ -53,7 +53,8 @@ public static class ConnectionRepair
         {
             // Win32Exception with NativeErrorCode 1223 == user declined UAC.
             // Treated the same as any other launch failure: log + false.
-            DeckleTrackpadSource.Log.RepairLaunchFailed(ex.GetType().Name, ex.Message);
+            DeckleTrackpadSource.Log.RepairLaunchFailed();
+            DeckleTrackpadSource.Log.RepairLaunchFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }

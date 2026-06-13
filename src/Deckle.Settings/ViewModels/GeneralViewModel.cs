@@ -233,7 +233,8 @@ public partial class GeneralViewModel : ObservableObject
         finally { _isSyncing = false; }
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(Theme);
-        DeckleSettingsSource.Log.SectionReset("Appearance");
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Appearance");
     }
 
     public void ResetBehaviourDefaults()
@@ -249,7 +250,8 @@ public partial class GeneralViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushToSettings();
-        DeckleSettingsSource.Log.SectionReset("Behaviour");
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Behaviour");
     }
 
     public void ResetStartupDefaults()
@@ -266,6 +268,7 @@ public partial class GeneralViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushToSettings();
-        DeckleSettingsSource.Log.SectionReset("Startup");
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Startup");
     }
 }

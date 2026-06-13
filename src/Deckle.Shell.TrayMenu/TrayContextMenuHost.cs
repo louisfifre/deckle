@@ -122,7 +122,8 @@ public sealed class TrayContextMenuHost : IDisposable
         BuildWindow();
         BuildFlyout();
 
-        DeckleShellTrayMenuSource.Log.HostConstructed(ownerHwnd.ToInt64());
+        DeckleShellTrayMenuSource.Log.HostConstructed();
+        DeckleShellTrayMenuSource.Log.HostConstructedDetail(ownerHwnd.ToInt64());
     }
 
     // ── Build window ──────────────────────────────────────────────────────────
@@ -212,7 +213,8 @@ public sealed class TrayContextMenuHost : IDisposable
             Loc.Get("TrayMenu_AmbientLight"),
             () =>
             {
-                DeckleShellTrayMenuSource.Log.ItemClicked(_ambientItem!.Text);
+                DeckleShellTrayMenuSource.Log.ItemClicked();
+                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_ambientItem!.Text);
                 Hide("item_click:Ambient");
                 OnToggleAmbient?.Invoke();
             });
@@ -222,7 +224,8 @@ public sealed class TrayContextMenuHost : IDisposable
             Loc.Get("TrayMenu_TaskbarCover"),
             () =>
             {
-                DeckleShellTrayMenuSource.Log.ItemClicked(_taskbarCoverItem!.Text);
+                DeckleShellTrayMenuSource.Log.ItemClicked();
+                DeckleShellTrayMenuSource.Log.ItemClickedDetail(_taskbarCoverItem!.Text);
                 Hide("item_click:TaskbarCover");
                 OnToggleTaskbarCover?.Invoke();
             });
@@ -283,7 +286,8 @@ public sealed class TrayContextMenuHost : IDisposable
         var item = new MenuFlyoutItem { Text = text };
         item.Click += (_, _) =>
         {
-            DeckleShellTrayMenuSource.Log.ItemClicked(text);
+            DeckleShellTrayMenuSource.Log.ItemClicked();
+            DeckleShellTrayMenuSource.Log.ItemClickedDetail(text);
             Hide($"item_click:{text}");
             action();
         };
@@ -333,7 +337,8 @@ public sealed class TrayContextMenuHost : IDisposable
         double msSinceLastShow = _showCount == 0 ? 0 : (nowTickMs - _lastShowTickMs);
         _showCount++;
         _lastShowTickMs = nowTickMs;
-        DeckleShellTrayMenuSource.Log.ShowRequested(msSinceLastShow, _showCount);
+        DeckleShellTrayMenuSource.Log.ShowRequested();
+        DeckleShellTrayMenuSource.Log.ShowRequestedDetail(msSinceLastShow, _showCount);
 
         if (_ambientItem is not null && IsAmbientOn is not null)
         {
@@ -460,7 +465,8 @@ public sealed class TrayContextMenuHost : IDisposable
     {
         if (!_isVisible) return;
         _isVisible = false;
-        DeckleShellTrayMenuSource.Log.Hidden(reason);
+        DeckleShellTrayMenuSource.Log.Hidden();
+        DeckleShellTrayMenuSource.Log.HiddenDetail(reason);
         _flyout?.Hide();
         if (_hwnd != IntPtr.Zero)
             NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE);
@@ -551,7 +557,8 @@ public sealed class TrayContextMenuHost : IDisposable
 
             _flyout?.Hide();
             sw.Stop();
-            DeckleShellTrayMenuSource.Log.PrimeCycleCompleted(sw.Elapsed.TotalMilliseconds);
+            DeckleShellTrayMenuSource.Log.PrimeCycleCompleted();
+            DeckleShellTrayMenuSource.Log.PrimeCycleCompletedDetail(sw.Elapsed.TotalMilliseconds);
         });
     }
 

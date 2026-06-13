@@ -51,28 +51,41 @@ public class DeckleThreadingSourceTests
     {
         using var listener = new TestEventListener("Deckle-Threading");
 
-        DeckleThreadingSource.Log.MarshalTimeout(
+        DeckleThreadingSource.Log.MarshalTimeout();
+        DeckleThreadingSource.Log.MarshalTimeoutDetail(
             operation: "feedback-display", caller: "hud-window", waited_ms: 5000);
 
-        var ev = Assert.Single(listener.Events);
-        Assert.Equal(DeckleThreadingSource.EvtMarshalTimeout, ev.EventId);
-        Assert.Equal(EventLevel.Warning, ev.Level);
-        Assert.True(ev.HasKeyword(Keywords.Threading));
+        Assert.Equal(2, listener.Events.Count);
+        var milestone = listener.Events[0];
+        Assert.Equal(DeckleThreadingSource.EvtMarshalTimeout, milestone.EventId);
+        Assert.Equal(EventLevel.Warning, milestone.Level);
+        Assert.True(milestone.HasKeyword(Keywords.Threading));
+        var detail = listener.Events[1];
+        Assert.Equal(DeckleThreadingSource.EvtMarshalTimeoutDetail, detail.EventId);
+        Assert.Equal(EventLevel.Verbose, detail.Level);
+        Assert.Equal("feedback-display", detail.Payload?[0]);
+        Assert.Equal("hud-window", detail.Payload?[1]);
+        Assert.Equal(5000, detail.Payload?[2]);
     }
 
     [Fact]
-    public void DispatcherEnqueueRejectedKeepsLegacyShellSignature()
+    public void DispatcherEnqueueRejectedEmitsWarningThenVerboseDetail()
     {
         using var listener = new TestEventListener("Deckle-Threading");
 
-        DeckleThreadingSource.Log.DispatcherEnqueueRejected(
+        DeckleThreadingSource.Log.DispatcherEnqueueRejected();
+        DeckleThreadingSource.Log.DispatcherEnqueueRejectedDetail(
             caller_source: "LOGWIN", reason: "log entry");
 
-        var ev = Assert.Single(listener.Events);
-        Assert.Equal(DeckleThreadingSource.EvtDispatcherEnqueueRejected, ev.EventId);
-        Assert.Equal(EventLevel.Warning, ev.Level);
-        Assert.True(ev.HasKeyword(Keywords.Threading));
-        Assert.Equal("LOGWIN", ev.Payload?[0]);
-        Assert.Equal("log entry", ev.Payload?[1]);
+        Assert.Equal(2, listener.Events.Count);
+        var milestone = listener.Events[0];
+        Assert.Equal(DeckleThreadingSource.EvtDispatcherEnqueueRejected, milestone.EventId);
+        Assert.Equal(EventLevel.Warning, milestone.Level);
+        Assert.True(milestone.HasKeyword(Keywords.Threading));
+        var detail = listener.Events[1];
+        Assert.Equal(DeckleThreadingSource.EvtDispatcherEnqueueRejectedDetail, detail.EventId);
+        Assert.Equal(EventLevel.Verbose, detail.Level);
+        Assert.Equal("LOGWIN", detail.Payload?[0]);
+        Assert.Equal("log entry", detail.Payload?[1]);
     }
 }
