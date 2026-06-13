@@ -10,10 +10,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Done ({0})")]
-    public void PipelineCompleted(string outcome)
+           Message = "Done")]
+    public void PipelineCompleted()
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineCompleted, outcome);
+        if (IsEnabled()) WriteEvent(EvtPipelineCompleted);
+    }
+
+    [Event(EvtPipelineCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "done | outcome={0}")]
+    public void PipelineCompletedDetail(string outcome)
+    {
+        if (IsEnabled()) WriteEvent(EvtPipelineCompletedDetail, outcome);
     }
 
     [Event(EvtPipelineTimings,

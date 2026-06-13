@@ -101,7 +101,8 @@ public sealed class WhisperBackend : IAsrBackend
 
             if (!File.Exists(modelPath))
             {
-                DeckleWhispSource.Log.ModelLoadAborted("file_not_found", modelPath);
+                DeckleWhispSource.Log.ModelLoadAborted();
+                DeckleWhispSource.Log.ModelLoadAbortedDetail("file_not_found", modelPath);
                 return new ModelLoadResult(false, 0, null, "file_not_found");
             }
 
@@ -129,11 +130,13 @@ public sealed class WhisperBackend : IAsrBackend
 
             if (_ctx == IntPtr.Zero)
             {
-                DeckleWhispSource.Log.ModelLoadFailed(modelPath);
+                DeckleWhispSource.Log.ModelLoadFailed();
+                DeckleWhispSource.Log.ModelLoadFailedDetail(modelPath);
                 return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed");
             }
 
-            DeckleWhispSource.Log.ModelLoaded(_detectedBackend);
+            DeckleWhispSource.Log.ModelLoaded();
+            DeckleWhispSource.Log.ModelLoadedDetail(_detectedBackend);
             DeckleWhispSource.Log.ModelLoadComplete(sw.ElapsedMilliseconds, _detectedBackend);
 
             return new ModelLoadResult(true, sw.ElapsedMilliseconds, _detectedBackend, null);
@@ -178,7 +181,8 @@ public sealed class WhisperBackend : IAsrBackend
         if (string.IsNullOrWhiteSpace(envPath)) return fallback;
         if (!Path.IsPathRooted(envPath) || !File.Exists(envPath))
         {
-            DeckleWhispSource.Log.ModelPathEnvIgnored(envPath, fallback);
+            DeckleWhispSource.Log.ModelPathEnvIgnored();
+            DeckleWhispSource.Log.ModelPathEnvIgnoredDetail(envPath, fallback);
             return fallback;
         }
         return envPath;
@@ -316,7 +320,8 @@ public sealed class WhisperBackend : IAsrBackend
 
         if (result != 0 && !_abortRequested)
         {
-            DeckleWhispSource.Log.TranscribeFailed(result);
+            DeckleWhispSource.Log.TranscribeFailed();
+            DeckleWhispSource.Log.TranscribeFailedDetail(result);
             return new TranscriptionResult(
                 Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result);
         }
@@ -380,7 +385,8 @@ public sealed class WhisperBackend : IAsrBackend
                     _abortRequested = true;
                     string preview = segText.Trim();
                     if (preview.Length > 60) preview = preview[..60] + "…";
-                    DeckleWhispSource.Log.TranscribeRepetitionLoop(streak, period, preview);
+                    DeckleWhispSource.Log.TranscribeRepetitionLoop();
+                    DeckleWhispSource.Log.TranscribeRepetitionLoopDetail(streak, period, preview);
                 }
 
                 _segmentSink?.Invoke(segment);
@@ -402,7 +408,8 @@ public sealed class WhisperBackend : IAsrBackend
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.SegmentCallbackThrew(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.SegmentCallbackThrew();
+            DeckleWhispSource.Log.SegmentCallbackThrewDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -466,8 +473,14 @@ public sealed class WhisperBackend : IAsrBackend
                 // ggml levels: 0=None, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Cont.
                 switch (level)
                 {
-                    case 4: DeckleWhispSource.Log.WhisperLogError(msg); break;
-                    case 3: DeckleWhispSource.Log.WhisperLogWarning(msg); break;
+                    case 4:
+                        DeckleWhispSource.Log.WhisperLogError();
+                        DeckleWhispSource.Log.WhisperLogErrorDetail(msg);
+                        break;
+                    case 3:
+                        DeckleWhispSource.Log.WhisperLogWarning();
+                        DeckleWhispSource.Log.WhisperLogWarningDetail(msg);
+                        break;
                     default: DeckleWhispSource.Log.WhisperLogVerbose(msg); break;
                 }
             }
@@ -483,7 +496,8 @@ public sealed class WhisperBackend : IAsrBackend
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.WhisperLogSetUnavailable(ex.Message);
+            DeckleWhispSource.Log.WhisperLogSetUnavailable();
+            DeckleWhispSource.Log.WhisperLogSetUnavailableDetail(ex.Message);
         }
     }
 

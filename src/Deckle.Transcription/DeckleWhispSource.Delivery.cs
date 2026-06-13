@@ -19,10 +19,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardAllocFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "GlobalAlloc failed | bytes={0}")]
-    public void ClipboardAllocFailed(int bytes)
+           Message = "Allocating clipboard memory failed")]
+    public void ClipboardAllocFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtClipboardAllocFailed, bytes);
+        if (IsEnabled()) WriteEvent(EvtClipboardAllocFailed);
+    }
+
+    [Event(EvtClipboardAllocFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "global alloc failed | bytes={0}")]
+    public void ClipboardAllocFailedDetail(int bytes)
+    {
+        if (IsEnabled()) WriteEvent(EvtClipboardAllocFailedDetail, bytes);
     }
 
     [Event(EvtClipboardOpen,
@@ -34,28 +43,34 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtClipboardOpen, ok);
     }
 
+    // In-place clean (no params, no placeholders): the Win32 API name was
+    // dropped for a human sentence.
     [Event(EvtClipboardOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "OpenClipboard failed")]
+           Message = "Opening the clipboard failed")]
     public void ClipboardOpenFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardOpenFailed);
     }
 
+    // Constant-only detail dropped: the method takes no args (handle was the
+    // compile-time constant 0). No Verbose mirror.
     [Event(EvtClipboardSetDataFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "SetClipboardData failed | handle=0")]
+           Message = "Writing to the clipboard failed")]
     public void ClipboardSetDataFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardSetDataFailed);
     }
 
+    // Constant-only detail dropped: the method takes no args (reason was the
+    // compile-time constant no_unicode_data). No Verbose mirror.
     [Event(EvtClipboardVerifyMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "verify failed | reason=no_unicode_data")]
+           Message = "Clipboard verification found no text")]
     public void ClipboardVerifyMissing()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMissing);
@@ -64,10 +79,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMismatch,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "verify failed | expected_chars={0} | actual_chars={1}")]
-    public void ClipboardVerifyMismatch(int expected_chars, int actual_chars)
+           Message = "Clipboard verification found the wrong text")]
+    public void ClipboardVerifyMismatch()
     {
-        if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatch, expected_chars, actual_chars);
+        if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatch);
+    }
+
+    [Event(EvtClipboardVerifyMismatchDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "verify mismatch | expected_chars={0} | actual_chars={1}")]
+    public void ClipboardVerifyMismatchDetail(int expected_chars, int actual_chars)
+    {
+        if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatchDetail, expected_chars, actual_chars);
     }
 
     [Event(EvtClipboardCopied,
@@ -108,19 +132,24 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPasteForeground, foreground_descriptor);
     }
 
+    // In-place clean (entirely human guidance, no params, no placeholders):
+    // only the "skipped:" implementation prefix was dropped.
     [Event(EvtPasteSkippedNoForeground,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "skipped: no foreground window. Clipboard holds the text — Ctrl+V where you want it.")]
+           Message = "Paste skipped — no foreground window. The text is on the clipboard, press Ctrl+V where you want it.")]
     public void PasteSkippedNoForeground()
     {
         if (IsEnabled()) WriteEvent(EvtPasteSkippedNoForeground);
     }
 
+    // In-place clean (entirely human guidance, no params, no placeholders):
+    // only the "skipped:" implementation prefix was dropped. "Deckle" is kept —
+    // it is the app name addressed to the user, not the EventSource tag.
     [Event(EvtPasteSkippedSelfTarget,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "skipped: foreground is Deckle itself. Clipboard holds the text — Ctrl+V in the right window.")]
+           Message = "Paste skipped — Deckle was in the foreground. The text is on the clipboard, press Ctrl+V in the right window.")]
     public void PasteSkippedSelfTarget()
     {
         if (IsEnabled()) WriteEvent(EvtPasteSkippedSelfTarget);
@@ -135,22 +164,35 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPasteUiaDiag, uia_diag);
     }
 
+    // In-place clean (entirely human guidance, no params, no placeholders):
+    // only the "skipped:" implementation prefix was dropped.
     [Event(EvtPasteSkippedNotTextField,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "skipped: focused element is not a text field. Clipboard holds the text — Ctrl+V where you want it.")]
+           Message = "Paste skipped — the focused element is not a text field. The text is on the clipboard, press Ctrl+V where you want it.")]
     public void PasteSkippedNotTextField()
     {
         if (IsEnabled()) WriteEvent(EvtPasteSkippedNotTextField);
     }
 
+    // User-facing guidance kept as the milestone; the injected/total counts
+    // move to the Verbose mirror.
     [Event(EvtPasteSendInputPartial,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "partial: SendInput injected {0}/{1} events. Clipboard holds the text — Ctrl+V manually.")]
-    public void PasteSendInputPartial(int sent, int total)
+           Message = "Paste was only partly sent. The text is on the clipboard, press Ctrl+V manually.")]
+    public void PasteSendInputPartial()
     {
-        if (IsEnabled()) WriteEvent(EvtPasteSendInputPartial, sent, total);
+        if (IsEnabled()) WriteEvent(EvtPasteSendInputPartial);
+    }
+
+    [Event(EvtPasteSendInputPartialDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "send input partial | sent={0} | total={1}")]
+    public void PasteSendInputPartialDetail(int sent, int total)
+    {
+        if (IsEnabled()) WriteEvent(EvtPasteSendInputPartialDetail, sent, total);
     }
 
     [Event(EvtPasteSucceeded,

@@ -96,7 +96,8 @@ public sealed partial class TranscriptionEngine
         // (App.ApplyLevelWindow on the App side).
         _host.ApplyLevelWindow(lw);
 
-        DeckleWhispSource.Log.AutoCalibrated(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
+        DeckleWhispSource.Log.AutoCalibrated();
+        DeckleWhispSource.Log.AutoCalibratedDetail(calib.NewMinDbfs, calib.NewMaxDbfs, needed);
     }
 
     // Emit the post-DSP level distribution — the processed-signal mirror of the raw
@@ -189,7 +190,8 @@ public sealed partial class TranscriptionEngine
                 string.Equals(p.Name, _manualProfileName, StringComparison.OrdinalIgnoreCase));
             if (profile is null)
             {
-                DeckleWhispSource.Log.ManualProfileNotFound(_manualProfileName);
+                DeckleWhispSource.Log.ManualProfileNotFound();
+                DeckleWhispSource.Log.ManualProfileNotFoundDetail(_manualProfileName);
             }
         }
         else if (llmSettings.Enabled)
@@ -315,7 +317,8 @@ public sealed partial class TranscriptionEngine
         // _strategyLabel for the telemetry surface.
         string strategyLabel = _backend.Name;
 
-        DeckleWhispSource.Log.PipelineCompleted(outcome.ToString());
+        DeckleWhispSource.Log.PipelineCompleted();
+        DeckleWhispSource.Log.PipelineCompletedDetail(outcome.ToString());
         DeckleWhispSource.Log.PipelineTimings(
             recDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
             stopToPipelineMs, whisperInitMs,
@@ -459,7 +462,8 @@ public sealed partial class TranscriptionEngine
 
         if (r.Status == ClipboardWriteStatus.AllocFailed)
         {
-            DeckleWhispSource.Log.ClipboardAllocFailed(r.ByteCount);
+            DeckleWhispSource.Log.ClipboardAllocFailed();
+            DeckleWhispSource.Log.ClipboardAllocFailedDetail(r.ByteCount);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
@@ -503,7 +507,8 @@ public sealed partial class TranscriptionEngine
         }
         else if (r.Status == ClipboardWriteStatus.VerifyLengthMismatch)
         {
-            DeckleWhispSource.Log.ClipboardVerifyMismatch(r.ExpectedChars, r.ActualChars);
+            DeckleWhispSource.Log.ClipboardVerifyMismatch();
+            DeckleWhispSource.Log.ClipboardVerifyMismatchDetail(r.ExpectedChars, r.ActualChars);
             EmitUserFeedback(FB_WARN,
                 Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Title"),
                 Loc.Get("Engine_ClipboardIncomplete_LengthMismatch_Body"),
@@ -576,7 +581,8 @@ public sealed partial class TranscriptionEngine
         uint sent = NativeMethods.SendInput((uint)inputs.Length, inputs, cbSize);
         if (sent != inputs.Length)
         {
-            DeckleWhispSource.Log.PasteSendInputPartial((int)sent, inputs.Length);
+            DeckleWhispSource.Log.PasteSendInputPartial();
+            DeckleWhispSource.Log.PasteSendInputPartialDetail((int)sent, inputs.Length);
             return false;
         }
 

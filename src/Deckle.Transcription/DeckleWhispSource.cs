@@ -158,5 +158,38 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // SpeechTrimSettingsSnapshot) moved to the Deckle-Vad provider when the VAD became
     // its own module. IDs burned, never reused.
 
-
+    // ── Verbose mirrors (Verbose/Info separation) ───────────────────────
+    // Milestones keep their original id; the Verbose mirrors added for the
+    // Verbose/Info separation take fresh ids 125-152 appended after the
+    // sequence (124 is the last burned id). Each mirrors a milestone whose
+    // IDs / k=v detail / native log line moved out of the Capital message.
+    // IDs are public in the ETW manifest; never reuse an id.
+    public const int EvtWarmupClipHeaderInvalidDetail    = 125;
+    public const int EvtWarmupClipSampleMismatchDetail   = 126;
+    public const int EvtWarmupClipLoadFailedDetail       = 127;
+    public const int EvtModelLoadedDetail                = 128;
+    public const int EvtModelLoadAbortedDetail           = 129;
+    public const int EvtModelLoadFailedDetail            = 130;
+    public const int EvtModelPathEnvIgnoredDetail        = 131;
+    public const int EvtWhisperLogSetUnavailableDetail   = 132;
+    public const int EvtWhisperLogWarningDetail          = 133;
+    public const int EvtWhisperLogErrorDetail            = 134;
+    public const int EvtRecordingProbeFailedDetail       = 135;
+    public const int EvtRecordingMicErrorDetail          = 136;
+    public const int EvtAutoCalibratedDetail             = 137;
+    public const int EvtPipelineCrashedDetail            = 138;
+    public const int EvtTranscribeFailedDetail           = 139;
+    public const int EvtTranscribeRepetitionLoopDetail   = 140;
+    public const int EvtSegmentCallbackThrewDetail       = 141;
+    public const int EvtStreamingDrainedDetail           = 142;
+    public const int EvtUtteranceSkippedDetail           = 143;
+    public const int EvtClipboardAllocFailedDetail       = 144;
+    public const int EvtClipboardVerifyMismatchDetail    = 145;
+    public const int EvtPasteSendInputPartialDetail      = 146;
+    public const int EvtPipelineCompletedDetail          = 147;
+    public const int EvtManualProfileNotFoundDetail      = 148;
+    public const int EvtDisposeWorkerJoinTimeoutDetail   = 149;
+    public const int EvtPageInitFailedDetail             = 150;
+    public const int EvtPageLoadedFailedDetail           = 151;
+    public const int EvtPageModelScanFailedDetail        = 152;
 }

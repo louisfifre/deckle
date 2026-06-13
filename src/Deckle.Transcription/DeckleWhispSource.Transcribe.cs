@@ -16,10 +16,12 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtHotkeyToggleIgnored, state);
     }
 
+    // In-place clean (no params, no placeholders): the milestone is entirely a
+    // human sentence; the lowercase phrasing and arrow shorthand were dropped.
     [Event(EvtHotkeyStartingCASLost,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "starting → recording CAS lost (likely Dispose)")]
+           Message = "The start transition was lost before recording began")]
     public void HotkeyStartingCASLost()
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyStartingCASLost);
@@ -28,25 +30,45 @@ public sealed partial class DeckleWhispSource
     [Event(EvtRecordingProbeFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "probe MMSYSERR={0} — {1}")]
-    public void RecordingProbeFailed(uint mmsys_err, string title)
+           Message = "The microphone probe failed")]
+    public void RecordingProbeFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingProbeFailed, mmsys_err, title);
+        if (IsEnabled()) WriteEvent(EvtRecordingProbeFailed);
+    }
+
+    [Event(EvtRecordingProbeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "probe failed | mmsys_err={0} | title={1}")]
+    public void RecordingProbeFailedDetail(uint mmsys_err, string title)
+    {
+        if (IsEnabled()) WriteEvent(EvtRecordingProbeFailedDetail, mmsys_err, title);
     }
 
     [Event(EvtRecordingMicError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "capture mic error MMSYSERR={0} — {1}")]
-    public void RecordingMicError(uint mmsys_err, string title)
+           Message = "The microphone failed during capture")]
+    public void RecordingMicError()
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingMicError, mmsys_err, title);
+        if (IsEnabled()) WriteEvent(EvtRecordingMicError);
     }
 
+    [Event(EvtRecordingMicErrorDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "capture mic error | mmsys_err={0} | title={1}")]
+    public void RecordingMicErrorDetail(uint mmsys_err, string title)
+    {
+        if (IsEnabled()) WriteEvent(EvtRecordingMicErrorDetail, mmsys_err, title);
+    }
+
+    // In-place clean (no params, no placeholders): lowercase implementation
+    // phrasing recapitalized into a human sentence.
     [Event(EvtRecordingLowAudio,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "low audio overlay surfaced")]
+           Message = "Low audio was surfaced to the user")]
     public void RecordingLowAudio()
     {
         if (IsEnabled()) WriteEvent(EvtRecordingLowAudio);
@@ -55,19 +77,37 @@ public sealed partial class DeckleWhispSource
     [Event(EvtAutoCalibrated,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Auto-calibrated level window: Min={0:F0} Max={1:F0} dBFS (median over {2} sessions, p25-5dB / p90+5dB margins)")]
-    public void AutoCalibrated(double new_min_dbfs, double new_max_dbfs, int session_count)
+           Message = "Level window auto-calibrated")]
+    public void AutoCalibrated()
     {
-        if (IsEnabled()) WriteEvent(EvtAutoCalibrated, new_min_dbfs, new_max_dbfs, session_count);
+        if (IsEnabled()) WriteEvent(EvtAutoCalibrated);
+    }
+
+    [Event(EvtAutoCalibratedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "auto-calibrated | new_min_dbfs={0:F0} | new_max_dbfs={1:F0} | session_count={2} | margins=p25-5dB/p90+5dB")]
+    public void AutoCalibratedDetail(double new_min_dbfs, double new_max_dbfs, int session_count)
+    {
+        if (IsEnabled()) WriteEvent(EvtAutoCalibratedDetail, new_min_dbfs, new_max_dbfs, session_count);
     }
 
     [Event(EvtPipelineCrashed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "pipeline crashed: {0}: {1}")]
-    public void PipelineCrashed(string ex_type, string ex_message)
+           Message = "The pipeline crashed")]
+    public void PipelineCrashed()
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineCrashed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPipelineCrashed);
+    }
+
+    [Event(EvtPipelineCrashedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "pipeline crashed | ex_type={0} | ex_message={1}")]
+    public void PipelineCrashedDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtPipelineCrashedDetail, ex_type, ex_message);
     }
 
     // ── Transcribe ──────────────────────────────────────────────────────
@@ -108,10 +148,12 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribePrompt, prompt_len, carry, preview);
     }
 
+    // In-place clean (no params, no placeholders): lowercase phrasing
+    // recapitalized into a human sentence.
     [Event(EvtTranscribeEmpty,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "empty audio buffer, nothing to transcribe")]
+           Message = "There was no audio to transcribe")]
     public void TranscribeEmpty()
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeEmpty);
@@ -120,19 +162,31 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "whisper_full failed | result={0}")]
-    public void TranscribeFailed(int result)
+           Message = "Transcription failed")]
+    public void TranscribeFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeFailed, result);
+        if (IsEnabled()) WriteEvent(EvtTranscribeFailed);
     }
 
+    [Event(EvtTranscribeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "whisper_full failed | result={0}")]
+    public void TranscribeFailedDetail(int result)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscribeFailedDetail, result);
+    }
+
+    // Milestone drops the segment count; the existing TranscribeCompleteDetail
+    // (whisper_ms | n_seg | chars) is its Verbose mirror, already following at
+    // the call site.
     [Event(EvtTranscribeCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Transcription complete ({0} seg)")]
-    public void TranscribeCompleted(int n_seg)
+           Message = "Transcription complete")]
+    public void TranscribeCompleted()
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeCompleted, n_seg);
+        if (IsEnabled()) WriteEvent(EvtTranscribeCompleted);
     }
 
     [Event(EvtTranscribeCompleteDetail,
@@ -147,10 +201,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeRepetitionLoop,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "repetition loop detected — period-{1} streak {0} ('{2}'); requesting whisper to abort")]
-    public void TranscribeRepetitionLoop(int streak, int period, string preview)
+           Message = "A repetition loop was detected and transcription was aborted")]
+    public void TranscribeRepetitionLoop()
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoop, streak, period, preview);
+        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoop);
+    }
+
+    [Event(EvtTranscribeRepetitionLoopDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "repetition loop | streak={0} | period={1} | text=\"{2}\"")]
+    public void TranscribeRepetitionLoopDetail(int streak, int period, string preview)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoopDetail, streak, period, preview);
     }
 
     [Event(EvtTranscribeSkipped,
@@ -167,19 +230,37 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingDrained,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Streaming complete | {0} utterances | {1:F1} s audio | {2} ms whisper | {3} words | {4} seg")]
-    public void StreamingDrained(int n_utterances, double audio_sec, long whisper_ms, int words, int n_seg)
+           Message = "Streaming complete")]
+    public void StreamingDrained()
     {
-        if (IsEnabled()) WriteEvent(EvtStreamingDrained, n_utterances, audio_sec, whisper_ms, words, n_seg);
+        if (IsEnabled()) WriteEvent(EvtStreamingDrained);
+    }
+
+    [Event(EvtStreamingDrainedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "streaming complete | utterances={0} | audio_sec={1:F1} | whisper_ms={2} | words={3} | n_seg={4}")]
+    public void StreamingDrainedDetail(int n_utterances, double audio_sec, long whisper_ms, int words, int n_seg)
+    {
+        if (IsEnabled()) WriteEvent(EvtStreamingDrainedDetail, n_utterances, audio_sec, whisper_ms, words, n_seg);
     }
 
     [Event(EvtUtteranceSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance #{0} failed, dictation continues | {1}: {2}")]
-    public void UtteranceSkipped(int index, string ex_type, string ex_message)
+           Message = "An utterance failed and dictation continued")]
+    public void UtteranceSkipped()
     {
-        if (IsEnabled()) WriteEvent(EvtUtteranceSkipped, index, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtUtteranceSkipped);
+    }
+
+    [Event(EvtUtteranceSkippedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "utterance skipped | index={0} | ex_type={1} | ex_message={2}")]
+    public void UtteranceSkippedDetail(int index, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtUtteranceSkippedDetail, index, ex_type, ex_message);
     }
 
     // Producer side: one event per utterance the segmenter cuts off the live
@@ -272,9 +353,18 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmentCallbackThrew,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}: {1}")]
-    public void SegmentCallbackThrew(string ex_type, string ex_message)
+           Message = "The segment callback threw")]
+    public void SegmentCallbackThrew()
     {
-        if (IsEnabled()) WriteEvent(EvtSegmentCallbackThrew, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtSegmentCallbackThrew);
+    }
+
+    [Event(EvtSegmentCallbackThrewDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "segment callback threw | ex_type={0} | ex_message={1}")]
+    public void SegmentCallbackThrewDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSegmentCallbackThrewDetail, ex_type, ex_message);
     }
 }

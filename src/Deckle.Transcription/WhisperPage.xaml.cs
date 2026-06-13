@@ -84,7 +84,8 @@ public sealed partial class WhisperPage : Page
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.PageInitFailed(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.PageInitFailed();
+            DeckleWhispSource.Log.PageInitFailedDetail(ex.GetType().Name, ex.Message);
             DeckleWhispSource.Log.PageStackTrace(ex.StackTrace ?? "(no stack)");
             throw;
         }
@@ -158,7 +159,8 @@ public sealed partial class WhisperPage : Page
             }
             catch (Exception ex)
             {
-                DeckleWhispSource.Log.PageLoadedFailed(ex.GetType().Name, ex.Message);
+                DeckleWhispSource.Log.PageLoadedFailed();
+                DeckleWhispSource.Log.PageLoadedFailedDetail(ex.GetType().Name, ex.Message);
                 DeckleWhispSource.Log.PageStackTrace(ex.StackTrace ?? "(no stack)");
             }
         };
@@ -286,7 +288,8 @@ public sealed partial class WhisperPage : Page
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.PageModelScanFailed(ex.Message);
+            DeckleWhispSource.Log.PageModelScanFailed();
+            DeckleWhispSource.Log.PageModelScanFailedDetail(ex.Message);
         }
 
         string current = ViewModel.Model;

@@ -211,7 +211,8 @@ public sealed partial class TranscriptionEngine
         if (capture.Outcome == CaptureOutcome.MicError)
         {
             var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
-            DeckleWhispSource.Log.RecordingMicError(capture.MmsysErr, title);
+            DeckleWhispSource.Log.RecordingMicError();
+            DeckleWhispSource.Log.RecordingMicErrorDetail(capture.MmsysErr, title);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
             RaiseFinished(TranscriptionOutcome.None);
             return null;
@@ -240,7 +241,8 @@ public sealed partial class TranscriptionEngine
         // summary of the whole take (utterances the segmenter produced, audio
         // length, cumulative Whisper time, word count, Whisper's own sub-segments).
         double takeAudioSec = (float)capture.Pcm.Length / 16_000f;
-        DeckleWhispSource.Log.StreamingDrained(
+        DeckleWhispSource.Log.StreamingDrained();
+        DeckleWhispSource.Log.StreamingDrainedDetail(
             consumed.NUtterances,
             takeAudioSec,
             consumed.TotalMs,
@@ -407,7 +409,8 @@ public sealed partial class TranscriptionEngine
             {
                 // One utterance failing must not lose the whole dictation — log,
                 // drop its context, keep going (resilience, the first goal).
-                DeckleWhispSource.Log.UtteranceSkipped(u.Index, ex.GetType().Name, ex.Message);
+                DeckleWhispSource.Log.UtteranceSkipped();
+                DeckleWhispSource.Log.UtteranceSkippedDetail(u.Index, ex.GetType().Name, ex.Message);
                 previousTail = null;
                 continue;
             }

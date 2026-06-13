@@ -148,7 +148,8 @@ public sealed partial class TranscriptionEngine
             if (!probe.Ok)
             {
                 var (title, body) = LocalizeMicError(probe.Kind, probe.MmsysErr);
-                DeckleWhispSource.Log.RecordingProbeFailed(probe.MmsysErr, title);
+                DeckleWhispSource.Log.RecordingProbeFailed();
+                DeckleWhispSource.Log.RecordingProbeFailedDetail(probe.MmsysErr, title);
                 EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 return ToggleResult.IgnoredBusy;
             }
@@ -290,7 +291,8 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.PipelineCrashed(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.PipelineCrashed();
+            DeckleWhispSource.Log.PipelineCrashedDetail(ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),

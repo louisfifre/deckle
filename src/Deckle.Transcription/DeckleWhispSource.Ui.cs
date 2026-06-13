@@ -22,13 +22,24 @@ public sealed partial class DeckleWhispSource
 
     // ── Llm-side observation from TranscriptionEngine ─────────────────────────
 
+    // User-facing guidance kept as the milestone; the missing profile name
+    // moves to the Verbose mirror.
     [Event(EvtManualProfileNotFound,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "manual profile '{0}' not found in Profiles — transcript pasted without rewriting. Pick an existing profile on the Rewriting page.")]
-    public void ManualProfileNotFound(string profile_name)
+           Message = "The selected rewriting profile was not found, so the transcript was pasted without rewriting. Pick an existing profile on the Rewriting page.")]
+    public void ManualProfileNotFound()
     {
-        if (IsEnabled()) WriteEvent(EvtManualProfileNotFound, profile_name);
+        if (IsEnabled()) WriteEvent(EvtManualProfileNotFound);
+    }
+
+    [Event(EvtManualProfileNotFoundDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "manual profile not found | profile_name={0}")]
+    public void ManualProfileNotFoundDetail(string profile_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtManualProfileNotFoundDetail, profile_name);
     }
 
     // ── Dispose ─────────────────────────────────────────────────────────
@@ -45,10 +56,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDisposeWorkerJoinTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "dispose timeout | join_ms={0} — worker still alive, leaking thread (process exiting)")]
-    public void DisposeWorkerJoinTimeout(long join_ms)
+           Message = "The worker did not stop in time and was left running as the process exits")]
+    public void DisposeWorkerJoinTimeout()
     {
-        if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoinTimeout, join_ms);
+        if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoinTimeout);
+    }
+
+    [Event(EvtDisposeWorkerJoinTimeoutDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "dispose timeout | join_ms={0} | state=worker_alive_thread_leaked")]
+    public void DisposeWorkerJoinTimeoutDetail(long join_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoinTimeoutDetail, join_ms);
     }
 
     [Event(EvtDisposeWorkerJoined,
@@ -115,8 +135,11 @@ public sealed partial class DeckleWhispSource
 
     // ── ViewModel + WhisperPage UI side ─────────────────────────────────
 
+    // Demoted to Verbose: a settings field mutating from the UI is an opaque
+    // internal step with no user-facing milestone value; the line is property +
+    // value detail, which belongs at Verbose. No milestone, no mirror.
     [Event(EvtSettingChanged,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "{0} ← {1}")]
     public void SettingChanged(string property, string value)
@@ -154,10 +177,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageInitFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "init component threw | error={0}: {1}")]
-    public void PageInitFailed(string ex_type, string ex_message)
+           Message = "The Whisper page failed to initialize")]
+    public void PageInitFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtPageInitFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPageInitFailed);
+    }
+
+    [Event(EvtPageInitFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "init component threw | ex_type={0} | ex_message={1}")]
+    public void PageInitFailedDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtPageInitFailedDetail, ex_type, ex_message);
     }
 
     [Event(EvtPageLoadedStart,
@@ -190,19 +222,37 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageLoadedFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "loaded threw | error={0}: {1}")]
-    public void PageLoadedFailed(string ex_type, string ex_message)
+           Message = "The Whisper page failed to load")]
+    public void PageLoadedFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtPageLoadedFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPageLoadedFailed);
+    }
+
+    [Event(EvtPageLoadedFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "loaded threw | ex_type={0} | ex_message={1}")]
+    public void PageLoadedFailedDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtPageLoadedFailedDetail, ex_type, ex_message);
     }
 
     [Event(EvtPageModelScanFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model scan failed: {0}")]
-    public void PageModelScanFailed(string ex_message)
+           Message = "Scanning for models failed")]
+    public void PageModelScanFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtPageModelScanFailed, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPageModelScanFailed);
+    }
+
+    [Event(EvtPageModelScanFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "model scan failed | ex_message={0}")]
+    public void PageModelScanFailedDetail(string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtPageModelScanFailedDetail, ex_message);
     }
 
     [Event(EvtPageDiscardRestartChanges,
@@ -223,8 +273,12 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPageResetAll);
     }
 
+    // Demoted to Verbose: a raw stack trace is pure technical detail attached to
+    // PageInitFailed / PageLoadedFailed, not a user-facing milestone. It carries
+    // multi-line content, which an Error-level message must not; at Verbose it is
+    // the greppable detail behind the Capital failure milestone.
     [Event(EvtPageStackTrace,
-           Level = EventLevel.Error,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "{0}")]
     public void PageStackTrace(string stack_trace)

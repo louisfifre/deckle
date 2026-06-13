@@ -19,28 +19,55 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipHeaderInvalid,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip header invalid | path={0}")]
-    public void WarmupClipHeaderInvalid(string path)
+           Message = "The warmup clip has an invalid header")]
+    public void WarmupClipHeaderInvalid()
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupClipHeaderInvalid, path);
+        if (IsEnabled()) WriteEvent(EvtWarmupClipHeaderInvalid);
+    }
+
+    [Event(EvtWarmupClipHeaderInvalidDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "warmup clip header invalid | path={0}")]
+    public void WarmupClipHeaderInvalidDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupClipHeaderInvalidDetail, path);
     }
 
     [Event(EvtWarmupClipSampleMismatch,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip format unexpected | format={0} ch={1} sr={2} bits={3} (expected PCM mono 16-bit 16 kHz)")]
-    public void WarmupClipSampleMismatch(int audio_format, int num_channels, int sample_rate, int bits_per_sample)
+           Message = "The warmup clip is not in the expected audio format")]
+    public void WarmupClipSampleMismatch()
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupClipSampleMismatch, audio_format, num_channels, sample_rate, bits_per_sample);
+        if (IsEnabled()) WriteEvent(EvtWarmupClipSampleMismatch);
+    }
+
+    [Event(EvtWarmupClipSampleMismatchDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "warmup clip format unexpected | format={0} | channels={1} | sample_rate={2} | bits={3} | expected=PCM mono 16-bit 16 kHz")]
+    public void WarmupClipSampleMismatchDetail(int audio_format, int num_channels, int sample_rate, int bits_per_sample)
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupClipSampleMismatchDetail, audio_format, num_channels, sample_rate, bits_per_sample);
     }
 
     [Event(EvtWarmupClipLoadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip load failed | error={0}: {1}")]
-    public void WarmupClipLoadFailed(string ex_type, string ex_message)
+           Message = "The warmup clip could not be loaded")]
+    public void WarmupClipLoadFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailed);
+    }
+
+    [Event(EvtWarmupClipLoadFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "warmup clip load failed | ex_type={0} | ex_message={1}")]
+    public void WarmupClipLoadFailedDetail(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailedDetail, ex_type, ex_message);
     }
 
     // ── Warmup pipeline ──────────────────────────────────────────────────
@@ -86,10 +113,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoadAborted,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load aborted | reason={0} | path={1}")]
-    public void ModelLoadAborted(string reason, string path)
+           Message = "Model load was aborted")]
+    public void ModelLoadAborted()
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadAborted, reason, path);
+        if (IsEnabled()) WriteEvent(EvtModelLoadAborted);
+    }
+
+    [Event(EvtModelLoadAbortedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "load aborted | reason={0} | path={1}")]
+    public void ModelLoadAbortedDetail(string reason, string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelLoadAbortedDetail, reason, path);
     }
 
     [Event(EvtModelInitFromFile,
@@ -104,19 +140,40 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoadFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "load failed | path={0}")]
-    public void ModelLoadFailed(string path)
+           Message = "The model could not be loaded")]
+    public void ModelLoadFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadFailed, path);
+        if (IsEnabled()) WriteEvent(EvtModelLoadFailed);
+    }
+
+    // The `path` key carries the model path on the backend init-failure call
+    // site and the exception message on the engine catch call site; the key is
+    // frozen, so the pre-existing semantic overlap is preserved as-is.
+    [Event(EvtModelLoadFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "load failed | path={0}")]
+    public void ModelLoadFailedDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelLoadFailedDetail, path);
     }
 
     [Event(EvtModelLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Model loaded ({0})")]
-    public void ModelLoaded(string backend)
+           Message = "Model loaded")]
+    public void ModelLoaded()
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoaded, backend);
+        if (IsEnabled()) WriteEvent(EvtModelLoaded);
+    }
+
+    [Event(EvtModelLoadedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "model loaded | backend={0}")]
+    public void ModelLoadedDetail(string backend)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelLoadedDetail, backend);
     }
 
     [Event(EvtModelLoadComplete,
@@ -176,10 +233,19 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelPathEnvIgnored,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "DECKLE_MODEL_PATH ignored (not an existing absolute path): \"{0}\". Falling back to \"{1}\".")]
-    public void ModelPathEnvIgnored(string env_path, string fallback)
+           Message = "The model path environment variable was ignored and the default was used")]
+    public void ModelPathEnvIgnored()
     {
-        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnored, env_path, fallback);
+        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnored);
+    }
+
+    [Event(EvtModelPathEnvIgnoredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "model path env ignored | reason=not_an_existing_absolute_path | env_path={0} | fallback={1}")]
+    public void ModelPathEnvIgnoredDetail(string env_path, string fallback)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnoredDetail, env_path, fallback);
     }
 
     // ── Whisper.cpp log redirect ────────────────────────────────────────
@@ -193,31 +259,60 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWhisperLogVerbose, message);
     }
 
+    // Native-log passthrough: the milestone names the source; the raw
+    // whisper.cpp line ({0}, native casing) is mirrored at Verbose.
     [Event(EvtWhisperLogWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void WhisperLogWarning(string message)
+           Message = "Whisper reported a warning")]
+    public void WhisperLogWarning()
     {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogWarning, message);
+        if (IsEnabled()) WriteEvent(EvtWhisperLogWarning);
+    }
+
+    [Event(EvtWhisperLogWarningDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "{0}")]
+    public void WhisperLogWarningDetail(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperLogWarningDetail, message);
     }
 
     [Event(EvtWhisperLogError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void WhisperLogError(string message)
+           Message = "Whisper reported an error")]
+    public void WhisperLogError()
     {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogError, message);
+        if (IsEnabled()) WriteEvent(EvtWhisperLogError);
+    }
+
+    [Event(EvtWhisperLogErrorDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "{0}")]
+    public void WhisperLogErrorDetail(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperLogErrorDetail, message);
     }
 
     [Event(EvtWhisperLogSetUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper_log_set unavailable: {0}")]
-    public void WhisperLogSetUnavailable(string ex_message)
+           Message = "The Whisper log hook could not be installed")]
+    public void WhisperLogSetUnavailable()
     {
-        if (IsEnabled()) WriteEvent(EvtWhisperLogSetUnavailable, ex_message);
+        if (IsEnabled()) WriteEvent(EvtWhisperLogSetUnavailable);
+    }
+
+    [Event(EvtWhisperLogSetUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "whisper_log_set unavailable | ex_message={0}")]
+    public void WhisperLogSetUnavailableDetail(string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWhisperLogSetUnavailableDetail, ex_message);
     }
 
     // ── Whisper init-phase compaction ────────────────────────────────────
