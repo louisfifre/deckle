@@ -344,6 +344,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         InitializeTaskbarCover();
         Milestone("taskbar_cover");
 
+        // Autocorrect module — keyboard Raw Input + diacritics restorer +
+        // injector, reconciled with the persisted module settings (Enabled by
+        // default; corrections land only on enrolled processes, Notepad out of
+        // the box). Loads the two small gzip lexicons from Data/ beside the exe;
+        // the live engine never touches the offline-only CamemBERT reranker.
+        InitializeAutocorrect();
+        Milestone("autocorrect");
+
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
         // The ILogWindowSink is attached at that point via
         // AppDiagnosticsBootstrap, which replays the LogWindowEventListener

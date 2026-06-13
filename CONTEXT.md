@@ -134,3 +134,15 @@ _Avoid_ : chunk, segment.
 **Segment** :
 Whisper's *output* unit — a short timestamped span the model re-derives **inside** each utterance from its own decoding. An utterance is an input cut decided by energy; a segment is an output cut decided by Whisper. One utterance contains one or more segments.
 _Avoid_ : utterance (the input unit), window (the 30 s encoder input).
+
+## Text operations — correction vs rewrite
+
+Two families of automated text change, told apart by the nature of the change — not by the surface it acts on (voice dictation or typed keyboard, which are orthogonal) nor by the engine behind it. The family decides the risk, and therefore whether the change is allowed to act silently.
+
+**Correction** :
+A bounded, in-place edit drawn from a closed set of possible changes — restoring a missing diacritic, dropping a hesitation, fixing punctuation or casing. It repairs what was typed or said and cannot introduce content that was not there, so it carries no meaning-drift risk: it may apply itself silently and is taken back by the single Backspace gesture (see *Correction revert*). Today: machine-wide diacritics restoration.
+_Avoid_ : rewrite (which regenerates text — correction only repairs a span), autocorrect (the product/module name, not the operation itself).
+
+**Rewrite** :
+A generative regeneration of a span — a sentence or a paragraph — into new text: removing disfluencies and recomposing, restructuring into paragraphs, regrouping by theme. Because it rewrites the wording, it can drift from the original meaning, so it is offered after the fact (suggested or confirmed) rather than applied silently — until trust is earned. The same operation is meant to serve both finalized dictation and typed text.
+_Avoid_ : correction (a bounded repair, not new text), reformulation (Rewrite is the Deckle term).

@@ -18,6 +18,13 @@ public static class RawInputInterop
     public const ushort UsagePageDigitizer = 0x0D;
     public const ushort UsageTouchpad      = 0x05;
 
+    // ── HID usages — Generic Desktop keyboard and mouse ──────────────────
+    // Generic Desktop page (0x01); keyboard observation registers usage
+    // 0x06, mouse-button observation usage 0x02.
+    public const ushort UsagePageGeneric = 0x01;
+    public const ushort UsageKeyboard    = 0x06;
+    public const ushort UsageMouse       = 0x02;
+
     // ── Registration flags ────────────────────────────────────────────────
 
     // Receive WM_INPUT_DEVICE_CHANGE (GIDC_ARRIVAL / GIDC_REMOVAL) for the
@@ -36,7 +43,46 @@ public static class RawInputInterop
 
     // ── Device enumeration ────────────────────────────────────────────────
 
-    public const uint RIM_TYPEHID = 2;
+    public const uint RIM_TYPEMOUSE    = 0;
+    public const uint RIM_TYPEKEYBOARD = 1;
+    public const uint RIM_TYPEHID      = 2;
+
+    // ── RAWKEYBOARD layout and flags ──────────────────────────────────────
+    // learn.microsoft.com/windows/win32/api/winuser/ns-winuser-rawkeyboard
+    // Read by pointer arithmetic off the RAWINPUT buffer, right after the
+    // header: MakeCode (USHORT) @ +0, Flags (USHORT) @ +2, Reserved @ +4,
+    // VKey (USHORT) @ +6, Message (UINT) @ +8, ExtraInformation (ULONG)
+    // @ +12 — the dwExtraInfo a sender stamped via SendInput, surfaced
+    // back on the receive side. Offsets are relative to RAWKEYBOARD start.
+    public const int KeyboardMakeCodeOffset  = 0;
+    public const int KeyboardFlagsOffset     = 2;
+    public const int KeyboardVKeyOffset      = 6;
+    public const int KeyboardExtraInfoOffset = 12;
+
+    // RAWKEYBOARD.Flags bits. RI_KEY_MAKE (0) is key-down by absence of
+    // RI_KEY_BREAK. RI_KEY_E0 marks the E0-prefixed (extended) scan code.
+    public const ushort RI_KEY_BREAK = 1;
+    public const ushort RI_KEY_E0    = 2;
+
+    // KEYBOARD_OVERRUN_MAKE_CODE companion: VKey for a fake/overrun key.
+    public const ushort VKEY_OVERRUN = 0xFF;
+
+    // ── RAWMOUSE layout and button-down flags ─────────────────────────────
+    // learn.microsoft.com/windows/win32/api/winuser/ns-winuser-rawmouse
+    // RAWMOUSE = usFlags (USHORT) @ +0, then a ULONG-aligned union whose
+    // usButtonFlags (USHORT) member lands @ +4 (2 bytes of padding after
+    // usFlags). usButtonData @ +6. Offset is relative to RAWMOUSE start.
+    public const int MouseButtonFlagsOffset = 4;
+
+    // RAWMOUSE.usButtonFlags transition bits we treat as a button press.
+    public const ushort RI_MOUSE_LEFT_BUTTON_DOWN   = 0x0001;
+    public const ushort RI_MOUSE_RIGHT_BUTTON_DOWN  = 0x0004;
+    public const ushort RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
+    public const ushort RI_MOUSE_BUTTON_4_DOWN      = 0x0040;
+    public const ushort RI_MOUSE_BUTTON_5_DOWN      = 0x0100;
+    public const ushort RI_MOUSE_ANY_BUTTON_DOWN =
+        RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN |
+        RI_MOUSE_MIDDLE_BUTTON_DOWN | RI_MOUSE_BUTTON_4_DOWN | RI_MOUSE_BUTTON_5_DOWN;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RAWINPUTDEVICELIST

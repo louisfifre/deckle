@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Deckle.Input.Autocorrect.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The host pulls the whole autocorrect stack transitively through
+         this one reference; Input + Core + Diagnostics ride along. -->
+    <ProjectReference Include="..\Deckle.Input.Autocorrect\Deckle.Input.Autocorrect.csproj" />
+    <!-- ONNX inference (CPU) + managed tokenizer, for the `mlm-probe` reranker POC. -->
+    <ProjectReference Include="..\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" />
+    <!-- DPAPI at-rest encryption for the `harvest` sink. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+</Project>

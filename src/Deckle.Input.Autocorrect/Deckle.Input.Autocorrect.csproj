@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Input.Autocorrect</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Support layer: raw keyboard stream, injection interop. -->
+    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Input.Autocorrect.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Derived lexical artifacts (build-data output) ride next to the binary. -->
+    <Content Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+</Project>

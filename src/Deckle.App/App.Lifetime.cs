@@ -16,6 +16,7 @@ public partial class App
         try { _engine?.Dispose();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("engine dispose: " + ex.Message); }
         try { ShutdownTrackpad();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("trackpad shutdown: " + ex.Message); }
         try { ShutdownTaskbarCover();      } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("taskbar cover shutdown: " + ex.Message); }
+        try { ShutdownAutocorrect();       } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("autocorrect shutdown: " + ex.Message); }
         try { _ambientEngine?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)); }
         catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("ambient engine dispose: " + ex.Message); }
         Environment.Exit(0);
