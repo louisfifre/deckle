@@ -124,3 +124,25 @@ unread today); two concurrent `run` instances double-inject, and the `dict` CLI 
 `list` (last-writer-wins against a live run — purge with run stopped). The engine itself has no
 test seam (concrete host/injector) — extracting interfaces is the prerequisite for pinning the
 gate order in tests.
+
+## 2026-06-13 — Second live run: stale binary, and two by-design misses named
+
+- The evening's live runs all executed a CLI binary built at 00:28 — before every audit fix
+  (01:15–01:22) and the trace mode (01:51). Post-fix validation had run through `Deckle.Tests.sln`,
+  which does not rebuild the CLI executable; the stale-binary state was caught on the old `surface:`
+  line format in the run output. The CLI was rebuilt at 01:59. Consequence: every live observation
+  so far (the mangled rewrites, the intermittence) is **pre-fix** evidence — none of the audit fixes
+  has been exercised live yet.
+- In that same run, « ecole → école » and « francais → français » landed clean on screen (the
+  remnant shows the corrected text). The mangling does not reproduce on every occurrence, on the
+  same pre-fix binary.
+- « ca » → « ça » never fires, by design: the EN web counts carry "ca" at 221.6 ppm (CA, ca.), far
+  above the 5 ppm English-guard bar, and that guard returns before the candidate machinery — so
+  even a personal-dictionary adoption could not override it (guard order: English bar precedes the
+  personal-variant merge). Whether an explicit user signal should outrank the corpus prior is an
+  open product question for Louis — « ça » is among the most frequent French words.
+- « cedille » → « cédille » never fires for a different reason: Lexique 3.83 (raw, verified) has no
+  « cédille » entry at all, so the derived lexicon offers no variant — empty candidates, the
+  literal stays. The EN count (0.022 ppm) is below the guard bar, so the block is purely the
+  missing target. The personal dictionary is the designed remedy for this class: typing the
+  accented form to adoption (≥ 3 occurrences) both supplies the variant and shields the word.
