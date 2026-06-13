@@ -268,16 +268,15 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (!NativeRuntime.IsInstalled() ||
             !SpeechModels.IsDefaultInstalled())
         {
-            DeckleSetupSource.Log.SetupInfo(
-                $"first-run gate | natives_installed={NativeRuntime.IsInstalled()}" +
-                $" | default_model_installed={SpeechModels.IsDefaultInstalled()}");
+            DeckleSetupSource.Log.WizardOpening();
+            DeckleSetupSource.Log.WizardOpeningDetail(NativeRuntime.IsInstalled(), SpeechModels.IsDefaultInstalled());
             var setup = new Deckle.Setup.SetupWindow();
             setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
             setup.Activate();
             bool success = await setup.Completion;
             if (!success)
             {
-                DeckleSetupSource.Log.SetupInfo("wizard cancelled — exiting");
+                DeckleSetupSource.Log.WizardCancelled();
                 Environment.Exit(0);
                 return;
             }

@@ -73,7 +73,7 @@ public sealed partial class SetupWindow : Window
         ConfigureWindow();
 
         Closed += OnWindowClosed;
-        DeckleSetupSource.Log.SetupInfo("setup window opened");
+        DeckleSetupSource.Log.WindowOpened();
 
         // Theme: wires ActualThemeChanged on the XAML root. The setup wizard
         // is a transient window (lives for first-run or a re-setup session from
@@ -115,7 +115,8 @@ public sealed partial class SetupWindow : Window
 
     public void Complete(bool success)
     {
-        DeckleSetupSource.Log.SetupInfo($"setup window closing | success={success}");
+        DeckleSetupSource.Log.WindowClosing();
+        DeckleSetupSource.Log.WindowClosingDetail(success);
         if (!_completion.Task.IsCompleted) _completion.TrySetResult(success);
         Close();
     }

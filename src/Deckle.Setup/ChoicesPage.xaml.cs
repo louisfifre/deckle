@@ -79,16 +79,16 @@ public sealed partial class ChoicesPage : Page
             if (folder is null) return;
 
             int copied = NativeRuntime.CopyFromFolder(folder.Path);
-            DeckleSetupSource.Log.SetupInfo(
-                $"setup native source picked | source={folder.Path} | copied={copied}");
+            DeckleSetupSource.Log.NativeSourcePicked();
+            DeckleSetupSource.Log.NativeSourcePickedDetail(folder.Path, copied);
 
             RefreshNativeStatus();
             UpdateNextEnabled();
         }
         catch (Exception ex)
         {
-            DeckleSetupSource.Log.SetupError(
-                $"setup browse native failed: {ex.GetType().Name}: {ex.Message}");
+            DeckleSetupSource.Log.NativeImportFailed();
+            DeckleSetupSource.Log.NativeImportFailedDetail($"{ex.GetType().Name}: {ex.Message}");
             NativeStatusText.Text = Loc.Format("Setup_Native_ImportFailed_Format", ex.Message);
         }
     }
@@ -226,8 +226,8 @@ public sealed partial class ChoicesPage : Page
     {
         if (_setup is null || _context is null) return;
         _context.ChoicesConfirmed = true;
-        DeckleSetupSource.Log.SetupInfo(
-            $"setup choices confirmed | location={_context.Location} | model={_context.SelectedModel!.Id}");
+        DeckleSetupSource.Log.ChoicesConfirmed();
+        DeckleSetupSource.Log.ChoicesConfirmedDetail(_context.Location, _context.SelectedModel!.Id);
         _setup.Body.Navigate(typeof(InstallingPage), _setup);
     }
 }
