@@ -324,8 +324,10 @@ public sealed class RawInputHost : IDisposable
             // actual touchpad page that could not be parsed is worth a
             // warning — TryCreate distinguishes via the failure text.
             if (failure is not null && !failure.StartsWith("not a touchpad collection"))
+            {
                 DeckleInputSource.Log.ParserCreateFailed();
                 DeckleInputSource.Log.ParserCreateFailedDetail(failure);
+            }
             _failedDevices.Add(hDevice);
             return false;
         }
