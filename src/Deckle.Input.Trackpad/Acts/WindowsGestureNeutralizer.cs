@@ -75,7 +75,8 @@ public static class WindowsGestureNeutralizer
             using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
             if (key is null)
             {
-                DeckleTrackpadSource.Log.GestureWriteFailed(
+                DeckleTrackpadSource.Log.GestureWriteFailed();
+                DeckleTrackpadSource.Log.GestureWriteFailedDetail(
                     nameof(InvalidOperationException),
                     $"cannot open HKCU\\{KeyPath}");
                 return false;
@@ -89,7 +90,8 @@ public static class WindowsGestureNeutralizer
         }
         catch (Exception ex)
         {
-            DeckleTrackpadSource.Log.GestureWriteFailed(ex.GetType().Name, ex.Message);
+            DeckleTrackpadSource.Log.GestureWriteFailed();
+            DeckleTrackpadSource.Log.GestureWriteFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -107,7 +109,8 @@ public static class WindowsGestureNeutralizer
             var backup = JsonSerializer.Deserialize<GestureBackup>(json);
             if (backup?.Values is null)
             {
-                DeckleTrackpadSource.Log.GestureWriteFailed(
+                DeckleTrackpadSource.Log.GestureWriteFailed();
+                DeckleTrackpadSource.Log.GestureWriteFailedDetail(
                     nameof(InvalidDataException),
                     "gesture backup file is empty or malformed");
                 return false;
@@ -116,7 +119,8 @@ public static class WindowsGestureNeutralizer
             using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
             if (key is null)
             {
-                DeckleTrackpadSource.Log.GestureWriteFailed(
+                DeckleTrackpadSource.Log.GestureWriteFailed();
+                DeckleTrackpadSource.Log.GestureWriteFailedDetail(
                     nameof(InvalidOperationException),
                     $"cannot open HKCU\\{KeyPath}");
                 return false;
@@ -142,7 +146,8 @@ public static class WindowsGestureNeutralizer
         }
         catch (Exception ex)
         {
-            DeckleTrackpadSource.Log.GestureWriteFailed(ex.GetType().Name, ex.Message);
+            DeckleTrackpadSource.Log.GestureWriteFailed();
+            DeckleTrackpadSource.Log.GestureWriteFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }

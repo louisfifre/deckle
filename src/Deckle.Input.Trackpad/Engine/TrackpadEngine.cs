@@ -170,7 +170,8 @@ public sealed class TrackpadEngine : IDisposable
     {
         if (_injectionFailureLogged) return;
         _injectionFailureLogged = true;
-        DeckleTrackpadSource.Log.InjectionFailed(action, _injector.LastError);
+        DeckleTrackpadSource.Log.InjectionFailed();
+        DeckleTrackpadSource.Log.InjectionFailedDetail(action, _injector.LastError);
     }
 
     // ── Device + settings observers ──────────────────────────────────────

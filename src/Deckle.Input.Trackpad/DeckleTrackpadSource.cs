@@ -31,6 +31,12 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtGestureWriteFailed       = 11;
     public const int EvtRepairLaunched           = 12;
     public const int EvtRepairLaunchFailed       = 13;
+    // Verbose mirrors added for the Verbose/Info separation (2026-06-13):
+    // InjectionFailed, GestureWriteFailed, and RepairLaunchFailed carried
+    // k=v detail at Warning level; the detail moves to these fresh mirrors.
+    public const int EvtInjectionFailedDetail    = 14;
+    public const int EvtGestureWriteFailedDetail = 15;
+    public const int EvtRepairLaunchFailedDetail = 16;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -84,10 +90,19 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtInjectionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "injection failed | action={0} | win32_error={1}")]
-    public void InjectionFailed(string action, int win32_error)
+           Message = "Mouse injection failed")]
+    public void InjectionFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtInjectionFailed, action, win32_error);
+        if (IsEnabled()) WriteEvent(EvtInjectionFailed);
+    }
+
+    [Event(EvtInjectionFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "injection failed | action={0} | win32_error={1}")]
+    public void InjectionFailedDetail(string action, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtInjectionFailedDetail, action, win32_error);
     }
 
     // ── Acts ─────────────────────────────────────────────────────────────
@@ -122,10 +137,19 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGestureWriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "gesture registry write failed | error={0}: {1}")]
-    public void GestureWriteFailed(string ex_type, string message)
+           Message = "Gesture registry write failed")]
+    public void GestureWriteFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtGestureWriteFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtGestureWriteFailed);
+    }
+
+    [Event(EvtGestureWriteFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "gesture registry write failed | ex_type={0} | message={1}")]
+    public void GestureWriteFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtGestureWriteFailedDetail, ex_type, message);
     }
 
     [Event(EvtRepairLaunched,
@@ -140,9 +164,18 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairLaunchFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "connection repair launch failed | error={0}: {1}")]
-    public void RepairLaunchFailed(string ex_type, string message)
+           Message = "Connection repair script failed to launch")]
+    public void RepairLaunchFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailed);
+    }
+
+    [Event(EvtRepairLaunchFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "connection repair launch failed | ex_type={0} | message={1}")]
+    public void RepairLaunchFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRepairLaunchFailedDetail, ex_type, message);
     }
 }
