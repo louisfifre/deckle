@@ -1,6 +1,6 @@
 ---
 name: readme-scripts
-description: "Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts under lib/, the TREE.md pre-commit hook, README stats automation, and the three native-runtime sourcing modes. Read before running, modifying, or extending a script under scripts/."
+description: "Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts under lib/, the TREE.md pre-commit hook, generated-docs automation, and the three native-runtime sourcing modes. Read before running, modifying, or extending a script under scripts/."
 type: module-readme
 module: scripts
 ---
@@ -20,18 +20,18 @@ dev action by purpose:
 
 | Section | Action | Per-worktree? | Delegates to |
 |---|---|:---:|---|
-| **Build** | Build & run (Debug) | yes | `lib/build-run.ps1 -Configuration Debug` |
-|  | Build & run (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
-|  | Build only (no run) | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
-| **Release** | Publish - GitHub Release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
-|  | Build release artifacts (no publish) | yes | `lib/publish-app.ps1` |
-|  | Changelog - regenerate from history | yes | `lib/changelog.ps1` |
-|  | Native runtime - build/publish bundle | no | `lib/publish-native-runtime.ps1` (publishing confirms first) |
-| **Worktree maintenance** | Clean bin/obj | yes | `lib/clean.ps1` |
-|  | Stats (files, LOC, long files) | yes | `lib/stats.ps1` |
-|  | README stats - regenerate pulse | yes | `lib/update-readme-stats.ps1` |
+| **Build** | Build and run app (Debug) | yes | `lib/build-run.ps1 -Configuration Debug` |
+|  | Build and run app (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
+|  | Build app without running | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
+| **Release** | Publish app release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
+|  | Prepare app release artifacts | yes | `lib/publish-app.ps1` |
+|  | Prepare native runtime release | no | `lib/publish-native-runtime.ps1` (publishing confirms first) |
+| **Worktree maintenance** | Clean build outputs | yes | `lib/clean.ps1` |
+|  | Show module stats | yes | `lib/stats.ps1` |
+|  | Update README pulse | yes | `lib/update-readme-stats.ps1` |
+|  | Update changelog | yes | `lib/changelog.ps1` |
 | **Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
-|  | Setup runtime assets | no | `lib/setup-assets.ps1` |
+|  | Set up runtime assets | no | `lib/setup-assets.ps1` |
 |  | Install git hooks | no | `lib/install-hooks.ps1` |
 
 Per-worktree actions prompt for a worktree right after the action is
@@ -51,10 +51,10 @@ profile — `deckle.ps1` is purely additive.
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
 | [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Runtime assets are left to the app's first-run wizard unless explicitly requested. | `-DryRun`, `-Full`, `-Yes`, `-IncludeAssets`, `-AssetsRelease X.Y.Z` |
 | [`lib/install-hooks.ps1`](lib/install-hooks.ps1) | Install the local git hooks sourced from `scripts/hooks/` into `.git/hooks/` and register the local `merge.ours` driver used by `TREE.md`. | |
+| [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>` |
 | [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from the Conventional-Commit history — plain `git log` + PowerShell, no external tool or API. Default regenerates the whole `CHANGELOG.md` from the `v0.4.0` floor forward; `-NotesFor X.Y.Z` emits a single version's section for `gh … --notes-file` (consumed by `publish-app.ps1`). | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
-| [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-ReadmePath <path>` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
-| [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`. **Not an entry point.** |
+| [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
 
 ## Git hooks — TREE.md auto-update
 
@@ -62,9 +62,9 @@ A `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before 
 
 The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files` (flat view, zero gitignored file, no annotation). It can also run by hand to refresh outside a commit: `pwsh scripts/hooks/update-tree.ps1`.
 
-## README stats automation
+## Generated docs automation
 
-The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (`README stats - regenerate pulse`) or directly:
+The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (`Update README pulse`) or directly:
 
 ```powershell
 pwsh scripts/lib/update-readme-stats.ps1
@@ -72,10 +72,16 @@ pwsh scripts/lib/update-readme-stats.ps1
 
 GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manual dispatch. The workflow checks out full history (`fetch-depth: 0`), runs the same script, and commits `README.md` only when the generated section changed.
 
+`CHANGELOG.md` is the same maintenance family: it is regenerated from local Git history, not hand-edited and not a publish action. Regenerate it locally through the menu (`Update changelog`) or directly:
+
+```powershell
+pwsh scripts/lib/changelog.ps1
+```
+
 ## Native runtime — three sourcing modes
 
 The app's first launch opens the in-app setup wizard when native DLLs or
-models are missing. The F5 menu also exposes `Setup runtime assets` as a
+models are missing. The F5 menu also exposes `Set up runtime assets` as a
 developer shortcut over `lib/setup-assets.ps1`, which provisions the 8
 native DLLs (5 whisper.cpp
 Vulkan + 3 MinGW C++ runtime) through one of three paths:

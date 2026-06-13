@@ -9,21 +9,37 @@ param(
     # Repository/worktree root. Defaults to the current Git worktree.
     [string]$Target,
 
+    # Interactive picker: lists the main repo + all linked worktrees and
+    # prompts for a choice. Overrides -Target.
+    [switch]$Pick,
+
     # Override the README path. Mostly useful for tests.
     [string]$ReadmePath
 )
 
 $ErrorActionPreference = 'Stop'
+$ScriptDir = $PSScriptRoot
 
-if ($Target) {
+function Step($msg) { Write-Host "`n[readme] $msg" -ForegroundColor Cyan }
+function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
+function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
+
+if ($Pick) {
+    Import-Module (Join-Path $ScriptDir '_menu.psm1') -Force
+    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
+} elseif ($Target) {
+    if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
     $RepoRoot = (git rev-parse --show-toplevel).Trim()
 }
 
+Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
+
 if (-not $ReadmePath) {
     $ReadmePath = Join-Path $RepoRoot 'README.md'
 }
+Write-Host "README: $ReadmePath" -ForegroundColor DarkGray
 
 if (-not (Test-Path -LiteralPath $ReadmePath -PathType Leaf)) {
     throw "README.md not found: $ReadmePath"
@@ -47,11 +63,14 @@ function Invoke-Git {
     return $output
 }
 
+Step 'Collect Git history'
 $commitCount = [int64](Invoke-Git rev-list --count HEAD)
 $dates       = @(Invoke-Git log --date=short --format=%ad HEAD)
 $firstDate   = if ($dates.Count -gt 0) { $dates[-1] } else { 'n/a' }
 $activeDays  = [int64](@($dates | Sort-Object -Unique).Count)
+Ok ("{0} commits across {1} active day(s)" -f (Format-Count $commitCount), (Format-Count $activeDays))
 
+Step 'Measure churn'
 $additions = [int64]0
 $deletions = [int64]0
 foreach ($line in (Invoke-Git log --numstat --pretty=tformat: HEAD)) {
@@ -61,7 +80,9 @@ foreach ($line in (Invoke-Git log --numstat --pretty=tformat: HEAD)) {
     }
 }
 $touched = $additions + $deletions
+Ok ("{0} added / {1} touched lines" -f (Format-Count $additions), (Format-Count $touched))
 
+Step 'Measure tracked text files'
 $trackedTextLines = [int64]0
 $trackedTextFiles = [int64]0
 foreach ($path in (Invoke-Git ls-files)) {
@@ -84,6 +105,7 @@ foreach ($path in (Invoke-Git ls-files)) {
     $trackedTextLines += $lines
     $trackedTextFiles++
 }
+Ok ("{0} tracked text files / {1} current lines" -f (Format-Count $trackedTextFiles), (Format-Count $trackedTextLines))
 
 $generatedDate = (Get-Date).ToString('yyyy-MM-dd', $Culture)
 
@@ -101,6 +123,7 @@ function Write-StatsSummary {
     Write-Host ""
 }
 
+Step 'Render README development pulse'
 $section = @"
 $StartMarker
 ## Development pulse
@@ -117,6 +140,7 @@ $readme = Get-Content -LiteralPath $ReadmePath -Raw
 $pattern = "(?s)$([regex]::Escape($StartMarker)).*?$([regex]::Escape($EndMarker))"
 if ([regex]::IsMatch($readme, $pattern)) {
     $updated = [regex]::Replace($readme, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $section })
+    Ok "Existing generated section found"
 } else {
     $dividerPattern = "(?m)^---\r?\n"
     $dividerMatch = [regex]::Match($readme, $dividerPattern)
@@ -124,6 +148,7 @@ if ([regex]::IsMatch($readme, $pattern)) {
         throw "Could not find README insertion point. Add $StartMarker / $EndMarker manually."
     }
     $updated = $readme.Insert($dividerMatch.Index, "$section`n`n")
+    Warn "Generated section was missing; inserted before the first README divider"
 }
 
 $normalizedReadme = $readme -replace "\r?\n", "`n"
@@ -133,8 +158,10 @@ if ($normalizedUpdated -ne $normalizedReadme) {
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText((Resolve-Path -LiteralPath $ReadmePath).Path, $normalizedUpdated, $utf8NoBom)
     Write-StatsSummary
-    Write-Host "README.md development pulse updated."
+    Step 'Done'
+    Ok "README.md development pulse updated"
 } else {
     Write-StatsSummary
-    Write-Host "README.md development pulse already up to date."
+    Step 'Done'
+    Ok "README.md development pulse already up to date"
 }

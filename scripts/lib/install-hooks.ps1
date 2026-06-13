@@ -2,9 +2,8 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Installe les hooks git locaux depuis scripts/hooks/.
-    À lancer une seule fois après un clone (les hooks ne sont pas versionnés
-    par git, seule leur source l'est).
+    Install local git hooks from scripts/hooks/.
+    Run once after a clone: hook sources are versioned, installed hooks are not.
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -12,6 +11,14 @@ $repoRoot  = (git rev-parse --show-toplevel).Trim()
 $hooksDir  = Join-Path (git -C $repoRoot rev-parse --absolute-git-dir).Trim() 'hooks'
 $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
 
+function Step($msg) { Write-Host "`n[hooks] $msg" -ForegroundColor Cyan }
+function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
+function Warn($msg) { Write-Host "        $msg" -ForegroundColor Yellow }
+
+Write-Host "Repo: $repoRoot" -ForegroundColor DarkGray
+Write-Host "Hooks: $hooksDir" -ForegroundColor DarkGray
+
+Step 'Install git hooks'
 $hookFiles = @('pre-commit')
 foreach ($hookFile in $hookFiles) {
     $src = Join-Path $sourceDir $hookFile
@@ -21,16 +28,17 @@ foreach ($hookFile in $hookFiles) {
 
     $dst = Join-Path $hooksDir $hookFile
     if (Test-Path $dst) {
-        Write-Warning "Hook '$hookFile' existant sauvegardé en '$hookFile.bak'."
+        Warn "Existing hook '$hookFile' backed up as '$hookFile.bak'"
         Copy-Item $dst "$dst.bak" -Force
     }
     Copy-Item $src $dst -Force
-    Write-Host "Hook '$hookFile' installé."
+    Ok "Installed $hookFile"
 }
 
 # Merge driver used by .gitattributes for TREE.md. `ours` keeps the local side
 # so two branches never collide on the generated tree listing; the next commit
 # that changes the file set regenerates it via the pre-commit hook. The driver
 # definition lives in .git/config (not shared by clone), so it is set here.
+Step "Register TREE.md merge driver"
 git config merge.ours.driver true
-Write-Host "Driver de merge 'ours' enregistré (TREE.md)."
+Ok "Registered merge.ours driver"

@@ -4,9 +4,8 @@
 # a PowerShell 7+ terminal. The menu groups actions by purpose:
 #
 #   Build             — daily compile + run loop, per-worktree.
-#   Release           — cut a GitHub release (installer exe + app payload),
-#                       build native runtime bundles, per-worktree where
-#                       applicable.
+#   Release           — cut release artefacts / GitHub releases only,
+#                       per-worktree where applicable.
 #   Worktree maint    — clean artefacts, gather stats, update docs,
 #                       per-worktree.
 #   Setup             — bootstrap a fresh dev machine (global, no
@@ -65,24 +64,24 @@ function Read-Optional {
 # section dividers — Up/Down skips them automatically.
 $actions = @(
     [pscustomobject]@{ Label = '── Build ──';                       Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Build & run (Debug)';               Value = 'build-debug'                       }
-    [pscustomobject]@{ Label = 'Build & run (Release)';             Value = 'build-release'                     }
-    [pscustomobject]@{ Label = 'Build only (no run)';               Value = 'build-norun'                       }
+    [pscustomobject]@{ Label = 'Build and run app (Debug)';         Value = 'build-debug'                       }
+    [pscustomobject]@{ Label = 'Build and run app (Release)';       Value = 'build-release'                     }
+    [pscustomobject]@{ Label = 'Build app without running';         Value = 'build-norun'                       }
 
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Publish - GitHub Release';          Value = 'publish-release'                   }
-    [pscustomobject]@{ Label = 'Build release artifacts (no publish)'; Value = 'build-release-artifacts'         }
-    [pscustomobject]@{ Label = 'Changelog - regenerate from history'; Value = 'changelog'                       }
-    [pscustomobject]@{ Label = 'Native runtime - build/publish bundle'; Value = 'native-runtime'                 }
+    [pscustomobject]@{ Label = 'Publish app release';               Value = 'publish-release'                   }
+    [pscustomobject]@{ Label = 'Prepare app release artifacts';     Value = 'build-release-artifacts'           }
+    [pscustomobject]@{ Label = 'Prepare native runtime release';    Value = 'native-runtime'                    }
 
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Clean bin/obj';                     Value = 'clean'                             }
-    [pscustomobject]@{ Label = 'Stats (files, LOC, long files)';    Value = 'stats'                             }
-    [pscustomobject]@{ Label = 'README stats - regenerate pulse';   Value = 'readme-stats'                      }
+    [pscustomobject]@{ Label = 'Clean build outputs';               Value = 'clean'                             }
+    [pscustomobject]@{ Label = 'Show module stats';                 Value = 'stats'                             }
+    [pscustomobject]@{ Label = 'Update README pulse';               Value = 'readme-stats'                      }
+    [pscustomobject]@{ Label = 'Update changelog';                  Value = 'changelog'                         }
 
     [pscustomobject]@{ Label = '── Setup ──';                       Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Bootstrap dev environment';         Value = 'bootstrap-dev'                     }
-    [pscustomobject]@{ Label = 'Setup runtime assets';              Value = 'setup-assets'                      }
+    [pscustomobject]@{ Label = 'Set up runtime assets';             Value = 'setup-assets'                      }
     [pscustomobject]@{ Label = 'Install git hooks';                 Value = 'install-hooks'                     }
 
     [pscustomobject]@{ Label = '';                                  Value = $null;            IsHeader = $true  }
@@ -147,13 +146,6 @@ switch ($action) {
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
     }
-    # 'changelog' regenerates CHANGELOG.md from the commit history (no publish,
-    # no confirmation — it only rewrites a tracked file the maintainer reviews).
-    'changelog' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'changelog.ps1') -Target $wt
-    }
     'native-runtime' {
         $version = Read-Optional -Question 'Native bundle version (X.Y.Z)'
         if (-not $version) {
@@ -199,6 +191,13 @@ switch ($action) {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'update-readme-stats.ps1') -Target $wt
+    }
+    # 'changelog' regenerates CHANGELOG.md from the commit history (no publish,
+    # no confirmation — it only rewrites a tracked file the maintainer reviews).
+    'changelog' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'changelog.ps1') -Target $wt
     }
 
     # ----- Setup — global (no worktree picker) ---------------------------

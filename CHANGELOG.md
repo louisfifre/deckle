@@ -9,6 +9,89 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [Unreleased]
+
+### Added
+
+- **scripts:** Generate changelog and release notes from git history
+- **scripts:** Publish the installer exe as the release headline asset
+- **input:** Bare Raw Input probe for the precision touchpad
+- **input:** SendInput mouse injection primitive
+- **shell:** Elevated startup via scheduled task
+- **trackpad:** Three-finger drag domain module
+- **app:** Compose the trackpad module
+- **trackpad:** Settings page and navigation entry
+- **trackpad:** Freeze calibrated values, retire the tuning expander
+- **anytype:** Core library over the live PM space — client, frozen schema, gestures
+- **mcp:** Stdio JSON-RPC host exposing the 13 PM tools
+- **transcription:** Paragraph break on silence-cut utterances
+- **notifications:** Notification catalogue, dispatcher, and interactive toast channel
+- **playground:** Manual test surface for the notification toast channel
+- **app:** Compose the notification dispatcher at boot
+- **anytype:** Create projects and tasks from their default templates
+- **mcp:** Self-documenting host copy
+- **anytype:** Select options are applied, never created
+- **taskbar-cover:** Edge-aware cover band domain module
+- **shell:** Taskbar cover switch in the tray menu
+- **app:** Compose the taskbar cover module
+- **core:** Add a dedicated diagnostics directory under the data root
+- **app:** Persist the setup narrative and critical errors locally
+- **settings:** Link to the local diagnostics folder
+- **setup:** Offer the diagnostics folder on a failed first run
+- **anytype:** Replace_section — heading-located body edit, verified
+- **anytype:** Add dialogue chat tools
+- **scripts:** Add README stats automation
+
+### Changed
+
+- **tray-menu:** Split milestones from their Verbose detail mirrors
+- **lighting:** Split milestones from their Verbose detail mirrors
+- **audio:** Split milestones from their Verbose detail mirrors
+- **shell:** Split milestones from their Verbose detail mirrors
+- **input:** Split milestones from their Verbose detail mirrors
+- **trackpad:** Split milestones from their Verbose detail mirrors
+- **threading:** Split milestones from their Verbose detail mirrors
+- **anytype:** Split milestones from their Verbose detail mirrors
+- **hud:** Split the HideSync-timeout warning from its Verbose detail
+- **settings:** Split milestones from their Verbose detail mirrors
+- **ambient:** Split milestones from their Verbose detail mirrors
+- **llm:** Split milestones from their Verbose detail mirrors
+- **app:** Split milestones from their Verbose detail mirrors
+- **whisp:** Split milestones from their Verbose detail mirrors
+- **vision:** Split milestones from their Verbose detail mirrors
+- **chrono:** Split the pilot milestone from its Verbose detail
+- **vad:** Split milestones from their Verbose detail mirrors
+- **resource:** Split the leak-suspect warning from its Verbose detail
+- **playground:** Type the diagnostic event channels
+- **setup:** Type the wizard event channels
+- **settings:** Type the per-setting change sub-channel
+- **diagnostics:** Self-create the JSONL sink parent directory
+
+### Fixed
+
+- **transcription:** Pin SHA-256 verification on Whisper model downloads
+- **lighting:** Validate the bridge IP at HueBridgeClient construction
+- **installer:** Refuse cmd metacharacters in the delayed self-delete
+- **transcription:** Fail closed when the native runtime DLL is absent
+- **audio:** Unwind partial buffer prep when capture setup throws
+- **setup:** Download silero_vad.onnx instead of ggml binary
+- **trackpad:** Mirror gesture-button Loc keys into the app resw
+- **trackpad:** Rework the Settings page after first hands-on
+- **anytype:** Tolerate the bare-string list-add response on epic attach
+- **notifications:** Self-settling prompts, live availability gate, complete narrative
+- **notifications:** Mirror descriptor Loc keys into the App resw, harden Loc misses
+- **mcp:** Link copy states the real pair matrix; instructions carry the property discipline
+- **taskbar-cover:** Serialize host restarts and unblock Start from shell hangs
+- **taskbar-cover:** Observe timer arming failures
+- **taskbar-cover:** Pin the pump imports to their Unicode entry points
+- **app:** Detach and flush taskbar cover settings at shutdown
+- **taskbar-cover:** Hold the provider to the Verbose/Info separation
+- **input:** Guard the parser-failure detail behind its braces
+- **anytype:** Invert the rapport↔task link, derive the project through tasks
+- **app:** Always surface the streaming transcript in the log
+- **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
+- **app:** Register always-on local sinks before settings migration
+
 ## [0.4.4](https://github.com/louisfifre/deckle/compare/v0.4.3...v0.4.4) — 2026-06-07
 
 ### Added

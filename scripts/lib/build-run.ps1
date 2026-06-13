@@ -24,6 +24,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir  = $PSScriptRoot                                  # scripts/lib/
 
+function Step($msg) { Write-Host "`n[build] $msg" -ForegroundColor Cyan }
+function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
+function Warn($msg) { Write-Host "        $msg" -ForegroundColor Yellow }
+
 # =============================================================================
 # RepoRoot resolution
 # -----------------------------------------------------------------------------
@@ -64,32 +68,41 @@ $AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
 # 1. Kill running instance (otherwise the .exe is locked)
-Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
-    Write-Host "Killing Deckle PID $($_.Id)" -ForegroundColor Yellow
-    $_ | Stop-Process -Force
+Step 'Stop running Deckle instance'
+$runningDeckle = @(Get-Process -Name Deckle -ErrorAction SilentlyContinue)
+foreach ($proc in $runningDeckle) {
+    Warn "Killing Deckle PID $($proc.Id)"
+    $proc | Stop-Process -Force
 }
+if ($runningDeckle.Count -eq 0) { Ok 'No running Deckle.exe found' }
 
 # 2. Build via `dotnet build`. Restore is implicit (separate evaluation
 # phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)
 # get imported from the freshly-regenerated .nuget.g.targets — no
 # CS5001 / CS0103 InitializeComponent surprise in a fresh worktree.
-Write-Host "Build ($Configuration x64)..." -ForegroundColor Cyan
+Step "dotnet build ($Configuration x64)"
 & dotnet build $Csproj "-c:$Configuration" '-p:Platform=x64' '-v:m' '-nologo'
 if ($LASTEXITCODE -ne 0) { throw "dotnet build failed (code $LASTEXITCODE)" }
+Ok 'Build succeeded'
 
 # 3. Run
-if ($NoRun) { return }
+if ($NoRun) {
+    Step 'Done'
+    Ok 'Launch skipped because -NoRun was set'
+    return
+}
 
 # Resolve the freshest Deckle.exe under artifacts\bin\Deckle.App\<pivot>\.
 # Pivot prefix match (debug / debug_win-x64) rather than an exact folder so a
 # RID-suffixed pivot can't strand us on a stale exe. LastWriteTime sort picks
 # the freshest if several pivots coexist.
+Step 'Resolve built executable'
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
 if (-not $ExeCandidates) { throw "Exe not found under $AppArtifactsBin (expected artifacts\bin\Deckle.App\$PivotPrefix\Deckle.exe)" }
 $ExePath = $ExeCandidates[0].FullName
-Write-Host "Run $ExePath" -ForegroundColor Green
+Ok $ExePath
 
 function Start-DeckleViaShell {
     param(
@@ -115,12 +128,21 @@ function Start-DeckleViaShell {
 # inherit a degraded foreground state, so we pass --post-build to Deckle.exe
 # and let the app relaunch itself once via the same ShellExecute primitive.
 # Pass -NoAutoRestart to suppress (debug-attach scenarios).
+$launchArgs = @()
 if ($HudZOrderSelfTest) {
-    Start-DeckleViaShell -FilePath $ExePath -DeckleArgs @('--post-build-hud-zorder-selftest')
+    $launchArgs = @('--post-build-hud-zorder-selftest')
 } elseif ($NoAutoRestart) {
-    Start-DeckleViaShell -FilePath $ExePath
+    $launchArgs = @()
 } else {
-    Start-DeckleViaShell -FilePath $ExePath -DeckleArgs @('--post-build')
+    $launchArgs = @('--post-build')
+}
+
+Step 'Launch Deckle'
+Start-DeckleViaShell -FilePath $ExePath -DeckleArgs $launchArgs
+if ($launchArgs.Count) {
+    Ok ("Started with args: {0}" -f ($launchArgs -join ' '))
+} else {
+    Ok 'Started without post-build restart args'
 }
 
 if ($Wait) {
@@ -133,5 +155,11 @@ if ($Wait) {
         Start-Sleep -Milliseconds 100
         $proc = Get-Process -Name Deckle -ErrorAction SilentlyContinue | Select-Object -First 1
     } while (-not $proc -and (Get-Date) -lt $deadline)
-    if ($proc) { $proc.WaitForExit() }
+    if ($proc) {
+        Step "Wait for Deckle PID $($proc.Id)"
+        $proc.WaitForExit()
+        Ok "Deckle exited with code $($proc.ExitCode)"
+    } else {
+        Warn 'Deckle process did not appear within 5 seconds'
+    }
 }

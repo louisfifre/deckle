@@ -2,17 +2,25 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Régénère TREE.md depuis git ls-files.
-    Support du hook pre-commit, invocable aussi à la main.
+    Regenerate TREE.md from git ls-files.
+    Supports the pre-commit hook and direct manual runs.
 #>
 
 $ErrorActionPreference = 'Stop'
 $repoRoot   = (git rev-parse --show-toplevel).Trim()
 $outputFile = Join-Path $repoRoot 'TREE.md'
 
+function Step($msg) { Write-Host "`n[tree] $msg" -ForegroundColor Cyan }
+function Ok($msg)   { Write-Host "       $msg" -ForegroundColor Green }
+
+Write-Host "Repo: $repoRoot" -ForegroundColor DarkGray
+Write-Host "TREE: $outputFile" -ForegroundColor DarkGray
+
 # ── Collecte ──────────────────────────────────────────────────────────────
 
+Step 'Collect tracked files'
 $files = git -C $repoRoot ls-files | Where-Object { $_ -ne '' }
+Ok "$($files.Count) tracked file(s)"
 
 # ── Frontmatter ───────────────────────────────────────────────────────────
 
@@ -191,6 +199,7 @@ Render-Node $root '' ''
 
 # ── Écriture ──────────────────────────────────────────────────────────────
 
+Step 'Write TREE.md'
 $body = $lines -join "`n"
 
 # No wall-clock timestamp on purpose: it made every regeneration differ even
@@ -208,4 +217,4 @@ $body
 "@
 
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.Encoding]::UTF8)
-Write-Host "TREE.md mis à jour ($($files.Count) fichiers suivis)."
+Ok "TREE.md updated"
