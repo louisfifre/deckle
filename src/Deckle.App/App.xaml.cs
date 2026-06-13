@@ -217,7 +217,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Boot-time sanity marker for the EventSource pipeline. It has no
         // product behaviour; it simply proves provider discovery, JSONL
         // routing, and LogWindow listener routing during startup.
-        Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted("wave 1 boot");
+        Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted();
+        Deckle.Chrono.DeckleChronoSource.Log.PilotEmittedDetail("wave 1 boot");
 
         // Cross-cutting Network sub-provider: capture machine network state
         // transitions to correlate business HTTP failures (Hue REST, Ollama)

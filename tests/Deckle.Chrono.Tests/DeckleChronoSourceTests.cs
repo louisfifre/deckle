@@ -22,7 +22,7 @@ public class DeckleChronoSourceTests
     {
         using var listener = new TestEventListener("Deckle-Chrono");
 
-        DeckleChronoSource.Log.PilotEmitted("hello-test");
+        DeckleChronoSource.Log.PilotEmitted();
 
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleChronoSource.EvtPilotEmitted, ev.EventId);
@@ -30,11 +30,11 @@ public class DeckleChronoSourceTests
     }
 
     [Fact]
-    public void PilotEmittedCarriesTheNoteAsFirstPayload()
+    public void PilotEmittedDetailCarriesTheNoteAsFirstPayload()
     {
         using var listener = new TestEventListener("Deckle-Chrono");
 
-        DeckleChronoSource.Log.PilotEmitted("payload-content");
+        DeckleChronoSource.Log.PilotEmittedDetail("payload-content");
 
         var ev = Assert.Single(listener.Events);
         var note = Assert.IsType<string>(ev.Payload?[0]);

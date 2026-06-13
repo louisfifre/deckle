@@ -24,7 +24,10 @@ public sealed class DeckleChronoSource : DeckleEventSource
     // reuse an ID after deleting an event (a historical consumer may still need
     // it to decode a dump). For Deckle we start fresh at wave 1, so there is no
     // history to preserve.
-    public const int EvtPilotEmitted = 1;
+    // The Verbose mirror added for the Verbose/Info separation takes the fresh
+    // id 2 at the end of the sequence.
+    public const int EvtPilotEmitted       = 1;
+    public const int EvtPilotEmittedDetail = 2;
 
     // Boot validation event. Emitted once at App startup to exercise
     // EventSource → JsonlEventListener → app.jsonl and EventSource →
@@ -32,9 +35,18 @@ public sealed class DeckleChronoSource : DeckleEventSource
     [Event(EvtPilotEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Chrono pilot emission ({0})")]
-    public void PilotEmitted(string note)
+           Message = "Chrono pilot emitted")]
+    public void PilotEmitted()
     {
-        if (IsEnabled()) WriteEvent(EvtPilotEmitted, note);
+        if (IsEnabled()) WriteEvent(EvtPilotEmitted);
+    }
+
+    [Event(EvtPilotEmittedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "pilot emitted | note={0}")]
+    public void PilotEmittedDetail(string note)
+    {
+        if (IsEnabled()) WriteEvent(EvtPilotEmittedDetail, note);
     }
 }

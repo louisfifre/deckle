@@ -16,7 +16,7 @@ namespace Deckle.TestSupport;
 //
 // Typical use in a test:
 //   using var listener = new TestEventListener("Deckle-Chrono");
-//   DeckleChronoSource.Log.PilotEmitted("test");
+//   DeckleChronoSource.Log.PilotEmitted();
 //   Assert.Single(listener.Events);
 //
 // The `using` is important: Dispose unregisters the listener, otherwise it
