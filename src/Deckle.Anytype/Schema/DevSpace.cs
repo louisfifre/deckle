@@ -74,6 +74,7 @@ public static class DevSpace
         public const string Rapport  = "rapport";  // layout: note
         public const string Idee     = "idee";
         public const string Document = "document";
+        public const string Chat     = "chat_derived"; // layout: chat
     }
 
     // ── Property keys (flat — properties are space-global) ────────────────────
@@ -326,6 +327,11 @@ public static class DevSpace
         new(Props.Version, "Version", "text"),
     ];
 
+    static readonly PropertyDef[] ChatProps =
+    [
+        new(Props.TachesLiees, "Tâche(s) liée(s)", "objects"),
+    ];
+
     static readonly PropertyDef[] NoProps = [];
 
     // The type's mapped properties in digest order, or empty for an unknown type.
@@ -337,6 +343,7 @@ public static class DevSpace
         Types.Rapport  => RapportProps,
         Types.Idee     => IdeeProps,
         Types.Document => DocumentProps,
+        Types.Chat     => ChatProps,
         _              => NoProps,
     };
 
@@ -429,7 +436,7 @@ public static class DevSpace
         // first-seen-wins walk yields each key's label/options once.
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (PropertyDef[] table in
-            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps })
+            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps, ChatProps })
             foreach (PropertyDef def in table)
                 if (seen.Add(def.Key))
                     yield return def;

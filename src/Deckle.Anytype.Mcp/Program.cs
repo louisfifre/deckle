@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text;
 using Deckle.Anytype.Api;
+using Deckle.Anytype.Dialogues;
 using Deckle.Anytype.Gestures;
 using Deckle.Anytype.Mcp.JsonRpc;
 using Deckle.Anytype.Mcp.Tools;
@@ -17,8 +18,10 @@ namespace Deckle.Anytype.Mcp;
 // process before the next read blocks. stderr stays the only log channel.
 internal static class Program
 {
-    private static async Task<int> Main()
+    private static async Task<int> Main(string[] args)
     {
+        ToolProfile profile = ToolProfileParser.Parse(args);
+
         // The listener must subscribe before any provider emits, so attach it
         // first — its EnableEvents also lights up sources created later.
         using var listener = new StderrEventListener(Console.Error);
@@ -44,8 +47,25 @@ internal static class Program
             var tasks = new TaskGestures(api, resolver);
             var projects = new ProjectGestures(api, resolver);
             var query = new QueryGestures(api, resolver);
+            var dialogues = new DialogueGestures(api, resolver);
 
-            var tools = ToolCatalog.Build(session, tasks, projects, query);
+            var tools = profile switch
+            {
+                ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query),
+                ToolProfile.Dialogues => DialogueToolCatalog.Build(dialogues),
+                ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query)
+                    .Concat(DialogueToolCatalog.Build(dialogues))
+                    .ToArray(),
+                _ => throw new InvalidOperationException($"Profil MCP inconnu : {profile}."),
+            };
+
+            var descriptor = profile switch
+            {
+                ToolProfile.ProjectManagement => McpServer.ProjectManagementDescriptor,
+                ToolProfile.Dialogues => McpServer.DialoguesDescriptor,
+                ToolProfile.All => McpServer.AllDescriptor,
+                _ => McpServer.ProjectManagementDescriptor,
+            };
 
             var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             using var stdin = new StreamReader(Console.OpenStandardInput(), utf8NoBom);
@@ -59,7 +79,7 @@ internal static class Program
             stdout.NewLine = "\n";
 
             var endpoint = new JsonRpcEndpoint(stdin, stdout);
-            var server = new McpServer(tools, endpoint);
+            var server = new McpServer(tools, endpoint, descriptor);
 
             using var cts = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) =>
@@ -79,5 +99,36 @@ internal static class Program
         }
 
         return 0;
+    }
+}
+
+internal enum ToolProfile
+{
+    ProjectManagement,
+    Dialogues,
+    All,
+}
+
+internal static class ToolProfileParser
+{
+    public static ToolProfile Parse(string[] args)
+    {
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (!string.Equals(args[i], "--profile", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string? value = i + 1 < args.Length ? args[i + 1] : null;
+            return value?.ToLowerInvariant() switch
+            {
+                "pm" or "project-management" => ToolProfile.ProjectManagement,
+                "dialogues" => ToolProfile.Dialogues,
+                "all" => ToolProfile.All,
+                _ => throw new ArgumentException(
+                    "Profil MCP invalide. Profils attendus : pm, dialogues, all."),
+            };
+        }
+
+        return ToolProfile.ProjectManagement;
     }
 }

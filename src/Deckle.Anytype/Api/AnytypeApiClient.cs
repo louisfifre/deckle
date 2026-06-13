@@ -24,7 +24,7 @@ namespace Deckle.Anytype.Api;
 // search/list roots carry {data, pagination}; list-add answers a bare JSON
 // string ("Objects added successfully"), not an object. The Bearer token is
 // held only in the Authorization header and never logged.
-public sealed class AnytypeApiClient : IDisposable
+public sealed partial class AnytypeApiClient : IDisposable
 {
     private readonly HttpClient _http;
     private readonly SemaphoreSlim _gate = new(1, 1);

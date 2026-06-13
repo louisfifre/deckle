@@ -200,6 +200,15 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostObject(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/objects", 200, response.ToJsonString()));
 
+    public void OnPostChat(JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/chats", 201, response.ToJsonString()));
+
+    public void OnGetChatMessages(string chatId, JsonObject response) =>
+        _routes.Add(new("GET", $"{SpacePath}/chats/{chatId}/messages", 200, response.ToJsonString()));
+
+    public void OnPostChatMessage(string chatId, JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/chats/{chatId}/messages", 201, response.ToJsonString()));
+
     public void OnSearch(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/search", 200, response.ToJsonString()));
 

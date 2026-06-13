@@ -190,8 +190,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
+│   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   └── AnytypeCredentials.cs
+│   │   ├── Dialogues/
+│   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── MarkdownBody.cs
@@ -211,6 +214,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonRpcEndpoint.cs
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
+│   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
 │   │   ├── Deckle.Anytype.Mcp.csproj
@@ -751,11 +755,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── tests/
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
+│   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── McpServerTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
+│   │   ├── DialogueGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs

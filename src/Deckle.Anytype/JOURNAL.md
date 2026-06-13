@@ -7,6 +7,10 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-13 — Dialogue chats stay on REST, separate from reports
+
+Found live against Dev: Anytype chats are objects of type `chat_derived`, layout `chat`, with transcript content served by `/chats/{chat_id}/messages` rather than object `markdown`. The `Test` chat carries the space-global `tache(s)_liee(s)` objects property and can link to a task without becoming a rapport. Chose the POC shape: dialogue gestures live inside `Deckle.Anytype` as a separate capability from project-management gestures, and the MCP host selects a `dialogues` profile instead of creating a new module.
+
 ## 2026-06-13 — `replace_section` and the body round-trip
 
 Added `replace_section` (14th tool): replaces a section located by its heading, with read-after-write verification. Found: Anytype re-serializes the body on every PATCH export, so the read-back is normalized — heading text and level survive, but a literal underscore / asterisk / backtick / pipe comes back backslash-escaped and lines gain trailing spaces; a byte-equal read-after-write is impossible, so verification compares a normalized form.

@@ -10,8 +10,6 @@ namespace Deckle.Anytype.Mcp.JsonRpc;
 // the initialize handshake, and the two tools/call error channels.
 public sealed class McpServer
 {
-    private const string ServerName = "deckle-anytype";
-    private const string ServerTitle = "Deckle Anytype";
     private const string ServerVersion = "0.1.0";
     private const string LatestProtocol = "2025-11-25";
 
@@ -20,7 +18,11 @@ public sealed class McpServer
     private static readonly HashSet<string> SupportedProtocols =
         new(StringComparer.Ordinal) { "2025-03-26", "2025-06-18", "2025-11-25" };
 
-    private const string Instructions =
+    public sealed record Descriptor(string Name, string Title, string Instructions);
+
+    public static readonly Descriptor ProjectManagementDescriptor = new(
+        "deckle-anytype",
+        "Deckle Anytype",
         "Anytype project-management space: projects (one per app or life area) "
         + "hold tasks; subtasks are inline '- [ ]' checklist items in the task "
         + "body, not separate objects. Before work that changes the space, call "
@@ -34,17 +36,36 @@ public sealed class McpServer
         + "options are applied, never created: new options come from the user, "
         + "in Anytype. Names "
         + "resolve to objects; an ambiguous name returns candidate ids so you "
-        + "can retry with one.";
+        + "can retry with one.");
+
+    public static readonly Descriptor DialoguesDescriptor = new(
+        "deckle-anytype-dialogues",
+        "Deckle Anytype Dialogues",
+        "Anytype dialogue chats for mediated LLM discussions. Create a dialogue "
+        + "chat for start, challenge, or dialogue work; post turns as system, "
+        + "claude, codex, or louis; read the chat before each new turn and use "
+        + "after_order_id to continue from the last seen message. These tools are "
+        + "not project-management reports and do not journal work sessions.");
+
+    public static readonly Descriptor AllDescriptor = new(
+        "deckle-anytype-all",
+        "Deckle Anytype All",
+        ProjectManagementDescriptor.Instructions + "\n\n" + DialoguesDescriptor.Instructions);
 
     private readonly Dictionary<string, ToolDescriptor> _tools;
     private readonly JsonArray _toolListing;
     private readonly JsonRpcEndpoint _endpoint;
+    private readonly Descriptor _descriptor;
 
     private bool _initialized;
 
-    public McpServer(IReadOnlyList<ToolDescriptor> tools, JsonRpcEndpoint endpoint)
+    public McpServer(
+        IReadOnlyList<ToolDescriptor> tools,
+        JsonRpcEndpoint endpoint,
+        Descriptor? descriptor = null)
     {
         _endpoint = endpoint;
+        _descriptor = descriptor ?? ProjectManagementDescriptor;
         _tools = new Dictionary<string, ToolDescriptor>(StringComparer.Ordinal);
         _toolListing = new JsonArray();
         foreach (var tool in tools)
@@ -154,11 +175,11 @@ public sealed class McpServer
             },
             ["serverInfo"] = new JsonObject
             {
-                ["name"] = ServerName,
-                ["title"] = ServerTitle,
+                ["name"] = _descriptor.Name,
+                ["title"] = _descriptor.Title,
                 ["version"] = ServerVersion,
             },
-            ["instructions"] = Instructions,
+            ["instructions"] = _descriptor.Instructions,
         };
         _endpoint.WriteResult(id, result);
     }
