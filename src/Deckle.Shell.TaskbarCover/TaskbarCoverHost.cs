@@ -107,7 +107,8 @@ public sealed class TaskbarCoverHost : IDisposable
                 // again. Until then, restarting would corrupt them.
                 if (!defunct.Join(TimeSpan.Zero))
                 {
-                    DeckleShellTaskbarCoverSource.Log.HostStartFailed(
+                    DeckleShellTaskbarCoverSource.Log.HostStartFailed();
+                    DeckleShellTaskbarCoverSource.Log.HostStartFailedDetail(
                         "DefunctWorker", "previous cover thread has not exited yet");
                     return false;
                 }
@@ -151,7 +152,8 @@ public sealed class TaskbarCoverHost : IDisposable
 
             if (!started)
             {
-                DeckleShellTaskbarCoverSource.Log.HostStartFailed(
+                DeckleShellTaskbarCoverSource.Log.HostStartFailed();
+                DeckleShellTaskbarCoverSource.Log.HostStartFailedDetail(
                     startError?.GetType().Name ?? "(unknown)", startError?.Message ?? "(no message)");
                 _thread = null;
                 return false;
@@ -254,7 +256,8 @@ public sealed class TaskbarCoverHost : IDisposable
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();
 
-        DeckleShellTaskbarCoverSource.Log.HostStarted(_hwnd.ToInt64(), (int)_threadId);
+        DeckleShellTaskbarCoverSource.Log.HostStarted();
+        DeckleShellTaskbarCoverSource.Log.HostStartedDetail(_hwnd.ToInt64(), (int)_threadId);
     }
 
     // First layout and gate probes, off Start()'s critical path: the gated
@@ -279,7 +282,11 @@ public sealed class TaskbarCoverHost : IDisposable
     private void ArmSuppressionTimer()
     {
         if (SetTimer(_hwnd, TIMER_SUPPRESSION, SuppressionPollMs, IntPtr.Zero) == UIntPtr.Zero)
-            DeckleShellTaskbarCoverSource.Log.TimerArmFailed("suppression", Marshal.GetLastWin32Error());
+        {
+            int error = Marshal.GetLastWin32Error(); // before any WriteEvent clobbers it
+            DeckleShellTaskbarCoverSource.Log.TimerArmFailed();
+            DeckleShellTaskbarCoverSource.Log.TimerArmFailedDetail("suppression", error);
+        }
     }
 
     private void RunPump()
@@ -410,7 +417,9 @@ public sealed class TaskbarCoverHost : IDisposable
             else if (!_recoverArmFailureLogged)
             {
                 _recoverArmFailureLogged = true;
-                DeckleShellTaskbarCoverSource.Log.TimerArmFailed("recover", Marshal.GetLastWin32Error());
+                int error = Marshal.GetLastWin32Error(); // before any WriteEvent clobbers it
+                DeckleShellTaskbarCoverSource.Log.TimerArmFailed();
+                DeckleShellTaskbarCoverSource.Log.TimerArmFailedDetail("recover", error);
             }
         }
     }
@@ -483,7 +492,8 @@ public sealed class TaskbarCoverHost : IDisposable
             band.left, band.top, band.right - band.left, band.bottom - band.top,
             NativeMethods.SWP_NOACTIVATE);
 
-        DeckleShellTaskbarCoverSource.Log.LayoutRebuilt(
+        DeckleShellTaskbarCoverSource.Log.LayoutRebuilt();
+        DeckleShellTaskbarCoverSource.Log.LayoutRebuiltDetail(
             edge.ToString(), band.left, band.top, band.right, band.bottom, reason);
 
         // The zone moved with the band — recompute where the cursor stands.
@@ -521,7 +531,8 @@ public sealed class TaskbarCoverHost : IDisposable
         }
 
         UpdateCover("suspended");
-        DeckleShellTaskbarCoverSource.Log.SystemSuspended(reason);
+        DeckleShellTaskbarCoverSource.Log.SystemSuspended();
+        DeckleShellTaskbarCoverSource.Log.SystemSuspendedDetail(reason);
     }
 
     private void ExitSuspendedState(string reason)
@@ -534,7 +545,8 @@ public sealed class TaskbarCoverHost : IDisposable
         ArmSuppressionTimer();
 
         UpdateCover("resumed");
-        DeckleShellTaskbarCoverSource.Log.SystemResumed(reason);
+        DeckleShellTaskbarCoverSource.Log.SystemResumed();
+        DeckleShellTaskbarCoverSource.Log.SystemResumedDetail(reason);
     }
 
     // Two stages: the shell's own notion of "busy fullscreen" first (cheap,
@@ -574,7 +586,15 @@ public sealed class TaskbarCoverHost : IDisposable
 
         if (suppressed == _appSuppressed) return;
         _appSuppressed = suppressed;
-        DeckleShellTaskbarCoverSource.Log.SuppressionChanged(suppressed, stage);
+        if (suppressed)
+        {
+            DeckleShellTaskbarCoverSource.Log.CoverSuppressed();
+            DeckleShellTaskbarCoverSource.Log.CoverSuppressedDetail(stage);
+        }
+        else
+        {
+            DeckleShellTaskbarCoverSource.Log.CoverUnsuppressed();
+        }
         UpdateCover(suppressed ? "fullscreen_enter" : "fullscreen_exit");
     }
 

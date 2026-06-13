@@ -8,6 +8,10 @@ namespace Deckle.Shell.TaskbarCover;
 // movement itself is never logged — the WinEvent stream runs at input
 // cadence and only its state transitions (zone enter / re-cover) carry
 // diagnostic value; those surface through CoverShown / CoverHidden.
+//
+// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a
+// short Capital sentence with no IDs and no k=v; the technical detail
+// (handles, geometry, reasons) lives in a Verbose mirror that FOLLOWS it.
 [EventSource(Name = "Deckle-TaskbarCover")]
 public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 {
@@ -16,61 +20,87 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     private DeckleShellTaskbarCoverSource() { }
 
     // ── Event IDs ─────────────────────────────────────────────────────────────
-    public const int EvtHostStarted         = 1;
-    public const int EvtHostStartFailed     = 2;
-    public const int EvtHostStopped         = 3;
-    public const int EvtLayoutRebuilt       = 4;
-    public const int EvtLayoutQueryFailed   = 5;
-    public const int EvtCoverShown          = 6;
-    public const int EvtCoverHidden         = 7;
-    public const int EvtSuppressionChanged  = 8;
-    public const int EvtSystemSuspended     = 9;
-    public const int EvtSystemResumed       = 10;
-    public const int EvtCursorHookFailed    = 11;
-    public const int EvtSessionNotifyFailed = 12;
-    public const int EvtHostStopTimedOut    = 13;
-    public const int EvtTimerArmFailed      = 14;
+    // Sequential from 1. IDs are public in the ETW manifest; do not reuse an
+    // ID after deleting an event.
+    public const int EvtHostStarted           = 1;
+    public const int EvtHostStartedDetail     = 2;
+    public const int EvtHostStartFailed       = 3;
+    public const int EvtHostStartFailedDetail = 4;
+    public const int EvtHostStopped           = 5;
+    public const int EvtHostStopTimedOut      = 6;
+    public const int EvtLayoutRebuilt         = 7;
+    public const int EvtLayoutRebuiltDetail   = 8;
+    public const int EvtLayoutQueryFailed     = 9;
+    public const int EvtCoverShown            = 10;
+    public const int EvtCoverHidden           = 11;
+    public const int EvtCoverSuppressed       = 12;
+    public const int EvtCoverSuppressedDetail = 13;
+    public const int EvtCoverUnsuppressed     = 14;
+    public const int EvtSystemSuspended       = 15;
+    public const int EvtSystemSuspendedDetail = 16;
+    public const int EvtSystemResumed         = 17;
+    public const int EvtSystemResumedDetail   = 18;
+    public const int EvtCursorHookFailed      = 19;
+    public const int EvtSessionNotifyFailed   = 20;
+    public const int EvtTimerArmFailed        = 21;
+    public const int EvtTimerArmFailedDetail  = 22;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
     [Event(EvtHostStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "taskbar cover host started | hwnd=0x{0:X} thread_id={1}")]
-    public void HostStarted(long hwnd, int thread_id)
+           Message = "Host started")]
+    public void HostStarted()
     {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtHostStarted, hwnd, thread_id);
+        if (IsEnabled()) WriteEvent(EvtHostStarted);
+    }
+
+    [Event(EvtHostStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "host started | hwnd=0x{0:X} | thread_id={1}")]
+    public void HostStartedDetail(long hwnd, int thread_id)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtHostStartedDetail, hwnd, thread_id);
     }
 
     [Event(EvtHostStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "taskbar cover host failed to start | error_type={0} message={1}")]
-    public void HostStartFailed(string error_type, string message)
+           Message = "The host failed to start — the taskbar stays uncovered")]
+    public void HostStartFailed()
     {
-        if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtHostStartFailed, error_type, message);
+        if (IsEnabled()) WriteEvent(EvtHostStartFailed);
+    }
+
+    [Event(EvtHostStartFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "start failed | error_type={0} | message={1}")]
+    public void HostStartFailedDetail(string error_type, string message)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtHostStartFailedDetail, error_type, message);
     }
 
     [Event(EvtHostStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "taskbar cover host stopped")]
+           Message = "Host stopped")]
     public void HostStopped()
     {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtHostStopped);
+        if (IsEnabled()) WriteEvent(EvtHostStopped);
     }
 
     [Event(EvtHostStopTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "taskbar cover thread did not exit in time — restart refused until it does")]
+           Message = "The cover thread did not exit in time — restart refused until it does")]
     public void HostStopTimedOut()
     {
-        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtHostStopTimedOut);
+        if (IsEnabled()) WriteEvent(EvtHostStopTimedOut);
     }
 
     // ── Taskbar layout ────────────────────────────────────────────────────────
@@ -78,21 +108,29 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtLayoutRebuilt,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "taskbar layout rebuilt | edge={0} band=({1},{2})-({3},{4}) reason={5}")]
-    public void LayoutRebuilt(string edge, int left, int top, int right, int bottom, string reason)
+           Message = "Layout rebuilt")]
+    public void LayoutRebuilt()
     {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Windowing))
-            WriteEvent(EvtLayoutRebuilt, edge, left, top, right, bottom, reason);
+        if (IsEnabled()) WriteEvent(EvtLayoutRebuilt);
+    }
+
+    [Event(EvtLayoutRebuiltDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "layout | edge={0} | band=({1},{2})-({3},{4}) | reason={5}")]
+    public void LayoutRebuiltDetail(string edge, int left, int top, int right, int bottom, string reason)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtLayoutRebuiltDetail, edge, left, top, right, bottom, reason);
     }
 
     [Event(EvtLayoutQueryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "taskbar position query failed — cover stays hidden until the taskbar is found")]
+           Message = "The taskbar could not be located — the cover stays hidden until it appears")]
     public void LayoutQueryFailed()
     {
-        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Windowing))
-            WriteEvent(EvtLayoutQueryFailed);
+        if (IsEnabled()) WriteEvent(EvtLayoutQueryFailed);
     }
 
     // ── Cover visibility ──────────────────────────────────────────────────────
@@ -107,8 +145,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "cover shown | reason={0}")]
     public void CoverShown(string reason)
     {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtCoverShown, reason);
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtCoverShown, reason);
     }
 
     [Event(EvtCoverHidden,
@@ -117,71 +155,114 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "cover hidden | reason={0}")]
     public void CoverHidden(string reason)
     {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtCoverHidden, reason);
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtCoverHidden, reason);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────────
 
-    [Event(EvtSuppressionChanged,
+    [Event(EvtCoverSuppressed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "fullscreen suppression changed | suppressed={0} stage={1}")]
-    public void SuppressionChanged(bool suppressed, string stage)
+           Message = "A fullscreen app is foreground — the cover stands down")]
+    public void CoverSuppressed()
     {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSuppressionChanged, suppressed, stage);
+        if (IsEnabled()) WriteEvent(EvtCoverSuppressed);
+    }
+
+    [Event(EvtCoverSuppressedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "suppressed | stage={0}")]
+    public void CoverSuppressedDetail(string stage)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtCoverSuppressedDetail, stage);
+    }
+
+    [Event(EvtCoverUnsuppressed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The fullscreen app is gone — the cover is back")]
+    public void CoverUnsuppressed()
+    {
+        if (IsEnabled()) WriteEvent(EvtCoverUnsuppressed);
     }
 
     [Event(EvtSystemSuspended,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "system suspended | reason={0}")]
-    public void SystemSuspended(string reason)
+           Message = "Parked for sleep or session lock")]
+    public void SystemSuspended()
     {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSystemSuspended, reason);
+        if (IsEnabled()) WriteEvent(EvtSystemSuspended);
+    }
+
+    [Event(EvtSystemSuspendedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "suspended | reason={0}")]
+    public void SystemSuspendedDetail(string reason)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtSystemSuspendedDetail, reason);
     }
 
     [Event(EvtSystemResumed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "system resumed | reason={0}")]
-    public void SystemResumed(string reason)
+           Message = "Resumed from sleep or unlock")]
+    public void SystemResumed()
     {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSystemResumed, reason);
+        if (IsEnabled()) WriteEvent(EvtSystemResumed);
     }
 
-    // ── Setup failures ────────────────────────────────────────────────────────
+    [Event(EvtSystemResumedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "resumed | reason={0}")]
+    public void SystemResumedDetail(string reason)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtSystemResumedDetail, reason);
+    }
+
+    // ── Setup and runtime failures ────────────────────────────────────────────
 
     [Event(EvtCursorHookFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cursor WinEvent hook failed — the cover cannot react to the mouse")]
+           Message = "The cursor hook failed — the cover cannot react to the mouse")]
     public void CursorHookFailed()
     {
-        if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtCursorHookFailed);
+        if (IsEnabled()) WriteEvent(EvtCursorHookFailed);
     }
 
     [Event(EvtSessionNotifyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "session change notification unavailable — cover will not pause on lock")]
+           Message = "Session change notifications unavailable — the cover will not pause on lock")]
     public void SessionNotifyFailed()
     {
-        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSessionNotifyFailed);
+        if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed);
     }
 
     [Event(EvtTimerArmFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "timer failed to arm | timer={0} win32_error={1}")]
-    public void TimerArmFailed(string timer, int win32_error)
+           Message = "A timer failed to arm — re-cover or fullscreen detection degraded")]
+    public void TimerArmFailed()
     {
-        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtTimerArmFailed, timer, win32_error);
+        if (IsEnabled()) WriteEvent(EvtTimerArmFailed);
+    }
+
+    [Event(EvtTimerArmFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "timer arm failed | timer={0} | win32_error={1}")]
+    public void TimerArmFailedDetail(string timer, int win32_error)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtTimerArmFailedDetail, timer, win32_error);
     }
 }
