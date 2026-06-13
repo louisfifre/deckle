@@ -12,7 +12,7 @@ namespace Deckle.Input.Autocorrect.Injection;
 // InjectionTag in dwExtraInfo for downstream consumers; the keyboard host
 // actually filters our synthesis by the Raw Input hDevice==0 signature of
 // SendInput events — the tag is not read back on the receive side today.
-public sealed class TextInjector
+public sealed class TextInjector : ITextInjector
 {
     // INPUT.type for a keyboard event (INPUT_KEYBOARD).
     private const uint INPUT_KEYBOARD = 1;

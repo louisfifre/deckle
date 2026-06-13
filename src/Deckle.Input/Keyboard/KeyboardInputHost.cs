@@ -26,7 +26,7 @@ namespace Deckle.Input.Keyboard;
 //
 // Events are raised on the input thread. Consumers do microseconds of
 // work per event; anything heavier must marshal itself off the thread.
-public sealed class KeyboardInputHost : IDisposable
+public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
 {
     private const string ClassName = "DeckleKeyboardHost";
     private const double RollupPeriodMs = 30_000;

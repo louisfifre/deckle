@@ -400,6 +400,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SendInputInterop.cs
 │   │   │   └── WinEventInterop.cs
 │   │   ├── Keyboard/
+│   │   │   ├── IKeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   └── KeyboardKeyEvent.cs
 │   │   ├── Telemetry/
@@ -434,6 +435,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── RestorationReport.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
+│   │   │   ├── ITextInjector.cs
 │   │   │   └── TextInjector.cs
 │   │   ├── Interop/
 │   │   │   └── KeyboardStateInterop.cs
@@ -448,6 +450,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── FrequencyLexicon.cs
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
+│   │   │   ├── ISurfaceProber.cs
 │   │   │   └── SurfaceProber.cs
 │   │   ├── Tracking/
 │   │   │   ├── KeyDecoder.cs

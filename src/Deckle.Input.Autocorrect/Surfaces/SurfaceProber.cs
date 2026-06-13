@@ -6,7 +6,7 @@ namespace Deckle.Input.Autocorrect.Surfaces;
 // Resolves the focused element into a FocusedSurface via one targeted UIA
 // read. Called on focus-change events only (never per keystroke) — the
 // cross-process COM round-trip is the cost of knowing where we type.
-public sealed class SurfaceProber
+public sealed class SurfaceProber : ISurfaceProber
 {
     public FocusedSurface Probe()
     {

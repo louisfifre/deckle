@@ -25,12 +25,12 @@ public sealed class AutocorrectEngine : IDisposable
     // personal word. Calibration constant, not a setting.
     private const double EnglishKnownPerMillion = 0.5;
 
-    private readonly KeyboardInputHost _host;
+    private readonly IKeyboardInputHost _host;
     private readonly KeyDecoder _decoder;
     private readonly TypedWordTracker _tracker;
-    private readonly SurfaceProber _prober;
+    private readonly ISurfaceProber _prober;
     private readonly ICorrectionPolicy _policy;
-    private readonly TextInjector _injector;
+    private readonly ITextInjector _injector;
     private readonly PersonalDictionary? _dictionary;
     private readonly Func<AutocorrectSettings> _settings;
     private readonly FrequencyLexicon? _french;
@@ -70,12 +70,12 @@ public sealed class AutocorrectEngine : IDisposable
     public FocusedSurface CurrentSurface => _surface;
 
     public AutocorrectEngine(
-        KeyboardInputHost host,
+        IKeyboardInputHost host,
         KeyDecoder decoder,
         TypedWordTracker tracker,
-        SurfaceProber prober,
+        ISurfaceProber prober,
         ICorrectionPolicy policy,
-        TextInjector injector,
+        ITextInjector injector,
         Func<AutocorrectSettings> settings,
         PersonalDictionary? dictionary = null,
         FrequencyLexicon? french = null,
