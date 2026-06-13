@@ -9,15 +9,15 @@ namespace Deckle.Anytype.Gestures;
 
 // Session gestures: open a daily report anchored to a task, append journal lines
 // to it, and link further tasks to the open report. Anchoring is done from the
-// task side — the rapport carries journal date + project, and each touched task
-// gets the report id appended to its « Rapport(s) lié(s) » property.
+// report side — the rapport carries journal date + the linked task(s) in its
+// « Tâche(s) liée(s) » property; its project is derived through those tasks.
 //
 // The "current report" is per-process state: session_log / session_touch with no
 // explicit report act on the report opened by session_start in this process.
 //
 // All schema keys go through Deckle.Anytype.Schema.DevSpace — the single source
-// of truth for the wire keys, including the trap keys (the misspelled
-// « rpport(s)_lie(s) », the opaque Priorité id).
+// of truth for the wire keys, including the trap keys (the malformed
+// « tache(s)_liee(s) », the opaque Priorité id).
 public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 {
     readonly AnytypeApiClient _api = api;
@@ -36,27 +36,27 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
-        IReadOnlyList<string> projectIds = ReadObjectIds(taskObj, DevSpace.Props.RelationProjet);
-
         // Body first line is the title (note layout has no name). Keep it terse —
         // the journal date is its own line so the digest reads it back cheaply.
         string today = Today();
         string body = $"# Journal {today}";
 
+        // The link lives on the report side: the rapport carries the anchor task in
+        // « Tâche(s) liée(s) » (it can link several), and its project is derived
+        // through those tasks — the report itself has no project property.
         var reportPayload = new JsonObject
         {
             ["type_key"] = DevSpace.Types.Rapport,
             ["body"] = body,
             ["properties"] = new JsonArray(
                 DateProp(DevSpace.Props.DateDuJournal, today),
-                ObjectsProp(DevSpace.Props.RelationProjet, projectIds)),
+                ObjectsProp(DevSpace.Props.TachesLiees, new[] { taskId })),
         };
 
         JsonObject report = await _api.CreateObjectAsync(reportPayload, ct);
         string reportId = report["id"]?.GetValue<string>()
             ?? throw new InvalidOperationException("Le rapport créé n'a pas d'id.");
 
-        await AppendReportToTaskAsync(taskObj, reportId, ct);
         _currentReportId = reportId;
 
         DeckleAnytypeSource.Log.SessionReportCreated(reportId);
@@ -108,7 +108,7 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
-        await AppendReportToTaskAsync(taskObj, _currentReportId, ct);
+        await AppendTaskToReportAsync(_currentReportId, taskId, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("session_touch", Elapsed(t0));
         return $"Tâche « {DisplayName(taskObj)} » liée au rapport courant.";
@@ -116,23 +116,22 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── anchoring ────────────────────────────────────────────────────────────
 
-    // Appends reportId to the task's « Rapport(s) lié(s) ». The objects array is
-    // replaced wholesale by the PATCH, so read the current ids first; idempotent
-    // when the report is already linked.
-    async Task AppendReportToTaskAsync(JsonObject taskObj, string reportId, CancellationToken ct)
+    // Appends taskId to the report's « Tâche(s) liée(s) ». The objects array is
+    // replaced wholesale by the PATCH, so read the report's current ids first;
+    // idempotent when the task is already linked.
+    async Task AppendTaskToReportAsync(string reportId, string taskId, CancellationToken ct)
     {
-        string taskId = taskObj["id"]?.GetValue<string>()
-            ?? throw new InvalidOperationException("La tâche n'a pas d'id.");
+        JsonObject report = await _api.GetObjectAsync(reportId, ct);
 
-        var ids = ReadObjectIds(taskObj, DevSpace.Props.RapportsLies).ToList();
-        if (ids.Contains(reportId)) return;
-        ids.Add(reportId);
+        var ids = ReadObjectIds(report, DevSpace.Props.TachesLiees).ToList();
+        if (ids.Contains(taskId)) return;
+        ids.Add(taskId);
 
         var payload = new JsonObject
         {
-            ["properties"] = new JsonArray(ObjectsProp(DevSpace.Props.RapportsLies, ids)),
+            ["properties"] = new JsonArray(ObjectsProp(DevSpace.Props.TachesLiees, ids)),
         };
-        await _api.UpdateObjectAsync(taskId, payload, ct);
+        await _api.UpdateObjectAsync(reportId, payload, ct);
     }
 
     // ── digest ───────────────────────────────────────────────────────────────
@@ -163,11 +162,14 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
             sb.Append(checklist);
         }
 
-        var reportIds = ReadObjectIds(taskObj, DevSpace.Props.RapportsLies);
-        var last3 = reportIds.Skip(Math.Max(0, reportIds.Count - 3)).ToList();
-        foreach (string rid in last3)
+        // Reports of this task: the link lives on the report side now, so query
+        // reports and keep those whose « Tâche(s) liée(s) » contains this task id,
+        // then fetch each for its full body (search hits carry no markdown).
+        string taskId = taskObj["id"]?.GetValue<string>() ?? "";
+        foreach (JsonObject hit in (await ReportsForTaskAsync(taskId, ct)).Take(3))
         {
-            JsonObject report = await _api.GetObjectAsync(rid, ct);
+            string rid = hit["id"]?.GetValue<string>() ?? "";
+            JsonObject report = rid.Length > 0 ? await _api.GetObjectAsync(rid, ct) : hit;
             string date = ReadDate(report, DevSpace.Props.DateDuJournal) ?? "?";
             string rbody = (report["markdown"]?.GetValue<string>() ?? "").Trim();
             sb.Append($"\n— {date}");
@@ -175,6 +177,27 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         }
 
         return sb.ToString();
+    }
+
+    // Reports linking this task, most-recent journal date first. The link lives on
+    // the report side (« Tâche(s) liée(s) »); search has no relation filter, so we
+    // page reports and filter client-side (same shape as ProjectGestures).
+    async Task<List<JsonObject>> ReportsForTaskAsync(string taskId, CancellationToken ct)
+    {
+        if (taskId.Length == 0) return [];
+
+        JsonObject root = await _api.SearchAsync(string.Empty, new[] { DevSpace.Types.Rapport }, limit: 200, ct);
+        JsonArray hits = root["data"]?.AsArray() ?? [];
+
+        var reports = new List<JsonObject>();
+        foreach (JsonNode? node in hits)
+            if (node is JsonObject r && ReadObjectIds(r, DevSpace.Props.TachesLiees).Contains(taskId))
+                reports.Add(r);
+
+        reports.Sort((a, b) => string.CompareOrdinal(
+            ReadDate(b, DevSpace.Props.DateDuJournal) ?? "",
+            ReadDate(a, DevSpace.Props.DateDuJournal) ?? ""));
+        return reports;
     }
 
     async Task<List<string>> ResolveNamesAsync(IReadOnlyList<string> ids, CancellationToken ct)

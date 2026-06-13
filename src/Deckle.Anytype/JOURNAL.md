@@ -7,6 +7,14 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-13 — Link model inverted: rapport → task, project derived
+
+The `session` type was deleted — it used to sit between task and rapport, and the link properties had been shaped for it. Louis re-pointed the live space: a rapport now carries « Tâche(s) liée(s) » (`tache(s)_liee(s)`, objects, several allowed), the task drops « Rapport(s) lié(s) », the rapport drops « Projet(s) lié(s) ». The chain is a cascade — rapport → task(s) → project — so a report's project is *derived* through its tasks, never stored. `session(s)_liee(s)` is gone from the space.
+
+Code resynced: `DevSpace` Rapport/Task tables + the new `tache(s)_liee(s)` key; the `link` matrix (now task→project, rapport→task, project→project); `SessionGestures` anchors on the report side (the report is born with the anchor task in « Tâche(s) liée(s) », `session_touch` appends further tasks to the report, a task's reports read by inverse search); `ProjectGestures` joins a project's reports through its tasks.
+
+Caveat — existing rapports were NOT re-linked: they keep their old `relation_projet` and have no `tache(s)_liee(s)`, so they stay out of the inverse views until a separate data migration re-links them. (Properties are space-global; `GET /v1/.../types` lists only a type's *featured* properties — the task still carries `etat`/`done` as object values though unfeatured — so the resync stayed surgical on the three reconfigured links.)
+
 ## 2026-06-13 — Templates are not applied by the API; the PM model pivots
 
 Found while rebuilding the space: POST /objects does not apply the type's default template — the optional `template_id` field does, and without it objects are born bare (no template blocks, no inline views). Every object of the first migration was bare. `create_project` and `create_task` now pass the space's default-template ids, frozen in `Schema/DevSpace.cs`. `template_id` composes with `body`: the template blocks come first, the body follows.

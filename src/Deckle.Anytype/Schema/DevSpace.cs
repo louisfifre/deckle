@@ -16,8 +16,9 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 // ─── DevSpace — frozen schema map ────────────────────────────────────────────
 //
 // Freezes the live structure of Louis's project-management space (« Dev »),
-// discovered against the running Anytype REST API on 2026-06-12. This file is
-// the single source of truth for every type key, property key and tag-option
+// discovered against the running Anytype REST API on 2026-06-12, re-verified
+// 2026-06-13 when the rapport↔task links were inverted (see JOURNAL). This file
+// is the single source of truth for every type key, property key and tag-option
 // key the gestures send over the wire. Everything here is measured fact, not
 // interpretation — indicative mood, no conditional.
 //
@@ -25,7 +26,7 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 // actually carries. Three traps are real, not typos to fix here — fixing them
 // in the space would break existing objects, so the code must speak the wire:
 //
-//   • Props.RapportsLies  = "rpport(s)_lie(s)"        — MISSPELLED key.
+//   • Props.TachesLiees   = "tache(s)_liee(s)"        — MALFORMED key (no accents).
 //   • Props.BudgetReel    = "budget_reel_("           — TRUNCATED key.
 //   • Props.ChargeReelle  = "charge_estimee_(jours)"  — MISLEADING key (named
 //     like an estimate, but it is the *real* charge field).
@@ -106,14 +107,13 @@ public static class DevSpace
         // Task-only.
         public const string RelationProjet    = "relation_projet";   // objects (Projet(s) lié(s))
         public const string ContactLie        = "contact_lie";       // objects
-        public const string RapportsLies      = "rpport(s)_lie(s)";  // objects — MISSPELLED key, real
         public const string FichiersLies      = "fichier(s)_lie(s)"; // files
         public const string TypeDeTache       = "type_de_tache";     // select
         public const string Livrables         = "livrable(s)";       // multi_select
 
         // Rapport-only.
         public const string DateDuJournal     = "date_du_journal";    // date
-        public const string SessionsLiees     = "session(s)_liee(s)"; // objects — unused (dormant session type)
+        public const string TachesLiees       = "tache(s)_liee(s)";   // objects — Tâche(s) liée(s), MALFORMED key
 
         // Document-only.
         public const string TypeDeDocument    = "type_de_document"; // select
@@ -297,7 +297,6 @@ public static class DevSpace
         new(Props.DueDate, "Date cible", "date"),
         new(Props.RelationProjet, "Projet(s) lié(s)", "objects"),
         new(Props.ContactLie, "Contact(s) lié(s)", "objects"),
-        new(Props.RapportsLies, "Rapport(s) lié(s)", "objects"),
         new(Props.FichiersLies, "Fichier(s) lié(s)", "files"),
         new(Props.Livrables, "Livrable(s)", "multi_select", Livrable.All),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
@@ -307,11 +306,9 @@ public static class DevSpace
     static readonly PropertyDef[] RapportProps =
     [
         new(Props.DateDuJournal, "Date du journal", "date"),
-        new(Props.RelationProjet, "Projet(s) lié(s)", "objects"),
+        new(Props.TachesLiees, "Tâche(s) liée(s)", "objects"),
         new(Props.ContactLie, "Contact(s) lié(s)", "objects"),
         new(Props.FichiersLies, "Fichier(s) lié(s)", "files"),
-        new(Props.SessionsLiees, "Session(s) liée(s)", "objects"),
-        new(Props.Tag, "Tag", "multi_select"),
     ];
 
     static readonly PropertyDef[] IdeeProps =

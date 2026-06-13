@@ -76,8 +76,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     //
     // Supported pairs (property written on the SOURCE):
     //   task    → project   : relation_projet
-    //   task    → rapport   : rpport(s)_lie(s)
-    //   rapport → project   : relation_projet
+    //   rapport → task      : tache(s)_liee(s)
     //   project → project   : depend_de
     public async Task<string> LinkAsync(string source, IReadOnlyList<string> targets, CancellationToken ct = default)
     {
@@ -190,15 +189,14 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     static string? LinkPropertyFor(string sourceType, string targetType)
     {
         if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Project) return DevSpace.Props.RelationProjet;
-        if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Rapport) return DevSpace.Props.RapportsLies;
-        if (sourceType == DevSpace.Types.Rapport && targetType == DevSpace.Types.Project) return DevSpace.Props.RelationProjet;
+        if (sourceType == DevSpace.Types.Rapport && targetType == DevSpace.Types.Task) return DevSpace.Props.TachesLiees;
         if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return DevSpace.Props.DependDe;
         return null;
     }
 
     static string SupportedPairsError(string sourceType, string targetType) =>
         $"Liaison non supportée : {sourceType} → {targetType}. " +
-        "Paires supportées : tâche→projet, tâche→rapport, rapport→projet, projet→projet.";
+        "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet.";
 
     // select/multi_select are async because a free (space-managed) vocabulary is
     // resolved against the live space; every other format is built in-memory.
