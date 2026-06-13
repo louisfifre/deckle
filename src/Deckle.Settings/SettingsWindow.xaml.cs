@@ -202,7 +202,8 @@ public sealed partial class SettingsWindow : Window
         }
         if (item.Tag is not string tag)
         {
-            DeckleSettingsSource.Log.NavImpossibleNoTag(item.Content?.ToString() ?? "");
+            DeckleSettingsSource.Log.NavImpossibleNoTag();
+            DeckleSettingsSource.Log.NavImpossibleNoTagDetail(item.Content?.ToString() ?? "");
             return;
         }
         if (tag == "logs") return;
@@ -210,7 +211,8 @@ public sealed partial class SettingsWindow : Window
         var pageType = Type.GetType(tag);
         if (pageType is null)
         {
-            DeckleSettingsSource.Log.NavFailedTypeNotFound(tag);
+            DeckleSettingsSource.Log.NavFailedTypeNotFound();
+            DeckleSettingsSource.Log.NavFailedTypeNotFoundDetail(tag);
             return;
         }
 
@@ -220,22 +222,26 @@ public sealed partial class SettingsWindow : Window
             return;
         }
 
-        DeckleSettingsSource.Log.NavStarted(pageType.Name);
+        DeckleSettingsSource.Log.NavStarted();
+        DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
         try
         {
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
             if (!ok)
             {
-                DeckleSettingsSource.Log.NavFailedFrameRejected(pageType.Name);
+                DeckleSettingsSource.Log.NavFailedFrameRejected();
+                DeckleSettingsSource.Log.NavFailedFrameRejectedDetail(pageType.Name);
             }
             else
             {
-                DeckleSettingsSource.Log.NavCompleted(pageType.Name);
+                DeckleSettingsSource.Log.NavCompleted();
+                DeckleSettingsSource.Log.NavCompletedDetail(pageType.Name);
             }
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.NavFailedThrew(pageType.Name, ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.NavFailedThrew();
+            DeckleSettingsSource.Log.NavFailedThrewDetail(pageType.Name, ex.GetType().Name, ex.Message);
             DeckleSettingsSource.Log.NavStackTrace(ex.StackTrace ?? "(no stack)");
         }
     }

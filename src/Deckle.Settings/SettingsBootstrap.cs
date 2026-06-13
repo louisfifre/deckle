@@ -126,7 +126,8 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.PerModuleMigrationFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.PerModuleMigrationFailed();
+            DeckleSettingsSource.Log.PerModuleMigrationFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -152,7 +153,8 @@ public static class SettingsBootstrap
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
         File.WriteAllText(targetPath, section.ToJsonString(_jsonOptions));
         root.Remove(jsonKey);
-        DeckleSettingsSource.Log.MigrationDispatched(jsonKey, moduleId);
+        DeckleSettingsSource.Log.MigrationDispatched();
+        DeckleSettingsSource.Log.MigrationDispatchedDetail(jsonKey, moduleId);
         return true;
     }
 
@@ -186,7 +188,8 @@ public static class SettingsBootstrap
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.InjectFailed(key, moduleId, ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.InjectFailed();
+            DeckleSettingsSource.Log.InjectFailedDetail(key, moduleId, ex.GetType().Name, ex.Message);
         }
     }
 
@@ -208,12 +211,14 @@ public static class SettingsBootstrap
         try
         {
             Directory.Move(oldDir, newDir);
-            DeckleSettingsSource.Log.ModuleFolderMigrated(oldId, newId);
+            DeckleSettingsSource.Log.ModuleFolderMigrated();
+            DeckleSettingsSource.Log.ModuleFolderMigratedDetail(oldId, newId);
             DeckleSettingsSource.Log.ModuleRenameDetail(oldId, newId);
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.ModuleFolderRenameFailed(oldId, newId);
+            DeckleSettingsSource.Log.ModuleFolderRenameFailed();
+            DeckleSettingsSource.Log.ModuleFolderRenameFailedDetail2(oldId, newId);
             DeckleSettingsSource.Log.ModuleFolderRenameFailedDetail(oldId, newId, ex.GetType().Name, ex.Message);
         }
     }
@@ -229,7 +234,8 @@ public static class SettingsBootstrap
         if (root[oldKey] is not JsonNode legacy || root[newKey] is not null) return false;
         root[newKey] = legacy.DeepClone();
         root.Remove(oldKey);
-        DeckleSettingsSource.Log.RenamedRootKey(oldKey, newKey);
+        DeckleSettingsSource.Log.RenamedRootKey();
+        DeckleSettingsSource.Log.RenamedRootKeyDetail(oldKey, newKey);
         return true;
     }
 

@@ -17,7 +17,17 @@ namespace Deckle.Settings;
 // combinatorial expansion into forty typed events. This area is homogeneous by
 // construction and tolerates generic parameterization without degrading
 // strict-typed semantics: level and keyword are fixed, only property names and
-// values vary.
+// values vary. That generic channel (SettingChanged / SettingChangedDetail /
+// SectionReset) is a DELIBERATE design and is intentionally left with its
+// "{0} ← {1}" / "{0} section reset" shape — see the Verbose/Info separation
+// note below; it is exempt from typification and flagged for human review.
+//
+// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info / Warning /
+// Error is a short Capital sentence with no IDs, paths, or k=v; the technical
+// detail (ids, paths, exception type+message, page/tag names) lives in a
+// Verbose mirror that FOLLOWS it. The mirrors added for that separation take
+// fresh ids 47-68 at the end of the id block; existing ids are public in the
+// ETW manifest and are never reused.
 [EventSource(Name = "Deckle-Settings")]
 public sealed class DeckleSettingsSource : DeckleEventSource
 {
@@ -85,15 +95,53 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtSettingsLoadWarning               = 45;
     public const int EvtSettingsLoadError                 = 46;
 
+    // ── Verbose mirrors appended for the Verbose/Info separation ──
+    // Each milestone above whose message carried an id / path / k=v / exception
+    // detail now emits a short Capital sentence, and the technical detail moves
+    // to one of these fresh ids. IDs are public in the ETW manifest; never
+    // reuse an id. ModuleFolderRenameFailed already had a `…Detail` (id 10,
+    // ids + error), so its new ids-only mirror is `…Detail2` (id 51).
+    public const int EvtMigrationDispatchedDetail         = 47;
+    public const int EvtPerModuleMigrationFailedDetail    = 48;
+    public const int EvtInjectFailedDetail                = 49;
+    public const int EvtModuleFolderMigratedDetail        = 50;
+    public const int EvtModuleFolderRenameFailedDetail2   = 51;
+    public const int EvtRenamedRootKeyDetail              = 52;
+    public const int EvtBackupSkippedSourceMissingDetail  = 53;
+    public const int EvtBackupCreatedDetail               = 54;
+    public const int EvtBackupFailedDetail                = 55;
+    public const int EvtBackupListFailedDetail            = 56;
+    public const int EvtRestoreSkippedSnapshotMissingDetail = 57;
+    public const int EvtRestoredFromBackupDetail          = 58;
+    public const int EvtRestoreFailedDetail               = 59;
+    public const int EvtFolderPickerFailedDetail          = 60;
+    public const int EvtSetupWindowOpenFailedDetail       = 61;
+    public const int EvtWarmupRestartFailedDetail         = 62;
+    public const int EvtNavImpossibleNoTagDetail          = 63;
+    public const int EvtNavFailedTypeNotFoundDetail       = 64;
+    public const int EvtNavStartedDetail                  = 65;
+    public const int EvtNavFailedFrameRejectedDetail      = 66;
+    public const int EvtNavCompletedDetail                = 67;
+    public const int EvtNavFailedThrewDetail              = 68;
+
     // ── Bootstrap ───────────────────────────────────────────────────────
 
     [Event(EvtMigrationDispatched,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated {0} → modules/{1}/settings.json")]
-    public void MigrationDispatched(string json_key, string module_id)
+           Message = "A settings section was migrated to its module file")]
+    public void MigrationDispatched()
     {
-        if (IsEnabled()) WriteEvent(EvtMigrationDispatched, json_key, module_id);
+        if (IsEnabled()) WriteEvent(EvtMigrationDispatched);
+    }
+
+    [Event(EvtMigrationDispatchedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "migration dispatched | json_key={0} | module_id={1}")]
+    public void MigrationDispatchedDetail(string json_key, string module_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtMigrationDispatchedDetail, json_key, module_id);
     }
 
     [Event(EvtMigrationDispatchSkipped,
@@ -105,10 +153,13 @@ public sealed class DeckleSettingsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtMigrationDispatchSkipped, json_key, target_path);
     }
 
+    // Constant migration (paths.modelsDirectory → modules/whisp/modelsDirectory,
+    // both compile-time keys) documented here; the milestone carries no detail,
+    // so no Verbose mirror is needed.
     [Event(EvtMigrationModelsDirectoryDispatched,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated paths.modelsDirectory → modules/whisp/modelsDirectory")]
+           Message = "The models directory setting was migrated")]
     public void MigrationModelsDirectoryDispatched()
     {
         if (IsEnabled()) WriteEvent(EvtMigrationModelsDirectoryDispatched);
@@ -126,28 +177,55 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtPerModuleMigrationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "per-module migration failed: {0}: {1}")]
-    public void PerModuleMigrationFailed(string ex_type, string message)
+           Message = "Per-module migration failed")]
+    public void PerModuleMigrationFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailed);
+    }
+
+    [Event(EvtPerModuleMigrationFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "per-module migration failed | error={0} | message={1}")]
+    public void PerModuleMigrationFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailedDetail, ex_type, message);
     }
 
     [Event(EvtInjectFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "inject {0} into {1} failed: {2}: {3}")]
-    public void InjectFailed(string key, string module_id, string ex_type, string message)
+           Message = "Could not inject a key into a module file")]
+    public void InjectFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtInjectFailed, key, module_id, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtInjectFailed);
+    }
+
+    [Event(EvtInjectFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "inject failed | key={0} | module_id={1} | error={2} | message={3}")]
+    public void InjectFailedDetail(string key, string module_id, string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtInjectFailedDetail, key, module_id, ex_type, message);
     }
 
     [Event(EvtModuleFolderMigrated,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Module folder migrated ({0} → {1})")]
-    public void ModuleFolderMigrated(string old_id, string new_id)
+           Message = "Module folder migrated")]
+    public void ModuleFolderMigrated()
     {
-        if (IsEnabled()) WriteEvent(EvtModuleFolderMigrated, old_id, new_id);
+        if (IsEnabled()) WriteEvent(EvtModuleFolderMigrated);
+    }
+
+    [Event(EvtModuleFolderMigratedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "module folder migrated | old_id={0} | new_id={1}")]
+    public void ModuleFolderMigratedDetail(string old_id, string new_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtModuleFolderMigratedDetail, old_id, new_id);
     }
 
     [Event(EvtModuleRenameDetail,
@@ -162,10 +240,10 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtModuleFolderRenameFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Module folder rename failed — {0} could not be moved to {1}.")]
-    public void ModuleFolderRenameFailed(string old_id, string new_id)
+           Message = "Could not rename a module folder")]
+    public void ModuleFolderRenameFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed, old_id, new_id);
+        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed);
     }
 
     [Event(EvtModuleFolderRenameFailedDetail,
@@ -177,46 +255,76 @@ public sealed class DeckleSettingsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailedDetail, old_id, new_id, ex_type, message);
     }
 
+    // Mirror for the reworded ModuleFolderRenameFailed milestone. A `…Detail`
+    // (id 10) already carried the full error tuple; this `…Detail2` carries the
+    // ids alone so the milestone and its mirror stay a clean pair. Both keep the
+    // same Keywords as the milestone.
+    [Event(EvtModuleFolderRenameFailedDetail2,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "module rename failed | old=modules/{0} | new=modules/{1}")]
+    public void ModuleFolderRenameFailedDetail2(string old_id, string new_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailedDetail2, old_id, new_id);
+    }
+
     [Event(EvtRenamedRootKey,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated {0} → {1}")]
-    public void RenamedRootKey(string old_key, string new_key)
+           Message = "A settings key was renamed")]
+    public void RenamedRootKey()
     {
-        if (IsEnabled()) WriteEvent(EvtRenamedRootKey, old_key, new_key);
+        if (IsEnabled()) WriteEvent(EvtRenamedRootKey);
     }
 
+    [Event(EvtRenamedRootKeyDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "root key renamed | old_key={0} | new_key={1}")]
+    public void RenamedRootKeyDetail(string old_key, string new_key)
+    {
+        if (IsEnabled()) WriteEvent(EvtRenamedRootKeyDetail, old_key, new_key);
+    }
+
+    // Constant migration (corpusLogging → telemetry, both compile-time keys)
+    // documented here; the milestone carries no detail, no Verbose mirror.
     [Event(EvtMigratedCorpusToTelemetry,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated corpusLogging → telemetry")]
+           Message = "Corpus logging was migrated to telemetry")]
     public void MigratedCorpusToTelemetry()
     {
         if (IsEnabled()) WriteEvent(EvtMigratedCorpusToTelemetry);
     }
 
+    // Constant migration (llm.manualProfileName → llm.slotAProfileName, both
+    // compile-time keys); milestone carries no detail, no Verbose mirror.
     [Event(EvtMigratedLlmManualToSlotA,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated llm.manualProfileName → llm.slotAProfileName")]
+           Message = "An LLM profile key was migrated")]
     public void MigratedLlmManualToSlotA()
     {
         if (IsEnabled()) WriteEvent(EvtMigratedLlmManualToSlotA);
     }
 
+    // Constant migration (llm.slotAProfileName → llm.primaryRewriteProfileName,
+    // both compile-time keys); milestone carries no detail, no Verbose mirror.
     [Event(EvtMigratedLlmSlotAToPrimary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated llm.slotAProfileName → llm.primaryRewriteProfileName")]
+           Message = "The primary LLM profile key was migrated")]
     public void MigratedLlmSlotAToPrimary()
     {
         if (IsEnabled()) WriteEvent(EvtMigratedLlmSlotAToPrimary);
     }
 
+    // Constant migration (llm.slotBProfileName → llm.secondaryRewriteProfileName,
+    // both compile-time keys); milestone carries no detail, no Verbose mirror.
     [Event(EvtMigratedLlmSlotBToSecondary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migrated llm.slotBProfileName → llm.secondaryRewriteProfileName")]
+           Message = "The secondary LLM profile key was migrated")]
     public void MigratedLlmSlotBToSecondary()
     {
         if (IsEnabled()) WriteEvent(EvtMigratedLlmSlotBToSecondary);
@@ -227,64 +335,127 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtBackupSkippedSourceMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "backup skipped — source missing | path={0}")]
-    public void BackupSkippedSourceMissing(string path)
+           Message = "Backup skipped because the source file is missing")]
+    public void BackupSkippedSourceMissing()
     {
-        if (IsEnabled()) WriteEvent(EvtBackupSkippedSourceMissing, path);
+        if (IsEnabled()) WriteEvent(EvtBackupSkippedSourceMissing);
+    }
+
+    [Event(EvtBackupSkippedSourceMissingDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "backup skipped — source missing | path={0}")]
+    public void BackupSkippedSourceMissingDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackupSkippedSourceMissingDetail, path);
     }
 
     [Event(EvtBackupCreated,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "backup created | path={0}")]
-    public void BackupCreated(string path)
+           Message = "Backup created")]
+    public void BackupCreated()
     {
-        if (IsEnabled()) WriteEvent(EvtBackupCreated, path);
+        if (IsEnabled()) WriteEvent(EvtBackupCreated);
+    }
+
+    [Event(EvtBackupCreatedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "backup created | path={0}")]
+    public void BackupCreatedDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackupCreatedDetail, path);
     }
 
     [Event(EvtBackupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "backup failed | error={0}: {1}")]
-    public void BackupFailed(string ex_type, string message)
+           Message = "Backup failed")]
+    public void BackupFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtBackupFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtBackupFailed);
+    }
+
+    [Event(EvtBackupFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "backup failed | error={0} | message={1}")]
+    public void BackupFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackupFailedDetail, ex_type, message);
     }
 
     [Event(EvtBackupListFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "backup list failed | error={0}: {1}")]
-    public void BackupListFailed(string ex_type, string message)
+           Message = "Could not list the backups")]
+    public void BackupListFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtBackupListFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtBackupListFailed);
+    }
+
+    [Event(EvtBackupListFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "backup list failed | error={0} | message={1}")]
+    public void BackupListFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackupListFailedDetail, ex_type, message);
     }
 
     [Event(EvtRestoreSkippedSnapshotMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restore skipped — snapshot missing | path={0}")]
-    public void RestoreSkippedSnapshotMissing(string path)
+           Message = "Restore skipped because the snapshot is missing")]
+    public void RestoreSkippedSnapshotMissing()
     {
-        if (IsEnabled()) WriteEvent(EvtRestoreSkippedSnapshotMissing, path);
+        if (IsEnabled()) WriteEvent(EvtRestoreSkippedSnapshotMissing);
+    }
+
+    [Event(EvtRestoreSkippedSnapshotMissingDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "restore skipped — snapshot missing | path={0}")]
+    public void RestoreSkippedSnapshotMissingDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestoreSkippedSnapshotMissingDetail, path);
     }
 
     [Event(EvtRestoredFromBackup,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restored from backup | path={0}")]
-    public void RestoredFromBackup(string path)
+           Message = "Restored from backup")]
+    public void RestoredFromBackup()
     {
-        if (IsEnabled()) WriteEvent(EvtRestoredFromBackup, path);
+        if (IsEnabled()) WriteEvent(EvtRestoredFromBackup);
+    }
+
+    [Event(EvtRestoredFromBackupDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "restored from backup | path={0}")]
+    public void RestoredFromBackupDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestoredFromBackupDetail, path);
     }
 
     [Event(EvtRestoreFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restore failed | error={0}: {1}")]
-    public void RestoreFailed(string ex_type, string message)
+           Message = "Restore failed")]
+    public void RestoreFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtRestoreFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtRestoreFailed);
+    }
+
+    [Event(EvtRestoreFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "restore failed | error={0} | message={1}")]
+    public void RestoreFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestoreFailedDetail, ex_type, message);
     }
 
     // ── Folder picker (FolderPickerCard + FolderPickerEditableCard) ─────
@@ -292,27 +463,38 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtFolderPickerFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "FolderPicker failed: {0}: {1}")]
-    public void FolderPickerFailed(string ex_type, string message)
+           Message = "The folder picker failed")]
+    public void FolderPickerFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtFolderPickerFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtFolderPickerFailed);
+    }
+
+    [Event(EvtFolderPickerFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "folder picker failed | error={0} | message={1}")]
+    public void FolderPickerFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtFolderPickerFailedDetail, ex_type, message);
     }
 
     // ── General page (setup wizard) ─────────────────────────────────────
 
+    // Pure status sentence, no params; cleaned and recapitalized in place.
     [Event(EvtSetupWizardHookNotWired,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setup wizard hook not wired — ignoring")]
+           Message = "The setup wizard hook is not wired")]
     public void SetupWizardHookNotWired()
     {
         if (IsEnabled()) WriteEvent(EvtSetupWizardHookNotWired);
     }
 
+    // Pure status sentence, no params; cleaned and recapitalized in place.
     [Event(EvtSetupWindowOpenedFromSettings,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setup window opened from Settings")]
+           Message = "Setup window opened from Settings")]
     public void SetupWindowOpenedFromSettings()
     {
         if (IsEnabled()) WriteEvent(EvtSetupWindowOpenedFromSettings);
@@ -321,19 +503,37 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtSetupWindowOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setup window open failed: {0}: {1}")]
-    public void SetupWindowOpenFailed(string ex_type, string message)
+           Message = "Could not open the setup window")]
+    public void SetupWindowOpenFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailed);
+    }
+
+    [Event(EvtSetupWindowOpenFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "setup window open failed | error={0} | message={1}")]
+    public void SetupWindowOpenFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailedDetail, ex_type, message);
     }
 
     [Event(EvtWarmupRestartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup restart failed: {0}: {1}")]
-    public void WarmupRestartFailed(string ex_type, string message)
+           Message = "Warmup restart failed")]
+    public void WarmupRestartFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupRestartFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtWarmupRestartFailed);
+    }
+
+    [Event(EvtWarmupRestartFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "warmup restart failed | error={0} | message={1}")]
+    public void WarmupRestartFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWarmupRestartFailedDetail, ex_type, message);
     }
 
     // ── SettingsWindow navigation ───────────────────────────────────────
@@ -359,19 +559,37 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtNavImpossibleNoTag,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "nav impossible | reason=no-tag | item={0}")]
-    public void NavImpossibleNoTag(string item_content)
+           Message = "A navigation item has no destination tag")]
+    public void NavImpossibleNoTag()
     {
-        if (IsEnabled()) WriteEvent(EvtNavImpossibleNoTag, item_content);
+        if (IsEnabled()) WriteEvent(EvtNavImpossibleNoTag);
+    }
+
+    [Event(EvtNavImpossibleNoTagDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "nav impossible | reason=no-tag | item={0}")]
+    public void NavImpossibleNoTagDetail(string item_content)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavImpossibleNoTagDetail, item_content);
     }
 
     [Event(EvtNavFailedTypeNotFound,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "nav failed | reason=type-not-found | tag={0}")]
-    public void NavFailedTypeNotFound(string tag)
+           Message = "A navigation target page type was not found")]
+    public void NavFailedTypeNotFound()
     {
-        if (IsEnabled()) WriteEvent(EvtNavFailedTypeNotFound, tag);
+        if (IsEnabled()) WriteEvent(EvtNavFailedTypeNotFound);
+    }
+
+    [Event(EvtNavFailedTypeNotFoundDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "nav failed | reason=type-not-found | tag={0}")]
+    public void NavFailedTypeNotFoundDetail(string tag)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavFailedTypeNotFoundDetail, tag);
     }
 
     [Event(EvtNavSkippedAlreadyCurrent,
@@ -386,43 +604,82 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     [Event(EvtNavStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigate to {0}")]
-    public void NavStarted(string page_name)
+           Message = "Navigation started")]
+    public void NavStarted()
     {
-        if (IsEnabled()) WriteEvent(EvtNavStarted, page_name);
+        if (IsEnabled()) WriteEvent(EvtNavStarted);
+    }
+
+    [Event(EvtNavStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "navigation started | page={0}")]
+    public void NavStartedDetail(string page_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavStartedDetail, page_name);
     }
 
     [Event(EvtNavFailedFrameRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "navigate failed | page={0} | reason=frame-returned-false")]
-    public void NavFailedFrameRejected(string page_name)
+           Message = "Navigation was rejected by the frame")]
+    public void NavFailedFrameRejected()
     {
-        if (IsEnabled()) WriteEvent(EvtNavFailedFrameRejected, page_name);
+        if (IsEnabled()) WriteEvent(EvtNavFailedFrameRejected);
+    }
+
+    [Event(EvtNavFailedFrameRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "navigate failed | page={0} | reason=frame-returned-false")]
+    public void NavFailedFrameRejectedDetail(string page_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavFailedFrameRejectedDetail, page_name);
     }
 
     [Event(EvtNavCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigated to {0}")]
-    public void NavCompleted(string page_name)
+           Message = "Navigation completed")]
+    public void NavCompleted()
     {
-        if (IsEnabled()) WriteEvent(EvtNavCompleted, page_name);
+        if (IsEnabled()) WriteEvent(EvtNavCompleted);
+    }
+
+    [Event(EvtNavCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "navigation completed | page={0}")]
+    public void NavCompletedDetail(string page_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavCompletedDetail, page_name);
     }
 
     [Event(EvtNavFailedThrew,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "navigate threw | page={0} | error={1}: {2}")]
-    public void NavFailedThrew(string page_name, string ex_type, string message)
+           Message = "Navigation threw an exception")]
+    public void NavFailedThrew()
     {
-        if (IsEnabled()) WriteEvent(EvtNavFailedThrew, page_name, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtNavFailedThrew);
     }
 
-    [Event(EvtNavStackTrace,
-           Level = EventLevel.Error,
+    [Event(EvtNavFailedThrewDetail,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "navigate threw | page={0} | error={1}: {2}")]
+    public void NavFailedThrewDetail(string page_name, string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavFailedThrewDetail, page_name, ex_type, message);
+    }
+
+    // Demoted from Error to Verbose: a raw stack trace is opaque internal
+    // detail with no standalone milestone value. It follows the NavFailedThrew
+    // milestone (and its …Detail mirror) as the deep-dive line.
+    [Event(EvtNavStackTrace,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "nav stack trace | stack={0}")]
     public void NavStackTrace(string stack)
     {
         if (IsEnabled()) WriteEvent(EvtNavStackTrace, stack);
@@ -456,6 +713,12 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     // construction (a logging setter), and multiplying typed events (forty
     // AppearanceThemeChanged, OverlayEnabledChanged, etc.) without semantic
     // gain would create noise without benefit.
+    //
+    // FLAGGED for human review: this generic channel keeps its "{0} ← {1}" /
+    // "{0} section reset" shape on Informational events, which technically
+    // carries a value token on an Info. It is left as a deliberate in-design
+    // exception (mirroring the Playground generic-channel exemption), NOT
+    // typified, per the alignment hard rule on defended generic channels.
 
     [Event(EvtSettingChanged,
            Level = EventLevel.Informational,

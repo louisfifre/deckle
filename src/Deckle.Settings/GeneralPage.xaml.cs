@@ -169,7 +169,8 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.FolderPickerFailed();
+            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -194,7 +195,8 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.SetupWindowOpenFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.SetupWindowOpenFailed();
+            DeckleSettingsSource.Log.SetupWindowOpenFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -218,7 +220,8 @@ public sealed partial class GeneralPage : Page
         var latest = ViewModel.LatestBackup;
         if (latest is null)
         {
-            DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing("(no_backup)");
+            DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing();
+            DeckleSettingsSource.Log.RestoreSkippedSnapshotMissingDetail("(no_backup)");
             return;
         }
 

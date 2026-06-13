@@ -64,7 +64,8 @@ public static class SettingsBackupService
             string source = SettingsService.Instance.ConfigPath;
             if (!File.Exists(source))
             {
-                DeckleSettingsSource.Log.BackupSkippedSourceMissing(source);
+                DeckleSettingsSource.Log.BackupSkippedSourceMissing();
+                DeckleSettingsSource.Log.BackupSkippedSourceMissingDetail(source);
                 return null;
             }
 
@@ -79,12 +80,14 @@ public static class SettingsBackupService
 
             File.Copy(source, destination, overwrite: false);
 
-            DeckleSettingsSource.Log.BackupCreated(destination);
+            DeckleSettingsSource.Log.BackupCreated();
+            DeckleSettingsSource.Log.BackupCreatedDetail(destination);
             return new BackupInfo(destination, stampNow);
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.BackupFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.BackupFailed();
+            DeckleSettingsSource.Log.BackupFailedDetail(ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -118,7 +121,8 @@ public static class SettingsBackupService
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.BackupListFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.BackupListFailed();
+            DeckleSettingsSource.Log.BackupListFailedDetail(ex.GetType().Name, ex.Message);
             return Array.Empty<BackupInfo>();
         }
     }
@@ -132,7 +136,8 @@ public static class SettingsBackupService
         {
             if (string.IsNullOrWhiteSpace(backupPath) || !File.Exists(backupPath))
             {
-                DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing(backupPath ?? "(null)");
+                DeckleSettingsSource.Log.RestoreSkippedSnapshotMissing();
+                DeckleSettingsSource.Log.RestoreSkippedSnapshotMissingDetail(backupPath ?? "(null)");
                 return false;
             }
 
@@ -150,12 +155,14 @@ public static class SettingsBackupService
 
             SettingsService.Instance.Reload();
 
-            DeckleSettingsSource.Log.RestoredFromBackup(backupPath);
+            DeckleSettingsSource.Log.RestoredFromBackup();
+            DeckleSettingsSource.Log.RestoredFromBackupDetail(backupPath);
             return true;
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.RestoreFailed(ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.RestoreFailed();
+            DeckleSettingsSource.Log.RestoreFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
