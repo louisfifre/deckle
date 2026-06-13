@@ -10,7 +10,8 @@ public partial class App
     private void OnAmbientSettingsChanged()
     {
         bool enabled = AmbientSettingsService.Instance.Current.Enabled;
-        DeckleAppSource.Log.AmbientPipelineState(enabled ? "Master ON" : "Master OFF");
+        DeckleAppSource.Log.AmbientPipelineState();
+        DeckleAppSource.Log.AmbientPipelineStateDetail(enabled ? "Master ON" : "Master OFF");
         _ = ApplyAmbientEnabledAsync(enabled);
     }
 
@@ -29,7 +30,8 @@ public partial class App
                 }
                 catch (Exception ex)
                 {
-                    DeckleAppSource.Log.AmbientStartFailed(ex.GetType().Name, $"{ex.Message} ; reverting Enabled to false");
+                    DeckleAppSource.Log.AmbientStartFailed();
+                    DeckleAppSource.Log.AmbientStartFailedDetail(ex.GetType().Name, $"{ex.Message} ; reverting Enabled to false");
                     var s = AmbientSettingsService.Instance.Current;
                     s.Enabled = false;
                     AmbientSettingsService.Instance.Save();

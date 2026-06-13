@@ -59,7 +59,8 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning(
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail(
                 $"window placement restore failed | window={key} | error={ex.Message}");
         }
     }
@@ -79,7 +80,8 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning(
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail(
                 $"window placement save failed | window={key} | error={ex.Message}");
         }
     }
@@ -119,7 +121,8 @@ internal static class SecondaryWindowPlacement
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning(
+            DeckleAppSource.Log.LogWindowWarning();
+            DeckleAppSource.Log.LogWindowWarningDetail(
                 $"window placement load failed | error={ex.Message}");
             return new Dictionary<string, PlacementDto>(StringComparer.Ordinal);
         }

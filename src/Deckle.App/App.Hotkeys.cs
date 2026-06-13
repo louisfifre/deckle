@@ -44,7 +44,8 @@ public partial class App
         switch (result)
         {
             case ToggleResult.Started:
-                DeckleAppSource.Log.HotkeyStart(
+                DeckleAppSource.Log.HotkeyStart();
+                DeckleAppSource.Log.HotkeyStartDetail(
                     $"{hotkeyName}{(manualProfile is null ? "" : $", LLM: {manualProfile}")}");
                 _hudWindow?.ShowPreparing();
                 break;
@@ -65,7 +66,8 @@ public partial class App
                 break;
 
             case ToggleResult.IgnoredNoProfile:
-                DeckleAppSource.Log.HotkeyNoProfile(hotkeyName);
+                DeckleAppSource.Log.HotkeyNoProfile();
+                DeckleAppSource.Log.HotkeyNoProfileDetail(hotkeyName);
                 break;
 
             case ToggleResult.IgnoredBusy:
