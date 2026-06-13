@@ -217,7 +217,12 @@ public sealed class AutocorrectEngine : IDisposable
             return;
         }
 
-        var decision = _policy.Evaluate(commit.Word, commit.PreviousWord);
+        // Live path stays one word of left context (bigram): the trigram model
+        // is exercised by the offline eval until the sentence-context wiring lands.
+        var leftContext = commit.PreviousWord is null
+            ? Array.Empty<string>()
+            : new[] { commit.PreviousWord };
+        var decision = _policy.Evaluate(commit.Word, leftContext);
 
         // A reverted pair stays suppressed whatever the policy says — enforced
         // here so even a policy without dictionary access (the CLI toy) honors

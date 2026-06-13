@@ -52,14 +52,20 @@ public static class PairModelTrainer
             foreach (string sentence in SplitSentences(line))
             {
                 sentences++;
-                string? prev = null; // null = sentence start; counted as "".
+                // Two-deep left context, both null at sentence start. prev is the
+                // immediate previous token, prevPrev the one before it; together
+                // they form the trigram key "prevPrev prev".
+                string? prev = null;
+                string? prevPrev = null;
 
                 foreach (string raw in WordBoundaries.Tokenize(sentence))
                 {
                     // A token participates only if it carries a letter — digit
-                    // and symbol tokens never reach the gate.
+                    // and symbol tokens never reach the gate, but they still
+                    // shift the context chain (they are what prev would be).
                     if (!HasLetter(raw))
                     {
+                        prevPrev = prev;
                         prev = raw.ToLowerInvariant();
                         continue;
                     }
@@ -72,10 +78,16 @@ public static class PairModelTrainer
                     {
                         ambiguousOccurrences++;
                         string prevKey = prev ?? string.Empty;
-                        Bump(model, folded, token, prevKey);   // the bigram
-                        Bump(model, folded, token, string.Empty); // the unigram total
+                        Bump(model, folded, token, prevKey);       // the bigram
+                        Bump(model, folded, token, string.Empty);  // the unigram total
+                        // The trigram row exists only for a real two-word context
+                        // (mid-sentence, both prevs present); at the start or the
+                        // second word the disambiguator backs off to the bigram.
+                        if (opts.MaxOrder >= 3 && prev is not null && prevPrev is not null)
+                            Bump(model, folded, token, prevPrev + " " + prev);
                     }
 
+                    prevPrev = prev;
                     prev = token;
                 }
             }
@@ -134,10 +146,13 @@ public static class PairModelTrainer
         byPrev[prev] = byPrev.TryGetValue(prev, out long c) ? c + 1 : 1;
     }
 
-    // Prune the bigram tail: drop (folded,variant,prev) rows below MinPairCount,
-    // then keep only the MaxPrevPerSlot most frequent prevs per slot. The ""
-    // unigram row is never pruned — it is the fallback the disambiguator leans
-    // on. Returns the number of rows surviving (counting the unigram rows).
+    // Prune the context tail per order, so adding trigrams leaves the bigram
+    // model unchanged. Drop (folded,variant,ctx) rows below MinPairCount, then
+    // keep only the MaxPrevPerSlot heaviest contexts of each order — bigram keys
+    // (a bare prev) and trigram keys ("prevPrev prev", carrying a space) capped
+    // in separate buckets. The "" unigram row is never pruned — it is the
+    // fallback the disambiguator leans on. Returns the surviving row count
+    // (unigram rows included).
     private static long Prune(
         Dictionary<string, Dictionary<string, Dictionary<string, long>>> model,
         TrainerOptions opts)
@@ -147,31 +162,37 @@ public static class PairModelTrainer
         {
             foreach (var byPrev in byVariant.Values)
             {
-                // Drop low-count bigrams (never the unigram total).
+                // Drop low-count context rows (never the unigram total).
                 var toDrop = new List<string>();
-                foreach (var (prev, count) in byPrev)
-                    if (prev.Length != 0 && count < opts.MinPairCount)
-                        toDrop.Add(prev);
-                foreach (string prev in toDrop)
-                    byPrev.Remove(prev);
+                foreach (var (ctx, count) in byPrev)
+                    if (ctx.Length != 0 && count < opts.MinPairCount)
+                        toDrop.Add(ctx);
+                foreach (string ctx in toDrop)
+                    byPrev.Remove(ctx);
 
-                // Cap the prevs per (folded,variant) slot, keeping the heaviest.
-                int bigrams = byPrev.Count - (byPrev.ContainsKey(string.Empty) ? 1 : 0);
-                if (bigrams > opts.MaxPrevPerSlot)
-                {
-                    var ranked = new List<KeyValuePair<string, long>>();
-                    foreach (var kv in byPrev)
-                        if (kv.Key.Length != 0)
-                            ranked.Add(kv);
-                    ranked.Sort(static (a, b) => b.Value.CompareTo(a.Value));
-                    for (int i = opts.MaxPrevPerSlot; i < ranked.Count; i++)
-                        byPrev.Remove(ranked[i].Key);
-                }
+                // Cap each order independently, keeping the heaviest contexts.
+                CapBucket(byPrev, opts.MaxPrevPerSlot, trigram: false);
+                CapBucket(byPrev, opts.MaxPrevPerSlot, trigram: true);
 
                 kept += byPrev.Count;
             }
         }
         return kept;
+    }
+
+    // Keep at most `cap` contexts of one order in a (folded,variant) slot — the
+    // bigram bucket (no space) or the trigram bucket (a space), heaviest kept.
+    private static void CapBucket(Dictionary<string, long> byPrev, int cap, bool trigram)
+    {
+        var ranked = new List<KeyValuePair<string, long>>();
+        foreach (var kv in byPrev)
+            if (kv.Key.Length != 0 && kv.Key.Contains(' ') == trigram)
+                ranked.Add(kv);
+        if (ranked.Count <= cap)
+            return;
+        ranked.Sort(static (a, b) => b.Value.CompareTo(a.Value));
+        for (int i = cap; i < ranked.Count; i++)
+            byPrev.Remove(ranked[i].Key);
     }
 
     // Split a line on the terse sentence breaks. The terminator is consumed;
@@ -214,8 +235,13 @@ public sealed record TrainerOptions
     public int MinPairCount { get; init; } = 3;
 
     // Keep at most this many distinct prevs per (folded,variant) slot, the most
-    // frequent ones; prune the tail.
+    // frequent ones; prune the tail. Applied per order (bigram and trigram
+    // contexts are capped in separate buckets).
     public int MaxPrevPerSlot { get; init; } = 64;
+
+    // The highest n-gram order to train: 2 = bigram only, 3 = also count the
+    // trigram context "prevPrev prev". Lower orders are always present for backoff.
+    public int MaxOrder { get; init; } = 3;
 }
 
 // What the training pass observed — a data-quality signal, not engine state.

@@ -45,7 +45,7 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RestoresUniqueVariant()
     {
-        var d = Restorer().Evaluate("francais", previousWord: null);
+        var d = Restorer().Evaluate("francais", []);
 
         Assert.NotNull(d);
         Assert.Equal("français", d!.Replacement);
@@ -55,7 +55,7 @@ public class DiacriticsRestorerTests
     [Fact]
     public void RestoresAccentOnEcole()
     {
-        var d = Restorer().Evaluate("ecole", null);
+        var d = Restorer().Evaluate("ecole", []);
 
         Assert.Equal("école", d!.Replacement);
         Assert.Equal(CorrectionReason.LexicalGate, d.Reason);
@@ -64,7 +64,7 @@ public class DiacriticsRestorerTests
     [Fact]
     public void PreservesTitleCase()
     {
-        var d = Restorer().Evaluate("Ecole", null);
+        var d = Restorer().Evaluate("Ecole", []);
 
         Assert.Equal("École", d!.Replacement);
     }
@@ -72,7 +72,7 @@ public class DiacriticsRestorerTests
     [Fact]
     public void PreservesAllUpperCase()
     {
-        var d = Restorer().Evaluate("FRANCAIS", null);
+        var d = Restorer().Evaluate("FRANCAIS", []);
 
         Assert.Equal("FRANÇAIS", d!.Replacement);
     }
@@ -81,7 +81,7 @@ public class DiacriticsRestorerTests
     public void RestoresDeja()
     {
         // "deja" folds to "deja", whose only accented variant is "déjà" — single.
-        var d = Restorer().Evaluate("deja", null);
+        var d = Restorer().Evaluate("deja", []);
 
         Assert.Equal("déjà", d!.Replacement);
         Assert.Equal(CorrectionReason.LexicalGate, d.Reason);
@@ -94,7 +94,7 @@ public class DiacriticsRestorerTests
     {
         // "cote" is itself a valid French form — the literal wins (guard 7),
         // even though "côte" exists behind the same fold.
-        Assert.Null(Restorer().Evaluate("cote", null));
+        Assert.Null(Restorer().Evaluate("cote", []));
     }
 
     [Fact]
@@ -102,54 +102,54 @@ public class DiacriticsRestorerTests
     {
         // "marche" is a valid form (guard 7 fires before any candidate work),
         // although "marché" sits behind the same fold.
-        Assert.Null(Restorer().Evaluate("marche", null));
+        Assert.Null(Restorer().Evaluate("marche", []));
     }
 
     [Fact]
     public void SingleLetterFormIsLeftAlone()
     {
         // "a" is a valid French form AND below MinWordLength — left alone either way.
-        Assert.Null(Restorer().Evaluate("a", null));
+        Assert.Null(Restorer().Evaluate("a", []));
     }
 
     [Fact]
     public void EnglishWordIsNeverFrenchified()
     {
         // No language detection in v1 — the bilingual guard protects "the".
-        Assert.Null(Restorer().Evaluate("the", null));
+        Assert.Null(Restorer().Evaluate("the", []));
     }
 
     [Fact]
     public void AmbiguousPairWithoutDominanceIsLeftAlone()
     {
         // "eleve" → élève (30) vs élevé (25): ratio 1.2, far under 20, no context.
-        Assert.Null(Restorer().Evaluate("eleve", null));
+        Assert.Null(Restorer().Evaluate("eleve", []));
     }
 
     [Fact]
     public void AlreadyAccentedWordIsNeverSecondGuessed()
     {
         // The user typed the accent deliberately (guard 6).
-        Assert.Null(Restorer().Evaluate("déja", null));
+        Assert.Null(Restorer().Evaluate("déja", []));
     }
 
     [Fact]
     public void DigitBearingTokenIsBlacklisted()
     {
-        Assert.Null(Restorer().Evaluate("win11", null));
+        Assert.Null(Restorer().Evaluate("win11", []));
     }
 
     [Fact]
     public void ElisionTokenIsLeftAlone()
     {
         // Trailing apostrophe — an elision prefix ("l'"), not a word.
-        Assert.Null(Restorer().Evaluate("l'", null));
+        Assert.Null(Restorer().Evaluate("l'", []));
     }
 
     [Fact]
     public void CamelCaseIdentifierIsLeftAlone()
     {
-        Assert.Null(Restorer().Evaluate("fooBar", null));
+        Assert.Null(Restorer().Evaluate("fooBar", []));
     }
 
     // ── Frequency dominance ────────────────────────────────────────────────
@@ -158,7 +158,7 @@ public class DiacriticsRestorerTests
     public void DominantVariantWinsWithoutContext()
     {
         // "etant" → étant (100) vs êtant (1): ratio 100, clears 20× and the floor.
-        var d = Restorer().Evaluate("etant", null);
+        var d = Restorer().Evaluate("etant", []);
 
         Assert.NotNull(d);
         Assert.Equal("étant", d!.Replacement);
@@ -172,7 +172,7 @@ public class DiacriticsRestorerTests
     {
         // The pair model picks élève; without it "eleve" stays (see above).
         var ctx = new StubDisambiguator(chosen: "élève");
-        var d = Restorer(context: ctx).Evaluate("eleve", previousWord: "bon");
+        var d = Restorer(context: ctx).Evaluate("eleve", ["bon"]);
 
         Assert.NotNull(d);
         Assert.Equal("élève", d!.Replacement);
@@ -183,7 +183,7 @@ public class DiacriticsRestorerTests
     public void ContextReceivesLowercasedPreviousWord()
     {
         var ctx = new StubDisambiguator(chosen: "élève");
-        Restorer(context: ctx).Evaluate("eleve", previousWord: "Bon");
+        Restorer(context: ctx).Evaluate("eleve", ["Bon"]);
 
         Assert.Equal("bon", ctx.LastPrevious);
     }
@@ -195,7 +195,7 @@ public class DiacriticsRestorerTests
     {
         // The user adopted "ecole" as a literal — it must not be corrected.
         var personal = new StubPersonal(adopted: new() { "ecole" });
-        Assert.Null(Restorer(personal: personal).Evaluate("ecole", null));
+        Assert.Null(Restorer(personal: personal).Evaluate("ecole", []));
     }
 
     [Fact]
@@ -203,7 +203,7 @@ public class DiacriticsRestorerTests
     {
         // The user reverted ecole→école once — that pair never fires on its own.
         var personal = new StubPersonal(suppressed: new() { ("ecole", "école") });
-        Assert.Null(Restorer(personal: personal).Evaluate("ecole", null));
+        Assert.Null(Restorer(personal: personal).Evaluate("ecole", []));
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class DiacriticsRestorerTests
             lower == "lea"
                 ? new[] { new AccentVariant("léa", 0.0) }
                 : Array.Empty<AccentVariant>())
-            .Evaluate("lea", null);
+            .Evaluate("lea", []);
 
         Assert.NotNull(d);
         Assert.Equal("léa", d!.Replacement);
@@ -231,12 +231,12 @@ public class DiacriticsRestorerTests
         // form, "l'" is an elision token. The gate touches one word.
         var r = Restorer();
 
-        Assert.Null(r.Evaluate("j'ai", null));
-        Assert.Null(r.Evaluate("marche", "j'ai"));
-        Assert.Null(r.Evaluate("vers", "marche"));
-        Assert.Null(r.Evaluate("l'", "vers"));
+        Assert.Null(r.Evaluate("j'ai", []));
+        Assert.Null(r.Evaluate("marche", ["j'ai"]));
+        Assert.Null(r.Evaluate("vers", ["marche"]));
+        Assert.Null(r.Evaluate("l'", ["vers"]));
 
-        var ecole = r.Evaluate("ecole", "l'");
+        var ecole = r.Evaluate("ecole", ["l'"]);
         Assert.NotNull(ecole);
         Assert.Equal("école", ecole!.Replacement);
         Assert.Equal(CorrectionReason.LexicalGate, ecole.Reason);
@@ -248,9 +248,9 @@ public class DiacriticsRestorerTests
     {
         public string? LastPrevious { get; private set; }
 
-        public string? Choose(string? previousWord, IReadOnlyList<AccentVariant> candidates)
+        public string? Choose(IReadOnlyList<string> leftContext, IReadOnlyList<AccentVariant> candidates)
         {
-            LastPrevious = previousWord;
+            LastPrevious = leftContext.Count > 0 ? leftContext[^1] : null;
             return chosen;
         }
     }

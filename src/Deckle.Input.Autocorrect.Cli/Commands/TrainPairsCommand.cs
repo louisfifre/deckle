@@ -38,10 +38,15 @@ internal static class TrainPairsCommand
         var french = FrequencyLexicon.LoadTsvGz(frenchPath);
         var index = AccentIndex.Build(french);
 
+        var trainerOptions = new TrainerOptions
+        {
+            MaxOrder = args.IntOr("--max-order", new TrainerOptions().MaxOrder),
+        };
+
         string outPath = DataSet.PairPath(dataDir);
         TrainerReport report;
         using (var reader = new StreamReader(corpus, Encoding.UTF8))
-            report = PairModelTrainer.TrainToFile(reader, french, index, outPath);
+            report = PairModelTrainer.TrainToFile(reader, french, index, outPath, trainerOptions);
 
         // Reload to report the on-disk model's shape (the rows that survived).
         var model = PairModel.LoadTsvGz(outPath);

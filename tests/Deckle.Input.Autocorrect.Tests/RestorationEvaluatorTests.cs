@@ -23,8 +23,9 @@ public class RestorationEvaluatorTests
 
         public string? LastPrevForA { get; private set; }
 
-        public CorrectionDecision? Evaluate(string word, string? previousWord)
+        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
         {
+            string? previousWord = leftContext.Count > 0 ? leftContext[^1] : null;
             if (word == "a")
                 LastPrevForA = previousWord; // capture the chained left context.
 
@@ -93,6 +94,43 @@ public class RestorationEvaluatorTests
         Assert.Equal(1.0 / 2.0, report.FalseCorrectionRate, 6);
         // Correct = Restored (2) + Untouched (1) over 6 tokens.
         Assert.Equal(3.0 / 6.0, report.WordAccuracy, 6);
+
+        // Precision is the headline: of the 4 emitted corrections (là, marché,
+        // à, coté) two were right — restored marché and à. The two wrong ones
+        // are the false correction (là) and the wrong form (coté).
+        Assert.Equal(4L, report.EmittedCorrections);
+        Assert.Equal(2L, report.Corruptions);
+        Assert.Equal(2.0 / 4.0, report.Precision, 6);
+    }
+
+    [Fact]
+    public void EmptyDenominatorRatesReadAsNaNNotZero()
+    {
+        // A pure-bare reference the policy never touches: no accents needed, none
+        // emitted. Recall and precision are "not measured" (NaN), not a flat 0%
+        // that would read as a perfect-or-failing score.
+        var report = Evaluate("chat chien.", Policy());
+
+        Assert.Equal(0L, report.AccentedRef);
+        Assert.Equal(0L, report.EmittedCorrections);
+        Assert.True(double.IsNaN(report.RestorationRecall));
+        Assert.True(double.IsNaN(report.Precision));
+        Assert.Equal(0.0, report.FalseCorrectionRate, 6); // bare words exist → measured
+    }
+
+    [Fact]
+    public void BreaksDownEmittedCorrectionsByStage()
+    {
+        // Every ScriptedPolicy rule reports LexicalGate, so the four emitted
+        // corrections land in one stage: two correct (marché, à), two wrong
+        // (the false correction là, the wrong form coté). Missed/untouched
+        // tokens never acted, so they contribute nothing to the breakdown.
+        var report = Evaluate("le chat marché était à côté.", Policy());
+
+        Assert.True(report.ByStage.TryGetValue(CorrectionReason.LexicalGate, out var gate));
+        Assert.Equal(4L, gate!.Acted);
+        Assert.Equal(2L, gate.Correct);
+        Assert.Equal(2L, gate.Wrong);
     }
 
     [Fact]
@@ -127,8 +165,8 @@ public class RestorationEvaluatorTests
     // sentence boundary.
     private sealed class OnlyAtSentenceStartPolicy : ICorrectionPolicy
     {
-        public CorrectionDecision? Evaluate(string word, string? previousWord) =>
-            word == "etait" && previousWord is null
+        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext) =>
+            word == "etait" && leftContext.Count == 0
                 ? new CorrectionDecision(word, "était", CorrectionReason.LexicalGate)
                 : null;
     }

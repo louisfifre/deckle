@@ -38,13 +38,19 @@ public static class RestorationEvaluator
         var wrongForm = new Dictionary<string, long>(StringComparer.Ordinal);
         var falseCorrections = new Dictionary<string, long>(StringComparer.Ordinal);
 
+        // Per-stage emitted-correction tally, keyed by the reason the policy gave.
+        var byStage = new Dictionary<CorrectionReason, StageTally>();
+
         string? line;
         bool capped = false;
         while (!capped && (line = reference.ReadLine()) is not null)
         {
             foreach (string sentence in SplitSentences(line))
             {
-                string? prevOut = null; // left context, carried within a sentence.
+                // Two-deep left context, carried within a sentence: prev1 is the
+                // immediate previous output, prev2 the one before it.
+                string? prev1 = null;
+                string? prev2 = null;
 
                 foreach (string token in WordBoundaries.Tokenize(sentence))
                 {
@@ -52,7 +58,8 @@ public static class RestorationEvaluator
                     {
                         // Non-word tokens are not scored, but they still break
                         // left context — the policy would see them as prev.
-                        prevOut = token.ToLowerInvariant();
+                        prev2 = prev1;
+                        prev1 = token.ToLowerInvariant();
                         continue;
                     }
 
@@ -64,13 +71,15 @@ public static class RestorationEvaluator
 
                     // What the typist produces: accents stripped, case kept.
                     string typed = AccentFolding.StripDiacritics(token);
-                    CorrectionDecision? decision = policy.Evaluate(typed, prevOut);
+                    CorrectionDecision? decision = policy.Evaluate(typed, LeftContext(prev2, prev1));
                     string output = decision?.Replacement ?? typed;
 
-                    Classify(report, token, typed, output, missed, wrongForm, falseCorrections);
+                    Classify(report, token, typed, output, decision, byStage,
+                        missed, wrongForm, falseCorrections);
 
                     report.TotalTokens++;
-                    prevOut = output.ToLowerInvariant();
+                    prev2 = prev1;
+                    prev1 = output.ToLowerInvariant();
                 }
 
                 if (capped)
@@ -78,6 +87,7 @@ public static class RestorationEvaluator
             }
         }
 
+        report.ByStage = byStage;
         report.TopMissed = Top(missed);
         report.TopWrongForm = Top(wrongForm);
         report.TopFalseCorrections = Top(falseCorrections);
@@ -90,6 +100,8 @@ public static class RestorationEvaluator
     private static void Classify(
         RestorationReport report,
         string token, string typed, string output,
+        CorrectionDecision? decision,
+        Dictionary<CorrectionReason, StageTally> byStage,
         Dictionary<string, long> missed,
         Dictionary<string, long> wrongForm,
         Dictionary<string, long> falseCorrections)
@@ -102,6 +114,7 @@ public static class RestorationEvaluator
             if (string.Equals(output, token, StringComparison.Ordinal))
             {
                 report.Restored++;
+                BumpStage(byStage, decision, correct: true);
             }
             else if (string.Equals(output, typed, StringComparison.Ordinal))
             {
@@ -112,6 +125,7 @@ public static class RestorationEvaluator
             {
                 report.WrongForm++;
                 Bump(wrongForm, token);
+                BumpStage(byStage, decision, correct: false);
             }
         }
         else
@@ -123,8 +137,24 @@ public static class RestorationEvaluator
             {
                 report.FalseCorrections++;
                 Bump(falseCorrections, token); // the word the typist got right.
+                BumpStage(byStage, decision, correct: false);
             }
         }
+    }
+
+    // Credit one emitted correction to the stage that produced it. The three
+    // acted branches always carry a non-null decision (output != typed implies
+    // the policy returned one); the guard keeps it total regardless.
+    private static void BumpStage(
+        Dictionary<CorrectionReason, StageTally> byStage, CorrectionDecision? decision, bool correct)
+    {
+        if (decision is null)
+            return;
+        if (!byStage.TryGetValue(decision.Reason, out var tally))
+            byStage[decision.Reason] = tally = new StageTally();
+        tally.Acted++;
+        if (correct) tally.Correct++;
+        else tally.Wrong++;
     }
 
     private static void Bump(Dictionary<string, long> tally, string word) =>
@@ -169,6 +199,13 @@ public static class RestorationEvaluator
                 return true;
         return false;
     }
+
+    // The left context handed to the policy, most recent last: empty at sentence
+    // start, one word once there is a previous, two from the third word on.
+    private static IReadOnlyList<string> LeftContext(string? prev2, string? prev1) =>
+        prev1 is null ? Array.Empty<string>()
+        : prev2 is null ? new[] { prev1 }
+        : new[] { prev2, prev1 };
 }
 
 // Tuning for the eval. The only knob is a token cap for quick smoke runs.

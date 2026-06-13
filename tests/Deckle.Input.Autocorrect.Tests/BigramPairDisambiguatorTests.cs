@@ -4,10 +4,10 @@ using Xunit;
 
 namespace Deckle.Input.Autocorrect.Tests;
 
-// The context model: a guarded argmax over per-candidate scores (bigram when
-// the prev is known, unigram otherwise), with add-one smoothing, a literal-bias
-// defense on the bare form, an evidence gate, and a margin. Null — leave the
-// literal — is the expected outcome whenever evidence is thin or the race close.
+// The context model: a guarded argmax over per-candidate scores, backing off
+// trigram → bigram → unigram, with add-one smoothing, a literal-bias defense on
+// the bare form, an evidence gate, and a margin. Null — leave the literal — is
+// the expected outcome whenever evidence is thin or the race close.
 [Trait("Category", "unit")]
 public class BigramPairDisambiguatorTests
 {
@@ -31,7 +31,7 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 20L),
         });
 
-        Assert.Equal("à", d.Choose("va", Candidates));
+        Assert.Equal("à", d.Choose(["va"], Candidates));
     }
 
     [Fact]
@@ -46,11 +46,11 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 5L),
         }, new DisambiguatorOptions { MarginRatio = 3.0 });
 
-        Assert.Equal("a", d.Choose("il", Candidates));
+        Assert.Equal("a", d.Choose(["il"], Candidates));
     }
 
     [Fact]
-    public void FallsBackToUnigramWhenPrevIsNull()
+    public void FallsBackToUnigramWhenContextEmpty()
     {
         // No context — the per-slot unigram totals decide. "a" overwhelms "à".
         var d = FromRows(new[]
@@ -59,7 +59,7 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 10L),
         });
 
-        Assert.Equal("a", d.Choose(null, Candidates));
+        Assert.Equal("a", d.Choose([], Candidates));
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 10L),
         });
 
-        Assert.Equal("a", d.Choose("qux", Candidates));
+        Assert.Equal("a", d.Choose(["qux"], Candidates));
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 6L),
         });
 
-        Assert.Null(d.Choose("x", Candidates));
+        Assert.Null(d.Choose(["x"], Candidates));
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public class BigramPairDisambiguatorTests
             ("a", "à", "", 1L),
         });
 
-        Assert.Null(d.Choose(null, Candidates));
+        Assert.Null(d.Choose([], Candidates));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class BigramPairDisambiguatorTests
     {
         var d = FromRows(new[] { ("a", "a", "", 100L) });
 
-        Assert.Null(d.Choose("il", new[] { Bare }));
+        Assert.Null(d.Choose(["il"], new[] { Bare }));
     }
 
     [Fact]
@@ -129,11 +129,56 @@ public class BigramPairDisambiguatorTests
         // The subject is the bias lever alone — margin pinned at 3× both sides.
         // No bias (1.0): smoothed 13 vs 5 — below the 3× margin → null.
         var noBias = FromRows(rows, new DisambiguatorOptions { MarginRatio = 3.0, LiteralBias = 1.0 });
-        Assert.Null(noBias.Choose("z", Candidates));
+        Assert.Null(noBias.Choose(["z"], Candidates));
 
         // Bias 2.0: the bare form's score doubles to 26 vs 5 → "a".
         var biased = FromRows(rows, new DisambiguatorOptions { MarginRatio = 3.0, LiteralBias = 2.0 });
-        Assert.Equal("a", biased.Choose("z", Candidates));
+        Assert.Equal("a", biased.Choose(["z"], Candidates));
+    }
+
+    // ── Trigram backoff ─────────────────────────────────────────────────────
+
+    // A slot where the two orders disagree: the bigram "la" favors "à" (30 vs 1),
+    // but the trigram "de la" favors the bare "a" (20 vs 1). The richer context
+    // wins when present, and the order knob lets us reproduce the bigram.
+    private static readonly (string, string, string, long)[] OrderDisagreeRows = new[]
+    {
+        ("a", "a", "", 5L),
+        ("a", "à", "", 5L),
+        ("a", "à", "la", 30L),
+        ("a", "a", "la", 1L),
+        ("a", "a", "de la", 20L),
+        ("a", "à", "de la", 1L),
+    };
+
+    [Fact]
+    public void TrigramContextOverridesBigram()
+    {
+        // Context [de, la]: the trigram "de la" is present and favors "a".
+        var d = FromRows(OrderDisagreeRows, new DisambiguatorOptions { MarginRatio = 3.0 });
+
+        Assert.Equal("a", d.Choose(["de", "la"], Candidates));
+    }
+
+    [Fact]
+    public void MaxContextOrderTwoIgnoresTrigram()
+    {
+        // Same rows, same context, but capped at order 2: the trigram is ignored
+        // and the bigram "la" decides — "à". Proves the A/B knob.
+        var d = FromRows(OrderDisagreeRows,
+            new DisambiguatorOptions { MarginRatio = 3.0, MaxContextOrder = 2 });
+
+        Assert.Equal("à", d.Choose(["de", "la"], Candidates));
+    }
+
+    [Fact]
+    public void BacksOffToBigramWhenTrigramUnseen()
+    {
+        // Context [xx, la]: the trigram "xx la" was never seen, so the decision
+        // backs off to the bigram "la" — "à".
+        var d = FromRows(OrderDisagreeRows, new DisambiguatorOptions { MarginRatio = 3.0 });
+
+        Assert.Equal("à", d.Choose(["xx", "la"], Candidates));
     }
 
     [Fact]

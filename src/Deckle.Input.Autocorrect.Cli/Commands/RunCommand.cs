@@ -28,7 +28,12 @@ internal static class RunCommand
         string root = RepoPaths.RepoRoot();
         string dataDir = args.ValueOr("--data", RepoPaths.DefaultDataDir(root));
 
-        var data = DataSet.Load(dataDir, wantEnglish: true, wantContext: true);
+        // French-first: no bilingual guard, no language detection — the spelling
+        // language is French. English is not loaded, so the restorer's guard and
+        // the learning's "known English" check both fall away (each gates on a
+        // non-null english). Unblocks ça→ça and the borrowed-word class; the eval
+        // keeps English for the A/B (--no-en).
+        var data = DataSet.Load(dataDir, wantEnglish: false, wantContext: true);
         if (data is null) return 1; // Load already pointed at build-data.
 
         // Settings: the activation gate. Report what is enabled and which apps
@@ -171,7 +176,7 @@ internal static class RunCommand
     // be watched end to end.
     private sealed class ToyHotstringPolicy : ICorrectionPolicy
     {
-        public CorrectionDecision? Evaluate(string word, string? previousWord)
+        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
         {
             if (AccentFolding.Fold(word) == "francais")
                 return new CorrectionDecision(

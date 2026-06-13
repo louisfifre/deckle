@@ -142,6 +142,36 @@ public class PairModelTrainerTests
         Assert.Equal(12L, model.Unigram("a", "à"));      // the total is intact.
     }
 
+    [Fact]
+    public void CountsTrigramContextWithoutDisturbingLowerOrders()
+    {
+        // "à" follows "va", itself preceded by "ne", in two sentences → the
+        // trigram key is "ne va". The bigram and unigram rows are untouched.
+        const string corpus = "il ne va à paris. il ne va à lyon.";
+        var (french, index) = Lexicon();
+        var model = PairModelTrainer.Train(
+            new StringReader(corpus), french, index, new TrainerOptions { MinPairCount = 1 });
+
+        Assert.Equal(2L, model.Bigram("a", "à", "ne va")); // the trigram row
+        Assert.Equal(2L, model.Bigram("a", "à", "va"));    // the bigram is still there
+        Assert.Equal(2L, model.Unigram("a", "à"));         // the unigram total is intact
+    }
+
+    [Fact]
+    public void MaxOrderTwoEmitsNoTrigramRows()
+    {
+        // Capping the trainer at order 2 reproduces the bigram model: the
+        // "ne va" trigram is never counted, the bigram is unchanged.
+        const string corpus = "il ne va à paris. il ne va à lyon.";
+        var (french, index) = Lexicon();
+        var model = PairModelTrainer.Train(
+            new StringReader(corpus), french, index,
+            new TrainerOptions { MinPairCount = 1, MaxOrder = 2 });
+
+        Assert.Equal(0L, model.Bigram("a", "à", "ne va"));
+        Assert.Equal(2L, model.Bigram("a", "à", "va"));
+    }
+
     private static List<(string, string, string, long)> Sorted(PairModel model)
     {
         var rows = new List<(string, string, string, long)>();

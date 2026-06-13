@@ -44,7 +44,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
         _personalVariants = personalVariants;
     }
 
-    public CorrectionDecision? Evaluate(string word, string? previousWord)
+    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
     {
         // 1. Too short to carry signal — and the single-char class is blacklisted.
         if (word.Length < _options.MinWordLength)
@@ -125,7 +125,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
         //     bare literal means « keep it ».
         if (_context is not null)
         {
-            string? chosen = _context.Choose(previousWord?.ToLowerInvariant(), candidates);
+            string? chosen = _context.Choose(LowercaseContext(leftContext), candidates);
             if (chosen is not null && chosen != lower)
             {
                 CorrectionReason reason = fromPersonal.Contains(chosen)
@@ -222,5 +222,17 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
             if (char.IsUpper(word[i]))
                 return true;
         return false;
+    }
+
+    // The disambiguator's contract is lowercased context; the live engine hands
+    // raw-case words, so fold here. Idempotent on the already-lowercased eval input.
+    private static IReadOnlyList<string> LowercaseContext(IReadOnlyList<string> context)
+    {
+        if (context.Count == 0)
+            return context;
+        var lower = new string[context.Count];
+        for (int i = 0; i < context.Count; i++)
+            lower[i] = context[i].ToLowerInvariant();
+        return lower;
     }
 }

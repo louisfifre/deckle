@@ -18,10 +18,10 @@ public enum CorrectionReason
 public sealed record CorrectionDecision(string Original, string Replacement, CorrectionReason Reason);
 
 // Decides whether a just-committed word should be rewritten.
-// previousWord is the left context (already corrected), null at the
-// start of an utterance or after a reset. Returns null to leave the
-// literal untouched — the conservative default.
+// leftContext is the preceding words on this surface (already corrected),
+// most recent last, empty at the start of an utterance or after a reset.
+// Returns null to leave the literal untouched — the conservative default.
 public interface ICorrectionPolicy
 {
-    CorrectionDecision? Evaluate(string word, string? previousWord);
+    CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext);
 }

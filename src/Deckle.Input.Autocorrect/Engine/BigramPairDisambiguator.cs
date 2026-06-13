@@ -123,15 +123,19 @@ public sealed class PairModel
 
 // ── BigramPairDisambiguator ─────────────────────────────────────────────────
 //
-// Stage two of the engine, the context model: given the previous word and the
-// accent variants of one ambiguous folded form, it picks the variant the left
-// context favors — or returns null, leaving the literal untouched. Null is the
-// expected, conservative outcome; a verdict is earned only when the evidence is
-// both present and decisive.
+// Stage two of the engine, the context model: given the left context (up to two
+// preceding words within the sentence) and the accent variants of one ambiguous
+// folded form, it picks the variant the context favors — or returns null,
+// leaving the literal untouched. Null is the expected, conservative outcome; a
+// verdict is earned only when the evidence is both present and decisive.
+//
+// NOTE: this is now an n-gram backoff model (trigram → bigram → unigram), no
+// longer a pure bigram. The class keeps its name until the trigram direction is
+// confirmed by the offline eval, then renames.
 //
 // The decision is a guarded argmax over per-candidate scores:
-//   • score(c) = Bigram(folded, c, prev) when prev is known and the row exists,
-//     else the Unigram(folded, c) fallback;
+//   • score(c) backs off per candidate: the trigram count for the "prevPrev prev"
+//     context if seen, else the bigram count for "prev", else the Unigram total;
 //   • the bare folded form gets its score multiplied by LiteralBias — the
 //     Gboard "cost to correct away from a valid word", here a defense: undoing
 //     a form that is itself legal French must clear a higher bar;
@@ -164,29 +168,41 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
     public int SlotCount => _model.SlotCount;
     public long RowCount => _model.RowCount;
 
-    public string? Choose(string? previousWord, IReadOnlyList<AccentVariant> candidates)
+    public string? Choose(IReadOnlyList<string> leftContext, IReadOnlyList<AccentVariant> candidates)
     {
         if (candidates.Count < 2)
             return null;
 
         // All candidates fold to the same key — derive it once from the first.
         string folded = AccentFolding.Fold(candidates[0].Form);
-        string? prev = previousWord; // already lowercased by the caller.
 
-        // Raw score per candidate: the bigram count if context is known and the
-        // row carries it, else the unigram total. Sum the raw scores for the
-        // evidence gate (before bias/smoothing — bias must not manufacture
-        // evidence out of a literal that has none).
+        // Context keys, highest order first. Both honor MaxContextOrder, so the
+        // model can be queried as a pure bigram (order 2) for the A/B baseline.
+        // The words are already lowercased by the caller; the most recent is last.
+        int n = leftContext.Count;
+        string? bigramKey = _options.MaxContextOrder >= 2 && n >= 1
+            ? leftContext[n - 1]
+            : null;
+        string? trigramKey = _options.MaxContextOrder >= 3 && n >= 2
+            ? leftContext[n - 2] + " " + leftContext[n - 1]
+            : null;
+
+        // Raw score per candidate, backing off trigram → bigram → unigram. Sum
+        // the raw scores for the evidence gate (before bias/smoothing — bias must
+        // not manufacture evidence out of a literal that has none).
         double rawSum = 0.0;
         double bestScore = double.NegativeInfinity, secondScore = double.NegativeInfinity;
         string? bestForm = null;
 
         foreach (var c in candidates)
         {
-            long raw =
-                prev is not null && _model.Bigram(folded, c.Form, prev) is var b and > 0
-                    ? b
-                    : _model.Unigram(folded, c.Form);
+            long raw;
+            if (trigramKey is not null && _model.Bigram(folded, c.Form, trigramKey) is var t and > 0)
+                raw = t;
+            else if (bigramKey is not null && _model.Bigram(folded, c.Form, bigramKey) is var b and > 0)
+                raw = b;
+            else
+                raw = _model.Unigram(folded, c.Form);
             rawSum += raw;
 
             // Add-one smoothing, then the literal defense on the bare form.
@@ -233,4 +249,9 @@ public sealed record DisambiguatorOptions
 
     // Minimum total raw evidence (summed counts) before any verdict is allowed.
     public int MinEvidence { get; init; } = 5;
+
+    // Highest context order the disambiguator will use: 3 = trigram backing off
+    // to bigram then unigram; 2 reproduces the bigram model exactly (the A/B
+    // baseline). Capped in effect by what the trained model carries.
+    public int MaxContextOrder { get; init; } = 3;
 }

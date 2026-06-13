@@ -29,6 +29,7 @@ internal static class EvalCommand
         {
             MarginRatio = args.DoubleOr("--margin", recordDefaults.MarginRatio),
             MinEvidence = args.IntOr("--evidence", recordDefaults.MinEvidence),
+            MaxContextOrder = args.IntOr("--max-order", recordDefaults.MaxContextOrder),
         };
 
         var data = DataSet.Load(
@@ -66,7 +67,8 @@ internal static class EvalCommand
                         + $"  (guard {options.EnglishGuardMinPerMillion:0.###} ppm)");
         Console.WriteLine($"Context     : {(data.Context is not null ? "on" : "off")}"
                         + $"  (margin {contextOptions.MarginRatio:0.###}x,"
-                        + $" evidence {contextOptions.MinEvidence})");
+                        + $" evidence {contextOptions.MinEvidence},"
+                        + $" order {contextOptions.MaxContextOrder})");
         Console.WriteLine($"Dominance   : {options.DominanceRatio:0.###}x");
         Console.WriteLine($"Valid forms : {options.CorrectValidFormsWithContext}");
         Console.WriteLine();
