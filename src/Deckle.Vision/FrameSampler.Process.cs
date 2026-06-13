@@ -54,7 +54,8 @@ public sealed partial class FrameSampler
                     int hr = map(_d3dContext, _stagingTex, 0, ScreenCaptureInterop.D3D11_MAP_READ, 0, &mapped);
                     if (hr != 0)
                     {
-                        DeckleVisionSource.Log.SamplerMapFailed(hr);
+                        DeckleVisionSource.Log.SamplerMapFailed();
+                        DeckleVisionSource.Log.SamplerMapFailedDetail(hr);
                         return;
                     }
 
@@ -75,7 +76,8 @@ public sealed partial class FrameSampler
         }
         catch (Exception ex)
         {
-            DeckleVisionSource.Log.SamplerProcessFailed(ex.GetType().Name, ex.Message);
+            DeckleVisionSource.Log.SamplerProcessFailed();
+            DeckleVisionSource.Log.SamplerProcessFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 

@@ -78,7 +78,7 @@ public sealed partial class ScreenCaptureService
             }
             catch (Exception ex)
             {
-                DeckleVisionSource.Log.CaptureStartFailed(ex.GetType().Name, ex.Message);
+                DeckleVisionSource.Log.CaptureStartFailed();
                 DeckleVisionSource.Log.CaptureStartFailedDetail(ex.HResult, ex.GetType().Name, ex.Message);
 
                 DisposeInternals();
@@ -101,7 +101,8 @@ public sealed partial class ScreenCaptureService
             return resolved;
         }
 
-        DeckleVisionSource.Log.MonitorNotFound(targetMonitorDeviceName);
+        DeckleVisionSource.Log.MonitorNotFound();
+        DeckleVisionSource.Log.MonitorNotFoundDetail(targetMonitorDeviceName);
         return ScreenCaptureInterop.GetPrimaryMonitor();
     }
 
@@ -155,13 +156,12 @@ public sealed partial class ScreenCaptureService
             long durationMs = (endTimestamp - _startTimestamp) * 1000 / Stopwatch.Frequency;
             long frames = Interlocked.Read(ref _frameCount);
             double fpsAvg = durationMs > 0 ? frames * 1000.0 / durationMs : 0.0;
-            double durationSec = durationMs / 1000.0;
 
             DisposeInternals();
 
             if (wasRunning)
             {
-                DeckleVisionSource.Log.ScreenCaptureStopped(frames, durationSec);
+                DeckleVisionSource.Log.ScreenCaptureStopped();
                 DeckleVisionSource.Log.ScreenCaptureStoppedDetail(frames, durationMs, fpsAvg);
             }
         }

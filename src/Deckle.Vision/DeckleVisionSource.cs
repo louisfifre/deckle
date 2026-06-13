@@ -46,6 +46,19 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtCaptureFormatRenegotiated       = 26;
     public const int EvtCaptureFormatRenegotiatedDetail = 27;
 
+    // ── Verbose mirrors (Verbose/Info separation) ───────────────────────
+    // Fresh ids appended after the milestone sequence; each mirrors a
+    // milestone whose IDs / k=v detail moved out of the Capital Info message.
+    // IDs are public in the ETW manifest; never reuse an id after deleting an
+    // event.
+    public const int EvtMonitorNotFoundDetail           = 28;
+    public const int EvtDeviceLostDetail                = 29;
+    public const int EvtTextureQueryFailedDetail        = 30;
+    public const int EvtFrameConsumerThrewDetail        = 31;
+    public const int EvtDuplicationRecreateAttemptFailedDetail = 32;
+    public const int EvtSamplerMapFailedDetail          = 33;
+    public const int EvtSamplerProcessFailedDetail      = 34;
+
     // ── Capture session lifecycle ───────────────────────────────────────
 
     [Event(EvtScreenCaptureStarting,
@@ -78,10 +91,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Screen capture failed to start — {0}: {1}")]
-    public void CaptureStartFailed(string ex_type, string message)
+           Message = "Screen capture failed to start")]
+    public void CaptureStartFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureStartFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtCaptureStartFailed);
     }
 
     [Event(EvtCaptureStartFailedDetail,
@@ -105,10 +118,19 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtMonitorNotFound,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Monitor not found — requested={0}, falling back to primary. Display may be disconnected or the device name has changed.")]
-    public void MonitorNotFound(string requested)
+           Message = "Monitor not found — falling back to primary. The display may be disconnected or its device name has changed.")]
+    public void MonitorNotFound()
     {
-        if (IsEnabled()) WriteEvent(EvtMonitorNotFound, requested);
+        if (IsEnabled()) WriteEvent(EvtMonitorNotFound);
+    }
+
+    [Event(EvtMonitorNotFoundDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "monitor not found | requested={0}")]
+    public void MonitorNotFoundDetail(string requested)
+    {
+        if (IsEnabled()) WriteEvent(EvtMonitorNotFoundDetail, requested);
     }
 
     [Event(EvtCaptureLoopWaitFailed,
@@ -123,10 +145,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtScreenCaptureStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Screen capture stopped ({0} frames in {1:F1} s)")]
-    public void ScreenCaptureStopped(long frames, double duration_sec)
+           Message = "Screen capture stopped")]
+    public void ScreenCaptureStopped()
     {
-        if (IsEnabled()) WriteEvent(EvtScreenCaptureStopped, frames, duration_sec);
+        if (IsEnabled()) WriteEvent(EvtScreenCaptureStopped);
     }
 
     [Event(EvtScreenCaptureStoppedDetail,
@@ -152,10 +174,19 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDeviceLost,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "D3D11 device lost (hr=0x{0:X8}) — capture session unrecoverable, stopping")]
-    public void DeviceLost(int hr)
+           Message = "Graphics device lost — the capture session is unrecoverable and is stopping")]
+    public void DeviceLost()
     {
-        if (IsEnabled()) WriteEvent(EvtDeviceLost, hr);
+        if (IsEnabled()) WriteEvent(EvtDeviceLost);
+    }
+
+    [Event(EvtDeviceLostDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "device lost | hr=0x{0:X8}")]
+    public void DeviceLostDetail(int hr)
+    {
+        if (IsEnabled()) WriteEvent(EvtDeviceLostDetail, hr);
     }
 
     [Event(EvtAcquireFrameFailed,
@@ -170,19 +201,37 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtTextureQueryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Texture QI failed — {0}: {1} (frame dropped, session continues)")]
-    public void TextureQueryFailed(string ex_type, string message)
+           Message = "A captured frame could not be read — the frame was dropped and the session continues")]
+    public void TextureQueryFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtTextureQueryFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtTextureQueryFailed);
+    }
+
+    [Event(EvtTextureQueryFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "texture query failed | ex_type={0} | message={1}")]
+    public void TextureQueryFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtTextureQueryFailedDetail, ex_type, message);
     }
 
     [Event(EvtFrameConsumerThrew,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "FrameArrived consumer threw — {0}: {1} (frame dropped, session continues)")]
-    public void FrameConsumerThrew(string ex_type, string message)
+           Message = "A frame consumer failed — the frame was dropped and the session continues")]
+    public void FrameConsumerThrew()
     {
-        if (IsEnabled()) WriteEvent(EvtFrameConsumerThrew, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtFrameConsumerThrew);
+    }
+
+    [Event(EvtFrameConsumerThrewDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "frame consumer threw | ex_type={0} | message={1}")]
+    public void FrameConsumerThrewDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtFrameConsumerThrewDetail, ex_type, message);
     }
 
     [Event(EvtReleaseFrameNonZero,
@@ -226,10 +275,19 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDuplicationRecreateAttemptFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "DuplicateOutput1 failed on recreate (attempt {0}) — {1}: {2}")]
-    public void DuplicationRecreateAttemptFailed(int attempt, string ex_type, string message)
+           Message = "Reopening the capture stream failed and will be retried")]
+    public void DuplicationRecreateAttemptFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailed, attempt, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailed);
+    }
+
+    [Event(EvtDuplicationRecreateAttemptFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "duplication recreate failed | attempt={0} | ex_type={1} | message={2}")]
+    public void DuplicationRecreateAttemptFailedDetail(int attempt, string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailedDetail, attempt, ex_type, message);
     }
 
     // Milestone — ungated by AmbientCaptureGate (Info always passes) so the
@@ -240,10 +298,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureFormatRenegotiated,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Capture surface renegotiated after a display change — now {0}")]
-    public void CaptureFormatRenegotiated(string mode)
+           Message = "Capture surface renegotiated after a display change")]
+    public void CaptureFormatRenegotiated()
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureFormatRenegotiated, mode);
+        if (IsEnabled()) WriteEvent(EvtCaptureFormatRenegotiated);
     }
 
     [Event(EvtCaptureFormatRenegotiatedDetail,
@@ -269,19 +327,37 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtSamplerMapFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "sampler map fail | hr=0x{0:X8}")]
-    public void SamplerMapFailed(int hr)
+           Message = "A frame could not be read back for sampling")]
+    public void SamplerMapFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtSamplerMapFailed, hr);
+        if (IsEnabled()) WriteEvent(EvtSamplerMapFailed);
+    }
+
+    [Event(EvtSamplerMapFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "sampler map failed | hr=0x{0:X8}")]
+    public void SamplerMapFailedDetail(int hr)
+    {
+        if (IsEnabled()) WriteEvent(EvtSamplerMapFailedDetail, hr);
     }
 
     [Event(EvtSamplerProcessFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "sampler process failed — {0}: {1}")]
-    public void SamplerProcessFailed(string ex_type, string message)
+           Message = "Frame sampling failed")]
+    public void SamplerProcessFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtSamplerProcessFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtSamplerProcessFailed);
+    }
+
+    [Event(EvtSamplerProcessFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "sampler process failed | ex_type={0} | message={1}")]
+    public void SamplerProcessFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSamplerProcessFailedDetail, ex_type, message);
     }
 
     // ── Heartbeat — rolling capture telemetry ──────────────────────────
