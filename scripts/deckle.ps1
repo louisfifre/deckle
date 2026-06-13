@@ -5,11 +5,13 @@
 #
 #   Build             — daily compile + run loop, per-worktree.
 #   Release           — cut a GitHub release (installer exe + app payload),
+#                       build native runtime bundles, per-worktree where
+#                       applicable.
+#   Worktree maint    — clean artefacts, gather stats, update docs,
 #                       per-worktree.
-#   Worktree maint    — clean artefacts, gather stats, per-worktree.
 #   Setup             — bootstrap a fresh dev machine (global, no
-#                       worktree picker), install local git hooks. Runtime
-#                       assets are handled by the app's first-run wizard.
+#                       worktree picker), install local git hooks, provision
+#                       optional runtime assets.
 #
 # Per-worktree actions prompt for a worktree after the action is picked
 # (worktree auto-resolves when only the main repo exists). Global actions
@@ -52,6 +54,13 @@ function Read-YesNo {
     return ($ans -match '^(y|yes|o|oui)$')
 }
 
+function Read-Optional {
+    param([Parameter(Mandatory)][string]$Question)
+    $answer = Read-Host $Question
+    if ([string]::IsNullOrWhiteSpace($answer)) { return $null }
+    return $answer.Trim()
+}
+
 # Build the top-level action list. Headers (IsHeader=$true) render as
 # section dividers — Up/Down skips them automatically.
 $actions = @(
@@ -62,14 +71,18 @@ $actions = @(
 
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Publish - GitHub Release';          Value = 'publish-release'                   }
+    [pscustomobject]@{ Label = 'Build release artifacts (no publish)'; Value = 'build-release-artifacts'         }
     [pscustomobject]@{ Label = 'Changelog - regenerate from history'; Value = 'changelog'                       }
+    [pscustomobject]@{ Label = 'Native runtime - build/publish bundle'; Value = 'native-runtime'                 }
 
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Clean bin/obj';                     Value = 'clean'                             }
     [pscustomobject]@{ Label = 'Stats (files, LOC, long files)';    Value = 'stats'                             }
+    [pscustomobject]@{ Label = 'README stats - regenerate pulse';   Value = 'readme-stats'                      }
 
     [pscustomobject]@{ Label = '── Setup ──';                       Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Bootstrap dev environment';         Value = 'bootstrap-dev'                     }
+    [pscustomobject]@{ Label = 'Setup runtime assets';              Value = 'setup-assets'                      }
     [pscustomobject]@{ Label = 'Install git hooks';                 Value = 'install-hooks'                     }
 
     [pscustomobject]@{ Label = '';                                  Value = $null;            IsHeader = $true  }
@@ -129,12 +142,46 @@ switch ($action) {
         }
         & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
     }
+    'build-release-artifacts' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
+    }
     # 'changelog' regenerates CHANGELOG.md from the commit history (no publish,
     # no confirmation — it only rewrites a tracked file the maintainer reviews).
     'changelog' {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'changelog.ps1') -Target $wt
+    }
+    'native-runtime' {
+        $version = Read-Optional -Question 'Native bundle version (X.Y.Z)'
+        if (-not $version) {
+            Write-Host "Cancelled: version is required." -ForegroundColor Yellow
+            return
+        }
+        $whisperRepo = Read-Optional -Question 'Path to whisper.cpp clone with build/bin'
+        if (-not $whisperRepo) {
+            Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor Yellow
+            return
+        }
+        $outDir = Read-Optional -Question 'Output directory (blank = temp)'
+        $publish = Read-YesNo -Question 'Publish native runtime GitHub Release after building?' -Default $false
+        if ($publish) {
+            Write-Host "This publishes a PUBLIC GitHub Release native-v$version via gh." -ForegroundColor Yellow
+            if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false)) {
+                Write-Host "Cancelled." -ForegroundColor Yellow
+                return
+            }
+        }
+
+        $nativeArgs = @{
+            Version = $version
+            WhisperRepo = $whisperRepo
+        }
+        if ($outDir)  { $nativeArgs.OutDir = $outDir }
+        if ($publish) { $nativeArgs.Publish = $true }
+        & (Join-Path $LibDir 'publish-native-runtime.ps1') @nativeArgs
     }
 
     # ----- Worktree maintenance ------------------------------------------
@@ -148,6 +195,11 @@ switch ($action) {
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'stats.ps1') -Target $wt
     }
+    'readme-stats' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'update-readme-stats.ps1') -Target $wt
+    }
 
     # ----- Setup — global (no worktree picker) ---------------------------
     'bootstrap-dev' {
@@ -157,6 +209,20 @@ switch ($action) {
         if ($dryRun) { $bootstrapArgs.DryRun = $true }
         if ($full)   { $bootstrapArgs.Full = $true }
         & (Join-Path $LibDir 'bootstrap-dev-env.ps1') @bootstrapArgs
+    }
+    'setup-assets' {
+        Write-Host "This may download native runtime and Whisper model files." -ForegroundColor Yellow
+        if (-not (Read-YesNo -Question 'Continue with runtime asset setup?' -Default $false)) {
+            Write-Host "Cancelled." -ForegroundColor Yellow
+            return
+        }
+
+        $assetArgs = @{}
+        $fromRelease = Read-Optional -Question 'Native runtime release version X.Y.Z (blank = local/sibling source or skip)'
+        if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
+        if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
+        if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false) { $assetArgs.Force = $true }
+        & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
     }
     'install-hooks' {
         & (Join-Path $LibDir 'install-hooks.ps1')

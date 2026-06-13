@@ -1,14 +1,31 @@
 # Deckle
 
-Local-first Windows utility that bundles personal productivity tools into a
-single system-tray app. No cloud dependency, no account, no telemetry leaving
-the machine.
+Deckle is a local-first Windows utility, and also a record of a threshold:
+LLMs made it possible for one person, coming from product and UX more than
+systems engineering, to reach into architecture, native platform work,
+observability, testing, and release discipline faster than would have been
+reasonable alone.
+
+That power is liberating and uncomfortable. It can widen individual agency; it
+can also concentrate capability in the hands of whoever controls the tools and
+the material they are built from. Deckle is built inside that tension: local
+first, legible, no account, no telemetry leaving the machine.
 
 Built with WinUI 3, .NET 10, and Windows App SDK 1.8. Targets Windows 11.
 
 > Status — **personal project, early public release.** Tested on two
 > Windows 11 machines. Not packaged for the Microsoft Store. Build from source
 > with the instructions below.
+
+<!-- deckle-stats:start -->
+## Development pulse
+
+| First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
+|---:|---:|---:|---:|---:|---:|
+| 2026-04-01 | 1,160 | 55 | 203,495 | 308,844 | 98,088 |
+
+<sub>Generated from Git history on 2026-06-13. Counts include tracked text files only for the current line total.</sub>
+<!-- deckle-stats:end -->
 
 ---
 

@@ -1,0 +1,37 @@
+name: Update README stats
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 1 * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme-stats:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Regenerate README stats
+        shell: pwsh
+        run: pwsh scripts/lib/update-readme-stats.ps1
+
+      - name: Commit README update
+        shell: pwsh
+        run: |
+          if (-not (git status --porcelain README.md)) {
+            Write-Host "README.md already up to date."
+            exit 0
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: update development pulse"
+          git push

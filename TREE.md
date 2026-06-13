@@ -61,6 +61,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │           ├── config.yaml
 │           ├── LICENSE.txt
 │           └── SKILL.md  — winui-app Bootstrap, develop, and design modern WinUI 3 desktop applications with C# and…
+├── .github/
+│   └── workflows/
+│       └── update-readme-stats.yml
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
@@ -183,7 +186,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── setup-assets.ps1
-│   │   └── stats.ps1
+│   │   ├── stats.ps1
+│   │   └── update-readme-stats.ps1
 │   ├── deckle.ps1
 │   └── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
 ├── src/
