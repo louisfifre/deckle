@@ -166,10 +166,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── adr/
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
 │   │   └── CLAUDE.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
-│   ├── research/
-│   │   ├── 2026-06-12--notifications-catalogue.md
-│   │   └── research--system-autocorrect--2026-06-12.md
-│   └── pipeline-hud-sync.md  — [reference] Carte du pipeline de transcription et de la synchronisation HUD — étapes, threa…
+│   └── research/
+│       ├── 2026-06-12--notifications-catalogue.md
+│       └── research--system-autocorrect--2026-06-12.md
 ├── scripts/
 │   ├── hooks/
 │   │   ├── pre-commit
