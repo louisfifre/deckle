@@ -475,12 +475,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DryRunCommand.cs
 │   │   │   ├── EnrollCommand.cs
 │   │   │   ├── EvalCommand.cs
+│   │   │   ├── HarvestCommand.cs
 │   │   │   ├── InjectCommand.cs
 │   │   │   ├── MlmProbeCommand.cs
 │   │   │   ├── RepoPaths.cs
 │   │   │   ├── RunCommand.cs
 │   │   │   ├── TrainPairsCommand.cs
 │   │   │   └── WatchCommand.cs
+│   │   ├── Harvest/
+│   │   │   ├── HarvestData.cs
+│   │   │   ├── HarvestFilter.cs
+│   │   │   └── HarvestStore.cs
 │   │   ├── Mlm/
 │   │   │   ├── CamembertMlmScorer.cs
 │   │   │   └── CamembertSentenceReranker.cs

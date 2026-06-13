@@ -11,5 +11,7 @@
     <!-- ONNX inference (CPU) + managed tokenizer, for the `mlm-probe` reranker POC. -->
     <ProjectReference Include="..\Deckle.Inference.Onnx\Deckle.Inference.Onnx.csproj" />
     <PackageReference Include="Microsoft.ML.Tokenizers" />
+    <!-- DPAPI at-rest encryption for the `harvest` sink. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 </Project>

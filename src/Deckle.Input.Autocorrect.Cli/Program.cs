@@ -24,6 +24,7 @@ return command switch
     "mlm-probe" => MlmProbeCommand.Run(rest),
     "dry-run" => DryRunCommand.Run(rest),
     "watch" => WatchCommand.Run(rest),
+    "harvest" => HarvestCommand.Run(rest),
     "inject" => InjectCommand.Run(rest),
     "run" => RunCommand.Run(rest),
     "enroll" => EnrollCommand.Run(rest),
@@ -74,6 +75,9 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("Live prototype:");
     Console.WriteLine("  watch       Observe keyboard / focus — no correction, no injection.");
+    Console.WriteLine("  harvest     [--data <dir>] | list | purge | path");
+    Console.WriteLine("              Observe and persist the signal streams (edit pairs +");
+    Console.WriteLine("              unknown words), DPAPI-encrypted. No correction, no injection.");
     Console.WriteLine("  inject <text> [--delay-ms 3000]");
     Console.WriteLine("              Type a literal string after a countdown.");
     Console.WriteLine("  run [--toy] [--data <dir>]");
