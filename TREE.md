@@ -473,10 +473,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── EnrollCommand.cs
 │   │   │   ├── EvalCommand.cs
 │   │   │   ├── InjectCommand.cs
+│   │   │   ├── MlmProbeCommand.cs
 │   │   │   ├── RepoPaths.cs
 │   │   │   ├── RunCommand.cs
 │   │   │   ├── TrainPairsCommand.cs
 │   │   │   └── WatchCommand.cs
+│   │   ├── Mlm/
+│   │   │   └── CamembertMlmScorer.cs
 │   │   ├── Deckle.Input.Autocorrect.Cli.csproj
 │   │   └── Program.cs
 │   ├── Deckle.Input.Trackpad/

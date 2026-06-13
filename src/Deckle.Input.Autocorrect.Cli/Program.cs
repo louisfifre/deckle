@@ -21,6 +21,7 @@ return command switch
     "build-data" => BuildDataCommand.Run(rest),
     "train-pairs" => TrainPairsCommand.Run(rest),
     "eval" => EvalCommand.Run(rest),
+    "mlm-probe" => MlmProbeCommand.Run(rest),
     "watch" => WatchCommand.Run(rest),
     "inject" => InjectCommand.Run(rest),
     "run" => RunCommand.Run(rest),
@@ -57,6 +58,8 @@ static void PrintUsage()
     Console.WriteLine("              [--valid-forms] [--en-guard <ppm>] [--dominance <ratio>]");
     Console.WriteLine("              [--max-tokens <n>]");
     Console.WriteLine("              Score diacritics restoration against the reference.");
+    Console.WriteLine("  mlm-probe   [--model <dir>] [--corpus <file>] [--n <per-class>] [--out <tsv>]");
+    Console.WriteLine("              Probe a CamemBERT MLM on a balanced a/à set (reranker POC).");
     Console.WriteLine();
     Console.WriteLine("Live prototype:");
     Console.WriteLine("  watch       Observe keyboard / focus — no correction, no injection.");

@@ -41,6 +41,10 @@
          holds. The native onnxruntime.dll resolves at the App's win-x64 build. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
 
+    <!-- Managed SentencePiece/BPE tokenizers (no native lib, no Python) — used by
+         the autocorrect CLI's CamemBERT MLM reranker probe to segment text. -->
+    <PackageVersion Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
+
     <!-- Test stack (tests/Deckle.*.Tests): xUnit v3 on the Microsoft Testing Platform,
          VSTest bridge for the Test Explorer. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
