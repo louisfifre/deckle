@@ -9,10 +9,15 @@ namespace Deckle.Playground;
 // switch), and the host PlaygroundWindow itself.
 //
 // Provider Name = "Deckle-Playground" → [PLAYGROUND] tag through the legacy
-// bridge. Playground is a dev/tuning surface: strict-typed doctrine is applied
-// to clear transitions (nav, settings), but a generic channel is accepted for
-// the many diagnostic interaction strings (Hue pairing attempts, zone scan,
-// match entertainment areas) that are not each worth a typed event.
+// bridge.
+//
+// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info/Warning is a
+// short Capital sentence with no IDs and no k=v; the technical detail (handles,
+// reasons, ids, exceptions) lives in a Verbose mirror that FOLLOWS it. The many
+// diagnostic interactions (Hue bridge calls, entertainment-area matching, zone
+// suggestion/assignment) are typed per operation — a failed Hue call collapses
+// to one milestone + one Verbose detail keyed by the operation name rather than
+// a free-form string channel.
 [EventSource(Name = "Deckle-Playground")]
 public sealed class DecklePlaygroundSource : DeckleEventSource
 {
@@ -20,125 +25,231 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
 
     private DecklePlaygroundSource() { }
 
-    // ── EventIds ─────────────────────────────────────────────────────────
-    public const int EvtNavWarning             = 1;
-    public const int EvtNavError               = 2;
-    public const int EvtSettingChanged         = 3;
-    public const int EvtSettingChangedDetail   = 4;
-    public const int EvtScreenCaptureVerbose   = 5;
-    public const int EvtScreenCaptureWarning   = 6;
-    public const int EvtHueWarning             = 7;
-    public const int EvtHueInfo                = 8;
-    public const int EvtHueVerbose             = 9;
-    public const int EvtAmbientVerbose         = 10;
-    public const int EvtAmbientInfo            = 11;
+    // ── Event IDs ─────────────────────────────────────────────────────────────
+    // Milestones keep their original id; the Verbose mirrors added for the typed
+    // rewrite take fresh ids 12-22 at the end of the sequence. 4/10/11 — the old
+    // generic SettingChangedDetail / AmbientVerbose / AmbientInfo channels split
+    // 1:many into typed events with no single successor; burned, never reused.
+    // IDs are public in the ETW manifest; never reuse an id after deleting an event.
+    public const int EvtNavigationRejected           = 1;
+    public const int EvtNavigationFailed             = 2;
+    public const int EvtTuningChanged                = 3;
+    public const int EvtScreenCaptureToggled         = 5;
+    public const int EvtScreenCaptureStartFailed     = 6;
+    public const int EvtHueCallFailed                = 7;
+    public const int EvtEntertainmentAreaUsed        = 8;
+    public const int EvtHueCallFailedDetail          = 9;
+    public const int EvtNavigationRejectedDetail     = 12;
+    public const int EvtNavigationFailedDetail       = 13;
+    public const int EvtScreenCaptureStartFailedDetail = 14;
+    public const int EvtEntertainmentAreaUsedDetail  = 15;
+    public const int EvtPipelineModeChanged          = 16;
+    public const int EvtPipelineModeChangedDetail    = 17;
+    public const int EvtLightZoneUpdated             = 18;
+    public const int EvtLightZoneUpdatedDetail       = 19;
+    public const int EvtResolveLights                = 20;
+    public const int EvtMatchEntertainmentArea       = 21;
+    public const int EvtZoneSuggested                = 22;
 
-    // ── Navigation (PlaygroundWindow) ───────────────────────────────────
+    // ── Navigation (PlaygroundWindow) ───────────────────────────────────────
 
-    [Event(EvtNavWarning,
+    [Event(EvtNavigationRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void NavWarning(string message)
+           Message = "A navigation request was rejected")]
+    public void NavigationRejected()
     {
-        if (IsEnabled()) WriteEvent(EvtNavWarning, message);
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavigationRejected);
     }
 
-    [Event(EvtNavError,
+    [Event(EvtNavigationRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "nav rejected | reason={0} | item={1}")]
+    public void NavigationRejectedDetail(string reason, string item)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavigationRejectedDetail, reason, item);
+    }
+
+    [Event(EvtNavigationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void NavError(string message)
+           Message = "Navigating to a page failed")]
+    public void NavigationFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtNavError, message);
+        if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavigationFailed);
     }
 
-    // ── ViewModel setters ───────────────────────────────────────────────
-
-    [Event(EvtSettingChanged,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0} ← {1}")]
-    public void SettingChanged(string property, string value)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingChanged, property, value);
-    }
-
-    [Event(EvtSettingChangedDetail,
+    [Event(EvtNavigationFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void SettingChangedDetail(string detail)
+           Message = "nav failed | page={0} | reason={1} | error={2}")]
+    public void NavigationFailedDetail(string page, string reason, string error)
     {
-        if (IsEnabled()) WriteEvent(EvtSettingChangedDetail, detail);
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavigationFailedDetail, page, reason, error);
     }
 
-    // ── Screen capture page ─────────────────────────────────────────────
+    // ── ViewModel setters (tuning sliders) ──────────────────────────────────
 
-    [Event(EvtScreenCaptureVerbose,
+    [Event(EvtTuningChanged,
            Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "{0}")]
-    public void ScreenCaptureVerbose(string message)
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "tuning changed | setting={0} | value={1}")]
+    public void TuningChanged(string setting, string value)
     {
-        if (IsEnabled()) WriteEvent(EvtScreenCaptureVerbose, message);
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtTuningChanged, setting, value);
     }
 
-    [Event(EvtScreenCaptureWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "{0}")]
-    public void ScreenCaptureWarning(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtScreenCaptureWarning, message);
-    }
+    // ── Ambient pipeline mode (multi-light switch) ──────────────────────────
 
-    // ── Hue interactions ────────────────────────────────────────────────
-
-    [Event(EvtHueWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "{0}")]
-    public void HueWarning(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtHueWarning, message);
-    }
-
-    [Event(EvtHueInfo,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "{0}")]
-    public void HueInfo(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtHueInfo, message);
-    }
-
-    [Event(EvtHueVerbose,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "{0}")]
-    public void HueVerbose(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtHueVerbose, message);
-    }
-
-    // ── Ambient interactions ────────────────────────────────────────────
-
-    [Event(EvtAmbientVerbose,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void AmbientVerbose(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtAmbientVerbose, message);
-    }
-
-    [Event(EvtAmbientInfo,
+    [Event(EvtPipelineModeChanged,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "{0}")]
-    public void AmbientInfo(string message)
+           Message = "The ambient pipeline mode changed")]
+    public void PipelineModeChanged()
     {
-        if (IsEnabled()) WriteEvent(EvtAmbientInfo, message);
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtPipelineModeChanged);
+    }
+
+    [Event(EvtPipelineModeChangedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "pipeline mode | mode={0}")]
+    public void PipelineModeChangedDetail(string mode)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtPipelineModeChangedDetail, mode);
+    }
+
+    // ── Screen capture page ─────────────────────────────────────────────────
+
+    [Event(EvtScreenCaptureToggled,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "playground toggle | running={0}")]
+    public void ScreenCaptureToggled(bool running)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtScreenCaptureToggled, running);
+    }
+
+    [Event(EvtScreenCaptureStartFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Starting the screen capture failed")]
+    public void ScreenCaptureStartFailed()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtScreenCaptureStartFailed);
+    }
+
+    [Event(EvtScreenCaptureStartFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "screen capture start | error={0}")]
+    public void ScreenCaptureStartFailedDetail(string error)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtScreenCaptureStartFailedDetail, error);
+    }
+
+    // ── Hue interactions ────────────────────────────────────────────────────
+
+    [Event(EvtHueCallFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "A Hue bridge call failed")]
+    public void HueCallFailed()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Push))
+            WriteEvent(EvtHueCallFailed);
+    }
+
+    [Event(EvtHueCallFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "hue call failed | op={0} | error={1}")]
+    public void HueCallFailedDetail(string op, string error)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
+            WriteEvent(EvtHueCallFailedDetail, op, error);
+    }
+
+    [Event(EvtEntertainmentAreaUsed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Using an entertainment area as the lights source")]
+    public void EntertainmentAreaUsed()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Push))
+            WriteEvent(EvtEntertainmentAreaUsed);
+    }
+
+    [Event(EvtEntertainmentAreaUsedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "ent area source | name={0} | lights={1}")]
+    public void EntertainmentAreaUsedDetail(string name, int lights)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
+            WriteEvent(EvtEntertainmentAreaUsedDetail, name, lights);
+    }
+
+    // ── Ambient zone resolution ─────────────────────────────────────────────
+
+    [Event(EvtResolveLights,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "resolve lights | group_id={0} | group_name={1} | from_group={2}")]
+    public void ResolveLights(string group_id, string group_name, int from_group)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtResolveLights, group_id, group_name, from_group);
+    }
+
+    [Event(EvtMatchEntertainmentArea,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "match ent area | result={0} | ent_id={1} | name={2} | overlap={3}")]
+    public void MatchEntertainmentArea(string result, string ent_id, string name, int overlap)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtMatchEntertainmentArea, result, ent_id, name, overlap);
+    }
+
+    [Event(EvtZoneSuggested,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "zone suggest | id={0} | zone={1} | ent_name={2} | x={3:F2} | y={4:F2} | z={5:F2}")]
+    public void ZoneSuggested(string id, string zone, string ent_name, double x, double y, double z)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtZoneSuggested, id, zone, ent_name, x, y, z);
+    }
+
+    [Event(EvtLightZoneUpdated,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A light zone was updated")]
+    public void LightZoneUpdated()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtLightZoneUpdated);
+    }
+
+    [Event(EvtLightZoneUpdatedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "zone assign | id={0} | zone={1}")]
+    public void LightZoneUpdatedDetail(string id, string zone)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtLightZoneUpdatedDetail, id, zone);
     }
 }
