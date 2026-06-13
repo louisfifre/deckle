@@ -30,6 +30,24 @@ Unresolved live risks left for later: stale surface read before inject, UIA prob
 silent UIPI into elevated windows, keystroke-in-flight corruption, self-filter blind to other
 synthetic input, double-inject from two run instances.
 
+## 2026-06-13 — Reranker tuned and measured on real dictation
+
+Built an eval corpus from the app's own transcription telemetry (~208k words, the `corpus/raw`
+tiers under `%LOCALAPPDATA%\Deckle\telemetry`) — the real distribution, French dense with English
+tech terms. Reranker measured on a 25k slice (the full corpus is ~40 min: one MLM pass per ambiguous
+slot). Operating point gate + proper-noun caps guard + CamemBERT reranker (freq-prior 1, margin 2):
+precision 99.38 %, recall 69 %, reranker stage 784/786; gate-only baseline 98.4 % / 41.5 %. The
+frequency prior (fill-mask logit + log-frequency) keeps the common form unless the model strongly
+overrules it; the caps guard leaves a title-cased mid-utterance word alone (proper noun). Recall is
+ceilinged by the reranker abstaining on `à`/`là` at margin 2 — lowering the margin trades precision.
+
+Two findings. The ASR ground-truth in telemetry writes « çà » for « ça » — a reference artifact that
+scores a correct engine as wrong; clean it before using telemetry as an eval reference. On real text
+the gate's false corrections split cleanly: capitalized proper nouns (`Git` 64×, killed by the caps
+guard) and verb conjugations absent from Lexique (`captes`, `renommes` — the coverage gap Morphalou
+would close). The offline `dry-run` command (gate + reranker verdict on text as typed, no injection)
+is the iteration tool; the live observation mode is still unbuilt.
+
 ## 2026-06-13 — Open direction (exploring, nothing built)
 
 French-first: English dropped, French-only, spelling language chosen manually. Recall ambition raised
