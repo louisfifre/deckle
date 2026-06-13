@@ -70,10 +70,13 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     private DeckleThreadingSource() { }
 
     // ── EventIds ────────────────────────────────────────────────────────
-    public const int EvtMarshalQueued              = 1;
-    public const int EvtMarshalCompleted           = 2;
-    public const int EvtMarshalTimeout             = 3;
-    public const int EvtDispatcherEnqueueRejected  = 4;
+    public const int EvtMarshalQueued                      = 1;
+    public const int EvtMarshalCompleted                   = 2;
+    public const int EvtMarshalTimeout                     = 3;
+    public const int EvtDispatcherEnqueueRejected          = 4;
+    // Verbose mirrors appended for the Verbose/Info separation (ids 5-6).
+    public const int EvtMarshalTimeoutDetail               = 5;
+    public const int EvtDispatcherEnqueueRejectedDetail    = 6;
 
     // Trunk: emitted just before `TryEnqueue` on the caller-site side. Verbose
     // because marshalling is frequent by nature (a typical user Stop chains
@@ -113,27 +116,48 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtMarshalTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "marshal timeout | operation={0} | caller={1} | waited_ms={2}")]
-    public void MarshalTimeout(string operation, string caller, int waited_ms)
+           Message = "A marshal callback did not run within the expected delay")]
+    public void MarshalTimeout()
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Threading)) return;
-        WriteEvent(EvtMarshalTimeout, operation, caller, waited_ms);
+        WriteEvent(EvtMarshalTimeout);
+    }
+
+    [Event(EvtMarshalTimeoutDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Threading,
+           Message = "marshal timeout | operation={0} | caller={1} | waited_ms={2}")]
+    public void MarshalTimeoutDetail(string operation, string caller, int waited_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Threading)) return;
+        WriteEvent(EvtMarshalTimeoutDetail, operation, caller, waited_ms);
     }
 
     // Specialized: `TryEnqueue` returned false (queue shut down). Migrated from
     // `DeckleShellSource.DispatcherEnqueueRejected` (event id 15 in legacy
-    // Shell). The public signature stays identical to avoid breaking existing
-    // callers: `caller_source` is the free label propagated by
+    // Shell). The detail (`caller_source`, `reason`) moves to the Verbose mirror
+    // `DispatcherEnqueueRejectedDetail` (id 6) per the Verbose/Info separation.
+    // `caller_source` is the free label propagated by
     // `DispatcherQueueExtensions.TryEnqueueOrLog` (e.g. "HUD", "LOGWIN"),
     // `reason` describes the cause or context of the lost enqueue (e.g.
     // "queue-rejected", short description of the event being marshalled).
     [Event(EvtDispatcherEnqueueRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "dispatcher enqueue rejected | caller_source={0} | reason={1}")]
-    public void DispatcherEnqueueRejected(string caller_source, string reason)
+           Message = "A dispatcher enqueue was rejected")]
+    public void DispatcherEnqueueRejected()
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Threading)) return;
-        WriteEvent(EvtDispatcherEnqueueRejected, caller_source, reason);
+        WriteEvent(EvtDispatcherEnqueueRejected);
+    }
+
+    [Event(EvtDispatcherEnqueueRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Threading,
+           Message = "dispatcher enqueue rejected | caller_source={0} | reason={1}")]
+    public void DispatcherEnqueueRejectedDetail(string caller_source, string reason)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Threading)) return;
+        WriteEvent(EvtDispatcherEnqueueRejectedDetail, caller_source, reason);
     }
 }
