@@ -54,6 +54,8 @@ internal static class EvalCommand
             EnglishGuardMinPerMillion = args.DoubleOr("--en-guard", 5.0),
             DominanceRatio = args.DoubleOr("--dominance", 20.0),
             CorrectValidFormsWithContext = args.Has("--valid-forms"),
+            MinCandidateFrequencyPerMillion = args.DoubleOr("--min-cand-freq", 0.0),
+            GuardCapitalizedMidSentence = args.Has("--guard-caps"),
         };
 
         var restorer = new DiacriticsRestorer(
@@ -74,6 +76,8 @@ internal static class EvalCommand
                         + $" evidence {contextOptions.MinEvidence},"
                         + $" order {contextOptions.MaxContextOrder})");
         Console.WriteLine($"Dominance   : {options.DominanceRatio:0.###}x");
+        Console.WriteLine($"Cand. floor : {options.MinCandidateFrequencyPerMillion:0.###} ppm");
+        Console.WriteLine($"Caps guard  : {options.GuardCapitalizedMidSentence}");
         Console.WriteLine($"Valid forms : {options.CorrectValidFormsWithContext}");
 
         RestorationReport report;
@@ -82,15 +86,16 @@ internal static class EvalCommand
             string modelDir = args.ValueOr("--model",
                 Path.Combine(RepoPaths.DefaultRawDir(root), "..", "models", "camembert-base"));
             double margin = args.DoubleOr("--rerank-margin", 2.0);
+            double freqPrior = args.DoubleOr("--rerank-freq-prior", 1.0);
             if (!File.Exists(Path.Combine(modelDir, "model.onnx")))
             {
                 Console.Error.WriteLine($"Missing model: {Path.Combine(modelDir, "model.onnx")}");
                 return 1;
             }
-            Console.WriteLine($"Reranker    : on   (CamemBERT MLM, margin {margin:0.###})");
+            Console.WriteLine($"Reranker    : on   (CamemBERT MLM, margin {margin:0.###}, freq-prior {freqPrior:0.###})");
             Console.WriteLine();
 
-            using var reranker = new CamembertSentenceReranker(modelDir, margin);
+            using var reranker = new CamembertSentenceReranker(modelDir, margin, freqPrior);
             using var reader = new StreamReader(corpus, Encoding.UTF8);
             // The restorer is both the gate (ICorrectionPolicy) and the ambiguity
             // probe (IAmbiguityProbe) — it knows which slots it left for context.
