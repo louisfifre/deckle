@@ -11,6 +11,9 @@ public partial class App
         try { _hotkeyManager?.Dispose();   } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("hotkeys dispose: " + ex.Message); }
         try { _tray?.Dispose();            } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("tray dispose: " + ex.Message); }
         try { _trayMenu?.Dispose();        } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("tray menu dispose: " + ex.Message); }
+        // Before _messageHost: the signal's subclass + Raw Input sink sit on the
+        // host's HWND, which _messageHost.Dispose destroys.
+        try { _cursorSignal?.Dispose();    } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("cursor signal dispose: " + ex.Message); }
         try { _messageHost?.Dispose();     } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("message host dispose: " + ex.Message); }
         try { _overlayManager?.Dispose();  } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("overlay manager dispose: " + ex.Message); }
         try { _engine?.Dispose();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("engine dispose: " + ex.Message); }

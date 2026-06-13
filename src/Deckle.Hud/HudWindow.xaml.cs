@@ -38,11 +38,12 @@ namespace Deckle.Hud;
 //
 // Mouse proximity:
 //   - WS_EX_LAYERED + SetLayeredWindowAttributes(LWA_ALPHA) gives a global
-//     alpha covering the whole window content. Updated on every WM_INPUT
-//     through a smoothstep — no polling.
-//   - Raw Input (RIDEV_INPUTSINK) ensures WM_INPUT arrives even though the
-//     HUD never owns focus.
-//   - Subclass delegate kept in an instance field to survive GC.
+//     alpha covering the whole window content. Recomputed through a smoothstep
+//     each time the cursor moves — no polling.
+//   - The cursor signal is the shared CursorMovementSignal (Deckle.Shell): the
+//     HUD subscribes while proximity is active and unsubscribes otherwise. It
+//     no longer owns a Raw Input sink of its own.
+//   - WM_NCCALCSIZE subclass delegate kept in an instance field to survive GC.
 public sealed partial class HudWindow : Window
 {
     private const int HUD_WIDTH         = 272;
@@ -61,9 +62,13 @@ public sealed partial class HudWindow : Window
 
     private readonly IntPtr _hwnd;
 
+    // Shared source of mouse-move ticks (one Raw Input sink for the whole
+    // process, owned by Deckle.Shell). The HUD subscribes while proximity is
+    // active; see EnableProximity / DisableProximity.
+    private readonly CursorMovementSignal _cursorSignal;
+
     private byte _currentAlpha = MAX_ALPHA;
     private bool _proximityActive;
-    private bool _rawInputRegistered;
 
     private NativeMethods.SubclassProc? _subclassDelegate;
     private static readonly UIntPtr SubclassId = new(0x48554450); // "HUDP"
@@ -101,8 +106,10 @@ public sealed partial class HudWindow : Window
     public IntPtr Hwnd             => _hwnd;
     public bool   IsMainHudShown   => _state != HudState.Hidden;
 
-    public HudWindow()
+    public HudWindow(CursorMovementSignal cursorSignal)
     {
+        _cursorSignal = cursorSignal;
+
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
@@ -151,7 +158,7 @@ public sealed partial class HudWindow : Window
         // WS_EX_TOOLWINDOW keeps the HUD out of alt-tab. WS_EX_NOACTIVATE
         // makes the no-focus-steal contract native rather than only relying
         // on SW_SHOWNOACTIVATE. WS_EX_TRANSPARENT forwards mouse hits beneath
-        // the window; proximity fade still runs through Raw Input.
+        // the window; proximity fade still runs through the shared cursor signal.
         var ex = NativeMethods.GetWindowLongPtr(_hwnd, NativeMethods.GWL_EXSTYLE).ToInt64();
         NativeMethods.SetWindowLongPtr(
             _hwnd, NativeMethods.GWL_EXSTYLE,
@@ -181,8 +188,6 @@ public sealed partial class HudWindow : Window
             NativeMethods.SWP_FRAMECHANGED |
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE |
             NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
-
-        RegisterMouseRawInput();
 
         // Theme: wires ActualThemeChanged on the XAML root to trace
         // light/dark/HC transitions. `RequestedTheme` is set by App.ApplyTheme
@@ -220,22 +225,6 @@ public sealed partial class HudWindow : Window
         DeckleThemeSource.Log.ThemeChanged(
             "hud", _lastTheme.ToString(), to.ToString(), source);
         _lastTheme = to;
-    }
-
-    private void RegisterMouseRawInput()
-    {
-        var rid = new RAWINPUTDEVICE[]
-        {
-            new RAWINPUTDEVICE
-            {
-                usUsagePage = 0x01,
-                usUsage     = 0x02,
-                dwFlags     = NativeMethods.RIDEV_INPUTSINK,
-                hwndTarget  = _hwnd,
-            }
-        };
-        _rawInputRegistered = NativeMethods.RegisterRawInputDevices(
-            rid, 1, (uint)Marshal.SizeOf<RAWINPUTDEVICE>());
     }
 
     // ── Public API (thread-safe) ──────────────────────────────────────────────
@@ -430,7 +419,7 @@ public sealed partial class HudWindow : Window
                 Chrono.ApplyState(HudState.Hidden);
                 Chrono.Visibility  = Visibility.Visible;
                 Message.Visibility = Visibility.Collapsed;
-                _proximityActive   = false;
+                DisableProximity();
                 SetAlphaImmediate(MAX_ALPHA);
                 IconAssets.ApplyToWindow(AppWindow, recording: false);
                 NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE);
@@ -485,8 +474,10 @@ public sealed partial class HudWindow : Window
 
         CancelFadeIn();
         SetAlphaImmediate(targetAlpha);
-        _proximityActive = Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity;
-        if (_proximityActive) UpdateProximity();
+        if (Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity)
+            EnableProximity();
+        else
+            DisableProximity();
     }
 
     private void ArmMessageHideTimer(TimeSpan duration)
@@ -603,7 +594,7 @@ public sealed partial class HudWindow : Window
         timer.Start();
     }
 
-    // ── Subclass: WM_NCCALCSIZE (no-frame) + WM_INPUT (proximity) ─────────────
+    // ── Subclass: WM_NCCALCSIZE (no-frame) ───────────────────────────────────
 
     private IntPtr SubclassCallback(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
@@ -625,11 +616,31 @@ public sealed partial class HudWindow : Window
             return IntPtr.Zero;
         }
 
-        if (uMsg == NativeMethods.WM_INPUT && _proximityActive)
-        {
-            UpdateProximity();
-        }
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+    }
+
+    // ── Proximity: subscribe to the shared cursor signal ──────────────────────
+    //
+    // While active, every mouse move recomputes the HUD alpha (UpdateProximity).
+    // Subscription is idempotent; each Enable re-seeds the alpha from the
+    // current cursor position so a state change reflects reality immediately
+    // rather than waiting for the next move.
+
+    private void EnableProximity()
+    {
+        if (!_proximityActive)
+        {
+            _proximityActive = true;
+            _cursorSignal.Moved += UpdateProximity;
+        }
+        UpdateProximity();
+    }
+
+    private void DisableProximity()
+    {
+        if (!_proximityActive) return;
+        _proximityActive = false;
+        _cursorSignal.Moved -= UpdateProximity;
     }
 
     // ── Proximity: distance → alpha via smoothstep ────────────────────────────
@@ -753,7 +764,7 @@ public sealed partial class HudWindow : Window
     private void StartFadeIn(byte target, bool activateProximityOnComplete)
     {
         _fadeInTimer?.Stop();
-        _proximityActive = false;
+        DisableProximity();
         byte fromAlpha = _currentAlpha;
         SetAlphaImmediate(0);
         _fadeInTarget = target;
@@ -788,10 +799,10 @@ public sealed partial class HudWindow : Window
         {
             sender.Stop();
             SetAlphaImmediate(_fadeInTarget);
-            if (_fadeInActivateProximityOnComplete)
+            if (_fadeInActivateProximityOnComplete &&
+                Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity)
             {
-                _proximityActive = Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity;
-                if (_proximityActive) UpdateProximity();
+                EnableProximity();
             }
         }
     }

@@ -1,4 +1,3 @@
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
@@ -17,11 +16,12 @@ namespace Deckle.Hud;
 // opaque LayerFillColorDefaultBrush, DWM round + default accent stroke,
 // WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT, WM_NCCALCSIZE erased
 // via subclass. Also mirrors HudWindow's proximity-fade behaviour: when the
-// cursor approaches, alpha smooth-ramps from MAX down toward MIN. Implemented
-// via a DispatcherQueueTimer + GetCursorPos poll rather than Raw Input — a
-// RIDEV_INPUTSINK registration is per-process-per-usage and would clobber the
-// single registration HudWindow owns. Overlays are transient (2-8 s) so
-// polling 60 Hz costs ~120 GetCursorPos calls per card, which is negligible.
+// cursor approaches, alpha smooth-ramps from MAX down toward MIN. The cursor
+// signal is the shared CursorMovementSignal (Deckle.Shell): the card subscribes
+// on fade-in and unsubscribes on fade-out. A per-window Raw Input sink is
+// impossible (RIDEV_INPUTSINK is per-process-per-usage), and the former 60 Hz
+// GetCursorPos poll is gone now that every surface shares the one sink owned by
+// the message-only host.
 //
 // Unlike HudWindow, no Closing intercept: the manager calls FadeOut, which
 // ends with ForceClose → Window.Close() after the alpha animator reaches 0.
@@ -47,12 +47,16 @@ public sealed partial class HudOverlayWindow : Window
     private NativeMethods.SubclassProc? _subclassDelegate;
     private static readonly UIntPtr SubclassId = new(0x48554F56); // "HUOV"
 
-    private DispatcherQueueTimer? _proximityTimer;
+    // Shared mouse-move source (Deckle.Shell). Subscribed while the card is in
+    // proximity mode; see BeginProximityMode / EndProximityMode.
+    private readonly CursorMovementSignal _cursorSignal;
     private bool _proximityActive;
     private byte _proximityAlpha = MAX_ALPHA;
 
-    public HudOverlayWindow()
+    public HudOverlayWindow(CursorMovementSignal cursorSignal)
     {
+        _cursorSignal = cursorSignal;
+
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
@@ -115,9 +119,8 @@ public sealed partial class HudOverlayWindow : Window
             NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
         // Fade animator owns the layered alpha from here on. Manager calls
-        // FadeIn / FadeOut; proximity polling mixes in at runtime via instant
-        // FadeTo updates (no animation overhead — we're already driving frames
-        // at 60 Hz from the proximity timer).
+        // FadeIn / FadeOut; proximity mixes in at runtime via instant FadeTo
+        // updates driven by the shared cursor signal (no animation overhead).
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
 
         // Theme: wires ActualThemeChanged for transient overlays. An overlay
@@ -213,8 +216,8 @@ public sealed partial class HudOverlayWindow : Window
     // ── Fade: public entry points driven by HudOverlayManager ────────────────
 
     // Ramps alpha from current (0 on first call after ShowAt) up to MAX_ALPHA
-    // over 150 ms, then arms the proximity polling loop. Callback fires once
-    // both the fade and the proximity arming are complete.
+    // over 150 ms, then enters proximity mode (subscribes to the cursor
+    // signal). Callback fires once both the fade and the arming are complete.
     public void FadeIn(Action? onComplete = null)
     {
         // Axis 2: FadeInStarted (scope="overlay"). from_alpha comes from the
@@ -235,7 +238,7 @@ public sealed partial class HudOverlayWindow : Window
         });
     }
 
-    // Disarms the proximity loop immediately (so it can't fight the fade),
+    // Leaves proximity mode immediately (so it can't fight the fade),
     // then ramps alpha down to 0 over 150 ms. Manager uses the completion
     // callback to schedule ForceClose.
     public void FadeOut(Action? onComplete = null)
@@ -246,10 +249,9 @@ public sealed partial class HudOverlayWindow : Window
 
     // ── Proximity: cursor-distance → alpha smoothstep ────────────────────────
     //
-    // Same profile as HudWindow.UpdateProximity, driven by a 60 Hz dispatcher
-    // timer instead of RIDEV_INPUTSINK. The proximity-requested alpha only
-    // modulates downward from MAX_ALPHA to MIN_ALPHA — fade-in / fade-out own
-    // the 0..MAX_ALPHA range.
+    // Same profile as HudWindow.UpdateProximity, driven by the shared cursor
+    // signal. The proximity-requested alpha only modulates downward from
+    // MAX_ALPHA to MIN_ALPHA — fade-in / fade-out own the 0..MAX_ALPHA range.
 
     private void BeginProximityMode()
     {
@@ -257,12 +259,7 @@ public sealed partial class HudOverlayWindow : Window
         if (!Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity) return;
 
         _proximityActive = true;
-        _proximityTimer ??= DispatcherQueue.CreateTimer();
-        _proximityTimer.Interval = TimeSpan.FromMilliseconds(16);
-        _proximityTimer.IsRepeating = true;
-        _proximityTimer.Tick -= OnProximityTick;
-        _proximityTimer.Tick += OnProximityTick;
-        _proximityTimer.Start();
+        _cursorSignal.Moved += UpdateProximity;
 
         // Seed with the current cursor distance so the first frame after
         // fade-in already reflects reality rather than snapping one tick later.
@@ -271,16 +268,10 @@ public sealed partial class HudOverlayWindow : Window
 
     private void EndProximityMode()
     {
-        if (_proximityTimer is not null)
-        {
-            _proximityTimer.Stop();
-            _proximityTimer.Tick -= OnProximityTick;
-        }
+        if (!_proximityActive) return;
+        _cursorSignal.Moved -= UpdateProximity;
         _proximityActive = false;
     }
-
-    private void OnProximityTick(DispatcherQueueTimer sender, object args)
-        => UpdateProximity();
 
     private void UpdateProximity()
     {

@@ -720,6 +720,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell/
 │   │   ├── AutostartService.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
+│   │   ├── CursorMovementSignal.cs
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs

@@ -76,10 +76,10 @@ public sealed class DeckleHudSource : DeckleEventSource
     // ─── Axis 2 — 150 ms cubic ease-out fade-in ────────────────────────
     //
     // Emitted at the start of each fade-in. `scope` distinguishes surfaces
-    // with their own alpha animator: "hud" for HudWindow (raw input
-    // proximity), "overlay" for HudOverlayWindow (60 Hz polling). A future
-    // separate "message" surface (the retract hybrid bleed described in
-    // CLAUDE.md but not implemented) would be added here.
+    // with their own alpha animator: "hud" for HudWindow, "overlay" for
+    // HudOverlayWindow — both now fade off the shared CursorMovementSignal
+    // (Deckle.Shell). A future separate "message" surface (the retract hybrid
+    // bleed described in CLAUDE.md but not implemented) would be added here.
     [Event(EvtFadeInStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

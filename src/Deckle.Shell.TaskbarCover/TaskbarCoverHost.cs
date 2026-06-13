@@ -21,7 +21,7 @@ namespace Deckle.Shell.TaskbarCover;
 // Cursor movement arrives through a WinEvent hook
 // (EVENT_OBJECT_LOCATIONCHANGE filtered on OBJID_CURSOR), not Raw Input:
 // the RIDEV_INPUTSINK mouse registration is per-process-per-usage and
-// HudWindow owns the only one (proximity fade). The hook is asynchronous
+// CursorMovementSignal (Deckle.Shell) owns the only one. The hook is asynchronous
 // and additive — no input-chain latency, no contention. It delivers on
 // the thread that registered it, which therefore owns a message pump;
 // the same thread owns the window, the timers and every state field, so

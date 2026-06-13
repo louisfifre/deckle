@@ -33,15 +33,17 @@ public sealed class HudOverlayManager : IDisposable
 
     private readonly HudWindow _mainHud;
     private readonly DispatcherQueue _dispatcher;
+    private readonly CursorMovementSignal _cursorSignal;
     private readonly List<OverlayEntry> _entries = new();
 
     private bool _mainHudVisible;
     private bool _disposed;
 
-    public HudOverlayManager(HudWindow mainHud, DispatcherQueue dispatcher)
+    public HudOverlayManager(HudWindow mainHud, DispatcherQueue dispatcher, CursorMovementSignal cursorSignal)
     {
         _mainHud        = mainHud;
         _dispatcher     = dispatcher;
+        _cursorSignal   = cursorSignal;
         _mainHudVisible = mainHud.IsMainHudShown;
         mainHud.MainHudVisibilityChanged += OnMainHudVisibilityChanged;
     }
@@ -71,7 +73,7 @@ public sealed class HudOverlayManager : IDisposable
         if (!SettingsService.Instance.Current.Overlay.Enabled)
             return;
 
-        var window = new HudOverlayWindow();
+        var window = new HudOverlayWindow(_cursorSignal);
         var hwnd = window.Hwnd;
 
         // Append to the list first so ComputeSlotPositionPx sees the final
@@ -100,7 +102,7 @@ public sealed class HudOverlayManager : IDisposable
         var entry = new OverlayEntry(window, slide, lifeTimer, newSlot);
         lifeTimer.Tick += (_, _) => OnLifeTimerTick(entry);
 
-        // Window owns its fade animator so proximity polling and fade-in /
+        // Window owns its fade animator so proximity updates and fade-in /
         // fade-out share a single alpha source of truth.
         window.FadeIn();
         lifeTimer.Start();
