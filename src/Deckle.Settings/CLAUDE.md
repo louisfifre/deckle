@@ -9,7 +9,7 @@ The Settings UI shell. It hosts the window (adaptive NavigationView + page Frame
 
 ## SettingsHost — shell-side delegate registry
 
-A static set of typed delegates the app wires at boot (`ApplyTheme`, `RestartApp`, `GetSettingsWindow`, `OpenLogWindow`, …). A module page calls them (`SettingsHost.X?.Invoke(...)`) to trigger a shell action without `Deckle.Settings` ever referencing the host project. Deliberately not a disguised service locator: each capability is one nominal field, added and wired explicitly, null-safe when the shell hasn't wired it (isolated module test).
+A static set of typed delegates the app wires at boot (`ApplyTheme`, `RestartApp`, `GetSettingsWindow`, `OpenSetupWizard`, …). A module page calls them (`SettingsHost.X?.Invoke(...)`) to trigger a shell action without `Deckle.Settings` ever referencing the host project. Deliberately not a disguised service locator: each capability is one nominal field, added and wired explicitly, null-safe when the shell hasn't wired it (isolated module test).
 
 ## Per-module persistence
 

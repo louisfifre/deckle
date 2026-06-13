@@ -8,8 +8,9 @@ namespace Deckle.Settings;
 // App-side hooks the Settings UI pages and ViewModels need to drive
 // concerns that only the App owns: theme broadcast across windows, the
 // canonical AudioLevelMapper statics in Deckle.Audio (touched by the
-// level-window slider), process restart, and the lazy SettingsWindow
-// instance accessor used by dialogs to anchor their XamlRoot.
+// level-window slider), process restart, the lazy SettingsWindow
+// instance accessor used by dialogs to anchor their XamlRoot, and
+// re-opening the first-run setup wizard on demand.
 //
 // Why a static delegate registry rather than a project reference back
 // to the App assembly? Because that would close the dependency cycle
@@ -20,7 +21,7 @@ namespace Deckle.Settings;
 // and degrade silently to no-op when nothing is wired (so the lib
 // remains buildable / testable in isolation).
 //
-// All four hooks are intentionally `Action<...>` / `Func<...>` rather
+// All five hooks are intentionally `Action<...>` / `Func<...>` rather
 // than a single interface — keeps the surface minimal, no boxing, and
 // each hook can be wired independently if a future host implements only
 // part of the contract (e.g. a settings preview window without a full
