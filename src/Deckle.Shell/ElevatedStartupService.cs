@@ -72,7 +72,8 @@ public static class ElevatedStartupService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.ElevatedStartupProbeFailed(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.ElevatedStartupProbeFailed();
+            DeckleShellSource.Log.ElevatedStartupProbeFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
@@ -82,7 +83,8 @@ public static class ElevatedStartupService
         string? exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath))
         {
-            DeckleShellSource.Log.ElevatedStartupEnableFailed(
+            DeckleShellSource.Log.ElevatedStartupEnableFailed();
+            DeckleShellSource.Log.ElevatedStartupEnableFailedDetail(
                 nameof(InvalidOperationException), "Environment.ProcessPath empty");
             return false;
         }
@@ -111,7 +113,8 @@ public static class ElevatedStartupService
 
             if (proc.ExitCode != 0)
             {
-                DeckleShellSource.Log.ElevatedStartupEnableFailed(
+                DeckleShellSource.Log.ElevatedStartupEnableFailed();
+                DeckleShellSource.Log.ElevatedStartupEnableFailedDetail(
                     "schtasks", $"exit code {proc.ExitCode}");
                 return false;
             }
@@ -127,7 +130,8 @@ public static class ElevatedStartupService
         {
             // Win32Exception 1223 == user declined UAC. Same handling as any
             // other failure: log + false.
-            DeckleShellSource.Log.ElevatedStartupEnableFailed(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.ElevatedStartupEnableFailed();
+            DeckleShellSource.Log.ElevatedStartupEnableFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
         finally
@@ -155,7 +159,8 @@ public static class ElevatedStartupService
 
             if (proc.ExitCode != 0)
             {
-                DeckleShellSource.Log.ElevatedStartupDisableFailed(
+                DeckleShellSource.Log.ElevatedStartupDisableFailed();
+                DeckleShellSource.Log.ElevatedStartupDisableFailedDetail(
                     "schtasks", $"exit code {proc.ExitCode}");
                 return false;
             }
@@ -169,7 +174,8 @@ public static class ElevatedStartupService
         }
         catch (Exception ex)
         {
-            DeckleShellSource.Log.ElevatedStartupDisableFailed(ex.GetType().Name, ex.Message);
+            DeckleShellSource.Log.ElevatedStartupDisableFailed();
+            DeckleShellSource.Log.ElevatedStartupDisableFailedDetail(ex.GetType().Name, ex.Message);
             return false;
         }
     }
