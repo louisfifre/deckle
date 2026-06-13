@@ -72,7 +72,8 @@ public sealed class ContactFrameRecorder : IDisposable
             }
             catch (Exception ex)
             {
-                DeckleInputSource.Log.RecordingFailed(ex.GetType().Name, ex.Message);
+                DeckleInputSource.Log.RecordingFailed();
+                DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
                 _writer?.Dispose();
                 _writer = null;
                 _path = null;
@@ -170,7 +171,8 @@ public sealed class ContactFrameRecorder : IDisposable
             }
             catch (Exception ex)
             {
-                DeckleInputSource.Log.RecordingFailed(ex.GetType().Name, ex.Message);
+                DeckleInputSource.Log.RecordingFailed();
+                DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
             }
             finally
             {
@@ -201,7 +203,8 @@ public sealed class ContactFrameRecorder : IDisposable
 
     private void FailAndClose(Exception ex)
     {
-        DeckleInputSource.Log.RecordingFailed(ex.GetType().Name, ex.Message);
+        DeckleInputSource.Log.RecordingFailed();
+        DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
         _writer?.Dispose();
         _writer = null;
         _path = null;
