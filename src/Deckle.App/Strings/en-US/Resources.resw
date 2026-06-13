@@ -562,6 +562,9 @@
   <data name="Setup_Result_FailedCount_Format" xml:space="preserve">
     <value>{0} of {1} item(s) failed.</value>
   </data>
+  <data name="Setup_OpenDiagnosticsFolder" xml:space="preserve">
+    <value>Open diagnostics folder</value>
+  </data>
   <data name="Setup_Result_Detail_BytesInstalled_Format" xml:space="preserve">
     <value>{0} installed</value>
   </data>
