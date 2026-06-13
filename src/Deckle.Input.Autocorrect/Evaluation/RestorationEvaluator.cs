@@ -198,6 +198,78 @@ public static class RestorationEvaluator
         return report;
     }
 
+    // Runs the live policy (the gate) then the post-sentence reranker over a
+    // line of text AS TYPED — no accent-stripping unless asked, no scoring, no
+    // reference. This is the engine of the `dry-run` command: it answers "what
+    // would the engine do to this exact text?", word by word. Sentence
+    // splitting and tokenization match Evaluate and the live tracker, so the
+    // verdict is the one that would ship. `strip` simulates a typist from
+    // already-accented text (paste real French, see what we recover).
+    public static IReadOnlyList<WordOutcome> RestoreLine(
+        string line,
+        ICorrectionPolicy policy,
+        IAmbiguityProbe probe,
+        ISentenceReranker reranker,
+        bool strip = false)
+    {
+        var outcomes = new List<WordOutcome>();
+
+        foreach (string sentence in SplitSentences(line))
+        {
+            // Pass 1 — the gate, word by word. Non-word tokens are skipped: they
+            // are not corrected and the reranker scores a word-only sequence.
+            var words = new List<WordEval>();
+            foreach (string token in WordBoundaries.Tokenize(sentence))
+            {
+                if (!HasLetter(token))
+                    continue;
+
+                string typed = strip ? AccentFolding.StripDiacritics(token) : token;
+                // Reranker-direct mode carries no bigram, so the gate never
+                // reads left context — an empty context is exactly what the live
+                // engine would feed it here.
+                CorrectionDecision? decision = policy.Evaluate(typed, Array.Empty<string>());
+                string output = decision?.Replacement ?? typed;
+
+                IReadOnlyList<AccentVariant> candidates =
+                    string.Equals(output, typed, StringComparison.Ordinal)
+                        ? probe.AmbiguousCandidates(typed)
+                        : Array.Empty<AccentVariant>();
+
+                words.Add(new WordEval(typed, typed, output, decision, candidates));
+            }
+
+            // Pass 2 — rerank ambiguous slots with the full sentence context,
+            // left to right so a resolved slot informs the next.
+            var sequence = new List<string>(words.Count);
+            foreach (var w in words) sequence.Add(w.Output);
+
+            for (int i = 0; i < words.Count; i++)
+            {
+                var w = words[i];
+                if (w.Candidates.Count < 2)
+                    continue;
+                string? chosen = reranker.Rerank(sequence, i, w.Candidates);
+                if (chosen is null)
+                    continue;
+                string newOutput = CasePattern.Apply(w.Typed, chosen);
+                if (string.Equals(newOutput, w.Output, StringComparison.Ordinal))
+                    continue;
+                words[i] = w with
+                {
+                    Output = newOutput,
+                    Decision = new CorrectionDecision(w.Typed, newOutput, CorrectionReason.SentenceReranker),
+                };
+                sequence[i] = newOutput;
+            }
+
+            foreach (var w in words)
+                outcomes.Add(new WordOutcome(w.Typed, w.Output, w.Decision?.Reason, w.Candidates.Count >= 2));
+        }
+
+        return outcomes;
+    }
+
     // Place one token in its class. The split hinges on whether the reference
     // carried accents (token != typed) and on what the policy emitted. Output
     // is compared to the reference ordinally — accents and case must match.
@@ -325,3 +397,11 @@ public sealed record EvaluatorOptions
     // Stop after this many scored tokens; 0 means no cap (the full reference).
     public int MaxTokens { get; init; } = 0;
 }
+
+// One word's dry-run verdict (RestoreLine): the text as the policy saw it, the
+// final form after gate + rerank, the stage that acted (null = left untouched),
+// and whether it was an ambiguous slot the reranker was offered — true with a
+// SentenceReranker reason means it resolved it, true with no change means it
+// was offered the choice and abstained.
+public readonly record struct WordOutcome(
+    string Typed, string Output, CorrectionReason? Reason, bool WasAmbiguous);

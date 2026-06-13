@@ -472,6 +472,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CliArgs.cs
 │   │   │   ├── DataSet.cs
 │   │   │   ├── DictCommand.cs
+│   │   │   ├── DryRunCommand.cs
 │   │   │   ├── EnrollCommand.cs
 │   │   │   ├── EvalCommand.cs
 │   │   │   ├── InjectCommand.cs
