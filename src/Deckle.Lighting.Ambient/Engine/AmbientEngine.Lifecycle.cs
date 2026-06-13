@@ -166,7 +166,8 @@ public sealed partial class AmbientEngine
             {
                 if (_useMultiLightRequested)
                 {
-                    DeckleAmbientSource.Log.MultiLightDriverIncompat(_output!.GetType().Name);
+                    DeckleAmbientSource.Log.MultiLightDriverIncompat();
+                    DeckleAmbientSource.Log.MultiLightDriverIncompatDetail(_output!.GetType().Name);
                 }
                 _multiLightActive = false;
                 _pushIntervalMs = 1000 / GroupPushHz;
@@ -185,7 +186,8 @@ public sealed partial class AmbientEngine
             }
             catch (Exception ex)
             {
-                DeckleAmbientSource.Log.EventStreamSetupFailed(ex.GetType().Name, ex.Message);
+                DeckleAmbientSource.Log.EventStreamSetupFailed();
+                DeckleAmbientSource.Log.EventStreamSetupFailedDetail(ex.GetType().Name, ex.Message);
                 _v2LightMap = null;
                 _v2GroupedLightMap = null;
             }
@@ -270,7 +272,8 @@ public sealed partial class AmbientEngine
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PipelineStartFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PipelineStartFailed();
+            DeckleAmbientSource.Log.PipelineStartFailedDetail(ex.GetType().Name, ex.Message);
             try { _cts?.Cancel(); } catch { /* best effort */ }
             AmbientCaptureGate.SetActive(false);
             IsRunning = false;
@@ -322,7 +325,8 @@ public sealed partial class AmbientEngine
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.SamplerRebuildFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.SamplerRebuildFailed();
+            DeckleAmbientSource.Log.SamplerRebuildFailedDetail(ex.GetType().Name, ex.Message);
             return;
         }
 
@@ -333,7 +337,8 @@ public sealed partial class AmbientEngine
         // dispose, so the swap never throws on the read side.
         var superseded = Interlocked.Exchange(ref _sampler, fresh);
 
-        DeckleAmbientSource.Log.SamplerRebuilt(capture.IsHdrSession ? "HDR" : "SDR");
+        DeckleAmbientSource.Log.SamplerRebuilt();
+        DeckleAmbientSource.Log.SamplerRebuiltDetail(capture.IsHdrSession ? "HDR" : "SDR");
 
         if (superseded is not null)
         {
@@ -352,7 +357,8 @@ public sealed partial class AmbientEngine
         try { await sampler.DisposeAsync().ConfigureAwait(false); }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.SamplerRebuildFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.SamplerRebuildFailed();
+            DeckleAmbientSource.Log.SamplerRebuildFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -556,12 +562,7 @@ public sealed partial class AmbientEngine
         try { _cts?.Cancel(); } catch { /* best effort */ }
         IsRunning = false;
 
-        DeckleAmbientSource.Log.PipelineStopped(_stopReason switch
-        {
-            "capture_lost" => "capture lost",
-            "external"     => "external light change",
-            _              => "user request",
-        });
+        DeckleAmbientSource.Log.PipelineStopped();
         DeckleAmbientSource.Log.PipelineStopDetail(
             _stopReason,
             _multiLightActive ? "multi" : "group",

@@ -393,7 +393,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
         catch (Exception ex)
         {
             // A subscriber threw — don't let it kill the engine flow.
-            DeckleAmbientSource.Log.StateChangedSubscriberThrew(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.StateChangedSubscriberThrew();
+            DeckleAmbientSource.Log.StateChangedSubscriberThrewDetail(ex.GetType().Name, ex.Message);
         }
     }
 

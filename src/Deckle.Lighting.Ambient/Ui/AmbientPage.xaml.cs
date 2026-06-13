@@ -343,7 +343,8 @@ public sealed partial class AmbientPage : Page
         catch (Exception ex)
         {
             SetHuePairStatus(Loc.Format("AmbientHue_PairStatus_Failed_Format", ex.Message));
-            DeckleAmbientSource.Log.AmbientPagePairFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.AmbientPagePairFailed();
+            DeckleAmbientSource.Log.AmbientPagePairFailedDetail(ex.GetType().Name, ex.Message);
         }
         finally
         {
@@ -392,7 +393,8 @@ public sealed partial class AmbientPage : Page
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed();
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailedDetail(ex.GetType().Name, ex.Message);
         }
         finally
         {

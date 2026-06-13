@@ -81,7 +81,8 @@ public sealed partial class AmbientEngine
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PushLoopCrashed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PushLoopCrashed();
+            DeckleAmbientSource.Log.PushLoopCrashedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -158,7 +159,8 @@ public sealed partial class AmbientEngine
             // Warning unconditional — capture-activity gating never
             // suppresses faults, the user needs to see when the bridge
             // throws even with the toggle off.
-            DeckleAmbientSource.Log.PushGroupFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PushGroupFailed();
+            DeckleAmbientSource.Log.PushGroupFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -322,7 +324,8 @@ public sealed partial class AmbientEngine
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PushMultiFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PushMultiFailed();
+            DeckleAmbientSource.Log.PushMultiFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 

@@ -62,7 +62,8 @@ public sealed class HuePairingService : IDisposable
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.BridgeAutoRestoreFailed(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.BridgeAutoRestoreFailed();
+            DeckleAmbientSource.Log.BridgeAutoRestoreFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -167,7 +168,8 @@ public sealed class HuePairingService : IDisposable
         settings.HueUsername = creds.Username;
         AmbientSettingsService.Instance.Save();
 
-        DeckleAmbientSource.Log.BridgePairingStored(bridge.Id, creds.UsernameHead);
+        DeckleAmbientSource.Log.BridgePairingStored();
+        DeckleAmbientSource.Log.BridgePairingStoredDetail(bridge.Id, creds.UsernameHead);
 
         BridgeChanged?.Invoke();
         return creds;
@@ -212,7 +214,8 @@ public sealed class HuePairingService : IDisposable
         }
         previous?.Dispose();
 
-        DeckleAmbientSource.Log.BridgeRestoredFromSettings(bridge.Id, bridge.InternalIpAddress);
+        DeckleAmbientSource.Log.BridgeRestoredFromSettings();
+        DeckleAmbientSource.Log.BridgeRestoredFromSettingsDetail(bridge.Id, bridge.InternalIpAddress);
 
         BridgeChanged?.Invoke();
     }
