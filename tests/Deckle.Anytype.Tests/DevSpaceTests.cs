@@ -151,16 +151,16 @@ public class DevSpaceTests
     }
 
     [Fact]
-    public void TryResolvePropertyResolvesTheMisspelledRapportsLiesLabel()
+    public void TryResolvePropertyResolvesTheMalformedTachesLieesLabel()
     {
-        // Trap: « Rapport(s) lié(s) » carries the misspelled wire key
-        // "rpport(s)_lie(s)" (missing the first 'a'). Reports anchor to tasks
-        // through this exact key, so the misspelling must survive.
+        // Trap: « Tâche(s) liée(s) » carries the malformed wire key
+        // "tache(s)_liee(s)" (no accents). Reports anchor to tasks through this
+        // exact key, so the malformed form must survive.
         bool ok = DevSpace.TryResolveProperty(
-            DevSpace.Types.Task, "Rapport(s) lié(s)", out string key, out _);
+            DevSpace.Types.Rapport, "Tâche(s) liée(s)", out string key, out _);
 
         Assert.True(ok);
-        Assert.Equal("rpport(s)_lie(s)", key);
+        Assert.Equal("tache(s)_liee(s)", key);
     }
 
     [Fact]
@@ -173,8 +173,8 @@ public class DevSpaceTests
         Assert.Equal("charge_estimee_(jours)", charge);
 
         Assert.True(DevSpace.TryResolveProperty(
-            DevSpace.Types.Task, "rpport(s)_lie(s)", out string rapports, out _));
-        Assert.Equal("rpport(s)_lie(s)", rapports);
+            DevSpace.Types.Rapport, "tache(s)_liee(s)", out string taches, out _));
+        Assert.Equal("tache(s)_liee(s)", taches);
     }
 
     [Fact]

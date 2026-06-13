@@ -13,9 +13,9 @@ namespace Deckle.Anytype.Gestures;
 // per fact, no banner, no markdown decoration beyond what carries meaning.
 public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 {
-    // Project header digest + the project's tasks + its last 3 reports.
-    // Tasks: searched by type then filtered client-side on relation_projet
-    // containing this project id — the search API has no relation filter.
+    // Project header digest + the project's tasks + its last 3 reports. Reports
+    // are joined through the tasks — the link lives on the report side now, the
+    // project itself has no report link.
     public async Task<string> OverviewAsync(string project, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -29,8 +29,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         AppendHeaderFacts(sb, obj);
 
         sb.Append('\n');
-        await AppendTasksAsync(sb, projectId, ct);
-        await AppendRecentReportsAsync(sb, projectId, reportCount: 3, fullBody: false, ct);
+        IReadOnlyList<string> taskIds = await AppendTasksAsync(sb, projectId, ct);
+        await AppendRecentReportsAsync(sb, taskIds, reportCount: 3, fullBody: false, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("project_overview", Elapsed(started));
         return sb.ToString().TrimEnd();
@@ -151,32 +151,45 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         AppendFact(sb, "Définition de fini", PropReader.Text(project, DevSpace.Props.DefinitionDeFini));
     }
 
-    async Task AppendTasksAsync(StringBuilder sb, string projectId, CancellationToken ct)
+    // Appends the project's task lines and returns their ids (for the report join).
+    // Tasks are searched by type then filtered client-side on relation_projet
+    // containing this project id — the search API has no relation filter.
+    async Task<IReadOnlyList<string>> AppendTasksAsync(StringBuilder sb, string projectId, CancellationToken ct)
     {
         JsonObject root = await api.SearchAsync(string.Empty, [DevSpace.Types.Task], limit: 200, ct);
         JsonArray hits = root["data"]?.AsArray() ?? [];
 
+        var taskIds = new List<string>();
         bool any = false;
         foreach (JsonNode? node in hits)
         {
             if (node is not JsonObject t) continue;
             if (!PropReader.ObjectRefs(t, DevSpace.Props.RelationProjet).Contains(projectId)) continue;
 
+            taskIds.Add(PropReader.Id(t));
             if (!any) { sb.Append("Tâches :\n"); any = true; }
             AppendTaskLine(sb, t);
         }
 
         if (!any) sb.Append("Aucune tâche.\n");
+        return taskIds;
     }
 
-    async Task AppendRecentReportsAsync(StringBuilder sb, string projectId, int reportCount, bool fullBody, CancellationToken ct)
+    // Reports of the project = reports linked to any of the project's tasks (the
+    // link lives on the report side, « Tâche(s) liée(s) »; the project itself has
+    // no report link). Page reports, keep those touching a project task, most
+    // recent journal date first.
+    async Task AppendRecentReportsAsync(StringBuilder sb, IReadOnlyList<string> taskIds, int reportCount, bool fullBody, CancellationToken ct)
     {
+        if (taskIds.Count == 0) return;
+        var taskSet = new HashSet<string>(taskIds, StringComparer.Ordinal);
+
         JsonObject root = await api.SearchAsync(string.Empty, [DevSpace.Types.Rapport], limit: 200, ct);
         JsonArray hits = root["data"]?.AsArray() ?? [];
 
         var reports = new List<JsonObject>();
         foreach (JsonNode? node in hits)
-            if (node is JsonObject r && PropReader.ObjectRefs(r, DevSpace.Props.RelationProjet).Contains(projectId))
+            if (node is JsonObject r && PropReader.ObjectRefs(r, DevSpace.Props.TachesLiees).Any(taskSet.Contains))
                 reports.Add(r);
 
         // Most recent journal date first; missing dates sort last.
