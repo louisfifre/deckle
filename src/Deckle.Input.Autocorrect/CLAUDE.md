@@ -22,9 +22,13 @@ element is a password control, keystrokes are neither decoded, nor
 buffered, nor counted — a hard rule, not a setting.
 
 Typed text never crosses the EventSource: events carry counts, lengths
-and reasons only. The only persisted text is the personal dictionary,
-inspectable and removable by design. The CLI commands print words to
-the live console alone.
+and reasons only. The engine's only persisted text is the personal
+dictionary, inspectable and removable by design. Most CLI commands print
+words to the live console alone; the one exception is the opt-in
+`harvest` command — a maintainer iteration tool that persists two
+filtered signal streams (backspace-retape pairs, lexicon-unknown words —
+never the raw stream), DPAPI-encrypted at rest and purgeable, gated on
+password surfaces like every other observation path.
 
 ## Engine doctrine
 

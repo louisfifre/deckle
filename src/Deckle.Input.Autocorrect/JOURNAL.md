@@ -56,3 +56,25 @@ threshold. Corpus toward dictionary-grade coverage (Morphalou for forms, Lexique
 Wikipedia FR for context). Context to use the sentence's left context up to the last full stop, via a
 model still under exploration. Rewrite (generative regeneration, keyboard or dictation) is a separate,
 later chantier.
+
+## 2026-06-13 — Observation live landed (the harvest)
+
+The `harvest` CLI verb persists two filtered signal streams — backspace-retape correction pairs and
+committed words the French lexicon does not know — DPAPI-encrypted at rest (CurrentUser scope), in the
+CLI project only (the engine and its "only persisted text is the personal dictionary" invariant are
+untouched). Opt-in, password-gated at the source like `watch`, passive (never mutates the personal
+dictionary). Inspect/purge through `harvest list | purge | path`; the file is ciphertext, `harvest
+list` is its only readable surface. This is the bridge to the typo/spelling phase: the ASR eval
+corpora carry missing accents but no keyboard typos, so the retype pairs are the only real source of
+typed-error material.
+
+Capture filter (`HarvestFilter`): alphabetic tokens, length 2–24, connectors (apostrophe, hyphen)
+interior only — drops digit-bearing tokens, over-long blobs, and trailing-apostrophe elision markers
+(`l'`, `qu'`). Accepted residual, not eliminated: a short all-letter passphrase typed into a field that
+fails to set UIA IsPassword is still captured (the keylogger class) — mitigated by the IsPassword gate,
+the content filter, DPAPI, and easy purge, never by shape alone.
+
+Trap shared with `watch`: the surface gate reads a `surface` updated only on focus change, so the
+EVENT_OBJECT_FOCUS-before-first-keystroke ordering can let a single pre-focus keystroke through; bounded
+to a fragment (never a committed word, so nothing reaches disk on its own), and `surface` is published
+without volatile semantics in both commands.
