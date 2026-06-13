@@ -17,6 +17,11 @@ namespace Deckle.Shell.TrayMenu;
 // item_click:<label>), item click. These traces diagnose flyout-specific bugs
 // (zero measurement, excess height, unexpected dismiss) without drowning the
 // signal in Windowing noise.
+//
+// Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info is a short
+// Capital sentence with no IDs and no k=v; the technical detail (handles,
+// durations, dismiss reason, item label) lives in a Verbose mirror that FOLLOWS
+// it.
 [EventSource(Name = "Deckle-TrayMenu")]
 public sealed class DeckleShellTrayMenuSource : DeckleEventSource
 {
@@ -25,33 +30,51 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     private DeckleShellTrayMenuSource() { }
 
     // ── Event IDs ─────────────────────────────────────────────────────────────
-    public const int EvtHostConstructed       = 1;
-    public const int EvtFlyoutBuilt           = 2;
-    public const int EvtFrameLoaded           = 3;
-    public const int EvtPrimeCycleStarted     = 4;
-    public const int EvtPrimeCycleCompleted   = 5;
-    public const int EvtShowRequested         = 6;
-    public const int EvtAmbientStateRead      = 7;
-    public const int EvtItemMeasured          = 8;
-    public const int EvtFlyoutMeasured        = 9;
-    public const int EvtFlyoutShownAt         = 10;
-    public const int EvtHidden                = 11;
-    public const int EvtWindowActivated       = 12;
-    public const int EvtFlyoutClosed          = 13;
-    public const int EvtItemClicked           = 14;
-    public const int EvtDisposed              = 15;
-    public const int EvtTaskbarCoverStateRead = 16;
+    // Milestones keep their original id; the Verbose mirrors added for the
+    // Verbose/Info separation take fresh ids 17-21 at the end of the sequence.
+    // IDs are public in the ETW manifest; never reuse an id after deleting an event.
+    public const int EvtHostConstructed           = 1;
+    public const int EvtFlyoutBuilt               = 2;
+    public const int EvtFrameLoaded               = 3;
+    public const int EvtPrimeCycleStarted         = 4;
+    public const int EvtPrimeCycleCompleted       = 5;
+    public const int EvtShowRequested             = 6;
+    public const int EvtAmbientStateRead          = 7;
+    public const int EvtItemMeasured              = 8;
+    public const int EvtFlyoutMeasured            = 9;
+    public const int EvtFlyoutShownAt             = 10;
+    public const int EvtHidden                    = 11;
+    public const int EvtWindowActivated           = 12;
+    public const int EvtFlyoutClosed              = 13;
+    public const int EvtItemClicked               = 14;
+    public const int EvtDisposed                  = 15;
+    public const int EvtTaskbarCoverStateRead     = 16;
+    public const int EvtHostConstructedDetail     = 17;
+    public const int EvtPrimeCycleCompletedDetail = 18;
+    public const int EvtShowRequestedDetail       = 19;
+    public const int EvtHiddenDetail              = 20;
+    public const int EvtItemClickedDetail         = 21;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     [Event(EvtHostConstructed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tray menu host constructed | owner_hwnd=0x{0:X}")]
-    public void HostConstructed(long owner_hwnd)
+           Message = "Host constructed")]
+    public void HostConstructed()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtHostConstructed, owner_hwnd);
+            WriteEvent(EvtHostConstructed);
+    }
+
+    [Event(EvtHostConstructedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "host constructed | owner_hwnd=0x{0:X}")]
+    public void HostConstructedDetail(long owner_hwnd)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtHostConstructedDetail, owner_hwnd);
     }
 
     [Event(EvtFlyoutBuilt,
@@ -67,7 +90,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtDisposed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tray menu host disposed")]
+           Message = "Host disposed")]
     public void Disposed()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -99,11 +122,21 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtPrimeCycleCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "prime cycle completed | duration_ms={0:F2}")]
-    public void PrimeCycleCompleted(double duration_ms)
+           Message = "Visual tree primed")]
+    public void PrimeCycleCompleted()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtPrimeCycleCompleted, duration_ms);
+            WriteEvent(EvtPrimeCycleCompleted);
+    }
+
+    [Event(EvtPrimeCycleCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "prime cycle completed | duration_ms={0:F2}")]
+    public void PrimeCycleCompletedDetail(double duration_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPrimeCycleCompletedDetail, duration_ms);
     }
 
     // ── Show pipeline (per opening) ───────────────────────────────────────────
@@ -111,11 +144,21 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtShowRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Show() requested | ms_since_last_show={0:F1} show_count={1}")]
-    public void ShowRequested(double ms_since_last_show, int show_count)
+           Message = "Menu requested")]
+    public void ShowRequested()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtShowRequested, ms_since_last_show, show_count);
+            WriteEvent(EvtShowRequested);
+    }
+
+    [Event(EvtShowRequestedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "show requested | ms_since_last_show={0:F1} | show_count={1}")]
+    public void ShowRequestedDetail(double ms_since_last_show, int show_count)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtShowRequestedDetail, ms_since_last_show, show_count);
     }
 
     [Event(EvtAmbientStateRead,
@@ -160,10 +203,12 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
             WriteEvent(EvtFlyoutMeasured, dip_w, dip_h, physical_w, physical_h, scale);
     }
 
+    // Constant placement (FlyoutPlacementMode.Full, FlyoutShowMode.Transient) is
+    // documented at the ShowAt call site; the milestone carries no detail.
     [Event(EvtFlyoutShownAt,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "MenuFlyout.ShowAt | placement=Full mode=Transient")]
+           Message = "Menu shown")]
     public void FlyoutShownAt()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -175,11 +220,21 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtHidden,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tray menu hidden | reason={0}")]
-    public void Hidden(string reason)
+           Message = "Menu hidden")]
+    public void Hidden()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtHidden, reason);
+            WriteEvent(EvtHidden);
+    }
+
+    [Event(EvtHiddenDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "hidden | reason={0}")]
+    public void HiddenDetail(string reason)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtHiddenDetail, reason);
     }
 
     [Event(EvtWindowActivated,
@@ -205,10 +260,20 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtItemClicked,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item clicked | text=\"{0}\"")]
-    public void ItemClicked(string text)
+           Message = "A menu item was clicked")]
+    public void ItemClicked()
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtItemClicked, text);
+            WriteEvent(EvtItemClicked);
+    }
+
+    [Event(EvtItemClickedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "item clicked | text=\"{0}\"")]
+    public void ItemClickedDetail(string text)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtItemClickedDetail, text);
     }
 }
