@@ -71,7 +71,8 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.PageNavigatedToFailed(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.PageNavigatedToFailed();
+            DeckleLlmSource.Log.PageNavigatedToFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -80,7 +81,8 @@ public sealed partial class LlmPage : Page
         try { await RefreshOllamaStateAsync(); }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.EndpointRefreshFailed(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.EndpointRefreshFailed();
+            DeckleLlmSource.Log.EndpointRefreshFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -89,7 +91,8 @@ public sealed partial class LlmPage : Page
         try { await RefreshOllamaStateAsync(); }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.ManualRefreshFailed(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ManualRefreshFailed();
+            DeckleLlmSource.Log.ManualRefreshFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -133,7 +136,8 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.OllamaRefreshSkipped(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.OllamaRefreshSkipped();
+            DeckleLlmSource.Log.OllamaRefreshSkippedDetail(ex.GetType().Name, ex.Message);
             available = false;
             models = Array.Empty<OllamaModel>();
         }
@@ -208,7 +212,8 @@ public sealed partial class LlmPage : Page
         }
         catch (Exception ex)
         {
-            DeckleLlmSource.Log.ResetAllFailed(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ResetAllFailed();
+            DeckleLlmSource.Log.ResetAllFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 }

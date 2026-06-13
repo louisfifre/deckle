@@ -65,7 +65,8 @@ public class LlmService
     {
         if (string.IsNullOrWhiteSpace(profile.Model))
         {
-            DeckleLlmSource.Log.RewriteSkippedNoModel(profile.Name);
+            DeckleLlmSource.Log.RewriteSkippedNoModel();
+            DeckleLlmSource.Log.RewriteSkippedNoModelDetail(profile.Name);
             return default;
         }
 
@@ -77,7 +78,7 @@ public class LlmService
             string generateUrl = NormalizeGenerateUrl(endpoint);
             var options = BuildOptions(profile, stops);
 
-            DeckleLlmSource.Log.RewriteStarted(profile.Name);
+            DeckleLlmSource.Log.RewriteStarted();
             DeckleLlmSource.Log.RewriteStartedDetail(text.Length, profile.Model, profile.Name, family, FormatOptions(options));
 
             var body = new
@@ -154,7 +155,8 @@ public class LlmService
             // this is a hard timeout.
             DeckleCancellationSource.Log.OperationCancelled(
                 "llm-rewrite", "timeout", (int)sw.ElapsedMilliseconds);
-            DeckleLlmSource.Log.RewriteTimeout(REWRITE_HARD_CAP.TotalMinutes, profile.Name, profile.Model);
+            DeckleLlmSource.Log.RewriteTimeout();
+            DeckleLlmSource.Log.RewriteTimeoutDetail(REWRITE_HARD_CAP.TotalMinutes, profile.Name, profile.Model);
             // severity 1 = Warning, role 1 = Overlay.
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
@@ -166,7 +168,8 @@ public class LlmService
         catch (Exception ex)
         {
             sw.Stop();
-            DeckleLlmSource.Log.RewriteUnavailable(ex.GetType().Name, ex.Message, profile.Name, profile.Model);
+            DeckleLlmSource.Log.RewriteUnavailable();
+            DeckleLlmSource.Log.RewriteUnavailableDetail(ex.GetType().Name, ex.Message, profile.Name, profile.Model);
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
                 title:    "Rewriter unavailable",
@@ -198,7 +201,8 @@ public class LlmService
                     using var resp = await _http.GetAsync(psUrl, ct);
                     if (!resp.IsSuccessStatusCode)
                     {
-                        DeckleLlmSource.Log.PsProbeUnreachable((int)resp.StatusCode);
+                        DeckleLlmSource.Log.PsProbeUnreachable();
+                        DeckleLlmSource.Log.PsProbeUnreachableDetail((int)resp.StatusCode);
                         continue;
                     }
 
@@ -238,12 +242,14 @@ public class LlmService
 
                     double waitedSeconds = requestElapsed.Elapsed.TotalSeconds;
                     double capMinutes    = REWRITE_HARD_CAP.TotalMinutes;
-                    DeckleLlmSource.Log.OllamaBusy(name, vramGb, unloadSuffix, waitedSeconds, capMinutes);
+                    DeckleLlmSource.Log.OllamaBusy();
+                    DeckleLlmSource.Log.OllamaBusyDetail(name, vramGb, unloadSuffix, waitedSeconds, capMinutes);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    DeckleLlmSource.Log.PsProbeFailed(ex.GetType().Name, ex.Message);
+                    DeckleLlmSource.Log.PsProbeFailed();
+                    DeckleLlmSource.Log.PsProbeFailedDetail(ex.GetType().Name, ex.Message);
                 }
             }
         }

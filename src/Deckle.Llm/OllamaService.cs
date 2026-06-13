@@ -101,7 +101,8 @@ public sealed class OllamaService
         catch (JsonException ex)
         {
             string preview = json.Length > 200 ? json[..200] + "..." : json;
-            DeckleLlmSource.Log.ListModelsInvalidJson(ex.Message, preview);
+            DeckleLlmSource.Log.ListModelsInvalidJson();
+            DeckleLlmSource.Log.ListModelsInvalidJsonDetail(ex.Message, preview);
             return new();
         }
     }
@@ -127,7 +128,8 @@ public sealed class OllamaService
         catch (JsonException ex)
         {
             string preview = json.Length > 200 ? json[..200] + "..." : json;
-            DeckleLlmSource.Log.ShowModelInvalidJson(ex.Message, name, preview);
+            DeckleLlmSource.Log.ShowModelInvalidJson();
+            DeckleLlmSource.Log.ShowModelInvalidJsonDetail(ex.Message, name, preview);
             return null;
         }
     }
@@ -178,7 +180,8 @@ public sealed class OllamaService
 
             if (!AllowedSchemes.Contains(uri.Scheme))
             {
-                DeckleLlmSource.Log.EndpointSchemeNotAllowed(uri.Scheme, DefaultBaseUrl);
+                DeckleLlmSource.Log.EndpointSchemeNotAllowed();
+                DeckleLlmSource.Log.EndpointSchemeNotAllowedDetail(uri.Scheme, DefaultBaseUrl);
                 return DefaultBaseUrl;
             }
 
@@ -190,7 +193,8 @@ public sealed class OllamaService
 
             if (!isLoopback && _lastNonLoopbackHostWarned != host)
             {
-                DeckleLlmSource.Log.EndpointNonLoopbackHost(host);
+                DeckleLlmSource.Log.EndpointNonLoopbackHost();
+                DeckleLlmSource.Log.EndpointNonLoopbackHostDetail(host);
                 _lastNonLoopbackHostWarned = host;
             }
 
