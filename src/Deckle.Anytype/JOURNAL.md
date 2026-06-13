@@ -7,6 +7,21 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-13 — `replace_section` and the body round-trip
+
+Added `replace_section` (14th tool): replaces a section located by its heading, with read-after-write verification. Found: Anytype re-serializes the body on every PATCH export, so the read-back is normalized — heading text and level survive, but a literal underscore / asterisk / backtick / pipe comes back backslash-escaped and lines gain trailing spaces; a byte-equal read-after-write is impossible, so verification compares a normalized form.
+
+## 2026-06-13 — gRPC re-investigated; REST decision held
+
+Scoped feasibility pass on anytype-heart's private gRPC `ClientCommands` API — the block-level surface (stable block IDs, fine edits) that REST lacks. **Decision held (Louis): Deckle stays on REST, gRPC not pursued.** Deciding factor: port discovery is too complex and the whole path is heavy for the gain.
+
+Facts re-verified (researched 2026-06-13: anytype-heart + anytype-ts source on GitHub, advisory GHSA-vv3h-7qwr-722v, developers.anytype.io changelog):
+
+- **The gRPC port is not discoverable by a third party.** Anytype Desktop spawns heart with `127.0.0.1:0` (OS-chosen ephemeral port); the resolved address is printed only to heart's stdout, captured by the Electron parent — written to no file, named socket, or shared env. heart runs as Electron's child (killed on close), so its port and session key are private to that instance, not a daemon to attach to. The frontend speaks gRPC-Web, not native HTTP/2. The only clean gRPC path would be running our own headless heart (fixed ports 31007/31008, env `ANYTYPE_GRPC_ADDR`/`ANYTYPE_GRPCWEB_ADDR`) — owning a Go backend's lifecycle, not a graft.
+- **CVE-2026-31863 is no longer an argument.** It is a brute-force of the 4-digit challenge (CWE-307), Low/Medium, localhost-only, fixed in heart v0.48.4 / Desktop v0.54.5 by server-side rate-limiting; it does not change third-party integration cost.
+- **REST will not gain block-level editing.** The "patching the blocks" item (anyproto discussion #218) shipped as whole-body markdown replacement — the destructive read-modify-write already in use — and `getObject`'s `blocks` field was deprecated. Block-level with stable IDs stays gRPC-only at the visible horizon.
+- The gRPC `.proto` are clean proto3 (no baked-in `gogoproto`) and would compile to C# via `Grpc.Tools` without exotic plugins — codegen is not the cost. A third-party Python client exists (`rakaarwaky/anytype-automator`) and finds the port by probing 17 candidate ports, confirming there is no clean discovery.
+
 ## 2026-06-13 — Link model inverted: rapport → task, project derived
 
 The `session` type was deleted — it used to sit between task and rapport, and the link properties had been shaped for it. Louis re-pointed the live space: a rapport now carries « Tâche(s) liée(s) » (`tache(s)_liee(s)`, objects, several allowed), the task drops « Rapport(s) lié(s) », the rapport drops « Projet(s) lié(s) ». The chain is a cascade — rapport → task(s) → project — so a report's project is *derived* through its tasks, never stored. `session(s)_liee(s)` is gone from the space.
@@ -19,7 +34,7 @@ Caveat — existing rapports were NOT re-linked: they keep their old `relation_p
 
 Found while rebuilding the space: POST /objects does not apply the type's default template — the optional `template_id` field does, and without it objects are born bare (no template blocks, no inline views). Every object of the first migration was bare. `create_project` and `create_task` now pass the space's default-template ids, frozen in `Schema/DevSpace.cs`. `template_id` composes with `body`: the template blocks come first, the body follows.
 
-Decided (Louis): Deckle is a *project*, not an epic — one project per app/repo, the modules become tasks under it, their detail lives as inline `- [ ]` subtasks in the task body. The space was restructured live: 11 module tasks created from the task template under the project « Deckle » (born from the project template, inline task views intact); the old 63 tasks, 11 module projects and the epic archived. The epic level drops out of use for Deckle; revisiting the 13-tool surface (create_project's epic param, link, the host copy) is logged as a task in the space.
+Decided (Louis): Deckle is a *project*, not an epic — one project per app/repo, the modules become tasks under it, their detail lives as inline `- [ ]` subtasks in the task body. The space was restructured live: 11 module tasks created from the task template under the project « Deckle » (born from the project template, inline task views intact); the old 63 tasks, 11 module projects and the epic archived. The epic level drops out of use for Deckle; revisiting the tool surface (create_project's epic param, link, the host copy) is logged as a task in the space.
 
 ## 2026-06-12 — First live migration: list-add answers a bare string
 
@@ -46,17 +61,12 @@ Interactive bootstrap done against the live local API (Anytype Desktop, challeng
 
 **The PM space is `Dev`** (`bafyreibaltekf6yw32suoj3g57ot7gxgmpjwi37k7mx5y6mdd4f3i7p4fa.54yhp4w3lgp`). `Perso` holds unrelated personal types; `Test MCP` is an empty sandbox without the PM types.
 
-**PM types found in Dev:** `epic` (layout collection — projects are members of the collection, no link property on either side), `project`, `task`, `rapport` (note layout), `idee`, `document` — plus a dormant `session` type with zero objects (links tasks + rapports; left untouched).
+**PM types found in Dev:** `epic` (layout collection — projects are members of the collection, no link property on either side), `project`, `task`, `rapport` (note layout), `idee`, `document`.
 
 **Key traps found** (display name ≠ key; the core library owns this map, frozen as code):
 - `charge_estimee_(jours)` is the key for **Charge réelle**; `charge_estimee` is Charge estimée; `budget_reel_(` is the truncated key for Budget réel.
 - Priorité lives under the opaque property id `67c6d714341c1628147d7b1d`; its options `0` and `4` are opaque tag ids too (`67cc1782…`, `67c6d722…`); options 1/2/3/5 have literal keys.
-- Task's « Rapport(s) lié(s) » key is misspelled: `rpport(s)_lie(s)`.
 - Tag keys diverge from display names: `production`→Produire, `recherche`→Chercher, `gestion`→Gérer (type_de_tache); `rapport`→Recherche (type_de_document); `document_de_cadrage`→Texte (livrable(s)).
-
-**`rapport` has no task-link property.** It carries `date_du_journal`, `session(s)_liee(s)`, `relation_projet`, `contact_lie`, `fichier(s)_lie(s)`. The task→rapport link lives on the task side. The 47 existing rapports link only to the project in practice.
-
-**Decision (Louis): reports anchor to tasks from the task side, schema intact.** `session_start` creates the rapport (journal date + project link); the server writes the report into each touched task's « Rapport(s) lié(s) ». This amends the founding-grilling line "linked to every task it ended up touching" — the link is written on the tasks, not on the report.
 
 ## 2026-06-12 — Founding grilling (grill-with-docs session)
 
@@ -72,7 +82,7 @@ Module founded: a custom MCP server over the local Anytype REST API, tailored to
 - The official anytype-mcp is a thin auto-generated OpenAPI wrapper — no domain logic, no token economy. That gap is this module's reason to exist.
 - The block-level surface (AnyBlock) only exists on the private gRPC API used by the desktop app; not supported, not versioned — we stay on REST.
 
-**Session reports are phase 1, not phase 2.** Because body PATCH is full-replacement, journaling into the task body would mean re-reading and rewriting an ever-growing markdown. Instead each work session creates a small **report** object (Louis's existing report type: note layout, journal date, linked task/project) and journal lines go there — read-modify-write stays cheap on a fresh small object. 3–5 lines per session, each recording the *why* of a significant action (the *what* lives in git).
+**Session reports are phase 1, not phase 2.** Because body PATCH is full-replacement, journaling into the task body would mean re-reading and rewriting an ever-growing markdown. Instead each work session creates a small **report** object (Louis's existing report type: note layout, journal date, linked to its task(s)) and journal lines go there — read-modify-write stays cheap on a fresh small object. 3–5 lines per session, each recording the *why* of a significant action (the *what* lives in git).
 
 **Report lifecycle.** One report per work session, anchored on the task the session started on, and linked to every task it ended up touching — multi-task links, flat, not parent-child (Louis reads the graph in Anytype). No status property: a report is closed by construction because each session creates its own and never reopens previous ones. The handoff gesture is a final journal line by convention ("état au handoff : …"), not a field.
 
@@ -80,7 +90,7 @@ Module founded: a custom MCP server over the local Anytype REST API, tailored to
 
 **Work outside any task is a missing task.** When session work attaches to no existing task, the agent proposes creating one and Louis validates in conversation. No server-side validation machinery — MCP elicitation was considered and rejected (uneven client support, wrong layer; the future Deckle UI will add its own confirm step).
 
-**Tool surface v1 — validated by Louis, 13 tools.** Name→object resolution (returning candidates on ambiguity) is built into every tool, not a separate `resolve`. `session_start` returns the report id; `log` takes an optional report id, defaulting to the last one opened by this server process.
+**Tool surface v1 — validated by Louis, 13 tools.** Name→object resolution (returning candidates on ambiguity) is built into every tool, not a separate `resolve`. `session_start` returns a digest of the task and its recent reports; `log` takes an optional report id, defaulting to the last one opened by this server process.
 
 Priority 3 — `session_start(task)` (create report + return task + digest of previous reports), `log(line, report?)`, `get(name_or_id, type?)` (full read of any object), `project_overview(project)`, `create_task(project, name, type, priority?, body?)`, `task_done(task)`.
 
