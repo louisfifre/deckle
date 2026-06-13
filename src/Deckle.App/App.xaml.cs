@@ -19,6 +19,7 @@ namespace Deckle.App;
 public partial class App : Microsoft.UI.Xaml.Application
 {
     private MessageOnlyHost? _messageHost;
+    private CursorMovementSignal? _cursorSignal;
     private HotkeyManager? _hotkeyManager;
     private LogWindow? _logWindow;
 
@@ -398,17 +399,33 @@ public partial class App : Microsoft.UI.Xaml.Application
             setup.Activate();
         };
 
+        // Message-only Win32 host — invisible by construction (HWND_MESSAGE
+        // parent). Hosts the tray callback, global hotkeys, and the shared
+        // cursor-movement signal created right after it. Built here, before the
+        // HUD: the HUD and the overlay cards subscribe to that signal, and the
+        // signal's Raw Input sink must target this always-alive, never-hidden
+        // window rather than the HUD's HWND (hidden between uses). It has no
+        // upstream dependency; its own consumers (tray context menu, tray
+        // registration, hotkeys) are still wired further down in this method.
+        _messageHost = new MessageOnlyHost();
+
+        // The single process-wide source of "the cursor moved": it owns the one
+        // mouse Raw Input sink and fans WM_INPUT out to every proximity surface
+        // (the HUD and its overlay cards). Held in a field so the rooted
+        // subclass delegate is not collected.
+        _cursorSignal = new CursorMovementSignal(_messageHost.Hwnd);
+
         // HudWindow created once, never destroyed. No initial Show: the
-        // constructor captures the HWND and sets up subclass / raw input /
-        // extended styles directly on the native handle — no need to show the
-        // window for this to work. The first ShowRecording triggers
-        // ShowNoActivate, which positions bottom-center and calls SW_SHOWNOACTIVATE.
-        _hudWindow = new HudWindow();
+        // constructor captures the HWND and sets up subclass / extended styles
+        // directly on the native handle — no need to show the window for this
+        // to work. The first ShowRecording triggers ShowNoActivate, which
+        // positions bottom-center and calls SW_SHOWNOACTIVATE.
+        _hudWindow = new HudWindow(_cursorSignal);
 
         // Manager for the transient overlay card stack (independent HWNDs
         // stacked 24 dip away from the main HUD). Owns per-card timers and
         // positions; reacts to main HUD show/hide via MainHudVisibilityChanged.
-        _overlayManager = new HudOverlayManager(_hudWindow, _hudWindow.DispatcherQueue);
+        _overlayManager = new HudOverlayManager(_hudWindow, _hudWindow.DispatcherQueue, _cursorSignal);
 
         // Unique HUD feedback sink (direct EventSource channel since
         // sub-wave 6b). `HudFeedbackEventListener` (Deckle.Diagnostics)
@@ -525,11 +542,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         // own capture / sampler / Hue dependencies so the pipeline runs
         // without any window needing to be open.
         AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
-
-        // Message-only Win32 host — invisible by construction (HWND_MESSAGE
-        // parent). Hosts the tray callback and global hotkeys without any
-        // XAML window or off-screen trick.
-        _messageHost = new MessageOnlyHost();
 
         // Tray context menu — WinUI 3 SecondWindow pattern. The host needs
         // the message-only HWND as its owner so its popup inherits the tray's

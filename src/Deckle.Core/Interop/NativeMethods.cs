@@ -298,6 +298,9 @@ public static class NativeMethods
 
     public const uint WM_INPUT       = 0x00FF;
     public const uint RIDEV_INPUTSINK = 0x00000100;
+    // Unregisters a usage previously registered with RIDEV_INPUTSINK. The
+    // matching call must pass hwndTarget = NULL.
+    public const uint RIDEV_REMOVE    = 0x00000001;
 
     // WM_NCCALCSIZE lets us claim the entire window rect as client area.
     // Returning 0 with wParam=TRUE leaves rgrc[0] unchanged, so Windows

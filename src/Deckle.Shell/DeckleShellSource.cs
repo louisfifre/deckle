@@ -4,9 +4,9 @@ using Deckle.Diagnostics;
 namespace Deckle.Shell;
 
 // Shell module provider. Covers system shell capabilities: message-only Win32
-// host (tray callback + global hotkeys), HKCU\Run autostart, elevated startup
-// (Task Scheduler vehicle), hotkey management (registration +
-// WM_INPUTLANGCHANGE).
+// host (tray callback + global hotkeys), the global cursor-movement signal
+// attached to it, HKCU\Run autostart, elevated startup (Task Scheduler
+// vehicle), hotkey management (registration + WM_INPUTLANGCHANGE).
 //
 // The "observation attaches to the module that contains the operation" doctrine
 // converges several legacy sources (`LogSource.Hotkey`, `LogSource.MsgHost`,
@@ -61,6 +61,9 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtElevatedStartupDisableFailedDetail = 27;
     public const int EvtElevatedStartupProbeFailedDetail   = 28;
     public const int EvtHotkeyReregisterFailedDetail      = 29;
+    public const int EvtCursorSignalArmed                  = 30;
+    public const int EvtCursorSignalRegistrationFailed     = 31;
+    public const int EvtCursorSignalRegistrationFailedDetail = 32;
 
     // ── Message-only host ───────────────────────────────────────────────
 
@@ -71,6 +74,35 @@ public sealed class DeckleShellSource : DeckleEventSource
     public void MessageOnlyHostCreated(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtMessageOnlyHostCreated, hwnd);
+    }
+
+    // ── Cursor movement signal ──────────────────────────────────────────
+
+    [Event(EvtCursorSignalArmed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "cursor movement signal armed | hwnd={0}")]
+    public void CursorSignalArmed(long hwnd)
+    {
+        if (IsEnabled()) WriteEvent(EvtCursorSignalArmed, hwnd);
+    }
+
+    [Event(EvtCursorSignalRegistrationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Could not arm the cursor proximity signal — proximity fade is off")]
+    public void CursorSignalRegistrationFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtCursorSignalRegistrationFailed);
+    }
+
+    [Event(EvtCursorSignalRegistrationFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "cursor signal registration failed | error={0}")]
+    public void CursorSignalRegistrationFailedDetail(int error)
+    {
+        if (IsEnabled()) WriteEvent(EvtCursorSignalRegistrationFailedDetail, error);
     }
 
     // ── Autostart (HKCU\Run) ────────────────────────────────────────────

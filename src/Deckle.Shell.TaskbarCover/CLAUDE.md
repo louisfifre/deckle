@@ -19,10 +19,10 @@ domain module with its own runtime state, not a shell primitive.
 ## The cursor signal — why a WinEvent hook
 
 A `RIDEV_INPUTSINK` Raw Input mouse registration is **per process per
-usage**: `HudWindow` owns the only one (proximity fade) and a second
-registration would silently steal it — the same constraint that pushed
-`HudOverlayWindow` to a 60 Hz poll for its transient cards. A permanent
-module can't poll, so the cursor arrives through
+usage**: `CursorMovementSignal` (Deckle.Shell) owns the only one and a
+second registration would silently steal it — the same constraint that
+makes the HUD and its overlay cards share that single signal. A permanent
+module can't take that sink, so the cursor arrives through
 `SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE)` filtered on
 `OBJID_CURSOR`: additive (hooks coexist), asynchronous (no input-chain
 latency, unlike `WH_MOUSE_LL`), delivered on the registering thread's
