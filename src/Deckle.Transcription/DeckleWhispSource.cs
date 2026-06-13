@@ -192,4 +192,13 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPageInitFailedDetail             = 150;
     public const int EvtPageLoadedFailedDetail           = 151;
     public const int EvtPageModelScanFailedDetail        = 152;
+
+    // ── Per-provider keywords ───────────────────────────────────────────
+    // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits
+    // 0x400+ for provider-local use. KwTranscript marks the recognized
+    // transcript text itself — the user-facing result, not pipeline
+    // diagnostics — so the LogWindow keeps it visible while the chatty
+    // per-utterance and heartbeat Verbose stay behind the streaming
+    // activity toggle.
+    public const EventKeywords KwTranscript = (EventKeywords)0x400;
 }

@@ -343,7 +343,7 @@ public sealed partial class DeckleWhispSource
 
     [Event(EvtSegmentEmitted,
            Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
+           Keywords = (EventKeywords)Keywords.Pipeline | KwTranscript,
            Message = "{0}")]
     public void SegmentEmitted(string segment_line)
     {

@@ -90,10 +90,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         // same toggle so the gate stays whole after the split.
         if (StreamingCaptureGate.IsActive && (provider == "Deckle-Whisp" || provider == "Deckle-Vad"))
         {
-            // Toggle off: streaming is silent. The 1 Hz heartbeat and per-
-            // utterance details are dropped; milestones still tell whether
-            // the pipeline ran (StreamingPipelineStarted, StreamingDrained).
-            if (!LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity) return true;
+            // Toggle off: the chatty stream is silent — the 1 Hz heartbeat
+            // and per-utterance details are dropped — but the recognized
+            // transcript text (KwTranscript) always surfaces. It is the
+            // signal, not the firehose. Milestones still pass on their own
+            // (StreamingPipelineStarted, StreamingDrained).
+            if (!LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity)
+                return (keywords & DeckleWhispSource.KwTranscript) == 0;
             return false;
         }
 
