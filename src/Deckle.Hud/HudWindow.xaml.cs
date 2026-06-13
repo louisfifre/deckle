@@ -357,7 +357,8 @@ public sealed partial class HudWindow : Window
         // (Paste section), accepted in pathological cases.
         if (!done.Wait(TimeSpan.FromSeconds(5)))
         {
-            DeckleHudSource.Log.HudWarning("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
+            DeckleHudSource.Log.HudWarning();
+            DeckleHudSource.Log.HudWarningDetail("HideSync timeout — UI thread didn't process within 5s, paste proceeding without Hide rendezvous");
         }
     }
 

@@ -33,14 +33,26 @@ public sealed class DeckleHudSource : DeckleEventSource
     // 5 reserved: former HUD composition warm pass event, removed in 2026-06
     // when boot-time PrimeAndHide was deleted.
     public const int EvtProximityRollup     = 6;
+    // 7: Verbose mirror added for Verbose/Info separation — HudWarning detail.
+    public const int EvtHudWarningDetail    = 7;
 
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void HudWarning(string message)
+           Message = "HideSync timed out")]
+    public void HudWarning()
     {
-        if (IsEnabled()) WriteEvent(EvtHudWarning, message);
+        if (IsEnabled()) WriteEvent(EvtHudWarning);
+    }
+
+    [Event(EvtHudWarningDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "{0}")]
+    public void HudWarningDetail(string message)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtHudWarningDetail, message);
     }
 
     // ─── Axis 1 — Six-state state machine transitions ──────────────────
