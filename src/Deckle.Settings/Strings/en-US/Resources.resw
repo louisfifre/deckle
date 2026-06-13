@@ -1250,6 +1250,15 @@
   <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
     <value>Telemetry</value>
   </data>
+  <data name="DiagnosticsPageFilesHeaderLabel.Text" xml:space="preserve">
+    <value>Diagnostic files</value>
+  </data>
+  <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
+    <value>Setup and error logs</value>
+  </data>
+  <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
+    <value>Recorded automatically and kept on this device — never sent anywhere. Open the folder to find them when reporting a first-run or crash problem.</value>
+  </data>
   <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
     <value>Application data</value>
   </data>

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -132,5 +134,28 @@ public sealed partial class DiagnosticsPage : Page
     private void ResetLogging_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.ResetLoggingDefaults();
+    }
+
+    // Opens the always-on local diagnostics folder (setup + error logs) in
+    // Explorer. Same best-effort posture as FolderPickerCard's Open button:
+    // ensure the folder exists, shell-execute it, and log a failure rather
+    // than surface it — the folder is created eagerly at boot, so this guard
+    // is belt-and-braces.
+    private void OpenDiagnosticsFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.DiagnosticsDirectory);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = AppPaths.DiagnosticsDirectory,
+                UseShellExecute = true,
+            });
+        }
+        catch (System.Exception ex)
+        {
+            DeckleSettingsSource.Log.FolderPickerFailed();
+            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+        }
     }
 }
