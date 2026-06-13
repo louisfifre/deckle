@@ -385,7 +385,8 @@ public sealed partial class TranscriptionEngine
                     // so on any error log it once, stop trimming for the rest of this
                     // take (vad = null), and let this utterance through UNtrimmed rather
                     // than dropping it or crashing the consumer.
-                    DeckleVadSource.Log.SpeechTrimVadUnavailable($"trim failed: {ex.GetType().Name}: {ex.Message}");
+                    DeckleVadSource.Log.SpeechTrimVadUnavailable();
+                    DeckleVadSource.Log.SpeechTrimVadUnavailableDetail($"trim failed: {ex.GetType().Name}: {ex.Message}");
                     vad = null;
                 }
             }
