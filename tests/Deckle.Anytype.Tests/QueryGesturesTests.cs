@@ -41,6 +41,20 @@ public class QueryGesturesTests
         },
     };
 
+    // A task object carrying a markdown body — the surface replace_section reads,
+    // splices, and reads back.
+    static JsonObject BodyObject(string markdown) => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = TaskId,
+            ["name"] = "Ma tâche",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Task },
+            ["markdown"] = markdown,
+            ["properties"] = new JsonArray(),
+        },
+    };
+
     // The space's property list, mapping the « tag » key to its id.
     static JsonObject PropertiesPage() => new()
     {
@@ -165,5 +179,91 @@ public class QueryGesturesTests
             () => NewGestures(server).UpdateAsync(TaskId, props));
 
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // ── ReplaceSectionAsync ─────────────────────────────────────────────────────
+
+    // The headline path: the targeted section is spliced (siblings copied
+    // verbatim), the PATCH echoes Anytype's re-rendered body — underscore escaped,
+    // hard-break trailing spaces — and verification still confirms the intent
+    // through that normalization, so no second GET is needed.
+    [Fact]
+    public async Task ReplaceSectionSplicesTheTargetAndVerifiesThroughEscapingWithoutASecondRead()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, BodyObject("# Tâche\n\n## État\nÀ faire.\n\n## Notes\nrien"));
+        server.OnPatchObject(TaskId, BodyObject(
+            "# Tâche   \n\n## État   \nEn cours sur module\\_X.   \n\n## Notes   \nrien   "));
+
+        string digest = await NewGestures(server)
+            .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.");
+
+        // The PATCH carried the spliced document: the target body replaced, the
+        // « Notes » section copied byte-for-byte.
+        JsonObject patched = server.LastBodyFor("PATCH");
+        Assert.Equal(
+            "# Tâche\n\n## État\nEn cours sur module_X.\n\n## Notes\nrien",
+            patched["markdown"]!.GetValue<string>());
+
+        Assert.Contains("vérifié", digest);
+        // Verification used the PATCH echo, so exactly one GET (the RMW read) ran.
+        Assert.Equal(1, server.Requests.Count(r => r.Method == "GET"));
+    }
+
+    [Fact]
+    public async Task ReplaceSectionWithAnAbsentHeadingThrowsAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, BodyObject("## Présent\ncorps"));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).ReplaceSectionAsync(TaskId, "Absent", "x"));
+
+        // Strict, and helpful: the message names the present headings to retry with.
+        Assert.Contains("introuvable", ex.Message);
+        Assert.Contains("Présent", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task ReplaceSectionWithARepeatedHeadingThrowsAmbiguousAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, BodyObject("## Doublon\na\n## Doublon\nb"));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).ReplaceSectionAsync(TaskId, "Doublon", "x"));
+
+        Assert.Contains("ambig", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // The write commits but the read-back does not confirm it (here the echo still
+    // shows the old content). The gesture must report the divergence, not claim
+    // success — a full-replacement PATCH cannot be rolled back.
+    [Fact]
+    public async Task ReplaceSectionReportsDivergenceWhenTheReadBackDoesNotConfirmTheIntent()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, BodyObject("## État\nancien"));
+        server.OnPatchObject(TaskId, BodyObject("## État\nancien"));
+
+        string digest = await NewGestures(server).ReplaceSectionAsync(TaskId, "État", "nouveau");
+
+        Assert.Contains("vérification en échec", digest);
+    }
+
+    // Removing a sub-heading that lived inside the replaced section is intended, not
+    // loss — the section-set guard keys on the intended body, so this still verifies.
+    [Fact]
+    public async Task ReplaceSectionDroppingAnInSectionSubHeadingStillVerifies()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, BodyObject("## Groupe\n### enfant\nx\n## Fin\nz"));
+        server.OnPatchObject(TaskId, BodyObject("## Groupe   \nrésumé   \n## Fin   \nz   "));
+
+        string digest = await NewGestures(server).ReplaceSectionAsync(TaskId, "Groupe", "résumé");
+
+        Assert.Contains("vérifié", digest);
     }
 }

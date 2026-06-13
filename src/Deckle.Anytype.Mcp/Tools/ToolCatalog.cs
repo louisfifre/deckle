@@ -6,7 +6,7 @@ namespace Deckle.Anytype.Mcp.Tools;
 
 // ─── Tool catalog ─────────────────────────────────────────────────────────────
 //
-// Builds the 13 MCP tools over the four gesture classes. Each descriptor pairs a
+// Builds the 14 MCP tools over the four gesture classes. Each descriptor pairs a
 // JSON Schema (2020-12, additionalProperties:false) with a handler that reads and
 // type-checks the arguments before invoking the gesture.
 //
@@ -164,6 +164,20 @@ public static class ToolCatalog
                     ]),
                 async (args, ct) =>
                     await query.UpdateAsync(Str(args, "object"), Obj(args, "properties"), ct)),
+
+            new(
+                "replace_section",
+                "Replace the body under a markdown heading in an object's body, keeping every other section intact, then verify the write landed. Strict: the heading must already exist — the match is on the heading text, case-insensitive, and an absent or ambiguous heading is refused (with the present headings listed) so a mistyped title never creates a stray section. The heading line stays; only the lines under it, down to the next same-or-higher heading, are replaced. This is the body counterpart of update, which writes properties only.",
+                Schema(
+                    required:
+                    [
+                        Prop("object", "string", "Object whose body to edit, name or id."),
+                        Prop("heading", "string", "Exact text of the section heading to replace, without the leading '#'."),
+                        Prop("content", "string", "New markdown content to place under the heading; write it naturally, without escaping."),
+                    ]),
+                async (args, ct) =>
+                    await query.ReplaceSectionAsync(
+                        Str(args, "object"), Str(args, "heading"), Str(args, "content"), ct)),
         };
     }
 

@@ -194,6 +194,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── AnytypeCredentials.cs
 │   │   ├── Gestures/
 │   │   │   ├── LiveTagResolver.cs
+│   │   │   ├── MarkdownBody.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── Resolution.cs
@@ -755,6 +756,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
+│   │   ├── MarkdownBodyTests.cs
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── SessionGesturesTests.cs
