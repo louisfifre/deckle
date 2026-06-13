@@ -851,6 +851,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
+│   │   ├── HarvestDataTests.cs
+│   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── PairModelTrainerTests.cs
