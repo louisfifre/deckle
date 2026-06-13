@@ -146,7 +146,8 @@ internal static class WaveInLoop
                     bufferDoneCount++;
                     if (hdr.dwBytesRecorded == 0)
                     {
-                        DeckleAudioSource.Log.EmptyBufferReceived(i);
+                        DeckleAudioSource.Log.EmptyBufferReceived();
+                        DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
                     }
                     else
                     {
@@ -195,7 +196,8 @@ internal static class WaveInLoop
                             // Body) is emitted by the orchestrator via the
                             // onLowAudioDetected callback so Capture stays
                             // free of any Loc.Get dependency.
-                            DeckleAudioSource.Log.LowAudioDetected(
+                            DeckleAudioSource.Log.LowAudioDetected();
+                            DeckleAudioSource.Log.LowAudioDetectedDetail(
                                 recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
                             onLowAudioDetected?.Invoke();
                         }
@@ -222,7 +224,8 @@ internal static class WaveInLoop
             if (captureLagCount < 10 && bufferDoneCount >= 3)
             {
                 captureLagCount++;
-                DeckleAudioSource.Log.CaptureLagDetected(
+                DeckleAudioSource.Log.CaptureLagDetected();
+                DeckleAudioSource.Log.CaptureLagDetectedDetail(
                     bufferDoneCount, diagIterationCount, diagWaitMs, diagLastIterMs,
                     diagLastIterGc0, diagLastIterGc1, diagLastIterGc2);
             }
@@ -241,7 +244,8 @@ internal static class WaveInLoop
             if (!capHit && maxDurationSec > 0 && curSec >= maxDurationSec)
             {
                 capHit = true;
-                DeckleAudioSource.Log.DurationCapReached(curSec, maxDurationSec);
+                DeckleAudioSource.Log.DurationCapReached();
+                DeckleAudioSource.Log.DurationCapReachedDetail(curSec, maxDurationSec);
                 diagLastIterMs = diagIterWatch.ElapsedMilliseconds;
                 break;
             }

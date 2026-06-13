@@ -161,7 +161,8 @@ public sealed class MicrophoneCapture : System.IDisposable
             System.IntPtr.Zero, CALLBACK_EVENT);
         if (err != 0)
         {
-            DeckleAudioSource.Log.MicrophoneOpenFailed(err);
+            DeckleAudioSource.Log.MicrophoneOpenFailed();
+            DeckleAudioSource.Log.MicrophoneOpenFailedDetail(err);
             NativeMethods.CloseHandle(hEvent);
             return new CaptureResult(
                 Pcm:            System.Array.Empty<float>(),
@@ -289,7 +290,8 @@ public sealed class MicrophoneCapture : System.IDisposable
         double rmsAvg  = nAggSamples > 0 ? System.Math.Sqrt(aggSumSq / nAggSamples) : 0;
         double dbfsAvg = rmsAvg > 0 ? 20.0 * System.Math.Log10(rmsAvg) : -120.0;
 
-        DeckleAudioSource.Log.RecordingCompleted(totalSec);
+        DeckleAudioSource.Log.RecordingCompleted();
+        DeckleAudioSource.Log.RecordingCompletedDetail(totalSec);
         DeckleAudioSource.Log.CaptureCompleted(totalSec, pump.BuffersReceived, allBytes.Length, rmsAvg, aggPeak, dbfsAvg);
 
         // Mic telemetry — distribution + tail summary derived from _rmsLog.
@@ -315,8 +317,9 @@ public sealed class MicrophoneCapture : System.IDisposable
             // selector to tell whether you stopped after a silence (the
             // natural case) or while still speaking (often a hotkey hit
             // too early — last words may be clipped).
-            DeckleAudioSource.Log.RecordingTailSummary(
-                tail.Value.TailHeadline, tail.Value.TailMs, tail.Value.TailDbfs);
+            DeckleAudioSource.Log.RecordingTailSummary(tail.Value.TailHeadline);
+            DeckleAudioSource.Log.RecordingTailSummaryDetail(
+                tail.Value.TailMs, tail.Value.TailDbfs);
 
             telemetry = MicrophoneTelemetryCalculator.Compute(_rmsLog, tail.Value);
         }

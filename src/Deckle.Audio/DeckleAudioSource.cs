@@ -50,13 +50,23 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtSettingsLoadComplete      = 14;
     public const int EvtSettingsLoadWarning       = 15;
     public const int EvtSettingsLoadError         = 16;
+    // Milestones keep their original id; the Verbose mirrors added for the
+    // Verbose/Info separation take fresh ids 17-23 appended at the end of the
+    // sequence. IDs are public in the ETW manifest; never reuse an id.
+    public const int EvtRecordingCompletedDetail  = 17;
+    public const int EvtEmptyBufferReceivedDetail = 18;
+    public const int EvtLowAudioDetectedDetail    = 19;
+    public const int EvtCaptureLagDetectedDetail  = 20;
+    public const int EvtDurationCapReachedDetail  = 21;
+    public const int EvtMicrophoneOpenFailedDetail = 22;
+    public const int EvtRecordingTailSummaryDetail = 23;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording start")]
+           Message = "Recording started")]
     public void RecordingStarted()
     {
         if (IsEnabled()) WriteEvent(EvtRecordingStarted);
@@ -74,10 +84,19 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording complete ({0:F1} s)")]
-    public void RecordingCompleted(double total_sec)
+           Message = "Recording complete")]
+    public void RecordingCompleted()
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingCompleted, total_sec);
+        if (IsEnabled()) WriteEvent(EvtRecordingCompleted);
+    }
+
+    [Event(EvtRecordingCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "recording complete | total_sec={0:F1}")]
+    public void RecordingCompletedDetail(double total_sec)
+    {
+        if (IsEnabled()) WriteEvent(EvtRecordingCompletedDetail, total_sec);
     }
 
     [Event(EvtCaptureCompleted,
@@ -89,13 +108,26 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtCaptureCompleted, audio_sec, buffers, bytes, rms_avg, rms_peak, dbfs_avg);
     }
 
+    // User-facing guidance: tail_headline is itself a complete Capital sentence
+    // ("You stopped after a silence — capture ends cleanly."), surfaced in the
+    // Activity selector. The milestone forwards that human content verbatim; the
+    // tail measurements move to the Verbose mirror below.
     [Event(EvtRecordingTailSummary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "{0} (last {1} ms at {2:F1} dBFS)")]
-    public void RecordingTailSummary(string tail_headline, int tail_ms, double tail_dbfs)
+           Message = "{0}")]
+    public void RecordingTailSummary(string tail_headline)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingTailSummary, tail_headline, tail_ms, tail_dbfs);
+        if (IsEnabled()) WriteEvent(EvtRecordingTailSummary, tail_headline);
+    }
+
+    [Event(EvtRecordingTailSummaryDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "recording tail | tail_ms={0} | tail_dbfs={1:F1}")]
+    public void RecordingTailSummaryDetail(int tail_ms, double tail_dbfs)
+    {
+        if (IsEnabled()) WriteEvent(EvtRecordingTailSummaryDetail, tail_ms, tail_dbfs);
     }
 
     // ── Anomalies Captured In The waveIn Loop ───────────────────────────
@@ -103,19 +135,37 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtEmptyBufferReceived,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "empty buffer | index={0}")]
-    public void EmptyBufferReceived(int index)
+           Message = "An empty capture buffer was received")]
+    public void EmptyBufferReceived()
     {
-        if (IsEnabled()) WriteEvent(EvtEmptyBufferReceived, index);
+        if (IsEnabled()) WriteEvent(EvtEmptyBufferReceived);
+    }
+
+    [Event(EvtEmptyBufferReceivedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "empty buffer | index={0}")]
+    public void EmptyBufferReceivedDetail(int index)
+    {
+        if (IsEnabled()) WriteEvent(EvtEmptyBufferReceivedDetail, index);
     }
 
     [Event(EvtLowAudioDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "low audio detected | recording_ms={0} | no healthy voice ≥{1} ms above {2} dBFS")]
-    public void LowAudioDetected(int recording_ms, int min_sustained_ms, double dbfs_threshold)
+           Message = "No healthy voice was detected at the start of the recording")]
+    public void LowAudioDetected()
     {
-        if (IsEnabled()) WriteEvent(EvtLowAudioDetected, recording_ms, min_sustained_ms, dbfs_threshold);
+        if (IsEnabled()) WriteEvent(EvtLowAudioDetected);
+    }
+
+    [Event(EvtLowAudioDetectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "low audio detected | recording_ms={0} | min_sustained_ms={1} | dbfs_threshold={2}")]
+    public void LowAudioDetectedDetail(int recording_ms, int min_sustained_ms, double dbfs_threshold)
+    {
+        if (IsEnabled()) WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, dbfs_threshold);
     }
 
     // gc0/gc1/gc2 are the collections that happened DURING the lagging
@@ -124,34 +174,64 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureLagDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "capture lag | buffers_ready={0} iter={1} wait_ms={2} prev_iter_ms={3} gc0={4} gc1={5} gc2={6}")]
-    public void CaptureLagDetected(int buffers_ready, long iter, long wait_ms, long prev_iter_ms, int gc0, int gc1, int gc2)
+           Message = "The capture loop fell behind the microphone")]
+    public void CaptureLagDetected()
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected, buffers_ready, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
+        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected);
+    }
+
+    [Event(EvtCaptureLagDetectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "capture lag | buffers_ready={0} | iter={1} | wait_ms={2} | prev_iter_ms={3} | gc0={4} | gc1={5} | gc2={6}")]
+    public void CaptureLagDetectedDetail(int buffers_ready, long iter, long wait_ms, long prev_iter_ms, int gc0, int gc1, int gc2)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureLagDetectedDetail, buffers_ready, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
     }
 
     [Event(EvtDurationCapReached,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "duration cap reached | audio_sec={0:F1} | cap_sec={1}")]
-    public void DurationCapReached(double audio_sec, int cap_sec)
+           Message = "Recording stopped at the maximum duration")]
+    public void DurationCapReached()
     {
-        if (IsEnabled()) WriteEvent(EvtDurationCapReached, audio_sec, cap_sec);
+        if (IsEnabled()) WriteEvent(EvtDurationCapReached);
+    }
+
+    [Event(EvtDurationCapReachedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "duration cap reached | audio_sec={0:F1} | cap_sec={1}")]
+    public void DurationCapReachedDetail(double audio_sec, int cap_sec)
+    {
+        if (IsEnabled()) WriteEvent(EvtDurationCapReachedDetail, audio_sec, cap_sec);
     }
 
     [Event(EvtMicrophoneOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "waveInOpen error {0}")]
-    public void MicrophoneOpenFailed(uint mmsys_err)
+           Message = "The microphone could not be opened")]
+    public void MicrophoneOpenFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed, mmsys_err);
+        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed);
     }
 
+    [Event(EvtMicrophoneOpenFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "microphone open failed | mmsys_err={0}")]
+    public void MicrophoneOpenFailedDetail(uint mmsys_err)
+    {
+        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailedDetail, mmsys_err);
+    }
+
+    // In-place clean (no params, no placeholders): the milestone is entirely a
+    // human sentence; only the label prefix and implementation aside were
+    // dropped. No Verbose mirror.
     [Event(EvtMicrophoneTelemetryEmpty,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "Mic telemetry: no RMS samples captured (recording too short or audio thread starved)")]
+           Message = "The recording was too short to measure microphone levels")]
     public void MicrophoneTelemetryEmpty()
     {
         if (IsEnabled()) WriteEvent(EvtMicrophoneTelemetryEmpty);
