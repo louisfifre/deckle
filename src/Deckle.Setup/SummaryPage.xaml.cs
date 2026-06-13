@@ -1,7 +1,10 @@
+using System.Diagnostics;
+using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
+using Deckle.Core;
 
 namespace Deckle.Setup;
 
@@ -50,6 +53,12 @@ public sealed partial class SummaryPage : Page
             ? Loc.Format("Setup_Result_StoredUnder_Format", _context.Location)
             : Loc.Format("Setup_Result_FailedCount_Format", CountFailed(_context), _context.Results.Count);
 
+        // On failure, surface the always-on local diagnostics folder so a user
+        // stuck at first run — who can't reach Settings yet — can still find
+        // the setup/error logs to report the problem. Hidden on success.
+        OpenDiagnosticsLink.Content    = Loc.Get("Setup_OpenDiagnosticsFolder");
+        OpenDiagnosticsLink.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
+
         RenderResults();
 
         DeckleSetupSource.Log.SummaryShown();
@@ -74,6 +83,28 @@ public sealed partial class SummaryPage : Page
         // Retry: clear previous results and re-enter the install step.
         _context.Results.Clear();
         _setup.Body.Navigate(typeof(InstallingPage), _setup);
+    }
+
+    // Opens the always-on local diagnostics folder (setup + error logs) in
+    // Explorer. Best-effort: opening Explorer is a trivial user action and its
+    // failure is self-evident on screen, so it is swallowed — the Setup
+    // provider has no folder-open event and its frozen id set must not grow
+    // for this.
+    private void OnOpenDiagnosticsClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.DiagnosticsDirectory);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = AppPaths.DiagnosticsDirectory,
+                UseShellExecute = true,
+            });
+        }
+        catch
+        {
+            // see method comment — best-effort, nothing actionable to surface.
+        }
     }
 
     private void RenderResults()

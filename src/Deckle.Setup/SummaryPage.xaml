@@ -13,5 +13,9 @@
         <StackPanel x:Name="ItemsPanel"
                     Spacing="8" />
 
+        <HyperlinkButton x:Name="OpenDiagnosticsLink"
+                         Visibility="Collapsed"
+                         Click="OnOpenDiagnosticsClick" />
+
     </StackPanel>
 </Page>
