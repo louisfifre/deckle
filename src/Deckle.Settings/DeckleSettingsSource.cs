@@ -11,16 +11,13 @@ namespace Deckle.Settings;
 // FolderPickerEditableCard), and global-module settings persistence
 // (SettingsService).
 //
-// For the ViewModel setter area, where each setter systematically logs
-// "Property ← value", a generic parameterized
-// SettingChanged(string property, string value) event is preferred over
-// combinatorial expansion into forty typed events. This area is homogeneous by
-// construction and tolerates generic parameterization without degrading
-// strict-typed semantics: level and keyword are fixed, only property names and
-// values vary. That generic channel (SettingChanged / SettingChangedDetail /
-// SectionReset) is a DELIBERATE design and is intentionally left with its
-// "{0} ← {1}" / "{0} section reset" shape — see the Verbose/Info separation
-// note below; it is exempt from typification and flagged for human review.
+// For the ViewModel setter area, each setter logs the setting it changed
+// through a single parameterized SettingChanged(setting, value) Verbose event —
+// one event for the "a setting changed" operation, the setting name and value
+// as structured fields, rather than forty typed events with no semantic gain.
+// Per-setting changes are diagnostic detail and sit at Verbose; a section reset
+// is a deliberate, rare action and keeps an Info milestone with a Verbose
+// mirror.
 //
 // Verbose/Info separation per Deckle.Diagnostics/CLAUDE.md: an Info / Warning /
 // Error is a short Capital sentence with no IDs, paths, or k=v; the technical
@@ -86,7 +83,8 @@ public sealed class DeckleSettingsSource : DeckleEventSource
 
     // ── ViewModels (generic) ──
     public const int EvtSettingChanged                    = 40;
-    public const int EvtSettingChangedDetail              = 41;
+    // 41 — EvtSettingChangedDetail removed: SettingChanged is itself Verbose now,
+    // so the separate detail mirror was redundant. ID burned, never reused.
     public const int EvtSectionReset                      = 42;
 
     // ── Settings persistence (transitoire) ──
@@ -123,6 +121,7 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtNavFailedFrameRejectedDetail      = 66;
     public const int EvtNavCompletedDetail                = 67;
     public const int EvtNavFailedThrewDetail              = 68;
+    public const int EvtSectionResetDetail                = 69;
 
     // ── Bootstrap ───────────────────────────────────────────────────────
 
@@ -703,48 +702,44 @@ public sealed class DeckleSettingsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtOpenLogsFromFooter);
     }
 
-    // ── ViewModels (parameterized generic) ──────────────────────────────
+    // ── ViewModels (parameterized) ──────────────────────────────────────
     //
-    // Property setters in ViewModels follow a homogeneous "Property ← value"
-    // pattern: each setter logs its change at Info or Verbose. The
-    // "strict-typed per operation" doctrine degrades here into a stable
-    // parameterized zone: level and keyword are fixed, only (name, value)
-    // vary. This is justified because the operation is itself generic by
-    // construction (a logging setter), and multiplying typed events (forty
-    // AppearanceThemeChanged, OverlayEnabledChanged, etc.) without semantic
-    // gain would create noise without benefit.
-    //
-    // FLAGGED for human review: this generic channel keeps its "{0} ← {1}" /
-    // "{0} section reset" shape on Informational events, which technically
-    // carries a value token on an Info. It is left as a deliberate in-design
-    // exception (mirroring the Playground generic-channel exemption), NOT
-    // typified, per the alignment hard rule on defended generic channels.
+    // Property setters in ViewModels follow a homogeneous "a setting changed"
+    // pattern. One parameterized SettingChanged(setting, value) Verbose event
+    // carries them all — the setting name and value as structured fields —
+    // rather than forty typed events (AppearanceThemeChanged,
+    // OverlayEnabledChanged, …) with no semantic gain. Per-setting changes are
+    // diagnostic detail, hence Verbose. SectionReset is a deliberate, rare
+    // action and keeps an Info milestone with a Verbose mirror.
 
     [Event(EvtSettingChanged,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0} ← {1}")]
-    public void SettingChanged(string property, string value)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingChanged, property, value);
-    }
-
-    [Event(EvtSettingChangedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0} ← {1}")]
-    public void SettingChangedDetail(string property, string value)
+           Message = "setting changed | setting={0} | value={1}")]
+    public void SettingChanged(string setting, string value)
     {
-        if (IsEnabled()) WriteEvent(EvtSettingChangedDetail, property, value);
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtSettingChanged, setting, value);
     }
 
     [Event(EvtSectionReset,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0} section reset to defaults")]
-    public void SectionReset(string section)
+           Message = "A settings section was reset to defaults")]
+    public void SectionReset()
     {
-        if (IsEnabled()) WriteEvent(EvtSectionReset, section);
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtSectionReset);
+    }
+
+    [Event(EvtSectionResetDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "section reset | section={0}")]
+    public void SectionResetDetail(string section)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtSectionResetDetail, section);
     }
 
     // ── Settings persistence (transitoire) ──────────────────────────────
