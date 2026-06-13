@@ -187,7 +187,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // directly to canonical paths `<TelemetryDir>/{app,latency,
         // microphone,corpus}.jsonl`. Lazy LogWindow will attach to the
         // listener via `AttachLogWindowSink` on first open.
-        AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory);
+        AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory, AppPaths.DiagnosticsDirectory);
         Milestone("diagnostics");
 
         // Wire user gates on the JsonlEventListeners side
