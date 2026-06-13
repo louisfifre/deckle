@@ -146,3 +146,14 @@ gate order in tests.
   literal stays. The EN count (0.022 ppm) is below the guard bar, so the block is purely the
   missing target. The personal dictionary is the designed remedy for this class: typing the
   accented form to adoption (≥ 3 occurrences) both supplies the variant and shields the word.
+
+## 2026-06-13 — Louis's call: French-first
+
+- Louis, on reading the « ca » finding: « ça » must correct — that is exactly the class the tool
+  exists for. If forced to choose, he chooses French-only; the work targets French for now
+  (a French mode, rather than the bilingual-guard compromise).
+- The corpus question is opened: Lexique 3.83 (film/book subtitle frequencies) misses ordinary
+  words like « cédille »; Louis wants a French source with dictionary-grade coverage — academic
+  sources to be surveyed. Nothing chosen yet.
+- The context stage is to be revisited in that light (Louis's wording: « on passe le contexte au
+  suivant » — exact scope to clarify with him before acting).
