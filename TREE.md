@@ -827,6 +827,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
+│   │   ├── AutocorrectEngineCorrectionTests.cs
+│   │   ├── AutocorrectEngineGateTests.cs
+│   │   ├── AutocorrectEngineHarness.cs
+│   │   ├── AutocorrectEngineLearningTests.cs
+│   │   ├── AutocorrectEngineLifecycleTests.cs
+│   │   ├── AutocorrectEngineObservabilityTests.cs
+│   │   ├── AutocorrectEngineRevertTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
