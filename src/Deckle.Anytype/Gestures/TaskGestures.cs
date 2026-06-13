@@ -89,6 +89,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
         string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
 
+        using var _ = await api.AcquireWriteScopeAsync("task_done", taskId, ct);
         var payload = new JsonObject
         {
             ["properties"] = new JsonArray { CheckboxProp(DevSpace.Props.Done, true) },
@@ -115,6 +116,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
         string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
 
+        using var _ = await api.AcquireWriteScopeAsync("task_subtask", taskId, ct);
         JsonObject obj = await api.GetObjectAsync(taskId, ct);
         string objName = NameOf(obj, task);
         string markdown = obj["markdown"]?.GetValue<string>() ?? "";

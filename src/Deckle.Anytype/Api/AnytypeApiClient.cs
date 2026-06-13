@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
+using Deckle.Core;
 
 namespace Deckle.Anytype.Api;
 
@@ -29,6 +30,7 @@ public sealed partial class AnytypeApiClient : IDisposable
     private readonly HttpClient _http;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _spacePath;
+    private readonly SpaceWriteLock _writeLock;
 
     // One retry on a transient. Backoff falls back to this when the response
     // omits Retry-After; small because the gate already paces traffic.
@@ -48,7 +50,19 @@ public sealed partial class AnytypeApiClient : IDisposable
         _http.DefaultRequestHeaders.Add("Anytype-Version", credentials.ApiVersion);
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", credentials.ApiKey);
+
+        // The cross-process write lock lives beside the credentials, in the
+        // anytype module directory (same id as AnytypeCredentials.ModuleId).
+        _writeLock = new SpaceWriteLock(AppPaths.GetModuleDirectory("anytype"));
     }
+
+    // Exclusive write access to the space across every host process. A mutating
+    // gesture wraps its whole read-modify-write in this scope so a concurrent
+    // session cannot land a clobbering PATCH between its GET and its own PATCH.
+    // operation/target name the pending write for the contention log.
+    public Task<IDisposable> AcquireWriteScopeAsync(
+        string operation, string target, CancellationToken ct = default)
+        => _writeLock.AcquireAsync(operation, target, ct);
 
     // ── Public API ──────────────────────────────────────────────────────
 

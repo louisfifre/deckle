@@ -83,6 +83,11 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         var started = DateTime.UtcNow;
 
         string sourceId = await resolver.ResolveAsync(source, typeKeys: null, ct);
+
+        // Hold the space's write lock across the whole read-modify-write: the union
+        // is computed from a GET that must not be raced by another session's PATCH
+        // before our own lands.
+        using var _ = await api.AcquireWriteScopeAsync("link", sourceId, ct);
         JsonObject sourceObj = await api.GetObjectAsync(sourceId, ct);
         string sourceType = QueryProp.TypeKey(sourceObj) ?? "";
 
@@ -136,6 +141,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         var started = DateTime.UtcNow;
 
         string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+
+        using var _ = await api.AcquireWriteScopeAsync("update", id, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
         string objType = QueryProp.TypeKey(obj) ?? "";
 
@@ -173,6 +180,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         var started = DateTime.UtcNow;
 
         string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+
+        using var _ = await api.AcquireWriteScopeAsync("replace_section", id, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
         string body = QueryProp.Markdown(obj);
         string name = QueryProp.Name(obj);

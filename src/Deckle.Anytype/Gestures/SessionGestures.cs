@@ -82,6 +82,7 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
         else
             return "Aucun rapport ouvert dans cette session. Appelle d'abord session_start.";
 
+        using var _ = await _api.AcquireWriteScopeAsync("session_log", reportId, ct);
         JsonObject report = await _api.GetObjectAsync(reportId, ct);
         string current = report["markdown"]?.GetValue<string>() ?? "";
 
@@ -121,6 +122,7 @@ public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)
     // idempotent when the task is already linked.
     async Task AppendTaskToReportAsync(string reportId, string taskId, CancellationToken ct)
     {
+        using var _ = await _api.AcquireWriteScopeAsync("session_touch", reportId, ct);
         JsonObject report = await _api.GetObjectAsync(reportId, ct);
 
         var ids = ReadObjectIds(report, DevSpace.Props.TachesLiees).ToList();

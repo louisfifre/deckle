@@ -32,6 +32,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // Verbose mirrors added for the Verbose/Info separation (ids 8-9).
     public const int EvtApiRequestRetriedDetail   = 8;
     public const int EvtApiRequestFailedDetail    = 9;
+    public const int EvtSpaceWriteContended       = 10;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -121,5 +122,18 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void SessionReportCreated(string report_id)
     {
         if (IsEnabled()) WriteEvent(EvtSessionReportCreated, report_id);
+    }
+
+    // A mutating gesture had to wait for the cross-process write lock: another
+    // session held it. Verbose+structured — two waiters naming the same target are
+    // a real concurrent edit, visible by grepping target. waited_ms is the time
+    // spent blocked before the lock was granted.
+    [Event(EvtSpaceWriteContended,
+           Level = EventLevel.Verbose,
+           Keywords = Gesture,
+           Message = "space write contended | operation={0} | target={1} | waited_ms={2:F0}")]
+    public void SpaceWriteContended(string operation, string target, double waited_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpaceWriteContended, operation, target, waited_ms);
     }
 }

@@ -195,7 +195,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Api/
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
-│   │   │   └── AnytypeCredentials.cs
+│   │   │   ├── AnytypeCredentials.cs
+│   │   │   └── SpaceWriteLock.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
@@ -769,6 +770,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpaceWriteLockTests.cs
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── Deckle.Audio.Tests.csproj
