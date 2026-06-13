@@ -147,13 +147,28 @@ gate order in tests.
   missing target. The personal dictionary is the designed remedy for this class: typing the
   accented form to adoption (≥ 3 occurrences) both supplies the variant and shields the word.
 
-## 2026-06-13 — Louis's call: French-first
+## 2026-06-13 — Louis's call: French-first, recall raised, context promoted
 
-- Louis, on reading the « ca » finding: « ça » must correct — that is exactly the class the tool
-  exists for. If forced to choose, he chooses French-only; the work targets French for now
-  (a French mode, rather than the bilingual-guard compromise).
-- The corpus question is opened: Lexique 3.83 (film/book subtitle frequencies) misses ordinary
-  words like « cédille »; Louis wants a French source with dictionary-grade coverage — academic
-  sources to be surveyed. Nothing chosen yet.
-- The context stage is to be revisited in that light (Louis's wording: « on passe le contexte au
-  suivant » — exact scope to clarify with him before acting).
+The pivot, in Louis's words:
+
+- **English dropped, French-only, language chosen manually.** No bilingual guard, no language
+  detection — the user picks the spelling language. This removes the guard that blocked « ca » → « ça ».
+- **Recall ambition raised — but not by lowering the bar.** « J'ai envie que je tape et que ça se
+  corrige », « avec un certain niveau de sûreté ». Read carefully: he is not abandoning precision;
+  he refuses precision used as an alibi for weak recall. The route to *more coverage AND safe* is
+  richer data + sentence-level left-context, not a looser threshold. The module's « conservative by
+  doctrine » framing is to be reworked in that light — pending the domain survey, not rewritten yet.
+- **Corpus must reach dictionary-grade coverage.** Lexique 3.83 (subtitle/book frequencies) misses
+  ordinary words like « cédille ». Louis wants a French source with full word coverage — academic /
+  dictionary sources to be surveyed. Nothing chosen.
+- **Context promoted: the preceding words up to the last full stop.** Louis wants the correction
+  decision informed by sentence context (« les quelques mots qui précèdent jusqu'au prochain point »),
+  via models — to be both safer and more covering. This supersedes « on passe le contexte au suivant »:
+  context is now central, not deferred. Spectrum of local models (n-gram / small neural / local LLM)
+  to be weighed — note the standing « LLM rewrite paused » decision applies to dictation rewrite, a
+  different surface; this is disambiguation, not rewrite.
+- **Input automatisms wanted.** Double-space → period, auto-capitalization, and the like — the
+  « smart typing » features of mature input systems. New scope, to be specified.
+- **Method:** the field is mature (~20 years); survey the best practices before re-architecting.
+  Domain survey launched 2026-06-13 (workflow `autocorrect-domain-survey`) — a French état-de-l'art
+  briefing to read before choosing corpus and context architecture. No code until then.
