@@ -12,6 +12,7 @@ namespace Deckle.Core;
 //   • settings.json — single config file, sits at the root
 //   • backups/      — settings backup snapshots
 //   • telemetry/    — JSONL files (app, latency, microphone) + per-profile corpus
+//   • diagnostics/  — always-on local logs (setup, errors); never transmitted
 //   • models/       — Whisper ggml-*.bin
 //   • native/       — libwhisper.dll, ggml*.dll
 //   • benchmark/    — optional, installed on demand from Settings
@@ -45,6 +46,7 @@ public static class AppPaths
     public static string SettingsFilePath        { get; }
     public static string SettingsBackupDirectory { get; }
     public static string TelemetryDirectory      { get; }
+    public static string DiagnosticsDirectory    { get; }
     public static string ModelsDirectory         { get; }
     public static string NativeDirectory         { get; }
     public static string BenchmarkDirectory      { get; }
@@ -78,19 +80,24 @@ public static class AppPaths
         SettingsFilePath        = Path.Combine(UserDataRoot, "settings.json");
         SettingsBackupDirectory = Path.Combine(UserDataRoot, "backups");
         TelemetryDirectory      = Path.Combine(UserDataRoot, "telemetry");
+        DiagnosticsDirectory    = Path.Combine(UserDataRoot, "diagnostics");
         ModelsDirectory         = Path.Combine(UserDataRoot, "models");
         NativeDirectory         = Path.Combine(UserDataRoot, "native");
         BenchmarkDirectory      = Path.Combine(UserDataRoot, "benchmark");
         ModulesDirectory        = Path.Combine(UserDataRoot, "modules");
 
-        // UserDataRoot + telemetry are created eagerly — those are the two
-        // locations the app writes to during normal operation. Models,
-        // native, and benchmark are populated by the wizard or the user;
-        // creating them empty here would mask the "missing dependencies"
-        // detection done by Setup/NativeRuntime and Setup/SpeechModels.
-        // Backups dir is created on first write by SettingsBackupService.
+        // UserDataRoot, telemetry, and diagnostics are created eagerly — the
+        // locations the app writes to from boot during normal operation.
+        // diagnostics/ holds the always-on local setup/error logs, written
+        // unconditionally before the user can opt into anything, so the folder
+        // must exist at the very first emission. Models, native, and benchmark
+        // are populated by the wizard or the user; creating them empty here
+        // would mask the "missing dependencies" detection done by
+        // Setup/NativeRuntime and Setup/SpeechModels. Backups dir is created on
+        // first write by SettingsBackupService.
         Directory.CreateDirectory(UserDataRoot);
         Directory.CreateDirectory(TelemetryDirectory);
+        Directory.CreateDirectory(DiagnosticsDirectory);
 
         TryMigrateLegacySettingsLayout();
     }
