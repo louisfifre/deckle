@@ -172,3 +172,19 @@ The pivot, in Louis's words:
 - **Method:** the field is mature (~20 years); survey the best practices before re-architecting.
   Domain survey launched 2026-06-13 (workflow `autocorrect-domain-survey`) — a French état-de-l'art
   briefing to read before choosing corpus and context architecture. No code until then.
+
+## 2026-06-13 — Scope decision: Correction only, Rewrite deferred
+
+- Louis tranche le séquencement : **on ne fait que la Correction simple maintenant** (diacritiques
+  français-first sur ce worktree). On avance.
+- **Rewrite** (régénération générative) est reporté — pas de worktree maintenant, « sinon on va se
+  marcher dessus ». À ouvrir quand Louis s'y penchera, avec son propre worktree. Garder en tête que
+  c'est **joint** : capter au fil de l'eau les trouvailles utiles à la réécriture de transcription.
+- Distinction posée par Louis, à ne pas confondre : **réécriture de transcription** (la dictée, déjà
+  livrée via `Deckle.Llm.Rewrite`) ≠ **réécriture au clavier** (le texte tapé) — deux surfaces
+  distinctes, les deux pour plus tard.
+- Cap long terme de Louis (contexte, non tranché ici) : une inférence locale interne qu'il maîtrise
+  lui-même, ONNX étant la voie Windows visée — d'où l'intérêt à terme d'un réordonnanceur à ensemble
+  fermé (DistilCamemBERT) pour les paires de diacritiques ambiguës, qui reste dans la famille
+  Correction (cf. `CONTEXT.md`). Le saut vers le `Rewrite` génératif est inter-familles, pour plus tard.
+- Le glossaire `Correction` / `Rewrite` est gravé dans `CONTEXT.md` (commit `8a5e5c2`).
