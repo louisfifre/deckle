@@ -52,8 +52,9 @@ static void PrintUsage()
     Console.WriteLine("Deckle autocorrect CLI");
     Console.WriteLine();
     Console.WriteLine("Offline pipeline:");
-    Console.WriteLine("  build-data  [--raw <dir>] [--out <dir>]");
+    Console.WriteLine("  build-data  [--raw <dir>] [--out <dir>] [--morphalou]");
     Console.WriteLine("              Build lexicon-fr / lexicon-en from the raw sources.");
+    Console.WriteLine("              --morphalou overlays Morphalou inflected-form coverage.");
     Console.WriteLine("  train-pairs [--corpus <file>] [--data <dir>]");
     Console.WriteLine("              Train the left-context pair model from the FR corpus.");
     Console.WriteLine("  eval        [--corpus <file>] [--data <dir>] [--no-context] [--no-en]");

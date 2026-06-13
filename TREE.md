@@ -478,6 +478,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HarvestCommand.cs
 │   │   │   ├── InjectCommand.cs
 │   │   │   ├── MlmProbeCommand.cs
+│   │   │   ├── MorphalouReader.cs
 │   │   │   ├── RepoPaths.cs
 │   │   │   ├── RunCommand.cs
 │   │   │   ├── TrainPairsCommand.cs

@@ -12,6 +12,16 @@ namespace Deckle.Input.Autocorrect.Cli.Commands;
 // sorted so the artifact is byte-deterministic across runs and machines.
 internal static class BuildDataCommand
 {
+    // Frequency stamped on a Morphalou-only form (one Lexique does not carry).
+    // Not zero, on purpose: a zero runner-up would break the dominance gate
+    // (which requires the runner-up > 0), so a Morphalou form folded next to a
+    // real one would silently suppress a valid restoration. Epsilon keeps the
+    // dominance maths intact while sitting far below MinDominantFrequency, so a
+    // Morphalou-only form never wins a contested slot on its own — it only ever
+    // restores when it is the SOLE candidate of a fold (the lexical gate fires
+    // on a single candidate regardless of frequency).
+    private const double MorphalouEpsilonPerMillion = 0.001;
+
     public static int Run(CliArgs args)
     {
         string root = RepoPaths.RepoRoot();
@@ -27,7 +37,17 @@ internal static class BuildDataCommand
         Console.WriteLine($"Out  : {outDir}");
         Console.WriteLine();
 
-        BuildFrench(Path.Combine(rawDir, "Lexique383.tsv"), frenchOut);
+        // Morphalou overlay is opt-in: the default lexicon is Lexique-only and
+        // byte-deterministic. `--morphalou` folds in the inflected-form coverage
+        // once the source has been fetched (see fetch-autocorrect-data.ps1).
+        string morphalouSource = args.Has("--morphalou")
+            ? Path.Combine(rawDir, "Morphalou3.1_CSV.csv")
+            : "";
+        if (args.Has("--morphalou") && !File.Exists(morphalouSource))
+            Console.WriteLine("Note: --morphalou set but Morphalou3.1_CSV.csv is absent — "
+                            + "run fetch-autocorrect-data.ps1 first. Building Lexique-only.");
+
+        BuildFrench(Path.Combine(rawDir, "Lexique383.tsv"), morphalouSource, frenchOut);
         BuildEnglish(Path.Combine(rawDir, "count_1w.txt"), englishOut);
 
         SelfCheck(frenchOut, englishOut);
@@ -42,7 +62,7 @@ internal static class BuildDataCommand
     // surface appears once per lemma/POS), then take the max of the two sums —
     // the more generous of the two registers. Multi-word and junk forms are
     // dropped by the letter/apostrophe/hyphen filter.
-    private static void BuildFrench(string sourcePath, string outPath)
+    private static void BuildFrench(string sourcePath, string morphalouPath, string outPath)
     {
         using var reader = new StreamReader(sourcePath, Encoding.UTF8);
 
@@ -80,10 +100,74 @@ internal static class BuildDataCommand
         foreach (var (form, films) in sumFilms)
             final[form] = Math.Max(films, sumLivres.GetValueOrDefault(form, 0.0));
 
+        int lexiqueCount = final.Count;
+        int morphalouAdded = OverlayMorphalou(final, morphalouPath);
+
         WriteLexicon(outPath, final);
 
-        Console.WriteLine($"French: kept {final.Count:N0} forms from {rows:N0} rows "
-                        + $"({skippedForm:N0} forms filtered out).");
+        Console.WriteLine($"French: kept {lexiqueCount:N0} Lexique forms from {rows:N0} rows "
+                        + $"({skippedForm:N0} filtered out).");
+        Console.WriteLine(morphalouAdded >= 0
+            ? $"        + {morphalouAdded:N0} Morphalou-only forms (epsilon freq) = {final.Count:N0} total."
+            : "        Morphalou source not present — French lexicon is Lexique-only.");
+    }
+
+    // Overlays Morphalou inflected forms onto the Lexique map — but ONLY the ones
+    // that bring unambiguous new coverage. A form is added at epsilon iff it is
+    // the SOLE accented candidate of a fold Lexique leaves empty: then a bare
+    // typing has one deterministic restoration the lexical gate fires on. Two
+    // rejections matter, both measured: a form folding onto an EXISTING Lexique
+    // fold would demote that fold's clean gate/dominance restoration into a
+    // contested slot the conservative reranker abstains on (recall loss); and a
+    // fold carrying TWO Morphalou forms (enlèves vs enlevés) is genuinely
+    // ambiguous — adding both only feeds the reranker a slot it abstains on too.
+    // Returns the count added, or -1 when no Morphalou source is present (the
+    // step is optional, so `build-data` still runs Lexique-only without it).
+    private static int OverlayMorphalou(Dictionary<string, double> french, string morphalouPath)
+    {
+        if (!File.Exists(morphalouPath))
+            return -1;
+
+        // Folds Lexique already populates — never crowd one of these.
+        var lexiqueFolds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string form in french.Keys)
+            lexiqueFolds.Add(AccentFolding.Fold(form));
+
+        // fold → its sole candidate form, or null once a second distinct form
+        // proves the fold ambiguous.
+        var byFold = new Dictionary<string, string?>(StringComparer.Ordinal);
+        using (var reader = new StreamReader(morphalouPath, Encoding.UTF8))
+        {
+            foreach (string graphie in MorphalouReader.ReadInflectedForms(reader))
+            {
+                string form = graphie.ToLowerInvariant();
+                if (!IsAcceptedForm(form) || french.ContainsKey(form))
+                    continue;
+                string fold = AccentFolding.Fold(form);
+                if (lexiqueFolds.Contains(fold))
+                    continue;
+
+                if (byFold.TryGetValue(fold, out string? sole))
+                {
+                    if (sole is not null && sole != form)
+                        byFold[fold] = null; // a second distinct form — ambiguous
+                }
+                else
+                {
+                    byFold[fold] = form;
+                }
+            }
+        }
+
+        int added = 0;
+        foreach (var (_, form) in byFold)
+        {
+            if (form is null)
+                continue;
+            french[form] = MorphalouEpsilonPerMillion;
+            added++;
+        }
+        return added;
     }
 
     // ── English: Norvig count_1w ───────────────────────────────────────────
@@ -153,6 +237,10 @@ internal static class BuildDataCommand
         Console.WriteLine($"  French  count           {fr.Count,12:N0}");
         Console.WriteLine($"    freq(français)        {fr.FrequencyOf("français"),12:N4}");
         Console.WriteLine($"    freq(école)           {fr.FrequencyOf("école"),12:N4}");
+        // Conjugations Lexique omits but Morphalou carries — non-zero confirms
+        // the overlay landed (they sit at the epsilon frequency).
+        Console.WriteLine($"    freq(captes)          {fr.FrequencyOf("captes"),12:N4}");
+        Console.WriteLine($"    freq(renommes)        {fr.FrequencyOf("renommes"),12:N4}");
 
         var en = FrequencyLexicon.LoadTsvGz(englishOut);
         Console.WriteLine($"  English count           {en.Count,12:N0}");

@@ -136,6 +136,41 @@ Info "header columns ($($lexiqueCols.Count)): $($lexiqueCols -join ', ')"
 Info "data rows: $lexiqueRows"
 
 # =============================================================================
+# 1b. Morphalou 3.1 (French inflected forms — coverage beyond Lexique)
+# =============================================================================
+# Closes the conjugation / vocabulary gap Lexique leaves (captes, renommes…):
+# build-data overlays these forms at an epsilon frequency. The "tout en un"
+# CSV lives behind an ORTOLANG content URL (the market page is JS-only; the
+# content API serves the zip directly). We keep only the CSV from the archive
+# — the bundled HTML conjugation tree is dead weight. LGPL-LR (see NOTICE.md).
+Step 'Morphalou 3.1 (French inflected-form coverage)'
+$morphalouCsv = Join-Path $RawDir 'Morphalou3.1_CSV.csv'
+$morphalouUrl = 'https://repository.ortolang.fr/api/content/morphalou/3/Morphalou3.1_formatCSV_toutEnUn.zip'
+# The extracted CSV is ~100 MB; 50 MB is a safe completeness floor.
+$morphalouMinBytes = 50MB
+
+if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Length -lt $morphalouMinBytes)) {
+    $morphalouZip = Join-Path $RawDir 'Morphalou3.1_CSV.zip'
+    Info "downloading Morphalou3.1 CSV archive (~38 MB) ..."
+    & curl.exe -L --fail --retry 3 --progress-bar -o $morphalouZip $morphalouUrl
+    if ($LASTEXITCODE -ne 0) { throw "curl failed for Morphalou" }
+    Info "extracting Morphalou3.1_CSV.csv only ..."
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zipArchive = [System.IO.Compression.ZipFile]::OpenRead($morphalouZip)
+    try {
+        $entry = $zipArchive.Entries | Where-Object { $_.Name -eq 'Morphalou3.1_CSV.csv' }
+        if (-not $entry) { throw "Morphalou3.1_CSV.csv not found in the archive" }
+        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $morphalouCsv, $true)
+    } finally {
+        $zipArchive.Dispose()
+    }
+    Remove-Item $morphalouZip -Force
+    Ok "extracted Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
+} else {
+    Ok "already present Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
+}
+
+# =============================================================================
 # 2. Norvig count_1w.txt
 # =============================================================================
 Step 'Norvig count_1w.txt (English word counts)'
@@ -297,7 +332,7 @@ if (-not $Force -and $trainOk -and $evalOk) {
 # =============================================================================
 $swTotal.Stop()
 Step 'done'
-foreach ($f in @('Lexique383.tsv', 'count_1w.txt', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')) {
+foreach ($f in @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')) {
     $p = Join-Path $RawDir $f
     if (Test-Path $p) { Write-Host ("         {0,-20} {1,8} MB" -f $f, (Get-SizeMB $p)) }
     else              { Warn "MISSING $f" }
