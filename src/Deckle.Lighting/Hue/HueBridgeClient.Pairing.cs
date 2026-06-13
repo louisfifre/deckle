@@ -37,7 +37,8 @@ public sealed partial class HueBridgeClient
             {
                 case PairOutcome.Success success:
                     _credentials = success.Credentials;
-                    DeckleLightingSource.Log.BridgePaired(_bridge.Id);
+                    DeckleLightingSource.Log.BridgePaired();
+                    DeckleLightingSource.Log.BridgePairedDetail2(_bridge.Id);
                     DeckleLightingSource.Log.BridgePairedDetail(_bridge.Id, _credentials.UsernameHead);
                     return _credentials;
 
@@ -47,7 +48,8 @@ public sealed partial class HueBridgeClient
                     break;
 
                 case PairOutcome.OtherError otherError:
-                    DeckleLightingSource.Log.PairingRejected(otherError.Type, otherError.Description);
+                    DeckleLightingSource.Log.PairingRejected();
+                    DeckleLightingSource.Log.PairingRejectedDetail(otherError.Type, otherError.Description);
                     throw new HuePairingException(
                         $"Bridge refused pairing (type {otherError.Type}): {otherError.Description}");
             }
@@ -75,7 +77,8 @@ public sealed partial class HueBridgeClient
         }
         catch (HttpRequestException ex)
         {
-            DeckleLightingSource.Log.BridgeUnreachable(ex.GetType().Name, ex.Message);
+            DeckleLightingSource.Log.BridgeUnreachable();
+            DeckleLightingSource.Log.BridgeUnreachableDetail(ex.GetType().Name, ex.Message);
             throw new HueBridgeUnreachableException(
                 $"Bridge at {_bridge.InternalIpAddress} is unreachable.", ex);
         }
@@ -83,7 +86,8 @@ public sealed partial class HueBridgeClient
         // The bridge returns 200 even for "link button not pressed"; the JSON body carries the real result.
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.PairingHttpError((int)response.StatusCode, response.ReasonPhrase ?? "");
+            DeckleLightingSource.Log.PairingHttpError();
+            DeckleLightingSource.Log.PairingHttpErrorDetail((int)response.StatusCode, response.ReasonPhrase ?? "");
             throw new HttpRequestException(
                 $"Hue bridge returned {(int)response.StatusCode} on pairing.");
         }

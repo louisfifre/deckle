@@ -47,7 +47,8 @@ public static class HueDiscovery
             var bridges = await _http.GetFromJsonAsync<HueBridge[]>(CloudDiscoveryUrl, ct)
                           ?? [];
 
-            DeckleLightingSource.Log.DiscoveryFound(bridges.Length);
+            DeckleLightingSource.Log.DiscoveryFound();
+            DeckleLightingSource.Log.DiscoveryFoundDetail(bridges.Length);
             foreach (var b in bridges)
             {
                 DeckleLightingSource.Log.DiscoveryBridgeFound(b.Id, b.InternalIpAddress);
@@ -60,7 +61,8 @@ public static class HueDiscovery
             // Warning and return empty so the UI can prompt for manual
             // IP entry. TaskCanceledException covers both the explicit
             // CancellationToken path and the HttpClient.Timeout firing.
-            DeckleLightingSource.Log.DiscoveryFailed(ex.GetType().Name, ex.Message);
+            DeckleLightingSource.Log.DiscoveryFailed();
+            DeckleLightingSource.Log.DiscoveryFailedDetail(ex.GetType().Name, ex.Message);
             return [];
         }
     }

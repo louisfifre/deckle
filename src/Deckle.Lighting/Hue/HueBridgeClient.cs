@@ -206,7 +206,8 @@ public sealed partial class HueBridgeClient : IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.SetColorFailed(target, (int)response.StatusCode);
+            DeckleLightingSource.Log.SetColorFailed();
+            DeckleLightingSource.Log.SetColorFailedDetail(target, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
 
@@ -260,7 +261,8 @@ public sealed partial class HueBridgeClient : IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.IdentifyFailed(phase, lightId, (int)response.StatusCode);
+            DeckleLightingSource.Log.IdentifyFailed();
+            DeckleLightingSource.Log.IdentifyFailedDetail(phase, lightId, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
 
@@ -281,7 +283,8 @@ public sealed partial class HueBridgeClient : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsurePaired();
 
-        DeckleLightingSource.Log.ListingLightsInGroup(groupId);
+        DeckleLightingSource.Log.ListingLightsInGroup();
+        DeckleLightingSource.Log.ListingLightsInGroupDetail(groupId);
 
         var groupDto = await _http.GetFromJsonAsync<HueGroupDto>(
             $"api/{_credentials!.Username}/groups/{groupId}", _jsonOptions, ct)
@@ -299,7 +302,8 @@ public sealed partial class HueBridgeClient : IDisposable
 
         if (lightsDict is null)
         {
-            DeckleLightingSource.Log.BridgeReturnedNoLights(groupId);
+            DeckleLightingSource.Log.BridgeReturnedNoLights();
+            DeckleLightingSource.Log.BridgeReturnedNoLightsDetail(groupId);
             return [];
         }
 

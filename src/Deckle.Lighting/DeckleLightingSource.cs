@@ -19,6 +19,10 @@ public sealed class DeckleLightingSource : DeckleEventSource
 
     private DeckleLightingSource() { }
 
+    // IDs are public in the ETW manifest; never reuse an id after deleting an
+    // event. Milestones keep their original id; the Verbose mirrors added for the
+    // Verbose/Info separation take fresh ids 41-51 appended after the sequence.
+
     // ── EventIds — discovery ────────────────────────────────────────────
     public const int EvtDiscoveryStarted          = 1;
     public const int EvtDiscoveryStartedDetail    = 2;
@@ -75,6 +79,21 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public const int EvtEventStreamReconnecting   = 39;
     public const int EvtEventStreamStopped        = 40;
 
+    // ── EventIds — Verbose mirrors (Verbose/Info separation) ────────────
+    // Fresh ids appended after the milestone sequence; each mirrors a milestone
+    // whose IDs / k=v detail moved out of the Capital Info message.
+    public const int EvtDiscoveryFoundDetail        = 41;
+    public const int EvtDiscoveryFailedDetail       = 42;
+    public const int EvtBridgePairedDetail2         = 43;
+    public const int EvtPairingRejectedDetail       = 44;
+    public const int EvtBridgeUnreachableDetail     = 45;
+    public const int EvtPairingHttpErrorDetail      = 46;
+    public const int EvtSetColorFailedDetail        = 47;
+    public const int EvtClipV2GetFailedDetail       = 48;
+    public const int EvtIdentifyFailedDetail        = 49;
+    public const int EvtListingLightsInGroupDetail  = 50;
+    public const int EvtBridgeReturnedNoLightsDetail = 51;
+
     // ── Discovery ───────────────────────────────────────────────────────
 
     [Event(EvtDiscoveryStarted,
@@ -98,10 +117,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtDiscoveryFound,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Found {0} Hue bridges")]
-    public void DiscoveryFound(int count)
+           Message = "Found Hue bridges")]
+    public void DiscoveryFound()
     {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryFound, count);
+        if (IsEnabled()) WriteEvent(EvtDiscoveryFound);
+    }
+
+    [Event(EvtDiscoveryFoundDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "discover result | count={0}")]
+    public void DiscoveryFoundDetail(int count)
+    {
+        if (IsEnabled()) WriteEvent(EvtDiscoveryFoundDetail, count);
     }
 
     [Event(EvtDiscoveryBridgeFound,
@@ -116,10 +144,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtDiscoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cloud discovery failed — {0}: {1}")]
-    public void DiscoveryFailed(string ex_type, string message)
+           Message = "Cloud discovery failed")]
+    public void DiscoveryFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtDiscoveryFailed);
+    }
+
+    [Event(EvtDiscoveryFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "discover failed | ex_type={0} | message={1}")]
+    public void DiscoveryFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtDiscoveryFailedDetail, ex_type, message);
     }
 
     // ── Pairing ─────────────────────────────────────────────────────────
@@ -145,10 +182,21 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtBridgePaired,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge paired ({0})")]
-    public void BridgePaired(string bridge_id)
+           Message = "Bridge paired")]
+    public void BridgePaired()
     {
-        if (IsEnabled()) WriteEvent(EvtBridgePaired, bridge_id);
+        if (IsEnabled()) WriteEvent(EvtBridgePaired);
+    }
+
+    // A …Detail already exists (the pair-result mirror with username), so this
+    // milestone mirror is named …Detail2 per the Verbose/Info separation rule.
+    [Event(EvtBridgePairedDetail2,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "pair milestone | bridge_id={0}")]
+    public void BridgePairedDetail2(string bridge_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBridgePairedDetail2, bridge_id);
     }
 
     [Event(EvtBridgePairedDetail,
@@ -172,10 +220,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtPairingRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing rejected by bridge — type={0}: {1}")]
-    public void PairingRejected(int error_type, string description)
+           Message = "Pairing rejected by the bridge")]
+    public void PairingRejected()
     {
-        if (IsEnabled()) WriteEvent(EvtPairingRejected, error_type, description);
+        if (IsEnabled()) WriteEvent(EvtPairingRejected);
+    }
+
+    [Event(EvtPairingRejectedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "pair rejected | error_type={0} | description={1}")]
+    public void PairingRejectedDetail(int error_type, string description)
+    {
+        if (IsEnabled()) WriteEvent(EvtPairingRejectedDetail, error_type, description);
     }
 
     [Event(EvtPairingTimedOut,
@@ -190,19 +247,37 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtBridgeUnreachable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge unreachable during pairing — {0}: {1}")]
-    public void BridgeUnreachable(string ex_type, string message)
+           Message = "Bridge unreachable during pairing")]
+    public void BridgeUnreachable()
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeUnreachable, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtBridgeUnreachable);
+    }
+
+    [Event(EvtBridgeUnreachableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "bridge unreachable | ex_type={0} | message={1}")]
+    public void BridgeUnreachableDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtBridgeUnreachableDetail, ex_type, message);
     }
 
     [Event(EvtPairingHttpError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing HTTP error | hr={0} | reason={1}")]
-    public void PairingHttpError(int http_status, string reason)
+           Message = "Pairing HTTP request failed")]
+    public void PairingHttpError()
     {
-        if (IsEnabled()) WriteEvent(EvtPairingHttpError, http_status, reason);
+        if (IsEnabled()) WriteEvent(EvtPairingHttpError);
+    }
+
+    [Event(EvtPairingHttpErrorDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "pair http error | http_status={0} | reason={1}")]
+    public void PairingHttpErrorDetail(int http_status, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtPairingHttpErrorDetail, http_status, reason);
     }
 
     // ── Groups ──────────────────────────────────────────────────────────
@@ -248,10 +323,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtSetColorFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Set colour failed | {0} | hr={1}")]
-    public void SetColorFailed(string target, int http_status)
+           Message = "Setting a colour failed")]
+    public void SetColorFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtSetColorFailed, target, http_status);
+        if (IsEnabled()) WriteEvent(EvtSetColorFailed);
+    }
+
+    [Event(EvtSetColorFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "set colour failed | target={0} | http_status={1}")]
+    public void SetColorFailedDetail(string target, int http_status)
+    {
+        if (IsEnabled()) WriteEvent(EvtSetColorFailedDetail, target, http_status);
     }
 
     [Event(EvtPushColorOff,
@@ -333,10 +417,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtClipV2GetFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "CLIP v2 GET failed | path={0} | hr={1}")]
-    public void ClipV2GetFailed(string path, int http_status)
+           Message = "A CLIP v2 request failed")]
+    public void ClipV2GetFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtClipV2GetFailed, path, http_status);
+        if (IsEnabled()) WriteEvent(EvtClipV2GetFailed);
+    }
+
+    [Event(EvtClipV2GetFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "clip v2 get failed | path={0} | http_status={1}")]
+    public void ClipV2GetFailedDetail(string path, int http_status)
+    {
+        if (IsEnabled()) WriteEvent(EvtClipV2GetFailedDetail, path, http_status);
     }
 
     // ── Identify ────────────────────────────────────────────────────────
@@ -344,10 +437,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtIdentifyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Identify {0} failed | light_id={1} | hr={2}")]
-    public void IdentifyFailed(string phase, string light_id, int http_status)
+           Message = "Identifying a light failed")]
+    public void IdentifyFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtIdentifyFailed, phase, light_id, http_status);
+        if (IsEnabled()) WriteEvent(EvtIdentifyFailed);
+    }
+
+    [Event(EvtIdentifyFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "identify failed | phase={0} | light_id={1} | http_status={2}")]
+    public void IdentifyFailedDetail(string phase, string light_id, int http_status)
+    {
+        if (IsEnabled()) WriteEvent(EvtIdentifyFailedDetail, phase, light_id, http_status);
     }
 
     [Event(EvtLightIdentified,
@@ -364,10 +466,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtListingLightsInGroup,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Listing lights in group {0}")]
-    public void ListingLightsInGroup(string group_id)
+           Message = "Listing lights in a group")]
+    public void ListingLightsInGroup()
     {
-        if (IsEnabled()) WriteEvent(EvtListingLightsInGroup, group_id);
+        if (IsEnabled()) WriteEvent(EvtListingLightsInGroup);
+    }
+
+    [Event(EvtListingLightsInGroupDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "listing lights | group_id={0}")]
+    public void ListingLightsInGroupDetail(string group_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtListingLightsInGroupDetail, group_id);
     }
 
     [Event(EvtLightsListedEmpty,
@@ -382,10 +493,19 @@ public sealed class DeckleLightingSource : DeckleEventSource
     [Event(EvtBridgeReturnedNoLights,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Bridge returned no lights payload | group_id={0}")]
-    public void BridgeReturnedNoLights(string group_id)
+           Message = "Bridge returned no lights")]
+    public void BridgeReturnedNoLights()
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeReturnedNoLights, group_id);
+        if (IsEnabled()) WriteEvent(EvtBridgeReturnedNoLights);
+    }
+
+    [Event(EvtBridgeReturnedNoLightsDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "no lights payload | group_id={0}")]
+    public void BridgeReturnedNoLightsDetail(string group_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBridgeReturnedNoLightsDetail, group_id);
     }
 
     [Event(EvtLightsListed,
