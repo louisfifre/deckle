@@ -188,3 +188,52 @@ The pivot, in Louis's words:
   fermé (DistilCamemBERT) pour les paires de diacritiques ambiguës, qui reste dans la famille
   Correction (cf. `CONTEXT.md`). Le saut vers le `Rewrite` génératif est inter-familles, pour plus tard.
 - Le glossaire `Correction` / `Rewrite` est gravé dans `CONTEXT.md` (commit `8a5e5c2`).
+
+## 2026-06-13 — Couture de test posée, run live sur binaire frais, corpus choisi
+
+- **Couture de test extraite** (le prérequis nommé par l'audit, désormais fait) : trois ports
+  côté OS — `IKeyboardInputHost` (dans `Deckle.Input`), `ISurfaceProber`, `ITextInjector` (réduit
+  au seul `Replace`) — laissent le moteur tourner décodeur+tracker réels contre des OS fakés.
+  6 fichiers / ~34 tests couvrent l'orchestration (application, armement/désarmement du revert,
+  gardes de surface dont mot-de-passe-avant-décodage, apprentissage conditionnel, court-circuit de
+  suppression, cycle de vie de l'hôte, observabilité/aucune fuite de mot). 202 verts, 0 warning
+  nouveau. CLI intact (gardé comme véhicule de validation live jusqu'à l'UI produit).
+- **Premier run live sur le binaire corrigé** (Louis, `run --trace`, Notepad) : « ecole→école »,
+  « francais→français », « vanite→vanité » atterrissent propre — les correctifs de l'audit sont
+  enfin exercés live (toute l'observation antérieure était pré-fix). La trace confirme l'injection
+  diff-minimale (6/5/2 backspaces pour école/français/vanité = plus long préfixe commun) et que la
+  réinjection Unicode est invisible au Raw Input (seule la rafale VK_BACK paraît ; le retype est un
+  paquet texte KEYEVENTF_UNICODE).
+- Deux trous *by design* reconfirmés sur le binaire corrigé (déjà diagnostiqués) : « ca »→« ça »
+  bloqué par le garde anglais (#8, « ca » à 221,6 ppm EN) ; « cedille »→« cédille » candidats vides
+  (#11, Lexique n'a pas la forme).
+- **Corpus choisi (validé par Louis), la couverture « dictionary-grade » qu'exige le pivot
+  français-first :**
+  - Couverture → **Morphalou 3.1** (ATILF, ~976k formes, LGPL-LR). Qualité éditoriale + licence
+    propre, préféré à **GLÀFF** (~1,4 M, le plus gros, mais contradiction de licence BY-SA/LGPL-LR
+    + bruit Wiktionnaire = risque de faux candidat contre la doctrine de conservativité ; le surplus
+    de volume est de la longue traîne).
+  - Fréquence → **Lexique 3.83** `freqfilms2` (sous-titres ≈ registre courant), `freqlivres` en
+    secours (CC BY-SA 4.0). Gardé seulement comme table de classement ; sa couverture mince ne
+    compte plus.
+  - Corpus de contexte → **Wikipédia FR** (déjà en place ; CC BY-SA, accents fiables capitales
+    comprises). **Leipzig écarté** (CC BY-NC — même raison que l'abandon de LINDAT ; NC interdit le
+    cas d'usage, BY-SA non). mC4-fr (ODC-BY) / sous-ensembles édités de CroissantLLM = appoint de
+    volume optionnel plus tard. Garde-fou anti-empoisonnement quel que soit le corpus : jeter les
+    lignes sans aucun diacritique.
+  - Clé de jointure = forme désaccentuée : Morphalou → AccentIndex (candidats), Lexique →
+    fréquences. Détail de pipeline ouvert au build : fréquence d'une forme Morphalou absente de
+    Lexique.
+  - À vérifier au téléchargement : format de l'archive Morphalou (XML LMF vs CSV dérivé) et qu'elle
+    porte bien « cédille ».
+- **Plan étape 2, en série** (fichiers moteur partagés ; ordre de dé-risquage, chaque étape
+  validable seule) : 1. français-only — retirer le garde anglais, langue choisie à la main
+  (débloque « ca »→« ça » et la classe des emprunts ; sûr car l'utilisateur déclare la langue) ;
+  2. couverture Morphalou (corrige « cedille » et le reste) ; 3. contexte promu au contexte gauche
+  de phrase (jusqu'au point). Le mouvement 3 est gaté sur la décision de modèle ci-dessous.
+- **Reporté à une session de discussion (tâche spawné) :** le choix du modèle de contexte du
+  mouvement 3 (n-gramme KenLM / petit neuronal / reranker à ensemble fermé DistilCamemBERT — tout
+  reste dans la famille Correction) et, plus loin, si une réécriture générative de phrase au clavier
+  (famille Rewrite, distincte de la réécriture de transcription déjà livrée) vaut sa complexité/
+  maintenance — Louis penche pour non ; le doc de recherche a trouvé que la réécriture LLM libre
+  sur-corrige à bas WER.
