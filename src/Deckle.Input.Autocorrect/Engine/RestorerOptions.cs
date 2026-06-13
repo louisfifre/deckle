@@ -35,4 +35,12 @@ public sealed record RestorerOptions
     // (a→à, du→dû — the real-word class). Off in the live engine by doctrine;
     // the offline eval measures what it would buy and what it would break.
     public bool CorrectValidFormsWithContext { get; init; } = false;
+
+    // Proper-noun guard: a title-cased word (leading capital, lowercase tail,
+    // no internal capital) appearing mid-utterance is almost always a name —
+    // Git, Azure — never a dictated French word, so its spelling is left alone.
+    // Sentence-initial capitals are exempt: there a capital is the norm for a
+    // word that may legitimately need an accent. Off by default — it trades a
+    // few capitalized-accented restorations for killing the proper-noun class.
+    public bool GuardCapitalizedMidSentence { get; init; } = false;
 }

@@ -76,6 +76,12 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         if (AccentFolding.HasDiacritics(word))
             return null;
 
+        // 6b. Proper-noun guard (opt-in): a title-cased word mid-utterance is a
+        //     name (Git, Azure), not a dictated French word. Sentence-initial
+        //     capitals are exempt — there a capital is the ordinary case.
+        if (_options.GuardCapitalizedMidSentence && leftContext.Count > 0 && IsTitleCase(word))
+            return null;
+
         string lower = word.ToLowerInvariant();
 
         // 7. A valid French form is never touched — the literal always wins.
@@ -252,6 +258,25 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
             if (char.IsUpper(word[i]))
                 return true;
         return false;
+    }
+
+    // True for a plain title-cased token: a leading capital, a lowercase tail,
+    // and no internal capital ("Git", "Azure"). All-caps acronyms and camelCase
+    // (internal capital) are deliberately excluded — and so are hyphenated names
+    // carrying an internal capital ("États-Unis"), which stay eligible.
+    private static bool IsTitleCase(string word)
+    {
+        if (word.Length < 2 || !char.IsUpper(word[0]))
+            return false;
+        bool anyLower = false;
+        for (int i = 1; i < word.Length; i++)
+        {
+            if (char.IsUpper(word[i]))
+                return false;
+            if (char.IsLower(word[i]))
+                anyLower = true;
+        }
+        return anyLower;
     }
 
     // The disambiguator's contract is lowercased context; the live engine hands
