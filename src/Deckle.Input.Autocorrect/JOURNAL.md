@@ -78,3 +78,21 @@ Trap shared with `watch`: the surface gate reads a `surface` updated only on foc
 EVENT_OBJECT_FOCUS-before-first-keystroke ordering can let a single pre-focus keystroke through; bounded
 to a fragment (never a committed word, so nothing reaches disk on its own), and `surface` is published
 without volatile semantics in both commands.
+
+## 2026-06-14 — Margin sweep and Morphalou, measured
+
+Margin sweep on the cleaned telemetry corpus (~7k words, French-first, reranker on). Margin 2 →
+99.84 % precision / 79.07 % recall (1 false correction, caps guard off in the run); margin 1 → 99.54 %
+/ 81.70 % (3 false corrections, two of them a forced à→À). Lowering the margin buys ~2.6 recall points
+for ~0.3 precision and two wrong à, and the à/là/où misses barely move (56→45, 25→24, 18→17). The recall
+ceiling on that class is the MLM's own confidence, not the threshold — margin stays at 2.
+
+Morphalou 3.1 overlay, same corpus. A BROAD overlay (every Morphalou-only form, +613k) dropped recall to
+71.43 % while precision rose to 100 %: the new forms crowd previously-unambiguous folds, demoting clean
+gate/dominance restorations into the reranker, which abstains at margin 2 (dominance 211→75, reranker
+138→265). A SCOPED overlay — only a form that is the sole accented candidate of a fold Lexique leaves
+empty (+557k) — holds precision at 99.84 % and nudges recall to 79.45 %: safe but marginal here. The
+clean corpus does not exercise Morphalou's real value (literal protection of valid conjugations against
+false correction); the genuinely useful gap forms (captes/captés, enlèves/enlevés) are intra-fold
+ambiguous, and the scoped pass correctly skips them. Overlay is opt-in (`build-data --morphalou`);
+the default ships Lexique-only.

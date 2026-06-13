@@ -80,6 +80,21 @@ data files, not to Deckle's code.
   the derived `lexicon-fr.tsv.gz` (form + occurrences per million). The
   derived file remains under CC BY-SA 4.0 with this attribution.
 
+### Morphalou 3.1
+
+- Project : https://www.ortolang.fr/market/lexicons/morphalou — ATILF
+  (CNRS, UMR 7118).
+- License : LGPL-LR (Lesser General Public License For Linguistic
+  Resources) — the data.
+- Used as : source of French inflected forms (full verb / noun / adjective
+  paradigms) that Lexique omits. `build-data` takes only the forms absent
+  from Lexique and overlays them at a negligible frequency into the derived
+  French lexicon, closing the conjugation / vocabulary coverage gap. No
+  frequency data is used (Morphalou carries none). The derived forms stay
+  swappable by design — they live in the regeneratable `lexicon-fr.tsv.gz`.
+- Attribution : « Analyse et traitement informatique de la langue française
+  - UMR 7118 (ATILF) (2019). Morphalou [Lexique]. ORTOLANG. »
+
 ### Norvig ngrams (`count_1w.txt`)
 
 - Source : https://norvig.com/ngrams/ — Peter Norvig, derived from the
