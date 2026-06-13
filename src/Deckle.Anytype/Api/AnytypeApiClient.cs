@@ -192,7 +192,8 @@ public sealed class AnytypeApiClient : IDisposable
                 if (attempt < MaxRetries && IsTransient(response.StatusCode))
                 {
                     TimeSpan backoff = RetryAfter(response) ?? DefaultBackoff;
-                    DeckleAnytypeSource.Log.ApiRequestRetried(
+                    DeckleAnytypeSource.Log.ApiRequestRetried();
+                    DeckleAnytypeSource.Log.ApiRequestRetriedDetail(
                         method.Method, path, status, backoff.TotalMilliseconds);
                     await Task.Delay(backoff, ct).ConfigureAwait(false);
                     continue;
@@ -201,7 +202,8 @@ public sealed class AnytypeApiClient : IDisposable
                 // Terminal failure. Surface the server message (it is API error
                 // text, never key material) and throw.
                 string errorBody = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                DeckleAnytypeSource.Log.ApiRequestFailed(method.Method, path, status, Excerpt(errorBody));
+                DeckleAnytypeSource.Log.ApiRequestFailed();
+                DeckleAnytypeSource.Log.ApiRequestFailedDetail(method.Method, path, status, Excerpt(errorBody));
                 throw new HttpRequestException(
                     $"Anytype API {method.Method} {path} failed with {status}: {Excerpt(errorBody)}",
                     null, response.StatusCode);
