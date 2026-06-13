@@ -146,6 +146,20 @@
                                                Path="{x:Bind ViewModel.TelemetryStorageDirectory, Mode=TwoWay}" />
                 </controls:SettingsCard>
 
+                <!-- ── Diagnostic files ──────────────────────────────────────
+                     Always-on local logs (setup, errors), distinct from the
+                     opt-in telemetry above: recorded unconditionally and kept
+                     on this device, never transmitted. No toggle — they exist
+                     so a first-run or crash always leaves a trace; the only
+                     affordance is opening the folder. -->
+                <TextBlock x:Uid="DiagnosticsPageFilesHeaderLabel"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <controls:SettingsCard x:Uid="DiagnosticsFilesCard">
+                    <Button x:Uid="FolderPickerCard_OpenButton"
+                            Click="OpenDiagnosticsFolder_Click" />
+                </controls:SettingsCard>
+
             </StackPanel>
         </Grid>
     </ScrollViewer>
