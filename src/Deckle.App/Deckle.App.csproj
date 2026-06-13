@@ -84,6 +84,7 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
+    <ProjectReference Include="..\Deckle.Input.Autocorrect\Deckle.Input.Autocorrect.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
@@ -114,5 +115,8 @@
     <Content Include="Assets\Sounds\**\*.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- The autocorrect lexicons (Data/*.tsv.gz) ride in transitively from
+         Deckle.Input.Autocorrect's own Content rule — App.Autocorrect loads them
+         from Data/ beside the executable. -->
   </ItemGroup>
 </Project>

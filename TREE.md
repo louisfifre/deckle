@@ -244,6 +244,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── App.Ambient.cs
+│   │   ├── App.Autocorrect.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
