@@ -42,7 +42,9 @@ namespace Deckle.Diagnostics.Listeners;
 // Threading. Write happens on the emitter thread, guarded by a per-
 // listener lock so concurrent emissions don't tear lines and so a roll
 // never races a write. The file is opened in append mode and flushed at
-// every line, which lets a crash post-write keep the data on disk.
+// every line, which lets a crash post-write keep the data on disk —
+// process-crash durable, not power-loss durable (no per-line WriteThrough
+// on the hot path).
 public sealed class JsonlEventListener : EventListener
 {
     private readonly string _filePath;
@@ -73,8 +75,10 @@ public sealed class JsonlEventListener : EventListener
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    // `filePath` — absolute path of the target JSONL file. The parent
-    //              directory must already exist (caller responsibility).
+    // `filePath` — absolute path of the target JSONL file. The listener
+    //              creates the parent directory at construction, so the sink is
+    //              self-sufficient and does not depend on creation order
+    //              elsewhere.
     // `kindLabel` — the value written under the "kind" key. The legacy
     //              schema uses lowercase strings ("log", "latency",
     //              "corpus", "microphone"); pass the same value here.
@@ -101,6 +105,13 @@ public sealed class JsonlEventListener : EventListener
         _preEntryDropPredicate = preEntryDropPredicate;
         _schema = schema;
         _rotation = rotation;
+
+        // Self-sufficient sink: ensure the target's parent directory exists at
+        // construction rather than trusting a creation order elsewhere. One
+        // idempotent syscall at boot — and it keeps the always-on diagnostic
+        // sinks from silently losing their first write if the eager directory
+        // creation in AppPaths ever regresses.
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
         if (_rotation is not null)
         {

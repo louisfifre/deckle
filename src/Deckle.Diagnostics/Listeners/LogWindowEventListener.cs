@@ -38,10 +38,11 @@ public sealed class LogWindowEventListener : EventListener
     // posture: the filter expresses "this event is not meant to exist in the
     // live log window", not temporary display masking.
     //
-    // Wired by the host through ConfigureDropFilter. Current use case:
-    // silencing ambient Verbose events during the capture loop when the
-    // LogAmbientCaptureActivity toggle is off (consumed through
-    // Deckle.Diagnostics.Logging.AmbientCaptureGate).
+    // Wired by the host through ConfigureDropFilter. Currently UNWIRED: App
+    // routes ambient/streaming Verbose silencing through the provider-level
+    // filter (_providerLevelDropFilter) instead, so this entry-level hook has
+    // no caller today. Kept as the symmetric per-entry counterpart for a host
+    // that needs to drop by built EventEntry.
     private Func<EventEntry, bool>? _dropFilter;
     private Func<string, EventLevel, EventKeywords, bool>? _providerLevelDropFilter;
 

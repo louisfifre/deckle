@@ -160,6 +160,16 @@ public partial class App : Microsoft.UI.Xaml.Application
         var milestones = new List<string>();
         void Milestone(string name) => milestones.Add($"{name} +{sw.ElapsedMilliseconds}ms");
 
+        // Always-on local diagnostic sinks (setup.jsonl + errors.jsonl) come
+        // FIRST — before settings migration — so an Error in the very first boot
+        // step still lands in errors.jsonl. An EventListener only captures events
+        // emitted after it subscribes; these sinks read no settings and are
+        // ungated, so registering them here is what makes the local trace cover
+        // the riskiest, un-opted-in moment. The opt-in telemetry listeners are
+        // wired later, after migration — see InitializeTelemetry below.
+        AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
+        Milestone("diagnostics-local");
+
         // Per-module persistence migration runs FIRST — before any module
         // SettingsService.Instance is touched. Detects the legacy combined
         // settings.json and dispatches each module section to its own
@@ -186,11 +196,12 @@ public partial class App : Microsoft.UI.Xaml.Application
             return string.IsNullOrWhiteSpace(s) ? null : s;
         });
 
-        // EventSource observability pipeline. JsonlEventListeners write
-        // directly to canonical paths `<TelemetryDir>/{app,latency,
-        // microphone,corpus}.jsonl`. Lazy LogWindow will attach to the
-        // listener via `AttachLogWindowSink` on first open.
-        AppDiagnosticsBootstrap.Initialize(AppPaths.TelemetryDirectory, AppPaths.DiagnosticsDirectory);
+        // Opt-in telemetry pipeline + LogWindow ring buffer. JsonlEventListeners
+        // write directly to canonical paths `<TelemetryDir>/{app,latency,
+        // microphone,corpus}.jsonl`; lazy LogWindow attaches via
+        // `AttachLogWindowSink` on first open. The always-on local sinks were
+        // wired earlier (top of OnLaunched) — see InitializeLocalSinks.
+        AppDiagnosticsBootstrap.InitializeTelemetry(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
         // Wire user gates on the JsonlEventListeners side
