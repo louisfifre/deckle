@@ -18,7 +18,7 @@ public class ToolCatalogTests
     {
         "session_start", "log", "get", "project_overview", "create_task",
         "task_done", "link", "list_projects", "search", "subtask",
-        "create_project", "create_idea", "update",
+        "create_project", "create_idea", "update", "replace_section",
     };
 
     static IReadOnlyList<ToolDescriptor> BuildCatalog()
@@ -39,11 +39,11 @@ public class ToolCatalogTests
     }
 
     [Fact]
-    public void BuildExposesExactlyTheThirteenNamedTools()
+    public void BuildExposesExactlyTheFourteenNamedTools()
     {
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
-        Assert.Equal(13, names.Length);
+        Assert.Equal(14, names.Length);
         Assert.Equal(
             ExpectedToolNames.OrderBy(n => n),
             names.OrderBy(n => n));

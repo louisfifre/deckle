@@ -159,6 +159,63 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Mis à jour : {QueryProp.Name(obj)} ({string.Join(", ", applied)}).";
     }
 
+    // Replaces the body under a markdown heading and verifies the write landed.
+    // The body PATCH is a full replacement (Anytype has no block-level REST edit),
+    // so this reads the current body, splices the one targeted section
+    // (MarkdownBody keeps every other section verbatim), PATCHes the whole
+    // document, then reads it back to confirm the intent: the section now carries
+    // the new content (compared normalized, since Anytype re-escapes and reflows on
+    // export) and no other heading was dropped. Strict — an absent or ambiguous
+    // heading throws before any write, the model-facing error channel.
+    public async Task<string> ReplaceSectionAsync(
+        string selector, string heading, string content, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+
+        string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+        JsonObject obj = await api.GetObjectAsync(id, ct);
+        string body = QueryProp.Markdown(obj);
+        string name = QueryProp.Name(obj);
+
+        MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(body, heading, content);
+        if (edit.Status == MarkdownBody.EditStatus.NotFound)
+            throw new InvalidOperationException(
+                $"Section « {heading} » introuvable dans {name}. Titres présents : {HeadingList(body)}.");
+        if (edit.Status == MarkdownBody.EditStatus.Ambiguous)
+            throw new InvalidOperationException(
+                $"Section « {heading} » ambiguë dans {name} : {edit.MatchCount} titres portent ce texte. " +
+                "Renomme les doublons avant de l'éditer.");
+
+        JsonObject patched = await api.UpdateObjectAsync(
+            id, new JsonObject { ["markdown"] = edit.Body }, ct);
+
+        // Read-after-write. The PATCH response already carries the re-rendered body
+        // when Anytype echoes it (free); otherwise read once more. Either way the
+        // read-back is normalized, never the bytes we sent.
+        string reread = QueryProp.Markdown(patched);
+        if (reread.Length == 0)
+            reread = QueryProp.Markdown(await api.GetObjectAsync(id, ct));
+
+        DeckleAnytypeSource.Log.GestureCompleted("replace_section", Elapsed(started));
+
+        // Guard against the splice (or Anytype's re-serialization) dropping a
+        // section: every heading the spliced document MEANT to keep must still be
+        // there. The reference is the intended body, not the original — a sub-heading
+        // inside the replaced section is removed on purpose and must not read as loss.
+        bool intent = MarkdownBody.SectionContentMatches(reread, heading, content);
+        var after = new HashSet<string>(MarkdownBody.HeadingTexts(reread), StringComparer.OrdinalIgnoreCase);
+        bool guard = MarkdownBody.HeadingTexts(edit.Body).All(after.Contains);
+
+        if (intent && guard)
+            return $"Section « {heading} » remplacée dans {name} (vérifié).";
+
+        // The PATCH committed — a full-replacement write cannot be rolled back — so
+        // the divergence is reported, not thrown: the caller learns the read-back
+        // did not confirm the intent and can re-read and retry.
+        string why = !intent ? "le contenu relu ne correspond pas à l'intention" : "une autre section a disparu";
+        return $"Section « {heading} » écrite dans {name}, mais vérification en échec : {why}.";
+    }
+
     // Captures a quick idea. Short content (≤80 chars) becomes the name; longer
     // content keeps its first words as the name and the full text as the body.
     public async Task<string> CreateIdeaAsync(string content, CancellationToken ct = default)
@@ -197,6 +254,14 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     static string SupportedPairsError(string sourceType, string targetType) =>
         $"Liaison non supportée : {sourceType} → {targetType}. " +
         "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet.";
+
+    // The body's headings, quoted, for the « introuvable » error — it tells the
+    // model which titles actually exist so it can retry with one of them.
+    static string HeadingList(string body)
+    {
+        IReadOnlyList<string> headings = MarkdownBody.HeadingTexts(body);
+        return headings.Count > 0 ? string.Join(", ", headings.Select(h => $"« {h} »")) : "(aucun)";
+    }
 
     // select/multi_select are async because a free (space-managed) vocabulary is
     // resolved against the live space; every other format is built in-memory.
