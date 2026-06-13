@@ -427,7 +427,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── DiacriticsRestorer.cs
+│   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
+│   │   │   ├── ISentenceReranker.cs
 │   │   │   ├── PairModelTrainer.cs
 │   │   │   └── RestorerOptions.cs
 │   │   ├── Evaluation/
@@ -479,7 +481,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TrainPairsCommand.cs
 │   │   │   └── WatchCommand.cs
 │   │   ├── Mlm/
-│   │   │   └── CamembertMlmScorer.cs
+│   │   │   ├── CamembertMlmScorer.cs
+│   │   │   └── CamembertSentenceReranker.cs
 │   │   ├── Deckle.Input.Autocorrect.Cli.csproj
 │   │   └── Program.cs
 │   ├── Deckle.Input.Trackpad/

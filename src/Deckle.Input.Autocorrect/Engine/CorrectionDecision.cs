@@ -10,6 +10,8 @@ public enum CorrectionReason
     FrequencyDominance,
     /// <summary>Candidate supplied by the personal dictionary.</summary>
     PersonalWord,
+    /// <summary>Ambiguity resolved by the post-sentence bidirectional reranker.</summary>
+    SentenceReranker,
     /// <summary>The étape-2 toy hotstring — dev only.</summary>
     ToyHotstring,
 }

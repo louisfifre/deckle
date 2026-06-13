@@ -56,8 +56,9 @@ static void PrintUsage()
     Console.WriteLine("              Train the left-context pair model from the FR corpus.");
     Console.WriteLine("  eval        [--corpus <file>] [--data <dir>] [--no-context] [--no-en]");
     Console.WriteLine("              [--valid-forms] [--en-guard <ppm>] [--dominance <ratio>]");
-    Console.WriteLine("              [--max-tokens <n>]");
+    Console.WriteLine("              [--max-tokens <n>] [--reranker] [--rerank-margin <m>] [--model <dir>]");
     Console.WriteLine("              Score diacritics restoration against the reference.");
+    Console.WriteLine("              --reranker swaps the bigram for the post-sentence CamemBERT MLM.");
     Console.WriteLine("  mlm-probe   [--model <dir>] [--corpus <file>] [--n <per-class>] [--out <tsv>]");
     Console.WriteLine("              Probe a CamemBERT MLM on a balanced a/à set (reranker POC).");
     Console.WriteLine();

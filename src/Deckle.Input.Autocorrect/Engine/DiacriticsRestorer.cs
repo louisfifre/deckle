@@ -16,7 +16,7 @@ namespace Deckle.Input.Autocorrect.Engine;
 // first, then the literal-protection gates (a valid French or English form is
 // never second-guessed), then the candidate machinery. Each guard carries the
 // one reason it exists.
-public sealed class DiacriticsRestorer : ICorrectionPolicy
+public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
 {
     private readonly FrequencyLexicon _french;
     private readonly FrequencyLexicon? _english;
@@ -160,6 +160,36 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy
 
         // 15. Ambiguity without evidence — the literal stays.
         return null;
+    }
+
+    // IAmbiguityProbe: the closed candidate set when the fold carries >=2 forms,
+    // for a post-sentence reranker to resolve. Mirrors the candidate machinery of
+    // Evaluate (index variants + valid literal + personal, floor- and
+    // suppression-filtered) but without the guard chain or any decision — it only
+    // answers "is this an ambiguous slot, and which forms?". The blacklist guards
+    // (digits, internal upper, elision, already-accented) still matter: an
+    // already-accented or non-word token is never an ambiguous slot.
+    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word)
+    {
+        if (word.Length == 0)
+            return Array.Empty<AccentVariant>();
+        foreach (char c in word)
+            if (char.IsDigit(c) || (!char.IsLetter(c) && c is not '\'' and not '’' and not '-'))
+                return Array.Empty<AccentVariant>();
+        if (HasInternalUpper(word) || word[^1] is '\'' or '’' || AccentFolding.HasDiacritics(word))
+            return Array.Empty<AccentVariant>();
+
+        string lower = word.ToLowerInvariant();
+
+        // The gate blacklists sub-MinWordLength tokens outright; the reranker may
+        // still resolve a one-char ambiguity (a/à) — but only when the bare form
+        // is itself a valid word, so "leave it" is a real candidate and we never
+        // force an accent onto a stray letter (a code identifier, a list bullet).
+        if (word.Length < _options.MinWordLength && !_french.Contains(lower))
+            return Array.Empty<AccentVariant>();
+
+        var merged = BuildCandidates(lower, _french.Contains(lower), out _);
+        return merged.Count >= 2 ? merged : Array.Empty<AccentVariant>();
     }
 
     // Builds the filtered candidate list and records which surface forms came

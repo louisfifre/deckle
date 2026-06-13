@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using Deckle.Input.Autocorrect.Cli.Mlm;
 using Deckle.Input.Autocorrect.Engine;
 using Deckle.Input.Autocorrect.Evaluation;
 
@@ -20,6 +21,9 @@ internal static class EvalCommand
 
         bool noContext = args.Has("--no-context");
         bool noEnglish = args.Has("--no-en");
+        // The post-sentence CamemBERT reranker IS the context stage when on, so
+        // the left-context bigram is dropped — we measure gate + reranker.
+        bool useReranker = args.Has("--reranker");
 
         // Context disambiguator tuning. Margin and evidence are exposed for the
         // sensitivity sweep; unset flags inherit the record defaults so the eval
@@ -35,7 +39,7 @@ internal static class EvalCommand
         var data = DataSet.Load(
             dataDir,
             wantEnglish: !noEnglish,
-            wantContext: !noContext,
+            wantContext: !noContext && !useReranker,
             contextOptions: contextOptions);
         if (data is null) return 1;
 
@@ -71,11 +75,33 @@ internal static class EvalCommand
                         + $" order {contextOptions.MaxContextOrder})");
         Console.WriteLine($"Dominance   : {options.DominanceRatio:0.###}x");
         Console.WriteLine($"Valid forms : {options.CorrectValidFormsWithContext}");
-        Console.WriteLine();
 
         RestorationReport report;
-        using (var reader = new StreamReader(corpus, Encoding.UTF8))
+        if (useReranker)
+        {
+            string modelDir = args.ValueOr("--model",
+                Path.Combine(RepoPaths.DefaultRawDir(root), "..", "models", "camembert-base"));
+            double margin = args.DoubleOr("--rerank-margin", 2.0);
+            if (!File.Exists(Path.Combine(modelDir, "model.onnx")))
+            {
+                Console.Error.WriteLine($"Missing model: {Path.Combine(modelDir, "model.onnx")}");
+                return 1;
+            }
+            Console.WriteLine($"Reranker    : on   (CamemBERT MLM, margin {margin:0.###})");
+            Console.WriteLine();
+
+            using var reranker = new CamembertSentenceReranker(modelDir, margin);
+            using var reader = new StreamReader(corpus, Encoding.UTF8);
+            // The restorer is both the gate (ICorrectionPolicy) and the ambiguity
+            // probe (IAmbiguityProbe) — it knows which slots it left for context.
+            report = RestorationEvaluator.EvaluateReranked(reader, restorer, restorer, reranker, evalOptions);
+        }
+        else
+        {
+            Console.WriteLine();
+            using var reader = new StreamReader(corpus, Encoding.UTF8);
             report = RestorationEvaluator.Evaluate(reader, restorer, evalOptions);
+        }
 
         Console.Write(report.FormatConsole());
         return 0;
