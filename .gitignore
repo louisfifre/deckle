@@ -245,5 +245,7 @@ coverage/
 # Personal-workflow skills not meant for the public repo.
 .claude/skills/benchmark-loop/
 
-# Agent compatibility façade; canonical project instructions live under .claude/.
+# Agent compatibility façades; canonical project instructions live under .claude/.
 .agent/
+.agents/
+.codex/
