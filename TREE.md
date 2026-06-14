@@ -263,6 +263,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
+│   │   ├── AutocorrectNotifications.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
