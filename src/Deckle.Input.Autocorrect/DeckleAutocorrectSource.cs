@@ -51,10 +51,10 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSurfaceChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "surface | process={0} | editable={1} | password={2} | enrolled={3}")]
-    public void SurfaceChanged(string process, bool editable, bool password, bool enrolled)
+           Message = "surface | process={0} | editable={1} | password={2} | enrolled={3} | {4}")]
+    public void SurfaceChanged(string process, bool editable, bool password, bool enrolled, string probe)
     {
-        if (IsEnabled()) WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled);
+        if (IsEnabled()) WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled, probe);
     }
 
     // ── Corrections ──────────────────────────────────────────────────────

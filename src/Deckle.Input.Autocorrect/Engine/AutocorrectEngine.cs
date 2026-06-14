@@ -192,7 +192,7 @@ public sealed class AutocorrectEngine : IDisposable
 
         bool enrolled = IsEnrolled(_settings(), surface.ProcessName);
         DeckleAutocorrectSource.Log.SurfaceChanged(
-            surface.ProcessName, surface.IsTextEditable, surface.IsPassword, enrolled);
+            surface.ProcessName, surface.IsTextEditable, surface.IsPassword, enrolled, surface.Probe);
         SurfaceChanged?.Invoke(surface, enrolled);
     }
 
