@@ -1,7 +1,7 @@
 using System.IO;
 using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli;
+namespace Deckle.Input.Autocorrect.Lab;
 
 // The derived artifacts the engine reads, loaded from a Data/ directory:
 // the French lexicon + its accent index (mandatory), the English guard

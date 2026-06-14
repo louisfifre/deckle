@@ -4,13 +4,13 @@ using System.IO.Compression;
 using System.Text;
 using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli;
+namespace Deckle.Input.Autocorrect.Lab;
 
 // Regenerates the derived lexicons from the raw sources. French from
 // Lexique 3.83 (form + film/book frequencies), English from Norvig's
 // count_1w (the guard). Both land as `form<TAB>freq` gzip TSVs, ordinally
 // sorted so the artifact is byte-deterministic across runs and machines.
-internal static class BuildDataCommand
+public static class LexiconBuilder
 {
     // Frequency stamped on a Morphalou-only form (one Lexique does not carry).
     // Not zero, on purpose: a zero runner-up would break the dominance gate
@@ -22,12 +22,13 @@ internal static class BuildDataCommand
     // on a single candidate regardless of frequency).
     private const double MorphalouEpsilonPerMillion = 0.001;
 
-    public static int Run(CliArgs args)
+    // Builds the lexicons. The caller supplies the resolved directories — rawDir
+    // holds the fetched sources (Lexique383.tsv, count_1w.txt, optionally
+    // Morphalou3.1_CSV.csv), outDir is where the gzip TSV artifacts are written.
+    // withMorphalou folds in the inflected-form coverage when its source is
+    // present. Returns 0 on success.
+    public static int Run(string rawDir, string outDir, bool withMorphalou = false)
     {
-        string root = RepoPaths.RepoRoot();
-        string rawDir = args.ValueOr("--raw", RepoPaths.DefaultRawDir(root));
-        string outDir = args.ValueOr("--out", RepoPaths.DefaultDataDir(root));
-
         Directory.CreateDirectory(outDir);
 
         string frenchOut = DataSet.FrenchPath(outDir);
@@ -38,13 +39,13 @@ internal static class BuildDataCommand
         Console.WriteLine();
 
         // Morphalou overlay is opt-in: the default lexicon is Lexique-only and
-        // byte-deterministic. `--morphalou` folds in the inflected-form coverage
+        // byte-deterministic. withMorphalou folds in the inflected-form coverage
         // once the source has been fetched (see fetch-autocorrect-data.ps1).
-        string morphalouSource = args.Has("--morphalou")
+        string morphalouSource = withMorphalou
             ? Path.Combine(rawDir, "Morphalou3.1_CSV.csv")
             : "";
-        if (args.Has("--morphalou") && !File.Exists(morphalouSource))
-            Console.WriteLine("Note: --morphalou set but Morphalou3.1_CSV.csv is absent — "
+        if (withMorphalou && !File.Exists(morphalouSource))
+            Console.WriteLine("Note: withMorphalou set but Morphalou3.1_CSV.csv is absent — "
                             + "run fetch-autocorrect-data.ps1 first. Building Lexique-only.");
 
         BuildFrench(Path.Combine(rawDir, "Lexique383.tsv"), morphalouSource, frenchOut);

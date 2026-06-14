@@ -487,32 +487,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, m…
-│   ├── Deckle.Input.Autocorrect.Cli/
-│   │   ├── Commands/
-│   │   │   ├── BuildDataCommand.cs
-│   │   │   ├── CliArgs.cs
-│   │   │   ├── DataSet.cs
-│   │   │   ├── DictCommand.cs
-│   │   │   ├── DryRunCommand.cs
-│   │   │   ├── EnrollCommand.cs
-│   │   │   ├── EvalCommand.cs
-│   │   │   ├── HarvestCommand.cs
-│   │   │   ├── InjectCommand.cs
-│   │   │   ├── MlmProbeCommand.cs
-│   │   │   ├── MorphalouReader.cs
-│   │   │   ├── RepoPaths.cs
-│   │   │   ├── RunCommand.cs
-│   │   │   ├── TrainPairsCommand.cs
-│   │   │   └── WatchCommand.cs
-│   │   ├── Harvest/
-│   │   │   ├── HarvestData.cs
-│   │   │   ├── HarvestFilter.cs
-│   │   │   └── HarvestStore.cs
-│   │   ├── Mlm/
-│   │   │   ├── CamembertMlmScorer.cs
-│   │   │   └── CamembertSentenceReranker.cs
-│   │   ├── Deckle.Input.Autocorrect.Cli.csproj
-│   │   └── Program.cs
+│   ├── Deckle.Input.Autocorrect.Lab/
+│   │   ├── DataSet.cs
+│   │   ├── Deckle.Input.Autocorrect.Lab.csproj
+│   │   ├── HarvestData.cs
+│   │   ├── HarvestFilter.cs
+│   │   ├── HarvestStore.cs
+│   │   ├── LexiconBuilder.cs
+│   │   └── MorphalouReader.cs
+│   ├── Deckle.Input.Autocorrect.Mlm/
+│   │   ├── CamembertMlmScorer.cs
+│   │   ├── CamembertSentenceReranker.cs
+│   │   ├── Deckle.Input.Autocorrect.Mlm.csproj
+│   │   └── MlmProbe.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs

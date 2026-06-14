@@ -1,6 +1,6 @@
 using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli;
+namespace Deckle.Input.Autocorrect.Mlm;
 
 // ISentenceReranker backed by the CamemBERT masked-LM. For one ambiguous slot it
 // builds the left/right context from the sentence's other word-forms, masks the
