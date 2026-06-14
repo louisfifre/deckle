@@ -469,6 +469,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
 │   │   │   └── FrequencyLexicon.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
 │   │   │   ├── ISurfaceProber.cs
@@ -479,6 +482,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TypedWordTracker.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
+│   │   ├── Ui/
+│   │   │   ├── AutocorrectPage.xaml
+│   │   │   └── AutocorrectPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── AutocorrectAppRow.cs
+│   │   │   └── AutocorrectViewModel.cs
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
@@ -897,6 +906,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
+│   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
 │   │   ├── AutocorrectEngineHarness.cs
