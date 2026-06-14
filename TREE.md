@@ -68,6 +68,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── launch.json
 ├── benchmark/
 │   ├── benches/
+│   │   ├── tts-audition/
+│   │   │   ├── _harness.py
+│   │   │   ├── build_player.py
+│   │   │   ├── chatterbox_synth.py
+│   │   │   ├── f5_synth.py
+│   │   │   ├── orpheus_synth.py
+│   │   │   ├── supertonic_synth.py
+│   │   │   └── synth_onnx.py
 │   │   ├── voxtral-onnx-poc/
 │   │   │   ├── debug_kv.py
 │   │   │   ├── debug_tokens.py
