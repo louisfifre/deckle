@@ -99,6 +99,22 @@ public partial class App : Microsoft.UI.Xaml.Application
             return false;
         }
 
+        // ── Autocorrect ────────────────────────────────────────────────────
+        // No capture gate: the autocorrect engine runs continuously, so the
+        // toggle filters whenever it is off. Off: only the edits survive — an
+        // applied correction's Verbose detail (Push keyword: reason and lengths,
+        // never the word), alongside its Info milestone and any revert /
+        // injection failure (Info / Warning, which pass on their own above). The
+        // per-focus SurfaceChanged probe, the learning signals and the 30 s
+        // activity rollup are dropped: a heartbeat is meaningless for a
+        // keystroke-driven subsystem, only the corrections are. On: everything
+        // passes, SurfaceChanged and rollup included, for a debug deep-dive.
+        if (provider == "Deckle-Autocorrect")
+        {
+            if (LoggingSettingsService.Instance.Current.LogAutocorrectActivity) return false;
+            return (keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) == 0;
+        }
+
         return false;
     }
 

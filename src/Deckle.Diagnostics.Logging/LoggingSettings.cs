@@ -25,6 +25,18 @@ public sealed class LoggingSettings
     // ran. Off-by-default — same quiet-by-default posture as the ambient gate.
     public bool LogStreamingTranscriptionActivity { get; set; } = false;
 
+    // When false (the default), the autocorrect provider's chatty Verbose
+    // stream is dropped from the live LogWindow and app.jsonl — the per-focus
+    // SurfaceChanged probe, the learning signals and the 30 s activity rollup.
+    // What remains is only the edits: an applied correction's Verbose detail
+    // (reason and lengths, never the word) plus its milestone, and any revert or
+    // injection failure. No heartbeat — it is meaningless for a keystroke-driven
+    // subsystem. Unlike the ambient and streaming gates there is no capture
+    // window: the engine runs continuously, so the filter applies whenever the
+    // toggle is off. Off-by-default — same quiet-by-default posture as its
+    // siblings.
+    public bool LogAutocorrectActivity { get; set; } = false;
+
     // Current journal projection. Search text stays UI-local, but the
     // level-family selector is persisted and reused by app.jsonl so the
     // disk journal follows the same broad visibility mode for new events.

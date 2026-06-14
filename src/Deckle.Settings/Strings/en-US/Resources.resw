@@ -1247,6 +1247,12 @@
   <data name="LoggingStreamingCard.Description" xml:space="preserve">
     <value>Per-second heartbeat and per-utterance Verbose lines from the streaming transcription pipeline. The milestones (started, drained) always pass.</value>
   </data>
+  <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
+    <value>Log autocorrect activity</value>
+  </data>
+  <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
+    <value>Per-focus surface checks, learning signals and the periodic activity summary from the autocorrect engine. With this off, only applied corrections are logged — what changed (reason and lengths), never the word itself.</value>
+  </data>
   <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
     <value>Telemetry</value>
   </data>
