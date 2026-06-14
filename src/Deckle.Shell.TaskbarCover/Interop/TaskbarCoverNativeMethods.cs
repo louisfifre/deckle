@@ -117,6 +117,27 @@ internal static class TaskbarCoverNativeMethods
     [DllImport("user32.dll")]
     public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
+    // ── Foreground change signal & desktop exclusion ─────────────────────────
+    //
+    // EVENT_SYSTEM_FOREGROUND (same hook family, same thread) drives the
+    // immediate half of the fullscreen/z-order reconciliation: on a foreground
+    // change we re-evaluate suppression and climb back above the taskbar, which
+    // Explorer re-asserts topmost on fullscreen exit. The 5 s poll stays as the
+    // fallback and the sole path for F11, which raises no foreground event.
+    // GetShellWindow / GetDesktopWindow let the fullscreen geometry probe
+    // exclude the desktop itself — clicking the wallpaper makes it foreground
+    // and it covers the whole monitor, so without the guard it reads as a
+    // fullscreen app and the band stands down over a bare desktop.
+
+    public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+    public const int  OBJID_WINDOW            = 0;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetShellWindow();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDesktopWindow();
+
     // ── System messages the band window reacts to ────────────────────────────
 
     public const uint WM_DESTROY       = 0x0002;

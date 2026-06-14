@@ -44,6 +44,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSessionNotifyFailed   = 20;
     public const int EvtTimerArmFailed        = 21;
     public const int EvtTimerArmFailedDetail  = 22;
+    public const int EvtForegroundHookFailed  = 23;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -245,6 +246,15 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void SessionNotifyFailed()
     {
         if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed);
+    }
+
+    [Event(EvtForegroundHookFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The foreground hook is unavailable — fullscreen and z-order recovery fall back to the slow poll")]
+    public void ForegroundHookFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtForegroundHookFailed);
     }
 
     [Event(EvtTimerArmFailed,
