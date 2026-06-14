@@ -25,6 +25,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtInjectionFailed    = 7;
     public const int EvtLearningSignal     = 8;
     public const int EvtActivityRollup     = 9;
+    public const int EvtEnrollmentSuggested = 10;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -115,5 +116,16 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void ActivityRollup(int commits, int corrections, int reverts, int learning_signals, int gated_surfaces)
     {
         if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, reverts, learning_signals, gated_surfaces);
+    }
+
+    // ── Enrollment ───────────────────────────────────────────────────────
+
+    [Event(EvtEnrollmentSuggested,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "enrollment suggested | process={0}")]
+    public void EnrollmentSuggested(string process)
+    {
+        if (IsEnabled()) WriteEvent(EvtEnrollmentSuggested, process);
     }
 }

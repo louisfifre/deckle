@@ -903,6 +903,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectEngineRevertTests.cs
+│   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
