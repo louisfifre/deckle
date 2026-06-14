@@ -158,9 +158,21 @@ public sealed partial class HudPage
         var stack = NewExpander("Swipe (Transcribing / Rewriting)", ResetSwipe);
         // Static mutables on SwipeWaveAnimator (Deckle.Composition) —
         // read live each vsync by the animator's Tick, no rebuild needed.
+        // Cycle / stagger / envelope / ramp shape the timing and the per-digit
+        // envelope ; the ease shapes only the launch CADENCE (how the digits
+        // follow one another), never a single digit's linear fade.
         AddFloatRow(stack, "SwipeCycleSeconds", 0.1, 6.0, 0.1,
             SwipeWaveAnimator.SwipeCycleSeconds,
             v => SwipeWaveAnimator.SwipeCycleSeconds = (float)v);
+        AddFloatRow(stack, "SwipeStaggerSeconds", 0.05, 1.0, 0.05,
+            SwipeWaveAnimator.SwipeStaggerSeconds,
+            v => SwipeWaveAnimator.SwipeStaggerSeconds = (float)v);
+        AddFloatRow(stack, "SwipeEnvelopeSeconds", 0.05, 2.0, 0.05,
+            SwipeWaveAnimator.SwipeEnvelopeSeconds,
+            v => SwipeWaveAnimator.SwipeEnvelopeSeconds = (float)v);
+        AddFloatRow(stack, "SwipeRampFraction", 0, 0.5, 0.05,
+            SwipeWaveAnimator.SwipeRampFraction,
+            v => SwipeWaveAnimator.SwipeRampFraction = (float)v);
         AddFloatRow(stack, "SwipeEaseP1.X", 0, 1, 0.05, SwipeWaveAnimator.SwipeEaseP1.X,
             v => SwipeWaveAnimator.SwipeEaseP1 = new Vector2((float)v, SwipeWaveAnimator.SwipeEaseP1.Y));
         AddFloatRow(stack, "SwipeEaseP1.Y", -0.5, 1.5, 0.05, SwipeWaveAnimator.SwipeEaseP1.Y,
@@ -169,12 +181,6 @@ public sealed partial class HudPage
             v => SwipeWaveAnimator.SwipeEaseP2 = new Vector2((float)v, SwipeWaveAnimator.SwipeEaseP2.Y));
         AddFloatRow(stack, "SwipeEaseP2.Y", -0.5, 1.5, 0.05, SwipeWaveAnimator.SwipeEaseP2.Y,
             v => SwipeWaveAnimator.SwipeEaseP2 = new Vector2(SwipeWaveAnimator.SwipeEaseP2.X, (float)v));
-        AddFloatRow(stack, "SwipeRiseAlpha", 0.01, 1.0, 0.01, SwipeWaveAnimator.SwipeRiseAlpha,
-            v => SwipeWaveAnimator.SwipeRiseAlpha = (float)v);
-        AddFloatRow(stack, "SwipeDecayAlpha", 0.005, 0.5, 0.005, SwipeWaveAnimator.SwipeDecayAlpha,
-            v => SwipeWaveAnimator.SwipeDecayAlpha = (float)v);
-        AddIntRow(stack, "SwipeHeadDomain", 6, 12, SwipeWaveAnimator.SwipeHeadDomain,
-            v => SwipeWaveAnimator.SwipeHeadDomain = v);
         AddToggleRow(stack, "Simulate changed digits",
             _simulateChangedDigits,
             v => { _simulateChangedDigits = v; ApplyTarget(); });
@@ -182,12 +188,12 @@ public sealed partial class HudPage
 
     private void ResetSwipe()
     {
-        SwipeWaveAnimator.SwipeCycleSeconds = 4.5f;
-        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.3f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.6f, 1f);
-        SwipeWaveAnimator.SwipeRiseAlpha    = 0.25f;
-        SwipeWaveAnimator.SwipeDecayAlpha   = 0.012f;
-        SwipeWaveAnimator.SwipeHeadDomain   = 8;
+        SwipeWaveAnimator.SwipeCycleSeconds    = 2.4f;
+        SwipeWaveAnimator.SwipeStaggerSeconds  = 0.1f;
+        SwipeWaveAnimator.SwipeEnvelopeSeconds = 1.4f;
+        SwipeWaveAnimator.SwipeRampFraction    = 0.4f;
+        SwipeWaveAnimator.SwipeEaseP1          = new Vector2(0.4f, 0f);
+        SwipeWaveAnimator.SwipeEaseP2          = new Vector2(0.6f, 1f);
         _simulateChangedDigits = true;
         RebuildTuningPanel();
         ApplyTarget();
@@ -332,6 +338,28 @@ public sealed partial class HudPage
         _simManualOverride   = false;
         _simManualValue      = 0.012f;
         RebuildTuningPanel();
+    }
+
+    // Conic clone placement — where the cloned cone's apex sits within the
+    // 272×78 row frame. (136, 39) = centred (reproduces the contour's cone),
+    // (0, 0) = top-left corner (cone radiates from there). Preview-only
+    // floats, so each change rebuilds the clone (debounced) like a paint-time
+    // knob. Step 2 so the values land on round integers.
+    private void AddClonePlacementExpander()
+    {
+        var stack = NewExpander("Conic clone placement", ResetClonePlacement);
+        AddFloatRow(stack, "Cone centre X", 0, 272, 2, _cloneCentreX,
+            v => _cloneCentreX = (float)v, rebuild: true);
+        AddFloatRow(stack, "Cone centre Y", 0, 78, 2, _cloneCentreY,
+            v => _cloneCentreY = (float)v, rebuild: true);
+    }
+
+    private void ResetClonePlacement()
+    {
+        _cloneCentreX = NakedHudSize.X / 2f;
+        _cloneCentreY = NakedHudSize.Y / 2f;
+        RebuildTuningPanel();
+        ApplyTarget();
     }
 
     // Parked expander — fields only observable during a variant

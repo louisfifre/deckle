@@ -117,6 +117,17 @@ public sealed partial class HudPage : Page
     private static readonly Vector2 NakedHudSize = new(272f, 78f);
     private const           float   NakedHostDim = 300f;
 
+    // ── Conic clone preview ─────────────────────────────────────────────
+    //
+    // The ConicClone target's own disposable bundle (a second, freely-placed
+    // cone). Same lifetime discipline as _nakedPreview — disposed before a
+    // replacement is mounted and on window close. _cloneCentre* is the cone's
+    // apex placement within the 272×78 row frame, driven by the ClonePlacement
+    // expander; (136, 39) = centred (reproduces the contour), (0, 0) = top-left.
+    private HudComposition.ConicClonePreview? _conicClonePreview;
+    private float _cloneCentreX = NakedHudSize.X / 2f;
+    private float _cloneCentreY = NakedHudSize.Y / 2f;
+
     public HudPage()
     {
         InitializeComponent();
@@ -179,6 +190,8 @@ public sealed partial class HudPage : Page
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
         _nakedPreview = null;
+        _conicClonePreview?.Dispose();
+        _conicClonePreview = null;
     }
 
     // ── VM observer ──────────────────────────────────────────────────────────
@@ -201,6 +214,12 @@ public sealed partial class HudPage : Page
                 // panel is unchanged.
                 ApplyTarget();
                 break;
+
+            case nameof(HudViewModel.PreviewVariant):
+                // Transcribing ↔ Rewriting grading flip on a geometry-only
+                // preview : re-project so the cone re-grades (grey ↔ colour).
+                ApplyTarget();
+                break;
         }
     }
 
@@ -216,6 +235,17 @@ public sealed partial class HudPage : Page
         // → RebuildTuningPanel + ApplyTarget. No need to do anything
         // else here ; the visual update flows through the observer.
         ViewModel.CurrentTarget = next;
+    }
+
+    // Transcribing / Rewriting grading radios (toolbar). Only shown for the
+    // geometry-only previews; the click sets PreviewVariant, the VM observer
+    // re-projects. Fires once on load for the default-checked Rewriting radio —
+    // a no-op since the value already matches.
+    private void OnVariantRadioChecked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not RadioButton rb || rb.Tag is not string tag) return;
+        if (!Enum.TryParse<ProcessingVariant>(tag, out var variant)) return;
+        ViewModel.PreviewVariant = variant;
     }
 
     // ── Transport (Start / Stop) ─────────────────────────────────────────────
@@ -239,6 +269,8 @@ public sealed partial class HudPage : Page
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
         _nakedPreview = null;
+        _conicClonePreview?.Dispose();
+        _conicClonePreview = null;
         StopRmsPump();
 
         if (!ViewModel.IsPlaying)
@@ -249,18 +281,30 @@ public sealed partial class HudPage : Page
             // sees where the preview will reappear on Start.
             ChronoPreview.Visibility    = Visibility.Collapsed;
             NakedPreviewHost.Visibility = Visibility.Collapsed;
+            VariantToggle.Visibility    = Visibility.Collapsed;
             return;
         }
 
         var currentTarget = ViewModel.CurrentTarget;
         bool isNaked = currentTarget is HudTarget.Conic
                                      or HudTarget.ArcMask
-                                     or HudTarget.Combined;
+                                     or HudTarget.Combined
+                                     or HudTarget.ConicClone;
         ChronoPreview.Visibility    = isNaked ? Visibility.Collapsed : Visibility.Visible;
         NakedPreviewHost.Visibility = isNaked ? Visibility.Visible   : Visibility.Collapsed;
+        // The grading toggle rides with the geometry-only previews.
+        VariantToggle.Visibility    = isNaked ? Visibility.Visible   : Visibility.Collapsed;
 
         if (isNaked)
         {
+            // The clone is its own factory (a placed cone), not one of the three
+            // raw NakedMaskParts — branch it out before the part mapping.
+            if (currentTarget == HudTarget.ConicClone)
+            {
+                AttachConicClonePreview();
+                return;
+            }
+
             var part = currentTarget switch
             {
                 HudTarget.Conic    => HudComposition.NakedMaskPart.Conic,
@@ -308,10 +352,14 @@ public sealed partial class HudPage : Page
         if (_simulateChangedDigits &&
             (currentTarget == HudTarget.Transcribing || currentTarget == HudTarget.Rewriting))
         {
+            // Light ALL SIX digits (minutes included) so the swipe sweeps the
+            // full row — the clearest read while tuning. Shipping flags digits
+            // naturally via WriteDigit (minutes only on long takes); this is a
+            // Playground-only "show me the whole wave" override.
             ChronoPreview.SimulateChangedDigits(
-                min1: false, min2: false,
-                sec1: true,  sec2: true,
-                cs1:  true,  cs2:  true);
+                min1: true, min2: true,
+                sec1: true, sec2: true,
+                cs1:  true, cs2:  true);
         }
 
         if (currentTarget == HudTarget.Recording)
@@ -340,12 +388,39 @@ public sealed partial class HudPage : Page
         var arcFill = isLightTheme ? Microsoft.UI.Colors.Black : Microsoft.UI.Colors.White;
 
         _nakedPreview = HudComposition.CreateNakedMaskPreview(
-            compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill);
+            compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill,
+            ViewModel.PreviewVariant, isDark: !isLightTheme);
 
         float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
         _nakedPreview.Container.Offset = new Vector3(inset, inset, 0f);
 
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _nakedPreview.Container);
+    }
+
+    private void AttachConicClonePreview()
+    {
+        ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
+        _conicClonePreview?.Dispose();
+        _conicClonePreview = null;
+
+        var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
+
+        bool isLightTheme =
+            Content is FrameworkElement fe &&
+            fe.ActualTheme == ElementTheme.Light;
+
+        _conicClonePreview = HudComposition.CreateConicClonePreview(
+            compositor, NakedHudSize, _tuning.ToConfig(),
+            new Vector2(_cloneCentreX, _cloneCentreY),
+            ViewModel.PreviewVariant, isDark: !isLightTheme);
+
+        // Centre the 272×78 row frame inside the 300×300 host — same seat as the
+        // XAML reference border, so the clone sits where the live row would.
+        float insetX = (NakedHostDim - _conicClonePreview.Container.Size.X) / 2f;
+        float insetY = (NakedHostDim - _conicClonePreview.Container.Size.Y) / 2f;
+        _conicClonePreview.Container.Offset = new Vector3(insetX, insetY, 0f);
+
+        ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, _conicClonePreview.Container);
     }
 
     private void RequestRebuild()
@@ -417,16 +492,20 @@ public sealed partial class HudPage : Page
         _simManualValue        = 0.012f;
         _simulateChangedDigits = true;
 
+        // Conic clone placement — back to centred (reproduces the contour).
+        _cloneCentreX = NakedHudSize.X / 2f;
+        _cloneCentreY = NakedHudSize.Y / 2f;
+
         // Swipe + Audio mapping expanders — same values the individual
         // Reset* methods use. Swipe statics live on SwipeWaveAnimator
         // since 2026-05-02 (Deckle.Composition) ; audio mapping
         // statics still belong to AudioLevelMapper (Deckle.Audio).
-        SwipeWaveAnimator.SwipeCycleSeconds = 4.5f;
-        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.3f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.6f, 1f);
-        SwipeWaveAnimator.SwipeRiseAlpha    = 0.25f;
-        SwipeWaveAnimator.SwipeDecayAlpha   = 0.012f;
-        SwipeWaveAnimator.SwipeHeadDomain   = 8;
+        SwipeWaveAnimator.SwipeCycleSeconds    = 2.4f;
+        SwipeWaveAnimator.SwipeStaggerSeconds  = 0.1f;
+        SwipeWaveAnimator.SwipeEnvelopeSeconds = 1.4f;
+        SwipeWaveAnimator.SwipeRampFraction    = 0.4f;
+        SwipeWaveAnimator.SwipeEaseP1          = new Vector2(0.4f, 0f);
+        SwipeWaveAnimator.SwipeEaseP2          = new Vector2(0.6f, 1f);
         AudioLevelMapper.EmaAlpha          = 0.25f;
         AudioLevelMapper.MinDbfs           = -55f;
         AudioLevelMapper.MaxDbfs           = -32f;
@@ -473,6 +552,7 @@ public sealed partial class HudPage : Page
                 case HudTuningSection.Rewriting:     AddRewritingExpander();      break;
                 case HudTuningSection.AudioMapping:  AddAudioMappingExpander();   break;
                 case HudTuningSection.SimulatedRms:  AddSimulatedRmsExpander();   break;
+                case HudTuningSection.ClonePlacement: AddClonePlacementExpander(); break;
             }
         }
 

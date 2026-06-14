@@ -40,9 +40,20 @@ public sealed partial class HudChrono
     // conic sprite is parented here. Assembled in EnsureSwipeInfra.
     private FrameworkElement[]? _cellElements;
 
-    // Latched on the first build exception so UpdateSwipe's retry doesn't throw
-    // (and log) every vsync. Cleared by StartSwipe so a fresh take retries.
+    // Latched once the reveal build has failed too many times in a row, so
+    // UpdateSwipe's retry stops throwing (and logging) every vsync. NOT latched
+    // on the first failure: in the Playground the swipe can start the very tick a
+    // digit's glyph is (re)built, before its alpha mask is rasterised, so
+    // GetAlphaMask throws on the first attempt — which used to condemn the whole
+    // take to the flat-accent fallback. We now retry for a short window and latch
+    // only if it keeps failing. Both reset by StartSwipe for a fresh take.
     private bool _revealsFailed;
+    private int  _revealBuildAttempts;
+
+    // Consecutive failed build attempts tolerated before giving up (≈ the retry
+    // window in vsync frames). A transient "glyph not ready yet" miss costs a few
+    // retries; a genuine type rejection latches after this many and logs once.
+    private const int MaxRevealBuildAttempts = 90;
 
     // True while any cell still lacks its reveal — lets UpdateSwipe skip the
     // host-geometry reads in EnsureReveals once all six are built.
@@ -116,14 +127,19 @@ public sealed partial class HudChrono
         }
         catch (System.Exception ex)
         {
-            // One throw (most likely an alpha-mask / mask-brush type rejection)
-            // condemns the whole reveal for this take — same failure mode for
-            // every digit — so tear down any partial build and latch, falling
-            // back to the flat accent. Recorded so a degraded reveal isn't
-            // mistaken for a design choice.
+            // Tear down any partial build (one throw fails the same way for every
+            // digit) and retry on the next vsync — the most common cause in the
+            // Playground is a glyph whose alpha mask isn't rasterised yet on the
+            // tick the swipe starts, which clears itself a frame or two later.
+            // Only after MaxRevealBuildAttempts consecutive failures do we give
+            // up: latch the flat-accent fallback and log once, so a genuine type
+            // rejection is still recorded and not mistaken for a design choice.
             TearDownReveals();
-            _revealsFailed = true;
-            DeckleHudSource.Log.RevealMaskFailed(ex.GetType().Name, ex.Message);
+            if (++_revealBuildAttempts >= MaxRevealBuildAttempts)
+            {
+                _revealsFailed = true;
+                DeckleHudSource.Log.RevealMaskFailed(ex.GetType().Name, ex.Message);
+            }
         }
     }
 

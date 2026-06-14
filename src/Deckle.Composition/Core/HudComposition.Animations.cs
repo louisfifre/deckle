@@ -85,6 +85,14 @@ public static partial class HudComposition
     // die leaks the two ScalarKeyFrameAnimations (Linear / Eased)
     // indefinitely on the compositor — after enough rebuilds the
     // compositor saturates and Forever animations stop firing.
+    // `placement` (optional) — where the surface's placed centre lands after the
+    // rotation, in the brush's visual space. The composite is
+    // T(−visualCentre)·R(θ)·T(placement): the surface still spins around its own
+    // centre, but that centre is parked at `placement` instead of back at
+    // `visualCentre`. Null ⇒ placement = visualCentre, i.e. rotate-in-place (the
+    // shipping contour / naked path — byte-identical to before this param existed).
+    // The conic-clone preview passes a free placement so the developer can drag the
+    // cone's apex anywhere in the row frame.
     private static CompositionPropertySet StartRotation(
         Compositor compositor,
         CompositionSurfaceBrush brush,
@@ -94,7 +102,8 @@ public static partial class HudComposition
         float phaseTurns,
         float easeP1X, float easeP1Y,
         float easeP2X, float easeP2Y,
-        float minSpeedFraction)
+        float minSpeedFraction,
+        Vector2? placement = null)
     {
         float startAngle = MathF.Tau * phaseTurns;
         float fullAngle  = MathF.Tau * direction;
@@ -156,7 +165,7 @@ public static partial class HudComposition
             "Matrix3x2.CreateTranslation(posCentre)");
         matrixExpr.SetReferenceParameter("props", props);
         matrixExpr.SetVector2Parameter("negCentre", -visualCentre);
-        matrixExpr.SetVector2Parameter("posCentre",  visualCentre);
+        matrixExpr.SetVector2Parameter("posCentre",  placement ?? visualCentre);
         matrixExpr.SetScalarParameter ("minFrac",    clampedFraction);
         brush.StartAnimation("TransformMatrix", matrixExpr);
         return props;

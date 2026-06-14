@@ -316,6 +316,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
 │   │   │   ├── HudComposition.Config.cs
+│   │   │   ├── HudComposition.ConicClonePreview.cs
 │   │   │   ├── HudComposition.cs
 │   │   │   ├── HudComposition.DigitReveal.cs
 │   │   │   ├── HudComposition.Factories.cs

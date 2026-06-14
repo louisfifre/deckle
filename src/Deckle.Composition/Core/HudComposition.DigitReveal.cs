@@ -32,11 +32,16 @@ public static partial class HudComposition
     // legacy family name and gets the upright face; rather than fight the
     // matching, we just borrow XAML's already-correct rasterisation).
     //
-    // The combining table (Composition brushes doc) authorises exactly this:
-    //   CompositionMaskBrush.Source ← CompositionEffectBrush   (YES)
-    //   CompositionMaskBrush.Mask   ← CompositionSurfaceBrush  (YES)  (the
-    //                                  surface-backed brush GetAlphaMask hands
-    //                                  back).
+    // The glyph is masked INSIDE the effect graph via AlphaMaskEffect — the
+    // SAME mechanism the stroke (arc + silhouette masks) and the naked Combined
+    // preview use, and the only one proven to composite here. An earlier
+    // variant pulled the built EffectBrush out and fed it to a
+    // CompositionMaskBrush.Source: that rendered transparent (a fully-built
+    // effect brush handed back as a MaskBrush source does not composite),
+    // which is why the revealed digits came up empty — the primary glyph faded
+    // out under the swipe and the reveal above it drew nothing, leaving the
+    // bare Stop-tone background. Keeping the mask in the graph, as a surface
+    // alpha source, is what works.
     //
     // The reveal is driven managed, exactly like the flat-accent overlay it
     // sits on top of: SetHeat pushes the swipe wave's per-digit heat onto the
@@ -50,7 +55,6 @@ public static partial class HudComposition
 
         private readonly CompositionSurfaceBrush _conicBrush;
         private readonly CompositionEffectBrush  _effectBrush;
-        private readonly CompositionMaskBrush    _maskBrush;
         private readonly bool _conicRotates;
         private bool _disposed;
 
@@ -58,13 +62,11 @@ public static partial class HudComposition
             SpriteVisual visual,
             CompositionSurfaceBrush conicBrush,
             CompositionEffectBrush  effectBrush,
-            CompositionMaskBrush    maskBrush,
             bool conicRotates)
         {
             Visual        = visual;
             _conicBrush   = conicBrush;
             _effectBrush  = effectBrush;
-            _maskBrush    = maskBrush;
             _conicRotates = conicRotates;
         }
 
@@ -97,7 +99,6 @@ public static partial class HudComposition
             if (_conicRotates)
                 try { _conicBrush.StopAnimation("TransformMatrix"); } catch { }
 
-            try { _maskBrush.Dispose();   } catch { }
             try { _effectBrush.Dispose(); } catch { }
             try { _conicBrush.Dispose();  } catch { }
             try { Visual.Dispose(); } catch { }
@@ -171,12 +172,16 @@ public static partial class HudComposition
                 Matrix3x2.CreateTranslation(conicCentreInSpriteSpace);
         }
 
-        // ── Effect graph: Conic ─► Sat ─► Hue ─► Exp ─────────────────────────
-        // Mirrors the stroke's colour stage; Sat/Hue/Exp bind to the stroke's
-        // EffectProps so the grading blend (ApplyVariant) is shared, not
-        // duplicated. No mask stage here — the glyph mask is applied one level
-        // up by the CompositionMaskBrush. Seed values are harmless — the
-        // bindings overwrite them on the first composed frame.
+        // ── Effect graph: Conic ─► Sat ─► Hue ─► Exp ─► AlphaMask(Glyph) ─────
+        // Identical grading chain to the contour (Factories.cs), and all three
+        // scalars bind to the SAME stroke.EffectProps the contour binds — so the
+        // digit shows the EXACT same cone the contour shows, in the same grading,
+        // in lock-step (during Transcribing that means desaturated, per
+        // TranscribingSaturation; we do NOT recolour the digit — it is "le même
+        // cône que le contour", nothing more). The glyph mask is the last node —
+        // same in-graph masking the stroke and naked Combined preview use;
+        // AlphaMaskEffect output = (Source.RGB, Source.A · Mask.A): the cone where
+        // the glyph is opaque, transparent elsewhere.
         var cfg = stroke.Config;
         var saturationEffect = new SaturationEffect
         {
@@ -197,30 +202,28 @@ public static partial class HudComposition
             Source   = hueEffect,
         };
 
+        var maskedGraph = new AlphaMaskEffect
+        {
+            Source    = exposureEffect,
+            AlphaMask = new CompositionEffectSourceParameter("Glyph"),
+        };
+
         var effectFactory = compositor.CreateEffectFactory(
-            exposureEffect,
+            maskedGraph,
             new[] { "Sat.Saturation", "Hue.Angle", "Exp.Exposure" });
         var effectBrush = effectFactory.CreateBrush();
         effectBrush.SetSourceParameter("Conic", conicBrush);
+        effectBrush.SetSourceParameter("Glyph", glyphAlphaMask);
 
         BindEffectProperty(compositor, effectBrush, "Sat.Saturation", stroke.EffectProps, "Saturation");
         BindEffectProperty(compositor, effectBrush, "Hue.Angle",      stroke.EffectProps, "HueAngle");
         BindEffectProperty(compositor, effectBrush, "Exp.Exposure",   stroke.EffectProps, "Exposure");
 
-        // ── Mask the graded conic with the digit glyph ───────────────────────
-        // CompositionMaskBrush: Source is the graded conic effect brush, Mask is
-        // the readout glyph's alpha. Output = conic colour where the glyph is
-        // opaque, transparent elsewhere — a window on the living material in
-        // the exact shape of the digit.
-        var maskBrush = compositor.CreateMaskBrush();
-        maskBrush.Source = effectBrush;
-        maskBrush.Mask   = glyphAlphaMask;
-
         var sprite = compositor.CreateSpriteVisual();
         sprite.Size    = spriteSize;
-        sprite.Brush   = maskBrush;
+        sprite.Brush   = effectBrush;
         sprite.Opacity = 0f;   // revealed by SetHeat as the swipe head passes
 
-        return new DigitRevealVisual(sprite, conicBrush, effectBrush, maskBrush, conicRotates);
+        return new DigitRevealVisual(sprite, conicBrush, effectBrush, conicRotates);
     }
 }
