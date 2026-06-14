@@ -60,6 +60,9 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtDurationCapReachedDetail  = 21;
     public const int EvtMicrophoneOpenFailedDetail = 22;
     public const int EvtRecordingTailSummaryDetail = 23;
+    // Speaker render (waveOut) — open-failure milestone + verbose mirror.
+    public const int EvtSpeakerOpenFailed          = 24;
+    public const int EvtSpeakerOpenFailedDetail    = 25;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
@@ -223,6 +226,27 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public void MicrophoneOpenFailedDetail(uint mmsys_err)
     {
         if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailedDetail, mmsys_err);
+    }
+
+    // Speaker render — the waveOut device could not be opened (no render device,
+    // or an exclusive-mode conflict). Output path of the read-aloud feature;
+    // mirrors the microphone open-failure pair above.
+    [Event(EvtSpeakerOpenFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)(Keywords.Push | Keywords.Lifecycle),
+           Message = "The speaker could not be opened for playback")]
+    public void SpeakerOpenFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeakerOpenFailed);
+    }
+
+    [Event(EvtSpeakerOpenFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Push | Keywords.Lifecycle),
+           Message = "speaker open failed | mmsys_err={0}")]
+    public void SpeakerOpenFailedDetail(uint mmsys_err)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeakerOpenFailedDetail, mmsys_err);
     }
 
     // In-place clean (no params, no placeholders): the milestone is entirely a

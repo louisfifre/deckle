@@ -308,7 +308,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
-│   │   └── ProbeResult.cs
+│   │   ├── ProbeResult.cs
+│   │   └── SpeakerOutput.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
@@ -893,6 +894,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
