@@ -451,11 +451,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
-│   │   │   ├── PairModelTrainer.cs
-│   │   │   └── RestorerOptions.cs
-│   │   ├── Evaluation/
-│   │   │   ├── RestorationEvaluator.cs
-│   │   │   └── RestorationReport.cs
+│   │   │   ├── RestorerOptions.cs
+│   │   │   └── TrainerReport.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
@@ -494,7 +491,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HarvestFilter.cs
 │   │   ├── HarvestStore.cs
 │   │   ├── LexiconBuilder.cs
-│   │   └── MorphalouReader.cs
+│   │   ├── MorphalouReader.cs
+│   │   ├── PairModelTrainer.cs
+│   │   ├── RestorationEvaluator.cs
+│   │   └── RestorationReport.cs
 │   ├── Deckle.Input.Autocorrect.Mlm/
 │   │   ├── CamembertMlmScorer.cs
 │   │   ├── CamembertSentenceReranker.cs

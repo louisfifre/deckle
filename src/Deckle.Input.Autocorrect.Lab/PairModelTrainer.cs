@@ -1,7 +1,7 @@
 using System.IO;
 using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect;
+namespace Deckle.Input.Autocorrect.Lab;
 
 // ── PairModelTrainer ────────────────────────────────────────────────────────
 //
@@ -242,10 +242,3 @@ public sealed record TrainerOptions
     // trigram context "prevPrev prev". Lower orders are always present for backoff.
     public int MaxOrder { get; init; } = 3;
 }
-
-// What the training pass observed — a data-quality signal, not engine state.
-public sealed record TrainerReport(
-    long Sentences,
-    long Tokens,
-    long AmbiguousSlotOccurrences,
-    long KeptRows);
