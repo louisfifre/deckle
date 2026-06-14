@@ -18,7 +18,7 @@ Casing, structural prefixes, boolean prefixes, the `Async` suffix and event tens
 
 Prefer a suffix that names the precise role over the overflow ones — Manager, Helper, Util(s), a generic Wrapper — which name an unowned dump rather than a responsibility. Two suffixes fitting one type means two responsibilities — split. And two names so alike they get confused signal a missing factorization or a fuzzy role — rename to make the difference explicit.
 
-Names mirror the tree: a namespace follows its folder, a file and a folder are named for the responsibility they hold, and no two modules' capability names overlap. Avoid the fuzzy generic namespaces (Common, Shared, Utilities) — name the real capability.
+A namespace names a module's capability, never a file's location: one module exposes one namespace, and sub-folders organize files freely without ever shifting or splitting it. A file and a folder are still named for the responsibility they hold, and no two modules' capability names overlap. Avoid the fuzzy generic namespaces (Common, Shared, Utilities) — name the real capability.
 
 Mark resources consistently: the `x:Name`/`x:Key`/`x:Uid` split kept distinct, a `.resw` key frozen once sent for translation, an EventSource provider as `Deckle-<Component>` (dash, never dot — ETW collision). Theme resources are named by function, not value — that rule lives in `deckle-interface`.
 
