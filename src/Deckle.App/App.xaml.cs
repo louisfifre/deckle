@@ -284,6 +284,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         var toastChannel = new Deckle.Notifications.ToastChannel();
         var dispatcher = Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
         dispatcher.Catalog.Register(PlaygroundNotifications.All);
+        dispatcher.Catalog.Register(AutocorrectNotifications.All);
         Milestone("notifications");
 
         // First-run gate — the engine ctor below loads the model immediately

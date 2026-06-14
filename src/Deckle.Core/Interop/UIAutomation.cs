@@ -25,6 +25,18 @@ public static class UIAutomation
     private const int UIA_EditControlTypeId     = 50004;
     private const int UIA_DocumentControlTypeId = 50030;
 
+    // Control-pattern availability + Value read-only state, used to recognise
+    // editable surfaces a bare ControlType misses (a Chromium/Electron
+    // contenteditable reports a non-Edit ControlType yet exposes the Text
+    // pattern). ValueIsReadOnly defaults to TRUE when the Value pattern is
+    // absent, so it is only meaningful alongside IsValuePatternAvailable.
+    // https://learn.microsoft.com/windows/win32/winauto/uiauto-control-pattern-availability-propids
+    // https://learn.microsoft.com/windows/win32/winauto/uiauto-control-pattern-propids
+    private const int UIA_IsTextPatternAvailablePropertyId     = 30040;
+    private const int UIA_IsValuePatternAvailablePropertyId    = 30043;
+    private const int UIA_ValueIsReadOnlyPropertyId            = 30046;
+    private const int UIA_IsTextEditPatternAvailablePropertyId = 30149;
+
     // CoClass CUIAutomation.
     private static readonly Guid CLSID_CUIAutomation =
         new("FF48DBA4-60EF-4201-AA87-54103EEF594E");
@@ -73,9 +85,20 @@ public static class UIAutomation
     // Describes the system-focused element for the autocorrect surface gate:
     // IsPassword (UIA's own flag — defaults to FALSE on unmarked fields, so a
     // false here is "not known to be a password", never a guarantee),
-    // text-editability (ControlType Edit or Document), and the owning process.
-    // Returns false when UIA cannot answer at all — the caller treats that as
-    // an unknown surface (observe, never correct).
+    // text-editability, and the owning process. `diagnostic` carries the raw
+    // editability signature (ControlType + pattern availability) so the gate's
+    // verdict is auditable in the logs. Returns false when UIA cannot answer at
+    // all — the caller treats that as an unknown surface (observe, never correct).
+    //
+    // Editability is no longer the strict Edit/Document ControlType: a multi-line
+    // contenteditable surface (Chromium/Electron apps — Claude, Discord, …)
+    // reports a non-Edit ControlType yet exposes the Text pattern, which is why
+    // the strict gate silently withheld every correction there. We accept any
+    // editable-text signal: the explicit TextEdit pattern, a writable Value, or
+    // a Text provider. The bare Text-provider clause is deliberately broad (a
+    // read-only document also exposes it) and stays safe because corrections are
+    // gated by explicit per-app enrollment; the non-enrolled notification path
+    // tightens it later from the signature captured here.
     public static bool TryDescribeFocusedElement(
         out bool isPassword, out bool isTextEditable, out int processId, out string diagnostic)
     {
@@ -95,17 +118,27 @@ public static class UIAutomation
             if (el.GetCurrentPropertyValue(UIA_IsPasswordPropertyId, out var pw) == 0 && pw is bool b)
                 isPassword = b;
 
+            int controlType = 0;
             if (el.GetCurrentPropertyValue(UIA_ControlTypePropertyId, out var ct) == 0 && ct is not null)
-            {
-                int controlType = Convert.ToInt32(ct);
-                isTextEditable = controlType == UIA_EditControlTypeId
-                              || controlType == UIA_DocumentControlTypeId;
-            }
+                controlType = Convert.ToInt32(ct);
+
+            bool hasTextPattern     = GetBool(el, UIA_IsTextPatternAvailablePropertyId);
+            bool hasValuePattern    = GetBool(el, UIA_IsValuePatternAvailablePropertyId);
+            bool hasTextEditPattern = GetBool(el, UIA_IsTextEditPatternAvailablePropertyId);
+            bool valueReadOnly      = !hasValuePattern || GetBool(el, UIA_ValueIsReadOnlyPropertyId);
+
+            isTextEditable = controlType == UIA_EditControlTypeId
+                          || controlType == UIA_DocumentControlTypeId
+                          || hasTextEditPattern
+                          || (hasValuePattern && !valueReadOnly)
+                          || hasTextPattern;
 
             if (el.GetCurrentPropertyValue(UIA_ProcessIdPropertyId, out var pid) == 0 && pid is not null)
                 processId = Convert.ToInt32(pid);
 
-            diagnostic = $"password={isPassword} editable={isTextEditable} pid={processId}";
+            diagnostic =
+                $"ctrl={controlType} text={hasTextPattern} value={hasValuePattern} "
+                + $"value_ro={valueReadOnly} textedit={hasTextEditPattern}";
             return true;
         }
         catch (Exception ex)
@@ -114,6 +147,12 @@ public static class UIAutomation
             return false;
         }
     }
+
+    // True only when UIA returns a VT_BOOL TRUE for the property. A "not
+    // supported" sentinel (a COM object, not a bool) or any failure reads as
+    // false — the conservative default for a pattern-availability flag.
+    private static bool GetBool(IUIAutomationElement el, int propertyId)
+        => el.GetCurrentPropertyValue(propertyId, out var v) == 0 && v is bool b && b;
 
     private static IUIAutomation GetInstance()
     {

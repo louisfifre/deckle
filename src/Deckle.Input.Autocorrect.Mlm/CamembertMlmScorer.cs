@@ -3,7 +3,7 @@ using System.Text.Json;
 using Deckle.Inference.Onnx;
 using Microsoft.ML.Tokenizers;
 
-namespace Deckle.Input.Autocorrect.Cli;
+namespace Deckle.Input.Autocorrect.Mlm;
 
 // ── CamembertMlmScorer ──────────────────────────────────────────────────────
 //

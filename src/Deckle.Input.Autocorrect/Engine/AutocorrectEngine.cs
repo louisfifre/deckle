@@ -39,6 +39,10 @@ public sealed class AutocorrectEngine : IDisposable
     // variant of the revert needs caret-position knowledge v1 does not have.
     private (string Original, string Replacement)? _revertArmed;
 
+    // Apps already offered for enrollment this run — a would-be correction on an
+    // undecided surface prompts once, then stays silent until the user answers.
+    private readonly HashSet<string> _suggested = new(StringComparer.OrdinalIgnoreCase);
+
     // Rollup accumulators — input thread only.
     private double _rollupStartMs = -1;
     private int _rollupCommits;
@@ -62,6 +66,13 @@ public sealed class AutocorrectEngine : IDisposable
     /// partial send. The screen may hold anything between the two forms.
     /// </summary>
     public event Action<string, string, bool>? InjectionFailed;
+
+    /// <summary>
+    /// Raised on the input thread when a correction would have applied on an
+    /// editable, non-password, not-yet-decided surface — the signal to offer
+    /// enrollment for that process. Fires at most once per process per run.
+    /// </summary>
+    public event Action<string>? EnrollmentSuggested;
 
     public FocusedSurface CurrentSurface => _surface;
 
@@ -190,10 +201,10 @@ public sealed class AutocorrectEngine : IDisposable
         _surface = surface;
         _tracker.NotifyFocusChanged();
 
-        bool enrolled = IsEnrolled(_settings(), surface.ProcessName);
+        bool enabled = IsEnabledFor(_settings(), surface.ProcessName);
         DeckleAutocorrectSource.Log.SurfaceChanged(
-            surface.ProcessName, surface.IsTextEditable, surface.IsPassword, enrolled);
-        SurfaceChanged?.Invoke(surface, enrolled);
+            surface.ProcessName, surface.IsTextEditable, surface.IsPassword, enabled, surface.Probe);
+        SurfaceChanged?.Invoke(surface, enabled);
     }
 
     private void OnWordCommitted(WordCommit commit)
@@ -202,11 +213,22 @@ public sealed class AutocorrectEngine : IDisposable
 
         var surface = _surface;
         var settings = _settings();
-        bool actionable = settings.Enabled
-                       && IsEnrolled(settings, surface.ProcessName)
-                       && surface.IsTextEditable
-                       && !surface.IsPassword;
-        if (!actionable)
+
+        // Editability, password and the master switch withhold ALL action — and
+        // the policy itself — without stopping observation resets.
+        if (!settings.Enabled || !surface.IsTextEditable || surface.IsPassword)
+        {
+            _rollupGated++;
+            MaybeRollup(commit.TimestampMs);
+            return;
+        }
+
+        bool enabledHere = IsEnabledFor(settings, surface.ProcessName);
+        bool undecided = !IsDecided(settings, surface.ProcessName);
+
+        // A declined app (decided, off) is left entirely alone — no policy run,
+        // no suggestion. Only an enabled or a not-yet-decided app is evaluated.
+        if (!enabledHere && !undecided)
         {
             _rollupGated++;
             MaybeRollup(commit.TimestampMs);
@@ -221,19 +243,29 @@ public sealed class AutocorrectEngine : IDisposable
         var decision = _policy.Evaluate(commit.Word, leftContext);
 
         // A reverted pair stays suppressed whatever the policy says — enforced
-        // here so even a policy without dictionary access (the CLI toy) honors
-        // the gesture.
+        // here so even a policy without dictionary access honors the gesture.
         if (decision is not null
             && _dictionary?.IsSuppressed(decision.Original, decision.Replacement) == true)
             decision = null;
 
-        // Learning feeds on words the engine leaves alone. A corrected commit
-        // must NOT reinforce the bare typo, or a few repetitions would adopt it
-        // and silently disable its own correction.
-        if (decision is null)
-            RecordCommitLearning(commit.Word);
+        if (enabledHere)
+        {
+            // Learning feeds on words the engine leaves alone. A corrected commit
+            // must NOT reinforce the bare typo, or a few repetitions would adopt
+            // it and silently disable its own correction.
+            if (decision is null)
+                RecordCommitLearning(commit.Word);
+            else
+                ApplyCorrection(commit, decision);
+        }
         else
-            ApplyCorrection(commit, decision);
+        {
+            // Not yet decided: never correct here. A correction that WOULD have
+            // applied is the trigger to offer enrollment for this app — once.
+            if (decision is not null)
+                MaybeSuggestEnrollment(surface.ProcessName);
+            _rollupGated++;
+        }
 
         MaybeRollup(commit.TimestampMs);
     }
@@ -267,7 +299,7 @@ public sealed class AutocorrectEngine : IDisposable
     {
         var surface = _surface;
         var settings = _settings();
-        if (!settings.Enabled || !IsEnrolled(settings, surface.ProcessName)
+        if (!settings.Enabled || !IsEnabledFor(settings, surface.ProcessName)
             || !surface.IsTextEditable || surface.IsPassword)
             return;
 
@@ -305,13 +337,22 @@ public sealed class AutocorrectEngine : IDisposable
         DeckleAutocorrectSource.Log.LearningSignal("commit");
     }
 
-    private static bool IsEnrolled(AutocorrectSettings settings, string processName)
+    // Corrections run here only when the app's decision is explicitly on.
+    private static bool IsEnabledFor(AutocorrectSettings settings, string processName)
+        => processName.Length > 0
+        && settings.Apps.TryGetValue(processName, out bool on) && on;
+
+    // The user has answered for this app (on or off) — absent means never met.
+    private static bool IsDecided(AutocorrectSettings settings, string processName)
+        => processName.Length > 0 && settings.Apps.ContainsKey(processName);
+
+    // First would-be correction on a not-yet-decided app raises the enrollment
+    // offer; the per-run guard keeps it to a single prompt until the user answers.
+    private void MaybeSuggestEnrollment(string processName)
     {
-        if (processName.Length == 0) return false;
-        foreach (string enrolled in settings.EnrolledProcesses)
-            if (string.Equals(enrolled, processName, StringComparison.OrdinalIgnoreCase))
-                return true;
-        return false;
+        if (processName.Length == 0 || !_suggested.Add(processName)) return;
+        DeckleAutocorrectSource.Log.EnrollmentSuggested(processName);
+        EnrollmentSuggested?.Invoke(processName);
     }
 
     private void MaybeRollup(double nowMs)

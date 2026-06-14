@@ -1,9 +1,8 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using Deckle.Input.Autocorrect.Cli;
 
-namespace Deckle.Input.Autocorrect.Cli;
+namespace Deckle.Input.Autocorrect.Mlm;
 
 // Offline probe (NOT the live engine) for the post-sentence reranker idea: can a
 // CamemBERT masked-LM choose the right accented form among a CLOSED set, from
@@ -16,7 +15,7 @@ namespace Deckle.Input.Autocorrect.Cli;
 // act when the top-vs-second score margin clears a threshold, what precision do
 // we buy and what fraction of cases do we still cover? The live reranker will
 // sit somewhere on that curve.
-internal static class MlmProbeCommand
+public static class MlmProbe
 {
     // Curated ambiguous groups: a folded key and its real French surface forms.
     // These are the high-frequency function-word ambiguities the left-context
@@ -38,16 +37,13 @@ internal static class MlmProbeCommand
 
     private static readonly char[] SentenceBreaks = { '.', '!', '?', ';', ':', '…', '\n' };
 
-    public static int Run(CliArgs args)
+    // Runs the probe. The caller supplies the resolved paths — the model
+    // directory (holding model.onnx + the tokenizer files) and the evaluation
+    // corpus — plus how many cases to mine per surface form and an optional TSV
+    // dump of the per-case results. Returns 0 on success, 1 when an input is
+    // missing.
+    public static int Run(string modelDir, string corpus, int perForm = 120, string? outPath = null)
     {
-        string root = RepoPaths.RepoRoot();
-        string modelDir = args.ValueOr("--model",
-            Path.Combine(RepoPaths.DefaultRawDir(root), "..", "models", "camembert-base"));
-        string corpus = args.ValueOr("--corpus",
-            Path.Combine(RepoPaths.DefaultRawDir(root), "wiki-fr-eval.txt"));
-        int perForm = args.IntOr("--n", 120);
-        string? outPath = args.Value("--out");
-
         if (!File.Exists(Path.Combine(modelDir, "model.onnx")))
         {
             Console.Error.WriteLine($"Missing model: {Path.Combine(modelDir, "model.onnx")}");

@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Deckle.Core;
 using Deckle.Input.Autocorrect;
 using Deckle.Input;
+using Deckle.Notifications;
 
 namespace Deckle.App;
 
@@ -69,6 +73,11 @@ public partial class App
                 french: french,
                 english: null);
 
+            // Reactive enrollment: a would-be correction on an undecided app
+            // raises this on the engine's input thread. Detach the prompt so we
+            // never block that thread; the user's answer writes the decision back.
+            _autocorrectEngine.EnrollmentSuggested += p => _ = PromptAutocorrectEnrollmentAsync(p);
+
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
             ReconcileAutocorrect();
         }
@@ -105,6 +114,38 @@ public partial class App
     {
         _autocorrectEngine?.Dispose();
         _autocorrectDictionary?.Dispose();
+    }
+
+    // Turns an enrollment suggestion into a toast and writes the user's answer.
+    // Runs detached from the engine's input thread (fire-and-forget): blocking
+    // that thread would freeze typing. A null answer (ignored, dropped, or the
+    // toast expired) leaves the app undecided — it is offered again next run.
+    private static async Task PromptAutocorrectEnrollmentAsync(string process)
+    {
+        var dispatcher = NotificationDispatcher.Instance;
+        if (dispatcher is null) return; // boot wiring not done — nothing to ask through
+
+        NotificationResponse? response;
+        try
+        {
+            response = await dispatcher.PromptAsync(
+                AutocorrectNotifications.Enroll, bodyArgs: new object?[] { process });
+        }
+        catch
+        {
+            // Channel failure (e.g. an elevated process drops toasts): best-effort,
+            // leave the app undecided so a later run can offer it again.
+            return;
+        }
+
+        if (response is null) return;
+
+        bool enable = response.ActionId == AutocorrectNotifications.EnableAction;
+
+        // The module owns the write: SetDecision swaps the decision map by
+        // reference under its own lock, so the engine — reading Apps live on its
+        // input thread — never observes a half-updated map.
+        AutocorrectSettingsService.Instance.SetDecision(process, enable);
     }
 
     // The personal counterpart of the accent index: maps a folded key to the

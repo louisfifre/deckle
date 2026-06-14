@@ -55,6 +55,12 @@
                         <FontIcon Glyph="{StaticResource Icon.Sparkle}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Uid="SettingsNavAutocorrect"
+                                    Tag="Deckle.Input.Autocorrect.AutocorrectPage, Deckle.Input.Autocorrect">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Autocorrect}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem x:Uid="SettingsNavAmbient"
                                     Tag="Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient">
                     <NavigationViewItem.Icon>

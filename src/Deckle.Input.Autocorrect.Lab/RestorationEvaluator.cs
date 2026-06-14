@@ -1,7 +1,7 @@
 using System.IO;
 using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect;
+namespace Deckle.Input.Autocorrect.Lab;
 
 // ── RestorationEvaluator ────────────────────────────────────────────────────
 //

@@ -29,6 +29,9 @@ public static class Glyphs
     public const string Diagnostics = "";
     public const string Logs = "";
 
+    // Segoe Fluent "Spelling" (F87B) — proofing / autocorrect.
+    public const string Autocorrect = "";
+
     // Common semantic concepts
     public const string Shortcut = "";
     public const string Theme = "";

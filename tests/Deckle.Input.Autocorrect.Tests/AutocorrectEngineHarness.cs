@@ -27,6 +27,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
     public readonly List<(string Original, string Replacement)> Reverted = new();
     public readonly List<(string Original, string Replacement, bool IsRevert)> InjectionFailures = new();
     public readonly List<(FocusedSurface Surface, bool Enrolled)> SurfaceChanges = new();
+    public readonly List<string> EnrollmentSuggestions = new();
 
     // Timestamp stamped on every raised key — only the rollup heartbeat cares.
     public double TimeMs { get; set; }
@@ -65,6 +66,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Engine.CorrectionApplied += d => Applied.Add(d);
         Engine.CorrectionReverted += (o, r) => Reverted.Add((o, r));
         Engine.InjectionFailed += (o, r, rev) => InjectionFailures.Add((o, r, rev));
+        Engine.EnrollmentSuggested += p => EnrollmentSuggestions.Add(p);
     }
 
     public bool Start() => Engine.Start();

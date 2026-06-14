@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Deckle.Input.Autocorrect.Cli;
+namespace Deckle.Input.Autocorrect.Lab;
 
 // Reads inflected surface forms from the Morphalou 3.1 "tout en un" CSV
 // (semicolon-separated, UTF-8). The file opens with a free-text preamble, a
