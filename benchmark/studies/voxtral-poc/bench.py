@@ -48,7 +48,7 @@ BENCHMARK_ROOT = BENCH_DIR.parent.parent
 sys.path.insert(0, str(BENCHMARK_ROOT))
 
 from lib._base_compat import _ensure_stdout_utf8
-from lib import corpus
+from lib import corpus, paths
 from lib.env import load_dotenv
 from lib.event_log import EventLog
 from lib.metrics import wer as metric_wer
@@ -113,9 +113,14 @@ def main() -> int:
             print(f"  judge ready  : {judge.label} model={judge.row_model}")
 
     # ── Run dir ────────────────────────────────────────────────────────
-    run_id = args.run_name or f"voxtral-poc-{datetime.now():%Y-%m-%d-%H%M}"
-    run_dir = BENCHMARK_ROOT / "runs" / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    # Nommage canonique `<modèle>-<phase>-<NNNN>` (cf. lib/paths.py). Run dir
+    # vit sous %LOCALAPPDATA%\Deckle\benchmark\runs\ pour survivre aux
+    # worktrees. Override via --run-name si besoin d'un nom custom.
+    if args.run_name:
+        run_dir = paths.RUNS_DIR / args.run_name
+        run_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        run_dir = paths.make_run_dir(model=args.source, phase="poc")
     results_path = run_dir / "results.jsonl"
     events_path  = run_dir / "events.jsonl"
     monitor_path = run_dir / "monitor.jsonl"
@@ -287,7 +292,7 @@ def _parse_args() -> argparse.Namespace:
                         "juge sélectionné s'applique (claude-haiku-4-5 ou "
                         "gemini-3.5-flash).")
     p.add_argument("--run-name", default="",
-                   help="Nom du run (défaut : voxtral-poc-YYYY-MM-DD-HHMM).")
+                   help="Nom custom du run sous RUNS_DIR (défaut : <source>-poc-NNNN).")
     return p.parse_args()
 
 

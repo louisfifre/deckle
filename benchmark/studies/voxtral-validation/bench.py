@@ -137,7 +137,7 @@ def main() -> int:
         run_dir = paths.RUNS_DIR / args.run_name
         run_dir.mkdir(parents=True, exist_ok=True)
     else:
-        run_dir = paths.make_run_dir(model=args.source, phase="validation")
+        run_dir = paths.make_run_dir(model=args.source, phase="testing")
     results_path = run_dir / "results.jsonl"
     events_path  = run_dir / "events.jsonl"
     print(f"  run_dir : {run_dir}\n")
@@ -252,7 +252,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--skip-judge", action="store_true",
                    help="Skip le judge Gemini. Métriques objectives seulement.")
     p.add_argument("--run-name", default="",
-                   help="Nom du run (défaut : voxtral-validation-YYYY-MM-DD-HHMM).")
+                   help="Nom custom du run sous RUNS_DIR (défaut : <source>-testing-NNNN).")
     return p.parse_args()
 
 
