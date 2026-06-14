@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
-using Deckle.Shell.TaskbarCover.Interop;
-using static Deckle.Shell.TaskbarCover.Interop.TaskbarCoverNativeMethods;
+using Deckle.Core;
+using Deckle.Shell.TaskbarCover;
+using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
 namespace Deckle.Shell.TaskbarCover;
 

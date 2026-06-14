@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
-using Deckle.Input.Interop;
+using Deckle.Core;
+using Deckle.Input;
 
 namespace Deckle.Input;
 

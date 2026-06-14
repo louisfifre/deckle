@@ -1,5 +1,5 @@
 using System.Text;
-using Deckle.Input.Autocorrect.Cli.Commands;
+using Deckle.Input.Autocorrect.Cli;
 
 // CLI host of the autocorrect module: the offline data pipeline (build-data,
 // train-pairs, eval) and the live prototype (watch, inject, run, enroll, dict).

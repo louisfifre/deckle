@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics.Tracing;
 using System.IO;
-using Deckle.Diagnostics.Listeners;
+using Deckle.Diagnostics;
 using Xunit;
 
 namespace Deckle.Diagnostics.Tests;

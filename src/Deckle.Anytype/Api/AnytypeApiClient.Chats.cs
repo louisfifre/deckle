@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Deckle.Anytype.Api;
+namespace Deckle.Anytype;
 
 public sealed partial class AnytypeApiClient
 {

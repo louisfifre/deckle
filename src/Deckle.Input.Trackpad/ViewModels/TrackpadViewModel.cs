@@ -1,7 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Deckle.Input.Trackpad.ViewModels;
+namespace Deckle.Input.Trackpad;
 
 // ViewModel for TrackpadPage — bridges TrackpadSettings (master switch,
 // drag speed, raw-frame recording) to the XAML via x:Bind. Same shape as

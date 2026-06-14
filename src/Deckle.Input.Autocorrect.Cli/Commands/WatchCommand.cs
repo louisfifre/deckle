@@ -1,8 +1,7 @@
-using Deckle.Input.Autocorrect.Surfaces;
-using Deckle.Input.Autocorrect.Tracking;
-using Deckle.Input.Keyboard;
+using Deckle.Input.Autocorrect;
+using Deckle.Input;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Étape-1 observation deliverable: host → decode → track → probe, with NO
 // correction and NO injection. It exists to watch the observation layer

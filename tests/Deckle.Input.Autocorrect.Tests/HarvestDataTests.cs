@@ -1,4 +1,4 @@
-using Deckle.Input.Autocorrect.Cli.Harvest;
+using Deckle.Input.Autocorrect.Cli;
 using Xunit;
 
 namespace Deckle.Input.Autocorrect.Tests;

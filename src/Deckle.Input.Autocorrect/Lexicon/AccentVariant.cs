@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Lexicon;
+namespace Deckle.Input.Autocorrect;
 
 // One accented surface form behind a folded key, with its corpus
 // frequency (occurrences per million words, the Lexique scale).

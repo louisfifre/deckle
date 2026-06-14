@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Audio;
 using Deckle.Hud;
 using Deckle.Composition;
-using Deckle.Playground.ViewModels;
+using Deckle.Playground;
 
 namespace Deckle.Playground;
 

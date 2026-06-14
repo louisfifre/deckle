@@ -1,9 +1,9 @@
 using System;
 using System.Diagnostics;
 using Deckle.Catalog;
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Diagnostics;
-using Deckle.Shell.TrayMenu.Interop;
+using Deckle.Shell.TrayMenu;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;

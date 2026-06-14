@@ -1,8 +1,8 @@
 using System.Text.Json.Nodes;
 
-using Deckle.Anytype.Gestures;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Mcp.Tools;
+namespace Deckle.Anytype.Mcp;
 
 // ─── Tool catalog ─────────────────────────────────────────────────────────────
 //

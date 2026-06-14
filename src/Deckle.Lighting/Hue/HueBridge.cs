@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Passive description of a Philips Hue bridge on the local network.
 // Identification data only — no credentials. The pairing exchange

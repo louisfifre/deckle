@@ -1,11 +1,10 @@
 using System.IO;
 using Deckle.Core;
-using Deckle.Input.Autocorrect.Cli.Harvest;
-using Deckle.Input.Autocorrect.Surfaces;
-using Deckle.Input.Autocorrect.Tracking;
-using Deckle.Input.Keyboard;
+using Deckle.Input.Autocorrect.Cli;
+using Deckle.Input.Autocorrect;
+using Deckle.Input;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Observation live: the `watch` pipeline (host → decode → track → probe, no
 // correction, no injection, password-gated at the source) with a persistent,

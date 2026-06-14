@@ -1,7 +1,7 @@
 using System.Text;
-using Deckle.Input.Autocorrect.Engine;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Evaluation;
+namespace Deckle.Input.Autocorrect;
 
 // ── RestorationReport ───────────────────────────────────────────────────────
 //

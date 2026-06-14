@@ -1,11 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Deckle.Audio;
-using Deckle.Audio.Preprocessing;
 using System.Globalization;
 using System.Threading.Tasks;
 
-namespace Deckle.Settings.ViewModels;
+namespace Deckle.Settings;
 
 // ViewModel for RecordingPage — bridges CaptureSettings (audio device,
 // level window) to the XAML via x:Bind. Migrated from GeneralViewModel

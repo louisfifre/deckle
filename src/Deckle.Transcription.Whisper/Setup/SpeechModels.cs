@@ -3,9 +3,9 @@ using System.IO;
 using System.Linq;
 
 using Deckle.Core;
-using Deckle.Transcription.Setup;
+using Deckle.Transcription;
 
-namespace Deckle.Transcription.Whisper.Setup;
+namespace Deckle.Transcription.Whisper;
 
 // ── SpeechModels ─────────────────────────────────────────────────────────────
 //

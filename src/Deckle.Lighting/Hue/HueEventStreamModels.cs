@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Public record yielded by HueBridgeClient.StreamEventsAsync. One
 // instance per resource that the bridge reports as changed. The

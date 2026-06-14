@@ -2,12 +2,10 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
-using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
 using Deckle.Diagnostics.Logging;
-using Deckle.Transcription.Engine;
+using Deckle.Transcription;
 using Deckle.Vad;
-using Deckle.Transcription.Streaming;
 
 namespace Deckle.Transcription;
 

@@ -1,6 +1,6 @@
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // Chooses among the accent variants of one folded form using left
 // context — the preceding words within the sentence, most recent last,

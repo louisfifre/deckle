@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Deckle.Input.Autocorrect.Interop;
+namespace Deckle.Input.Autocorrect;
 
 // The user32 entry points the KeyDecoder needs to turn a virtual-key into
 // the character(s) it would produce, under the foreground window's layout.
 // GetForegroundWindow / GetWindowThreadProcessId already live in
-// Deckle.Core.Interop.NativeMethods — they are reused, not redeclared here.
+// Deckle.Core.NativeMethods — they are reused, not redeclared here.
 internal static class KeyboardStateInterop
 {
     // ToUnicodeEx maps a virtual-key + scancode + a 256-byte keyboard state

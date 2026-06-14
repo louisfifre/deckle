@@ -5,7 +5,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:settings="using:Deckle.Settings"
-    xmlns:vm="using:Deckle.Settings.ViewModels">
+    xmlns:vm="using:Deckle.Settings">
 
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample "Settings page
          example"): StackPanel max 1000 in a Grid, Spacing=4 between cards,

@@ -1,13 +1,13 @@
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
+using Deckle.Core;
 
-namespace Deckle.Shell.TrayMenu.Interop;
+namespace Deckle.Shell.TrayMenu;
 
 // ─── Tray menu specific P/Invokes ─────────────────────────────────────────────
 //
 // Generic imports (GetCursorPos, SetForegroundWindow, ShowWindow,
 // SetWindowLongPtr, SetLayeredWindowAttributes, DwmSetWindowAttribute,
-// GetDpiForWindow…) live in Deckle.Core.Interop.NativeMethods and are consumed
+// GetDpiForWindow…) live in Deckle.Core.NativeMethods and are consumed
 // as-is. Here we only add what is missing: native popup positioner and related
 // style constants.
 
@@ -40,7 +40,7 @@ internal static class TrayMenuNativeMethods
 
     // ── Additional TPM_* flags ────────────────────────────────────────────────
     //
-    // TPM_BOTTOMALIGN / TPM_RIGHTALIGN already live in Deckle.Core.Interop.
+    // TPM_BOTTOMALIGN / TPM_RIGHTALIGN already live in Deckle.Core.
     // TPM_WORKAREA constrains the popup to the current monitor work area
     // (excluding the taskbar). Essential so a tray menu does not overflow under
     // the taskbar.
@@ -62,7 +62,7 @@ internal static class TrayMenuNativeMethods
 
     // ── Additional ShowWindow nCmdShow values ────────────────────────────────
     //
-    // SW_HIDE and SW_SHOWNOACTIVATE already live in Deckle.Core.Interop.
+    // SW_HIDE and SW_SHOWNOACTIVATE already live in Deckle.Core.
     // SW_SHOWNORMAL activates the window; required so it receives the focus
     // that SetForegroundWindow will then confirm. Without activation,
     // MenuFlyout does not dismiss correctly on click-outside.

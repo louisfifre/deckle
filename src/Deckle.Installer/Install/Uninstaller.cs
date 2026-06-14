@@ -1,9 +1,8 @@
 using System.Diagnostics;
 
-using Deckle.Installer.Platform;
-using Deckle.Installer.Ui;
+using Deckle.Installer;
 
-namespace Deckle.Installer.Install;
+namespace Deckle.Installer;
 
 // ── Uninstaller ───────────────────────────────────────────────────────────────
 //

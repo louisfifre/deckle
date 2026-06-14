@@ -1,7 +1,7 @@
 using System.Text;
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Harvest;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Decides what is worth harvesting and what is noise or sensitive. Signal-only
 // by design: only alphabetic, French-shaped tokens of word length pass, so

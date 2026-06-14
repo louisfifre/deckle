@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Surfaces;
+namespace Deckle.Input.Autocorrect;
 
 // Resolves the focused control into a FocusedSurface. SurfaceProber is the
 // production implementation, doing one targeted UIA read per focus change. The

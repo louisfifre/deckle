@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Mcp.Tools;
+using Deckle.Anytype.Mcp;
 
-namespace Deckle.Anytype.Mcp.JsonRpc;
+namespace Deckle.Anytype.Mcp;
 
 // MCP dispatcher implementing the stdio lifecycle of revision 2025-11-25.
 // Single-threaded: messages are read and handled one at a time, which suits

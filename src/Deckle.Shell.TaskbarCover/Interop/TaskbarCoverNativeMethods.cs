@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
+using Deckle.Core;
 
-namespace Deckle.Shell.TaskbarCover.Interop;
+namespace Deckle.Shell.TaskbarCover;
 
 // Module-local Win32 surface for the cover host — everything the band
 // window, its message pump, the taskbar query, the cursor WinEvent hook

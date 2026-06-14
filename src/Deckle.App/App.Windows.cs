@@ -1,4 +1,4 @@
-using Deckle.App.Diagnostics;
+using Deckle.App;
 using Deckle.Playground;
 
 namespace Deckle.App;

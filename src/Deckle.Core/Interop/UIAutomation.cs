@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Core.Interop;
+namespace Deckle.Core;
 
 // ── UI Automation — focused-element text-editability probe ──────────────────
 //

@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Settings.ViewModels">
+    xmlns:vm="using:Deckle.Settings">
 
     <!-- Same canvas pattern as GeneralPage / DiagnosticsPage / WhisperPage:
          Grid wrapper + StackPanel MaxWidth=1000 + SettingsCardSpacing=4 +

@@ -1,9 +1,8 @@
 using System.IO;
 using System.Text;
-using Deckle.Input.Autocorrect.Engine;
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Trains the left-context pair model over the French Wikipedia corpus and
 // writes it next to the lexicons. The trainer's notion of "ambiguous" comes

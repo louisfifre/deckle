@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Input.Interop;
+namespace Deckle.Input;
 
-// SendInput mouse plumbing. Deckle.Core.Interop carries a keyboard-
+// SendInput mouse plumbing. Deckle.Core carries a keyboard-
 // flattened INPUT for the paste injection; the mouse variant needs the
 // union's MOUSEINPUT shape instead, so it lives here with its own
 // SendInput overload rather than contorting the shared struct.
@@ -21,7 +21,7 @@ public static class SendInputInterop
 
     // Mouse-flattened INPUT: type, then the MOUSEINPUT union member.
     // Total size on 64-bit Windows = 40 bytes, same union sizing rule as
-    // the keyboard variant in Deckle.Core.Interop.Structs.
+    // the keyboard variant in Deckle.Core.Structs.
     [StructLayout(LayoutKind.Explicit)]
     public struct MOUSE_INPUT
     {

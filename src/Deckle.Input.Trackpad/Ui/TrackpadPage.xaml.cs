@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
-using Deckle.Input.Trackpad.ViewModels;
+using Deckle.Input.Trackpad;
 using Deckle.Shell;
 
 namespace Deckle.Input.Trackpad;

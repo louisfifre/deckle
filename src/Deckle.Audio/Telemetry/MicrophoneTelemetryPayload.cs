@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Deckle.Audio.Telemetry;
+namespace Deckle.Audio;
 
 // ── MicrophoneTelemetryPayload ──────────────────────────────────────────────
 //

@@ -1,4 +1,4 @@
-namespace Deckle.Input.Keyboard;
+namespace Deckle.Input;
 
 // The keyboard observation host as its consumers depend on it: three
 // input-thread signals plus a start/stop lifecycle. KeyboardInputHost is the

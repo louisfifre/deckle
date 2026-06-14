@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Injection;
+namespace Deckle.Input.Autocorrect;
 
 // The minimal keystroke diff that turns `current` (the text sitting left of
 // the caret) into `target`: delete the divergent tail, then type the new one.

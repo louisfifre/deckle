@@ -1,6 +1,6 @@
 using System.Diagnostics.Tracing;
 
-namespace Deckle.Diagnostics.Listeners;
+namespace Deckle.Diagnostics;
 
 // Listens for the canonical UserFeedback emission across every
 // Deckle.* provider. A single well-known event name —

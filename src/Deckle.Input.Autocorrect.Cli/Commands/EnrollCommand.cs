@@ -1,6 +1,6 @@
 using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Manages the enrollment list — the activation gate. An app never enrolled is
 // never corrected, so this is how a surface opts in. Process names are stored

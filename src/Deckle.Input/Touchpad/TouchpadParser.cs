@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Deckle.Input.Interop;
+using Deckle.Input;
 
 namespace Deckle.Input;
 

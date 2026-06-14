@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
-using Deckle.Input.Interop;
+using Deckle.Core;
+using Deckle.Input;
 
-namespace Deckle.Input.Keyboard;
+namespace Deckle.Input;
 
 // Second dedicated Raw Input thread, for the autocorrect observation
 // layer: its own message-only window, its own GetMessage pump,

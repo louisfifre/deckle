@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Tracking;
+namespace Deckle.Input.Autocorrect;
 
 // A word the user finished typing — a boundary character committed it.
 // PreviousWord is the token committed just before on the same surface

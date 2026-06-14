@@ -1,4 +1,4 @@
-using Deckle.Transcription.Streaming;
+using Deckle.Transcription;
 
 namespace Deckle.Transcription;
 

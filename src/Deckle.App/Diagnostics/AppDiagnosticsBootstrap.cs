@@ -2,10 +2,9 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using Deckle.Diagnostics;
-using Deckle.Diagnostics.Listeners;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.App.Diagnostics;
+namespace Deckle.App;
 
 // Boot-time wiring of the EventSource-based observability pipeline, in two
 // phases with a deliberate order:

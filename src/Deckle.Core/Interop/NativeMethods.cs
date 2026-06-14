@@ -2,7 +2,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace Deckle.Core.Interop;
+namespace Deckle.Core;
 
 public static class NativeMethods
 {

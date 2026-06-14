@@ -1,9 +1,9 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using Deckle.Input.Autocorrect.Cli.Mlm;
+using Deckle.Input.Autocorrect.Cli;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Offline probe (NOT the live engine) for the post-sentence reranker idea: can a
 // CamemBERT masked-LM choose the right accented form among a CLOSED set, from

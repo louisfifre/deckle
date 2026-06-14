@@ -1,4 +1,4 @@
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Conversion sRGB → Hue's preferred colour representation : CIE 1931
 // xy chromaticity + a 1..254 brightness byte. The xy part follows the

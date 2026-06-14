@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Surfaces;
+namespace Deckle.Input.Autocorrect;
 
 // What the gate knows about the control under keyboard focus.
 // IsPassword is the hard gate — no decoding, no buffering, no counting.

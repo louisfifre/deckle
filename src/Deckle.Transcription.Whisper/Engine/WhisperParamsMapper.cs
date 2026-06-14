@@ -1,10 +1,10 @@
 using System;
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Transcription;
-using Deckle.Transcription.Whisper.Pinvoke;
+using Deckle.Transcription.Whisper;
 
-namespace Deckle.Transcription.Whisper.Engine;
+namespace Deckle.Transcription.Whisper;
 
 // ── WhisperParamsMapper ───────────────────────────────────────────────────────
 //

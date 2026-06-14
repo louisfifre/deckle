@@ -2,7 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Deckle.Anytype.Mcp.JsonRpc;
+namespace Deckle.Anytype.Mcp;
 
 // Transport framing for JSON-RPC 2.0 over stdio, MCP revision 2025-11-25:
 // newline-delimited UTF-8 (no BOM), exactly one JSON object per line, no

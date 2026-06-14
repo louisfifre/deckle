@@ -1,15 +1,15 @@
 using System.Net.Http;
 using System.Security.Cryptography;
 
-using Deckle.Installer.Ui;
+using Deckle.Installer;
 
-namespace Deckle.Installer.Io;
+namespace Deckle.Installer;
 
 // ── Downloader ────────────────────────────────────────────────────────────────
 //
 // Streams an HTTP download to disk while drawing a console progress bar and
 // computing SHA-256 incrementally. Deliberately a console-local re-take of
-// Deckle.Transcription.Setup.Downloader rather than a reference to it: that one
+// Deckle.Transcription.Downloader rather than a reference to it: that one
 // lives in a WinUI module and reports through IProgress<T> on a UI dispatcher;
 // pulling it in would drag all of WinUI into a stub whose entire reason to exist
 // is to stay small and self-contained. The shared shape (atomic .partial →

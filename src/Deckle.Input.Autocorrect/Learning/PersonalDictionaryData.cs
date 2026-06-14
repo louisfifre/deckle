@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Learning;
+namespace Deckle.Input.Autocorrect;
 
 // On-disk shape of the personal dictionary — the only persisted text in the
 // module (CLAUDE.md), serialized indented so the file is humanly inspectable.

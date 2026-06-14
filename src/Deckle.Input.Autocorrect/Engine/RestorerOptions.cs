@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // ── RestorerOptions ─────────────────────────────────────────────────────────
 //

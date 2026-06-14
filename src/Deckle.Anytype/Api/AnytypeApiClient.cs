@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Core;
 
-namespace Deckle.Anytype.Api;
+namespace Deckle.Anytype;
 
 // Thin transport over the local Anytype REST API. No domain knowledge: every
 // method takes/returns a JsonNode and the gestures layer owns the payload

@@ -14,8 +14,8 @@ using Windows.Storage.Pickers;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Data;
 using WinRT.Interop;
-using Deckle.App.Diagnostics;
-using Deckle.Core.Interop;
+using Deckle.App;
+using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
@@ -155,7 +155,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         return null;
     }
 
-    // Copy through the shared verified Win32 writer (Deckle.Core.Interop.
+    // Copy through the shared verified Win32 writer (Deckle.Core.
     // Win32Clipboard). The WinRT DataPackage/Clipboard.SetContent path this
     // replaced wrote unverified and relied on delayed rendering, which
     // truncated or failed silently on large selections — the bug this fixes.

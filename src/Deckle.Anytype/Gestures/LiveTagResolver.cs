@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // Resolves a select/multi_select value (display name or key) against a
 // property's LIVE options in the space, for properties that carry NO frozen

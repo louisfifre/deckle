@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
 using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
-using Deckle.Lighting.Hue;
 
 namespace Deckle.Playground;
 

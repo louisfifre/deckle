@@ -1,16 +1,12 @@
 using System.Runtime.InteropServices;
 using Deckle.Audio;
-using Deckle.Audio.Preprocessing;
-using Deckle.Audio.Telemetry;
 using Deckle.Catalog;
 using Deckle.Core;
-using Deckle.Core.Interop;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
-using Deckle.Transcription.Corpus;
-using Deckle.Transcription.Engine;
+using Deckle.Transcription;
 
 namespace Deckle.Transcription;
 
@@ -359,7 +355,7 @@ public sealed partial class TranscriptionEngine
     private bool CopyToClipboard(string text)
     {
         // The Win32 write + read-back verification now lives in
-        // Deckle.Core.Interop.Win32Clipboard, shared with the LogWindow Copy
+        // Deckle.Core.Win32Clipboard, shared with the LogWindow Copy
         // command. This method keeps the engine's observability surface: it
         // maps the structured result back onto the same EventSource events and
         // UserFeedback the inline implementation emitted, in the same order.

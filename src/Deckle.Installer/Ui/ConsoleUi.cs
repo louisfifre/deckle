@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Installer.Ui;
+namespace Deckle.Installer;
 
 // ── ConsoleUi ─────────────────────────────────────────────────────────────────
 //

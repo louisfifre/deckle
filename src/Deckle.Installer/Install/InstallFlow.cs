@@ -1,12 +1,9 @@
 using System.Diagnostics;
 using System.IO.Compression;
 
-using Deckle.Installer.Io;
-using Deckle.Installer.Platform;
-using Deckle.Installer.Release;
-using Deckle.Installer.Ui;
+using Deckle.Installer;
 
-namespace Deckle.Installer.Install;
+namespace Deckle.Installer;
 
 // ── InstallFlow ───────────────────────────────────────────────────────────────
 //

@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Bridge discovery on the local network. J2 only ships the cloud
 // lookup path : a GET to discovery.meethue.com returns the IPs of the

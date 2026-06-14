@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Deckle.Core;
 
-namespace Deckle.Input.Autocorrect.Learning;
+namespace Deckle.Input.Autocorrect;
 
 // The persisted learning surface: which words the user has made "theirs" and
 // which corrections they reverted. Reinforcement decays so a word typed once

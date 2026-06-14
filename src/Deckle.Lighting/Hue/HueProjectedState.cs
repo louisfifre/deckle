@@ -1,4 +1,4 @@
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 public readonly record struct HueProjectedState(
     bool On,

@@ -1,7 +1,7 @@
 using System.IO;
 using Deckle.Core;
 
-namespace Deckle.Transcription.Corpus;
+namespace Deckle.Transcription;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //

@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Deckle.Anytype.Mcp.Tools;
+namespace Deckle.Anytype.Mcp;
 
 // ─── Tool descriptor ──────────────────────────────────────────────────────────
 //

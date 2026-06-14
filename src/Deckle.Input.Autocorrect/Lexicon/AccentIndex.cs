@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Lexicon;
+namespace Deckle.Input.Autocorrect;
 
 // ── AccentIndex ─────────────────────────────────────────────────────────────
 //

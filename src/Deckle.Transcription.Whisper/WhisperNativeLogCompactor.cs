@@ -10,10 +10,7 @@ using System.Threading.Tasks;
 
 using Deckle.Core;
 using Deckle.Transcription;
-using Deckle.Transcription.Engine;
-using Deckle.Transcription.Whisper.Engine;
-using Deckle.Transcription.Whisper.Pinvoke;
-using Deckle.Transcription.Whisper.Setup;
+using Deckle.Transcription.Whisper;
 
 namespace Deckle.Transcription.Whisper;
 

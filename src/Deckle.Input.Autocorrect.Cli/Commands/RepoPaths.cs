@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Resolves the repo-relative locations the data pipeline reads and writes.
 // The host runs from artifacts\bin\..., so we walk up from the running

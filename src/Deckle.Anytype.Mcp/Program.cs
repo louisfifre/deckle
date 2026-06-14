@@ -1,10 +1,7 @@
 using System.IO;
 using System.Text;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Dialogues;
-using Deckle.Anytype.Gestures;
-using Deckle.Anytype.Mcp.JsonRpc;
-using Deckle.Anytype.Mcp.Tools;
+using Deckle.Anytype;
+using Deckle.Anytype.Mcp;
 
 namespace Deckle.Anytype.Mcp;
 

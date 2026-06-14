@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Microsoft.UI.Xaml.Controls"
     xmlns:local="using:Deckle.App"
-    xmlns:diag="using:Deckle.App.Diagnostics"
+    xmlns:diag="using:Deckle.App"
     Title="Deckle Logs">
 
     <Grid x:Name="RootGrid">

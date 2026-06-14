@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:ambientControls="using:Deckle.Lighting.Ambient.Controls">
+    xmlns:ambientControls="using:Deckle.Lighting.Ambient">
 
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample
          "Settings page example"): StackPanel max 1000 in a Grid,

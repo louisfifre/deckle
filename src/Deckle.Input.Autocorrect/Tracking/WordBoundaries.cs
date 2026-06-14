@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Deckle.Input.Autocorrect.Tracking;
+namespace Deckle.Input.Autocorrect;
 
 // The ONE canonical French tokenization, shared by the live TypedWordTracker
 // and the future offline trainer/eval so a word is split the same way wherever

@@ -1,4 +1,4 @@
-using Deckle.Anytype.Gestures;
+using Deckle.Anytype;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;

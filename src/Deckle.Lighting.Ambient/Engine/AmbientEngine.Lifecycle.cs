@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Lighting;
-using Deckle.Lighting.Hue;
 using Deckle.Vision;
 
 namespace Deckle.Lighting.Ambient;

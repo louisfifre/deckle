@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Shell;
 using Deckle.Core;
 
-namespace Deckle.Settings.ViewModels;
+namespace Deckle.Settings;
 
 // ViewModel for GeneralPage — bridges shell-level AppSettings sections
 // (Hotkeys, Appearance, Behaviour, Startup, Backup) to the XAML via x:Bind.

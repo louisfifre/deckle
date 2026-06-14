@@ -1,4 +1,4 @@
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Hue "group" — the unit of control for the REST API. Maps to a
 // Room (e.g. "Salon"), a Zone, or an Entertainment area in the user's

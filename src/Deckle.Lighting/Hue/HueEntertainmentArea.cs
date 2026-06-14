@@ -1,4 +1,4 @@
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // One entertainment area as configured by the user in the Hue mobile
 // app : a named bundle of lights with explicit 3D positions relative

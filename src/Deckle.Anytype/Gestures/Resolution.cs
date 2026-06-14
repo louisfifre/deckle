@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // Shared name→id resolution consumed by every gesture class. A gesture argument
 // that designates an object accepts either its name or its id; this is the one

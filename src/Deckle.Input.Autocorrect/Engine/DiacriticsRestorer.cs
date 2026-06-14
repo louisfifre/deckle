@@ -1,7 +1,6 @@
-using Deckle.Input.Autocorrect.Learning;
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // ── DiacriticsRestorer ──────────────────────────────────────────────────────
 //

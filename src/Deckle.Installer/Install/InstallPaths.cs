@@ -1,4 +1,4 @@
-namespace Deckle.Installer.Install;
+namespace Deckle.Installer;
 
 // ── InstallPaths ──────────────────────────────────────────────────────────────
 //

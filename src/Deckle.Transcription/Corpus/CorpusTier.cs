@@ -1,4 +1,4 @@
-namespace Deckle.Transcription.Corpus;
+namespace Deckle.Transcription;
 
 // Five length tiers applied to ASR output, indexed on word count. Hardcoded
 // here because the later Settings pass will decide whether these thresholds

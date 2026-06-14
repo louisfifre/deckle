@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Mcp.JsonRpc;
-using Deckle.Anytype.Mcp.Tools;
+using Deckle.Anytype.Mcp;
 using Xunit;
 
 namespace Deckle.Anytype.Mcp.Tests;

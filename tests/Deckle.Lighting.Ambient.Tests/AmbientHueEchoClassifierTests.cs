@@ -1,5 +1,5 @@
 using Deckle.Lighting.Ambient;
-using Deckle.Lighting.Hue;
+using Deckle.Lighting;
 using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;

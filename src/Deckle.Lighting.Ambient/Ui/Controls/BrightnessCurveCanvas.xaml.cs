@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 
-namespace Deckle.Lighting.Ambient.Controls;
+namespace Deckle.Lighting.Ambient;
 
 // Small square widget that plots the brightness response curve used by
 // AmbientEngine.ApplyBrightnessCurve. Two polylines overlap inside a

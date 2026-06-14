@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
-using Deckle.Diagnostics.Listeners;
+using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Telemetry;
 

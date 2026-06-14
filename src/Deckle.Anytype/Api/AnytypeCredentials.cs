@@ -2,7 +2,7 @@ using System.IO;
 using System.Text.Json;
 using Deckle.Core;
 
-namespace Deckle.Anytype.Api;
+namespace Deckle.Anytype;
 
 // Local Anytype API credentials, loaded from disk. The api_key is a bearer
 // token paired to the running Anytype Desktop instance — it never leaves this

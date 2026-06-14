@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Deckle.Input.Autocorrect.Tracking;
+namespace Deckle.Input.Autocorrect;
 
 // Pure state machine over the decoded keystroke stream: accumulates the word
 // under the caret, commits it on a boundary, and harvests the « typed wrong,

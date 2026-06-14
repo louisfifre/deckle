@@ -1,6 +1,6 @@
-using Deckle.Input.Autocorrect.Injection;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Étape-2 micro-deliverable: type a literal string into whatever window holds
 // focus when the countdown ends. It is the bare TextInjector path — a human

@@ -4,7 +4,7 @@ using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Diagnostics;
 
 namespace Deckle.Settings;

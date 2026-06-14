@@ -1,6 +1,5 @@
-using Deckle.App.Diagnostics;
+using Deckle.App;
 using Deckle.Core;
-using Deckle.Core.Interop;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
@@ -12,7 +11,6 @@ using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
-using Deckle.Transcription.Whisper.Setup;
 
 namespace Deckle.App;
 

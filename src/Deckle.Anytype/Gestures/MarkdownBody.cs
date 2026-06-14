@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // The body-edit engine, pure and I/O-free: locate a section by its heading and
 // replace the content under it, leaving every other section exactly as Anytype

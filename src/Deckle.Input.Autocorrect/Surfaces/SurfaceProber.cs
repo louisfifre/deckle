@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using Deckle.Core.Interop;
+using Deckle.Core;
 
-namespace Deckle.Input.Autocorrect.Surfaces;
+namespace Deckle.Input.Autocorrect;
 
 // Resolves the focused element into a FocusedSurface via one targeted UIA
 // read. Called on focus-change events only (never per keystroke) — the

@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
-using Deckle.Input.Interop;
+using Deckle.Core;
+using Deckle.Input;
 
-namespace Deckle.Input.Autocorrect.Injection;
+namespace Deckle.Input.Autocorrect;
 
 // Replays a correction as synthetic keystrokes via SendInput: a burst of
 // Backspaces to erase the divergent tail, then the new suffix typed as Unicode

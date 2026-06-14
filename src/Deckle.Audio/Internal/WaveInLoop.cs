@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Deckle.Core.Interop;
+using Deckle.Core;
 
-namespace Deckle.Audio.Internal;
+namespace Deckle.Audio;
 
 // Internal helper extracted from the legacy 331-line Record() body. Owns
 // only the inner polling loop + post-Stop drain — buffer allocation and

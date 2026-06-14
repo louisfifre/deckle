@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Deckle.Input.Autocorrect.Cli.Harvest;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Encrypted persistence for the observation harvest. Unlike the personal
 // dictionary (plaintext, inspectable by doctrine), the harvest is a raw,

@@ -2,10 +2,9 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
 using Deckle.Core;
 
-namespace Deckle.Transcription.Whisper.Pinvoke;
+namespace Deckle.Transcription.Whisper;
 
 // ── WhisperPInvoke ──────────────────────────────────────────────────────────
 //

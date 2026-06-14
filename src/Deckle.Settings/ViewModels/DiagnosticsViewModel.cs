@@ -3,7 +3,7 @@ using Deckle.Core;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Settings.ViewModels;
+namespace Deckle.Settings;
 
 // ViewModel for DiagnosticsPage — bridges TelemetrySettings and
 // LoggingSettings to the XAML via x:Bind. Originally migrated from

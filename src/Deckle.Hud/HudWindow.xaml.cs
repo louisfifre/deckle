@@ -4,7 +4,7 @@ using System.Threading;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;

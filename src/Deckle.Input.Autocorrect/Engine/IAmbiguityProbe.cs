@@ -1,6 +1,6 @@
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // Lets a caller ask the gate which words are genuinely ambiguous slots — those
 // whose folded key carries two or more surface forms a context model must

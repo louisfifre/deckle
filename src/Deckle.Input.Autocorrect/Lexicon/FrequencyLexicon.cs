@@ -2,7 +2,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
-namespace Deckle.Input.Autocorrect.Lexicon;
+namespace Deckle.Input.Autocorrect;
 
 // ── FrequencyLexicon ────────────────────────────────────────────────────────
 //

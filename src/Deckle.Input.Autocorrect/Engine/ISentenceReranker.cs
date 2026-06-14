@@ -1,6 +1,6 @@
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // A post-sentence, bidirectional disambiguator: unlike IPairDisambiguator (which
 // sees only the left context, word by word), this one runs once the sentence is
