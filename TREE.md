@@ -661,19 +661,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── HudViewModel.cs
 │   │   ├── Views/
-│   │   │   ├── AmbientPage.HdrTuning.cs
-│   │   │   ├── AmbientPage.Hue.cs
-│   │   │   ├── AmbientPage.LightZones.cs
-│   │   │   ├── AmbientPage.Preview.cs
-│   │   │   ├── AmbientPage.ScreenCapture.cs
-│   │   │   ├── AmbientPage.xaml
-│   │   │   ├── AmbientPage.xaml.cs
+│   │   │   ├── Ambient/
+│   │   │   │   ├── AmbientPage.HdrTuning.cs
+│   │   │   │   ├── AmbientPage.Hue.cs
+│   │   │   │   ├── AmbientPage.LightZones.cs
+│   │   │   │   ├── AmbientPage.Preview.cs
+│   │   │   │   ├── AmbientPage.ScreenCapture.cs
+│   │   │   │   ├── AmbientPage.xaml
+│   │   │   │   └── AmbientPage.xaml.cs
+│   │   │   ├── Hud/
+│   │   │   │   ├── HudPage.Expanders.cs
+│   │   │   │   ├── HudPage.RowFactories.cs
+│   │   │   │   ├── HudPage.xaml
+│   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
-│   │   │   ├── HudPage.Expanders.cs
-│   │   │   ├── HudPage.RowFactories.cs
-│   │   │   ├── HudPage.xaml
-│   │   │   ├── HudPage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
 │   │   │   └── PlaygroundWindow.xaml.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
