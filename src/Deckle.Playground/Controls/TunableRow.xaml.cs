@@ -1,6 +1,7 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.Globalization.NumberFormatting;
 
 namespace Deckle.Playground.Controls;
 
@@ -20,9 +21,25 @@ public sealed partial class TunableRow : UserControl
     // to any one of the three would otherwise echo back through the other two.
     private bool _syncing;
 
+    // The controls are configured once, on Loaded, when every range parameter is
+    // in place — never per-DP during XAML parse. The range DPs (Minimum / Maximum
+    // / Step) are set one at a time by the XBF loader ; reconfiguring on each would
+    // run Configure against a half-applied range (e.g. Minimum already 30 while
+    // Maximum is still the 1.0 default), a transient inverted / degenerate range a
+    // WinRT RangeBase setter rejects with E_INVALIDARG — surfaced by the loader as
+    // "Failed to assign to property Minimum". This gate defers all control writes
+    // until the parameters are coherent.
+    private bool _loaded;
+
     public TunableRow()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        _loaded = true;
         Configure();
         PushValueToControls();
         UpdateResetEnabled();
@@ -119,12 +136,12 @@ public sealed partial class TunableRow : UserControl
     // as 0.30000004) is rounded away before display — mirrors the HUD row factory.
     private int Digits => Math.Max(0, (int)Math.Ceiling(-Math.Log10(Step <= 0 ? 1 : Step)));
 
-    // Apply the range and increments to both controls. Minimum is set before
-    // Maximum so a below-zero Maximum (the dBFS threshold) isn't clamped up to the
-    // old Minimum of 0 — the same ordering trap the Segmentation page hit.
+    // Apply the range and increments to both controls. Only ever called from
+    // OnLoaded (and post-load Value pushes), so Minimum / Maximum / Step are all
+    // their final, mutually-consistent values — no half-applied transient range.
     private void Configure()
     {
-        if (ValueSlider is null) return;
+        if (!_loaded || ValueSlider is null) return;
         double step = Step <= 0 ? 1.0 : Step;
 
         ValueSlider.Minimum       = Minimum;
@@ -137,11 +154,21 @@ public sealed partial class TunableRow : UserControl
         ValueBox.Maximum     = Maximum;
         ValueBox.SmallChange = step;
         ValueBox.LargeChange = step * 10;
+
+        // Explicit formatter : without it the NumberBox prints the double's full
+        // precision (0.1 shows as 0.1000000015). Pin the display to exactly the
+        // decimals the step implies, so the box reads as a round number.
+        ValueBox.NumberFormatter = new DecimalFormatter
+        {
+            IntegerDigits  = 1,      // keep a leading "0" before the point
+            FractionDigits = Digits, // decimals implied by Step (0 for whole units)
+            IsGrouped      = false,  // no thousands separator on the ms values
+        };
     }
 
     private void PushValueToControls()
     {
-        if (ValueSlider is null) return;
+        if (!_loaded || ValueSlider is null) return;
         double shown = Math.Round(Value, Digits);
         _syncing = true;
         try
