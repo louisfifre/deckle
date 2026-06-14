@@ -813,7 +813,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── RepetitionDetector.cs
-│   │   └── WhisperBackend.cs
+│   │   ├── WhisperBackend.cs
+│   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Vad.csproj

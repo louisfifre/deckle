@@ -66,6 +66,10 @@ public sealed class WhisperBackend : IAsrBackend
     private WhisperNewSegmentCallback? _segmentCallback;
     private WhisperAbortCallback? _abortCallback;
 
+    // Init-phase log compactor — owns the per-phase string state machine that
+    // consolidates whisper.cpp's noisy init lines into one event per phase.
+    private readonly WhisperNativeLogCompactor _logCompactor = new();
+
     // ── IAsrBackend surface ──────────────────────────────────────────────────
 
     public bool IsModelLoaded => _ctx != IntPtr.Zero;
@@ -455,7 +459,7 @@ public sealed class WhisperBackend : IAsrBackend
                 // as a single event before the new phase starts. Lines that
                 // are not from a tracked phase flush any pending phase first,
                 // then fall through to the level switch below.
-                if (TryAccumulatePhaseLine(msg)) return;
+                if (_logCompactor.TryAccumulatePhaseLine(msg)) return;
 
                 // ── "no GPU found" downgrade for the second backend init ─
                 // The VAD context creation triggers a second whisper_backend
@@ -499,80 +503,6 @@ public sealed class WhisperBackend : IAsrBackend
             DeckleWhispSource.Log.WhisperLogSetUnavailable();
             DeckleWhispSource.Log.WhisperLogSetUnavailableDetail(ex.Message);
         }
-    }
-
-    // ── Init-phase compaction ────────────────────────────────────────────────
-    //
-    // whisper.cpp's init flow emits four distinct prefix groups whose lines
-    // are useful as a whole but noisy individually. We accumulate the
-    // value-of-interest from each line of the active phase into per-phase
-    // state, and flush a single consolidated event the moment we see a line
-    // from a different phase (or any non-phase line). The fifth init prefix —
-    // whisper_init_from_file_with_params_no_state: — emits a single line and
-    // passes through unchanged.
-
-    private static readonly string[] s_phasePrefixes = new[]
-    {
-        "whisper_init_with_params_no_state:",
-        "whisper_model_load:",
-        "whisper_backend_init_gpu:",
-        "whisper_init_state:",
-    };
-
-    // Current phase index (0..3) and accumulator. -1 means no phase active.
-    private int _phaseIndex = -1;
-    private readonly List<string> _phaseAccumulator = new();
-
-    // Returns true when the line was consumed by the phase machinery (and so
-    // must not flow through the normal level switch in the log hook).
-    private bool TryAccumulatePhaseLine(string msg)
-    {
-        int matched = -1;
-        for (int i = 0; i < s_phasePrefixes.Length; i++)
-        {
-            if (msg.StartsWith(s_phasePrefixes[i], StringComparison.Ordinal))
-            {
-                matched = i;
-                break;
-            }
-        }
-
-        if (matched < 0)
-        {
-            // Non-phase line — flush any pending phase first, then let the
-            // caller route the line normally.
-            FlushPendingPhase();
-            return false;
-        }
-
-        if (_phaseIndex >= 0 && matched != _phaseIndex)
-        {
-            // Different phase started — flush the previous one before
-            // starting accumulation on the new phase.
-            FlushPendingPhase();
-        }
-
-        _phaseIndex = matched;
-        // Capture the substring after the prefix, trimmed. Empty bodies are
-        // skipped — they carry no value to consolidate.
-        string body = msg.Substring(s_phasePrefixes[matched].Length).Trim();
-        if (body.Length > 0) _phaseAccumulator.Add(body);
-        return true;
-    }
-
-    private void FlushPendingPhase()
-    {
-        if (_phaseIndex < 0) return;
-        string consolidated = string.Join(" | ", _phaseAccumulator);
-        switch (_phaseIndex)
-        {
-            case 0: DeckleWhispSource.Log.WhisperInitParamsParsed(consolidated); break;
-            case 1: DeckleWhispSource.Log.WhisperModelLoadParsed(consolidated); break;
-            case 2: DeckleWhispSource.Log.WhisperBackendInitParsed(consolidated); break;
-            case 3: DeckleWhispSource.Log.WhisperInitStateParsed(consolidated); break;
-        }
-        _phaseAccumulator.Clear();
-        _phaseIndex = -1;
     }
 
     // ── Init-phase timing ─────────────────────────────────────────────────────
