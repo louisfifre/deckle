@@ -624,9 +624,9 @@
                                                x:Uid="WhisperSegHangoverRampStartCard"
                                                Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegHangoverRampStartBox"
-                                       Minimum="30000"
+                                       Minimum="0"
                                        Maximum="600000"
-                                       SmallChange="10000"
+                                       SmallChange="5000"
                                        LargeChange="30000"
                                        SpinButtonPlacementMode="Hidden"
                                        MinWidth="100"
@@ -637,9 +637,9 @@
                                                x:Uid="WhisperSegHangoverRampEndCard"
                                                Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
                             <NumberBox x:Name="SegHangoverRampEndBox"
-                                       Minimum="60000"
+                                       Minimum="30000"
                                        Maximum="900000"
-                                       SmallChange="10000"
+                                       SmallChange="5000"
                                        LargeChange="30000"
                                        SpinButtonPlacementMode="Hidden"
                                        MinWidth="100"
