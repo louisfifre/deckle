@@ -37,15 +37,19 @@ public partial class SegmentationViewModel : ObservableObject
     [ObservableProperty] public partial double RampStartSec   { get; set; }
     [ObservableProperty] public partial double RampEndSec     { get; set; }
 
-    // ── Curve shape ──────────────────────────────────────────────────────────
-    [ObservableProperty] public partial double Contrast  { get; set; }
-    [ObservableProperty] public partial double Position  { get; set; }
-    [ObservableProperty] public partial double Sharpness { get; set; }
+    // ── Curve shape — the two cubic-Bézier control points, each coord in [0,1] ──
+    [ObservableProperty] public partial double CurveX1 { get; set; }
+    [ObservableProperty] public partial double CurveY1 { get; set; }
+    [ObservableProperty] public partial double CurveX2 { get; set; }
+    [ObservableProperty] public partial double CurveY2 { get; set; }
 
     // ── Detection ────────────────────────────────────────────────────────────
+    // MarginMs / MinUtteranceMs are held as double (not int) so they bind to the
+    // TunableRow's double Value like every other knob ; WriteTo rounds them back
+    // to whole ms for the store.
     [ObservableProperty] public partial double ThresholdDbfs  { get; set; }
-    [ObservableProperty] public partial int    MarginMs       { get; set; }
-    [ObservableProperty] public partial int    MinUtteranceMs { get; set; }
+    [ObservableProperty] public partial double MarginMs       { get; set; }
+    [ObservableProperty] public partial double MinUtteranceMs { get; set; }
 
     // ── Command-enable flags ─────────────────────────────────────────────────
     [ObservableProperty] public partial bool IsDirty  { get; set; }
@@ -64,12 +68,13 @@ public partial class SegmentationViewModel : ObservableObject
     partial void OnHangoverMinSecChanged(double value) => Recompute();
     partial void OnRampStartSecChanged(double value)   => Recompute();
     partial void OnRampEndSecChanged(double value)     => Recompute();
-    partial void OnContrastChanged(double value)       => Recompute();
-    partial void OnPositionChanged(double value)       => Recompute();
-    partial void OnSharpnessChanged(double value)      => Recompute();
+    partial void OnCurveX1Changed(double value)        => Recompute();
+    partial void OnCurveY1Changed(double value)        => Recompute();
+    partial void OnCurveX2Changed(double value)        => Recompute();
+    partial void OnCurveY2Changed(double value)        => Recompute();
     partial void OnThresholdDbfsChanged(double value)  => Recompute();
-    partial void OnMarginMsChanged(int value)          => Recompute();
-    partial void OnMinUtteranceMsChanged(int value)    => Recompute();
+    partial void OnMarginMsChanged(double value)       => Recompute();
+    partial void OnMinUtteranceMsChanged(double value) => Recompute();
 
     private void Recompute()
     {
@@ -104,26 +109,37 @@ public partial class SegmentationViewModel : ObservableObject
     public void Revert()        => Apply(_saved);
     public void ResetDefaults() => Apply(_defaults);
 
-    // Adopt these (already slider-grid-coerced) values as BOTH the live state and
-    // the saved baseline, with no per-property recompute churn. Used once at page
-    // load to reconcile a persisted off-grid value with the slider grid, so the
-    // thumb, the VM and the readouts agree and IsDirty starts false.
-    public void AdoptAsSaved(
-        double hangoverMaxSec, double hangoverMinSec, double rampStartSec, double rampEndSec,
-        double contrast, double position, double sharpness,
-        double thresholdDbfs, int marginMs, int minUtteranceMs)
+    // Per-section reset to the shipping defaults — the section's reset wheel. Each
+    // sets only its own knobs, so the rest of the unsaved edits survive ; the
+    // per-property change hooks recompute the dirty flags.
+    public void ResetHangoverRamp()
     {
-        _saved = new Snapshot(
-            hangoverMaxSec, hangoverMinSec, rampStartSec, rampEndSec,
-            contrast, position, sharpness, thresholdDbfs, marginMs, minUtteranceMs);
-        Apply(_saved);
+        HangoverMaxSec = _defaults.HangoverMaxSec;
+        HangoverMinSec = _defaults.HangoverMinSec;
+        RampStartSec   = _defaults.RampStartSec;
+        RampEndSec     = _defaults.RampEndSec;
+    }
+
+    public void ResetCurve()
+    {
+        CurveX1 = _defaults.CurveX1;
+        CurveY1 = _defaults.CurveY1;
+        CurveX2 = _defaults.CurveX2;
+        CurveY2 = _defaults.CurveY2;
+    }
+
+    public void ResetDetection()
+    {
+        ThresholdDbfs  = _defaults.ThresholdDbfs;
+        MarginMs       = _defaults.MarginMs;
+        MinUtteranceMs = _defaults.MinUtteranceMs;
     }
 
     // ── Snapshot plumbing ────────────────────────────────────────────────────
 
     private Snapshot Capture() => new(
         HangoverMaxSec, HangoverMinSec, RampStartSec, RampEndSec,
-        Contrast, Position, Sharpness, ThresholdDbfs, MarginMs, MinUtteranceMs);
+        CurveX1, CurveY1, CurveX2, CurveY2, ThresholdDbfs, MarginMs, MinUtteranceMs);
 
     private void Apply(Snapshot s)
     {
@@ -135,9 +151,10 @@ public partial class SegmentationViewModel : ObservableObject
             HangoverMinSec = s.HangoverMinSec;
             RampStartSec   = s.RampStartSec;
             RampEndSec     = s.RampEndSec;
-            Contrast       = s.Contrast;
-            Position       = s.Position;
-            Sharpness      = s.Sharpness;
+            CurveX1        = s.CurveX1;
+            CurveY1        = s.CurveY1;
+            CurveX2        = s.CurveX2;
+            CurveY2        = s.CurveY2;
             ThresholdDbfs  = s.ThresholdDbfs;
             MarginMs       = s.MarginMs;
             MinUtteranceMs = s.MinUtteranceMs;
@@ -154,17 +171,18 @@ public partial class SegmentationViewModel : ObservableObject
     // field-wise equality the dirty check relies on.
     private readonly record struct Snapshot(
         double HangoverMaxSec, double HangoverMinSec, double RampStartSec, double RampEndSec,
-        double Contrast, double Position, double Sharpness,
-        double ThresholdDbfs, int MarginMs, int MinUtteranceMs)
+        double CurveX1, double CurveY1, double CurveX2, double CurveY2,
+        double ThresholdDbfs, double MarginMs, double MinUtteranceMs)
     {
         public static Snapshot FromSettings(EnergySegmenterSettings s) => new(
             HangoverMaxSec: s.HangoverMaxMs / 1000.0,
             HangoverMinSec: s.HangoverMinMs / 1000.0,
             RampStartSec:   s.HangoverRampStartMs / 1000.0,
             RampEndSec:     s.HangoverRampEndMs / 1000.0,
-            Contrast:       s.HangoverContrast,
-            Position:       s.HangoverPosition,
-            Sharpness:      s.HangoverSharpness,
+            CurveX1:        s.HangoverCurveX1,
+            CurveY1:        s.HangoverCurveY1,
+            CurveX2:        s.HangoverCurveX2,
+            CurveY2:        s.HangoverCurveY2,
             ThresholdDbfs:  s.ThresholdDbfs,
             MarginMs:       s.MarginMs,
             MinUtteranceMs: s.MinUtteranceMs);
@@ -175,12 +193,13 @@ public partial class SegmentationViewModel : ObservableObject
             s.HangoverMinMs       = (int)Math.Round(HangoverMinSec * 1000.0);
             s.HangoverRampStartMs = (int)Math.Round(RampStartSec * 1000.0);
             s.HangoverRampEndMs   = (int)Math.Round(RampEndSec * 1000.0);
-            s.HangoverContrast    = Contrast;
-            s.HangoverPosition    = Position;
-            s.HangoverSharpness   = Sharpness;
+            s.HangoverCurveX1     = CurveX1;
+            s.HangoverCurveY1     = CurveY1;
+            s.HangoverCurveX2     = CurveX2;
+            s.HangoverCurveY2     = CurveY2;
             s.ThresholdDbfs       = ThresholdDbfs;
-            s.MarginMs            = MarginMs;
-            s.MinUtteranceMs      = MinUtteranceMs;
+            s.MarginMs            = (int)Math.Round(MarginMs);
+            s.MinUtteranceMs      = (int)Math.Round(MinUtteranceMs);
         }
     }
 }

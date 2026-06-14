@@ -317,6 +317,15 @@ public sealed partial class AmbientPage : Page
         UpdatePreviewViewboxVisibility();
     }
 
+    // ── Action bar ───────────────────────────────────────────────────────────
+
+    // Reset to defaults : the VM snaps the tuning surface back to the shipping
+    // defaults and saves ; the AmbientSettingsService.Changed observer
+    // (OnAmbientSettingsChanged) reloads the VM and repaints every slider, so
+    // there's nothing to push from here.
+    private void OnAmbientResetDefaultsClick(object sender, RoutedEventArgs e)
+        => ViewModel.ResetDefaults();
+
     // ── Theme resource helper ───────────────────────────────────────────────
     //
     // Looking up a system fill colour brush from code-behind requires

@@ -24,22 +24,20 @@ namespace Deckle.Transcription;
 //                         HangoverMinMs. Between RampStart and RampEnd the delay
 //                         eases from Max to Min along the shaped curve below.
 //
-//   The decay between RampStart and RampEnd is a slope-integral curve: it declines
-//   from the start of the ramp — continuously, with no built-in plateau (whole-
-//   frame rounding aside) — and its slope ramps from entry to exit under three
-//   independent shape knobs.
+//   The decay between RampStart and RampEnd follows a cubic Bézier easing — the
+//   same function CSS cubic-bezier(x1,y1,x2,y2) defines — with fixed endpoints
+//   (0,0) and (1,1) and two free control points. The four coordinates below ARE
+//   those two control points. They span the whole space the old contrast / knee
+//   knobs reached and more: pulling both handles into a corner gives a true
+//   right-angle hug, the diagonal gives a straight decline.
 //
-//   HangoverContrast    — ratio of the exit slope to the entry slope. 1 is a
-//                         straight line (constant decline). Above 1 the curve is
-//                         gentle at entry then steepens toward a cliff at RampEnd;
-//                         below 1 is the mirror (steep entry, gentle tail).
-//   HangoverPosition    — where the knee sits along the ramp, in [0, 1]: 0 puts
-//                         the slope change at the very start (ease-out feel), 1 at
-//                         the very end (ease-in feel), ~0.8 keeps most of the ramp
-//                         gentle then breaks late.
-//   HangoverSharpness   — how abrupt the knee is. Low values blend the slope
-//                         change over the whole ramp; high values make it a sharp
-//                         corner at HangoverPosition.
+//   HangoverCurveX1/Y1  — first control point (P1), each in [0, 1]. Its direction
+//                         from (0,0) sets the curve's entry slope (Y1/X1).
+//   HangoverCurveX2/Y2  — second control point (P2), each in [0, 1]. Its direction
+//                         into (1,1) sets the exit slope ((1−Y2)/(1−X2)).
+//
+//   The default (0.42, 0.30, 0.85, 0.50) reproduces the previous shipped curve
+//   (gentle early decline, accelerating into a late knee) to within ~0.03.
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
@@ -52,9 +50,10 @@ public sealed class EnergySegmenterSettings
     public int    HangoverMinMs       { get; set; } = 500;
     public int    HangoverRampStartMs { get; set; } = 60_000;
     public int    HangoverRampEndMs   { get; set; } = 180_000;
-    public double HangoverContrast    { get; set; } = 3.0;
-    public double HangoverPosition    { get; set; } = 0.8;
-    public double HangoverSharpness   { get; set; } = 20.0;
+    public double HangoverCurveX1     { get; set; } = 0.42;
+    public double HangoverCurveY1     { get; set; } = 0.30;
+    public double HangoverCurveX2     { get; set; } = 0.85;
+    public double HangoverCurveY2     { get; set; } = 0.50;
     public int    MarginMs            { get; set; } = 150;
     public int    MinUtteranceMs      { get; set; } = 250;
 }

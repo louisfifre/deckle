@@ -25,6 +25,12 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- SettingsCard / SettingsExpander — WhisperPage canonical layout. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <!-- Win2D : Direct2D-backed CanvasControl for HangoverCurveCanvas — the
+         segmenter's hangover plot is drawn in immediate mode (a single Draw per
+         Invalidate) instead of recreating a XAML Shapes tree on every resize.
+         Same package Deckle.Composition uses for the HUD strokes ; version
+         centralised. -->
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 
   <ItemGroup>

@@ -73,7 +73,7 @@
     <value>Ambient lighting</value>
   </data>
   <data name="PlaygroundNavSegmentation.Content" xml:space="preserve">
-    <value>Segmentation</value>
+    <value>Speech segmentation</value>
   </data>
 
   <data name="PlaygroundHomeHeader.Text" xml:space="preserve">
@@ -102,13 +102,10 @@
   </data>
 
   <data name="PlaygroundHudTunablesHeader.Text" xml:space="preserve">
-    <value>Tunables</value>
+    <value>HUD Tunables</value>
   </data>
   <data name="PlaygroundHudTunablesDescription.Text" xml:space="preserve">
-    <value>Tweak values live for the current session — nothing is saved. Restart Deckle to reset to defaults.</value>
-  </data>
-  <data name="PlaygroundHudResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
+    <value>Tweak values live for the current session — nothing is saved. Reset to defaults to start over; the next launch is fresh anyway.</value>
   </data>
 
   <data name="PlaygroundAmbientHeader.Text" xml:space="preserve">

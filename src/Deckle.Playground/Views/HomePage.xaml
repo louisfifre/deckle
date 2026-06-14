@@ -18,13 +18,13 @@
               Margin="32,32,32,32">
             <StackPanel Spacing="32">
 
-                <!-- Header block : H1 + one-line description.
-                     TitleLargeTextBlockStyle matches the Settings pages'
-                     header convention so the visual hierarchy stays
-                     consistent across the app's tuning surfaces. -->
+                <!-- Header block : H1 + one-line description. TitleTextBlockStyle
+                     (not TitleLarge) is the shared Playground header convention —
+                     the HUD page sets the reference, every page aligns to it so
+                     no surface reads oversized. -->
                 <StackPanel Spacing="8">
                     <TextBlock x:Uid="PlaygroundHomeHeader"
-                               Style="{ThemeResource TitleLargeTextBlockStyle}" />
+                               Style="{ThemeResource TitleTextBlockStyle}" />
                     <TextBlock x:Uid="PlaygroundHomeSubheader"
                                Style="{ThemeResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
