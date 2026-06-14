@@ -34,4 +34,22 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
                     Apps[process] = true;
         EnrolledProcesses = null;
     }
+
+    // Pure transforms of the per-app decision map, beside the map they act on.
+    // AutocorrectSettingsService calls these under its write lock; both return
+    // a NEW case-insensitive map so the engine — which reads Apps live on its
+    // input thread — only ever observes a complete old-or-new reference, never
+    // a half-built one. The OrdinalIgnoreCase comparer is preserved on purpose:
+    // process names are matched without regard to case everywhere.
+    public static Dictionary<string, bool> WithDecision(
+        IReadOnlyDictionary<string, bool> apps, string process, bool enabled) =>
+        new(apps, StringComparer.OrdinalIgnoreCase) { [process] = enabled };
+
+    public static Dictionary<string, bool> WithoutDecision(
+        IReadOnlyDictionary<string, bool> apps, string process)
+    {
+        var next = new Dictionary<string, bool>(apps, StringComparer.OrdinalIgnoreCase);
+        next.Remove(process);
+        return next;
+    }
 }

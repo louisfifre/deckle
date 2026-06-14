@@ -25,10 +25,6 @@ public partial class App
     private PersonalDictionary? _autocorrectDictionary;
     private bool _autocorrectStarted;
 
-    // Serializes the read-modify-write of the per-app decision map when two
-    // enrollment answers happen to land close together.
-    private static readonly object _enrollWriteLock = new();
-
     private void InitializeAutocorrect()
     {
         try
@@ -146,18 +142,10 @@ public partial class App
 
         bool enable = response.ActionId == AutocorrectNotifications.EnableAction;
 
-        // Swap the decision map by reference rather than mutating it in place: the
-        // engine reads Apps live on its input thread, and a reference assignment
-        // is atomic, so it never observes a half-updated dictionary.
-        lock (_enrollWriteLock)
-        {
-            var settings = AutocorrectSettingsService.Instance.Current;
-            settings.Apps = new Dictionary<string, bool>(settings.Apps, StringComparer.OrdinalIgnoreCase)
-            {
-                [process] = enable,
-            };
-            AutocorrectSettingsService.Instance.Save();
-        }
+        // The module owns the write: SetDecision swaps the decision map by
+        // reference under its own lock, so the engine — reading Apps live on its
+        // input thread — never observes a half-updated map.
+        AutocorrectSettingsService.Instance.SetDecision(process, enable);
     }
 
     // The personal counterpart of the accent index: maps a folded key to the
