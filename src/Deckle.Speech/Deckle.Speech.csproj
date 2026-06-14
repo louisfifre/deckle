@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Speech</RootNamespace>
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload
+         keys land directly in the JSONL output. Same as Deckle.Audio. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Speech.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- SpeakerOutput render primitive lives in the audio module. -->
+    <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
+  </ItemGroup>
+</Project>

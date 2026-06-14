@@ -782,6 +782,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Show.cs
 │   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
+│   ├── Deckle.Speech/
+│   │   ├── ChatterboxSpeechBackend.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Read-aloud (TTS) output module — the ISpeechBackend boundary, the placeholder s…
+│   │   ├── Deckle.Speech.csproj
+│   │   ├── DeckleSpeechSource.cs
+│   │   ├── ISpeechBackend.cs
+│   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes and kept decisions for Deckle.Speech — read on demand when chas…
+│   │   ├── SpeechEngine.cs
+│   │   ├── SpeechSettings.cs
+│   │   └── SpeechSettingsService.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
 │   │   │   ├── CorpusTier.cs
@@ -965,6 +975,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   └── DispatcherQueueExtensionsTests.cs
+│   ├── Deckle.Speech.Tests/
+│   │   ├── Deckle.Speech.Tests.csproj
+│   │   ├── SpeechEngineTests.cs
+│   │   └── SpeechSettingsTests.cs
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs
