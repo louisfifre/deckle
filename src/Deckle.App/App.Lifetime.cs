@@ -17,6 +17,7 @@ public partial class App
         try { _messageHost?.Dispose();     } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("message host dispose: " + ex.Message); }
         try { _overlayManager?.Dispose();  } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("overlay manager dispose: " + ex.Message); }
         try { _engine?.Dispose();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("engine dispose: " + ex.Message); }
+        try { _speechEngine?.Dispose();    } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("speech engine dispose: " + ex.Message); }
         try { ShutdownTrackpad();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("trackpad shutdown: " + ex.Message); }
         try { ShutdownTaskbarCover();      } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("taskbar cover shutdown: " + ex.Message); }
         try { ShutdownAutocorrect();       } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("autocorrect shutdown: " + ex.Message); }
