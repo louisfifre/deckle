@@ -62,19 +62,26 @@ SOS = 128257           # start of speech (model generates this)
 EOS_AUDIO = 128258     # end of speech (generation stop)
 CODE_OFFSET = 128266   # first SNAC speech-token id (= 128256 + 10)
 
-# SNAC int2wav_static decodes a fixed window of 12 frames -> 24576 samples.
+# SNAC int2wav_static (laion/SNAC-24khz-decoder-onnx) decodes a FIXED window of 12
+# coarse frames -> 24576 samples (2048 samples/frame). It must be driven as a
+# sliding CENTRE window, not disjoint blocks: keep the middle, discard a margin of
+# convolutional context at each interior edge, edge-pad at the extremities.
 WIN_FRAMES = 12
 WIN_SAMPLES = 24576
+SAMPLES_PER_FRAME = WIN_SAMPLES // WIN_FRAMES  # 2048
+KEEP_MARGIN = 1  # frames of context dropped at each interior window edge
 SR = 24000
 
 # The FR finetune's named voices (lowercase). A valid voice is required.
 VOICES = ["pierre", "amelie", "marie"]
-# First-pass listening set: neutral, a question, a real corpus line, and the
-# expressive-tag test — Orpheus is the only engine that performs <laugh>/<sigh>.
-SIDS = ["01_neutre", "05_question", "corpus_01", "tags_rire"]
+# Clean, normal full sentences only — no hesitation tics (04), no expressive tags
+# (read literally on this finetune), no short corpus fragments. Real prose so the
+# voice can actually be judged.
+SIDS = ["01_neutre", "02_explication", "03_emotion", "05_question"]
 
-# Sampling — Orpheus defaults (model card / community).
-TEMPERATURE = 0.6
+# Sampling — lower temperature than the 0.6 default for more coherent French
+# (the garbling/hesitation suggests the decode samples drift; tighten it).
+TEMPERATURE = 0.4
 TOP_P = 0.9
 TOP_K = 50
 REPETITION_PENALTY = 1.1
@@ -149,35 +156,57 @@ def deinterleave(frame7: list[int]) -> tuple[list[int], list[int], list[int]]:
     return c0, c1, c2
 
 
+def _decode_window(session: ort.InferenceSession, frames: list, start: int,
+                   n_frames: int) -> np.ndarray:
+    """Decode one 12-frame window, edge-padding (clamping) out-of-range frames."""
+    c0, c1, c2 = [], [], []
+    for k in range(WIN_FRAMES):
+        idx = min(max(start + k, 0), n_frames - 1)  # clamp = repeat edge frame
+        a, b, c = deinterleave(frames[idx])
+        c0 += a
+        c1 += b
+        c2 += c
+    feeds = {
+        "codes0": np.asarray(c0, dtype=np.int64).reshape(1, WIN_FRAMES),
+        "codes1": np.asarray(c1, dtype=np.int64).reshape(1, 2 * WIN_FRAMES),
+        "codes2": np.asarray(c2, dtype=np.int64).reshape(1, 4 * WIN_FRAMES),
+    }
+    return session.run(None, feeds)[0].reshape(-1).astype(np.float32)
+
+
 def decode_codes(session: ort.InferenceSession, codes: list[int]) -> np.ndarray:
-    """Window the code stream into 12-frame blocks and SNAC-decode each."""
+    """Sliding-centre-window SNAC decode (laion static-decoder reference scheme).
+
+    Window = 12 frames, hop = 10, keep the centre [2048:22528] with a 1-frame
+    margin of convolutional context discarded at each interior edge; the first
+    window keeps its real start, the last its real end. Decoding disjoint blocks
+    (the previous approach) lost edge context and garbled everything past ~1 s.
+    """
     n_frames = len(codes) // 7
     if n_frames == 0:
         return np.zeros(0, dtype=np.float32)
     frames = [codes[7 * j: 7 * j + 7] for j in range(n_frames)]
+    spf = SAMPLES_PER_FRAME
 
-    chunks: list[np.ndarray] = []
-    for start in range(0, n_frames, WIN_FRAMES):
-        block = frames[start:start + WIN_FRAMES]
-        real = len(block)
-        if real < WIN_FRAMES:  # pad the trailing partial window
-            block = block + [[0] * 7] * (WIN_FRAMES - real)
-        c0, c1, c2 = [], [], []
-        for fr in block:
-            a, b, c = deinterleave(fr)
-            c0 += a
-            c1 += b
-            c2 += c
-        feeds = {
-            "codes0": np.asarray(c0, dtype=np.int64).reshape(1, WIN_FRAMES),
-            "codes1": np.asarray(c1, dtype=np.int64).reshape(1, 2 * WIN_FRAMES),
-            "codes2": np.asarray(c2, dtype=np.int64).reshape(1, 4 * WIN_FRAMES),
-        }
-        wav = session.run(None, feeds)[0].reshape(-1).astype(np.float32)
-        if real < WIN_FRAMES:  # trim the padded tail to the real frame count
-            wav = wav[: int(round(WIN_SAMPLES * real / WIN_FRAMES))]
-        chunks.append(wav)
-    return np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+    if n_frames <= WIN_FRAMES:  # fits a single window
+        return _decode_window(session, frames, 0, n_frames)[: n_frames * spf]
+
+    hop = WIN_FRAMES - 2 * KEEP_MARGIN  # 10
+    out: list[np.ndarray] = []
+    s = 0
+    first = True
+    while True:
+        wav = _decode_window(session, frames, s, n_frames)
+        is_last = (s + WIN_FRAMES >= n_frames)
+        left = 0 if first else KEEP_MARGIN
+        right = 0 if is_last else KEEP_MARGIN
+        gend = min(s + WIN_FRAMES - right, n_frames)
+        out.append(wav[left * spf: (gend - s) * spf])
+        if is_last:
+            break
+        s += hop
+        first = False
+    return np.concatenate(out)[: n_frames * spf]
 
 
 def main() -> int:
