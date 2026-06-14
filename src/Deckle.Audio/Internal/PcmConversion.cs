@@ -22,6 +22,26 @@ internal static class PcmConversion
         return result;
     }
 
+    // float [-1, 1] → PCM16 little-endian. The inverse of PcmToFloat, used by
+    // the speaker render path (SpeakerOutput) before handing bytes to waveOut.
+    // Clamps out-of-range input so a synthesis overshoot can't wrap around to
+    // the opposite sign. Scales by 32767 (full-scale positive); PcmToFloat
+    // divides by 32768, so the round-trip stays within one LSB.
+    public static byte[] FloatToPcm16(float[] samples)
+    {
+        var pcm = new byte[samples.Length * 2];
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float v = samples[i];
+            if (v > 1f) v = 1f;
+            else if (v < -1f) v = -1f;
+            short s = (short)(v * 32767f);
+            pcm[i * 2]     = (byte)(s & 0xFF);
+            pcm[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
+        }
+        return pcm;
+    }
+
     // Linear RMS → dBFS. Floors at -120 dBFS for a pure-zero buffer so the
     // log domain never sees 0 (the conventional "digital silence" floor —
     // the -96.7 dBFS we used to see corresponded to a single-LSB residual

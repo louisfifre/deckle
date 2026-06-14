@@ -272,6 +272,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
+│   │   ├── AutocorrectNotifications.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
@@ -308,7 +309,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IAudioRecordingHost.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
-│   │   └── ProbeResult.cs
+│   │   ├── ProbeResult.cs
+│   │   └── SpeakerOutput.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
@@ -460,11 +462,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
-│   │   │   ├── PairModelTrainer.cs
-│   │   │   └── RestorerOptions.cs
-│   │   ├── Evaluation/
-│   │   │   ├── RestorationEvaluator.cs
-│   │   │   └── RestorationReport.cs
+│   │   │   ├── RestorerOptions.cs
+│   │   │   └── TrainerReport.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
@@ -480,6 +479,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
 │   │   │   └── FrequencyLexicon.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
 │   │   │   ├── ISurfaceProber.cs
@@ -490,38 +492,34 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TypedWordTracker.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
+│   │   ├── Ui/
+│   │   │   ├── AutocorrectPage.xaml
+│   │   │   └── AutocorrectPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── AutocorrectAppRow.cs
+│   │   │   └── AutocorrectViewModel.cs
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── Deckle.Input.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, m…
-│   ├── Deckle.Input.Autocorrect.Cli/
-│   │   ├── Commands/
-│   │   │   ├── BuildDataCommand.cs
-│   │   │   ├── CliArgs.cs
-│   │   │   ├── DataSet.cs
-│   │   │   ├── DictCommand.cs
-│   │   │   ├── DryRunCommand.cs
-│   │   │   ├── EnrollCommand.cs
-│   │   │   ├── EvalCommand.cs
-│   │   │   ├── HarvestCommand.cs
-│   │   │   ├── InjectCommand.cs
-│   │   │   ├── MlmProbeCommand.cs
-│   │   │   ├── MorphalouReader.cs
-│   │   │   ├── RepoPaths.cs
-│   │   │   ├── RunCommand.cs
-│   │   │   ├── TrainPairsCommand.cs
-│   │   │   └── WatchCommand.cs
-│   │   ├── Harvest/
-│   │   │   ├── HarvestData.cs
-│   │   │   ├── HarvestFilter.cs
-│   │   │   └── HarvestStore.cs
-│   │   ├── Mlm/
-│   │   │   ├── CamembertMlmScorer.cs
-│   │   │   └── CamembertSentenceReranker.cs
-│   │   ├── Deckle.Input.Autocorrect.Cli.csproj
-│   │   └── Program.cs
+│   ├── Deckle.Input.Autocorrect.Lab/
+│   │   ├── DataSet.cs
+│   │   ├── Deckle.Input.Autocorrect.Lab.csproj
+│   │   ├── HarvestData.cs
+│   │   ├── HarvestFilter.cs
+│   │   ├── HarvestStore.cs
+│   │   ├── LexiconBuilder.cs
+│   │   ├── MorphalouReader.cs
+│   │   ├── PairModelTrainer.cs
+│   │   ├── RestorationEvaluator.cs
+│   │   └── RestorationReport.cs
+│   ├── Deckle.Input.Autocorrect.Mlm/
+│   │   ├── CamembertMlmScorer.cs
+│   │   ├── CamembertSentenceReranker.cs
+│   │   ├── Deckle.Input.Autocorrect.Mlm.csproj
+│   │   └── MlmProbe.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
@@ -781,6 +779,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Show.cs
 │   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
+│   ├── Deckle.Speech/
+│   │   ├── ChatterboxSpeechBackend.cs
+│   │   ├── CLAUDE.md  — [agent-instructions] Read-aloud (TTS) output module — the ISpeechBackend boundary, the placeholder s…
+│   │   ├── Deckle.Speech.csproj
+│   │   ├── DeckleSpeechSource.cs
+│   │   ├── ISpeechBackend.cs
+│   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes and kept decisions for Deckle.Speech — read on demand when chas…
+│   │   ├── SpeechEngine.cs
+│   │   ├── SpeechSettings.cs
+│   │   └── SpeechSettingsService.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
 │   │   │   ├── CorpusTier.cs
@@ -893,6 +901,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
@@ -918,6 +927,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
+│   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
 │   │   ├── AutocorrectEngineHarness.cs
@@ -925,6 +935,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectEngineRevertTests.cs
+│   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── Deckle.Input.Autocorrect.Tests.csproj
@@ -963,6 +974,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   └── DispatcherQueueExtensionsTests.cs
+│   ├── Deckle.Speech.Tests/
+│   │   ├── Deckle.Speech.Tests.csproj
+│   │   ├── SpeechEngineTests.cs
+│   │   └── SpeechSettingsTests.cs
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs

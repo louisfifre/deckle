@@ -97,6 +97,7 @@
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <ProjectReference Include="..\Deckle.Shell.TaskbarCover\Deckle.Shell.TaskbarCover.csproj" />
     <ProjectReference Include="..\Deckle.Shell.TrayMenu\Deckle.Shell.TrayMenu.csproj" />
+    <ProjectReference Include="..\Deckle.Speech\Deckle.Speech.csproj" />
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <!-- Whisper ASR backend (IAsrBackend implementation). App composition
          root instantiates WhisperBackend and injects it into the engine. -->

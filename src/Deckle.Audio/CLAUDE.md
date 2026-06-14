@@ -15,6 +15,10 @@ Capture doesn't know *why* it runs (transcription, a future Ask-Ollama, anything
 
 An optional, user-toggled DSP stage (high-pass, optional gate, gentle compressor, two-pass makeup, limiter) that conditions the captured signal for the ASR backend — a pure `float[] → float[]` transform, two-pass (measure then apply), never a real-time AGC, emitting nothing of its own. Defaults are deliberately gentle: hard compression lifts the inter-word noise floor, which feeds Whisper's silence hallucinations (the spurious « Sous-titres réalisés par… »), so the gate is off by default and targets stay conservative — starting points, not asserted optima. Whether the stage earns its place is still open.
 
+## Render output (`SpeakerOutput`)
+
+The first output primitive — the symmetric counterpart of `MicrophoneCapture`: a single-clip, blocking `waveOut` render of a finished mono float buffer to the default device. Format is carried per call (TTS is 24 kHz, not the 16 kHz capture is fixed to). It returns whether the clip reached the driver, so the caller can tell a silent device-open failure from success; `Deckle.Speech` drives it.
+
 ## Observability
 
 All emissions go through `DeckleAudioSource.Log` (AUDIO tag).

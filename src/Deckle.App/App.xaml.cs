@@ -9,6 +9,7 @@ using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
+using Deckle.Speech;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 
@@ -29,6 +30,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     private TrayIconManager? _tray;
     private TrayContextMenuHost? _trayMenu;
     private TranscriptionEngine? _engine;
+    private SpeechEngine? _speechEngine;
     private AmbientEngine? _ambientEngine;
 
     // Canonical engine accessor for surfaces that observe the running
@@ -321,6 +323,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         var backend = new WhisperBackend(host);
         _engine = new TranscriptionEngine(host, backend);
         Milestone("engine");
+
+        // Read-aloud (TTS) engine with the placeholder Chatterbox backend —
+        // same composition-root posture as the transcription engine above.
+        // Constructed dormant: no trigger is wired yet (the clipboard-read
+        // demonstrator was removed). The real ONNX synthesis backend lands at
+        // the next palier; the voice-assistant loop will drive it via Speak.
+        _speechEngine = new SpeechEngine(new ChatterboxSpeechBackend());
+        Milestone("speech_engine");
 
         // Canonical Ambient engine — owns its own ScreenCaptureService,
         // FrameSampler, HueBridgeClient and HueRestLightOutput at

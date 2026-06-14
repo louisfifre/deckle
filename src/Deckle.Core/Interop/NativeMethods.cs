@@ -182,6 +182,32 @@ public static class NativeMethods
     [DllImport("winmm.dll")]
     public static extern uint waveInClose(IntPtr hwi);
 
+    // ── waveOut (render audio PCM) ──────────────────────────────────────────
+    // Symmetric mirror of the waveIn capture API above. Used by
+    // Deckle.Audio/SpeakerOutput to play a synthesized clip to the default
+    // render device. Reuses the WAVEFORMATEX / WAVEHDR structs in Structs.cs.
+
+    [DllImport("winmm.dll")]
+    public static extern uint waveOutOpen(
+        out IntPtr phwo, uint uDeviceID,
+        ref WAVEFORMATEX pwfx,
+        IntPtr dwCallback, IntPtr dwInstance, uint fdwOpen);
+
+    [DllImport("winmm.dll")]
+    public static extern uint waveOutPrepareHeader(IntPtr hwo, IntPtr pwh, uint cbwh);
+
+    [DllImport("winmm.dll")]
+    public static extern uint waveOutWrite(IntPtr hwo, IntPtr pwh, uint cbwh);
+
+    [DllImport("winmm.dll")]
+    public static extern uint waveOutUnprepareHeader(IntPtr hwo, IntPtr pwh, uint cbwh);
+
+    [DllImport("winmm.dll")]
+    public static extern uint waveOutReset(IntPtr hwo);
+
+    [DllImport("winmm.dll")]
+    public static extern uint waveOutClose(IntPtr hwo);
+
     // ── waveIn: Input Device Enumeration ────────────────────────────────────
 
     [DllImport("winmm.dll")]

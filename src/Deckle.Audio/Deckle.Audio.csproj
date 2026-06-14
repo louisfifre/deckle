@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- PcmConversion (internal) is unit-tested through this InternalsVisibleTo,
+         the same way Deckle.Vad exposes its internal state machine to its tests. -->
+    <InternalsVisibleTo Include="Deckle.Audio.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
