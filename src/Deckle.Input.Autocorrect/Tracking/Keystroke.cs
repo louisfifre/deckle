@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Tracking;
+namespace Deckle.Input.Autocorrect;
 
 // What a raw key-down means for the text under the caret — the
 // KeyDecoder output consumed by the TypedWordTracker.

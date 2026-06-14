@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Deckle.Anytype.Schema;
+namespace Deckle.Anytype;
 
 // A select / multi_select choice. Key travels on the wire; Name is the French
 // display label.

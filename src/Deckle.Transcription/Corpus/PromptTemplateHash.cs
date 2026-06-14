@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Deckle.Llm.Rewrite;
 
-namespace Deckle.Transcription.Corpus;
+namespace Deckle.Transcription;
 
 // Stable fingerprint of a RewriteProfile's effective template, returned as
 // SHA256 hex truncated to 16 characters. Allows rewrite corpus analyses to

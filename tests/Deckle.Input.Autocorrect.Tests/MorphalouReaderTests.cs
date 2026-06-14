@@ -1,5 +1,5 @@
 using System.IO;
-using Deckle.Input.Autocorrect.Cli.Commands;
+using Deckle.Input.Autocorrect.Cli;
 using Xunit;
 
 namespace Deckle.Input.Autocorrect.Tests;

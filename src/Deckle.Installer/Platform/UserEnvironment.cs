@@ -1,4 +1,4 @@
-namespace Deckle.Installer.Platform;
+namespace Deckle.Installer;
 
 // ── UserEnvironment ───────────────────────────────────────────────────────────
 //

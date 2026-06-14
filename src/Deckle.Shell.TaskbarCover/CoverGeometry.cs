@@ -1,4 +1,4 @@
-using Deckle.Core.Interop;
+using Deckle.Core;
 
 namespace Deckle.Shell.TaskbarCover;
 

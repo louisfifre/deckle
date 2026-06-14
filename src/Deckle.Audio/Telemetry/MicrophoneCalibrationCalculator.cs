@@ -1,4 +1,4 @@
-namespace Deckle.Audio.Telemetry;
+namespace Deckle.Audio;
 
 // Pure compute: derives a fresh (MinDbfs, MaxDbfs) pair from a ring buffer
 // of recent MicrophoneTelemetryPayload samples. Returns whether the

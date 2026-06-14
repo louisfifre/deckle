@@ -7,7 +7,7 @@ using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace Deckle.Diagnostics.Listeners;
+namespace Deckle.Diagnostics;
 
 // Routed variant of JsonlEventListener. Same posture (one listener, one
 // predicate, one kindLabel, line-by-line JSON serialization, file lock to avoid

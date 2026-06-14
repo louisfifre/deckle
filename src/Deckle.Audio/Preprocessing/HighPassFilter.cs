@@ -1,6 +1,6 @@
 using System;
 
-namespace Deckle.Audio.Preprocessing;
+namespace Deckle.Audio;
 
 // ── HighPassFilter ─────────────────────────────────────────────────────────
 //

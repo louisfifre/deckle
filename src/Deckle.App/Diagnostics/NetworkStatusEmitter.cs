@@ -2,7 +2,7 @@ using Deckle.Diagnostics;
 using Windows.Networking;
 using Windows.Networking.Connectivity;
 
-namespace Deckle.App.Diagnostics;
+namespace Deckle.App;
 
 // Single emission site for `DeckleNetworkSource`. Wired at boot in
 // `App.OnLaunched` via `Start()`. The subscription to

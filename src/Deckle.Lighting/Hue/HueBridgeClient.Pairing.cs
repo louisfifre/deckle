@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 public sealed partial class HueBridgeClient
 {

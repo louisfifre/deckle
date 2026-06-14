@@ -1,4 +1,4 @@
-namespace Deckle.Transcription.Setup;
+namespace Deckle.Transcription;
 
 // ── ModelEntry ───────────────────────────────────────────────────────────────
 //

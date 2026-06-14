@@ -1,4 +1,4 @@
-using Deckle.Lighting.Hue;
+using Deckle.Lighting;
 
 namespace Deckle.Lighting.Ambient;
 

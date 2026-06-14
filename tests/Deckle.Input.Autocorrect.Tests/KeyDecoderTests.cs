@@ -1,6 +1,6 @@
 using System.Text;
-using Deckle.Input.Autocorrect.Tracking;
-using Deckle.Input.Keyboard;
+using Deckle.Input.Autocorrect;
+using Deckle.Input;
 using Xunit;
 
 namespace Deckle.Input.Autocorrect.Tests;

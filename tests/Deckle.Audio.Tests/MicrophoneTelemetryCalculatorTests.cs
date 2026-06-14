@@ -1,4 +1,4 @@
-using Deckle.Audio.Telemetry;
+using Deckle.Audio;
 using Xunit;
 
 namespace Deckle.Audio.Tests;

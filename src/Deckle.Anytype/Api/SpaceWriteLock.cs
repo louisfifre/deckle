@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Deckle.Anytype.Api;
+namespace Deckle.Anytype;
 
 // Cross-session exclusion for the space's mutating gestures. The Anytype REST API
 // has no optimistic concurrency — no ETag, no If-Match, no 409 — and a body PATCH

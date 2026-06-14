@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Deckle.Audio;
-using Deckle.Transcription.Streaming;
+using Deckle.Transcription;
 using Xunit;
 
 namespace Deckle.Transcription.Tests;

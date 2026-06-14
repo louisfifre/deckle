@@ -1,5 +1,5 @@
-using Deckle.App.Diagnostics;
-using Deckle.Core.Interop;
+using Deckle.App;
+using Deckle.Core;
 using Deckle.Transcription;
 
 namespace Deckle.App;

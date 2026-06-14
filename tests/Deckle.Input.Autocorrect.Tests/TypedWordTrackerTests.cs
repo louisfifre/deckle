@@ -1,4 +1,4 @@
-using Deckle.Input.Autocorrect.Tracking;
+using Deckle.Input.Autocorrect;
 using Xunit;
 
 namespace Deckle.Input.Autocorrect.Tests;

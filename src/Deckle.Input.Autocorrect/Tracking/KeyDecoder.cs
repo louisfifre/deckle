@@ -1,9 +1,9 @@
 using System.Text;
-using Deckle.Core.Interop;
-using Deckle.Input.Autocorrect.Interop;
-using Deckle.Input.Keyboard;
+using Deckle.Core;
+using Deckle.Input.Autocorrect;
+using Deckle.Input;
 
-namespace Deckle.Input.Autocorrect.Tracking;
+namespace Deckle.Input.Autocorrect;
 
 // Turns the raw KeyboardKeyEvent stream into Keystroke?, classifying each
 // key-down and resolving its character through ToUnicodeEx.

@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Input.Interop;
+namespace Deckle.Input;
 
-// Raw Input plumbing local to Deckle.Input. Deckle.Core.Interop already
+// Raw Input plumbing local to Deckle.Input. Deckle.Core already
 // carries the registration primitives shared with the HUD's mouse
 // proximity (RegisterRawInputDevices, RAWINPUTDEVICE, WM_INPUT,
 // RIDEV_INPUTSINK) and the message-only window primitives; this file adds

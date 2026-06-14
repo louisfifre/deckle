@@ -1,4 +1,4 @@
-namespace Deckle.Transcription.Streaming;
+namespace Deckle.Transcription;
 
 // One unit emitted by the EnergySegmenter: a speech span bounded by detected
 // silence (or by the safety ceiling), and the atomic audio span handed to the

@@ -1,11 +1,7 @@
-using Deckle.Input.Autocorrect.Injection;
-using Deckle.Input.Autocorrect.Learning;
-using Deckle.Input.Autocorrect.Lexicon;
-using Deckle.Input.Autocorrect.Surfaces;
-using Deckle.Input.Autocorrect.Tracking;
-using Deckle.Input.Keyboard;
+using Deckle.Input.Autocorrect;
+using Deckle.Input;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // The conductor: raw key events → decode → track → decide → inject, with the
 // revert gesture and the learning signals around it. Every handler runs on the

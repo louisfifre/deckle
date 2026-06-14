@@ -1,11 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Gestures;
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Dialogues;
+namespace Deckle.Anytype;
 
 // Dialogue chats are conversation transcripts, not project-management reports.
 // They live on Anytype's chat surface; task linkage is optional metadata on the

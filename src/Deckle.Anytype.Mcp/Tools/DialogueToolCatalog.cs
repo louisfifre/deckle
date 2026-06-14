@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Dialogues;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Mcp.Tools;
+namespace Deckle.Anytype.Mcp;
 
 public static class DialogueToolCatalog
 {

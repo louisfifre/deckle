@@ -2,10 +2,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // Session gestures: open a daily report anchored to a task, append journal lines
 // to it, and link further tasks to the open report. Anchoring is done from the
@@ -15,7 +14,7 @@ namespace Deckle.Anytype.Gestures;
 // The "current report" is per-process state: session_log / session_touch with no
 // explicit report act on the report opened by session_start in this process.
 //
-// All schema keys go through Deckle.Anytype.Schema.DevSpace — the single source
+// All schema keys go through Deckle.Anytype.DevSpace — the single source
 // of truth for the wire keys, including the trap keys (the malformed
 // « tache(s)_liee(s) », the opaque Priorité id).
 public sealed class SessionGestures(AnytypeApiClient api, NameResolver resolver)

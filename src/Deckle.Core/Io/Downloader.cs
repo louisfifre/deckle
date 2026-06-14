@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Deckle.Core.Io;
+namespace Deckle.Core;
 
 // ── Downloader ───────────────────────────────────────────────────────────────
 //

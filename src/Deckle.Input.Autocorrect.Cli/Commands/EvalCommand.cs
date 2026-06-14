@@ -1,10 +1,9 @@
 using System.IO;
 using System.Text;
-using Deckle.Input.Autocorrect.Cli.Mlm;
-using Deckle.Input.Autocorrect.Engine;
-using Deckle.Input.Autocorrect.Evaluation;
+using Deckle.Input.Autocorrect.Cli;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Runs the offline restoration eval against the wiki-fr-eval reference. The
 // flags compose the exact policy under test — lexical gate alone, plus the

@@ -1,8 +1,6 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Dialogues;
-using Deckle.Anytype.Gestures;
-using Deckle.Anytype.Mcp.Tools;
+using Deckle.Anytype;
+using Deckle.Anytype.Mcp;
 using Xunit;
 
 namespace Deckle.Anytype.Mcp.Tests;

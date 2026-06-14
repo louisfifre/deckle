@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Input.Interop;
+namespace Deckle.Input;
 
 // hid.dll preparsed-data parsing — the user-mode HID parser that turns a
 // raw input report into per-usage values without hand-decoding the report

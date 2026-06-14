@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Deckle.Input.Interop;
+namespace Deckle.Input;
 
 // WinEvent hook plumbing for focus-change observation. SetWinEventHook
 // with WINEVENT_OUTOFCONTEXT delivers callbacks via the host thread's

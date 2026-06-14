@@ -1,4 +1,4 @@
-namespace Deckle.Audio.Preprocessing;
+namespace Deckle.Audio;
 
 // ── PreprocessingSettings ──────────────────────────────────────────────────
 //

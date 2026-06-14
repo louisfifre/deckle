@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using Deckle.Core.Io;
+using Deckle.Core;
 
 namespace Deckle.Vad;
 

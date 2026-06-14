@@ -2,9 +2,9 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Catalog;
-using Deckle.Settings.ViewModels;
+using Deckle.Settings;
 using Deckle.Shell;
 
 namespace Deckle.Settings;

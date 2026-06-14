@@ -1,4 +1,4 @@
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Shell.TaskbarCover;
 using Xunit;
 

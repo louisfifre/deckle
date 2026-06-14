@@ -13,7 +13,7 @@ namespace Deckle.Diagnostics;
 // **No dependency on `Deckle.Core`.** The Diagnostics module sits beneath every
 // other technical brick (see `CLAUDE.md`); the required P/Invokes are
 // redeclared locally (private) instead of introducing a hard dependency on
-// `Deckle.Core.Interop.NativeMethods`. No symbol overlap: P/Invoke
+// `Deckle.Core.NativeMethods`. No symbol overlap: P/Invoke
 // declarations are local to this file, and `Deckle.Core` keeps its own
 // declarations for the rest of the app.
 //

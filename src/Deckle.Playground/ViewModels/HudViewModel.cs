@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Deckle.Playground.ViewModels;
+namespace Deckle.Playground;
 
 // ─── HUD playground target enum ──────────────────────────────────────────────
 //

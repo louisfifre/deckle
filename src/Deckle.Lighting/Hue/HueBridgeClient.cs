@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Per-bridge REST client. One instance is bound to one HueBridge for
 // the entire pairing + control lifecycle ; consumers that need to

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Deckle.Input.Autocorrect.Lexicon;
+namespace Deckle.Input.Autocorrect;
 
 // ── AccentFolding ───────────────────────────────────────────────────────────
 //

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Minimal option parser for the command tail: `--flag` (presence) and
 // `--opt value` (paired). No third-party parser by doctrine; the surface is

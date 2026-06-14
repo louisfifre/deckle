@@ -1,4 +1,4 @@
-namespace Deckle.Transcription.Streaming;
+namespace Deckle.Transcription;
 
 // Parameters of the energy segmenter — the threshold-on-RMS state machine that
 // places utterance boundaries on the live capture stream. Auto-properties so the

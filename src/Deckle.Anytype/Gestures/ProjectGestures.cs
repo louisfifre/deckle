@@ -1,10 +1,9 @@
 using System.Text;
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 using Deckle.Diagnostics;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // Project-level gestures: a project's overview digest, the project list grouped
 // by état, and project creation (optionally placed inside an epic collection).

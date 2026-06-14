@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace Deckle.Installer.Platform;
+namespace Deckle.Installer;
 
 // ── UninstallEntry ────────────────────────────────────────────────────────────
 //

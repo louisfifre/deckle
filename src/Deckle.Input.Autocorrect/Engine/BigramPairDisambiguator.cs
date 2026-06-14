@@ -1,9 +1,9 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // ── PairModel ───────────────────────────────────────────────────────────────
 //

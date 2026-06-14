@@ -1,10 +1,9 @@
 using System.Text;
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 using Deckle.Diagnostics;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // Generic read/link/update/idea gestures spanning every type. Like the other
 // gesture families, each returns a terse French plain-string digest.

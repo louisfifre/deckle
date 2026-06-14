@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 using Deckle.Core;
-using Deckle.Transcription.Setup;
+using Deckle.Transcription;
 
 namespace Deckle.Setup;
 
@@ -13,7 +13,7 @@ namespace Deckle.Setup;
 // disable Next, format the summary on the final page, etc.
 //
 // Lives in Deckle.Setup itself — the wizard module owns its own runtime
-// state. SetupContext used to sit in Deckle.Transcription.Setup but the
+// state. SetupContext used to sit in Deckle.Transcription but the
 // only consumers are the wizard pages here, and keeping it in the
 // transcription module forced parent ↔ child cycles once Whisper-specific
 // catalogs (SpeechModels) migrated to Deckle.Transcription.Whisper.

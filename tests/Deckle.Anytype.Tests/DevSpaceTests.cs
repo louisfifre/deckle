@@ -1,4 +1,4 @@
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;

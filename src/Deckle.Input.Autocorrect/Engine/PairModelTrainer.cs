@@ -1,8 +1,7 @@
 using System.IO;
-using Deckle.Input.Autocorrect.Lexicon;
-using Deckle.Input.Autocorrect.Tracking;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // ── PairModelTrainer ────────────────────────────────────────────────────────
 //

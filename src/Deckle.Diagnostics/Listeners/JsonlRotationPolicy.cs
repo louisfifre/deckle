@@ -1,6 +1,6 @@
 using System;
 
-namespace Deckle.Diagnostics.Listeners;
+namespace Deckle.Diagnostics;
 
 // Line-count rolling policy for a JsonlEventListener destination. When the
 // active file reaches MaxLines, it is rolled into a monotonically-numbered

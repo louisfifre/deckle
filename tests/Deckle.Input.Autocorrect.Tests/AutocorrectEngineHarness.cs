@@ -1,11 +1,6 @@
 using System.Text;
-using Deckle.Input.Autocorrect.Engine;
-using Deckle.Input.Autocorrect.Injection;
-using Deckle.Input.Autocorrect.Learning;
-using Deckle.Input.Autocorrect.Lexicon;
-using Deckle.Input.Autocorrect.Surfaces;
-using Deckle.Input.Autocorrect.Tracking;
-using Deckle.Input.Keyboard;
+using Deckle.Input.Autocorrect;
+using Deckle.Input;
 
 namespace Deckle.Input.Autocorrect.Tests;
 

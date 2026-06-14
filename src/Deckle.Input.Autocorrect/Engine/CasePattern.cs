@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Deckle.Input.Autocorrect.Engine;
+namespace Deckle.Input.Autocorrect;
 
 // ── CasePattern ─────────────────────────────────────────────────────────────
 //

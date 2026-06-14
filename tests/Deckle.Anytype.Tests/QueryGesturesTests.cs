@@ -1,7 +1,5 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Gestures;
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;

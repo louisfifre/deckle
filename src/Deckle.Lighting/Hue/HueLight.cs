@@ -1,4 +1,4 @@
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // Hue "light" — a single addressable bulb / strip / fixture inside a
 // group. CLIP v1 exposes lights by integer-string id (e.g. "1", "5") ;

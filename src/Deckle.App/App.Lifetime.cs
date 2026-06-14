@@ -1,4 +1,4 @@
-using Deckle.App.Diagnostics;
+using Deckle.App;
 
 namespace Deckle.App;
 

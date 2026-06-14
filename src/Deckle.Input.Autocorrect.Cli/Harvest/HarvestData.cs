@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Cli.Harvest;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // On-disk shape of the observation harvest — the maintainer's iteration corpus,
 // captured by the `harvest` command and (unlike the personal dictionary) sealed

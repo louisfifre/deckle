@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Injection;
+namespace Deckle.Input.Autocorrect;
 
 // Applies a correction to the focused control by rewriting the divergent tail.
 // TextInjector is the production implementation, replaying the diff as one

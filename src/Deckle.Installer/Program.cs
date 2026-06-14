@@ -1,5 +1,4 @@
-using Deckle.Installer.Install;
-using Deckle.Installer.Ui;
+using Deckle.Installer;
 
 // Entry point. Top-level statements compile to a NativeAOT-friendly Main.
 

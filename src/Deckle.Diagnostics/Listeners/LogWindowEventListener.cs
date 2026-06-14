@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 
-namespace Deckle.Diagnostics.Listeners;
+namespace Deckle.Diagnostics;
 
 // Listens to every Deckle.* EventSource and forwards each event to the
 // registered ILogWindowSink(s). The listener is constructed once at App

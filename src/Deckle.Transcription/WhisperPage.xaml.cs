@@ -12,7 +12,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Settings;
-using Deckle.Transcription.ViewModels;
+using Deckle.Transcription;
 using Deckle.Core;
 
 namespace Deckle.Transcription;

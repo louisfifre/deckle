@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Input.Trackpad.ViewModels">
+    xmlns:vm="using:Deckle.Input.Trackpad">
 
     <!-- Canonical Settings page layout, identical to DiagnosticsPage /
          AmbientPage / GeneralPage : ScrollViewer Padding 32,24, a

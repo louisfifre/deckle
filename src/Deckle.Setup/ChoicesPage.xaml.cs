@@ -3,8 +3,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using Deckle.Catalog;
-using Deckle.Transcription.Setup;
-using Deckle.Transcription.Whisper.Setup;
+using Deckle.Transcription;
+using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 

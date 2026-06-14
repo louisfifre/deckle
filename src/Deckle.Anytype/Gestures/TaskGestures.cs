@@ -1,10 +1,9 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Api;
-using Deckle.Anytype.Schema;
+using Deckle.Anytype;
 
-namespace Deckle.Anytype.Gestures;
+namespace Deckle.Anytype;
 
 // Task gestures: create an action-layout task under a project, mark it done,
 // and toggle/append inline checklist items in its markdown body.

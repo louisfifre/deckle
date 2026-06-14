@@ -1,4 +1,4 @@
-namespace Deckle.Input.Autocorrect.Learning;
+namespace Deckle.Input.Autocorrect;
 
 // The engine-facing view of the personal dictionary: adopted words
 // shield themselves from correction and join the candidate pool;

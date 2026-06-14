@@ -1,4 +1,4 @@
-using Deckle.Lighting.Hue;
+using Deckle.Lighting;
 
 namespace Deckle.Lighting.Ambient;
 
@@ -9,7 +9,7 @@ namespace Deckle.Lighting.Ambient;
 // in one place, and re-pairing from one surface is reflected
 // immediately in the other via the BridgeChanged event.
 //
-// Why here and not under Deckle.Lighting.Hue. The service has to
+// Why here and not under Deckle.Lighting. The service has to
 // persist the bridge ip/id/username, which lives in AmbientSettings
 // (the only configured consumer of Hue today). Lighting can't
 // reference Lighting.Ambient (would create a cycle), so the service

@@ -2,7 +2,7 @@ using System.Diagnostics.Tracing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Deckle.App.Diagnostics;
+namespace Deckle.App;
 
 // Routes each LogEntry to the appropriate DataTemplate. Two decision families:
 //

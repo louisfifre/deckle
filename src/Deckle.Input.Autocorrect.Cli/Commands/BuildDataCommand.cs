@@ -2,9 +2,9 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Deckle.Input.Autocorrect.Lexicon;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Regenerates the derived lexicons from the raw sources. French from
 // Lexique 3.83 (form + film/book frequencies), English from Norvig's

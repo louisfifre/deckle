@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace Deckle.Diagnostics.Listeners;
+namespace Deckle.Diagnostics;
 
 // Persists Deckle.* events to a JSONL file. One listener instance per
 // destination file; the App boot wires several of them — one for the

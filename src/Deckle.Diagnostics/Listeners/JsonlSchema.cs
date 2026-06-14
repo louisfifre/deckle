@@ -1,4 +1,4 @@
-namespace Deckle.Diagnostics.Listeners;
+namespace Deckle.Diagnostics;
 
 // Envelope shape a JsonlEventListener writes per line. Orthogonal to the
 // gate (which decides *whether* a line is written) — this decides *what

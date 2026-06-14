@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Deckle.Core.Interop;
+using Deckle.Core;
 using Deckle.Catalog;
 
 namespace Deckle.Shell;

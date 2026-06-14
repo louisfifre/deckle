@@ -1,6 +1,6 @@
-using Deckle.Audio.Internal;
+using Deckle.Audio;
 
-namespace Deckle.Audio.Telemetry;
+namespace Deckle.Audio;
 
 // Pure compute: distribution payload + Tail-600 ms diagnostic from a
 // per-recording RMS series (50 ms sub-window cadence, ~20 Hz). No side

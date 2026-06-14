@@ -1,4 +1,4 @@
-namespace Deckle.Input.Keyboard;
+namespace Deckle.Input;
 
 // One keyboard transition from WM_INPUT (RIM_TYPEKEYBOARD), normalized:
 // VirtualKey/ScanCode straight from RAWKEYBOARD, IsExtended from the E0

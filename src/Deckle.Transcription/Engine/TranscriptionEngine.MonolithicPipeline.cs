@@ -1,9 +1,8 @@
 using Deckle.Audio;
-using Deckle.Audio.Preprocessing;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
-using Deckle.Transcription.Engine;
+using Deckle.Transcription;
 
 namespace Deckle.Transcription;
 

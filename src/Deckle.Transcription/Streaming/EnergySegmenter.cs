@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Deckle.Audio;
 
-namespace Deckle.Transcription.Streaming;
+namespace Deckle.Transcription;
 
 // A point-in-time view of the segmenter's internal state, consumed by the
 // streaming pipeline to populate the 1 Hz StreamingHeartbeat. HangoverRequired

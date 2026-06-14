@@ -9,9 +9,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Core;
-using Deckle.Core.Io;
-using Deckle.Transcription.Setup;
-using Deckle.Transcription.Whisper.Setup;
+using Deckle.Transcription;
+using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 

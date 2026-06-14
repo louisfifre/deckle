@@ -1,8 +1,8 @@
 using System.IO;
 using Deckle.Core;
-using Deckle.Input.Autocorrect.Learning;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // Inspects and maintains the personal dictionary — the only persisted text in
 // the module, and by doctrine user-removable. Operates on the same

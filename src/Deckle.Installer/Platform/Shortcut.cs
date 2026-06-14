@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Deckle.Installer.Platform;
+namespace Deckle.Installer;
 
 // ── Shortcut ──────────────────────────────────────────────────────────────────
 //

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Deckle.Lighting.Hue;
+using Deckle.Lighting;
 using Deckle.Catalog;
 using Deckle.Shell;
 using Microsoft.UI.Xaml;

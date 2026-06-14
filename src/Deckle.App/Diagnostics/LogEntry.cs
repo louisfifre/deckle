@@ -1,7 +1,7 @@
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
-namespace Deckle.App.Diagnostics;
+namespace Deckle.App;
 
 // UI-side wrapper around an EventEntry produced by the Deckle.Diagnostics
 // listener. LogWindow consumes only LogEntry instances; the wrapper

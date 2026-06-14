@@ -1,16 +1,9 @@
 using System.IO;
 using Deckle.Core;
 using Deckle.Input.Autocorrect;
-using Deckle.Input.Autocorrect.Engine;
-using Deckle.Input.Autocorrect.Learning;
-using Deckle.Input.Autocorrect.Lexicon;
-using Deckle.Input.Autocorrect.Surfaces;
-using Deckle.Input.Autocorrect.Injection;
-using Deckle.Input.Autocorrect.Tracking;
-using Deckle.Input.Interop;
-using Deckle.Input.Keyboard;
+using Deckle.Input;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // The live prototype: the whole engine wired to the real keyboard, repairing
 // words on enrolled surfaces. It composes settings, lexicons, the personal

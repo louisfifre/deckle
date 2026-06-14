@@ -1,9 +1,8 @@
 using System.IO;
-using Deckle.Input.Autocorrect.Cli.Mlm;
-using Deckle.Input.Autocorrect.Engine;
-using Deckle.Input.Autocorrect.Evaluation;
+using Deckle.Input.Autocorrect.Cli;
+using Deckle.Input.Autocorrect;
 
-namespace Deckle.Input.Autocorrect.Cli.Commands;
+namespace Deckle.Input.Autocorrect.Cli;
 
 // The dry-run probe: feeds text through the live policy (lexical gate + the
 // post-sentence CamemBERT reranker) and prints what it WOULD correct — never

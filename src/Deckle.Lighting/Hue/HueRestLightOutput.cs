@@ -1,4 +1,4 @@
-namespace Deckle.Lighting.Hue;
+namespace Deckle.Lighting;
 
 // ILightOutput / IMultiLightOutput implementation on top of a paired
 // HueBridgeClient. Binds the abstraction to a specific group on a
