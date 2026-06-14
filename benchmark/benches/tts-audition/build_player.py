@@ -65,7 +65,9 @@ VOICE_LABEL = {
     "chatterbox_jessicaT50": "Jessica · temp 0.5 (plat)",
     "chatterbox_jessicaT70": "Jessica · temp 0.7 (vif)",
     "f5_fr": "clone — réf. (fr)",
-    "orpheus": "voix CML-FR",
+    "orpheus_pierre": "Pierre (H)",
+    "orpheus_amelie": "Amélie (F)",
+    "orpheus_marie": "Marie (F)",
     "piper_upmc_s0": "upmc · jessica (féminine)",
     "piper_upmc_s1": "upmc · pierre (masculine)",
 }

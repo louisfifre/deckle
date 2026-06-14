@@ -1,25 +1,24 @@
-"""Synthesize French TTS LOCALLY via Orpheus (ONNX) + SNAC decoder (ONNX).
+"""Synthesize French TTS LOCALLY via Orpheus (ONNX-genai, DirectML) + SNAC (ONNX, CPU).
 
-On-doctrine path: no online inference, no `transformers` at inference time. The
-3B Orpheus French finetune is exported once to ONNX-genai by the model builder
-(export-time torch/transformers is allowed); here we drive it purely through
-`onnxruntime_genai` (LM) + `onnxruntime` (SNAC decoder), both on the CPU EP.
+On-doctrine: no online inference, no `transformers` at inference. The 3B Orpheus
+French finetune (canopylabs/3b-fr-ft-research_release) is exported once to
+onnxruntime-genai by the model builder (export-time torch/transformers allowed);
+here we drive it purely through `onnxruntime_genai` (LM on DirectML) and
+`onnxruntime` (SNAC decoder on CPU — the AMD DML ConvTranspose wall keeps the
+upsampling decoder off the GPU).
 
 Pipeline (Orpheus -> SNAC):
-  1. LM (onnxruntime_genai): feed prompt token IDs framed by Orpheus special
-     tokens, autoregress until the end-of-speech token. The model emits SNAC
-     "speech" tokens (id >= CODE_OFFSET).
-  2. Decode tokens to SNAC codes: code = id - CODE_OFFSET - (pos % 7) * 4096,
-     keeping only the running positions; 7 tokens = 1 frame.
-  3. De-interleave the 7 codes/frame into SNAC's 3 hierarchical levels
-     (canonical Orpheus mapping: c0=[0]; c1=[1,4]; c2=[2,3,5,6]).
-  4. SNAC `snac24_int2wav_static.onnx` is STATIC: it decodes exactly 12 frames
-     (codes0[12]/codes1[24]/codes2[48]) -> 24576 samples. We window the frame
-     stream in blocks of 12 and concatenate; a trailing partial block is padded
-     and its extra tail trimmed.
+  1. LM: prompt = [SOH] + tokenizer("<voice>: <text>") + [EOT, EOH, SOA, SOS];
+     autoregress until end-of-speech (128258). The FR finetune exposes NAMED
+     voices (pierre/amelie/marie) — a valid voice is REQUIRED; a voiceless or
+     English-voice prompt yields corrupted ("alien") audio.
+  2. token -> SNAC code: code = id - 128266 - (pos % 7) * 4096; 7 codes = 1 frame.
+  3. de-interleave 7 codes -> 3 SNAC levels (c0=[0]; c1=[1,4]; c2=[2,3,5,6]).
+  4. SNAC static decoder: 12 frames -> 24576 samples; window the stream by 12.
 
-Weights live under D:\\models\\tts\\ (LM: orpheus-fr, decoder: snac-decoder),
-outside the repo. Outputs land in the gitignored run dir, skip-if-exists.
+LM export: D:\\models\\tts\\orpheus-fr-genai-fp16-dml (fp16, DirectML provider).
+SNAC: D:\\models\\tts\\snac-decoder\\snac24_int2wav_static.onnx (CPU).
+Outputs land in the shared run dir; stats are recorded per voice.
 
 Run with the dedicated venv:
     benchmark\\.venv-orpheus\\Scripts\\python.exe ^
@@ -37,6 +36,7 @@ import numpy as np
 import soundfile as sf
 import onnxruntime as ort
 import onnxruntime_genai as og
+from tokenizers import Tokenizer as HFTokenizer
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -45,53 +45,66 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE.parent.parent / "runs" / "tts-audition-poc-0001"
-LM_DIR = Path(r"D:\models\tts\orpheus-fr")
+sys.path.insert(0, str(HERE))
+import _harness  # noqa: E402
+
+OUT = _harness.RUN_DIR
+LM_DIR = Path(r"D:\models\tts\orpheus-fr-genai-fp16-dml")
 SNAC = Path(r"D:\models\tts\snac-decoder\snac24_int2wav_static.onnx")
 
-# Orpheus special tokens (canonical, from canopyai/Orpheus-TTS).
-SOT = 128259           # start of human turn
+# Orpheus special tokens (canonical, canopyai/Orpheus-TTS).
+BOS = 128000           # <|begin_of_text|>
+SOH = 128259           # start of human turn
 EOT = 128009           # <|eot_id|> end of text
 EOH = 128260           # end of human turn
-SOA = 128261           # start of AI turn
-SOS = 128257           # start of speech
+SOA = 128261           # start of AI turn (model generates this)
+SOS = 128257           # start of speech (model generates this)
 EOS_AUDIO = 128258     # end of speech (generation stop)
-CODE_OFFSET = 128266   # first SNAC "speech" token id
+CODE_OFFSET = 128266   # first SNAC speech-token id (= 128256 + 10)
 
 # SNAC int2wav_static decodes a fixed window of 12 frames -> 24576 samples.
 WIN_FRAMES = 12
 WIN_SAMPLES = 24576
 SR = 24000
 
-# CML French finetune has no documented named voice; we keep the prompt voiceless
-# (raw text). If a finetune expects a "voice: text" prefix, set VOICE accordingly.
-VOICE = ""
+# The FR finetune's named voices (lowercase). A valid voice is required.
+VOICES = ["pierre", "amelie", "marie"]
+# First-pass listening set: neutral, a question, a real corpus line, and the
+# expressive-tag test — Orpheus is the only engine that performs <laugh>/<sigh>.
+SIDS = ["01_neutre", "05_question", "corpus_01", "tags_rire"]
 
-SENTENCES = {
-    "01_neutre": ("Bonjour Louis. Voici la réponse que tu cherchais : il te suffit "
-                  "d'appuyer sur le raccourci, et je te lis la suite à voix haute."),
-    "04_tics": ("Euh… attends, du coup, comment dire… ouais voilà, "
-                "c'est exactement ça en fait."),
-}
+# Sampling — Orpheus defaults (model card / community).
+TEMPERATURE = 0.6
+TOP_P = 0.9
+TOP_K = 50
+REPETITION_PENALTY = 1.1
+MAX_NEW = 1800
 
 
 def log(m: str) -> None:
     print(m, flush=True)
 
 
-def build_prompt_ids(tokenizer: "og.Tokenizer", text: str) -> list[int]:
-    """Frame the text with Orpheus special tokens, returning a flat id list."""
-    body = f"{VOICE}: {text}" if VOICE else text
-    text_ids = list(tokenizer.encode(body))
-    return [SOT] + text_ids + [EOT, EOH, SOA, SOS]
+def build_prompt_ids(tokenizer: HFTokenizer, text: str, voice: str) -> list[int]:
+    """Frame "<voice>: <text>" with Orpheus special tokens -> flat id list.
+
+    Tokenized via the `tokenizers` lib (reading tokenizer.json), NOT og.Tokenizer:
+    transformers 5.x writes a tokenizer_class that genai 0.13.1 rejects
+    (TokenizersBackend). add_special_tokens=False returns only the text tokens —
+    the SOH/EOT/EOH/SOA/SOS framing is added explicitly here.
+    """
+    text_ids = list(tokenizer.encode(f"{voice}: {text}", add_special_tokens=False).ids)
+    # canopyai canonical: [SOH] + [BOS]+text + [EOT, EOH]. The model GENERATES the
+    # [SOA][SOS] speech-start itself — pre-filling them yields short/empty turns.
+    return [SOH, BOS] + text_ids + [EOT, EOH]
 
 
-def generate_speech_tokens(model, tokenizer, prompt_ids, max_new=1800):
+def generate_speech_tokens(model, tokenizer, prompt_ids, max_new=MAX_NEW):
     """Autoregress until EOS_AUDIO (or cap); return the generated token ids."""
     params = og.GeneratorParams(model)
     params.set_search_options(
-        do_sample=True, temperature=0.6, top_p=0.9, top_k=50,
-        repetition_penalty=1.1, max_length=len(prompt_ids) + max_new,
+        do_sample=True, temperature=TEMPERATURE, top_p=TOP_P, top_k=TOP_K,
+        repetition_penalty=REPETITION_PENALTY, max_length=len(prompt_ids) + max_new,
     )
     gen = og.Generator(model, params)
     gen.append_tokens(prompt_ids)
@@ -114,6 +127,7 @@ def tokens_to_codes(tokens: list[int]) -> list[int]:
     index over the kept speech tokens; a token is a speech token when its code
     lands in [0, 4096). Anything else (stray text/special) is skipped, and the
     position counter only advances on accepted codes so frame alignment holds.
+    Out-of-range codes are the canonical signature of a bad offset / wrong voice.
     """
     codes: list[int] = []
     pos = 0
@@ -168,61 +182,64 @@ def decode_codes(session: ort.InferenceSession, codes: list[int]) -> np.ndarray:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    log(f"Output: {OUT}")
-    log(f"LM:     {LM_DIR}")
-    log(f"SNAC:   {SNAC}")
+    log(f"Output: {OUT}\nLM: {LM_DIR}\nSNAC: {SNAC}")
 
     if not (LM_DIR / "model.onnx").exists():
-        log("  FATAL: LM export missing (model.onnx). Run the genai builder first.")
+        log("  FATAL: LM export missing (model.onnx). Run the genai builder (-p fp16 -e dml) first.")
         return 2
     if not SNAC.exists():
         log("  FATAL: SNAC decoder onnx missing.")
         return 2
 
+    texts = {**_harness.PUBLIC_SENTENCES, **_harness.EXPRESSIVE_TAGS, **_harness.corpus_sentences()}
+    sids = [s for s in SIDS if s in texts]
+
     log("\nLoading SNAC decoder (CPU EP) ...")
     snac = ort.InferenceSession(str(SNAC), providers=["CPUExecutionProvider"])
     for i in snac.get_inputs():
         log(f"  SNAC in  {i.name} {i.shape} {i.type}")
-    for o in snac.get_outputs():
-        log(f"  SNAC out {o.name} {o.shape} {o.type}")
 
-    log("\nLoading Orpheus LM (onnxruntime_genai, CPU) ...")
+    log("Loading Orpheus LM (onnxruntime_genai) ...")
     t0 = time.time()
-    config = og.Config(str(LM_DIR))
-    model = og.Model(config)
-    tokenizer = og.Tokenizer(model)
-    log(f"  LM ready in {time.time() - t0:.1f}s")
+    model = og.Model(og.Config(str(LM_DIR)))
+    tokenizer = HFTokenizer.from_file(str(LM_DIR / "tokenizer.json"))
+    load_s = time.time() - t0
+    log(f"  LM ready in {load_s:.1f}s  (execution provider from genai_config.json)")
 
-    for sid, text in SENTENCES.items():
-        dest = OUT / f"onnx_orpheus_{sid}.wav"
-        if dest.exists():
-            log(f"\nskip: {dest.name}")
-            continue
-        log(f"\n== {sid} ==\n  {text}")
-        try:
-            t0 = time.time()
-            prompt_ids = build_prompt_ids(tokenizer, text)
-            log(f"  prompt tokens: {len(prompt_ids)}")
-            toks = generate_speech_tokens(model, tokenizer, prompt_ids)
-            t_gen = time.time() - t0
-            codes = tokens_to_codes(toks)
-            n_frames = len(codes) // 7
-            log(f"  generated {len(toks)} tokens -> {len(codes)} codes "
-                f"({n_frames} frames) in {t_gen:.1f}s")
-            if n_frames == 0:
-                log("  GEN EMPTY: no SNAC speech tokens produced; "
-                    "prompt format likely off for this finetune.")
-                continue
-            audio = decode_codes(snac, codes)
-            peak = float(np.max(np.abs(audio))) if audio.size else 0.0
-            log(f"  decoded {audio.size} samples  peak={peak:.3f}")
-            if peak > 0:
-                audio = audio / max(peak, 1e-6) * 0.95  # gentle normalize
-            sf.write(str(dest), audio.astype(np.float32), SR)
-            log(f"  wrote {dest.name}  ({SR} Hz, {audio.size / SR:.1f}s)")
-        except Exception as e:  # noqa: BLE001
-            log(f"  GEN FAILED {sid}: {type(e).__name__}: {str(e)[:240]}")
-            traceback.print_exc()
+    for voice in VOICES:
+        log(f"\n===== voice {voice} =====")
+        comp = aud = 0.0
+        n = 0
+        for sid in sids:
+            text = texts[sid]
+            dest = OUT / f"onnx_orpheus_{voice}_{sid}.wav"
+            try:
+                tc = time.time()
+                prompt_ids = build_prompt_ids(tokenizer, text, voice)
+                toks = generate_speech_tokens(model, tokenizer, prompt_ids)
+                codes = tokens_to_codes(toks)
+                n_frames = len(codes) // 7
+                if n_frames == 0:
+                    log(f"  {sid}: EMPTY (no SNAC speech tokens) — prompt/voice off?")
+                    continue
+                audio = decode_codes(snac, codes)
+                comp += time.time() - tc
+                peak = float(np.max(np.abs(audio))) if audio.size else 0.0
+                if peak > 0:
+                    audio = audio / max(peak, 1e-6) * 0.95  # gentle normalize
+                sf.write(str(dest), audio.astype(np.float32), SR)
+                secs = audio.size / SR
+                aud += secs
+                n += 1
+                log(f"  {sid}: {len(toks)} tok -> {n_frames} frames, {secs:.1f}s (peak {peak:.2f})")
+            except Exception as e:  # noqa: BLE001
+                log(f"  GEN FAILED {voice}/{sid}: {type(e).__name__}: {str(e)[:200]}")
+                traceback.print_exc()
+        if n:
+            _harness.stats_record(
+                "orpheus", voice, ep="dml", n=n,
+                compute_s=round(comp, 1), audio_s=round(aud, 1),
+                rtf=round(aud / comp, 2) if comp else None, load_s=round(load_s, 1))
 
     wavs = sorted(OUT.glob("onnx_orpheus_*.wav"))
     log(f"\nDone. {len(wavs)} orpheus wavs:")
