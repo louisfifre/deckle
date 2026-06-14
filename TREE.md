@@ -752,6 +752,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and f…
 │   │   ├── TrayContextMenuHost.cs
+│   │   ├── TrayContextMenuHost.Flyout.cs
+│   │   ├── TrayContextMenuHost.Measure.cs
+│   │   ├── TrayContextMenuHost.Show.cs
+│   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
