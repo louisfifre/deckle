@@ -29,18 +29,39 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Manual test surface for the notification toast channel
 - **app:** Compose the notification dispatcher at boot
 - **anytype:** Create projects and tasks from their default templates
+- **input:** Keyboard and pointer raw input host with focus signals
+- **core:** Describe the focused element for the autocorrect surface gate
+- **autocorrect:** Typed-word tracking over the raw keyboard stream
+- **autocorrect:** Conservative lexical gate for diacritics restoration
+- **autocorrect:** Minimal-diff injection and decayed personal dictionary
+- **autocorrect:** Left-context pair model and restoration eval harness
+- **autocorrect:** Engine wiring - surface gate, correction revert, learning signals
 - **mcp:** Self-documenting host copy
+- **autocorrect:** Cli host - watch, inject, run, eval, data pipeline, enroll, dict
+- **autocorrect:** Derived lexical artifacts (Lexique, Norvig, Wikipedia FR pairs)
+- **autocorrect:** Calibrate the context margin from the eval matrix
 - **anytype:** Select options are applied, never created
 - **taskbar-cover:** Edge-aware cover band domain module
 - **shell:** Taskbar cover switch in the tray menu
 - **app:** Compose the taskbar cover module
+- **autocorrect:** Trace mode attributes every key event by origin
 - **core:** Add a dedicated diagnostics directory under the data root
 - **app:** Persist the setup narrative and critical errors locally
 - **settings:** Link to the local diagnostics folder
 - **setup:** Offer the diagnostics folder on a failed first run
 - **anytype:** Replace_section — heading-located body edit, verified
 - **anytype:** Add dialogue chat tools
+- **autocorrect:** N-gram left-context disambiguation and precision-first eval
+- **autocorrect:** CamemBERT MLM reranker probe (offline)
+- **autocorrect:** Post-sentence reranker stage in the offline eval
+- **autocorrect:** Proper-noun caps guard for the lexical gate
+- **autocorrect:** Reranker frequency prior and eval tuning flags
+- **autocorrect:** Offline dry-run command
 - **scripts:** Add README stats automation
+- **anytype:** Serialize cross-session writes with a file lock
+- **autocorrect:** Observation-live harvest command
+- **autocorrect:** Optional Morphalou inflected-form overlay
+- **app:** Wire the autocorrect engine into the app
 
 ### Changed
 
@@ -65,7 +86,18 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Type the diagnostic event channels
 - **setup:** Type the wizard event channels
 - **settings:** Type the per-setting change sub-channel
+- **autocorrect:** Extract OS-port interfaces for the test seam
 - **diagnostics:** Self-create the JSONL sink parent directory
+- **hud:** Share one cursor-movement signal across the HUD surfaces
+- **app:** Split LogWindow into Model/Interaction/Chrome partials
+- **tray-menu:** Split TrayContextMenuHost into Window/Flyout/Show/Measure partials
+- **ambient:** Split AmbientEngine.Lifecycle event handlers into partials
+- **whisper:** Extract WhisperNativeLogCompactor from WhisperBackend
+- **transcription:** Split TranscriptionEngine.Pipeline into Finalize/Telemetry partials
+- Collapse to one namespace per module
+- **hud:** Split HudWindow and organize into Chrono/Windows/Model
+- **settings:** Organize into Dialogs/Pages/Controls/Persistence
+- **playground:** Organize Views into Ambient/Hud
 
 ### Fixed
 
@@ -81,6 +113,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **notifications:** Self-settling prompts, live availability gate, complete narrative
 - **notifications:** Mirror descriptor Loc keys into the App resw, harden Loc misses
 - **mcp:** Link copy states the real pair matrix; instructions carry the property discipline
+- **autocorrect:** Land tracker state before raising commit events
+- **autocorrect:** Chorded editing keys decode as shortcuts
+- **autocorrect:** Corrections no longer feed their own defeat
+- **autocorrect:** Make the live run path diagnosable
 - **taskbar-cover:** Serialize host restarts and unblock Start from shell hangs
 - **taskbar-cover:** Observe timer arming failures
 - **taskbar-cover:** Pin the pump imports to their Unicode entry points

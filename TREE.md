@@ -266,6 +266,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
+│   │   ├── LogWindow.Chrome.cs
+│   │   ├── LogWindow.Interaction.cs
+│   │   ├── LogWindow.Model.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
 │   │   └── SecondaryWindowPlacement.cs
@@ -377,27 +380,34 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
+│   │   ├── Chrono/
+│   │   │   ├── HudChrono.Clock.cs
+│   │   │   ├── HudChrono.Reveal.cs
+│   │   │   ├── HudChrono.Stroke.cs
+│   │   │   ├── HudChrono.xaml
+│   │   │   └── HudChrono.xaml.cs
+│   │   ├── Model/
+│   │   │   ├── HudPalette.cs
+│   │   │   ├── HudState.cs
+│   │   │   └── MessageKind.cs
+│   │   ├── Windows/
+│   │   │   ├── HudOverlayManager.cs
+│   │   │   ├── HudOverlayWindow.xaml
+│   │   │   ├── HudOverlayWindow.xaml.cs
+│   │   │   ├── HudWindow.Fade.cs
+│   │   │   ├── HudWindow.Proximity.cs
+│   │   │   ├── HudWindow.State.cs
+│   │   │   ├── HudWindow.Windowing.cs
+│   │   │   ├── HudWindow.xaml
+│   │   │   ├── HudWindow.xaml.cs
+│   │   │   └── WindowSlideAnimator.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
-│   │   ├── HudChrono.Clock.cs
-│   │   ├── HudChrono.Reveal.cs
-│   │   ├── HudChrono.Stroke.cs
-│   │   ├── HudChrono.xaml
-│   │   ├── HudChrono.xaml.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
-│   │   ├── HudOverlayManager.cs
-│   │   ├── HudOverlayWindow.xaml
-│   │   ├── HudOverlayWindow.xaml.cs
-│   │   ├── HudPalette.cs
-│   │   ├── HudState.cs
-│   │   ├── HudWindow.xaml
-│   │   ├── HudWindow.xaml.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
-│   │   ├── MessageKind.cs
-│   │   ├── ProximityRollupAggregator.cs
-│   │   └── WindowSlideAnimator.cs
+│   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
 │   │   ├── Deckle.Inference.Onnx.csproj
@@ -569,7 +579,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Lighting.Ambient/
 │   │   ├── Engine/
 │   │   │   ├── AmbientColorPipeline.cs
+│   │   │   ├── AmbientEngine.CaptureEvents.cs
 │   │   │   ├── AmbientEngine.cs
+│   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
@@ -649,19 +661,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── HudViewModel.cs
 │   │   ├── Views/
-│   │   │   ├── AmbientPage.HdrTuning.cs
-│   │   │   ├── AmbientPage.Hue.cs
-│   │   │   ├── AmbientPage.LightZones.cs
-│   │   │   ├── AmbientPage.Preview.cs
-│   │   │   ├── AmbientPage.ScreenCapture.cs
-│   │   │   ├── AmbientPage.xaml
-│   │   │   ├── AmbientPage.xaml.cs
+│   │   │   ├── Ambient/
+│   │   │   │   ├── AmbientPage.HdrTuning.cs
+│   │   │   │   ├── AmbientPage.Hue.cs
+│   │   │   │   ├── AmbientPage.LightZones.cs
+│   │   │   │   ├── AmbientPage.Preview.cs
+│   │   │   │   ├── AmbientPage.ScreenCapture.cs
+│   │   │   │   ├── AmbientPage.xaml
+│   │   │   │   └── AmbientPage.xaml.cs
+│   │   │   ├── Hud/
+│   │   │   │   ├── HudPage.Expanders.cs
+│   │   │   │   ├── HudPage.RowFactories.cs
+│   │   │   │   ├── HudPage.xaml
+│   │   │   │   └── HudPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
-│   │   │   ├── HudPage.Expanders.cs
-│   │   │   ├── HudPage.RowFactories.cs
-│   │   │   ├── HudPage.xaml
-│   │   │   ├── HudPage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
 │   │   │   └── PlaygroundWindow.xaml.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
@@ -670,6 +684,28 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Settings/
+│   │   ├── Controls/
+│   │   │   ├── FolderPickerCard.xaml
+│   │   │   ├── FolderPickerCard.xaml.cs
+│   │   │   ├── FolderPickerEditableCard.xaml
+│   │   │   └── FolderPickerEditableCard.xaml.cs
+│   │   ├── Dialogs/
+│   │   │   ├── ApplicationLogConsentDialog.cs
+│   │   │   ├── AudioCorpusConsentDialog.cs
+│   │   │   ├── CorpusConsentDialog.cs
+│   │   │   └── MicrophoneTelemetryConsentDialog.cs
+│   │   ├── Pages/
+│   │   │   ├── DiagnosticsPage.xaml
+│   │   │   ├── DiagnosticsPage.xaml.cs
+│   │   │   ├── GeneralPage.xaml
+│   │   │   ├── GeneralPage.xaml.cs
+│   │   │   ├── RecordingPage.xaml
+│   │   │   └── RecordingPage.xaml.cs
+│   │   ├── Persistence/
+│   │   │   ├── AppSettings.cs
+│   │   │   ├── SettingsBackupService.cs
+│   │   │   ├── SettingsBootstrap.cs
+│   │   │   └── SettingsService.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -677,28 +713,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiagnosticsViewModel.cs
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── RecordingViewModel.cs
-│   │   ├── ApplicationLogConsentDialog.cs
-│   │   ├── AppSettings.cs
-│   │   ├── AudioCorpusConsentDialog.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
-│   │   ├── CorpusConsentDialog.cs
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
-│   │   ├── DiagnosticsPage.xaml
-│   │   ├── DiagnosticsPage.xaml.cs
-│   │   ├── FolderPickerCard.xaml
-│   │   ├── FolderPickerCard.xaml.cs
-│   │   ├── FolderPickerEditableCard.xaml
-│   │   ├── FolderPickerEditableCard.xaml.cs
-│   │   ├── GeneralPage.xaml
-│   │   ├── GeneralPage.xaml.cs
-│   │   ├── MicrophoneTelemetryConsentDialog.cs
-│   │   ├── RecordingPage.xaml
-│   │   ├── RecordingPage.xaml.cs
-│   │   ├── SettingsBackupService.cs
-│   │   ├── SettingsBootstrap.cs
 │   │   ├── SettingsHost.cs
-│   │   ├── SettingsService.cs
 │   │   ├── SettingsWindow.xaml
 │   │   └── SettingsWindow.xaml.cs
 │   ├── Deckle.Setup/
@@ -749,6 +767,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and f…
 │   │   ├── TrayContextMenuHost.cs
+│   │   ├── TrayContextMenuHost.Flyout.cs
+│   │   ├── TrayContextMenuHost.Measure.cs
+│   │   ├── TrayContextMenuHost.Show.cs
+│   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Transcription/
 │   │   ├── Corpus/
@@ -760,11 +782,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptionEngine.cs
+│   │   │   ├── TranscriptionEngine.Finalize.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
-│   │   │   └── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   └── TranscriptionEngine.Telemetry.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
@@ -804,7 +828,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── RepetitionDetector.cs
-│   │   └── WhisperBackend.cs
+│   │   ├── WhisperBackend.cs
+│   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Vad.csproj
