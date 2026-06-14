@@ -70,7 +70,7 @@ LANG = "fr"
 # DEMO (greedy argmax, 256 cap). The demo caused the dual failure we heard: long
 # sentences hit the 256 ceiling (trailing silence) while short ones argmax'd onto
 # STOP too early (clipped). Sampling + a ~1000-token budget fixes both.
-REPETITION_PENALTY = 1.2
+REPETITION_PENALTY = 1.4  # research #355: pre-arm against stutter on long text (was 1.2)
 MAX_NEW_TOKENS = 1000
 TEMPERATURE = 0.8
 TOP_P = 0.95
@@ -79,23 +79,23 @@ SEED = 9527  # reproducible sampled decode
 
 DEFAULT_EXAGGERATION = 0.5
 
-# ── Accent experiment ──────────────────────────────────────────────────────
-# Chatterbox CLONES the reference clip's timbre AND its accent. The shipped
-# default_voice.wav is an ENGLISH speaker -> anglo-accented French (what Louis
-# heard). We probe whether a NATIVE FRENCH reference removes the accent, using
-# clean French clips already produced in this run dir (Supertonic M1, Piper
-# Pierre/Jessica) as zero-shot references. Plus one "flat voice" pass — lower
-# temperature + exaggeration — for the "voix plus plate" request. The default
-# (anglo) takes stay on the page as the baseline; we don't re-render them.
-FR_REFERENCES = {
-    "frSupertonic": OUT / "onnx_supertonic_M1_01_neutre.wav",
-    "frPierre": OUT / "onnx_piper_upmc_s1_01_neutre.wav",
-    "frJessica": OUT / "onnx_piper_upmc_s0_01_neutre.wav",
-}
+# ── Quality refinement (post-listen) ───────────────────────────────────────
+# Louis kept the FR-referenced Chatterbox (Pierre/Jessica). Research (issue
+# #355): on the MULTILINGUAL model `exaggeration` is near-inert (emotion_adv_fc
+# crushed by RMSNorm) — so FIX it at 0.5 and sweep TEMPERATURE, the real
+# flatness/naturalness lever (0.5 flat … 0.7 livelier; below 0.5 → robotic).
+# References are silence-trimmed at load. The Piper clip is a synthetic-timbre
+# ceiling; a real human FR clip would be the upper bound (open question for Louis).
+EXAGGERATION = 0.5
+REF_PIERRE = OUT / "onnx_piper_upmc_s1_01_neutre.wav"
+REF_JESSICA = OUT / "onnx_piper_upmc_s0_01_neutre.wav"
+GRID = [  # (refkey, ref_wav, temperature)
+    ("pierreT50", REF_PIERRE, 0.5),
+    ("pierreT70", REF_PIERRE, 0.7),
+    ("jessicaT50", REF_JESSICA, 0.5),
+    ("jessicaT70", REF_JESSICA, 0.7),
+]
 COMPARISON_SIDS = ["01_neutre", "02_explication", "corpus_01"]
-FLAT_REF = "frPierre"
-FLAT_EXAGGERATION = 0.3
-FLAT_TEMPERATURE = 0.5
 
 
 def log(m: str) -> None:
@@ -170,6 +170,7 @@ def encode_reference(sess: dict, ref_wav: Path):
       speaker_features [1,F,80]  -> decoder `speaker_features`
     """
     audio, _ = librosa.load(str(ref_wav), sr=S3GEN_SR)
+    audio, _ = librosa.effects.trim(audio, top_db=30)  # drop leading/trailing silence
     audio = audio[np.newaxis, :].astype(np.float32)
     cond_emb, prompt_token, speaker_embeddings, speaker_features = sess["speech_encoder"].run(
         None, {"audio_values": audio})
@@ -270,24 +271,26 @@ def main() -> int:
     setup_s = time.perf_counter() - t0
     log(f"  sessions ready in {setup_s:.1f}s")
 
-    # (refkey, ref_wav, exaggeration, temperature): native-FR refs at the default
-    # dial, then one flat pass (low temp + low exaggeration) on the Pierre ref.
-    runs = [(k, p, DEFAULT_EXAGGERATION, TEMPERATURE) for k, p in FR_REFERENCES.items()]
-    runs.append(("flatPierre", FR_REFERENCES[FLAT_REF], FLAT_EXAGGERATION, FLAT_TEMPERATURE))
-
+    # Temperature sweep on the two FR refs Louis liked (Pierre, Jessica). Refs are
+    # silence-trimmed and encoded once, then reused across temperatures.
+    # exaggeration is INERT on the multilingual model (#355) -> fixed; flatness
+    # comes from TEMPERATURE.
+    encoded: dict[Path, tuple] = {}
     tot_comp = tot_aud = 0.0
     tot_n = 0
-    for refkey, ref_wav, exg, temp in runs:
+    for refkey, ref_wav, temp in GRID:
         if not ref_wav.exists():
             log(f"\n== {refkey}: reference missing ({ref_wav.name}) — skipped ==")
             continue
-        log(f"\n== {refkey}  (ref={ref_wav.name}, exg={exg}, temp={temp}) ==")
-        ref = encode_reference(sess, ref_wav)
+        if ref_wav not in encoded:
+            encoded[ref_wav] = encode_reference(sess, ref_wav)
+        ref = encoded[ref_wav]
+        log(f"\n== {refkey}  (ref={ref_wav.name}, exg={EXAGGERATION}, temp={temp}) ==")
         for sid, text in comparison:
             dest = OUT / f"onnx_chatterbox_{refkey}_{sid}.wav"
             try:
                 tc = time.perf_counter()
-                wav = synth(sess, ref, tokenizer, text, exg, temp, rng)
+                wav = synth(sess, ref, tokenizer, text, EXAGGERATION, temp, rng)
                 tot_comp += time.perf_counter() - tc
                 sf.write(str(dest), wav.astype(np.float32), S3GEN_SR)
                 secs = len(wav) / S3GEN_SR
@@ -299,7 +302,7 @@ def main() -> int:
                 traceback.print_exc()
     if tot_n:
         _harness.stats_record(
-            "chatterbox", "refsweep", ep=os.environ.get("DECKLE_TTS_EP", "cpu"), n=tot_n,
+            "chatterbox", "tempsweep", ep=os.environ.get("DECKLE_TTS_EP", "cpu"), n=tot_n,
             compute_s=round(tot_comp, 1), audio_s=round(tot_aud, 1),
             rtf=round(tot_aud / tot_comp, 2) if tot_comp else None, load_s=round(setup_s, 1))
 

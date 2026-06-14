@@ -60,10 +60,10 @@ ENGINES = [
 
 VOICE_LABEL = {
     "supertonic_M1": "M1 (masculine)",
-    "chatterbox_frSupertonic": "réf. FR — Supertonic M1 (H)",
-    "chatterbox_frPierre": "réf. FR — Piper Pierre (H)",
-    "chatterbox_frJessica": "réf. FR — Piper Jessica (F)",
-    "chatterbox_flatPierre": "réf. FR Pierre — voix plate (temp 0.5 / exag 0.3)",
+    "chatterbox_pierreT50": "Pierre · temp 0.5 (plat)",
+    "chatterbox_pierreT70": "Pierre · temp 0.7 (vif)",
+    "chatterbox_jessicaT50": "Jessica · temp 0.5 (plat)",
+    "chatterbox_jessicaT70": "Jessica · temp 0.7 (vif)",
     "f5_fr": "clone — réf. (fr)",
     "orpheus": "voix CML-FR",
     "piper_upmc_s0": "upmc · jessica (féminine)",
