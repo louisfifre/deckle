@@ -380,27 +380,34 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
+│   │   ├── Chrono/
+│   │   │   ├── HudChrono.Clock.cs
+│   │   │   ├── HudChrono.Reveal.cs
+│   │   │   ├── HudChrono.Stroke.cs
+│   │   │   ├── HudChrono.xaml
+│   │   │   └── HudChrono.xaml.cs
+│   │   ├── Model/
+│   │   │   ├── HudPalette.cs
+│   │   │   ├── HudState.cs
+│   │   │   └── MessageKind.cs
+│   │   ├── Windows/
+│   │   │   ├── HudOverlayManager.cs
+│   │   │   ├── HudOverlayWindow.xaml
+│   │   │   ├── HudOverlayWindow.xaml.cs
+│   │   │   ├── HudWindow.Fade.cs
+│   │   │   ├── HudWindow.Proximity.cs
+│   │   │   ├── HudWindow.State.cs
+│   │   │   ├── HudWindow.Windowing.cs
+│   │   │   ├── HudWindow.xaml
+│   │   │   ├── HudWindow.xaml.cs
+│   │   │   └── WindowSlideAnimator.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
-│   │   ├── HudChrono.Clock.cs
-│   │   ├── HudChrono.Reveal.cs
-│   │   ├── HudChrono.Stroke.cs
-│   │   ├── HudChrono.xaml
-│   │   ├── HudChrono.xaml.cs
 │   │   ├── HudMessage.xaml
 │   │   ├── HudMessage.xaml.cs
-│   │   ├── HudOverlayManager.cs
-│   │   ├── HudOverlayWindow.xaml
-│   │   ├── HudOverlayWindow.xaml.cs
-│   │   ├── HudPalette.cs
-│   │   ├── HudState.cs
-│   │   ├── HudWindow.xaml
-│   │   ├── HudWindow.xaml.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
-│   │   ├── MessageKind.cs
-│   │   ├── ProximityRollupAggregator.cs
-│   │   └── WindowSlideAnimator.cs
+│   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
 │   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
 │   │   ├── Deckle.Inference.Onnx.csproj
