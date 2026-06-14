@@ -49,18 +49,17 @@ def id_label(sid: str) -> str:
 
 # engine prefix -> (display label, honest note). Judgement-by-ear is Louis's.
 ENGINES = [
-    ("chatterbox", "Chatterbox-ML", "Clonage zéro-shot : le timbre ET l'accent viennent de la référence. "
-                                    "La voix par défaut est anglaise — d'où l'accent anglo. Les variantes « réf. FR » testent "
-                                    "une référence française ; « voix plate » baisse température + exagération. Licence MIT — commercial libre."),
-    ("supertonic", "Supertonic-3", "Expressif, voix fixes (pas de clonage). Aucun canal de tags : les &lt;laugh&gt; seraient lus tels quels — réservés à Orpheus."),
-    ("orpheus", "Orpheus français", "3B expressif, le seul à faire les vrais tags &lt;laugh&gt;/&lt;sigh&gt; arbitraires. Lourd : GPU nécessaire."),
+    ("orpheus", "Orpheus français", "3B expressif, le seul à faire les vrais tags &lt;laugh&gt;/&lt;sigh&gt; arbitraires. Lourd : tourne sur le GPU (DirectML)."),
+    ("chatterbox", "Chatterbox-ML", "Clonage zéro-shot : reprend le timbre d'une référence (ici des clips Piper/Supertonic FR) "
+                                    "et le re-synthétise avec bien plus de naturel — c'est là sa valeur, pas la voix. "
+                                    "« Voix plate » = température + exagération basses. Licence MIT — commercial libre."),
+    ("piper", "Piper (VITS)", "Propre et intelligible, très léger (77 Mo). Plat — aucune émotion apprise. Sert aussi de référence à Chatterbox."),
     ("f5", "F5-TTS français", "Clonage zéro-shot — emprunte le timbre d'une référence. Licence CC-BY-NC : usage perso seulement."),
-    ("piper", "Piper (VITS)", "Propre et intelligible, mais plat — aucune émotion apprise. Base de référence."),
+    ("supertonic", "Supertonic-3", "Expressif, voix fixes (pas de clonage). Gardé pour comparaison, mais le gain sur Piper ne justifie pas son poids. Pas de canal de tags."),
 ]
 
 VOICE_LABEL = {
     "supertonic_M1": "M1 (masculine)",
-    "chatterbox": "réf. anglaise par défaut (l'accent anglo)",
     "chatterbox_frSupertonic": "réf. FR — Supertonic M1 (H)",
     "chatterbox_frPierre": "réf. FR — Piper Pierre (H)",
     "chatterbox_frJessica": "réf. FR — Piper Jessica (F)",
@@ -148,6 +147,32 @@ def stats_panel() -> str:
             'La colonne « Généré » dit si c\'est frais.</p></section>')
 
 
+def stats_history() -> str:
+    """All run records, newest-first, in a collapsible dropdown — the run history
+    Louis asked for (the latest-only panel above is the at-a-glance view)."""
+    p = OUT / "_stats.jsonl"
+    if not p.exists():
+        return ""
+    recs = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+    if not recs:
+        return ""
+    recs.sort(key=lambda r: r["ts"], reverse=True)
+    rows = []
+    for r in recs:
+        name = f"{r['model']} · {r.get('voice', '')}" if r.get("voice") else r["model"]
+        n, comp = r.get("n"), r.get("compute_s")
+        per = f"{comp / n:.1f}s" if (comp and n) else "—"
+        rtf = r.get("rtf")
+        rows.append(
+            f"<tr><td>{html.escape(r['ts'].replace('T', ' '))}</td><td>{html.escape(name)}</td>"
+            f"<td>{r.get('ep', '—')}</td><td>{n or '—'}</td><td>{per}</td>"
+            f"<td>{(str(rtf) + '×') if rtf else '—'}</td></tr>")
+    return ('<details class="hist"><summary>Historique des runs (' + str(len(recs)) + ')</summary>'
+            '<table class="stats"><thead><tr><th>Quand</th><th>Modèle</th><th>EP</th>'
+            '<th>Phr.</th><th>Compute/phr.</th><th>RTF</th></tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody></table></details>')
+
+
 def main() -> int:
     items = {}  # engine_voice -> {id: filename}
     engine_of = {}
@@ -221,6 +246,9 @@ def main() -> int:
   table.stats {{ width:100%; border-collapse:collapse; font-size:13px; }}
   table.stats th, table.stats td {{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }}
   table.stats th {{ color:var(--mut); font-weight:600; }}
+  details.hist {{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 20px; margin:0 0 16px; }}
+  details.hist summary {{ cursor:pointer; color:var(--accent); font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }}
+  details.hist table {{ margin-top:10px; }}
   .guide {{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-top:22px; }}
   .guide h2 {{ color:var(--ink); }} .guide ul {{ margin:0; padding-left:20px; }} .guide li {{ margin:5px 0; }}
   .foot {{ color:var(--mut); font-size:13px; margin-top:22px; }}
@@ -230,6 +258,7 @@ def main() -> int:
   <p class="sub">Échantillons synthétisés <b>en local</b>, en <b>ONNX Runtime pur</b>,
   sans Transformers ni inférence en ligne. Phrases publiques + extraits réels de ton corpus.</p>
   {stats_panel()}
+  {stats_history()}
   {highlight_html}
   {"".join(sections)}
   <div class="guide"><h2>Les phrases</h2><ul>{sentences_ref}</ul></div>
