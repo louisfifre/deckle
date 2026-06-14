@@ -139,7 +139,8 @@
                         <StackPanel Grid.Column="0" Spacing="4">
                             <TextBlock Text="x1" Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
+                            <NumberBox x:Name="CurveX1Box"
+                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten"
                                        Value="{x:Bind ViewModel.CurveX1, Mode=TwoWay}" />
@@ -147,7 +148,8 @@
                         <StackPanel Grid.Column="1" Spacing="4">
                             <TextBlock Text="y1" Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
+                            <NumberBox x:Name="CurveY1Box"
+                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten"
                                        Value="{x:Bind ViewModel.CurveY1, Mode=TwoWay}" />
@@ -155,7 +157,8 @@
                         <StackPanel Grid.Column="2" Spacing="4">
                             <TextBlock Text="x2" Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
+                            <NumberBox x:Name="CurveX2Box"
+                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten"
                                        Value="{x:Bind ViewModel.CurveX2, Mode=TwoWay}" />
@@ -163,7 +166,8 @@
                         <StackPanel Grid.Column="3" Spacing="4">
                             <TextBlock Text="y2" Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <NumberBox Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
+                            <NumberBox x:Name="CurveY2Box"
+                                       Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten"
                                        Value="{x:Bind ViewModel.CurveY2, Mode=TwoWay}" />
@@ -174,6 +178,7 @@
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                TextWrapping="Wrap"
+                               HorizontalAlignment="Left"
                                MaxWidth="640" />
                 </StackPanel>
             </StackPanel>
@@ -326,6 +331,13 @@
                                 Description="Speech shorter than this is dropped as a noise blip rather than transcribed." />
                         </StackPanel>
                     </Border>
+
+                    <!-- Footer breathing room — only present while the floating
+                         save bar is up, so the last card's caption can scroll
+                         clear of it instead of sitting under it. Its height is
+                         kept in step with the bar's actual height in code-behind;
+                         toggled with the bar on IsDirty. -->
+                    <Border x:Name="UnsavedSpacer" Height="76" Visibility="Collapsed" />
                 </StackPanel>
             </ScrollViewer>
 

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.Globalization.NumberFormatting;
 
 namespace Deckle.Playground;
 
@@ -35,6 +36,24 @@ public sealed partial class SegmentationPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // Curve-coordinate boxes : pin the display to two decimals so a control
+        // point reads as 0.24, not 0.2400000002 (the double's full precision).
+        // One stateless formatter shared across the four boxes.
+        var curveFormatter = new DecimalFormatter
+        {
+            IntegerDigits  = 1,
+            FractionDigits = 2,
+            IsGrouped      = false,
+        };
+        CurveX1Box.NumberFormatter = curveFormatter;
+        CurveY1Box.NumberFormatter = curveFormatter;
+        CurveX2Box.NumberFormatter = curveFormatter;
+        CurveY2Box.NumberFormatter = curveFormatter;
+
+        // Keep the footer spacer exactly as tall as the floating save bar (plus a
+        // little air), so the bar always clears the last caption when it's up.
+        UnsavedBar.SizeChanged += (_, e) => UnsavedSpacer.Height = e.NewSize.Height + 24;
 
         if (this.Content is FrameworkElement root)
             root.Loaded += OnPageLoaded;
@@ -117,5 +136,9 @@ public sealed partial class SegmentationPage : Page
     }
 
     private void UpdateUnsavedBar()
-        => UnsavedBar.Visibility = ViewModel.IsDirty ? Visibility.Visible : Visibility.Collapsed;
+    {
+        bool dirty = ViewModel.IsDirty;
+        UnsavedBar.Visibility    = dirty ? Visibility.Visible : Visibility.Collapsed;
+        UnsavedSpacer.Visibility = dirty ? Visibility.Visible : Visibility.Collapsed;
+    }
 }
