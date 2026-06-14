@@ -1,0 +1,429 @@
+<!-- Streaming segmentation tuning page. Two columns : the dynamic-hangover
+     curve stage on the left (live plot + legend + axes + a plain-language
+     readout), the segmenter knobs on the right in a scroll panel with a
+     pinned Save / Revert / Reset bar. Edits are EPHEMERAL — held in
+     SegmentationViewModel until Save writes them to the transcription
+     settings store (the Playground Save / Revert / Reset contract), unlike
+     the live-save AmbientPage. -->
+<Page
+    x:Class="Deckle.Playground.SegmentationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:transcription="using:Deckle.Transcription">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="480" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ── Col 0 — curve stage ─────────────────────────────────────── -->
+        <Grid Grid.Column="0" Margin="32,24,16,32">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Legend -->
+            <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Spacing="16"
+                        Margin="52,0,0,12">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Rectangle Width="16" Height="3" RadiusX="1.5" RadiusY="1.5"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <TextBlock Text="Shaped curve"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Rectangle Width="16" Height="3" RadiusX="1.5" RadiusY="1.5"
+                               Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                    <TextBlock Text="Linear reference"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Y-axis labels + the plot -->
+            <Grid Grid.Row="1" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" MinWidth="44">
+                    <TextBlock x:Name="AxisYMaxText"
+                               VerticalAlignment="Top"
+                               HorizontalAlignment="Right"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <TextBlock Text="0 s"
+                               VerticalAlignment="Bottom"
+                               HorizontalAlignment="Right"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </Grid>
+                <transcription:HangoverCurveCanvas
+                    x:Name="HangoverCurve"
+                    Grid.Column="1"
+                    MinHeight="240" />
+            </Grid>
+
+            <!-- X-axis labels -->
+            <Grid Grid.Row="2" Margin="52,6,0,0">
+                <TextBlock Text="0 s"
+                           HorizontalAlignment="Left"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                <TextBlock Text="Utterance length"
+                           HorizontalAlignment="Center"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock x:Name="AxisXMaxText"
+                           HorizontalAlignment="Right"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            </Grid>
+
+            <!-- Plain-language readout of the current curve -->
+            <TextBlock x:Name="CurveReadoutText"
+                       Grid.Row="3"
+                       Margin="52,16,0,0"
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="Wrap" />
+        </Grid>
+
+        <!-- ── Col 1 — controls + pinned action bar ────────────────────── -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ScrollViewer Grid.Row="0"
+                          MinWidth="380"
+                          MaxWidth="480"
+                          Padding="0,24,32,12"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="20">
+
+                    <!-- Page title block. -->
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Uid="PlaygroundSegmentationHeader"
+                                   Style="{ThemeResource TitleLargeTextBlockStyle}" />
+                        <TextBlock x:Uid="PlaygroundSegmentationSubheader"
+                                   Style="{ThemeResource BodyTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!-- Hangover & ramp card. -->
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Padding="24">
+                        <StackPanel Spacing="20">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Hangover &amp; ramp"
+                                           Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                <TextBlock Text="The decision delay starts at the maximum and, once an utterance grows past the ramp start, shrinks toward the minimum by the ramp end. In seconds."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           MaxWidth="640" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Hangover (max)" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegHangoverMaxSlider" Grid.Column="0"
+                                            StepFrequency="0.5" SmallChange="0.5" LargeChange="1.0"
+                                            TickFrequency="1.0" TickPlacement="Outside"
+                                            ValueChanged="OnSegHangoverMaxChanged" />
+                                    <TextBlock x:Name="SegHangoverMaxValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Trailing silence to wait, at the start of an utterance, before declaring it ended."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Hangover (min)" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegHangoverMinSlider" Grid.Column="0"
+                                            StepFrequency="0.1" SmallChange="0.1" LargeChange="0.5"
+                                            TickFrequency="0.5" TickPlacement="Outside"
+                                            ValueChanged="OnSegHangoverMinChanged" />
+                                    <TextBlock x:Name="SegHangoverMinValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Floor the delay decays to for long utterances — a shorter pause is treated as intra-word."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Ramp start" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegRampStartSlider" Grid.Column="0"
+                                            StepFrequency="5" SmallChange="5" LargeChange="20"
+                                            TickFrequency="30" TickPlacement="Outside"
+                                            ValueChanged="OnSegRampStartChanged" />
+                                    <TextBlock x:Name="SegRampStartValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Utterance length where the delay starts shrinking from the max."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Ramp end" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegRampEndSlider" Grid.Column="0"
+                                            StepFrequency="5" SmallChange="5" LargeChange="20"
+                                            TickFrequency="30" TickPlacement="Outside"
+                                            ValueChanged="OnSegRampEndChanged" />
+                                    <TextBlock x:Name="SegRampEndValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Utterance length where the delay reaches the minimum."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Curve shape card. -->
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Padding="24">
+                        <StackPanel Spacing="20">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Curve shape"
+                                           Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                <TextBlock Text="How the delay travels from max to min between the ramp bounds. The curve declines from the very start — no plateau — and accelerates toward the end."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           MaxWidth="640" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Contrast" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegContrastSlider" Grid.Column="0"
+                                            StepFrequency="0.1" SmallChange="0.1" LargeChange="1.0"
+                                            TickFrequency="5" TickPlacement="Outside"
+                                            ValueChanged="OnSegContrastChanged" />
+                                    <TextBlock x:Name="SegContrastValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Exit-to-entry slope ratio. 1 is a straight line ; above 1 is gentle-then-cliff, below 1 the mirror."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Knee position" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegPositionSlider" Grid.Column="0"
+                                            StepFrequency="0.02" SmallChange="0.02" LargeChange="0.1"
+                                            TickFrequency="0.25" TickPlacement="Outside"
+                                            ValueChanged="OnSegPositionChanged" />
+                                    <TextBlock x:Name="SegPositionValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Where the knee sits along the ramp — 0 breaks early, 1 breaks late."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Knee sharpness" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegSharpnessSlider" Grid.Column="0"
+                                            StepFrequency="0.5" SmallChange="0.5" LargeChange="2.0"
+                                            TickFrequency="5" TickPlacement="Outside"
+                                            ValueChanged="OnSegSharpnessChanged" />
+                                    <TextBlock x:Name="SegSharpnessValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="How abrupt the knee is — low blends the slope change over the whole ramp, high makes a sharp corner."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Detection card. -->
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Padding="24">
+                        <StackPanel Spacing="20">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Detection"
+                                           Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                <TextBlock Text="The voicing gate, the cut margin, and the noise-blip floor — the rest of the segmenter around the hangover curve."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           MaxWidth="640" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Silence threshold" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegThresholdSlider" Grid.Column="0"
+                                            StepFrequency="1" SmallChange="1" LargeChange="5"
+                                            TickFrequency="10" TickPlacement="Outside"
+                                            ValueChanged="OnSegThresholdChanged" />
+                                    <TextBlock x:Name="SegThresholdValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Raw level (dBFS) at or above which a frame counts as speech. Lower is more sensitive."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Cut margin" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegMarginSlider" Grid.Column="0"
+                                            StepFrequency="50" SmallChange="50" LargeChange="100"
+                                            TickFrequency="250" TickPlacement="Outside"
+                                            ValueChanged="OnSegMarginChanged" />
+                                    <TextBlock x:Name="SegMarginValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Silence kept after the last word when cutting — the rest is dropped."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Minimum utterance" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="SegMinUtteranceSlider" Grid.Column="0"
+                                            StepFrequency="50" SmallChange="50" LargeChange="100"
+                                            TickFrequency="250" TickPlacement="Outside"
+                                            ValueChanged="OnSegMinUtteranceChanged" />
+                                    <TextBlock x:Name="SegMinUtteranceValueText" Grid.Column="1"
+                                               VerticalAlignment="Center" MinWidth="76" TextAlignment="End"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                                <TextBlock Text="Speech shorter than this is dropped as a noise blip rather than transcribed."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Pinned action bar — always visible under the scroll. -->
+            <Border Grid.Row="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,0"
+                    Padding="0,16,32,24">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="12"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <TextBlock x:Name="UnsavedIndicator"
+                               Text="Unsaved changes"
+                               VerticalAlignment="Center"
+                               Margin="0,0,4,0"
+                               Visibility="Collapsed"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <Button x:Name="ResetDefaultsButton"
+                            IsEnabled="{x:Bind ViewModel.CanReset, Mode=OneWay}"
+                            Click="OnResetDefaultsClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                            <TextBlock Text="Reset to defaults" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="RevertButton"
+                            IsEnabled="{x:Bind ViewModel.IsDirty, Mode=OneWay}"
+                            Click="OnRevertClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
+                            <TextBlock Text="Revert" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="SaveButton"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            IsEnabled="{x:Bind ViewModel.IsDirty, Mode=OneWay}"
+                            Click="OnSaveClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Save}" FontSize="14" />
+                            <TextBlock Text="Save" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

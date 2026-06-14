@@ -22,9 +22,24 @@ namespace Deckle.Transcription;
 //                         Below this, the delay stays at HangoverMaxMs.
 //   HangoverRampEndMs   — utterance length at and above which the delay equals
 //                         HangoverMinMs. Between RampStart and RampEnd the delay
-//                         decays as Max × (Min/Max)^(p³) — cubic ease-in: stays
-//                         near the max in the first half of the ramp, then drops
-//                         sharply near the end.
+//                         eases from Max to Min along the shaped curve below.
+//
+//   The decay between RampStart and RampEnd is a slope-integral curve: it declines
+//   from the start of the ramp — continuously, with no built-in plateau (whole-
+//   frame rounding aside) — and its slope ramps from entry to exit under three
+//   independent shape knobs.
+//
+//   HangoverContrast    — ratio of the exit slope to the entry slope. 1 is a
+//                         straight line (constant decline). Above 1 the curve is
+//                         gentle at entry then steepens toward a cliff at RampEnd;
+//                         below 1 is the mirror (steep entry, gentle tail).
+//   HangoverPosition    — where the knee sits along the ramp, in [0, 1]: 0 puts
+//                         the slope change at the very start (ease-out feel), 1 at
+//                         the very end (ease-in feel), ~0.8 keeps most of the ramp
+//                         gentle then breaks late.
+//   HangoverSharpness   — how abrupt the knee is. Low values blend the slope
+//                         change over the whole ramp; high values make it a sharp
+//                         corner at HangoverPosition.
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
@@ -32,11 +47,14 @@ namespace Deckle.Transcription;
 //                         are dropped as noise blips rather than emitted.
 public sealed class EnergySegmenterSettings
 {
-    public double ThresholdDbfs        { get; set; } = -45.0;
-    public int    HangoverMaxMs        { get; set; } = 5_000;
-    public int    HangoverMinMs        { get; set; } = 500;
-    public int    HangoverRampStartMs  { get; set; } = 60_000;
-    public int    HangoverRampEndMs    { get; set; } = 180_000;
-    public int    MarginMs             { get; set; } = 150;
-    public int    MinUtteranceMs       { get; set; } = 250;
+    public double ThresholdDbfs       { get; set; } = -45.0;
+    public int    HangoverMaxMs       { get; set; } = 5_000;
+    public int    HangoverMinMs       { get; set; } = 500;
+    public int    HangoverRampStartMs { get; set; } = 60_000;
+    public int    HangoverRampEndMs   { get; set; } = 180_000;
+    public double HangoverContrast    { get; set; } = 3.0;
+    public double HangoverPosition    { get; set; } = 0.8;
+    public double HangoverSharpness   { get; set; } = 20.0;
+    public int    MarginMs            { get; set; } = 150;
+    public int    MinUtteranceMs      { get; set; } = 250;
 }

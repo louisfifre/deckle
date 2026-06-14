@@ -1,5 +1,5 @@
-<!-- Landing page : two SettingsCards routing to the HUD and Ambient
-     pages. Pattern mirrors Dev Home / Settings hub : a centred,
+<!-- Landing page : three SettingsCards routing to the HUD, Ambient and
+     Segmentation pages. Pattern mirrors Dev Home / Settings hub : a centred,
      readable column with an H1 and a stack of cards. Routing goes
      through PlaygroundShell.NavigateTo so the page doesn't hold a
      reference to the parent Window's NavigationView. -->
@@ -49,6 +49,11 @@
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}"
                                            IsClickEnabled="True"
                                            Click="OnAmbientCardClick" />
+                    <controls:SettingsCard x:Name="HomeSegmentationCard"
+                                           x:Uid="PlaygroundHomeSegmentationCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Speech}}"
+                                           IsClickEnabled="True"
+                                           Click="OnSegmentationCardClick" />
                 </StackPanel>
 
                 <!-- Notifications test surface. Manual probe for the toast

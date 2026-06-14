@@ -42,8 +42,9 @@ internal readonly record struct SegmenterSnapshot(
 //   frame before declaring the utterance over, so a brief intra-phrase pause
 //   does not split a sentence. The required delay SHRINKS as the utterance
 //   grows: HangoverMaxMs while the utterance is below HangoverRampStartMs,
-//   HangoverMinMs at and above HangoverRampEndMs, log-linear decay in between.
-//   No hard cap — a very long utterance ends on a micro-pause, never mid-word.
+//   HangoverMinMs at and above HangoverRampEndMs, a shaped slope-integral decay
+//   in between (contrast / position / sharpness knobs). No hard cap — a very long
+//   utterance ends on a micro-pause, never mid-word.
 //
 //   Margin = CUT POSITION. The emitted span ends MarginMs after the last voiced
 //   frame. The silence between the margin and the hangover expiry is DROPPED.
@@ -66,6 +67,9 @@ internal sealed class EnergySegmenter
     private readonly int   _rampEndFrames;      // utterance length at/above which hangover = min
     private readonly int   _marginFrames;       // trailing silence frames kept after last voiced
     private readonly int   _minVoicedFrames;    // shorter voiced extent → dropped as a blip
+    private readonly double _hangoverContrast;  // exit/entry slope ratio of the ramp decay
+    private readonly double _hangoverPosition;  // where the knee sits along the ramp, [0,1]
+    private readonly double _hangoverSharpness; // how abrupt the knee is
 
     private enum State { Silence, Speech, Hangover }
     private State _state = State.Silence;
@@ -92,6 +96,9 @@ internal sealed class EnergySegmenter
         _rampEndFrames     = FramesFromMs(settings.HangoverRampEndMs,   min: 1);
         _marginFrames      = FramesFromMs(settings.MarginMs,            min: 0);
         _minVoicedFrames   = FramesFromMs(settings.MinUtteranceMs,      min: 1);
+        _hangoverContrast  = settings.HangoverContrast;
+        _hangoverPosition  = settings.HangoverPosition;
+        _hangoverSharpness = settings.HangoverSharpness;
 
         // Min must not exceed Max, and RampEnd must not precede RampStart — keep
         // the curve monotone non-increasing even if settings are inconsistent.
@@ -103,11 +110,12 @@ internal sealed class EnergySegmenter
         => Math.Max(min, (int)Math.Round(ms / FrameMs));
 
     // Current hangover requirement, based on how long the open utterance has
-    // grown. Below RampStart: max. At/above RampEnd: min. In between: cubic
-    // ease-in (p³) wrapped around the log-linear decay — the hangover stays
-    // near the max in the first half of the ramp window, then drops sharply in
-    // the last quarter. This is the curve Louis wanted: long stability, then
-    // brutal switch.
+    // grown. Below RampStart: max. At/above RampEnd: min. In between, the delay
+    // eases from max to min along a slope-integral curve (see Ease) that declines
+    // from the start of the ramp — continuously, with no built-in plateau (whole-
+    // frame rounding aside) — and whose entry vs exit steepness is shaped by
+    // contrast, position and sharpness. No hard cap —
+    // a long utterance still ends on a micro-pause, never mid-word.
     private int RequiredHangoverFrames()
     {
         int len = _frames.Count;
@@ -115,11 +123,33 @@ internal sealed class EnergySegmenter
         if (len >= _rampEndFrames)   return _hangoverMinFrames;
 
         double p = (double)(len - _rampStartFrames) / (_rampEndFrames - _rampStartFrames);
-        double pSteep = p * p * p;
-        double ratio = (double)_hangoverMinFrames / _hangoverMaxFrames;
-        int frames = (int)Math.Round(_hangoverMaxFrames * Math.Pow(ratio, pSteep));
-        return Math.Max(_hangoverMinFrames, frames);
+        double t = Ease(p, _hangoverPosition, _hangoverContrast, _hangoverSharpness);
+        int frames = (int)Math.Round(_hangoverMaxFrames - (_hangoverMaxFrames - _hangoverMinFrames) * t);
+        return Math.Clamp(frames, _hangoverMinFrames, _hangoverMaxFrames);
     }
+
+    // Slope-integral easing on [0,1] → [0,1], monotone increasing from 0 to 1.
+    // The instantaneous slope is 1 + (c−1)·σ(s·(p−m)), a logistic step from slope
+    // ≈ 1 at entry to slope ≈ c at exit, centred at m with abruptness s. Its
+    // normalised integral declines from the very first step (no plateau) and has
+    // an entry/exit steepness ratio of c: c > 1 is gentle-then-cliff, c < 1 the
+    // mirror, c = 1 (or s ≈ 0) a straight line. MUST stay in lockstep with
+    // HangoverCurveCanvas, which plots the same function.
+    private static double Ease(double p, double m, double c, double s)
+    {
+        if (s < 0.05 || Math.Abs(c - 1.0) < 1e-3) return p;
+        double den = RawIntegral(1.0, m, c, s);
+        return den <= 0.0 ? p : RawIntegral(p, m, c, s) / den;
+    }
+
+    // Un-normalised integral of the slope from 0 to p. Since ∫σ = softplus, it is
+    // p + (c−1)·(softplus(s·(p−m)) − softplus(−s·m))/s.
+    private static double RawIntegral(double p, double m, double c, double s)
+        => p + (c - 1.0) * (Softplus(s * (p - m)) - Softplus(-s * m)) / s;
+
+    // log(1 + e^z), guarded against overflow: for large z it is ≈ z.
+    private static double Softplus(double z)
+        => z > 30.0 ? z : Math.Log(1.0 + Math.Exp(z));
 
     // Feed one capture frame. Emits an Utterance via the callback if this frame
     // completes one (silence-bounded end).
