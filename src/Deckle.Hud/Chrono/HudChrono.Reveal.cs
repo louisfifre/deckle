@@ -1,4 +1,5 @@
 using Deckle.Composition;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Hud;
@@ -8,8 +9,8 @@ namespace Deckle.Hud;
 // During Transcribing and Rewriting, a wave travels left→right across the 6
 // digits. Each digit carries its own *heat* scalar in [0, 1] driving the
 // Opacity of its accent overlay TextBlock — when heat rises, the overlay
-// (SystemFillColorCriticalBrush) cross-fades in over the primary; at heat=1 the
-// digit reads as pure red.
+// (ChronoAccentBrush) cross-fades in over the primary; at heat=1
+// the digit reads as pure accent.
 //
 // The wave motion math (head walk + asymmetric rise/decay lerp) lives in
 // `SwipeWaveAnimator` (Deckle.Composition.Primitives) since 2026-05-02.
@@ -19,8 +20,9 @@ namespace Deckle.Hud;
 // can be tuned live by the playground. See the type-level comment on
 // SwipeWaveAnimator for the full algorithm description.
 //
-// Dots (DotA / DotB) have no accent overlay and no heat tracking — they stay
-// primary the whole cycle. Unchanged digits (those that did not flip during
+// Dots (DotA / DotB) have no accent overlay and no heat tracking — they stay at
+// the at-rest background tone the whole cycle. Unchanged digits (those that did
+// not flip during
 // Recording, per the animator's changed flags) have their target pinned at 0 so
 // their heat only decays; if they inherit any heat from the Recording hand-off,
 // it fades and then they stay dark.
@@ -73,6 +75,7 @@ public sealed partial class HudChrono
         {
             _digitPrimary = new[] { Min1, Min2, Sec1, Sec2, Cs1, Cs2 };
             _digitAccent  = new[] { Min1Accent, Min2Accent, Sec1Accent, Sec2Accent, Cs1Accent, Cs2Accent };
+            _cellElements = new FrameworkElement[] { Min1Cell, Min2Cell, Sec1Cell, Sec2Cell, Cs1Cell, Cs2Cell };
         }
     }
 
@@ -82,6 +85,13 @@ public sealed partial class HudChrono
         if (_swipeRunning) return;
         _swipeStopwatch.Restart();
         _swipeRunning = true;
+        // The Stop background tone (Tertiary) is already painted by the calling
+        // Apply* method. Build the per-digit conic reveals the swipe cross-fades
+        // in over that tone; clear the failure latch first so a fresh take
+        // retries any that failed last time. Cells whose layout hasn't settled
+        // yet are retried from UpdateSwipe.
+        _revealsFailed = false;
+        EnsureReveals();
     }
 
     private void StopSwipe()
@@ -89,6 +99,9 @@ public sealed partial class HudChrono
         if (!_swipeRunning) return;
         _swipeStopwatch.Stop();
         _swipeRunning = false;
+        // Tear the conic reveals down before the stroke they borrow from is
+        // disposed (StopSwipe precedes DetachProcessingVisual in every path).
+        TearDownReveals();
         // Drop heat to zero and hide the accent overlays on the way out.
         // The next state entry (ApplyRecording / ApplyCharging) takes
         // over from a clean slate.
@@ -104,22 +117,40 @@ public sealed partial class HudChrono
         // statics for cadence / easing / rise-decay alphas.
         _swipe.Tick(_swipeStopwatch.Elapsed.TotalSeconds);
 
+        // Retry building any reveal whose cell wasn't laid out on the
+        // synchronous StartSwipe call. Skipped once all six are built.
+        if (!_revealsFailed && RevealsPending()) EnsureReveals();
+
         for (int i = 0; i < DigitCount; i++)
         {
-            // Push the new heat onto the overlay's Opacity. TextBlock
-            // Opacity is a DP so the set is a no-op when unchanged; no
-            // need to guard manually — but we round to 3 decimals first
-            // so a heat of 0.9999997 (floating noise) doesn't repeatedly
-            // invalidate the render pass.
-            //
-            // The primary glyph's Opacity is pushed to (1 - accent) so
-            // the two layers never double up on subpixel coverage (see
-            // WriteDigit comment). Skipping this invariant makes
-            // Recording-time flashes look bolder than unchanged digits.
+            // Heat only ever rises on a digit the animator flagged "changed"
+            // (animated this take); every other stays at 0 and keeps showing the
+            // Tertiary background. Rounded to 3 decimals so floating noise
+            // (0.9999997) doesn't re-invalidate the render pass every frame.
             double rounded = System.Math.Round(_swipe.GetHeat(i), 3);
-            if (_digitAccent[i].Opacity != rounded)
-                _digitAccent[i].Opacity = rounded;
             double primaryOpacity = 1.0 - rounded;
+
+            var reveal = _reveals[i];
+            if (reveal is not null)
+            {
+                // Conic reveal: the masked sprite cross-fades the living conic in
+                // over the Tertiary primary as heat rises. Keep the flat accent
+                // overlay hidden so it can't stack with it.
+                reveal.SetHeat((float)rounded);
+                if (_digitAccent[i].Opacity != 0)
+                    _digitAccent[i].Opacity = 0;
+            }
+            else
+            {
+                // Fallback (step 1) until/unless the conic reveal builds: the
+                // flat accent overlay cross-fades in instead.
+                if (_digitAccent[i].Opacity != rounded)
+                    _digitAccent[i].Opacity = rounded;
+            }
+
+            // Keep primary + reveal/accent opacity summing to 1 so only one glyph
+            // ever inks — otherwise two ClearType copies double up on subpixel
+            // coverage and the revealed digit reads bolder (see WriteDigit).
             if (_digitPrimary[i].Opacity != primaryOpacity)
                 _digitPrimary[i].Opacity = primaryOpacity;
         }
@@ -175,6 +206,10 @@ public sealed partial class HudChrono
         _swipe.SetChanged(3, sec2);
         _swipe.SetChanged(4, cs1);
         _swipe.SetChanged(5, cs2);
+        // The changed flags only select which digits the Stop swipe re-lights;
+        // the background tone is a uniform Tertiary set by the Apply* method, so
+        // there is nothing to repaint here when the Playground flips the flags
+        // after StartSwipe.
     }
 
     // CubicBezierEase moved to Deckle.Composition.Primitives.Easing

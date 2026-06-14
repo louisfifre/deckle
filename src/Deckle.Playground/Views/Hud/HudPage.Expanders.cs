@@ -182,11 +182,11 @@ public sealed partial class HudPage
 
     private void ResetSwipe()
     {
-        SwipeWaveAnimator.SwipeCycleSeconds = 3.0f;
-        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.7f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.1f, 1f);
-        SwipeWaveAnimator.SwipeRiseAlpha    = 0.05f;
-        SwipeWaveAnimator.SwipeDecayAlpha   = 0.025f;
+        SwipeWaveAnimator.SwipeCycleSeconds = 4.5f;
+        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.3f, 0f);
+        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.6f, 1f);
+        SwipeWaveAnimator.SwipeRiseAlpha    = 0.25f;
+        SwipeWaveAnimator.SwipeDecayAlpha   = 0.012f;
         SwipeWaveAnimator.SwipeHeadDomain   = 8;
         _simulateChangedDigits = true;
         RebuildTuningPanel();

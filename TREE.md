@@ -317,6 +317,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.Animations.cs
 │   │   │   ├── HudComposition.Config.cs
 │   │   │   ├── HudComposition.cs
+│   │   │   ├── HudComposition.DigitReveal.cs
 │   │   │   ├── HudComposition.Factories.cs
 │   │   │   ├── HudComposition.NakedPreview.cs
 │   │   │   ├── HudComposition.Painting.cs
@@ -381,8 +382,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
+│   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary and the per-phase colour-state matrix (digits, do…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
+│   │   │   ├── HudChrono.RevealMask.cs
 │   │   │   ├── HudChrono.Stroke.cs
 │   │   │   ├── HudChrono.xaml
 │   │   │   └── HudChrono.xaml.cs

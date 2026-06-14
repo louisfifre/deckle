@@ -421,11 +421,11 @@ public sealed partial class HudPage : Page
         // Reset* methods use. Swipe statics live on SwipeWaveAnimator
         // since 2026-05-02 (Deckle.Composition) ; audio mapping
         // statics still belong to AudioLevelMapper (Deckle.Audio).
-        SwipeWaveAnimator.SwipeCycleSeconds = 3.0f;
-        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.5f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.2f, 1f);
-        SwipeWaveAnimator.SwipeRiseAlpha    = 0.1f;
-        SwipeWaveAnimator.SwipeDecayAlpha   = 0.025f;
+        SwipeWaveAnimator.SwipeCycleSeconds = 4.5f;
+        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.3f, 0f);
+        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.6f, 1f);
+        SwipeWaveAnimator.SwipeRiseAlpha    = 0.25f;
+        SwipeWaveAnimator.SwipeDecayAlpha   = 0.012f;
         SwipeWaveAnimator.SwipeHeadDomain   = 8;
         AudioLevelMapper.EmaAlpha          = 0.25f;
         AudioLevelMapper.MinDbfs           = -55f;
