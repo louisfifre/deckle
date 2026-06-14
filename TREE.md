@@ -152,11 +152,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── README.md  — readme-study-voxtral-transformers [study] Completed study — Voxtral Mini 3B BF16 via Transformers + torch-ROCm on Windows…
 │   │   │   ├── sanity_check.py
 │   │   │   └── smoke_chat_regimes.py
-│   │   └── voxtral-validation/
-│   │       ├── aggregate_verdicts.py
-│   │       ├── bench.py
-│   │       ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
-│   │       └── validate_judge_prompt.py
+│   │   ├── voxtral-validation/
+│   │   │   ├── aggregate_verdicts.py
+│   │   │   ├── bench.py
+│   │   │   ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
+│   │   │   └── validate_judge_prompt.py
+│   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py

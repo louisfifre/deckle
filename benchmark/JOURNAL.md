@@ -7,6 +7,10 @@ type: module-journal
 
 Dated discoveries from the ASR benchmark spike. Findings, not plans; where a finding hardened into doctrine it moved to a CLAUDE.md or CONTEXT.md. Most recent on top.
 
+## 2026-06-15 — ASR spike closed: Whisper kept, alternatives dropped
+
+Whisper streaming (large-v3 via whisper.cpp) is fast and accurate enough for the daily need now that the streaming path and its known issues are under control — it stays the shipped ASR. The alternatives explored in this spike are **dropped for now**, none clearly better than Whisper at an accessible cost: Voxtral via ONNX/DirectML (KV-cache decode unresolved), Voxtral BF16 via Transformers + torch-ROCm (works, no decisive quality win), Voxtral 24B Q4_K_M via llama.cpp Vulkan (fast but Q4 fidelity cost), Phi-4 multimodal via OGA (broken upstream, #1455). The ONNX/DirectML harness is kept for future local inference inside Deckle.
+
 ## 2026-06-14 — Local French TTS audition: Chatterbox in, Orpheus out
 
 Spike auditioning local ONNX French TTS by ear (`benches/tts-audition/`). Kept: **Chatterbox-Multilingual** (Resemble AI, MIT). Zero-shot voice cloning — timbre comes from a reference clip, the model re-renders it with far more natural prosody. Feeding a French Piper VITS clip (UPMC Pierre/Jessica) as reference gives a high-quality French voice; the shipped `default_voice.wav` is English, which had carried an anglo accent. Flatness/control is **temperature** (LM sampling), not `exaggeration` — exaggeration is near-inert on the multilingual model (emotion_adv_fc crushed by RMSNorm, chatterbox#355); top_k/cfg_weight aren't reachable from the hand-rolled ONNX decode. Piper VITS itself has no temperature (fixed noise_scale). ~real-time on CPU.
