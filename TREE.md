@@ -70,6 +70,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── benches/
 │   │   ├── tts-audition/
 │   │   │   ├── _harness.py
+│   │   │   ├── .gitignore
 │   │   │   ├── build_player.py
 │   │   │   ├── chatterbox_synth.py
 │   │   │   ├── f5_synth.py

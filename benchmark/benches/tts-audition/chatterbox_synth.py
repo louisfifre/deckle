@@ -78,13 +78,24 @@ TOP_K = 1000
 SEED = 9527  # reproducible sampled decode
 
 DEFAULT_EXAGGERATION = 0.5
-EMOTION_TEXT = _harness.PUBLIC_SENTENCES["03_emotion"]
-# Emotion-dial sweep on the emotional sentence: the `exaggeration` scalar is the
-# whole point of this candidate, so we render it calm / default / intense.
-EMOTION_DIAL = {
-    "03_emotion_calme": (EMOTION_TEXT, 0.3),
-    "03_emotion_intense": (EMOTION_TEXT, 0.8),
+
+# ── Accent experiment ──────────────────────────────────────────────────────
+# Chatterbox CLONES the reference clip's timbre AND its accent. The shipped
+# default_voice.wav is an ENGLISH speaker -> anglo-accented French (what Louis
+# heard). We probe whether a NATIVE FRENCH reference removes the accent, using
+# clean French clips already produced in this run dir (Supertonic M1, Piper
+# Pierre/Jessica) as zero-shot references. Plus one "flat voice" pass — lower
+# temperature + exaggeration — for the "voix plus plate" request. The default
+# (anglo) takes stay on the page as the baseline; we don't re-render them.
+FR_REFERENCES = {
+    "frSupertonic": OUT / "onnx_supertonic_M1_01_neutre.wav",
+    "frPierre": OUT / "onnx_piper_upmc_s1_01_neutre.wav",
+    "frJessica": OUT / "onnx_piper_upmc_s0_01_neutre.wav",
 }
+COMPARISON_SIDS = ["01_neutre", "02_explication", "corpus_01"]
+FLAT_REF = "frPierre"
+FLAT_EXAGGERATION = 0.3
+FLAT_TEMPERATURE = 0.5
 
 
 def log(m: str) -> None:
@@ -104,14 +115,15 @@ def repetition_penalty(generated: np.ndarray, scores: np.ndarray, penalty: float
     return out
 
 
-def sample_token(logits: np.ndarray, rng: np.random.Generator) -> int:
+def sample_token(logits: np.ndarray, rng: np.random.Generator, *, temperature: float) -> int:
     """Temperature + top-k + top-p (nucleus) sampling over one step's logits.
 
     `logits` is the 1-D, already-repetition-penalized score vector. This replaces
     greedy argmax — the production decode that stops the long-sentence runaway
-    and the short-sentence premature STOP.
+    and the short-sentence premature STOP. `temperature` is per-call so a "flat
+    voice" pass can lower it without touching the module default.
     """
-    z = logits.astype(np.float64) / TEMPERATURE
+    z = logits.astype(np.float64) / temperature
     if TOP_K and TOP_K < z.size:
         kth = np.partition(z, -TOP_K)[-TOP_K]
         z[z < kth] = -np.inf
@@ -165,7 +177,7 @@ def encode_reference(sess: dict, ref_wav: Path):
 
 
 def synth(sess: dict, ref, tok: Tokenizer, text: str, exaggeration: float,
-          rng: np.random.Generator) -> np.ndarray:
+          temperature: float, rng: np.random.Generator) -> np.ndarray:
     """Full text->waveform for one sentence. `ref` is the encode_reference tuple."""
     cond_emb, prompt_token, speaker_embeddings, speaker_features = ref
 
@@ -212,7 +224,7 @@ def synth(sess: dict, ref, tok: Tokenizer, text: str, exaggeration: float,
 
         logits = logits[:, -1, :]
         logits = repetition_penalty(generated, logits, REPETITION_PENALTY)
-        nxt = sample_token(logits[0], rng)
+        nxt = sample_token(logits[0], rng, temperature=temperature)
         next_token = np.array([[nxt]], dtype=np.int64)
         generated = np.concatenate((generated, next_token), axis=-1)
         if (next_token.flatten() == STOP_SPEECH_TOKEN).all():
@@ -241,52 +253,58 @@ def synth(sess: dict, ref, tok: Tokenizer, text: str, exaggeration: float,
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     log(f"Output: {OUT}\nModel dir: {MODEL_DIR}")
-
-    ref_wav = MODEL_DIR / "default_voice.wav"
     tokenizer = Tokenizer.from_file(str(MODEL_DIR / "tokenizer.json"))
 
-    # Public neutral set + real corpus dictation (read at runtime, never
-    # versioned), all at the default dial, plus the emotion-dial sweep.
-    sentences = {**_harness.PUBLIC_SENTENCES, **_harness.corpus_sentences()}
-    jobs: list[tuple[str, str, float]] = [
-        (sid, text, DEFAULT_EXAGGERATION) for sid, text in sentences.items()
-    ] + [
-        (sid, text, exg) for sid, (text, exg) in EMOTION_DIAL.items()
-    ]
+    # Texts read at runtime (public + private corpus). We render a small fixed
+    # comparison set across several reference voices to isolate the ACCENT.
+    texts = {**_harness.PUBLIC_SENTENCES, **_harness.corpus_sentences()}
+    comparison = [(sid, texts[sid]) for sid in COMPARISON_SIDS if sid in texts]
+    missing = [sid for sid in COMPARISON_SIDS if sid not in texts]
+    if missing:
+        log(f"  (comparison sids not found, skipped: {missing})")
 
     log("Building ONNX sessions…")
     t0 = time.perf_counter()
     sess = build_sessions()
     rng = np.random.default_rng(SEED)
-    log("Encoding reference voice (once)…")
-    ref = encode_reference(sess, ref_wav)
-    load_s = time.perf_counter() - t0
-    log(f"  setup {load_s:.1f}s  (speaker_embeddings {ref[2].shape}, prompt_token {ref[1].shape})")
+    setup_s = time.perf_counter() - t0
+    log(f"  sessions ready in {setup_s:.1f}s")
 
-    comp = aud = 0.0
-    n = 0
-    for sid, text, exg in jobs:
-        dest = OUT / f"onnx_chatterbox_{sid}.wav"
-        try:
-            tc = time.perf_counter()
-            wav = synth(sess, ref, tokenizer, text, exg, rng)
-            comp += time.perf_counter() - tc
-            sf.write(str(dest), wav.astype(np.float32), S3GEN_SR)
-            secs = len(wav) / S3GEN_SR
-            aud += secs
-            n += 1
-            log(f"  wrote {dest.name}  (exg={exg}, {secs:.1f}s)")
-        except Exception as e:  # noqa: BLE001
-            log(f"  GEN FAILED {sid}: {type(e).__name__}: {str(e)[:200]}")
-            traceback.print_exc()
-    if n:
+    # (refkey, ref_wav, exaggeration, temperature): native-FR refs at the default
+    # dial, then one flat pass (low temp + low exaggeration) on the Pierre ref.
+    runs = [(k, p, DEFAULT_EXAGGERATION, TEMPERATURE) for k, p in FR_REFERENCES.items()]
+    runs.append(("flatPierre", FR_REFERENCES[FLAT_REF], FLAT_EXAGGERATION, FLAT_TEMPERATURE))
+
+    tot_comp = tot_aud = 0.0
+    tot_n = 0
+    for refkey, ref_wav, exg, temp in runs:
+        if not ref_wav.exists():
+            log(f"\n== {refkey}: reference missing ({ref_wav.name}) — skipped ==")
+            continue
+        log(f"\n== {refkey}  (ref={ref_wav.name}, exg={exg}, temp={temp}) ==")
+        ref = encode_reference(sess, ref_wav)
+        for sid, text in comparison:
+            dest = OUT / f"onnx_chatterbox_{refkey}_{sid}.wav"
+            try:
+                tc = time.perf_counter()
+                wav = synth(sess, ref, tokenizer, text, exg, temp, rng)
+                tot_comp += time.perf_counter() - tc
+                sf.write(str(dest), wav.astype(np.float32), S3GEN_SR)
+                secs = len(wav) / S3GEN_SR
+                tot_aud += secs
+                tot_n += 1
+                log(f"  wrote {dest.name}  ({secs:.1f}s)")
+            except Exception as e:  # noqa: BLE001
+                log(f"  GEN FAILED {refkey}/{sid}: {type(e).__name__}: {str(e)[:200]}")
+                traceback.print_exc()
+    if tot_n:
         _harness.stats_record(
-            "chatterbox", "default", ep=os.environ.get("DECKLE_TTS_EP", "cpu"), n=n,
-            compute_s=round(comp, 1), audio_s=round(aud, 1),
-            rtf=round(aud / comp, 2) if comp else None, load_s=round(load_s, 1))
+            "chatterbox", "refsweep", ep=os.environ.get("DECKLE_TTS_EP", "cpu"), n=tot_n,
+            compute_s=round(tot_comp, 1), audio_s=round(tot_aud, 1),
+            rtf=round(tot_aud / tot_comp, 2) if tot_comp else None, load_s=round(setup_s, 1))
 
     wavs = sorted(OUT.glob("onnx_chatterbox_*.wav"))
-    log(f"\nDone. {len(wavs)} Chatterbox wavs:")
+    log(f"\nDone. {len(wavs)} Chatterbox wavs total in run dir:")
     for w in wavs:
         log(f"  {w.name}  ({w.stat().st_size // 1024} KB)")
     return 0

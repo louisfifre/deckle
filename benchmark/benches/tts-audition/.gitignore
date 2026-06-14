@@ -1,0 +1,7 @@
+# Vendored third-party export toolkit (its own git repo). Kept on disk for the
+# F5 export reference; never tracked inside Deckle.
+F5-TTS-ONNX/
+
+# Python caches.
+__pycache__/
+*.pyc

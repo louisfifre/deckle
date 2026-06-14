@@ -49,8 +49,9 @@ def id_label(sid: str) -> str:
 
 # engine prefix -> (display label, honest note). Judgement-by-ear is Louis's.
 ENGINES = [
-    ("chatterbox", "Chatterbox-ML", "Clonage de voix (français natif) + molette d'expressivité (calme/intense). "
-                                    "Recette de production : sampling, budget 1000 tokens. Licence MIT — commercial libre."),
+    ("chatterbox", "Chatterbox-ML", "Clonage zéro-shot : le timbre ET l'accent viennent de la référence. "
+                                    "La voix par défaut est anglaise — d'où l'accent anglo. Les variantes « réf. FR » testent "
+                                    "une référence française ; « voix plate » baisse température + exagération. Licence MIT — commercial libre."),
     ("supertonic", "Supertonic-3", "Expressif, voix fixes (pas de clonage). Aucun canal de tags : les &lt;laugh&gt; seraient lus tels quels — réservés à Orpheus."),
     ("orpheus", "Orpheus français", "3B expressif, le seul à faire les vrais tags &lt;laugh&gt;/&lt;sigh&gt; arbitraires. Lourd : GPU nécessaire."),
     ("f5", "F5-TTS français", "Clonage zéro-shot — emprunte le timbre d'une référence. Licence CC-BY-NC : usage perso seulement."),
@@ -59,7 +60,11 @@ ENGINES = [
 
 VOICE_LABEL = {
     "supertonic_M1": "M1 (masculine)",
-    "chatterbox": "voix par défaut (clonée)",
+    "chatterbox": "réf. anglaise par défaut (l'accent anglo)",
+    "chatterbox_frSupertonic": "réf. FR — Supertonic M1 (H)",
+    "chatterbox_frPierre": "réf. FR — Piper Pierre (H)",
+    "chatterbox_frJessica": "réf. FR — Piper Jessica (F)",
+    "chatterbox_flatPierre": "réf. FR Pierre — voix plate (temp 0.5 / exag 0.3)",
     "f5_fr": "clone — réf. (fr)",
     "orpheus": "voix CML-FR",
     "piper_upmc_s0": "upmc · jessica (féminine)",
