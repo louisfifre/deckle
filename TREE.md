@@ -769,11 +769,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptionEngine.cs
+│   │   │   ├── TranscriptionEngine.Finalize.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
-│   │   │   └── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   └── TranscriptionEngine.Telemetry.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
