@@ -13,9 +13,11 @@ namespace Deckle.Shell.TaskbarCover;
 //     WM_DISPLAYCHANGE / TaskbarCreated);
 //   • the cursor entering the reveal zone hides the band instantly;
 //     leaving it re-covers after RecoverDelayMs;
-//   • a fullscreen / presentation foreground app suppresses the band
-//     (5 s poll — F11 fullscreen changes no foreground window, so a
-//     foreground event alone would miss it);
+//   • a fullscreen / presentation foreground app suppresses the band;
+//     a foreground-change WinEvent reconciles it — and the band's z-order
+//     above the taskbar — the instant the foreground changes, with a 5 s
+//     poll behind it as the fallback and the sole path for F11, which
+//     changes no foreground window;
 //   • sleep and session lock park the machine entirely.
 //
 // Cursor movement arrives through a WinEvent hook
@@ -59,11 +61,13 @@ public sealed class TaskbarCoverHost : IDisposable
     private IntPtr _hInstance;
     private IntPtr _brush;
     private IntPtr _cursorHook;
+    private IntPtr _foregroundHook;
     private uint _wmTaskbarCreated;
 
     // Rooted for the GC while native code holds their function pointers.
     private NativeMethods.WndProc? _wndProcDelegate;
     private WinEventProc? _cursorHookDelegate;
+    private WinEventProc? _foregroundHookDelegate;
 
     private volatile bool _running;
 
@@ -253,6 +257,17 @@ public sealed class TaskbarCoverHost : IDisposable
             throw new InvalidOperationException("SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed");
         }
 
+        // Foreground changes drive the immediate reconciliation of fullscreen
+        // suppression and z-order. Non-fatal, unlike the cursor hook: on
+        // failure the 5 s poll alone still does the job, just lazily — so the
+        // band never gets stuck, it just reacts slower.
+        _foregroundHookDelegate = OnForegroundEvent;
+        _foregroundHook = SetWinEventHook(
+            EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
+            IntPtr.Zero, _foregroundHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
+        if (_foregroundHook == IntPtr.Zero)
+            DeckleShellTaskbarCoverSource.Log.ForegroundHookFailed();
+
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
             DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();
 
@@ -305,6 +320,11 @@ public sealed class TaskbarCoverHost : IDisposable
             // Must run on the thread that called SetWinEventHook — we are on it.
             UnhookWinEvent(_cursorHook);
             _cursorHook = IntPtr.Zero;
+        }
+        if (_foregroundHook != IntPtr.Zero)
+        {
+            UnhookWinEvent(_foregroundHook);
+            _foregroundHook = IntPtr.Zero;
         }
         if (_hwnd != IntPtr.Zero)
         {
@@ -446,12 +466,26 @@ public sealed class TaskbarCoverHost : IDisposable
 
         EvaluateAppSuppressed();
 
-        // The taskbar is topmost too; among topmost windows the most
-        // recently positioned wins. Re-asserting on this slow tick keeps
-        // the band above it whatever the shell re-ordered meanwhile.
-        if (_coverVisible)
-            NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
-                NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        // Fallback z-order re-assertion: the foreground hook handles the
+        // common case the instant it happens, this slow tick catches whatever
+        // re-ordered the band without raising a foreground event (F11 included).
+        if (_coverVisible) ReassertTopmost();
+    }
+
+    // Foreground changed: reconcile suppression now instead of at the next
+    // poll, and — while the band is up — climb back above the taskbar, which
+    // Explorer re-asserts topmost on fullscreen exit. This is the event-driven
+    // half; the suppression poll remains the fallback (and the only path for
+    // F11, which raises no foreground event).
+    private void OnForegroundEvent(
+        IntPtr hWinEventHook, uint evt, IntPtr hwnd,
+        int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
+    {
+        if (idObject != OBJID_WINDOW) return;
+        if (_systemSuspended || !_layoutKnown) return;
+
+        EvaluateAppSuppressed();
+        if (_coverVisible) ReassertTopmost();
     }
 
     // ── Geometry ──────────────────────────────────────────────────────────
@@ -568,7 +602,7 @@ public sealed class TaskbarCoverHost : IDisposable
         if (!suppressed)
         {
             IntPtr fg = NativeMethods.GetForegroundWindow();
-            if (fg != IntPtr.Zero
+            if (fg != IntPtr.Zero && !IsDesktopWindow(fg)
                 && DwmGetWindowAttribute(fg, DWMWA_EXTENDED_FRAME_BOUNDS,
                        out var bounds, (uint)Marshal.SizeOf<NativeMethods.RECT>()) == 0)
             {
@@ -598,6 +632,21 @@ public sealed class TaskbarCoverHost : IDisposable
         UpdateCover(suppressed ? "fullscreen_enter" : "fullscreen_exit");
     }
 
+    // The desktop covers the whole monitor and would pass the fullscreen
+    // geometry test: clicking the wallpaper makes it foreground and the band
+    // would stand down over a bare desktop until something else takes the
+    // foreground. Excluded by the canonical guard Windows itself uses (the
+    // shell and root desktop windows) plus the WorkerW host that backs an
+    // animated or secondary wallpaper.
+    private static bool IsDesktopWindow(IntPtr hwnd)
+    {
+        if (hwnd == GetShellWindow() || hwnd == GetDesktopWindow()) return true;
+
+        var cls = new System.Text.StringBuilder(16);
+        return NativeMethods.GetClassName(hwnd, cls, cls.Capacity) > 0
+            && cls.ToString() == "WorkerW";
+    }
+
     // ── Visibility — the sole ShowWindow site, idempotent ─────────────────
 
     private void UpdateCover(string reason)
@@ -610,8 +659,7 @@ public sealed class TaskbarCoverHost : IDisposable
         if (shouldBeVisible)
         {
             NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-            NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
-                NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+            ReassertTopmost();
             DeckleShellTaskbarCoverSource.Log.CoverShown(reason);
         }
         else
@@ -620,4 +668,12 @@ public sealed class TaskbarCoverHost : IDisposable
             DeckleShellTaskbarCoverSource.Log.CoverHidden(reason);
         }
     }
+
+    // Climb to the top of the topmost band. The taskbar is topmost too and
+    // among topmost windows the most recently positioned wins, so this is how
+    // the band stays above it — re-asserted when shown, on every foreground
+    // change, and on the suppression poll as a fallback.
+    private void ReassertTopmost() =>
+        NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
 }

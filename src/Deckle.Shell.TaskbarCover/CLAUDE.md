@@ -62,10 +62,15 @@ the cursor before committing (fixes a standalone flicker where re-entry
 followed by stillness let the band re-cover under the cursor).
 Fullscreen suppression is the standalone's proven two-stage probe
 (`SHQueryUserNotificationState`, then DWM extended-frame-bounds vs
-monitor) on a 5 s poll — kept as a poll because F11 fullscreen changes
-no foreground window, so no event exists; the same tick re-asserts
+monitor); the geometry stage excludes the desktop itself — the shell and
+root desktop windows plus the `WorkerW` wallpaper host — which covers the
+whole monitor and would otherwise read as a fullscreen app the moment the
+wallpaper is clicked. An `EVENT_SYSTEM_FOREGROUND` WinEvent hook drives
+it: on every foreground change it re-evaluates suppression and re-asserts
 HWND_TOPMOST while visible (the taskbar is topmost too, last-positioned
-wins). Sleep and session lock park everything. The reveal-zone depth
+wins, and Explorer re-asserts it on fullscreen exit). A 5 s poll backs
+the hook up and is the sole path for F11, which changes no foreground
+window. Sleep and session lock park everything. The reveal-zone depth
 (192 px) and re-cover delay (5 s) are frozen constants, deliberately not
 settings. The whole user surface is the tray switch — no Settings page,
 deliberately: with the tunables frozen, a page would carry a single
@@ -77,4 +82,6 @@ parameter appears.
 No fabricated geometry: when `ABM_GETTASKBARPOS` fails the cover stays
 hidden until `TaskbarCreated` or the retry tick finds the taskbar — a
 wrong band is worse than no band. A dead cursor hook fails the whole
-start (the band would mask the taskbar forever).
+start (the band would mask the taskbar forever). The foreground hook is
+non-fatal by contrast: on failure the 5 s poll alone keeps suppression
+and z-order correct, only lazily.
