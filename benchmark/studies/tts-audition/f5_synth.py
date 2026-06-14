@@ -34,7 +34,14 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE.parent.parent / "runs" / "tts-audition-poc-0001"
+sys.path.insert(0, str(HERE))
+import _harness  # noqa: E402
+
+# Shared run dir under %LOCALAPPDATA% (survives worktrees), the single location
+# every audition script and the player agree on. Replaces the old worktree-local
+# `runs/tts-audition-poc-0001`, which both broke the code/data split and pointed
+# at the parallel-contaminated take.
+OUT = _harness.RUN_DIR
 
 MODEL_DIR = Path(r"D:\models\tts\f5-fr")
 VOCAB_PATH = MODEL_DIR / "vocab.txt"
@@ -54,17 +61,9 @@ FUSE_NFE = 1
 SPEED = 1.0
 RANDOM_SEED = 9527
 
-SENTENCES = {
-    "01_neutre": ("Bonjour Louis. Voici la réponse que tu cherchais : il te suffit "
-                  "d'appuyer sur le raccourci, et je te lis la suite à voix haute."),
-    "02_explication": ("Alors, pour résumer simplement : le modèle tourne en local, "
-                       "sur ta carte graphique, sans jamais rien envoyer dans le cloud."),
-    "03_emotion": ("Franchement, c'est génial ! Ça marche du premier coup, "
-                   "je n'en reviens pas."),
-    "04_tics": ("Euh… attends, du coup, comment dire… ouais voilà, "
-                "c'est exactement ça en fait."),
-    "05_question": "Tu veux que je te lise la suite, ou bien je m'arrête là ?",
-}
+# The five neutral audition sentences, shared with every other engine through
+# the harness (single source of truth — no per-script duplication).
+SENTENCES = _harness.PUBLIC_SENTENCES
 
 REF_TEXT = SENTENCES["01_neutre"]
 

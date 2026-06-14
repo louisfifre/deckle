@@ -4,9 +4,11 @@ description: "Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisp
 type: bench-scenario
 ---
 
-# `benches/voxtral-validation/` — Voxtral vs Whisper
+# `studies/voxtral-validation/` — Voxtral vs Whisper
 
 Bench de qualité Voxtral 24B Q4_K_M (via `llama-mtmd-cli` Vulkan) sur le corpus `voxtral-val-30`. Mesure WER, word_count_ratio et axes paralinguistiques du judge Gemini multimodal.
+
+> **Statut — étude archivée (abandonnée 2026-06).** Whisper streaming couvre le besoin ; l'évaluation Voxtral est abandonnée. Conservé comme référence (ground truth Gemini, source llama.cpp Vulkan, `word_count_ratio`). Voir [`../../README.md`](../../README.md) et [`../../JOURNAL.md`](../../JOURNAL.md).
 
 ## Pourquoi ce bench
 

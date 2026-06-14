@@ -2,12 +2,14 @@
 name: readme-bench-voxtral-poc
 description: "Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckle transcription pipeline. Read before running, modifying, or extending this bench, or before extracting its results."
 type: module-readme
-module: benchmark/benches/voxtral-poc
+module: benchmark/studies/voxtral-poc
 ---
 
 # bench voxtral-poc
 
 POC bench evaluating Voxtral Mini 3B as a Whisper alternative inside the Deckle transcription pipeline.
+
+> **Status — archived study (abandoned 2026-06).** Whisper streaming covers the need; the Voxtral evaluation is dropped. This bench is the canonical **template** for a new scenario — copy its `bench.py`. See [`../../README.md`](../../README.md) and [`../../JOURNAL.md`](../../JOURNAL.md).
 
 ## What
 

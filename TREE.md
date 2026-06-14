@@ -67,51 +67,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
-│   ├── benches/
-│   │   ├── tts-audition/
-│   │   │   ├── _harness.py
-│   │   │   ├── .gitignore
-│   │   │   ├── build_player.py
-│   │   │   ├── chatterbox_synth.py
-│   │   │   ├── f5_synth.py
-│   │   │   ├── orpheus_synth.py
-│   │   │   ├── supertonic_synth.py
-│   │   │   └── synth_onnx.py
-│   │   ├── voxtral-onnx-poc/
-│   │   │   ├── debug_kv.py
-│   │   │   ├── debug_tokens.py
-│   │   │   └── smoke_test.py
-│   │   ├── voxtral-poc/
-│   │   │   ├── bench.py
-│   │   │   └── README.md  — readme-bench-voxtral-poc [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
-│   │   ├── voxtral-transformers/
-│   │   │   ├── compare_bf16_vs_q4.py
-│   │   │   ├── inspect_smoke_palier3.py
-│   │   │   ├── perf_rtf.py
-│   │   │   ├── sandbox_sampling.py
-│   │   │   ├── sanity_check.py
-│   │   │   ├── smoke_chat_regimes.py
-│   │   │   └── summary_validation_0001.py
-│   │   └── voxtral-validation/
-│   │       ├── aggregate_verdicts.py
-│   │       ├── bench.py
-│   │       ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
-│   │       └── validate_judge_prompt.py
-│   ├── cs/
-│   │   └── PhiBench/
-│   │       ├── Models/
-│   │       │   ├── Regime.cs
-│   │       │   ├── Sample.cs
-│   │       │   └── TranscriptionResult.cs
-│   │       ├── CorpusLoader.cs
-│   │       ├── CorpusRunner.cs
-│   │       ├── JsonlWriter.cs
-│   │       ├── Phi4Transcriber.cs
-│   │       ├── PhiBench.csproj
-│   │       ├── Program.cs
-│   │       ├── RegimesLoader.cs
-│   │       ├── SingleRunner.cs
-│   │       └── WavHeader.cs
 │   ├── lib/
 │   │   ├── judges/
 │   │   │   ├── __init__.py
@@ -142,18 +97,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── env.py
 │   │   ├── event_log.py
 │   │   └── paths.py
-│   ├── perf-cap/
-│   │   ├── debug-mini-3b-f16-2026-05-27.ps1
-│   │   ├── debug-mini-3b-q8-2026-05-27.ps1
-│   │   ├── debug-samples-difficiles-2026-05-27.ps1
-│   │   ├── debug-transcribe-token-2026-05-27.ps1
-│   │   ├── download-models.ps1
-│   │   ├── parse_vulkan_log.py
-│   │   ├── profile-config.ps1
-│   │   ├── profile-server-text.ps1
-│   │   ├── run-all.ps1
-│   │   ├── session-2026-05-26-prompts.ps1
-│   │   └── session-2026-05-26-reruns.ps1
 │   ├── prompts/
 │   │   ├── judges/
 │   │   │   ├── claude_per_row.md
@@ -165,15 +108,66 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── voxtral_transcribe.toml
 │   │   │   └── voxtral_validation.toml
 │   │   └── whisper_initial.txt
+│   ├── studies/
+│   │   ├── perf-cap/
+│   │   │   ├── download-models.ps1
+│   │   │   ├── parse_vulkan_log.py
+│   │   │   ├── profile-config.ps1
+│   │   │   ├── profile-server-text.ps1
+│   │   │   ├── README.md  — readme-study-perf-cap [study] Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llam…
+│   │   │   └── run-all.ps1
+│   │   ├── PhiBench/
+│   │   │   ├── Models/
+│   │   │   │   ├── Regime.cs
+│   │   │   │   ├── Sample.cs
+│   │   │   │   └── TranscriptionResult.cs
+│   │   │   ├── CorpusLoader.cs
+│   │   │   ├── CorpusRunner.cs
+│   │   │   ├── JsonlWriter.cs
+│   │   │   ├── Phi4Transcriber.cs
+│   │   │   ├── PhiBench.csproj
+│   │   │   ├── Program.cs
+│   │   │   ├── README.md  — readme-study-phibench [study] Suspended C# bench for Phi-4 multimodal audio via ONNX Runtime GenAI (OGA). Blo…
+│   │   │   ├── RegimesLoader.cs
+│   │   │   ├── SingleRunner.cs
+│   │   │   └── WavHeader.cs
+│   │   ├── tts-audition/
+│   │   │   ├── _harness.py
+│   │   │   ├── .gitignore
+│   │   │   ├── build_player.py
+│   │   │   ├── chatterbox_synth.py
+│   │   │   ├── f5_synth.py
+│   │   │   ├── orpheus_synth.py
+│   │   │   ├── README.md  — readme-bench-tts-audition [bench-scenario] Local French TTS audition — a by-ear comparison of ONNX-local TTS engines on th…
+│   │   │   ├── supertonic_synth.py
+│   │   │   └── synth_onnx.py
+│   │   ├── voxtral-onnx-poc/
+│   │   │   ├── README.md  — readme-study-voxtral-onnx [study] Completed POC — Voxtral Mini 3B via ONNX Runtime + DirectML. Smoke pipeline kep…
+│   │   │   └── smoke_test.py
+│   │   ├── voxtral-poc/
+│   │   │   ├── bench.py
+│   │   │   └── README.md  — readme-bench-voxtral-poc [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
+│   │   ├── voxtral-transformers/
+│   │   │   ├── perf_rtf.py
+│   │   │   ├── README.md  — readme-study-voxtral-transformers [study] Completed study — Voxtral Mini 3B BF16 via Transformers + torch-ROCm on Windows…
+│   │   │   ├── sanity_check.py
+│   │   │   └── smoke_chat_regimes.py
+│   │   ├── voxtral-validation/
+│   │   │   ├── aggregate_verdicts.py
+│   │   │   ├── bench.py
+│   │   │   ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
+│   │   │   └── validate_judge_prompt.py
+│   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py
+│   ├── .env.example
 │   ├── build_corpus_voxtral_val_30.py
 │   ├── CLAUDE.md  — [agent-instructions] Autonomous box measuring ASR backend quality and performance on private corpora…
 │   ├── Directory.Build.props
 │   ├── JOURNAL.md  — [module-journal] Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
 │   ├── pregenerate_groundtruth_gemini.py
-│   └── README.md  — readme-benchmark [module-readme] Human-facing entry point for the benchmark/ suite — what it is, how a bench is…
+│   └── README.md  — readme-benchmark [module-readme] Human-facing entry point for the benchmark/ suite — the live harness, the froze…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…

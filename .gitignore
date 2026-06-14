@@ -28,8 +28,8 @@ src/**/bin/
 src/**/obj/
 tests/**/bin/
 tests/**/obj/
-benchmark/cs/**/bin/
-benchmark/cs/**/obj/
+benchmark/**/bin/
+benchmark/**/obj/
 
 # Deployment output — rebuildable via dotnet publish.
 publish/
