@@ -682,6 +682,28 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Settings/
+│   │   ├── Controls/
+│   │   │   ├── FolderPickerCard.xaml
+│   │   │   ├── FolderPickerCard.xaml.cs
+│   │   │   ├── FolderPickerEditableCard.xaml
+│   │   │   └── FolderPickerEditableCard.xaml.cs
+│   │   ├── Dialogs/
+│   │   │   ├── ApplicationLogConsentDialog.cs
+│   │   │   ├── AudioCorpusConsentDialog.cs
+│   │   │   ├── CorpusConsentDialog.cs
+│   │   │   └── MicrophoneTelemetryConsentDialog.cs
+│   │   ├── Pages/
+│   │   │   ├── DiagnosticsPage.xaml
+│   │   │   ├── DiagnosticsPage.xaml.cs
+│   │   │   ├── GeneralPage.xaml
+│   │   │   ├── GeneralPage.xaml.cs
+│   │   │   ├── RecordingPage.xaml
+│   │   │   └── RecordingPage.xaml.cs
+│   │   ├── Persistence/
+│   │   │   ├── AppSettings.cs
+│   │   │   ├── SettingsBackupService.cs
+│   │   │   ├── SettingsBootstrap.cs
+│   │   │   └── SettingsService.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -689,28 +711,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiagnosticsViewModel.cs
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── RecordingViewModel.cs
-│   │   ├── ApplicationLogConsentDialog.cs
-│   │   ├── AppSettings.cs
-│   │   ├── AudioCorpusConsentDialog.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
-│   │   ├── CorpusConsentDialog.cs
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
-│   │   ├── DiagnosticsPage.xaml
-│   │   ├── DiagnosticsPage.xaml.cs
-│   │   ├── FolderPickerCard.xaml
-│   │   ├── FolderPickerCard.xaml.cs
-│   │   ├── FolderPickerEditableCard.xaml
-│   │   ├── FolderPickerEditableCard.xaml.cs
-│   │   ├── GeneralPage.xaml
-│   │   ├── GeneralPage.xaml.cs
-│   │   ├── MicrophoneTelemetryConsentDialog.cs
-│   │   ├── RecordingPage.xaml
-│   │   ├── RecordingPage.xaml.cs
-│   │   ├── SettingsBackupService.cs
-│   │   ├── SettingsBootstrap.cs
 │   │   ├── SettingsHost.cs
-│   │   ├── SettingsService.cs
 │   │   ├── SettingsWindow.xaml
 │   │   └── SettingsWindow.xaml.cs
 │   ├── Deckle.Setup/
