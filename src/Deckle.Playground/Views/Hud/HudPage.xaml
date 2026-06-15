@@ -202,11 +202,11 @@
                             x:Name="ResetAllButton"
                             Style="{ThemeResource SubtleButtonStyle}"
                             VerticalAlignment="Center"
-                            ToolTipService.ToolTip="Reset every section to the shipping defaults"
+                            ToolTipService.ToolTip="Reset everything on this page to its defaults"
                             Click="OnResetAllClick">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                            <TextBlock Text="Reset to defaults" />
+                            <TextBlock Text="Reset all" />
                         </StackPanel>
                     </Button>
                     <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"

@@ -10,7 +10,30 @@
          underneath. The slider and the box stay in sync through the code-behind
          guard ; both step on the same increment so values land on round numbers.
          The reset wheel is enabled only while the value differs from its default. -->
-    <StackPanel Spacing="6">
+    <StackPanel Spacing="6"
+                Background="Transparent"
+                PointerEntered="OnPointerEntered"
+                PointerExited="OnPointerExited">
+
+        <VisualStateManager.VisualStateGroups>
+            <!-- The per-knob reset wheel stays hidden until the row is hovered or
+                 the wheel is focused — same Settings reveal as the section reset on
+                 TuningCard, one level down. Instant, no animation ; the wheel keeps
+                 its slot so the reveal never reflows the label row. -->
+            <VisualStateGroup x:Name="RevealStates">
+                <VisualState x:Name="Rest">
+                    <VisualState.Setters>
+                        <Setter Target="ResetButton.Opacity" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Revealed">
+                    <VisualState.Setters>
+                        <Setter Target="ResetButton.Opacity" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -23,8 +46,11 @@
                     Style="{ThemeResource SubtleButtonStyle}"
                     Padding="6,4" MinWidth="0"
                     VerticalAlignment="Center"
+                    Opacity="0"
                     ToolTipService.ToolTip="Reset to default"
-                    Click="OnResetClick">
+                    Click="OnResetClick"
+                    GotFocus="OnResetGotFocus"
+                    LostFocus="OnResetLostFocus">
                 <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="12" />
             </Button>
         </Grid>

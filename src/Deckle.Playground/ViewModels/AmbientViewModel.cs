@@ -317,6 +317,34 @@ public partial class AmbientViewModel : ObservableObject
         var d   = new AmbientSettings();
         var cur = AmbientSettingsService.Instance.Current;
 
+        ApplyHdrDefaults(cur, d);
+        ApplyZoneSamplingDefaults(cur, d);
+
+        AmbientSettingsService.Instance.Save();
+    }
+
+    // Per-section resets — the HDR tuning card and the zone-sampling card each
+    // carry their own reset. Both write straight onto the store and Save() once
+    // (like ResetDefaults), so the Changed observer reloads the VM and repaints
+    // only what changed. Splitting ResetDefaults this way keeps the page-level
+    // "Reset all" and the two section resets reading from one defaults source.
+
+    public void ResetHdrSection()
+    {
+        ApplyHdrDefaults(AmbientSettingsService.Instance.Current, new AmbientSettings());
+        AmbientSettingsService.Instance.Save();
+    }
+
+    public void ResetZoneSamplingSection()
+    {
+        ApplyZoneSamplingDefaults(AmbientSettingsService.Instance.Current, new AmbientSettings());
+        AmbientSettingsService.Instance.Save();
+    }
+
+    // The HDR grading surface + the Mode preset (Mode lives on the HDR card and
+    // selects a whole tuning, so it resets with the grading it drives).
+    private static void ApplyHdrDefaults(AmbientSettings cur, AmbientSettings d)
+    {
         cur.ExposureEv                     = d.ExposureEv;
         cur.SaturationBoost                = d.SaturationBoost;
         cur.MinBrightness                  = d.MinBrightness;
@@ -325,12 +353,14 @@ public partial class AmbientViewModel : ObservableObject
         cur.BrightnessCurveSCurveSteepness = d.BrightnessCurveSCurveSteepness;
         cur.ChangeThreshold                = d.ChangeThreshold;
         cur.SmoothingAlpha                 = d.SmoothingAlpha;
-        cur.BorderMode                     = d.BorderMode;
-        cur.BorderDepth                    = d.BorderDepth;
-        cur.BorderCells                    = d.BorderCells;
         cur.Mode                           = d.Mode;
+    }
 
-        AmbientSettingsService.Instance.Save();
+    private static void ApplyZoneSamplingDefaults(AmbientSettings cur, AmbientSettings d)
+    {
+        cur.BorderMode  = d.BorderMode;
+        cur.BorderDepth = d.BorderDepth;
+        cur.BorderCells = d.BorderCells;
     }
 
     // Compares the persisted tuning surface against a fresh AmbientSettings

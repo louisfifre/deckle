@@ -73,7 +73,7 @@
     <value>Ambient lighting</value>
   </data>
   <data name="PlaygroundNavSegmentation.Content" xml:space="preserve">
-    <value>Speech segmentation</value>
+    <value>Utterance segmentation</value>
   </data>
 
   <data name="PlaygroundHomeHeader.Text" xml:space="preserve">
@@ -102,10 +102,10 @@
   </data>
 
   <data name="PlaygroundHudTunablesHeader.Text" xml:space="preserve">
-    <value>HUD Tunables</value>
+    <value>HUD elements</value>
   </data>
   <data name="PlaygroundHudTunablesDescription.Text" xml:space="preserve">
-    <value>Tweak values live for the current session — nothing is saved. Reset to defaults to start over; the next launch is fresh anyway.</value>
+    <value>Tweak values live for the current session — nothing is saved. Reset all to start over; the next launch is fresh anyway.</value>
   </data>
 
   <data name="PlaygroundAmbientHeader.Text" xml:space="preserve">
@@ -116,7 +116,7 @@
   </data>
 
   <data name="PlaygroundSegmentationHeader.Text" xml:space="preserve">
-    <value>Speech segmentation</value>
+    <value>Utterance segmentation</value>
   </data>
   <data name="PlaygroundSegmentationSubheader.Text" xml:space="preserve">
     <value>Shape the dynamic-hangover curve that decides where the streaming transcriber cuts one utterance from the next. Edits stay local until you save.</value>

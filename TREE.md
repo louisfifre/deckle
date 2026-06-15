@@ -655,7 +655,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Playground/
 │   │   ├── Controls/
 │   │   │   ├── TunableRow.xaml
-│   │   │   └── TunableRow.xaml.cs
+│   │   │   ├── TunableRow.xaml.cs
+│   │   │   ├── TuningCard.xaml
+│   │   │   └── TuningCard.xaml.cs
 │   │   ├── Models/
 │   │   │   └── TuningModel.cs
 │   │   ├── Strings/

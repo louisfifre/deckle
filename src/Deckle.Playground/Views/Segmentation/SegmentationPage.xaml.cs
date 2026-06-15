@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Globalization.NumberFormatting;
 
@@ -111,6 +112,23 @@ public sealed partial class SegmentationPage : Page
     private void OnResetHangoverRampClick(object sender, RoutedEventArgs e) => ViewModel.ResetHangoverRamp();
     private void OnResetCurveClick(object sender, RoutedEventArgs e)        => ViewModel.ResetCurve();
     private void OnResetDetectionClick(object sender, RoutedEventArgs e)    => ViewModel.ResetDetection();
+
+    // ── Curve-shape reset reveal ─────────────────────────────────────────────────
+    //
+    // The curve editor lives in the left column rather than a TuningCard, so its
+    // "Reset section" gets the same hover/focus reveal wired by hand — instant, no
+    // animation, matching the cards and the HUD expanders.
+
+    private bool _curvePointerOver;
+    private bool _curveResetFocused;
+
+    private void OnCurveSectionPointerEntered(object sender, PointerRoutedEventArgs e) { _curvePointerOver = true;  UpdateCurveResetReveal(); }
+    private void OnCurveSectionPointerExited(object sender, PointerRoutedEventArgs e)  { _curvePointerOver = false; UpdateCurveResetReveal(); }
+    private void OnCurveResetGotFocus(object sender, RoutedEventArgs e)  { _curveResetFocused = true;  UpdateCurveResetReveal(); }
+    private void OnCurveResetLostFocus(object sender, RoutedEventArgs e) { _curveResetFocused = false; UpdateCurveResetReveal(); }
+
+    private void UpdateCurveResetReveal() =>
+        CurveResetButton.Opacity = _curvePointerOver || _curveResetFocused ? 1 : 0;
 
     // ── Graph show / hide ────────────────────────────────────────────────────────
 

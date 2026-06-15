@@ -105,7 +105,10 @@
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            TextWrapping="Wrap" />
 
-                <StackPanel Spacing="8">
+                <StackPanel x:Name="CurveShapeSection" Spacing="8"
+                            Background="Transparent"
+                            PointerEntered="OnCurveSectionPointerEntered"
+                            PointerExited="OnCurveSectionPointerExited">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -115,12 +118,18 @@
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
                                    VerticalAlignment="Center" />
                         <Button Grid.Column="1"
+                                x:Name="CurveResetButton"
                                 Style="{ThemeResource SubtleButtonStyle}"
-                                Padding="6,4" MinWidth="0"
                                 VerticalAlignment="Center"
-                                ToolTipService.ToolTip="Reset the curve to its default"
-                                Click="OnResetCurveClick">
-                            <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                                Opacity="0"
+                                ToolTipService.ToolTip="Reset this section to its defaults"
+                                Click="OnResetCurveClick"
+                                GotFocus="OnCurveResetGotFocus"
+                                LostFocus="OnCurveResetLostFocus">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                                <TextBlock Text="Reset section" />
+                            </StackPanel>
                         </Button>
                     </Grid>
 
@@ -216,11 +225,11 @@
                                 Style="{ThemeResource SubtleButtonStyle}"
                                 VerticalAlignment="Center"
                                 IsEnabled="{x:Bind ViewModel.CanReset, Mode=OneWay}"
-                                ToolTipService.ToolTip="Reset every knob to the shipping defaults"
+                                ToolTipService.ToolTip="Reset everything on this page to its defaults"
                                 Click="OnResetDefaultsClick">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                                <TextBlock Text="Reset to defaults" />
+                                <TextBlock Text="Reset all" />
                             </StackPanel>
                         </Button>
                         <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
@@ -232,36 +241,10 @@
                     </Grid>
 
                     <!-- Hangover & ramp card. -->
-                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{ThemeResource ControlCornerRadius}"
-                            Padding="24">
+                    <controls:TuningCard Title="Hangover &amp; ramp"
+                        Description="The decision delay starts at the maximum and, once an utterance grows past the ramp start, shrinks toward the minimum by the ramp end. In seconds."
+                        ResetClick="OnResetHangoverRampClick">
                         <StackPanel Spacing="20">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="Hangover &amp; ramp"
-                                               Style="{ThemeResource SubtitleTextBlockStyle}" />
-                                    <TextBlock Text="The decision delay starts at the maximum and, once an utterance grows past the ramp start, shrinks toward the minimum by the ramp end. In seconds."
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap"
-                                               MaxWidth="640" />
-                                </StackPanel>
-                                <Button Grid.Column="1"
-                                        Style="{ThemeResource SubtleButtonStyle}"
-                                        Padding="6,4" MinWidth="0"
-                                        VerticalAlignment="Top"
-                                        ToolTipService.ToolTip="Reset this section to defaults"
-                                        Click="OnResetHangoverRampClick">
-                                    <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                                </Button>
-                            </Grid>
-
                             <controls:TunableRow Label="Hangover (max)" Unit="s"
                                 Minimum="0.5" Maximum="15.0" Step="0.5" Default="5.0"
                                 Value="{x:Bind ViewModel.HangoverMaxSec, Mode=TwoWay}"
@@ -282,39 +265,13 @@
                                 Value="{x:Bind ViewModel.RampEndSec, Mode=TwoWay}"
                                 Description="Utterance length where the delay reaches the minimum." />
                         </StackPanel>
-                    </Border>
+                    </controls:TuningCard>
 
                     <!-- Detection card. -->
-                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{ThemeResource ControlCornerRadius}"
-                            Padding="24">
+                    <controls:TuningCard Title="Detection"
+                        Description="The voicing gate, the cut margin, and the noise-blip floor — the rest of the segmenter around the hangover curve."
+                        ResetClick="OnResetDetectionClick">
                         <StackPanel Spacing="20">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="Detection"
-                                               Style="{ThemeResource SubtitleTextBlockStyle}" />
-                                    <TextBlock Text="The voicing gate, the cut margin, and the noise-blip floor — the rest of the segmenter around the hangover curve."
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap"
-                                               MaxWidth="640" />
-                                </StackPanel>
-                                <Button Grid.Column="1"
-                                        Style="{ThemeResource SubtleButtonStyle}"
-                                        Padding="6,4" MinWidth="0"
-                                        VerticalAlignment="Top"
-                                        ToolTipService.ToolTip="Reset this section to defaults"
-                                        Click="OnResetDetectionClick">
-                                    <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
-                                </Button>
-                            </Grid>
-
                             <controls:TunableRow Label="Silence threshold" Unit="dBFS"
                                 Minimum="-70.0" Maximum="-20.0" Step="1.0" Default="-45.0"
                                 Value="{x:Bind ViewModel.ThresholdDbfs, Mode=TwoWay}"
@@ -330,7 +287,7 @@
                                 Value="{x:Bind ViewModel.MinUtteranceMs, Mode=TwoWay}"
                                 Description="Speech shorter than this is dropped as a noise blip rather than transcribed." />
                         </StackPanel>
-                    </Border>
+                    </controls:TuningCard>
 
                     <!-- Footer breathing room — only present while the floating
                          save bar is up, so the last card's caption can scroll

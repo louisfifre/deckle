@@ -1,6 +1,7 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Windows.Globalization.NumberFormatting;
 
 namespace Deckle.Playground.Controls;
@@ -224,4 +225,19 @@ public sealed partial class TunableRow : UserControl
     }
 
     private void OnResetClick(object sender, RoutedEventArgs e) => Value = Default;
+
+    // ── Reveal ───────────────────────────────────────────────────────────────
+
+    // Either pointer or keyboard focus keeps the reset wheel shown ; track both so
+    // leaving one while the other still holds doesn't hide it prematurely.
+    private bool _pointerOver;
+    private bool _resetFocused;
+
+    private void OnPointerEntered(object sender, PointerRoutedEventArgs e) { _pointerOver = true; UpdateReveal(); }
+    private void OnPointerExited(object sender, PointerRoutedEventArgs e) { _pointerOver = false; UpdateReveal(); }
+    private void OnResetGotFocus(object sender, RoutedEventArgs e) { _resetFocused = true; UpdateReveal(); }
+    private void OnResetLostFocus(object sender, RoutedEventArgs e) { _resetFocused = false; UpdateReveal(); }
+
+    private void UpdateReveal() =>
+        VisualStateManager.GoToState(this, _pointerOver || _resetFocused ? "Revealed" : "Rest", true);
 }
