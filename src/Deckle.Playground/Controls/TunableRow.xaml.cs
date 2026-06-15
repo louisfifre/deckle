@@ -144,33 +144,45 @@ public sealed partial class TunableRow : UserControl
         if (!_loaded || ValueSlider is null) return;
         double step = Step <= 0 ? 1.0 : Step;
 
-        ValueSlider.Minimum       = Minimum;
-        ValueSlider.Maximum       = Maximum;
-        ValueSlider.StepFrequency = step;
-        ValueSlider.SmallChange   = step;
-        ValueSlider.LargeChange   = step * 10;
-
-        ValueBox.Minimum     = Minimum;
-        ValueBox.Maximum     = Maximum;
-        ValueBox.SmallChange = step;
-        ValueBox.LargeChange = step * 10;
-
-        // Explicit formatter : without it the NumberBox prints the double's full
-        // precision (0.1 shows as 0.1000000015). FractionDigits alone is only a
-        // MINIMUM — it doesn't round — so a NumberRounder snapped to the step grid
-        // is what actually trims the noise. Together they pin the display to a
-        // round number on the step.
-        ValueBox.NumberFormatter = new DecimalFormatter
+        // Setting Slider.Minimum while the slider still holds its default 0 makes
+        // RangeBase clamp the value UP to the new minimum and raise ValueChanged.
+        // Outside this guard OnSliderChanged would catch that spurious change and
+        // overwrite Value (and, via the TwoWay bind, the view-model) with the row
+        // minimum — so a stored 10 s would silently become 0.5 s on open. The guard
+        // makes the range setup inert ; PushValueToControls reposts the real value.
+        bool prev = _syncing;
+        _syncing = true;
+        try
         {
-            IntegerDigits  = 1,      // keep a leading "0" before the point
-            FractionDigits = Digits, // decimals implied by Step (0 for whole units)
-            IsGrouped      = false,  // no thousands separator on the ms values
-            NumberRounder  = new IncrementNumberRounder
+            ValueSlider.Minimum       = Minimum;
+            ValueSlider.Maximum       = Maximum;
+            ValueSlider.StepFrequency = step;
+            ValueSlider.SmallChange   = step;
+            ValueSlider.LargeChange   = step * 10;
+
+            ValueBox.Minimum     = Minimum;
+            ValueBox.Maximum     = Maximum;
+            ValueBox.SmallChange = step;
+            ValueBox.LargeChange = step * 10;
+
+            // Explicit formatter : without it the NumberBox prints the double's full
+            // precision (0.1 shows as 0.1000000015). FractionDigits alone is only a
+            // MINIMUM — it doesn't round — so a NumberRounder snapped to the step grid
+            // is what actually trims the noise. Together they pin the display to a
+            // round number on the step.
+            ValueBox.NumberFormatter = new DecimalFormatter
             {
-                Increment         = step,
-                RoundingAlgorithm = RoundingAlgorithm.RoundHalfUp,
-            },
-        };
+                IntegerDigits  = 1,      // keep a leading "0" before the point
+                FractionDigits = Digits, // decimals implied by Step (0 for whole units)
+                IsGrouped      = false,  // no thousands separator on the ms values
+                NumberRounder  = new IncrementNumberRounder
+                {
+                    Increment         = step,
+                    RoundingAlgorithm = RoundingAlgorithm.RoundHalfUp,
+                },
+            };
+        }
+        finally { _syncing = prev; }
     }
 
     private void PushValueToControls()
