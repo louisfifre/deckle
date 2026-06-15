@@ -138,31 +138,36 @@ public sealed partial class HudChrono
             double rounded = RevealTestPinAll
                 ? 1.0
                 : System.Math.Round(_swipe.GetHeat(i), 3);
-            double primaryOpacity = 1.0 - rounded;
 
             var reveal = _reveals[i];
             if (reveal is not null)
             {
-                // Conic reveal: the masked sprite cross-fades the living conic in
-                // over the Tertiary primary as heat rises. Keep the flat accent
-                // overlay hidden so it can't stack with it.
+                // Conic reveal: the masked comet sprite layers ON TOP of the
+                // always-on Tertiary primary. Where the comet's alpha is present it
+                // covers the Tertiary; where it isn't, the Tertiary shows through —
+                // so the digit is never empty, it only gets swept. SetHeat drives
+                // the per-digit envelope (how much of the comet is admitted). Keep
+                // the flat accent overlay hidden so it can't stack with the sprite.
                 reveal.SetHeat((float)rounded);
                 if (_digitAccent[i].Opacity != 0)
                     _digitAccent[i].Opacity = 0;
             }
             else
             {
-                // Fallback (step 1) until/unless the conic reveal builds: the
-                // flat accent overlay cross-fades in instead.
+                // Fallback (step 1) until/unless the conic reveal builds: the flat
+                // accent overlay fades in over the Tertiary primary instead.
                 if (_digitAccent[i].Opacity != rounded)
                     _digitAccent[i].Opacity = rounded;
             }
 
-            // Keep primary + reveal/accent opacity summing to 1 so only one glyph
-            // ever inks — otherwise two ClearType copies double up on subpixel
-            // coverage and the revealed digit reads bolder (see WriteDigit).
-            if (_digitPrimary[i].Opacity != primaryOpacity)
-                _digitPrimary[i].Opacity = primaryOpacity;
+            // The Tertiary primary stays fully inked for the whole swipe — it is
+            // the resting glyph the comet sweeps OVER, never a layer that fades
+            // out. (Earlier this summed primary + reveal to 1 to dodge ClearType
+            // edge double-inking; but that emptied the glyph wherever the comet's
+            // alpha was low — the opposite of the intended "always-Tertiary,
+            // masked on top" reveal. The edge-boldening tradeoff is accepted.)
+            if (_digitPrimary[i].Opacity != 1.0)
+                _digitPrimary[i].Opacity = 1.0;
         }
     }
 
