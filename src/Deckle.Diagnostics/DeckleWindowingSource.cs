@@ -25,7 +25,10 @@ namespace Deckle.Diagnostics;
 // windows). Popups anchored to a parent control ALSO emit `PopupAnchored` (with
 // the anchored control rect serialized as string "x,y,w,h" to fit in 6
 // EventSource parameters). Topmost/no-activate surfaces may ALSO emit
-// `WindowZOrderState` to capture the native result of a z-order transition.
+// `WindowZOrderState` to capture the native result of a z-order transition. A
+// resizable window whose recompute is coalesced emits `WindowResizeSettled` once
+// per settled resize (never per WM_SIZE frame) — standalone, not a trunk
+// specialization, since a coalescer rather than a positioning site raises it.
 //
 // Closed `window` vocabulary (short logical name for the common trunk):
 //   "hud"           — main HudWindow (bottom-center)
@@ -61,6 +64,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtOverlaySlotAssigned  = 2;
     public const int EvtPopupAnchored        = 3;
     public const int EvtWindowZOrderState    = 4;
+    public const int EvtWindowResizeSettled  = 5;
 
     // Common trunk: emitted by every site that positions or resizes a window.
     // `window` is a short logical name (see closed vocabulary above). `hmon`
@@ -161,5 +165,24 @@ public sealed class DeckleWindowingSource : DeckleEventSource
             first_occluding_above_class,
             first_occluding_above_topmost,
             setpos_ok, last_error);
+    }
+
+    // Resize-coalescing specialization: one rolled-up event per *settled* resize,
+    // emitted by ResizeCoalescer at the boundary where the window does its single
+    // deferred recompute — never one per WM_SIZE frame. `trigger` is a closed
+    // 2-value vocabulary: "gesture" (a user drag bracketed by WM_ENTERSIZEMOVE /
+    // WM_EXITSIZEMOVE, `frames` = the WM_SIZE frames coalesced into the one
+    // recompute, `duration_ms` = the gesture wall-clock) or "direct" (a WM_SIZE
+    // outside any gesture — maximize / snap / programmatic SetWindowPos — with
+    // `frames`=1 and `duration_ms`=0, the safety net). `window` reuses the closed
+    // logical-name vocabulary of the common trunk above.
+    [Event(EvtWindowResizeSettled,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "resize settled | window={0} | trigger={1} | frames={2} | duration_ms={3}")]
+    public void WindowResizeSettled(string window, string trigger, int frames, long duration_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowResizeSettled, window, trigger, frames, duration_ms);
     }
 }

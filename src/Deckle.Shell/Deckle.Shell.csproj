@@ -16,6 +16,12 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- ResizeGesture (the Win32-free state machine behind ResizeCoalescer) is
+         internal; its unit tests reach it through this grant. -->
+    <InternalsVisibleTo Include="Deckle.Shell.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output. Convention

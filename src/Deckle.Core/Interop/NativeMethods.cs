@@ -151,6 +151,23 @@ public static class NativeMethods
     public static extern IntPtr DefSubclassProc(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
 
+    // ── Resize / move modal loop (WM_ENTERSIZEMOVE … WM_EXITSIZEMOVE) ─────────
+    //
+    // When the user grabs the title bar or a sizing border, Windows runs a modal
+    // move/size loop: WM_ENTERSIZEMOVE once at the start, a burst of WM_SIZE /
+    // WM_SIZING while the pointer moves, then WM_EXITSIZEMOVE once when
+    // DefWindowProc returns. Maximize, snap and programmatic SetWindowPos do NOT
+    // enter this loop — they emit WM_SIZE alone. A resize coalescer brackets the
+    // gesture on ENTER/EXIT and treats a WM_SIZE seen outside it as a one-shot
+    // (the safety net). See Deckle.Shell/ResizeCoalescer.
+    public const uint WM_SIZE          = 0x0005;
+    public const uint WM_ENTERSIZEMOVE = 0x0231;
+    public const uint WM_EXITSIZEMOVE  = 0x0232;
+
+    // WM_SIZE wParam value when the window was minimized (client area collapses
+    // to 0×0). A coalescer ignores it so a minimize triggers no phantom recompute.
+    public const int SIZE_MINIMIZED    = 1;
+
     // ── Injection clavier (SendInput) ─────────────────────────────────────────
 
     [DllImport("user32.dll", SetLastError = true)]
