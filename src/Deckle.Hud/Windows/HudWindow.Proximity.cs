@@ -56,7 +56,7 @@ public sealed partial class HudWindow : Window
         int dy = cursor.Y < top  ? top  - cursor.Y : (cursor.Y > bottom ? cursor.Y - bottom : 0);
         double distancePx = Math.Sqrt(dx * dx + dy * dy);
 
-        double scale  = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        double scale  = _dpiScale;
         double nearPx = NEAR_RADIUS_DIP * scale;
         double farPx  = FAR_RADIUS_DIP  * scale;
 

@@ -67,6 +67,14 @@ public sealed partial class HudWindow : Window
     // active; see EnableProximity / DisableProximity.
     private readonly CursorMovementSignal _cursorSignal;
 
+    // Window scale (DPI/96), cached. GetDpiForWindow was called on every
+    // WM_INPUT tick (~125 Hz) inside UpdateProximity — the HUD's hottest path —
+    // although the scale only ever changes on WM_DPICHANGED. Seeded from the
+    // HWND's current DPI in the ctor and refreshed from WM_DPICHANGED's wParam
+    // in the subclass. UI-thread only (both the seed and the message pump run
+    // there), so no synchronization is needed.
+    private double _dpiScale = 1.0;
+
     private byte _currentAlpha = MAX_ALPHA;
     private bool _proximityActive;
 
@@ -112,6 +120,10 @@ public sealed partial class HudWindow : Window
 
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
+
+        // Seed the cached scale from the HWND's current monitor; WM_DPICHANGED
+        // refreshes it thereafter (see SubclassCallback).
+        _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
 
         // Explicit null defeats any auto-applied Mica / Acrylic backdrop on
         // recent WindowsAppSDK versions. Paired with DWMWA_SYSTEMBACKDROP_TYPE
@@ -277,6 +289,17 @@ public sealed partial class HudWindow : Window
         // Verified 2026-04-17: removing this handler (even with
         // ExtendsContentIntoTitleBar already off) brings the rectangular
         // outline back immediately. The handler is load-bearing.
+        //
+        // Refresh the cached scale from the new DPI Windows just announced —
+        // LOWORD(wParam) is the new X-axis DPI — instead of calling
+        // GetDpiForWindow per WM_INPUT tick in UpdateProximity. We do not consume
+        // the message (no reposition): DefSubclassProc lets WinUI 3 run its own
+        // DPI-change layout.
+        if (uMsg == NativeMethods.WM_DPICHANGED)
+        {
+            _dpiScale = (wParam.ToInt32() & 0xFFFF) / 96.0;
+        }
+
         if (uMsg == NativeMethods.WM_NCCALCSIZE)
         {
             return IntPtr.Zero;
