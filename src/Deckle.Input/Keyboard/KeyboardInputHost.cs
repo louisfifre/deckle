@@ -4,20 +4,29 @@ using Deckle.Input;
 
 namespace Deckle.Input;
 
-// Second dedicated Raw Input thread, for the autocorrect observation
-// layer: its own message-only window, its own GetMessage pump,
-// registration for the Generic Desktop keyboard (0x01:0x06) and mouse
-// (0x01:0x02) usages with RIDEV_INPUTSINK (events regardless of focus),
-// no RIDEV_DEVNOTIFY (presence is irrelevant here — we observe transitions,
-// not which device produced them).
+// The process's shared keyboard-and-mouse Raw Input host: its own
+// message-only window, its own GetMessage pump, registration for the
+// Generic Desktop keyboard (0x01:0x06) and mouse (0x01:0x02) usages with
+// RIDEV_INPUTSINK (events regardless of focus), no RIDEV_DEVNOTIFY
+// (presence is irrelevant here — we observe transitions, not which device
+// produced them).
+//
+// The mouse is a single Raw Input resource per process — only one window
+// may receive it (the last one registered wins), so this host is the sole
+// owner and the app shares one instance across consumers. Today two of
+// them: the autocorrect engine (keys, pointer-down, focus) and the wheel
+// recorder (WheelObserved). Start/Stop therefore reference-count — the
+// native window and registration come up on the first consumer and go down
+// on the last — so neither consumer can pull the resource from under the
+// other.
 //
 // Separate from RawInputHost by design: that host carries the touchpad
 // contact stream at report cadence feeding an injection path; this one
-// observes typing and pointer activity for the corrector. Mixing them on
-// one window would couple two unrelated lifecycles. The structure (HWND_
-// MESSAGE window, WndProc rooted in a field, dedicated thread, startup
-// handshake) mirrors RawInputHost exactly; it reuses RawInputHost.NowMs so
-// every event in the module shares one host clock.
+// observes keyboard, pointer and wheel activity. Mixing them on one window
+// would couple two unrelated lifecycles. The structure (HWND_MESSAGE
+// window, WndProc rooted in a field, dedicated thread, startup handshake)
+// mirrors RawInputHost exactly; it reuses RawInputHost.NowMs so every event
+// in the module shares one host clock.
 //
 // Focus signals come from two WinEvent hooks installed on this same
 // thread (SetWinEventHook is WINEVENT_OUTOFCONTEXT, so its callbacks ride
@@ -51,9 +60,13 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private int _rollupKeys;
     private int _rollupInjectedFiltered;
     private int _rollupPointerDowns;
+    private int _rollupWheel;
     private int _rollupFocusChanges;
 
-    private volatile bool _running;
+    // Consumers currently holding the host up. The native window and Raw
+    // Input registration exist exactly while this is > 0. Guarded by
+    // _stateLock, like the thread handle.
+    private int _refCount;
 
     /// <summary>Raised on the input thread for every non-overrun keyboard transition.</summary>
     public event Action<KeyboardKeyEvent>? KeyReceived;
@@ -61,22 +74,31 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     /// <summary>Raised on the input thread when any mouse button transitions to down.</summary>
     public event Action? PointerInteraction;
 
+    /// <summary>Raised on the input thread for every mouse-wheel transition (vertical or horizontal).</summary>
+    public event Action<MouseWheelEvent>? WheelObserved;
+
     /// <summary>Raised on the input thread when the foreground window or focused element changes.</summary>
     public event Action? FocusChanged;
 
-    public bool IsRunning => _running;
+    public bool IsRunning { get { lock (_stateLock) return _refCount > 0; } }
 
     /// <summary>
-    /// Spawns the input thread, creates the window, registers for keyboard
-    /// and mouse raw input and installs the focus hooks. Returns false (and
-    /// logs) when the native setup failed; the app keeps running without
-    /// keyboard observation.
+    /// Registers a consumer. The first call spawns the input thread, creates
+    /// the window, registers for keyboard and mouse raw input and installs
+    /// the focus hooks; later calls just take a reference and return true.
+    /// Returns false (and logs) when the native setup failed — the app keeps
+    /// running without keyboard, pointer or wheel observation. Every Start
+    /// that returns true must be balanced by one <see cref="Stop"/>.
     /// </summary>
     public bool Start()
     {
         lock (_stateLock)
         {
-            if (_running) return true;
+            if (_refCount > 0)
+            {
+                _refCount++;
+                return true;
+            }
 
             using var ready = new ManualResetEventSlim(false);
             Exception? startError = null;
@@ -115,19 +137,24 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
                 return false;
             }
 
-            _running = true;
+            _refCount = 1;
             return true;
         }
     }
 
-    /// <summary>Posts WM_QUIT to the input thread and joins it.</summary>
+    /// <summary>
+    /// Releases a consumer. The last release posts WM_QUIT to the input
+    /// thread and joins it; earlier releases just drop a reference. Balanced
+    /// against <see cref="Start"/>; calling it once more than Start is a no-op.
+    /// </summary>
     public void Stop()
     {
         Thread? thread;
         lock (_stateLock)
         {
-            if (!_running || _thread is null) return;
-            _running = false;
+            if (_refCount == 0) return;
+            if (--_refCount > 0) return;
+            if (_thread is null) return;
             thread = _thread;
             _thread = null;
         }
@@ -343,10 +370,31 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
     private void HandleMouse(int dataOffset, RawInputInterop.RAWINPUTHEADER header)
     {
-        // Reject pure movement before any other work — this path fires at
-        // mouse report rate. A button transition is the only thing we keep.
+        // This path fires at mouse report rate. Two kinds of report earn
+        // work — a wheel transition and a button-down; pure movement is the
+        // common case and is dropped below.
         ushort buttonFlags = (ushort)Marshal.ReadInt16(
             _rawBuffer, dataOffset + RawInputInterop.MouseButtonFlagsOffset);
+
+        // Wheel reports ride the same button-flags word but set no button
+        // bit; the signed detent sits in usButtonData (+6). A report carries
+        // one wheel axis at a time.
+        bool vertical   = (buttonFlags & RawInputInterop.RI_MOUSE_WHEEL)  != 0;
+        bool horizontal = (buttonFlags & RawInputInterop.RI_MOUSE_HWHEEL) != 0;
+        if (vertical || horizontal)
+        {
+            short delta = Marshal.ReadInt16(
+                _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
+            _rollupWheel++;
+            WheelObserved?.Invoke(new MouseWheelEvent(
+                Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
+                Delta:       delta,
+                TimestampMs: RawInputHost.NowMs,
+                Device:      header.hDevice));
+            TrackRollup(RawInputHost.NowMs);
+            return;
+        }
+
         if ((buttonFlags & RawInputInterop.RI_MOUSE_ANY_BUTTON_DOWN) == 0) return;
 
         _rollupPointerDowns++;
@@ -391,12 +439,13 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         if (nowMs - _rollupStartMs < RollupPeriodMs) return;
 
         DeckleInputSource.Log.KeyboardRollup(
-            _rollupKeys, _rollupInjectedFiltered, _rollupPointerDowns, _rollupFocusChanges);
+            _rollupKeys, _rollupInjectedFiltered, _rollupPointerDowns, _rollupWheel, _rollupFocusChanges);
 
         _rollupStartMs = nowMs;
         _rollupKeys = 0;
         _rollupInjectedFiltered = 0;
         _rollupPointerDowns = 0;
+        _rollupWheel = 0;
         _rollupFocusChanges = 0;
     }
 }

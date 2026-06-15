@@ -275,14 +275,15 @@ public sealed class DeckleInputSource : DeckleEventSource
 
     // ── Keyboard activity rollup (30 s aggregate while input flows) ──────
     // Never carries typed text. Counters only — key transitions seen,
-    // injected events filtered out, pointer button-downs, focus changes.
+    // injected events filtered out, pointer button-downs, wheel ticks, focus
+    // changes.
 
     [Event(EvtKeyboardRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | focus_changes={3}")]
-    public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int focus_changes)
+           Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
+    public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, focus_changes);
+        if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
     }
 }

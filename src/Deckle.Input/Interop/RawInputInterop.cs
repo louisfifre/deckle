@@ -73,6 +73,7 @@ public static class RawInputInterop
     // usButtonFlags (USHORT) member lands @ +4 (2 bytes of padding after
     // usFlags). usButtonData @ +6. Offset is relative to RAWMOUSE start.
     public const int MouseButtonFlagsOffset = 4;
+    public const int MouseButtonDataOffset  = 6;
 
     // RAWMOUSE.usButtonFlags transition bits we treat as a button press.
     public const ushort RI_MOUSE_LEFT_BUTTON_DOWN   = 0x0001;
@@ -80,6 +81,8 @@ public static class RawInputInterop
     public const ushort RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
     public const ushort RI_MOUSE_BUTTON_4_DOWN      = 0x0040;
     public const ushort RI_MOUSE_BUTTON_5_DOWN      = 0x0100;
+    public const ushort RI_MOUSE_WHEEL              = 0x0400;
+    public const ushort RI_MOUSE_HWHEEL             = 0x0800;
     public const ushort RI_MOUSE_ANY_BUTTON_DOWN =
         RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN |
         RI_MOUSE_MIDDLE_BUTTON_DOWN | RI_MOUSE_BUTTON_4_DOWN | RI_MOUSE_BUTTON_5_DOWN;

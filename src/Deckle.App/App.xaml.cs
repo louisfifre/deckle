@@ -370,6 +370,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         InitializeTaskbarCover();
         Milestone("taskbar_cover");
 
+        // Shared keyboard/mouse Raw Input host — the single per-process owner
+        // of the mouse Raw Input resource. Created before its consumers
+        // (autocorrect, wheel capture), which reference-count it.
+        InitializeInputHost();
+        Milestone("input_host");
+
         // Autocorrect module — keyboard Raw Input + diacritics restorer +
         // injector, reconciled with the persisted module settings (Enabled by
         // default; corrections land only on enrolled processes, Notepad out of

@@ -265,6 +265,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Hotkeys.cs
+│   │   ├── App.Input.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.TaskbarCover.cs
@@ -435,7 +436,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Keyboard/
 │   │   │   ├── IKeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.cs
-│   │   │   └── KeyboardKeyEvent.cs
+│   │   │   ├── KeyboardKeyEvent.cs
+│   │   │   └── MouseWheelEvent.cs
 │   │   ├── Telemetry/
 │   │   │   └── ContactFrameRecorder.cs
 │   │   ├── Touchpad/

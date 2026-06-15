@@ -14,6 +14,9 @@ public interface IKeyboardInputHost
     /// <summary>Raised on the input thread when any mouse button transitions to down.</summary>
     event Action? PointerInteraction;
 
+    /// <summary>Raised on the input thread for every mouse-wheel transition (vertical or horizontal).</summary>
+    event Action<MouseWheelEvent>? WheelObserved;
+
     /// <summary>Raised on the input thread when the foreground window or focused element changes.</summary>
     event Action? FocusChanged;
 

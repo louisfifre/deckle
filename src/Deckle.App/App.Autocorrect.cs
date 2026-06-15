@@ -29,6 +29,11 @@ public partial class App
     {
         try
         {
+            // The keyboard/mouse Raw Input host is the process-shared one,
+            // created by InitializeInputHost ahead of this. Without it there
+            // is no input source to drive the engine.
+            if (_keyboardMouseHost is null) return;
+
             string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
             string frenchPath = Path.Combine(dataDir, "lexicon-fr.tsv.gz");
             string pairPath = Path.Combine(dataDir, "pair-bigrams-fr.tsv.gz");
@@ -62,7 +67,7 @@ public partial class App
                 personalVariants: BuildAutocorrectPersonalVariants(_autocorrectDictionary));
 
             _autocorrectEngine = new AutocorrectEngine(
-                host: new KeyboardInputHost(),
+                host: _keyboardMouseHost,
                 decoder: new KeyDecoder(),
                 tracker: new TypedWordTracker(),
                 prober: new SurfaceProber(),
