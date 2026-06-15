@@ -180,6 +180,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── CLAUDE.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   └── research/
 │       ├── 2026-06-12--notifications-catalogue.md
+│       ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
 │       └── research--system-autocorrect--2026-06-12.md
 ├── scripts/
 │   ├── hooks/
