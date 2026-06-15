@@ -653,6 +653,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
+│   │   ├── Controls/
+│   │   │   ├── TunableRow.xaml
+│   │   │   └── TunableRow.xaml.cs
 │   │   ├── Models/
 │   │   │   └── TuningModel.cs
 │   │   ├── Strings/
@@ -660,7 +663,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── AmbientViewModel.cs
-│   │   │   └── HudViewModel.cs
+│   │   │   ├── HudViewModel.cs
+│   │   │   └── SegmentationViewModel.cs
 │   │   ├── Views/
 │   │   │   ├── Ambient/
 │   │   │   │   ├── AmbientPage.HdrTuning.cs
@@ -675,6 +679,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
+│   │   │   ├── Segmentation/
+│   │   │   │   ├── SegmentationPage.xaml
+│   │   │   │   └── SegmentationPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
@@ -790,6 +797,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorpusTier.cs
 │   │   │   ├── PromptTemplateHash.cs
 │   │   │   └── WavCorpusWriter.cs
+│   │   ├── Curves/
+│   │   │   └── UnitBezier.cs
 │   │   ├── Engine/
 │   │   │   ├── IAsrBackend.cs
 │   │   │   ├── PipelineProduction.cs
@@ -811,6 +820,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   └── Controls/
+│   │   │       ├── HangoverCurveCanvas.xaml
+│   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   └── WhisperViewModel.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
@@ -984,7 +997,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
-│   │   └── StreamingBackendAudioTests.cs
+│   │   ├── StreamingBackendAudioTests.cs
+│   │   └── UnitBezierTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   └── RepetitionDetectorTests.cs
