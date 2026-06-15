@@ -7,6 +7,22 @@ type: module-journal
 
 Not read by default. Come here for the *why* behind a HUD choice the code no longer shows — DWM/layered constraints, deferred work, render rules.
 
+## 2026-06-15 — Digit reveal: pinned, not swept; RMS-on-digits rejected
+
+The left→right swipe wave over the Stop digits is retired for a static pinned
+reveal — the six glyphs read as one window onto the rotating clone cone. The
+SwipeWaveAnimator is kept dormant (`RevealPinnedNoSwipe`) in case the wave is
+wanted again.
+
+Transcribing contrast (comet greyed to ~the Tertiary glyph it sweeps) is fixed
+by a clone OKLCh palette decoupled from the contour, NOT by exposure —
+ExposureEffect caps at +2 EV, too low for the grey-on-Tertiary lift.
+
+Tried and rejected: driving the Recording digits' brightness from the mic RMS.
+It flashes — unpleasant. Kept the binary accent flash on the Windows accent
+colour (Windows-first until the app has its own). Don't re-try RMS-on-digits
+without a different mapping.
+
 ## 2026-06-13 — The transient message must sit in front of the chrono
 
 The transient message/notification overlay currently catches the HUD chrono's DWM shadow, which reads wrong for a card that animates in and out. Decided intent: the message overlay must sit **in front of** the chrono, so the message casts its shadow onto the chrono — not the reverse. The earlier goal (same plane, with the HUD's shadow simply not bleeding onto neighbouring windows) is not achievable with DWM. The `DWMNCRP_DISABLED` attempt on the overlay cards was a parallel, unvalidated try and is wrong: per `Deckle.Core/Interop/NativeMethods.cs` that flag also kills the 1-dip accent stroke the card just set. Not done.
