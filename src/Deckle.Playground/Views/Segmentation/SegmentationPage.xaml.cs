@@ -45,15 +45,20 @@ public sealed partial class SegmentationPage : Page
             IntegerDigits  = 1,
             FractionDigits = 2,
             IsGrouped      = false,
+            NumberRounder  = new IncrementNumberRounder
+            {
+                Increment         = 0.01,
+                RoundingAlgorithm = RoundingAlgorithm.RoundHalfUp,
+            },
         };
         CurveX1Box.NumberFormatter = curveFormatter;
         CurveY1Box.NumberFormatter = curveFormatter;
         CurveX2Box.NumberFormatter = curveFormatter;
         CurveY2Box.NumberFormatter = curveFormatter;
 
-        // Keep the footer spacer exactly as tall as the floating save bar (plus a
-        // little air), so the bar always clears the last caption when it's up.
-        UnsavedBar.SizeChanged += (_, e) => UnsavedSpacer.Height = e.NewSize.Height + 24;
+        // Keep the footer spacer as tall as the floating save bar, so the last
+        // caption can scroll just clear of it without leaving a big empty gap.
+        UnsavedBar.SizeChanged += (_, e) => UnsavedSpacer.Height = e.NewSize.Height;
 
         if (this.Content is FrameworkElement root)
             root.Loaded += OnPageLoaded;

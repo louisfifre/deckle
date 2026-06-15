@@ -337,7 +337,7 @@
                          clear of it instead of sitting under it. Its height is
                          kept in step with the bar's actual height in code-behind;
                          toggled with the bar on IsDirty. -->
-                    <Border x:Name="UnsavedSpacer" Height="76" Visibility="Collapsed" />
+                    <Border x:Name="UnsavedSpacer" Height="56" Visibility="Collapsed" />
                 </StackPanel>
             </ScrollViewer>
 
