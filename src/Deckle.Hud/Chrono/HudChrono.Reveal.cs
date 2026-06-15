@@ -69,12 +69,14 @@ public sealed partial class HudChrono
     private readonly System.Diagnostics.Stopwatch _swipeStopwatch = new();
     private bool _swipeRunning;
 
-    // DIAGNOSTIC (2026-06-15): "enlever le swipe pour tester". When true, every
-    // digit's conic reveal is pinned fully on for the whole Transcribing /
-    // Rewriting state — no per-digit envelope, no fade — so the ONE shared,
-    // rotating cone can be verified through all six glyphs at once, identical to
-    // the contour. Flip back to false to restore the swipe wave.
-    private const bool RevealTestPinAll = true;
+    // Retained design (2026-06-15): the left→right swipe wave is OFF. Every digit's
+    // conic reveal is pinned fully on for the whole Transcribing / Rewriting state
+    // — no per-digit envelope, no fade — so the six glyphs read as ONE static
+    // window onto the shared rotating cone, identical to the contour. This is the
+    // look we kept; the SwipeWaveAnimator path is left intact but dormant (cheap —
+    // it Ticks into unread heat) so flipping this back to false restores the wave
+    // if we change our mind.
+    private const bool RevealPinnedNoSwipe = true;
 
     private void EnsureSwipeInfra()
     {
@@ -135,7 +137,7 @@ public sealed partial class HudChrono
             // (animated this take); every other stays at 0 and keeps showing the
             // Tertiary background. Rounded to 3 decimals so floating noise
             // (0.9999997) doesn't re-invalidate the render pass every frame.
-            double rounded = RevealTestPinAll
+            double rounded = RevealPinnedNoSwipe
                 ? 1.0
                 : System.Math.Round(_swipe.GetHeat(i), 3);
 
