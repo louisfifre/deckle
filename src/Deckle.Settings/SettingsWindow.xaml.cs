@@ -224,6 +224,9 @@ public sealed partial class SettingsWindow : Window
 
         DeckleSettingsSource.Log.NavStarted();
         DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
+        // One nav-start timestamp for BOTH measures: this restart feeds the
+        // Navigate-return NavTiming below and the page's first-Loaded PageReady.
+        DeckleSettingsSource.NavClock.Restart();
         try
         {
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
@@ -236,6 +239,7 @@ public sealed partial class SettingsWindow : Window
             {
                 DeckleSettingsSource.Log.NavCompleted();
                 DeckleSettingsSource.Log.NavCompletedDetail(pageType.Name);
+                DeckleSettingsSource.Log.NavTiming(pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
             }
         }
         catch (Exception ex)

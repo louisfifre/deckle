@@ -292,6 +292,9 @@ public sealed partial class PlaygroundWindow : Window
 
         if (PageFrame.CurrentSourcePageType == pageType) return;
 
+        // One nav-start timestamp for BOTH the Navigate-return NavTiming and the
+        // destination page's first-Loaded PageReady. Set once per navigation.
+        DecklePlaygroundSource.NavClock.Restart();
         try
         {
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
@@ -301,6 +304,8 @@ public sealed partial class PlaygroundWindow : Window
                 DecklePlaygroundSource.Log.NavigationFailedDetail(pageType.Name, "frame_returned_false", "");
                 return;
             }
+
+            DecklePlaygroundSource.Log.NavTiming(pageType.Name, DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
 
             // Cache the resolved page instance so ShowAndActivate /
             // DisposeResources don't have to walk the Frame's content

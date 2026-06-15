@@ -74,6 +74,9 @@ public sealed partial class SegmentationPage : Page
         ViewModel.Load();
         UpdateReadouts();
         UpdateUnsavedBar();
+        // First Loaded = page ready after the load above (gated by _loaded).
+        // Measured from the nav-start clock set in PlaygroundWindow.
+        DecklePlaygroundSource.Log.PageReady(nameof(SegmentationPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
     // The view-model is the single source : watch it to keep the two plain-text

@@ -162,6 +162,9 @@ public sealed partial class HudPage : Page
     {
         BuildTuningPanel();
         ApplyTarget();
+        // First Loaded = page ready after the heavy work above. Measured from
+        // the nav-start clock set in PlaygroundWindow.OnNavSelectionChanged.
+        DecklePlaygroundSource.Log.PageReady(nameof(HudPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
     // ── Public surface called by PlaygroundWindow ────────────────────────────
