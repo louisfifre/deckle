@@ -36,8 +36,8 @@ namespace Deckle.Transcription;
 //   HangoverCurveX2/Y2  — second control point (P2), each in [0, 1]. Its direction
 //                         into (1,1) sets the exit slope ((1−Y2)/(1−X2)).
 //
-//   The default (0.42, 0.30, 0.85, 0.50) reproduces the previous shipped curve
-//   (gentle early decline, accelerating into a late knee) to within ~0.03.
+//   The default (0.85, 0.10, 0.90, 0.25) is the curve currently tuned in use:
+//   the delay holds near the max through most of the ramp, then drops late.
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
@@ -46,14 +46,14 @@ namespace Deckle.Transcription;
 public sealed class EnergySegmenterSettings
 {
     public double ThresholdDbfs       { get; set; } = -45.0;
-    public int    HangoverMaxMs       { get; set; } = 5_000;
+    public int    HangoverMaxMs       { get; set; } = 10_000;
     public int    HangoverMinMs       { get; set; } = 500;
-    public int    HangoverRampStartMs { get; set; } = 60_000;
-    public int    HangoverRampEndMs   { get; set; } = 180_000;
-    public double HangoverCurveX1     { get; set; } = 0.42;
-    public double HangoverCurveY1     { get; set; } = 0.30;
-    public double HangoverCurveX2     { get; set; } = 0.85;
-    public double HangoverCurveY2     { get; set; } = 0.50;
+    public int    HangoverRampStartMs { get; set; } = 15_000;
+    public int    HangoverRampEndMs   { get; set; } = 120_000;
+    public double HangoverCurveX1     { get; set; } = 0.85;
+    public double HangoverCurveY1     { get; set; } = 0.10;
+    public double HangoverCurveX2     { get; set; } = 0.90;
+    public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
     public int    MinUtteranceMs      { get; set; } = 250;
 }
