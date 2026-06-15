@@ -61,6 +61,19 @@ internal sealed class TuningModel
     public float  ArcEaseP2Y       = 0.625f;
     public float  ArcMinSpeedFraction = 0f;
 
+    // ── Clone-cone placement (digit reveal + ConicClone preview) ─────────
+    // Fraction of the host frame; (0.5, 0.5) = centred. See the matching
+    // ConicArcStrokeConfig block for the full geometry rationale.
+    public float CloneCentreXFraction = 0.5f;
+    public float CloneCentreYFraction = 0.5f;
+
+    // ── Clone-cone rotation — independent speeds/directions, default =
+    //    contour. See the matching ConicArcStrokeConfig block. ────────────
+    public double CloneHuePeriodSeconds = 14.0;
+    public float  CloneHueDirection     = 1f;
+    public double CloneArcPeriodSeconds = 8.0;
+    public float  CloneArcDirection     = 1f;
+
     // ── Rewriting variant ───────────────────────────────────────────────
     public float  RewritingSaturation    = 1f;
     public float  RewritingHueShiftTurns = 0f;
@@ -130,6 +143,14 @@ internal sealed class TuningModel
         ArcEaseP2X        = ArcEaseP2X,
         ArcEaseP2Y        = ArcEaseP2Y,
         ArcMinSpeedFraction = ArcMinSpeedFraction,
+
+        CloneCentreXFraction = CloneCentreXFraction,
+        CloneCentreYFraction = CloneCentreYFraction,
+
+        CloneHuePeriodSeconds = CloneHuePeriodSeconds,
+        CloneHueDirection     = CloneHueDirection,
+        CloneArcPeriodSeconds = CloneArcPeriodSeconds,
+        CloneArcDirection     = CloneArcDirection,
 
         RewritingSaturation    = RewritingSaturation,
         RewritingHueShiftTurns = RewritingHueShiftTurns,

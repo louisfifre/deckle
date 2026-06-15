@@ -82,34 +82,34 @@ public static partial class HudComposition
         public ContainerVisual Visual { get; }
         public int CreationId { get; }
 
-        // ── Shared conic material (read-only accessors) ──────────────────────
-        // Exposed so the chrono digits can become "windows on the same living
-        // material" as the stroke (F1 — one conic behind the whole HUD): a
-        // digit overlay builds its own AlphaMaskEffect(Source = Sat/Hue/Exp(this
-        // conic), Mask = glyph) reusing the SAME surface, rotation PropertySet
-        // and grading PropertySet the stroke samples — so the texture, its
-        // breathing rotation and its colour grading stay in lock-step across
-        // digits and contour. The brush-combining table forbids feeding the
-        // stroke's *built* effect brush into another effect (CompositionEffect
-        // → EffectBrush.SetSourceParameter = NO), so the share happens one level
-        // down, at the surface + the two PropertySets — each consumer rebuilds
-        // its own graph from them.
+        // ── Shared with the swipe digit reveal (read-only accessors) ─────────
+        // The chrono swipe digits are glass onto a CLONE of this stroke's
+        // visible material. Two things are SHARED with the clone, one is not:
         //
-        // ConicSurface — the static per-pixel OKLCh palette (the "material").
-        public CompositionDrawingSurface ConicSurface => _conicSurface;
-        // HueRotationProps — the Linear/Eased scalars whose blend StartRotation
-        // turns into the conic brush's TransformMatrix. Null only when the hue
-        // rotation is frozen (Recording with RecordingHuePeriodSeconds = 0);
-        // Transcribing / Rewriting (the only states that swipe) always spin, so
-        // it is non-null whenever a digit reveal runs.
-        public CompositionPropertySet? HueRotationProps => _hueRotationProps;
+        //   • GRADING is shared — a digit overlay builds its own
+        //     AlphaMaskEffect(Source = Sat/Hue/Exp(cone), Mask = glyph) and binds
+        //     the three grading scalars to EffectProps, so the reveal greys /
+        //     colours in lock-step with the contour's state blend. (The brush-
+        //     combining table forbids feeding the stroke's *built* effect brush
+        //     into another effect — CompositionEffect → EffectBrush.Set-
+        //     SourceParameter = NO — so the share is one level down, at the
+        //     PropertySet, and each consumer rebuilds its own graph.)
+        //
+        //   • CONFIG is shared — the reveal reads Config for the palette, the arc
+        //     shape and the CLONE rotation periods (CloneHue*/CloneArc*).
+        //
+        //   • SURFACES + ROTATION are NOT shared — the reveal paints its own
+        //     CLONE surfaces (BuildRevealConeMaterial — auto-scaled + freely
+        //     placed) and spins them on its own rotations at the clone periods,
+        //     independent of the contour. That decoupling is what lets the reveal
+        //     cone be placed, sized and timed on its own.
+        //
         // EffectProps — the live Saturation / HueAngle / Exposure scalars that
         // ApplyVariant animates. A digit graph binds its own Sat/Hue/Exp slots
         // to these so the grading blend is shared, not duplicated.
         public CompositionPropertySet EffectProps => _effectProps;
-        // Config — paint-time + animation knobs (the digit needs HuePeriod /
-        // HueDirection / HueMinSpeedFraction / HuePhaseTurns to rebuild a
-        // rotation expression that matches the stroke's exactly).
+        // Config — palette, arc shape + the clone rotation periods the reveal
+        // rebuilds its own rotations from.
         public ConicArcStrokeConfig Config => _config;
 
         private readonly Compositor _compositor;

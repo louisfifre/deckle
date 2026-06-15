@@ -190,6 +190,7 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.HueRotation,
                     HudTuningSection.Transcribing,
                     HudTuningSection.Swipe,
+                    HudTuningSection.ClonePlacement,
                 },
             HudTarget.Rewriting =>
                 new[]
@@ -200,6 +201,7 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.HueRotation,
                     HudTuningSection.Rewriting,
                     HudTuningSection.Swipe,
+                    HudTuningSection.ClonePlacement,
                 },
             HudTarget.Conic =>
                 new[]

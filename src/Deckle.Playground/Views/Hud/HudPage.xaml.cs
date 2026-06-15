@@ -121,12 +121,11 @@ public sealed partial class HudPage : Page
     //
     // The ConicClone target's own disposable bundle (a second, freely-placed
     // cone). Same lifetime discipline as _nakedPreview — disposed before a
-    // replacement is mounted and on window close. _cloneCentre* is the cone's
-    // apex placement within the 272×78 row frame, driven by the ClonePlacement
-    // expander; (136, 39) = centred (reproduces the contour), (0, 0) = top-left.
+    // replacement is mounted and on window close. Its apex placement lives on
+    // the tuning config (CloneCentre*Fraction), set by the ClonePlacement
+    // expander and read by CreateConicClonePreview — the SAME value the live
+    // digit reveal reads, so preview and reveal stay in lock-step.
     private HudComposition.ConicClonePreview? _conicClonePreview;
-    private float _cloneCentreX = NakedHudSize.X / 2f;
-    private float _cloneCentreY = NakedHudSize.Y / 2f;
 
     public HudPage()
     {
@@ -411,7 +410,6 @@ public sealed partial class HudPage : Page
 
         _conicClonePreview = HudComposition.CreateConicClonePreview(
             compositor, NakedHudSize, _tuning.ToConfig(),
-            new Vector2(_cloneCentreX, _cloneCentreY),
             ViewModel.PreviewVariant, isDark: !isLightTheme);
 
         // Centre the 272×78 row frame inside the 300×300 host — same seat as the
@@ -491,10 +489,8 @@ public sealed partial class HudPage : Page
         _simManualOverride     = false;
         _simManualValue        = 0.012f;
         _simulateChangedDigits = true;
-
-        // Conic clone placement — back to centred (reproduces the contour).
-        _cloneCentreX = NakedHudSize.X / 2f;
-        _cloneCentreY = NakedHudSize.Y / 2f;
+        // Conic clone placement resets with the fresh TuningModel above
+        // (CloneCentre*Fraction field initialisers = 0.5, i.e. centred).
 
         // Swipe + Audio mapping expanders — same values the individual
         // Reset* methods use. Swipe statics live on SwipeWaveAnimator

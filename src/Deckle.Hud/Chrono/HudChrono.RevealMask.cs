@@ -36,6 +36,14 @@ public sealed partial class HudChrono
     private readonly HudComposition.DigitRevealVisual?[] _reveals
         = new HudComposition.DigitRevealVisual?[DigitCount];
 
+    // The shared CLONE cone material the six reveals sample — built once per
+    // take (BuildRevealConeMaterial): the auto-scaled conic + arc-mask surfaces
+    // and the two rotation PropertySets (hue + arc) at the clone periods. Owned
+    // HERE, not by the stroke: disposed in TearDownReveals AFTER every reveal
+    // that binds it, so no surface brush / rotation expression outlives it. Null
+    // until the first EnsureReveals build of a take.
+    private HudComposition.RevealConeMaterial? _revealMaterial;
+
     // The six cell Grids hosting each digit's primary + accent TextBlocks; the
     // conic sprite is parented here. Assembled in EnsureSwipeInfra.
     private FrameworkElement[]? _cellElements;
@@ -74,22 +82,36 @@ public sealed partial class HudChrono
         if (_revealsFailed) return;
         if (_digitPrimary is null || _cellElements is null) return;
         if (_processingStroke is null) return;
-        // No shared rotation to bind to (frozen-hue stroke) ⇒ no living conic to
-        // reveal. Shouldn't happen in Transcribing / Rewriting (both spin).
-        if (_processingStroke.HueRotationProps is null) return;
+        // The reveal cone spins on its OWN clone rotations (built in
+        // BuildRevealConeMaterial), independent of the stroke — so no dependency
+        // on the stroke's own hue rotation here. We still need the stroke for its
+        // EffectProps (shared grading) and Config (palette + clone periods).
 
-        // Host size the stroke's conic is centred on (same fallback the stroke
-        // factory uses pre-layout). The conic surface centre maps to hostSize/2.
+        // Host frame the reveal cone is placed within. The cone CENTRE (apex)
+        // sits at CloneCentre*Fraction · hostSize — (0.5, 0.5) reproduces the
+        // contour's centred cone. Same pre-layout fallback the stroke factory
+        // uses; in the shipping HUD the host is laid out before the swipe runs.
         float hostW = (float)ProcessingSurfaceHost.ActualWidth;
         float hostH = (float)ProcessingSurfaceHost.ActualHeight;
         if (hostW <= 0f || hostH <= 0f) { hostW = 272f; hostH = 78f; }
-        var hostCentre = new Vector2(hostW / 2f, hostH / 2f);
+        var hostSize = new Vector2(hostW, hostH);
+        var cfg  = _processingStroke.Config;
+        var apex = new Vector2(
+            cfg.CloneCentreXFraction * hostW,
+            cfg.CloneCentreYFraction * hostH);
 
         var compositor = ElementCompositionPreview
             .GetElementVisual(ProcessingSurfaceHost).Compositor;
 
         try
         {
+            // One clone cone material shared across the six digits — auto-scaled
+            // to cover the host frame from the apex (the coverage guarantee), with
+            // its own hue+arc rotations at the clone periods. Built once per take;
+            // rebuilt only after a teardown nulls it.
+            _revealMaterial ??= HudComposition.BuildRevealConeMaterial(
+                compositor, hostSize, apex, cfg);
+
             for (int i = 0; i < DigitCount; i++)
             {
                 if (_reveals[i] is not null) continue;       // already built
@@ -104,17 +126,18 @@ public sealed partial class HudChrono
                 // swipe, so the glyph won't change underneath it).
                 CompositionBrush glyphAlphaMask = _digitPrimary[i].GetAlphaMask();
 
-                // Offset of this cell's top-left within the conic's host space;
-                // conicCentre = hostCentre − cellOffset places surface-pixel
-                // (x,y) at the SAME HUD point the stroke shows there — one shared
-                // conic across the row, not a private one per digit (F1).
+                // Offset of this cell's top-left within the host frame;
+                // conicCentre = apex − cellOffset places the clone's centre at
+                // `apex` in host space — all six digits read ONE cone placed
+                // there, each sampling its own slice.
                 Point o = cell.TransformToVisual(ProcessingSurfaceHost)
                               .TransformPoint(new Point(0, 0));
-                var conicCentre = hostCentre - new Vector2((float)o.X, (float)o.Y);
+                var conicCentre = apex - new Vector2((float)o.X, (float)o.Y);
 
                 var reveal = HudComposition.CreateDigitReveal(
                     compositor,
                     _processingStroke,
+                    _revealMaterial,
                     glyphAlphaMask,
                     new Vector2(cw, ch),
                     conicCentre);
@@ -158,5 +181,11 @@ public sealed partial class HudChrono
             _reveals[i]!.Dispose();
             _reveals[i] = null;
         }
+        // The shared clone material (surfaces + rotations) outlives the per-digit
+        // brushes that bound it — dispose it only after every reveal above is
+        // gone, or a brush / rotation expression would touch freed memory on its
+        // last render tick.
+        _revealMaterial?.Dispose();
+        _revealMaterial = null;
     }
 }

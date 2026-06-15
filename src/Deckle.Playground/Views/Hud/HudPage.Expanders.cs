@@ -340,24 +340,41 @@ public sealed partial class HudPage
         RebuildTuningPanel();
     }
 
-    // Conic clone placement — where the cloned cone's apex sits within the
-    // 272×78 row frame. (136, 39) = centred (reproduces the contour's cone),
-    // (0, 0) = top-left corner (cone radiates from there). Preview-only
-    // floats, so each change rebuilds the clone (debounced) like a paint-time
-    // knob. Step 2 so the values land on round integers.
+    // Conic clone — placement + INDEPENDENT rotation of the cloned double comet
+    // (the material the swipe reveals behind the digits). Placement: where the
+    // cone's apex sits within the 272×78 row frame ((136,39) = centred, (0,0) =
+    // top-left). The X/Y sliders read in px against the preview frame but STORE a
+    // fraction (CloneCentre*Fraction). Rotation: the clone's own hue + arc speeds
+    // and directions — default = the contour's, so a fresh clone looks identical
+    // until you tune them apart. All of it drives BOTH the ConicClone preview AND
+    // the live digit reveal through the shared config — paint-time, debounced.
     private void AddClonePlacementExpander()
     {
-        var stack = NewExpander("Conic clone placement", ResetClonePlacement);
-        AddFloatRow(stack, "Cone centre X", 0, 272, 2, _cloneCentreX,
-            v => _cloneCentreX = (float)v, rebuild: true);
-        AddFloatRow(stack, "Cone centre Y", 0, 78, 2, _cloneCentreY,
-            v => _cloneCentreY = (float)v, rebuild: true);
+        var stack = NewExpander("Conic clone", ResetClonePlacement);
+        AddFloatRow(stack, "Cone centre X", 0, NakedHudSize.X, 2,
+            _tuning.CloneCentreXFraction * NakedHudSize.X,
+            v => _tuning.CloneCentreXFraction = (float)v / NakedHudSize.X, rebuild: true);
+        AddFloatRow(stack, "Cone centre Y", 0, NakedHudSize.Y, 2,
+            _tuning.CloneCentreYFraction * NakedHudSize.Y,
+            v => _tuning.CloneCentreYFraction = (float)v / NakedHudSize.Y, rebuild: true);
+        AddFloatRow(stack, "Clone hue period (s)", 0, 60, 0.5, _tuning.CloneHuePeriodSeconds,
+            v => _tuning.CloneHuePeriodSeconds = v, rebuild: true);
+        AddDirectionRow(stack, "Clone hue direction", _tuning.CloneHueDirection,
+            v => _tuning.CloneHueDirection = v);
+        AddFloatRow(stack, "Clone arc period (s)", 0.5, 30, 0.5, _tuning.CloneArcPeriodSeconds,
+            v => _tuning.CloneArcPeriodSeconds = v, rebuild: true);
+        AddDirectionRow(stack, "Clone arc direction", _tuning.CloneArcDirection,
+            v => _tuning.CloneArcDirection = v);
     }
 
     private void ResetClonePlacement()
     {
-        _cloneCentreX = NakedHudSize.X / 2f;
-        _cloneCentreY = NakedHudSize.Y / 2f;
+        _tuning.CloneCentreXFraction = 0.5f;
+        _tuning.CloneCentreYFraction = 0.5f;
+        _tuning.CloneHuePeriodSeconds = 14.0;
+        _tuning.CloneHueDirection     = 1f;
+        _tuning.CloneArcPeriodSeconds = 8.0;
+        _tuning.CloneArcDirection     = 1f;
         RebuildTuningPanel();
         ApplyTarget();
     }
