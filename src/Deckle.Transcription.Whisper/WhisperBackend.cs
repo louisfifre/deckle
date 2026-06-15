@@ -338,6 +338,21 @@ public sealed class WhisperBackend : IAsrBackend
         foreach (var seg in segments) sb.Append(seg.Text);
         string fullText = sb.ToString().Trim();
 
+        // Known-hallucination filter. On silence/music whisper emits a fixed
+        // subtitle-credit phrase from its training corpus at high confidence,
+        // where neither the confidence thresholds nor the repetition guard bite.
+        // Matched on the WHOLE utterance (never a substring), so a real dictation
+        // quoting the phrase is untouched. A hit blanks the text — the segments
+        // stay for telemetry, and an empty FullText is already treated as "no
+        // text" by both the streaming consumer and the monolithic finalize.
+        if (KnownHallucinations.Matches(fullText))
+        {
+            string preview = fullText.Length > 60 ? fullText[..60] + "…" : fullText;
+            DeckleWhispSource.Log.TranscribeHallucinationFiltered();
+            DeckleWhispSource.Log.TranscribeHallucinationFilteredDetail(preview);
+            fullText = "";
+        }
+
         return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, aborted, result);
     }
 

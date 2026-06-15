@@ -852,6 +852,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SpeechModels.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
 │   │   ├── Deckle.Transcription.Whisper.csproj
+│   │   ├── KnownHallucinations.cs
 │   │   ├── RepetitionDetector.cs
 │   │   ├── WhisperBackend.cs
 │   │   └── WhisperNativeLogCompactor.cs
@@ -999,6 +1000,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── StreamingBackendAudioTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
+│   │   ├── KnownHallucinationsTests.cs
 │   │   └── RepetitionDetectorTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
