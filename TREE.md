@@ -747,6 +747,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
+│   │   ├── ResizeCoalescer.cs
+│   │   ├── ResizeGesture.cs
 │   │   └── TrayIconManager.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
@@ -967,7 +969,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
-│   │   └── DispatcherQueueExtensionsTests.cs
+│   │   ├── DispatcherQueueExtensionsTests.cs
+│   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
 │   │   ├── SpeechEngineTests.cs
