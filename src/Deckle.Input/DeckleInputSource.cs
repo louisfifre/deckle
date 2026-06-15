@@ -45,6 +45,14 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtKeyboardHostStopped      = 22;
     public const int EvtKeyboardHostStartFailed  = 23;
     public const int EvtKeyboardRollup           = 24;
+    // Wheel observation + recording sessions (ids 25-31).
+    public const int EvtWheelRecordingStarted      = 25;
+    public const int EvtWheelRecordingStartedDetail = 26;
+    public const int EvtWheelRecordingStopped      = 27;
+    public const int EvtWheelRecordingStoppedDetail = 28;
+    public const int EvtWheelRecordingFailed       = 29;
+    public const int EvtWheelRecordingFailedDetail = 30;
+    public const int EvtWheelDeviceObserved        = 31;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -275,14 +283,85 @@ public sealed class DeckleInputSource : DeckleEventSource
 
     // ── Keyboard activity rollup (30 s aggregate while input flows) ──────
     // Never carries typed text. Counters only — key transitions seen,
-    // injected events filtered out, pointer button-downs, focus changes.
+    // injected events filtered out, pointer button-downs, wheel ticks, focus
+    // changes.
 
     [Event(EvtKeyboardRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | focus_changes={3}")]
-    public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int focus_changes)
+           Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
+    public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, focus_changes);
+        if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
+    }
+
+    // ── Wheel recording sessions ─────────────────────────────────────────
+    // The wheel counterpart of the frame recorder: a JSONL session of raw
+    // wheel events (cadence, deltas, axes) captured to compare against
+    // trackpad gestures. Same Informational/Verbose split as the frame
+    // recorder; wheel events themselves never hit the EventSource (they go
+    // to the JSONL), only the lifecycle milestones and the per-device line.
+
+    [Event(EvtWheelRecordingStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Wheel recording started")]
+    public void WheelRecordingStarted()
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStarted);
+    }
+
+    [Event(EvtWheelRecordingStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "wheel recording | path={0}")]
+    public void WheelRecordingStartedDetail(string path)
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, path);
+    }
+
+    [Event(EvtWheelRecordingStopped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Wheel recording stopped")]
+    public void WheelRecordingStopped()
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStopped);
+    }
+
+    [Event(EvtWheelRecordingStoppedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "wheel recording closed | path={0} | events={1} | duration_sec={2} | bytes={3}")]
+    public void WheelRecordingStoppedDetail(string path, long events, double duration_sec, long bytes)
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, path, events, duration_sec, bytes);
+    }
+
+    [Event(EvtWheelRecordingFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Wheel recording encountered an error")]
+    public void WheelRecordingFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed);
+    }
+
+    [Event(EvtWheelRecordingFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "wheel recording failed | error={0}: {1}")]
+    public void WheelRecordingFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailedDetail, ex_type, message);
+    }
+
+    [Event(EvtWheelDeviceObserved,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "wheel device | dev={0} | name={1} | vid=0x{2:X4} | pid=0x{3:X4}")]
+    public void WheelDeviceObserved(int dev, string name, uint vendor_id, uint product_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtWheelDeviceObserved, dev, name, vendor_id, product_id);
     }
 }

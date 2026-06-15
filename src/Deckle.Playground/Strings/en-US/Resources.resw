@@ -72,6 +72,9 @@
   <data name="PlaygroundNavAmbient.Content" xml:space="preserve">
     <value>Ambient lighting</value>
   </data>
+  <data name="PlaygroundNavMouseWheel.Content" xml:space="preserve">
+    <value>Mouse wheel</value>
+  </data>
 
   <data name="PlaygroundHomeHeader.Text" xml:space="preserve">
     <value>Deckle Playground</value>
@@ -91,6 +94,12 @@
   <data name="PlaygroundHomeAmbientCard.Description" xml:space="preserve">
     <value>Screen capture, zone sampling, colour processing, Hue REST output. Live preview + per-light swatches.</value>
   </data>
+  <data name="PlaygroundHomeMouseWheelCard.Header" xml:space="preserve">
+    <value>Mouse wheel capture</value>
+  </data>
+  <data name="PlaygroundHomeMouseWheelCard.Description" xml:space="preserve">
+    <value>Record raw wheel events to JSONL — cadence, deltas, axes — the reference data for mapping the wheel onto a two-finger gesture.</value>
+  </data>
 
   <data name="PlaygroundHudTunablesHeader.Text" xml:space="preserve">
     <value>Tunables</value>
@@ -107,6 +116,25 @@
   </data>
   <data name="PlaygroundAmbientSubheader.Text" xml:space="preserve">
     <value>Screen capture, Hue bridge, and the analysis pipeline that pushes the averaged screen colour to your lights.</value>
+  </data>
+
+  <data name="PlaygroundMouseWheelHeader.Text" xml:space="preserve">
+    <value>Mouse wheel capture</value>
+  </data>
+  <data name="PlaygroundMouseWheelSubheader.Text" xml:space="preserve">
+    <value>Record raw wheel events from any mouse to a JSONL file under telemetry/ — cadence, signed deltas and axis, on the shared keyboard/mouse input host. The reference data for mapping the wheel onto a two-finger touchpad gesture.</value>
+  </data>
+  <data name="PlaygroundMouseWheelRecordCard.Header" xml:space="preserve">
+    <value>Record wheel events</value>
+  </data>
+  <data name="PlaygroundMouseWheelRecordCard.Description" xml:space="preserve">
+    <value>Writes wheel-events-*.jsonl while on. Leave it on, scroll across apps with the intentions you want to capture, then turn it off.</value>
+  </data>
+  <data name="PlaygroundMouseWheelOpenFolderCard.Header" xml:space="preserve">
+    <value>Telemetry folder</value>
+  </data>
+  <data name="PlaygroundMouseWheelOpenFolderCard.Description" xml:space="preserve">
+    <value>Open the folder where the capture files are written.</value>
   </data>
 
   <!-- Notifications test surface (HomePage). x:Uid bindings : the section

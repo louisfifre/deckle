@@ -27,6 +27,7 @@
     <x:String x:Key="Icon.Sparkle">&#xF6C7;</x:String>
     <x:String x:Key="Icon.Lightbulb">&#xEA80;</x:String>
     <x:String x:Key="Icon.Trackpad">&#xEFA5;</x:String>
+    <x:String x:Key="Icon.Mouse">&#xE962;</x:String>
     <!-- Segoe Fluent "Spelling" (F87B) — proofing / autocorrect, the Windows
          icon for spell-check. Not a keyboard: autocorrect is a text-correction
          concern, not an input-device one. -->
