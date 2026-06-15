@@ -387,7 +387,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         // default; corrections land only on enrolled processes, Notepad out of
         // the box). Loads the two small gzip lexicons from Data/ beside the exe;
         // the live engine never touches the offline-only CamemBERT reranker.
-        InitializeAutocorrect();
+        // Fire-and-forget: the engine builds itself off the UI thread (the heavy
+        // FR lexicon load) and wires up when ready. Boot does not wait — the
+        // engine has no synchronous consumer in OnLaunched, same posture as
+        // ApplyAmbientEnabledAsync. The milestone marks the dispatch, not load
+        // completion.
+        _ = InitializeAutocorrectAsync();
         Milestone("autocorrect");
 
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
