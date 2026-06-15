@@ -174,6 +174,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── CLAUDE.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   └── research/
 │       ├── 2026-06-12--notifications-catalogue.md
+│       ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
 │       └── research--system-autocorrect--2026-06-12.md
 ├── scripts/
 │   ├── hooks/
@@ -259,8 +260,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Hotkeys.cs
+│   │   ├── App.Input.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
+│   │   ├── App.MouseWheel.cs
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
@@ -429,9 +432,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Keyboard/
 │   │   │   ├── IKeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.cs
-│   │   │   └── KeyboardKeyEvent.cs
+│   │   │   ├── KeyboardKeyEvent.cs
+│   │   │   └── MouseWheelEvent.cs
 │   │   ├── Telemetry/
-│   │   │   └── ContactFrameRecorder.cs
+│   │   │   ├── ContactFrameRecorder.cs
+│   │   │   └── WheelEventRecorder.cs
 │   │   ├── Touchpad/
 │   │   │   ├── ContactFrame.cs
 │   │   │   ├── ContactFrameAssembler.cs
@@ -442,6 +447,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
+│   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input — founding choices, measurements,…
+│   │   ├── MouseWheelSettings.cs
+│   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.Autocorrect/
 │   │   ├── Data/
@@ -676,6 +684,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
+│   │   │   ├── MouseWheel/
+│   │   │   │   ├── MouseWheelPage.xaml
+│   │   │   │   └── MouseWheelPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml

@@ -17,6 +17,7 @@
 		}
 	],
 	"settings": {
-		"powershell.cwd": "deckle"
+		"powershell.cwd": "deckle",
+		"liveServer.settings.multiRootWorkspaceName": "deckle"
 	}
 }
