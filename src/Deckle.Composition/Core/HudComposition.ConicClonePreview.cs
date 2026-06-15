@@ -143,7 +143,10 @@ public static partial class HudComposition
         var graphicsDevice = CanvasComposition.CreateCompositionGraphicsDevice(
             compositor, canvasDevice);
 
-        var conicSurface = PaintConicSurface(canvasDevice, graphicsDevice, pxSquare, cfg);
+        // Same decoupled clone palette as the live reveal (CloneOklch* lightness/
+        // chroma) so the preview shows the digits' real surface, not the contour's.
+        var conicSurface = PaintConicSurface(canvasDevice, graphicsDevice, pxSquare,
+            CloneSurfaceConfig(cfg));
         var arcSurface   = PaintArcMaskSurface(
             canvasDevice, graphicsDevice, pxSquare, cfg, Microsoft.UI.Colors.White);
 

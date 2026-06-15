@@ -319,7 +319,12 @@ public static partial class HudComposition
         var graphicsDevice = CanvasComposition.CreateCompositionGraphicsDevice(
             compositor, canvasDevice);
 
-        var conicSurface = PaintConicSurface  (canvasDevice, graphicsDevice, pxSquare, cfg);
+        // The clone's CONIC is painted with the reveal's OWN OKLCh lightness/chroma
+        // (CloneSurfaceConfig) — brighter / more chromatic than the contour so the
+        // swept digits read with peps, decoupled from the contour's palette. The arc
+        // mask is white (palette-independent), so it stays on the shared cfg.
+        var conicSurface = PaintConicSurface  (canvasDevice, graphicsDevice, pxSquare,
+                                               CloneSurfaceConfig(cfg));
         var arcSurface   = PaintArcMaskSurface(canvasDevice, graphicsDevice, pxSquare, cfg,
                                                Microsoft.UI.Colors.White);
 
@@ -334,6 +339,16 @@ public static partial class HudComposition
 
         return new RevealConeMaterial(conicSurface, arcSurface, hueProps, arcProps);
     }
+
+    // The palette the clone cone is painted with: the contour's config, but with
+    // OKLCh lightness/chroma swapped for the reveal's OWN (CloneOklch*). This is the
+    // peps knob — pushing the swept digits brighter / more chromatic than the
+    // contour WITHOUT a separate exposure node (ExposureEffect caps at +2 EV, too
+    // low for the lift the grey-on-Tertiary sweep needs). Hue start/range, wedge
+    // count and everything else stay shared. Used by BOTH the live reveal and the
+    // ConicClone preview (same helper) so the two surfaces can't drift.
+    private static ConicArcStrokeConfig CloneSurfaceConfig(ConicArcStrokeConfig cfg)
+        => cfg with { OklchLightness = cfg.CloneOklchLightness, OklchChroma = cfg.CloneOklchChroma };
 
     // Side of the square conic surface whose inscribed circle reaches every
     // corner of `frame` from `centre` — the coverage-guarantee auto-scale shared

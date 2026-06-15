@@ -357,6 +357,13 @@ public sealed partial class HudPage
         AddFloatRow(stack, "Cone centre Y", 0, NakedHudSize.Y, 2,
             _tuning.CloneCentreYFraction * NakedHudSize.Y,
             v => _tuning.CloneCentreYFraction = (float)v / NakedHudSize.Y, rebuild: true);
+        // Peps knobs — the clone's own OKLCh lightness/chroma, decoupled from the
+        // contour's palette (exposure caps at +2 EV, too low). Lightness brightens
+        // the Transcribing greyscale sweep ; chroma feeds the Rewriting colour.
+        AddFloatRow(stack, "Clone OKLCh lightness", 0, 1, 0.05, _tuning.CloneOklchLightness,
+            v => _tuning.CloneOklchLightness = (float)v, rebuild: true);
+        AddFloatRow(stack, "Clone OKLCh chroma", 0, 0.4, 0.05, _tuning.CloneOklchChroma,
+            v => _tuning.CloneOklchChroma = (float)v, rebuild: true);
         AddFloatRow(stack, "Clone hue period (s)", 0, 60, 0.5, _tuning.CloneHuePeriodSeconds,
             v => _tuning.CloneHuePeriodSeconds = v, rebuild: true);
         AddDirectionRow(stack, "Clone hue direction", _tuning.CloneHueDirection,
@@ -369,12 +376,14 @@ public sealed partial class HudPage
 
     private void ResetClonePlacement()
     {
-        _tuning.CloneCentreXFraction = 0.5f;
-        _tuning.CloneCentreYFraction = 0.5f;
-        _tuning.CloneHuePeriodSeconds = 14.0;
-        _tuning.CloneHueDirection     = 1f;
-        _tuning.CloneArcPeriodSeconds = 8.0;
-        _tuning.CloneArcDirection     = 1f;
+        _tuning.CloneCentreXFraction = 196f / NakedHudSize.X;
+        _tuning.CloneCentreYFraction = 0f;
+        _tuning.CloneOklchLightness   = 0.9f;
+        _tuning.CloneOklchChroma      = 0.3f;
+        _tuning.CloneHuePeriodSeconds = 7.0;
+        _tuning.CloneHueDirection     = -1f;
+        _tuning.CloneArcPeriodSeconds = 4.0;
+        _tuning.CloneArcDirection     = -1f;
         RebuildTuningPanel();
         ApplyTarget();
     }

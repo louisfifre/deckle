@@ -64,15 +64,21 @@ internal sealed class TuningModel
     // ── Clone-cone placement (digit reveal + ConicClone preview) ─────────
     // Fraction of the host frame; (0.5, 0.5) = centred. See the matching
     // ConicArcStrokeConfig block for the full geometry rationale.
-    public float CloneCentreXFraction = 0.5f;
-    public float CloneCentreYFraction = 0.5f;
+    public float CloneCentreXFraction = 196f / 272f;
+    public float CloneCentreYFraction = 0f;
+
+    // ── Clone-cone palette — reveal's own OKLCh lightness/chroma (the peps
+    //    knob), decoupled from the contour. See the matching ConicArcStrokeConfig
+    //    block. ─────────────────────────────────────────────────────────────────
+    public float CloneOklchLightness = 0.9f;
+    public float CloneOklchChroma    = 0.3f;
 
     // ── Clone-cone rotation — independent speeds/directions, default =
     //    contour. See the matching ConicArcStrokeConfig block. ────────────
-    public double CloneHuePeriodSeconds = 14.0;
-    public float  CloneHueDirection     = 1f;
-    public double CloneArcPeriodSeconds = 8.0;
-    public float  CloneArcDirection     = 1f;
+    public double CloneHuePeriodSeconds = 7.0;
+    public float  CloneHueDirection     = -1f;
+    public double CloneArcPeriodSeconds = 4.0;
+    public float  CloneArcDirection     = -1f;
 
     // ── Rewriting variant ───────────────────────────────────────────────
     public float  RewritingSaturation    = 1f;
@@ -146,6 +152,9 @@ internal sealed class TuningModel
 
         CloneCentreXFraction = CloneCentreXFraction,
         CloneCentreYFraction = CloneCentreYFraction,
+
+        CloneOklchLightness = CloneOklchLightness,
+        CloneOklchChroma    = CloneOklchChroma,
 
         CloneHuePeriodSeconds = CloneHuePeriodSeconds,
         CloneHueDirection     = CloneHueDirection,
