@@ -118,8 +118,21 @@
     <Content Include="Assets\Sounds\**\*.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- The autocorrect lexicons (Data/*.tsv.gz) ride in transitively from
-         Deckle.Input.Autocorrect's own Content rule — App.Autocorrect loads them
-         from Data/ beside the executable. -->
   </ItemGroup>
+
+  <!-- The autocorrect lexicons must sit flat under Data/ beside the executable,
+       where App.Autocorrect loads them. Transitive Content from
+       Deckle.Input.Autocorrect lands under "Deckle.Input.Autocorrect\Data\"
+       instead (the SDK prefixes referenced-project content with the project
+       name) and re-declaring it here loses to that copy on source-path dedup,
+       so the engine silently finds nothing and never arms. Flatten it
+       deterministically after the build instead. -->
+  <Target Name="FlattenAutocorrectLexicons" AfterTargets="Build">
+    <ItemGroup>
+      <_AutocorrectLexicon Include="..\Deckle.Input.Autocorrect\Data\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_AutocorrectLexicon)"
+          DestinationFiles="@(_AutocorrectLexicon->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

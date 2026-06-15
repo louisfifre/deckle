@@ -35,7 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Derived lexical artifacts (build-data output) ride next to the binary. -->
+    <!-- Derived lexical artifacts (build-data output) ride next to the binary.
+         Note: this Content lands flat under "Data\" in THIS project's own output,
+         but does NOT transit flat into a consuming app — the SDK prefixes it with
+         the project name there. Deckle.App flattens it back with a post-build
+         target (FlattenAutocorrectLexicons) so the engine finds it beside the exe. -->
     <Content Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
