@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Composition;
 
 namespace Deckle.Playground;
 
@@ -18,6 +19,9 @@ public enum HudTarget
     Conic,
     ArcMask,
     Combined,
+    // A second, freely-placed conic cone (own surface) painted from the same
+    // config as the contour — a placement sandbox for the digit-reveal material.
+    ConicClone,
 }
 
 // Logical groups of tuning expanders. The HUD tuning panel is rebuilt
@@ -38,6 +42,7 @@ public enum HudTuningSection
     Rewriting,
     AudioMapping,
     SimulatedRms,
+    ClonePlacement,
     Parked,
 }
 
@@ -75,15 +80,33 @@ public partial class HudViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsPlaying { get; set; }
 
+    // Which state's grading the geometry-only previews (Conic / ArcMask /
+    // Combined / Conic clone) are shown in — Transcribing (greyscale) or
+    // Rewriting (full colour). Inert for the four HUD-state targets, which carry
+    // their own variant. Default Rewriting so a freshly-selected cone shows in
+    // colour (its placement is unreadable in flat grey).
+    [ObservableProperty]
+    public partial ProcessingVariant PreviewVariant { get; set; }
+
     public HudViewModel()
     {
         // Default target = Transcribing, mirrors the previous in-memory
         // default that the original PlaygroundWindow seeded. Pause by
         // default so the window opens to an empty preview, the user
         // clicks Play to start.
-        CurrentTarget = HudTarget.Transcribing;
-        IsPlaying     = false;
+        CurrentTarget  = HudTarget.Transcribing;
+        IsPlaying      = false;
+        PreviewVariant = ProcessingVariant.Rewriting;
     }
+
+    // The Transcribing/Rewriting grading toggle only makes sense for the
+    // geometry-only previews; the HUD-state targets already encode their own
+    // variant. HudPage binds the toggle's Visibility here.
+    public bool IsVariantToggleVisible =>
+        CurrentTarget is HudTarget.Conic
+                      or HudTarget.ArcMask
+                      or HudTarget.Combined
+                      or HudTarget.ConicClone;
 
     // Computed transport enable-flags. Derived from IsPlaying ; the
     // partial change method below fires change notifications for these
@@ -98,11 +121,21 @@ public partial class HudViewModel : ObservableObject
     // Human-readable label shown on the DropDownButton. Same case as the
     // enum members — they read as proper UI labels by design ("Recording",
     // "Conic"…).
-    public string CurrentTargetLabel => CurrentTarget.ToString();
+    // Friendly labels for the DropDownButton — the raw enum names read poorly
+    // for the primitives ("ArcMask"), and these match the MenuFlyout item text.
+    public string CurrentTargetLabel => CurrentTarget switch
+    {
+        HudTarget.Conic      => "Cone",
+        HudTarget.ArcMask    => "Sweep mask",
+        HudTarget.Combined   => "Masked cone",
+        HudTarget.ConicClone => "Cone clone",
+        _                    => CurrentTarget.ToString(),
+    };
 
     partial void OnCurrentTargetChanged(HudTarget value)
     {
         OnPropertyChanged(nameof(CurrentTargetLabel));
+        OnPropertyChanged(nameof(IsVariantToggleVisible));
     }
 
     partial void OnIsPlayingChanged(bool value)
@@ -157,6 +190,7 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.HueRotation,
                     HudTuningSection.Transcribing,
                     HudTuningSection.Swipe,
+                    HudTuningSection.ClonePlacement,
                 },
             HudTarget.Rewriting =>
                 new[]
@@ -167,6 +201,7 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.HueRotation,
                     HudTuningSection.Rewriting,
                     HudTuningSection.Swipe,
+                    HudTuningSection.ClonePlacement,
                 },
             HudTarget.Conic =>
                 new[]
@@ -180,6 +215,14 @@ public partial class HudViewModel : ObservableObject
                 {
                     HudTuningSection.Geometry,
                     HudTuningSection.ArcRotation,
+                },
+            HudTarget.ConicClone =>
+                new[]
+                {
+                    HudTuningSection.Geometry,
+                    HudTuningSection.Palette,
+                    HudTuningSection.HueRotation,
+                    HudTuningSection.ClonePlacement,
                 },
             _ /* Combined */ =>
                 new[]

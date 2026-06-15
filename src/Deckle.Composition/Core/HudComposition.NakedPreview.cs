@@ -156,7 +156,8 @@ public static partial class HudComposition
     public static NakedPreview CreateNakedMaskPreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg, NakedMaskPart part,
-        Color arcFillColor)
+        Color arcFillColor,
+        ProcessingVariant gradeVariant, bool isDark)
     {
         // Reuse the exact pxSquare math from CreateConicArcStroke so the
         // naked preview paints the same brush footprint. Any drift here
@@ -226,20 +227,33 @@ public static partial class HudComposition
         switch (part)
         {
             case NakedMaskPart.Conic:
-                sprite.Brush = conicBrush;
+            {
+                // Grade the bare cone like the live stroke in the chosen state
+                // (Transcribing ⇒ grey, Rewriting ⇒ colour) so the toggle reads
+                // the same as the swipe will. Static seed — no state blend here.
+                var graded = BuildVariantGrading(
+                    new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
+                var ef = compositor.CreateEffectFactory(graded);
+                effectBrush = ef.CreateBrush();
+                effectBrush.SetSourceParameter("Conic", conicBrush);
+                sprite.Brush = effectBrush;
                 break;
+            }
             case NakedMaskPart.ArcMask:
+                // Pure alpha mask — Sat/Hue/Exp are a no-op on a white monochrome
+                // surface, so the variant toggle leaves it untouched.
                 sprite.Brush = arcMaskBrush;
                 break;
             case NakedMaskPart.Combined:
-                // Single AlphaMaskEffect — output = (Conic.RGB, Conic.A · Arc.A).
-                // No Sat/Hue/Exp nodes (those are state-blend concerns;
-                // the diagnostic is about geometry). Pattern matches the
-                // shipping CreateConicArcStroke (no factory disposal; the
-                // factory is short-lived and collected on GC).
+            {
+                // Conic ⊗ Arc, with the conic graded for the chosen state first —
+                // output = (graded.RGB, graded.A · Arc.A). Same masking stage as
+                // the shipping stroke, minus the silhouette.
+                var graded = BuildVariantGrading(
+                    new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
                 var effectGraph = new AlphaMaskEffect
                 {
-                    Source    = new CompositionEffectSourceParameter("Conic"),
+                    Source    = graded,
                     AlphaMask = new CompositionEffectSourceParameter("Arc"),
                 };
                 var effectFactory = compositor.CreateEffectFactory(effectGraph);
@@ -248,6 +262,7 @@ public static partial class HudComposition
                 effectBrush.SetSourceParameter("Arc",   arcMaskBrush);
                 sprite.Brush = effectBrush;
                 break;
+            }
         }
 
         container.Children.InsertAtTop(sprite);

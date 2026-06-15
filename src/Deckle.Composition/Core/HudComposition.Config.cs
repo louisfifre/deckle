@@ -194,6 +194,52 @@ public static partial class HudComposition
         public float  ArcEaseP2Y         { get; init; } = 0.625f;
         public float  ArcMinSpeedFraction { get; init; } = 0f;
 
+        // ── Clone-cone placement (the swipe's digit reveal) ─────────────
+        // Where the reveal cone's centre sits within the host frame, as a
+        // FRACTION of host size (DPI/size-independent, so one slider drives
+        // both the live reveal and the ConicClone preview through the same
+        // value). (0.5, 0.5) = centred — reproduces the contour's cone, so
+        // each digit samples the same slice the contour shows at that point.
+        // (0, 0) = top-left corner, the cone radiating from there.
+        //
+        // The reveal cone is a CLONE of the contour's: same OKLCh palette and
+        // same breathing rotation (it shares the stroke's HueRotationProps and
+        // EffectProps), but its OWN surface, auto-scaled so its inscribed
+        // circle reaches every host corner FROM this centre. That guarantees a
+        // digit anywhere in the row samples a painted pixel instead of falling
+        // off the surface (out-of-bounds = transparent) — the coverage the
+        // earlier shared-surface route lacked. The cone is a pure angular
+        // gradient, invariant under radial scaling, so growing the surface only
+        // extends coverage, never distorts the look.
+        public float  CloneCentreXFraction { get; init; } = 196f / 272f; // 196 px on the 272-wide row
+        public float  CloneCentreYFraction { get; init; } = 0f;          // apex at the row's top edge
+
+        // ── Clone-cone palette — the reveal's OWN OKLCh lightness/chroma, decoupled
+        //    from the contour's (OklchLightness/Chroma) so the swept digits can be
+        //    pushed brighter / more chromatic for "peps" without touching the
+        //    contour. This is the peps knob: ExposureEffect caps at +2 EV — too low
+        //    for the lift the grey-on-Tertiary sweep needs — so the lift lives in the
+        //    baked surface instead. Lightness above the contour's 0.75 reads as a
+        //    brighter sweep in Transcribing (greyscale); chroma feeds the Rewriting
+        //    colour. Painted into the clone surface by CloneSurfaceConfig. ─────────
+        public float  CloneOklchLightness   { get; init; } = 0.9f;
+        public float  CloneOklchChroma      { get; init; } = 0.3f;
+
+        // ── Clone-cone rotation — INDEPENDENT from the contour's, so the
+        //    reveal cone can spin at its own pace (a distinct animation, not
+        //    a window locked to the contour). Only the speeds + directions
+        //    split: the arc SHAPE (ConicSpan/Fade/Mirror), the ease curves,
+        //    the phase and the palette stay shared, so a fresh clone looks
+        //    identical to the contour until you tune the speeds apart. The
+        //    reveal is a DOUBLE-comet (conic ⊗ arc mask) like the visible
+        //    contour, NOT the naked cone — critical in Transcribing, where the
+        //    greyscale (luminance-uniform OKLCh) cone shows no motion on its
+        //    own and only the swept comet SHAPE reads. ─────────────────────
+        public double CloneHuePeriodSeconds { get; init; } = 7.0;
+        public float  CloneHueDirection     { get; init; } = -1f;
+        public double CloneArcPeriodSeconds { get; init; } = 4.0;
+        public float  CloneArcDirection     { get; init; } = -1f;
+
         // ── Rewriting variant — target values for the live effect
         //    pipeline. Baseline neutrals leave the baked palette alone ──
         public float  RewritingSaturation       { get; init; } = 1f;

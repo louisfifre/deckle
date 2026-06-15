@@ -35,6 +35,14 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtProximityRollup     = 6;
     // 7: Verbose mirror added for Verbose/Info separation — HudWarning detail.
     public const int EvtHudWarningDetail    = 7;
+    // 8: digit reveal mask (F1) build failure — degrades to the flat accent.
+    public const int EvtRevealMaskFailed    = 8;
+    // 9 reserved: former reveal custom-font resolution event, removed in 2026-06
+    // when the digit mask moved from a Win2D-painted glyph to
+    // TextBlock.GetAlphaMask (no font loading left to observe).
+    // 10: reveal mask geometry — cell + host extents and the cell offset used to
+    // place the shared conic under the digit (F1 placement diagnostics).
+    public const int EvtRevealGeometry      = 10;
 
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
@@ -53,6 +61,35 @@ public sealed class DeckleHudSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtHudWarningDetail, message);
+    }
+
+    // Digit reveal mask (F1 prototype) failed to build — most often a Win2D
+    // font-load failure (DrawText E_INVALIDARG when the Bitcount URI can't be
+    // resolved). The reveal is optional, so the digit silently falls back to
+    // the flat-accent overlay; this records *why* it fell back so a degraded
+    // reveal isn't mistaken for a design choice.
+    [Event(EvtRevealMaskFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "digit reveal mask failed | error={0} | message={1}")]
+    public void RevealMaskFailed(string error, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRevealMaskFailed, error, message);
+    }
+
+    // Geometry captured when a digit reveal is built: the cell extents, the
+    // cell's top-left offset within the processing-surface host, and the host
+    // extents. These are exactly the numbers the F1 placement maths consume
+    // (conicCentre = hostCentre − cellOffset), so a misplaced "window on the
+    // conic" can be read straight off the log instead of guessed at.
+    [Event(EvtRevealGeometry,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "reveal geometry | cell={0}x{1} | offset={2},{3} | host={4}x{5}")]
+    public void RevealGeometry(double cellW, double cellH, double offX, double offY, double hostW, double hostH)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtRevealGeometry, cellW, cellH, offX, offY, hostW, hostH);
     }
 
     // ─── Axis 1 — Six-state state machine transitions ──────────────────

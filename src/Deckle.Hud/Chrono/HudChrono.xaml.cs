@@ -8,7 +8,7 @@ namespace Deckle.Hud;
 // Chrono card — container + clock + processing stroke attach.
 //
 // Owns the Bitcount Single MM.SS.cc clock and the progressive digit accent
-// (each digit that ever changed locks to SystemFillColorCriticalBrush until
+// (each digit that ever changed locks to ChronoAccentBrush until
 // the next clock reset). Stroke sources:
 //   - DWM frame (always on)     — 1-dip system accent stroke on the rounded
 //                                  HWND silhouette (DWMWA_BORDER_COLOR =
@@ -53,13 +53,11 @@ public sealed partial class HudChrono : UserControl
 
         ChronoRoot.ActualThemeChanged += (_, _) =>
         {
-            // Accent TextBlocks bind Foreground via {ThemeResource …} in
-            // XAML, so they re-resolve on theme change automatically. The
-            // primary TextBlocks inherit from the shared style's
-            // ThemeResource Foreground — same story. No per-TextBlock
-            // re-assignment needed here (unlike the old design which
-            // mutated Foreground in code, which breaks the ThemeResource
-            // binding and requires a manual re-push on theme change).
+            // The face's background tone is mutated onto Foreground in code
+            // (ApplyRestTone), which drops the {ThemeResource} binding — so a
+            // live theme switch must re-push the current phase's tone. The
+            // accent twins keep their XAML accent brush and need no refresh.
+            ReapplyRestToneForState();
 
             // Transcribing exposure is theme-aware (Dark vs Light split),
             // and Recording reuses those same baselines for its greyscale
@@ -112,19 +110,13 @@ public sealed partial class HudChrono : UserControl
         UnhookRendering();
         StopSwipe();
 
-        // Pure paint: the "parked" clock look — primary text in the neutral /
-        // tertiary colour, waiting for the first recording. Override the Style
-        // default Foreground for the 6 digits; dots stay primary (structural
-        // punctuation, not data, so they read at full contrast regardless of
-        // state). The clock value and the digit glyphs are owned by the clock
-        // lifecycle (ResetClock on entry, driven by the host) — Charging must
-        // not touch them, so this same style can later be reused over a frozen
-        // clock without zeroing it.
-        var neutral = ResolveNeutralBrush();
-        Min1.Foreground = neutral; Min2.Foreground = neutral;
-        Sec1.Foreground = neutral; Sec2.Foreground = neutral;
-        Cs1.Foreground  = neutral; Cs2.Foreground  = neutral;
-        DotA.Foreground = neutral; DotB.Foreground = neutral;
+        // Parked look: the whole face recedes to the Disabled tone — nothing has
+        // been recorded yet, so digits and dots alike sit at the faintest step of
+        // the scale (Chrono/CONTEXT.md). The clock value and glyphs are owned by
+        // the clock lifecycle (ResetClock, driven by the host); Charging only
+        // paints the tone, so the same look can sit over a zeroed or a frozen
+        // clock without touching the value.
+        ApplyRestTone(ToneCharging);
 
         DetachProcessingVisual();
     }
@@ -135,20 +127,21 @@ public sealed partial class HudChrono : UserControl
 
         AttachProcessingVisual(ProcessingVariant.Recording);
 
-        // Clear local Foreground so each primary TextBlock inherits its Style
-        // default (TextFillColorPrimaryBrush, theme-resource-bound). The clock
-        // face itself (the 00.00.00 reset + the ticking + the per-tick accent
-        // flash) is owned by StartClock, which the host calls before this.
-        ClearDigitForegrounds();
+        // Recording background tone: the whole face sits at Secondary. Digits
+        // that advance flip to Accent on top (WriteDigit drives the per-tick
+        // flash); the ones that never move stay Secondary, as do the dots. The
+        // clock face (reset + ticking + flash) is owned by StartClock, which the
+        // host calls right after this. See Chrono/CONTEXT.md.
+        ApplyRestTone(ToneRecording);
     }
 
     private void ApplyTranscribing()
     {
-        // The clock is frozen by StopClock (the host calls it before this),
-        // which also latches the final elapsed value and may light the
-        // last-changed digit — we KEEP the animator's changed flags so the
-        // swipe knows which digits are eligible for the accent reveal.
-        ClearDigitForegrounds();
+        // Stop tone: the whole face drops to Tertiary. The clock is frozen by
+        // StopClock (host-driven around this) and the animator's changed flags
+        // are KEPT, so the swipe re-lights only the digits that were animated,
+        // in accent over the Tertiary background. See Chrono/CONTEXT.md.
+        ApplyRestTone(ToneStopped);
 
         AttachProcessingVisual(ProcessingVariant.Transcribing);
         StartSwipe();
@@ -160,8 +153,9 @@ public sealed partial class HudChrono : UserControl
     private void ApplyRewriting()
     {
         // Clock already frozen by the Transcribing transition; Rewriting only
-        // re-skins the stroke and restarts the reveal.
-        ClearDigitForegrounds();
+        // re-skins the stroke and restarts the reveal over the same Tertiary
+        // Stop tone.
+        ApplyRestTone(ToneStopped);
 
         AttachProcessingVisual(ProcessingVariant.Rewriting);
         StartSwipe();
@@ -177,6 +171,47 @@ public sealed partial class HudChrono : UserControl
         // The clock is left as-is (stopped after a take); the next session's
         // ResetClock zeroes it. Rendering is unhooked, so nothing reads a
         // residual value while hidden — it stays invisible and harmless.
+    }
+
+    // ── Background tone — the resting colour of the whole face per phase ──────
+    //
+    // The chrono face never uses Primary: every phase overrides it with one of
+    // these three system tones, stepping down the scale Disabled → Secondary →
+    // Tertiary. The accent reveal (Recording flash, Stop swipe) layers on top of
+    // this background, never replaces it. The authoritative mapping lives in
+    // Chrono/CONTEXT.md; these keys are its code mirror.
+    private const string ToneCharging  = "TextFillColorDisabledBrush";   // before any take
+    private const string ToneRecording = "TextFillColorSecondaryBrush";  // clock running
+    private const string ToneStopped   = "TextFillColorTertiaryBrush";   // frozen, swipe runs
+
+    // Paint one background tone across the whole face — the 6 digit primaries
+    // and the 2 dots, uniformly. The accent twins are left alone (their Opacity
+    // is reveal-driven). Mutating Foreground in code drops the XAML
+    // {ThemeResource} binding, so a live theme switch is re-pushed by
+    // ReapplyRestToneForState off the current state.
+    private void ApplyRestTone(string brushKey)
+    {
+        if (Application.Current.Resources[brushKey] is not Brush tone) return;
+        Min1.Foreground = tone; Min2.Foreground = tone;
+        Sec1.Foreground = tone; Sec2.Foreground = tone;
+        Cs1.Foreground  = tone; Cs2.Foreground  = tone;
+        DotA.Foreground = tone; DotB.Foreground = tone;
+    }
+
+    // Re-apply the current phase's background tone after a live theme change.
+    // The system tone brushes resolve per theme, and ApplyRestTone froze a
+    // concrete brush onto each Foreground, so without this the face would keep
+    // the pre-switch colours until the next state transition.
+    private void ReapplyRestToneForState()
+    {
+        switch (_state)
+        {
+            case HudState.Charging:     ApplyRestTone(ToneCharging);  break;
+            case HudState.Recording:    ApplyRestTone(ToneRecording); break;
+            case HudState.Transcribing:
+            case HudState.Rewriting:    ApplyRestTone(ToneStopped);   break;
+            // Hidden / Message: face not shown, nothing to refresh.
+        }
     }
 
     private void HookRendering()

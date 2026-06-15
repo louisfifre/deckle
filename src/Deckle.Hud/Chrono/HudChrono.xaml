@@ -13,6 +13,13 @@
          Rounded silhouette produced by this Border alone. -->
     <Grid x:Name="ChronoRoot">
         <Grid.Resources>
+            <!-- The user's EXACT Windows accent colour (raw SystemAccentColor),
+                 not the contrast-adjusted AccentText*/AccentFill* tints — those
+                 lighten the accent on a dark surface (gold reads as pale yellow),
+                 which is not what the flash should look like. This brush keeps the
+                 literal accent the user picked in Windows. -->
+            <SolidColorBrush x:Key="ChronoAccentBrush" Color="{ThemeResource SystemAccentColor}" />
+
             <!-- Shared style for the 8 clock TextBlocks. A shared style is
                  necessary because the 8 characters are now separate UIElements
                  (not Runs inside a single TextBlock) — each needs its own
@@ -21,7 +28,7 @@
                  the 8 TextBlocks get them here via x:Key to keep them aligned
                  and avoid prop repetition. Foreground is a ThemeResource
                  default — code-behind overrides per TextBlock during the
-                 swipe (disabled → primary / critical). -->
+                 swipe (disabled → primary / accent). -->
             <Style x:Key="ChronoDigitStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="ms-appx:///Assets/Fonts/BitcountSingle.ttf#Bitcount Single" />
                 <Setter Property="FontWeight" Value="ExtraLight" />
@@ -72,11 +79,11 @@
              Per-digit overlay pattern: each digit Grid stacks two
              TextBlocks with identical text. The primary is always at
              full opacity with the theme Foreground brush; the accent
-             sibling uses SystemFillColorCriticalBrush and is hidden by
+             sibling uses ChronoAccentBrush and is hidden by
              default (Opacity=0). The swipe animation code in
              HudChrono.xaml.cs modulates each accent's Opacity each
-             vsync so the digit cross-fades from primary to critical red
-             and back as the wave passes — rather than snapping the
+             vsync so the digit cross-fades from primary to the Windows
+             accent and back as the wave passes — rather than snapping the
              Foreground DP between two brushes per frame (which caused
              visible stepping because the swap was instantaneous).
 
@@ -89,37 +96,37 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-            <Grid>
+            <Grid x:Name="Min1Cell">
                 <TextBlock x:Name="Min1"       Text="0" Style="{StaticResource ChronoDigitStyle}" />
                 <TextBlock x:Name="Min1Accent" Text="0" Style="{StaticResource ChronoDigitStyle}"
-                           Foreground="{ThemeResource SystemFillColorCriticalBrush}" Opacity="0" />
+                           Foreground="{StaticResource ChronoAccentBrush}" Opacity="0" />
             </Grid>
-            <Grid>
+            <Grid x:Name="Min2Cell">
                 <TextBlock x:Name="Min2"       Text="0" Style="{StaticResource ChronoDigitStyle}" />
                 <TextBlock x:Name="Min2Accent" Text="0" Style="{StaticResource ChronoDigitStyle}"
-                           Foreground="{ThemeResource SystemFillColorCriticalBrush}" Opacity="0" />
+                           Foreground="{StaticResource ChronoAccentBrush}" Opacity="0" />
             </Grid>
             <TextBlock x:Name="DotA" Text="." Style="{StaticResource ChronoDigitStyle}" />
-            <Grid>
+            <Grid x:Name="Sec1Cell">
                 <TextBlock x:Name="Sec1"       Text="0" Style="{StaticResource ChronoDigitStyle}" />
                 <TextBlock x:Name="Sec1Accent" Text="0" Style="{StaticResource ChronoDigitStyle}"
-                           Foreground="{ThemeResource SystemFillColorCriticalBrush}" Opacity="0" />
+                           Foreground="{StaticResource ChronoAccentBrush}" Opacity="0" />
             </Grid>
-            <Grid>
+            <Grid x:Name="Sec2Cell">
                 <TextBlock x:Name="Sec2"       Text="0" Style="{StaticResource ChronoDigitStyle}" />
                 <TextBlock x:Name="Sec2Accent" Text="0" Style="{StaticResource ChronoDigitStyle}"
-                           Foreground="{ThemeResource SystemFillColorCriticalBrush}" Opacity="0" />
+                           Foreground="{StaticResource ChronoAccentBrush}" Opacity="0" />
             </Grid>
             <TextBlock x:Name="DotB" Text="." Style="{StaticResource ChronoDigitStyle}" />
-            <Grid>
+            <Grid x:Name="Cs1Cell">
                 <TextBlock x:Name="Cs1"       Text="0" Style="{StaticResource ChronoDigitStyle}" />
                 <TextBlock x:Name="Cs1Accent" Text="0" Style="{StaticResource ChronoDigitStyle}"
-                           Foreground="{ThemeResource SystemFillColorCriticalBrush}" Opacity="0" />
+                           Foreground="{StaticResource ChronoAccentBrush}" Opacity="0" />
             </Grid>
-            <Grid>
+            <Grid x:Name="Cs2Cell">
                 <TextBlock x:Name="Cs2"       Text="0" Style="{StaticResource ChronoDigitStyle}" />
                 <TextBlock x:Name="Cs2Accent" Text="0" Style="{StaticResource ChronoDigitStyle}"
-                           Foreground="{ThemeResource SystemFillColorCriticalBrush}" Opacity="0" />
+                           Foreground="{StaticResource ChronoAccentBrush}" Opacity="0" />
             </Grid>
         </StackPanel>
     </Grid>

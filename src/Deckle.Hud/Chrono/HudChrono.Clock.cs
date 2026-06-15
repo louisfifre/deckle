@@ -35,20 +35,6 @@ public sealed partial class HudChrono
     private int _lastSec = -1;
     private int _lastCs  = -1;
 
-    // Resolved at runtime from Application.Resources so theme switches
-    // still update the brush (System resource keys flip color across
-    // light/dark). Only ResolveNeutralBrush is used from code — the
-    // critical / primary brushes now live purely in XAML via
-    // {ThemeResource …} bindings on the accent overlay TextBlocks and
-    // the shared ChronoDigitStyle, respectively, and theme changes are
-    // handled by WinUI's resource-tracking machinery. The neutral brush
-    // is the one exception because Charging overrides the primary
-    // Foreground with the tertiary tone on every digit — too
-    // state-specific to express as a ThemeResource default.
-    private static Brush ResolveNeutralBrush() =>
-        (Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush)
-        ?? new SolidColorBrush(Microsoft.UI.Colors.Gray);
-
     // ── Clock lifecycle ───────────────────────────────────────────────────────
     //
     // The functional chronometer, owned here and driven by the host
@@ -92,7 +78,7 @@ public sealed partial class HudChrono
 
     // Reset the visible chrono face to a pristine zero: invalidate the
     // last-rendered cache so UpdateClock repaints every position, drop the
-    // per-digit "ever-changed" flags and accent heat (the red flash state), and
+    // per-digit "ever-changed" flags and accent heat (the accent flash state), and
     // write the glyphs straight to "0" via ResetDigitTexts (not WriteDigit,
     // which would treat the change as a tick and flash it).
     private void ClearDigitDisplay()
@@ -117,26 +103,10 @@ public sealed partial class HudChrono
         Cs1Accent.Text  = Cs2Accent.Text  = "0";
     }
 
-    // Clears the local Foreground on all 8 primary TextBlocks. Each falls
-    // back to its Style default (TextFillColorPrimaryBrush). The accent
-    // overlays always carry SystemFillColorCriticalBrush from XAML, so
-    // they don't need clearing here — only the Opacity is state-driven.
-    private void ClearDigitForegrounds()
-    {
-        Min1.ClearValue(TextBlock.ForegroundProperty);
-        Min2.ClearValue(TextBlock.ForegroundProperty);
-        DotA.ClearValue(TextBlock.ForegroundProperty);
-        Sec1.ClearValue(TextBlock.ForegroundProperty);
-        Sec2.ClearValue(TextBlock.ForegroundProperty);
-        DotB.ClearValue(TextBlock.ForegroundProperty);
-        Cs1.ClearValue(TextBlock.ForegroundProperty);
-        Cs2.ClearValue(TextBlock.ForegroundProperty);
-    }
-
     // Writes `newText` onto both the primary and accent TextBlocks at
     // `index`, flags the digit as "changed" for the downstream swipe,
     // and bumps its heat to 1 so the accent overlay is visible
-    // immediately — the Recording-time "each change flashes red" UX
+    // immediately — the Recording-time "each change flashes in accent" UX
     // we have been iterating on. Returns early if the text didn't
     // actually change (no-op on every vsync for stationary digits).
     // Index order matches the swipe animator's per-element arrays:

@@ -1,4 +1,5 @@
 using Deckle.Composition;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Hud;
@@ -7,20 +8,23 @@ namespace Deckle.Hud;
 //
 // During Transcribing and Rewriting, a wave travels left→right across the 6
 // digits. Each digit carries its own *heat* scalar in [0, 1] driving the
-// Opacity of its accent overlay TextBlock — when heat rises, the overlay
-// (SystemFillColorCriticalBrush) cross-fades in over the primary; at heat=1 the
-// digit reads as pure red.
+// Opacity of its accent / conic overlay — heat is a per-digit envelope (linear
+// fade-in, hold at full, fade-out), and the digits' envelopes are launched one
+// after another, staggered, so several overlap at once. At the hold the digit
+// reaches full opacity and reads as pure accent / vivid conic.
 //
-// The wave motion math (head walk + asymmetric rise/decay lerp) lives in
-// `SwipeWaveAnimator` (Deckle.Composition.Primitives) since 2026-05-02.
-// HudChrono drives the animator's Tick() each vsync and copies the per-element
-// heat values onto the digits' XAML TextBlock.Opacity. Tunables (cycle, easing,
-// rise/decay alphas, head domain) are public statics on SwipeWaveAnimator and
-// can be tuned live by the playground. See the type-level comment on
-// SwipeWaveAnimator for the full algorithm description.
+// The wave motion math (per-digit envelope + eased-stagger launch order) lives
+// in `SwipeWaveAnimator` (Deckle.Composition.Primitives) since 2026-05-02,
+// rewritten from a comet to the envelope model on 2026-06-14. HudChrono drives
+// the animator's Tick() each vsync and copies the per-element heat values onto
+// the digits' XAML TextBlock.Opacity. Tunables (cycle, stagger, envelope, ramp,
+// cadence easing) are public statics on SwipeWaveAnimator and can be tuned live
+// by the playground. See the type-level comment on SwipeWaveAnimator for the
+// full algorithm description.
 //
-// Dots (DotA / DotB) have no accent overlay and no heat tracking — they stay
-// primary the whole cycle. Unchanged digits (those that did not flip during
+// Dots (DotA / DotB) have no accent overlay and no heat tracking — they stay at
+// the at-rest background tone the whole cycle. Unchanged digits (those that did
+// not flip during
 // Recording, per the animator's changed flags) have their target pinned at 0 so
 // their heat only decays; if they inherit any heat from the Recording hand-off,
 // it fades and then they stay dark.
@@ -44,15 +48,13 @@ public sealed partial class HudChrono
     //                  so the swipe can tell which digits are eligible for
     //                  the accent flash (dots and unchanged digits stay at
     //                  Opacity 0 on their accent overlay forever).
-    //   - heat[i]    : 0..1 driving the accent overlay's Opacity. Rises
-    //                  fast when the swipe head is on a changed digit,
-    //                  decays slowly afterwards. The asymmetric rise/decay
-    //                  (see SwipeWaveAnimator.SwipeRiseAlpha /
-    //                  SwipeDecayAlpha) gives the wave effect described in
-    //                  the spec: a digit keeps glowing for a moment after
-    //                  the head has moved on, so several digits are
-    //                  partially lit at once — a trailing comet instead of
-    //                  a single moving pixel.
+    //   - heat[i]    : 0..1 driving the accent overlay's Opacity. Follows a
+    //                  per-digit envelope (linear fade-in, hold at full,
+    //                  fade-out) whose launch instant is staggered left→right
+    //                  (see SwipeWaveAnimator.SwipeStagger/Envelope/RampSeconds
+    //                  and the cadence easing). Envelopes are longer than the
+    //                  stagger, so ~3 digits are lit at once — the wave — and
+    //                  each one reaches full opacity at its hold.
     // Index order matches `_digitPrimary` / `_digitAccent`:
     //   0 Min1, 1 Min2, 2 Sec1, 3 Sec2, 4 Cs1, 5 Cs2.
     private readonly SwipeWaveAnimator _swipe = new(DigitCount);
@@ -67,12 +69,22 @@ public sealed partial class HudChrono
     private readonly System.Diagnostics.Stopwatch _swipeStopwatch = new();
     private bool _swipeRunning;
 
+    // Retained design (2026-06-15): the left→right swipe wave is OFF. Every digit's
+    // conic reveal is pinned fully on for the whole Transcribing / Rewriting state
+    // — no per-digit envelope, no fade — so the six glyphs read as ONE static
+    // window onto the shared rotating cone, identical to the contour. This is the
+    // look we kept; the SwipeWaveAnimator path is left intact but dormant (cheap —
+    // it Ticks into unread heat) so flipping this back to false restores the wave
+    // if we change our mind.
+    private const bool RevealPinnedNoSwipe = true;
+
     private void EnsureSwipeInfra()
     {
         if (_digitPrimary is null)
         {
             _digitPrimary = new[] { Min1, Min2, Sec1, Sec2, Cs1, Cs2 };
             _digitAccent  = new[] { Min1Accent, Min2Accent, Sec1Accent, Sec2Accent, Cs1Accent, Cs2Accent };
+            _cellElements = new FrameworkElement[] { Min1Cell, Min2Cell, Sec1Cell, Sec2Cell, Cs1Cell, Cs2Cell };
         }
     }
 
@@ -82,6 +94,14 @@ public sealed partial class HudChrono
         if (_swipeRunning) return;
         _swipeStopwatch.Restart();
         _swipeRunning = true;
+        // The Stop background tone (Tertiary) is already painted by the calling
+        // Apply* method. Build the per-digit conic reveals the swipe cross-fades
+        // in over that tone; clear the failure latch first so a fresh take
+        // retries any that failed last time. Cells whose layout hasn't settled
+        // yet are retried from UpdateSwipe.
+        _revealsFailed = false;
+        _revealBuildAttempts = 0;
+        EnsureReveals();
     }
 
     private void StopSwipe()
@@ -89,6 +109,9 @@ public sealed partial class HudChrono
         if (!_swipeRunning) return;
         _swipeStopwatch.Stop();
         _swipeRunning = false;
+        // Tear the conic reveals down before the stroke they borrow from is
+        // disposed (StopSwipe precedes DetachProcessingVisual in every path).
+        TearDownReveals();
         // Drop heat to zero and hide the accent overlays on the way out.
         // The next state entry (ApplyRecording / ApplyCharging) takes
         // over from a clean slate.
@@ -104,24 +127,49 @@ public sealed partial class HudChrono
         // statics for cadence / easing / rise-decay alphas.
         _swipe.Tick(_swipeStopwatch.Elapsed.TotalSeconds);
 
+        // Retry building any reveal whose cell wasn't laid out on the
+        // synchronous StartSwipe call. Skipped once all six are built.
+        if (!_revealsFailed && RevealsPending()) EnsureReveals();
+
         for (int i = 0; i < DigitCount; i++)
         {
-            // Push the new heat onto the overlay's Opacity. TextBlock
-            // Opacity is a DP so the set is a no-op when unchanged; no
-            // need to guard manually — but we round to 3 decimals first
-            // so a heat of 0.9999997 (floating noise) doesn't repeatedly
-            // invalidate the render pass.
-            //
-            // The primary glyph's Opacity is pushed to (1 - accent) so
-            // the two layers never double up on subpixel coverage (see
-            // WriteDigit comment). Skipping this invariant makes
-            // Recording-time flashes look bolder than unchanged digits.
-            double rounded = System.Math.Round(_swipe.GetHeat(i), 3);
-            if (_digitAccent[i].Opacity != rounded)
-                _digitAccent[i].Opacity = rounded;
-            double primaryOpacity = 1.0 - rounded;
-            if (_digitPrimary[i].Opacity != primaryOpacity)
-                _digitPrimary[i].Opacity = primaryOpacity;
+            // Heat is non-zero only on a digit the animator flagged "changed"
+            // (animated this take); every other stays at 0 and keeps showing the
+            // Tertiary background. Rounded to 3 decimals so floating noise
+            // (0.9999997) doesn't re-invalidate the render pass every frame.
+            double rounded = RevealPinnedNoSwipe
+                ? 1.0
+                : System.Math.Round(_swipe.GetHeat(i), 3);
+
+            var reveal = _reveals[i];
+            if (reveal is not null)
+            {
+                // Conic reveal: the masked comet sprite layers ON TOP of the
+                // always-on Tertiary primary. Where the comet's alpha is present it
+                // covers the Tertiary; where it isn't, the Tertiary shows through —
+                // so the digit is never empty, it only gets swept. SetHeat drives
+                // the per-digit envelope (how much of the comet is admitted). Keep
+                // the flat accent overlay hidden so it can't stack with the sprite.
+                reveal.SetHeat((float)rounded);
+                if (_digitAccent[i].Opacity != 0)
+                    _digitAccent[i].Opacity = 0;
+            }
+            else
+            {
+                // Fallback (step 1) until/unless the conic reveal builds: the flat
+                // accent overlay fades in over the Tertiary primary instead.
+                if (_digitAccent[i].Opacity != rounded)
+                    _digitAccent[i].Opacity = rounded;
+            }
+
+            // The Tertiary primary stays fully inked for the whole swipe — it is
+            // the resting glyph the comet sweeps OVER, never a layer that fades
+            // out. (Earlier this summed primary + reveal to 1 to dodge ClearType
+            // edge double-inking; but that emptied the glyph wherever the comet's
+            // alpha was low — the opposite of the intended "always-Tertiary,
+            // masked on top" reveal. The edge-boldening tradeoff is accepted.)
+            if (_digitPrimary[i].Opacity != 1.0)
+                _digitPrimary[i].Opacity = 1.0;
         }
     }
 
@@ -135,9 +183,11 @@ public sealed partial class HudChrono
 
     // Drops all heat to zero and pushes Opacity=0 onto the accent
     // overlays. Used on state entries that need a clean slate (Charging,
-    // Recording start). Transcribing / Rewriting inherit heat from the
-    // last Recording frame so the previously-lit digits decay naturally
-    // as the swipe picks them up.
+    // Recording start). Transcribing / Rewriting don't call this: they keep
+    // the changed flags and let Tick recompute every heat from the envelope
+    // on the first vsync, so the face starts dark (Tertiary) and the wave
+    // lights the marked digits left→right — the Stop behaviour Chrono/CONTEXT.md
+    // describes ("drops to Tertiary, then a swipe re-lights, one by one").
     private void ClearDigitHeat()
     {
         _swipe.ClearAllHeat();
@@ -175,6 +225,10 @@ public sealed partial class HudChrono
         _swipe.SetChanged(3, sec2);
         _swipe.SetChanged(4, cs1);
         _swipe.SetChanged(5, cs2);
+        // The changed flags only select which digits the Stop swipe re-lights;
+        // the background tone is a uniform Tertiary set by the Apply* method, so
+        // there is nothing to repaint here when the Playground flips the flags
+        // after StartSwipe.
     }
 
     // CubicBezierEase moved to Deckle.Composition.Primitives.Easing

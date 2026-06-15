@@ -61,6 +61,25 @@ internal sealed class TuningModel
     public float  ArcEaseP2Y       = 0.625f;
     public float  ArcMinSpeedFraction = 0f;
 
+    // ── Clone-cone placement (digit reveal + ConicClone preview) ─────────
+    // Fraction of the host frame; (0.5, 0.5) = centred. See the matching
+    // ConicArcStrokeConfig block for the full geometry rationale.
+    public float CloneCentreXFraction = 196f / 272f;
+    public float CloneCentreYFraction = 0f;
+
+    // ── Clone-cone palette — reveal's own OKLCh lightness/chroma (the peps
+    //    knob), decoupled from the contour. See the matching ConicArcStrokeConfig
+    //    block. ─────────────────────────────────────────────────────────────────
+    public float CloneOklchLightness = 0.9f;
+    public float CloneOklchChroma    = 0.3f;
+
+    // ── Clone-cone rotation — independent speeds/directions, default =
+    //    contour. See the matching ConicArcStrokeConfig block. ────────────
+    public double CloneHuePeriodSeconds = 7.0;
+    public float  CloneHueDirection     = -1f;
+    public double CloneArcPeriodSeconds = 4.0;
+    public float  CloneArcDirection     = -1f;
+
     // ── Rewriting variant ───────────────────────────────────────────────
     public float  RewritingSaturation    = 1f;
     public float  RewritingHueShiftTurns = 0f;
@@ -130,6 +149,17 @@ internal sealed class TuningModel
         ArcEaseP2X        = ArcEaseP2X,
         ArcEaseP2Y        = ArcEaseP2Y,
         ArcMinSpeedFraction = ArcMinSpeedFraction,
+
+        CloneCentreXFraction = CloneCentreXFraction,
+        CloneCentreYFraction = CloneCentreYFraction,
+
+        CloneOklchLightness = CloneOklchLightness,
+        CloneOklchChroma    = CloneOklchChroma,
+
+        CloneHuePeriodSeconds = CloneHuePeriodSeconds,
+        CloneHueDirection     = CloneHueDirection,
+        CloneArcPeriodSeconds = CloneArcPeriodSeconds,
+        CloneArcDirection     = CloneArcDirection,
 
         RewritingSaturation    = RewritingSaturation,
         RewritingHueShiftTurns = RewritingHueShiftTurns,

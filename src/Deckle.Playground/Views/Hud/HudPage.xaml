@@ -56,8 +56,11 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <DropDownButton Grid.Column="0"
-                                x:Name="TargetDropDownButton"
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            Spacing="12"
+                            VerticalAlignment="Center">
+                <DropDownButton x:Name="TargetDropDownButton"
                                 MinWidth="200"
                                 HorizontalContentAlignment="Left"
                                 ToolTipService.ToolTip="Pick the HUD state or primitive to preview">
@@ -80,33 +83,67 @@
                          WinUI 3 has no native section-header in
                          MenuFlyout and going custom for this isn't
                          worth the maintenance cost. -->
+                    <!-- Three groups, separated: HUD states · sweep
+                         primitives · the placeable clone. Primitives renamed
+                         to read as what they show (the raw cone, the rotating
+                         sweep mask, the cone seen through that mask) rather
+                         than the internal type names. MinHeight + separator
+                         margins give the items room — the default flyout reads
+                         cramped against the seams. -->
                     <DropDownButton.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedLeft">
                             <MenuFlyoutItem Text="Charging"
-                                            Tag="Charging"
+                                            Tag="Charging" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutItem Text="Recording"
-                                            Tag="Recording"
+                                            Tag="Recording" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutItem Text="Transcribing"
-                                            Tag="Transcribing"
+                                            Tag="Transcribing" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                             <MenuFlyoutItem Text="Rewriting"
-                                            Tag="Rewriting"
+                                            Tag="Rewriting" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem Text="Conic"
-                                            Tag="Conic"
+                            <MenuFlyoutSeparator Margin="0,6,0,6" />
+                            <MenuFlyoutItem Text="Cone"
+                                            Tag="Conic" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutItem Text="ArcMask"
-                                            Tag="ArcMask"
+                            <MenuFlyoutItem Text="Sweep mask"
+                                            Tag="ArcMask" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
-                            <MenuFlyoutItem Text="Combined"
-                                            Tag="Combined"
+                            <MenuFlyoutItem Text="Masked cone"
+                                            Tag="Combined" MinHeight="36"
+                                            Click="OnTargetMenuItemClick" />
+                            <MenuFlyoutSeparator Margin="0,6,0,6" />
+                            <MenuFlyoutItem Text="Cone clone"
+                                            Tag="ConicClone" MinHeight="36"
                                             Click="OnTargetMenuItemClick" />
                         </MenuFlyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
+
+                    <!-- Variant grading toggle — only meaningful for the
+                         geometry-only previews (Cone / Sweep mask / Masked
+                         cone / Cone clone), which carry no intrinsic state.
+                         ApplyTarget shows it when one of those is active and
+                         drives the preview's grading (Transcribing = grey,
+                         Rewriting = colour). -->
+                    <StackPanel x:Name="VariantToggle"
+                                Orientation="Horizontal"
+                                Spacing="8"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed">
+                        <RadioButton Content="Transcribing"
+                                     GroupName="PreviewVariant"
+                                     Tag="Transcribing"
+                                     Checked="OnVariantRadioChecked" />
+                        <RadioButton Content="Rewriting"
+                                     GroupName="PreviewVariant"
+                                     Tag="Rewriting"
+                                     IsChecked="True"
+                                     Checked="OnVariantRadioChecked" />
+                    </StackPanel>
+                </StackPanel>
 
                 <!-- Transport : Start / Stop with icon + label. Same
                      wording as the rest of the app (Settings + tray

@@ -158,9 +158,21 @@ public sealed partial class HudPage
         var stack = NewExpander("Swipe (Transcribing / Rewriting)", ResetSwipe);
         // Static mutables on SwipeWaveAnimator (Deckle.Composition) —
         // read live each vsync by the animator's Tick, no rebuild needed.
+        // Cycle / stagger / envelope / ramp shape the timing and the per-digit
+        // envelope ; the ease shapes only the launch CADENCE (how the digits
+        // follow one another), never a single digit's linear fade.
         AddFloatRow(stack, "SwipeCycleSeconds", 0.1, 6.0, 0.1,
             SwipeWaveAnimator.SwipeCycleSeconds,
             v => SwipeWaveAnimator.SwipeCycleSeconds = (float)v);
+        AddFloatRow(stack, "SwipeStaggerSeconds", 0.05, 1.0, 0.05,
+            SwipeWaveAnimator.SwipeStaggerSeconds,
+            v => SwipeWaveAnimator.SwipeStaggerSeconds = (float)v);
+        AddFloatRow(stack, "SwipeEnvelopeSeconds", 0.05, 2.0, 0.05,
+            SwipeWaveAnimator.SwipeEnvelopeSeconds,
+            v => SwipeWaveAnimator.SwipeEnvelopeSeconds = (float)v);
+        AddFloatRow(stack, "SwipeRampFraction", 0, 0.5, 0.05,
+            SwipeWaveAnimator.SwipeRampFraction,
+            v => SwipeWaveAnimator.SwipeRampFraction = (float)v);
         AddFloatRow(stack, "SwipeEaseP1.X", 0, 1, 0.05, SwipeWaveAnimator.SwipeEaseP1.X,
             v => SwipeWaveAnimator.SwipeEaseP1 = new Vector2((float)v, SwipeWaveAnimator.SwipeEaseP1.Y));
         AddFloatRow(stack, "SwipeEaseP1.Y", -0.5, 1.5, 0.05, SwipeWaveAnimator.SwipeEaseP1.Y,
@@ -169,12 +181,6 @@ public sealed partial class HudPage
             v => SwipeWaveAnimator.SwipeEaseP2 = new Vector2((float)v, SwipeWaveAnimator.SwipeEaseP2.Y));
         AddFloatRow(stack, "SwipeEaseP2.Y", -0.5, 1.5, 0.05, SwipeWaveAnimator.SwipeEaseP2.Y,
             v => SwipeWaveAnimator.SwipeEaseP2 = new Vector2(SwipeWaveAnimator.SwipeEaseP2.X, (float)v));
-        AddFloatRow(stack, "SwipeRiseAlpha", 0.01, 1.0, 0.01, SwipeWaveAnimator.SwipeRiseAlpha,
-            v => SwipeWaveAnimator.SwipeRiseAlpha = (float)v);
-        AddFloatRow(stack, "SwipeDecayAlpha", 0.005, 0.5, 0.005, SwipeWaveAnimator.SwipeDecayAlpha,
-            v => SwipeWaveAnimator.SwipeDecayAlpha = (float)v);
-        AddIntRow(stack, "SwipeHeadDomain", 6, 12, SwipeWaveAnimator.SwipeHeadDomain,
-            v => SwipeWaveAnimator.SwipeHeadDomain = v);
         AddToggleRow(stack, "Simulate changed digits",
             _simulateChangedDigits,
             v => { _simulateChangedDigits = v; ApplyTarget(); });
@@ -182,12 +188,12 @@ public sealed partial class HudPage
 
     private void ResetSwipe()
     {
-        SwipeWaveAnimator.SwipeCycleSeconds = 3.0f;
-        SwipeWaveAnimator.SwipeEaseP1       = new Vector2(0.7f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2       = new Vector2(0.1f, 1f);
-        SwipeWaveAnimator.SwipeRiseAlpha    = 0.05f;
-        SwipeWaveAnimator.SwipeDecayAlpha   = 0.025f;
-        SwipeWaveAnimator.SwipeHeadDomain   = 8;
+        SwipeWaveAnimator.SwipeCycleSeconds    = 2.4f;
+        SwipeWaveAnimator.SwipeStaggerSeconds  = 0.1f;
+        SwipeWaveAnimator.SwipeEnvelopeSeconds = 1.4f;
+        SwipeWaveAnimator.SwipeRampFraction    = 0.4f;
+        SwipeWaveAnimator.SwipeEaseP1          = new Vector2(0.4f, 0f);
+        SwipeWaveAnimator.SwipeEaseP2          = new Vector2(0.6f, 1f);
         _simulateChangedDigits = true;
         RebuildTuningPanel();
         ApplyTarget();
@@ -332,6 +338,54 @@ public sealed partial class HudPage
         _simManualOverride   = false;
         _simManualValue      = 0.012f;
         RebuildTuningPanel();
+    }
+
+    // Conic clone — placement + INDEPENDENT rotation of the cloned double comet
+    // (the material the swipe reveals behind the digits). Placement: where the
+    // cone's apex sits within the 272×78 row frame ((136,39) = centred, (0,0) =
+    // top-left). The X/Y sliders read in px against the preview frame but STORE a
+    // fraction (CloneCentre*Fraction). Rotation: the clone's own hue + arc speeds
+    // and directions — default = the contour's, so a fresh clone looks identical
+    // until you tune them apart. All of it drives BOTH the ConicClone preview AND
+    // the live digit reveal through the shared config — paint-time, debounced.
+    private void AddClonePlacementExpander()
+    {
+        var stack = NewExpander("Conic clone", ResetClonePlacement);
+        AddFloatRow(stack, "Cone centre X", 0, NakedHudSize.X, 2,
+            _tuning.CloneCentreXFraction * NakedHudSize.X,
+            v => _tuning.CloneCentreXFraction = (float)v / NakedHudSize.X, rebuild: true);
+        AddFloatRow(stack, "Cone centre Y", 0, NakedHudSize.Y, 2,
+            _tuning.CloneCentreYFraction * NakedHudSize.Y,
+            v => _tuning.CloneCentreYFraction = (float)v / NakedHudSize.Y, rebuild: true);
+        // Peps knobs — the clone's own OKLCh lightness/chroma, decoupled from the
+        // contour's palette (exposure caps at +2 EV, too low). Lightness brightens
+        // the Transcribing greyscale sweep ; chroma feeds the Rewriting colour.
+        AddFloatRow(stack, "Clone OKLCh lightness", 0, 1, 0.05, _tuning.CloneOklchLightness,
+            v => _tuning.CloneOklchLightness = (float)v, rebuild: true);
+        AddFloatRow(stack, "Clone OKLCh chroma", 0, 0.4, 0.05, _tuning.CloneOklchChroma,
+            v => _tuning.CloneOklchChroma = (float)v, rebuild: true);
+        AddFloatRow(stack, "Clone hue period (s)", 0, 60, 0.5, _tuning.CloneHuePeriodSeconds,
+            v => _tuning.CloneHuePeriodSeconds = v, rebuild: true);
+        AddDirectionRow(stack, "Clone hue direction", _tuning.CloneHueDirection,
+            v => _tuning.CloneHueDirection = v);
+        AddFloatRow(stack, "Clone arc period (s)", 0.5, 30, 0.5, _tuning.CloneArcPeriodSeconds,
+            v => _tuning.CloneArcPeriodSeconds = v, rebuild: true);
+        AddDirectionRow(stack, "Clone arc direction", _tuning.CloneArcDirection,
+            v => _tuning.CloneArcDirection = v);
+    }
+
+    private void ResetClonePlacement()
+    {
+        _tuning.CloneCentreXFraction = 196f / NakedHudSize.X;
+        _tuning.CloneCentreYFraction = 0f;
+        _tuning.CloneOklchLightness   = 0.9f;
+        _tuning.CloneOklchChroma      = 0.3f;
+        _tuning.CloneHuePeriodSeconds = 7.0;
+        _tuning.CloneHueDirection     = -1f;
+        _tuning.CloneArcPeriodSeconds = 4.0;
+        _tuning.CloneArcDirection     = -1f;
+        RebuildTuningPanel();
+        ApplyTarget();
     }
 
     // Parked expander — fields only observable during a variant
