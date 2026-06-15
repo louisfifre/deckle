@@ -58,8 +58,11 @@ public partial class SegmentationViewModel : ObservableObject
     public SegmentationViewModel()
     {
         _defaults = Snapshot.FromSettings(new EnergySegmenterSettings());
-        _saved    = _defaults; // replaced by the first Load()
-        Apply(_defaults);
+        // Load the persisted settings up front, so the two-way bindings evaluate
+        // against the real stored values from their very first read instead of the
+        // compiled defaults. Loading later (on the page's Loaded) left the rows
+        // showing defaults whenever the post-construction propagation didn't take.
+        Load();
     }
 
     // Every editable knob recomputes the dirty / reset flags on change. The flags
