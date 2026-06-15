@@ -59,7 +59,8 @@ internal sealed class Compressor
         for (int i = 0; i < x.Length; i++)
         {
             double a = Math.Abs(x[i]);
-            double levelDb = a > 1e-9 ? 20.0 * Math.Log10(a) : -180.0;
+            // 20·log10(a) == (20/ln10)·ln(a); Log is ~3-5× cheaper than Log10.
+            double levelDb = a > 1e-9 ? 8.685889638065035 * Math.Log(a) : -180.0;
 
             // Static gain-computer output (target gain reduction, ≤ 0).
             double target = ComputeGainReductionDb(levelDb);
@@ -69,7 +70,8 @@ internal sealed class Compressor
             double coef = target < _gainReductionDb ? _attackCoef : _releaseCoef;
             _gainReductionDb = coef * _gainReductionDb + (1.0 - coef) * target;
 
-            float gain = (float)Math.Pow(10.0, _gainReductionDb / 20.0);
+            // 10^(x/20) == exp(x·ln10/20); Exp is ~3-5× cheaper than Pow.
+            float gain = (float)Math.Exp(_gainReductionDb * 0.11512925464970229);
             x[i] *= gain;
         }
     }
