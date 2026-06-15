@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Shell.TaskbarCover;
 using static Deckle.Shell.TaskbarCover.TaskbarCoverNativeMethods;
 
@@ -230,8 +231,15 @@ public sealed class TaskbarCoverHost : IDisposable
         // NOACTIVATE + TOOLWINDOW: the band never takes focus and never
         // appears in Alt-Tab. Not click-through — a click on the band is
         // deliberately swallowed, the taskbar below stays masked.
+        // TOPMOST at creation, not via a later SetWindowPos: promoting an
+        // existing window to topmost needs SetForegroundWindow permission,
+        // which the process lacks while another app owns the foreground (the
+        // common case at boot) — the call succeeds yet silently leaves the band
+        // below the taskbar. Born topmost, it isn't subject to that gate; the
+        // SetWindowPos(HWND_TOPMOST) calls then only restack an already-topmost
+        // window, which carries no permission requirement.
         _hwnd = NativeMethods.CreateWindowEx(
-            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE,
+            dwExStyle:    NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_TOPMOST,
             lpClassName:  ClassName,
             lpWindowName: null,
             dwStyle:      WS_POPUP,
@@ -469,7 +477,15 @@ public sealed class TaskbarCoverHost : IDisposable
         // Fallback z-order re-assertion: the foreground hook handles the
         // common case the instant it happens, this slow tick catches whatever
         // re-ordered the band without raising a foreground event (F11 included).
-        if (_coverVisible) ReassertTopmost();
+        if (_coverVisible)
+        {
+            ReassertTopmost();
+            // Steady-state witness: if the band lost the topmost race at boot
+            // and the assert above doesn't re-stack it over Shell_TrayWnd, this
+            // tick keeps logging the taskbar as the occluder every poll — the
+            // proof the re-assert is a no-op against an already-topmost sibling.
+            WindowingProbe.EmitWindowZOrderState(_hwnd, "taskbar-cover", "suppression_poll");
+        }
     }
 
     // Foreground changed: reconcile suppression now instead of at the next
@@ -660,6 +676,14 @@ public sealed class TaskbarCoverHost : IDisposable
         {
             NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
             ReassertTopmost();
+            // Z-order witness: ShowWindow + the topmost assert can both succeed
+            // while the band still sits below Shell_TrayWnd (the taskbar is
+            // topmost too, last-positioned wins). CoverShown only proves the
+            // ShowWindow call; this captures the native result — what occludes
+            // the band right after the assert, and the foreground at that
+            // instant — to settle the boot "covers but stays under the taskbar"
+            // case the visibility log can't see.
+            WindowingProbe.EmitWindowZOrderState(_hwnd, "taskbar-cover", "after_show_topmost");
             DeckleShellTaskbarCoverSource.Log.CoverShown(reason);
         }
         else

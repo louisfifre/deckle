@@ -399,6 +399,13 @@ public static class NativeMethods
     // stealing. Future interactive menus must live on a separate surface, not
     // on this passthrough window.
     public const uint WS_EX_NOACTIVATE = 0x08000000;
+    // WS_EX_TOPMOST: born above all non-topmost windows, kept there even when
+    // deactivated. Set at creation deliberately — a post-creation
+    // SetWindowPos(HWND_TOPMOST) requires the owning process to hold
+    // SetForegroundWindow permission, which it lacks while another app owns the
+    // foreground; the call then returns success but silently drops the topmost
+    // promotion. Creation carries no such gate.
+    public const uint WS_EX_TOPMOST = 0x00000008;
     public const uint LWA_ALPHA     = 0x00000002;
 
     [DllImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowLongPtrW")]

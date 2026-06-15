@@ -41,6 +41,7 @@ namespace Deckle.Diagnostics;
 //   "playground"    — PlaygroundWindow (Hud + Ambient tuning shell)
 //   "tray-popup"    — tray icon context popup
 //   "folder-picker" — system FolderPicker opened from Settings
+//   "taskbar-cover" — opaque band masking the taskbar (native, own thread)
 // Any new window added to the project must extend this vocabulary before
 // emission, to preserve listener-side grep-ability.
 //
