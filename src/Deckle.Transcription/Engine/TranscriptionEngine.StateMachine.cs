@@ -134,6 +134,7 @@ public sealed partial class TranscriptionEngine
             // strategy at the backend handoff. The backend phase timings
             // (init / VAD) now travel on PipelineProduction, not engine fields.
             _modelLoadMs = 0;
+            _primeMs = 0;
             _hotkeySw = System.Diagnostics.Stopwatch.StartNew();
             _recordDrainDuration = System.TimeSpan.Zero;
             _stopToPipelineSw = null;
@@ -230,31 +231,33 @@ public sealed partial class TranscriptionEngine
         _recordCts = new CancellationTokenSource();
         _drainCts  = new CancellationTokenSource();
 
+        // Observed in the finally even on early-exit paths that bypass the gate
+        // (e.g. a mic error before the first backend call), so default it to a
+        // completed true for the warm / never-started case.
+        Task<bool> primeTask = Task.FromResult(true);
+
         try
         {
-            // Prime before recording. On a cold worker — model not resident,
-            // i.e. the first hotkey of the session or the first after an idle
-            // unload — EnsurePrimed loads the model AND runs a dummy inference
-            // so the GPU kernels are compiled. The HUD sits in Charging
-            // (presented by App on the Started result) for the whole prime:
-            // the chrono stays frozen/grey and no capture runs until the model
-            // is warm. This is what guarantees the user's first real
-            // transcription is never a cold miss. A warm worker (model still
-            // resident from a recent transcription) falls straight through.
-            // Cancellable via _recordCts — a Stop pressed during the prime
-            // aborts the dummy inference and the whole start.
-            if (!EnsurePrimed(_recordCts.Token))
-            {
-                RaiseFinished(TranscriptionOutcome.None);
-                return;
-            }
+            // Kick the model prime off CONCURRENTLY with the capture below. On a
+            // cold worker — model not resident, i.e. the first hotkey of the
+            // session or the first after an idle unload — BeginPrime loads the
+            // model AND runs a dummy inference (GPU kernels compiled) on the thread
+            // pool, while Record already captures real audio. The chrono ticks from
+            // the first PCM, so the old "Charging" dead time is gone. A warm worker
+            // gets an already-completed gate. The prime rides the DRAIN token, so a
+            // Stop lets it finish warming the model for the take that follows; only
+            // Dispose aborts it. The first real backend call waits on this gate
+            // (AwaitPrime, inside the strategy), so the prime's dummy whisper_full
+            // and the real one never overlap.
+            primeTask = BeginPrime(_drainCts.Token);
 
-            // The recording-duration stopwatch and the "Recording" status are no
-            // longer raised here. They fire from OnCaptureStarted — the instant
-            // waveInStart confirms the mic is live — so the HUD chrono is glued to
-            // the first real PCM instead of leading it by the device-open latency.
-            // Charging holds until then. Invariant preserved: Record runs only
-            // after EnsurePrimed, so "Recording" still cannot precede a warm model.
+            // The recording-duration stopwatch and the "Recording" status fire from
+            // OnCaptureStarted — the instant waveInStart confirms the mic is live —
+            // so the HUD chrono is glued to the first real PCM. Capture starts right
+            // away now (the prime runs alongside it), so on a cold worker the HUD
+            // leaves Charging for Recording at once instead of after the load. The
+            // invariant shifted: "Recording" MAY precede a warm model now, but the
+            // first BACKEND CALL may not — the gate holds it until the prime is done.
 
             // One id per recording (corpus join key, ADR-0006), shared by
             // whichever strategy runs and consumed only in FinalizeTranscription.
@@ -265,16 +268,17 @@ public sealed partial class TranscriptionEngine
             // calibrate, Stopping → Transcribing). It returns the raw text +
             // audio + backend timings for the shared finalize, or null when it
             // already handled an early exit (mic error, empty audio, backend
-            // failure, lost CAS) and raised Finished itself.
+            // failure, lost CAS, prime failure) and raised Finished itself.
             //
             // Strategy is read from the live settings snapshot, so the next
-            // recording picks up a Settings change with no restart. Streaming
-            // gets both tokens (producer + drain); monolithic ignores the drain.
+            // recording picks up a Settings change with no restart. Both strategies
+            // take the prime gate; streaming also gets the drain token for its
+            // consumer, monolithic only the producer token.
             bool streaming = _host.Transcription.Streaming.Strategy == PipelineStrategyKind.Streaming;
             PipelineProduction? produced =
                 (streaming
-                    ? ProduceStreamingAsync(_recordCts.Token, _drainCts.Token)
-                    : ProduceMonolithicAsync(_recordCts.Token))
+                    ? ProduceStreamingAsync(_recordCts.Token, _drainCts.Token, primeTask)
+                    : ProduceMonolithicAsync(_recordCts.Token, primeTask))
                 .GetAwaiter().GetResult();
 
             if (produced is not null)
@@ -298,6 +302,20 @@ public sealed partial class TranscriptionEngine
         }
         finally
         {
+            // Settle the prime before any teardown. On the normal path the gate
+            // (AwaitPrime) already awaited it; this also covers the early-exit
+            // paths that bypass the gate (a mic error before the first backend
+            // call) and makes the _backend.IsModelLoaded check below reflect the
+            // load result. It MUST run before _drainCts is disposed: the prime's
+            // abort_callback polls that token, and touching a disposed CTS can
+            // throw across the native boundary. On Dispose, _drainCts is already
+            // cancelled, so the wait is bounded — the dummy inference aborts; a
+            // model load in flight is not cancellable but completes in a few
+            // seconds, well within the join timeout. The result is swallowed: a
+            // prime failure already surfaced its UserFeedback inside LoadModel.
+            try { primeTask.GetAwaiter().GetResult(); }
+            catch { /* prime failure already surfaced; nothing user-facing here */ }
+
             // Terminal Idle transition — owned by the worker thread, in this
             // exact order: state, worker reference, idle event, then status.
             // The status fires last so any subscriber that reads _state from
@@ -370,9 +388,11 @@ public sealed partial class TranscriptionEngine
     //  - raise "Recording", which flips the HUD Charging → Recording and starts
     //    the on-screen chrono.
     // Runs on the capture/worker thread, inside Record (the same thread that
-    // raised "Recording" here before). Invariant preserved: Record is entered
-    // only after EnsurePrimed, so "Recording" still cannot appear before the
-    // model is warm.
+    // raised "Recording" here before). The old invariant ("Recording" cannot
+    // appear before the model is warm) is deliberately gone: capture and the
+    // prime now run concurrently, so on a cold worker "Recording" fires while the
+    // model is still loading. What replaces it is the gate (AwaitPrime) — the
+    // first backend call, not the chrono, is what waits for the warm model.
     private void OnCaptureStarted()
     {
         _hotkeySw?.Stop();

@@ -39,7 +39,7 @@ public sealed partial class TranscriptionEngine
     // explicit drainCt check at the top of the consumer loop, not from an
     // exception out of the backend call.
     private async Task<PipelineProduction?> ProduceStreamingAsync(
-        CancellationToken producerCt, CancellationToken drainCt)
+        CancellationToken producerCt, CancellationToken drainCt, Task<bool> primeTask)
     {
         // Streaming-activity gate: held open for the lifetime of this method
         // through `using`, so any early return / throw / cancellation still
@@ -140,10 +140,12 @@ public sealed partial class TranscriptionEngine
         }
 
         // The consumer must be live BEFORE capture starts — frames (and the
-        // utterances they yield) arrive during Record.
+        // utterances they yield) arrive during Record. It crosses the prime gate
+        // before its first backend call; utterances queue in the unbounded channel
+        // meanwhile, so nothing is lost while the model warms.
         Task<StreamingConsumeResult> consumer =
             Task.Run(() => ConsumeUtterancesAsync(channel.Reader, drainCt,
-                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad, vadOptions));
+                onDequeue: () => Interlocked.Decrement(ref backlogBox[0]), vad, vadOptions, primeTask));
 
         _capture.Frame += OnFrame;
 
@@ -282,8 +284,30 @@ public sealed partial class TranscriptionEngine
     // cancellation, so we must check the token ourselves.
     private async Task<StreamingConsumeResult> ConsumeUtterancesAsync(
         ChannelReader<Utterance> reader, CancellationToken drainCt, Func<int> onDequeue,
-        SileroVad? vad, SileroVadOptions vadOptions)
+        SileroVad? vad, SileroVadOptions vadOptions, Task<bool> primeTask)
     {
+        // Prime gate. No utterance is decoded until the prime's dummy inference
+        // has returned (single whisper context). The producer keeps capturing and
+        // segmenting meanwhile; the unbounded channel buffers the backlog, so the
+        // wait is hidden behind the recording, not added to the Stop latency — the
+        // gate phase is "during_recording".
+        if (!await AwaitPrime(primeTask, "during_recording").ConfigureAwait(false))
+        {
+            // Prime failed (model load error — UserFeedback already shown). Nothing
+            // to transcribe onto, but Record is still capturing on the worker thread
+            // and the segmenter keeps writing utterances. Drain-and-discard so those
+            // buffers are released as they arrive instead of piling up unread until
+            // Stop; then return empty and let ProduceStreamingAsync take its
+            // empty-text exit on the normal Stop path. Dispose (drainCt) ends the
+            // drain early.
+            try
+            {
+                await foreach (var _ in reader.ReadAllAsync(drainCt).ConfigureAwait(false)) { }
+            }
+            catch (OperationCanceledException) { /* Dispose — abandon the discard loop */ }
+            return new StreamingConsumeResult("", 0, 0, 0, 0, null);
+        }
+
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0;
         int nSeg = 0, nUtt = 0;

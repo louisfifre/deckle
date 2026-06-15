@@ -194,6 +194,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPageModelScanFailedDetail        = 152;
     public const int EvtTranscribeHallucinationFiltered  = 153;
     public const int EvtTranscribeHallucinationFilteredDetail = 154;
+    public const int EvtPrimeOverlap                     = 155;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits

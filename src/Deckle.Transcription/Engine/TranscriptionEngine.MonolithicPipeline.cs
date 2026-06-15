@@ -27,7 +27,8 @@ public sealed partial class TranscriptionEngine
     // Runs on the worker thread; producerCt is the run's _recordCts token (Stop
     // and Dispose cancel it to drain capture, and it is the abort signal for the
     // single backend call).
-    private async Task<PipelineProduction?> ProduceMonolithicAsync(CancellationToken producerCt)
+    private async Task<PipelineProduction?> ProduceMonolithicAsync(
+        CancellationToken producerCt, Task<bool> primeTask)
     {
         // ── Capture ───────────────────────────────────────────────────────────
         CaptureResult capture = _capture.Record(_recordingHost, producerCt);
@@ -87,6 +88,15 @@ public sealed partial class TranscriptionEngine
         RaiseStatus(Loc.Get("Status_Transcribing"));
 
         // ── Inference ─────────────────────────────────────────────────────────
+        // Prime gate. The single backend call must not race the prime's dummy
+        // inference; cross the gate before touching the backend. On a warm worker
+        // this returns instantly. On a short cold take it blocks until the prime
+        // finishes (its wall counts toward _stopToPipelineSw, stopped below — the
+        // user genuinely waited for it, so the gate phase is "at_stop"). A failed
+        // prime falls through to the IsModelLoaded check, which raises
+        // ModelNotReady (UserFeedback already shown by LoadModel).
+        await AwaitPrime(primeTask, "at_stop").ConfigureAwait(false);
+
         if (!_backend.IsModelLoaded)
         {
             RaiseStatus(Loc.Get("Status_ModelNotReady"));

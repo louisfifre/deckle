@@ -24,11 +24,11 @@ public sealed partial class TranscriptionEngine
     // user-facing wrapper (RaiseStatus, UserFeedback localization).
 
     // silentStatus suppresses the "Loading model… → Ready" status transitions
-    // emitted here. Set by the parallel-load path in WorkerRun, where the load
-    // runs concurrently with the capture and the "Recording" status must hold
-    // for the whole recording instead of being clobbered by a load that
-    // happens to finish mid-capture. The error UserFeedback dialogs stay — a
-    // load failure must always surface, silent or not.
+    // emitted here. Set by the concurrent prime (BeginPrime → EnsurePrimed),
+    // where the load runs in parallel with the capture: "Recording" must hold
+    // for the whole take instead of being clobbered by a load that finishes
+    // mid-capture. The error UserFeedback dialogs stay — a load failure must
+    // always surface, silent or not.
     private bool LoadModel(bool silentStatus = false)
     {
         if (!silentStatus) RaiseStatus(Loc.Get("Status_LoadingModel"));
@@ -220,19 +220,69 @@ public sealed partial class TranscriptionEngine
 
     // ── Prime ─────────────────────────────────────────────────────────────────
     //
-    // Ensures the backend is ready for a clean first transcription: model
-    // loaded AND inference kernels compiled. Called by WorkerRun *before* the
-    // recording begins (the HUD sits in Charging meanwhile), not at boot — the
-    // model is loaded on demand and freed again after the idle timeout, so
-    // nothing sits in VRAM while the app is idle.
+    // BeginPrime kicks the prime off for the current run and hands WorkerRun a
+    // gate (AwaitPrime) the active pipeline crosses before its first backend call.
     //
-    // Returns true immediately when the model is already resident — a warm
-    // worker skips straight to recording. On a cold worker it does two things:
-    //   1) Load the model, silent on the status channel (silentStatus: true).
-    //      The HUD's Charging state is the user-facing "preparing" signal;
-    //      LoadModel's internal "Loading model… → Ready" transitions would
-    //      otherwise clobber it. A load failure surfaces its own localized
-    //      UserFeedback (inside LoadModel) and returns false.
+    // On a WARM worker the model is already resident: no task is spawned, the gate
+    // is an already-completed true, and AwaitPrime returns without yielding.
+    //
+    // On a COLD worker the prime — model load + a dummy inference to compile the
+    // GPU kernels — runs on the thread pool, CONCURRENTLY with the capture that
+    // WorkerRun starts right after. That concurrency is the whole point: the
+    // chrono ticks from the first PCM while the model warms behind it, so the old
+    // "Charging" dead time is gone. The first real backend call is held at the
+    // gate until the prime's dummy whisper_full has returned, so the two never
+    // overlap (see AwaitPrime).
+    //
+    // primeCt is the run's DRAIN token (_drainCts), never the producer/Stop token:
+    // the prime must SURVIVE a Stop so the model finishes warming even on a take
+    // shorter than the load, and abort only on Dispose so the worker join stays
+    // bounded.
+    private Task<bool> BeginPrime(CancellationToken primeCt)
+    {
+        if (_backend.IsModelLoaded) return Task.FromResult(true);
+        return Task.Run(() => EnsurePrimed(primeCt));
+    }
+
+    // The gate every pipeline crosses before its first backend call. It makes the
+    // single-context invariant explicit at the call boundary — no real
+    // whisper_full until the prime's dummy whisper_full has returned. (The
+    // backend's own _transcribeLock is the hard native guard against a concurrent
+    // call; this gate adds the ordering and the model-loaded guarantee on top, so
+    // the real call never hits an unloaded _ctx.) On a warm worker the prime task
+    // is already complete and this returns synchronously. Emits the PrimeOverlap
+    // measure only when a prime actually ran (cold), so the log shows how much of
+    // the cold cost the recording hid.
+    // gatePhase (closed vocabulary "at_stop" | "during_recording") records WHERE
+    // the wait sat, so the PrimeOverlap gate_wait_ms reads as one magnitude per
+    // phase: post-Stop perceived latency in monolithic, capture-overlapped hidden
+    // wait in streaming. See PrimeOverlap's remark.
+    private async Task<bool> AwaitPrime(Task<bool> primeTask, string gatePhase)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        bool primed = await primeTask.ConfigureAwait(false);
+        sw.Stop();
+        // _primeMs is set by EnsurePrimed before the task completes (Task
+        // completion is the memory barrier), and stays 0 on a warm worker where
+        // the task was never spawned — that 0 is how we skip the measure cleanly.
+        if (_primeMs > 0)
+            DeckleWhispSource.Log.PrimeOverlap(_primeMs, sw.ElapsedMilliseconds, gatePhase);
+        return primed;
+    }
+
+    // Ensures the backend is ready for a clean first transcription: model loaded
+    // AND inference kernels compiled. Runs on the thread pool via BeginPrime (cold
+    // worker), concurrently with the capture — not at boot. The model is loaded on
+    // demand and freed again after the idle timeout, so nothing sits in VRAM while
+    // the app is idle.
+    //
+    // Returns true immediately when the model is already resident. On a cold worker
+    // it does two things:
+    //   1) Load the model, silent on the status channel (silentStatus: true). The
+    //      HUD is already showing Recording (capture runs in parallel), so
+    //      LoadModel's "Loading model… → Ready" transitions would clobber it. A
+    //      load failure surfaces its own localized UserFeedback (inside LoadModel)
+    //      and returns false → the gate reports failure and the take is dropped.
     //   2) Run a dummy inference: push the short embedded clip
     //      (Assets/Sounds/speech.wav, PCM mono 16 kHz) straight through the
     //      backend so VAD + whisper_full + the first-time GPU kernel compile all
@@ -243,19 +293,22 @@ public sealed partial class TranscriptionEngine
     // Robustness — never touches the clipboard, the corpus, or the status /
     // Finished events. The prime calls the backend DIRECTLY (not a pipeline
     // strategy, not the shared finalize), with an empty segment sink, so there is
-    // no user-facing tail to suppress — the old ThreadStatic warmup flag is gone.
-    // It runs synchronously on the worker thread before "Recording" is raised, so
-    // a real transcription can never observe a half-primed state.
+    // no user-facing tail to suppress — this is what structurally closed the
+    // 2026-06-05 clipboard-leak race, and it holds regardless of which thread the
+    // prime runs on. The single-context hazard that the synchronous-on-worker
+    // design also guarded is now closed by the gate (AwaitPrime) plus the backend
+    // _transcribeLock, which is what lets the prime move back off the worker thread.
     //
-    // Cancellable via the caller's token (the run's _recordCts): a Stop pressed
-    // during the prime aborts the dummy inference (abort_callback observes the
-    // token mid-decoder) and returns false so the whole start unwinds. The
-    // model load itself is not cancellable; a Stop during the load is observed
-    // right after it returns.
+    // Cancellable via the DRAIN token (_drainCts): a Stop does NOT abort the prime
+    // (the model finishes warming for the take that follows); only Dispose fires
+    // it, aborting the dummy inference (abort_callback observes the token
+    // mid-decoder) so the worker join stays bounded. The model load itself is not
+    // cancellable; a Dispose during the load is observed right after it returns.
     private bool EnsurePrimed(CancellationToken ct)
     {
         if (_backend.IsModelLoaded) return true;
 
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         DeckleWhispSource.Log.WarmupStart();
 
         if (!EnsureModelLoaded(silentStatus: true)) return false;
@@ -268,13 +321,11 @@ public sealed partial class TranscriptionEngine
         // whisper_full + first-time GPU kernel compile); the result is discarded
         // and nothing user-facing happens — no clipboard, no corpus, no
         // status/Finished, and an empty segment sink so prime segments never leak
-        // to NewSegment subscribers. Going straight to the backend keeps the
-        // prime off any streaming consumer thread and avoids segmenting a clip
-        // that does not need it. It runs synchronously on the worker thread
-        // before "Recording" is raised, so a real transcription can never observe
-        // a half-primed state (this is what the old ThreadStatic warmup flag
-        // guarded against — no longer needed now that the prime bypasses the
-        // pipeline entirely).
+        // to NewSegment subscribers. Going straight to the backend keeps the prime
+        // off any streaming consumer thread and avoids segmenting a clip that does
+        // not need it. With the empty sink and no pipeline tail, a real
+        // transcription can never observe a half-primed user-facing state — the
+        // bypass, not the thread it runs on, is what makes that true.
         try
         {
             _backend.TranscribeAsync(warmupBuffer, static _ => { }, ct)
@@ -282,14 +333,16 @@ public sealed partial class TranscriptionEngine
         }
         catch (OperationCanceledException)
         {
-            // Stop pressed during the prime — unwind the start quietly. Any other
-            // exception is a genuine prime failure and propagates to WorkerRun's
-            // catch (PipelineCrashed), same as a real transcription crash.
+            // Dispose fired the drain token during the prime — abandon quietly.
+            // Any other exception is a genuine prime failure and propagates to
+            // WorkerRun's catch (PipelineCrashed), same as a real transcription
+            // crash.
             return false;
         }
 
         if (ct.IsCancellationRequested) return false;
 
+        _primeMs = sw.ElapsedMilliseconds;
         DeckleWhispSource.Log.WarmupComplete();
         return true;
     }

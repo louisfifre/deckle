@@ -90,6 +90,28 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWarmupComplete);
     }
 
+    // Structured measure for the concurrent prime (cold worker only): how long the
+    // prime's model-load + dummy inference took (prime_ms), how long the first real
+    // backend call waited for it at the gate (gate_wait_ms), and WHERE that wait
+    // sat (gate_phase, closed vocabulary). The wait's meaning depends on the phase,
+    // so the field always reads the same once filtered on it:
+    //   at_stop          (monolithic) — post-Stop latency the user actually
+    //                     perceived; ≈ 0 means the recording fully hid the cold
+    //                     cost, > 0 is the residual because the take was shorter
+    //                     than the prime.
+    //   during_recording (streaming)  — the consumer began waiting before the first
+    //                     utterance was ready, fully overlapped with capture and
+    //                     never perceived at Stop; a large value is hidden cost, not
+    //                     user-facing latency.
+    [Event(EvtPrimeOverlap,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "prime overlap | prime_ms={0} | gate_wait_ms={1} | gate_phase={2}")]
+    public void PrimeOverlap(long prime_ms, long gate_wait_ms, string gate_phase)
+    {
+        if (IsEnabled()) WriteEvent(EvtPrimeOverlap, prime_ms, gate_wait_ms, gate_phase);
+    }
+
     // ── Model lifecycle ─────────────────────────────────────────────────
 
     [Event(EvtModelLoading,
