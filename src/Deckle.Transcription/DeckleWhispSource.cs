@@ -192,6 +192,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPageInitFailedDetail             = 150;
     public const int EvtPageLoadedFailedDetail           = 151;
     public const int EvtPageModelScanFailedDetail        = 152;
+    public const int EvtTranscribeHallucinationFiltered  = 153;
+    public const int EvtTranscribeHallucinationFilteredDetail = 154;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits

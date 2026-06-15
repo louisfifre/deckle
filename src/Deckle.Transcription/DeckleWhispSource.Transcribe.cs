@@ -216,6 +216,24 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoopDetail, streak, period, preview);
     }
 
+    [Event(EvtTranscribeHallucinationFiltered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A known hallucination was filtered out")]
+    public void TranscribeHallucinationFiltered()
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFiltered);
+    }
+
+    [Event(EvtTranscribeHallucinationFilteredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "hallucination filtered | text=\"{0}\"")]
+    public void TranscribeHallucinationFilteredDetail(string preview)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredDetail, preview);
+    }
+
     [Event(EvtTranscribeSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
