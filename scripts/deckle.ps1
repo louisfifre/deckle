@@ -77,6 +77,9 @@ $actions = @(
     [pscustomobject]@{ Label = 'Prepare app release artifacts';     Value = 'build-release-artifacts'           }
     [pscustomobject]@{ Label = 'Prepare native runtime release';    Value = 'native-runtime'                    }
 
+    [pscustomobject]@{ Label = '── MCP ──';                         Value = $null;            IsHeader = $true  }
+    [pscustomobject]@{ Label = 'Install / update Anytype MCP';      Value = 'install-anytype-mcp'               }
+
     [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Clean build outputs';               Value = 'clean'                             }
     [pscustomobject]@{ Label = 'Show module stats';                 Value = 'stats'                             }
@@ -185,6 +188,23 @@ switch ($action) {
         if ($outDir)  { $nativeArgs.OutDir = $outDir }
         if ($publish) { $nativeArgs.Publish = $true }
         & (Join-Path $LibDir 'publish-native-runtime.ps1') @nativeArgs
+    }
+
+    # ----- MCP — publish a versioned host + repoint the `current` junction -
+    # 'install-anytype-mcp' publishes the Anytype MCP host into a fresh
+    # versioned dir under %LOCALAPPDATA%\Deckle\mcp\anytype\ and points the
+    # `current` junction (Scoop model) at it; .claude.json targets current\ once.
+    # AI clients stop spawning (and locking) the build-output exe. Re-run any
+    # time to cut a new version — no need to close clients, nothing running gets
+    # overwritten. publish is the maintainer's act — gated behind this y/N.
+    'install-anytype-mcp' {
+        Write-Host "Publishes the Anytype MCP to %LOCALAPPDATA%\Deckle\mcp\anytype\ (versioned + 'current' junction) and points .claude.json at current\ — AI clients stop locking the build output." -ForegroundColor Yellow
+        Write-Host "Safe to re-run to cut a new version: open sessions keep theirs, new spawns get the fresh one." -ForegroundColor Yellow
+        if (-not (Read-YesNo -Question 'Install / update the Anytype MCP now?' -Default $false)) {
+            Write-Host "Cancelled." -ForegroundColor Yellow
+            return
+        }
+        & (Join-Path $LibDir 'install-anytype-mcp.ps1')
     }
 
     # ----- Worktree maintenance ------------------------------------------

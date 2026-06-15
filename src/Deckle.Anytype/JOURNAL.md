@@ -7,6 +7,10 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-15 — MCP host consumed via a `current` junction, off the build tree
+
+The host AI clients spawn no longer points at the build output (`artifacts\bin\Deckle.Anytype.Mcp\debug\Deckle.Anytype.Mcp.exe`). A running .exe is locked on Windows, so a live client (Claude Code, Codex) held that file and any rebuild of the host failed with MSB3026 — the cause behind "can't rebuild/restart while a session is up". Chose the Scoop model under `%LOCALAPPDATA%\Deckle\mcp\anytype\` (sibling of `modules\anytype\`, the credentials home): each publish lands in `versions\<timestamp>\`, a `current` junction points at the active one, and `.claude.json` targets `current\Deckle.Anytype.Mcp.exe` once. An update republishes into a new dir and re-points the junction — it never overwrites a running exe, so clients stay open (live sessions keep their version until they respawn; old dirs prune once released). `scripts/lib/install-anytype-mcp.ps1` (Setup menu) owns publish + junction + the surgical, idempotent config repoint. The junction is deleted with `Directory.Delete(path,$false)` (reparse-point only, never its target).
+
 ## 2026-06-13 — Dialogue chats stay on REST, separate from reports
 
 Found live against Dev: Anytype chats are objects of type `chat_derived`, layout `chat`, with transcript content served by `/chats/{chat_id}/messages` rather than object `markdown`. The `Test` chat carries the space-global `tache(s)_liee(s)` objects property and can link to a task without becoming a rapport. Chose the POC shape: dialogue gestures live inside `Deckle.Anytype` as a separate capability from project-management gestures, and the MCP host selects a `dialogues` profile instead of creating a new module.
