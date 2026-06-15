@@ -54,6 +54,7 @@ public sealed class ResizeCoalescer : IDisposable
     private readonly Action? _onResizeStarted;
     private readonly ResizeGesture _gesture = new();
     private readonly Stopwatch     _gestureClock = new();
+    private long                   _lastFrameMs;   // gesture-clock ms at the previous coalesced frame
 
     private NativeMethods.SubclassProc? _subclassDelegate;
 
@@ -94,11 +95,14 @@ public sealed class ResizeCoalescer : IDisposable
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
         UIntPtr uIdSubclass, IntPtr dwRefData)
     {
+        bool traceFrame = false;   // set for a coalesced gesture frame, traced after the chain
+
         switch (uMsg)
         {
             case NativeMethods.WM_ENTERSIZEMOVE:
                 _gesture.EnterSizeMove();
                 _gestureClock.Restart();
+                _lastFrameMs = 0;
                 _onResizeStarted?.Invoke();
                 break;
 
@@ -110,18 +114,45 @@ public sealed class ResizeCoalescer : IDisposable
                 // Ignore minimize (client area collapses to 0×0): no recompute is
                 // due, and letting it through would settle a phantom 0-size layout.
                 if (wParam.ToInt32() != NativeMethods.SIZE_MINIMIZED)
-                    Settle(_gesture.Size());
+                {
+                    ResizeSettlement? settlement = _gesture.Size();
+                    if (settlement is null)
+                        traceFrame = true;   // coalesced gesture frame — traced below
+                    else
+                        Settle(settlement);  // direct settle (maximize / snap / programmatic)
+                }
                 break;
         }
 
         // Always chain: WinUI's own WM_SIZE handling (its layout pass) and any
         // other subclass must still run. We observe the gesture, never consume it.
-        return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+        // For a coalesced gesture frame we bracket the chain call to time WinUI's
+        // synchronous relayout — it runs inside DefSubclassProc — and surface the
+        // per-frame trace afterwards, so the cadence and layout cost of a laggy
+        // drag are observable frame by frame.
+        if (!traceFrame)
+            return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+
+        long start = Stopwatch.GetTimestamp();
+        IntPtr result = NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+        long relayoutMs = (Stopwatch.GetTimestamp() - start) * 1000 / Stopwatch.Frequency;
+
+        long nowMs = _gestureClock.ElapsedMilliseconds;
+        long sincePrevMs = nowMs - _lastFrameMs;
+        _lastFrameMs = nowMs;
+
+        int packed = lParam.ToInt32();   // WM_SIZE packs client w/h in the low 32 bits
+        DeckleWindowingSource.Log.WindowResizeFrame(
+            _window, _gesture.Frames, packed & 0xFFFF, (packed >> 16) & 0xFFFF,
+            sincePrevMs, relayoutMs);
+
+        return result;
     }
 
     // Turns a non-null settlement into the rolled-up trace and the recompute. One
-    // Verbose event per settled resize — never per frame — on the cross-cutting
-    // windowing provider, so a drag's coalescing is observable after the fact.
+    // WindowResizeSettled per settled resize, on the cross-cutting windowing
+    // provider, so a drag's coalescing is observable after the fact — the granular
+    // per-frame view is the WindowResizeFrame companion emitted above.
     private void Settle(ResizeSettlement? settlement)
     {
         if (settlement is null) return;

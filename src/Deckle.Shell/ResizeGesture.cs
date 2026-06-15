@@ -18,6 +18,10 @@ internal sealed class ResizeGesture
 {
     public bool IsResizing { get; private set; }
 
+    // Coalesced WM_SIZE count for the gesture in flight. Read by ResizeCoalescer
+    // to index the per-frame Verbose trace; the settled rollup reads it too.
+    public int Frames => _frames;
+
     private bool _sizedDuringGesture;
     private int  _frames;
 
