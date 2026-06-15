@@ -156,13 +156,20 @@ public sealed partial class TunableRow : UserControl
         ValueBox.LargeChange = step * 10;
 
         // Explicit formatter : without it the NumberBox prints the double's full
-        // precision (0.1 shows as 0.1000000015). Pin the display to exactly the
-        // decimals the step implies, so the box reads as a round number.
+        // precision (0.1 shows as 0.1000000015). FractionDigits alone is only a
+        // MINIMUM — it doesn't round — so a NumberRounder snapped to the step grid
+        // is what actually trims the noise. Together they pin the display to a
+        // round number on the step.
         ValueBox.NumberFormatter = new DecimalFormatter
         {
             IntegerDigits  = 1,      // keep a leading "0" before the point
             FractionDigits = Digits, // decimals implied by Step (0 for whole units)
             IsGrouped      = false,  // no thousands separator on the ms values
+            NumberRounder  = new IncrementNumberRounder
+            {
+                Increment         = step,
+                RoundingAlgorithm = RoundingAlgorithm.RoundHalfUp,
+            },
         };
     }
 
