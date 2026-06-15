@@ -31,9 +31,25 @@ public sealed class SileroVad : IDisposable
     private readonly float[] _input   = new float[ContextSamples + WindowSamples];
     private readonly long[]  _sr      = new long[] { SampleRate };
 
+    // Per-window plumbing hoisted to fields so RunWindow allocates nothing. The
+    // input tensors wrap the reused _input/_state/_sr buffers (shapes are
+    // constant); the two destinations receive the outputs by position — _prob1
+    // the probability, _state the new recurrent state copied in place for the
+    // next window.
+    private readonly float[] _prob1 = new float[1];
+    private readonly OnnxTensorInput[] _inputs;
+    private readonly float[][] _outputs;
+
     public SileroVad(string modelPath)
     {
         _session = new OnnxModelSession(modelPath);
+        _inputs = new[]
+        {
+            OnnxTensorInput.Float("input", _input, new[] { 1, _input.Length }),
+            OnnxTensorInput.Float("state", _state, new[] { 2, 1, 128 }),
+            OnnxTensorInput.Int64("sr", _sr, new[] { 1 }),
+        };
+        _outputs = new[] { _prob1, _state };
     }
 
     // Detects the speech spans within a 16 kHz mono buffer, in sample indices
@@ -88,21 +104,13 @@ public sealed class SileroVad : IDisposable
 
     private float RunWindow()
     {
-        var inputs = new[]
-        {
-            OnnxTensorInput.Float("input", _input, new[] { 1, _input.Length }),
-            OnnxTensorInput.Float("state", _state, new[] { 2, 1, 128 }),
-            OnnxTensorInput.Int64("sr", _sr, new[] { 1 }),
-        };
-
-        IReadOnlyList<float[]> outputs = _session.Run(inputs);
-
-        // Read by position (probability, new state) — the order the graph and the
-        // reference Python (`out, state = ort_outs`) use; robust to the exact
-        // output node names. Copy the new state back for the next window.
-        float prob = outputs[0][0];
-        outputs[1].CopyTo(_state, 0);
-        return prob;
+        // Inputs and destinations are cached fields; the run writes the
+        // probability into _prob1 and the new state into _state in place — by
+        // position, the order the graph and the reference Python
+        // (`out, state = ort_outs`) use, robust to the exact output node names —
+        // so the next window picks up the state.
+        _session.Run(_inputs, _outputs);
+        return _prob1[0];
     }
 
     // Clears the recurrent state and context between independent buffers.

@@ -168,6 +168,9 @@ public sealed partial class AmbientPage : Page
                 rejectSource: "PLAYGROUND", rejectWhat: "init flag",
                 priority: DispatcherQueuePriority.Low);
         }
+        // First Loaded = page ready after ViewModel.Load + control sync above.
+        // Measured from the nav-start clock set in PlaygroundWindow.
+        DecklePlaygroundSource.Log.PageReady(nameof(AmbientPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

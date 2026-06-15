@@ -29,6 +29,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     public const int EvtSpeechTrimVadUnavailableDetail      = 10;
     public const int EvtSpeechTrimVadDownloadStartDetail    = 11;
     public const int EvtSpeechTrimVadDownloadCompleteDetail = 12;
+    public const int EvtSpeechTrimVadLoadComplete           = 13;
 
     [Event(EvtSpeechTrimmed,
            Level = EventLevel.Verbose,
@@ -75,6 +76,21 @@ public sealed class DeckleVadSource : DeckleEventSource
     public void SpeechTrimVadLoadedDetail(string model_path)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, model_path);
+    }
+
+    // Wall-clock for the VAD load: SHA-256 verify + ONNX session construction,
+    // measured together in VadService. Mirrors whisper's ModelLoadComplete
+    // (load_ms on a dedicated Verbose *Complete event), with the canonical ms
+    // unit. A fresh event rather than a new arg on SpeechTrimVadLoadedDetail —
+    // that event's signature is frozen, and whisper carries the number on its
+    // own *Complete event, not on *Detail.
+    [Event(EvtSpeechTrimVadLoadComplete,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "load complete | load_ms={0}")]
+    public void SpeechTrimVadLoadComplete(long load_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadComplete, load_ms);
     }
 
     [Event(EvtSpeechTrimVadUnavailable,

@@ -26,6 +26,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtLearningSignal     = 8;
     public const int EvtActivityRollup     = 9;
     public const int EvtEnrollmentSuggested = 10;
+    public const int EvtLexiconLoadComplete = 11;
+    public const int EvtEngineReady         = 12;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -45,6 +47,33 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void EngineStopped()
     {
         if (IsEnabled()) WriteEvent(EvtEngineStopped);
+    }
+
+    // load_ms is the wall-clock of the off-UI-thread lexicon+index+bigram
+    // build (gzip decode + dictionary build of the multi-MB FR frequency
+    // data); entries is the loaded FR lexicon form count. Structured-verbose
+    // sibling of the EngineReady milestone — mirrors whisper's
+    // ModelLoadComplete(load_ms, backend). Verbose so the number never reaches
+    // the Info milestone stream.
+    [Event(EvtLexiconLoadComplete,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "lexicon load complete | load_ms={0} | entries={1}")]
+    public void LexiconLoadComplete(long load_ms, int entries)
+    {
+        if (IsEnabled()) WriteEvent(EvtLexiconLoadComplete, load_ms, entries);
+    }
+
+    // Concise readiness edge: the engine is built, wired and reconciled to the
+    // persisted settings. No number — its verbose sibling LexiconLoadComplete
+    // carries the timing. Mirrors whisper's ModelLoaded() "Model loaded".
+    [Event(EvtEngineReady,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Autocorrect ready")]
+    public void EngineReady()
+    {
+        if (IsEnabled()) WriteEvent(EvtEngineReady);
     }
 
     // ── Surface gate ─────────────────────────────────────────────────────

@@ -353,6 +353,14 @@ public static class NativeMethods
     // chrome windows (used by Chromium, Electron, PowerToys).
     public const uint WM_NCCALCSIZE  = 0x0083;
 
+    // WM_DPICHANGED is sent to a PerMonitorV2-aware top-level HWND (see
+    // Deckle.App\app.manifest) when its effective DPI changes — dragged to a
+    // monitor at a different scale, or the host monitor's scale changed live.
+    // LOWORD(wParam) carries the new X-axis DPI (identical to the Y-axis); the
+    // scale factor is that value / 96. The one event that invalidates a cached
+    // window scale.
+    public const uint WM_DPICHANGED  = 0x02E0;
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool RegisterRawInputDevices(
         RAWINPUTDEVICE[] pRawInputDevices, uint uiNumDevices, uint cbSize);

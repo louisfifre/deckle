@@ -44,6 +44,11 @@ public sealed partial class HudOverlayWindow : Window
     private readonly IntPtr _hwnd;
     private LayeredAlphaAnimator? _fade;
 
+    // Cached window scale (DPI/96); see HudWindow for the rationale. Seeded in
+    // the ctor, refreshed from WM_DPICHANGED in SubclassCallback. Replaces the
+    // per-WM_INPUT-tick GetDpiForWindow call in UpdateProximity. UI-thread only.
+    private double _dpiScale = 1.0;
+
     private NativeMethods.SubclassProc? _subclassDelegate;
     private static readonly UIntPtr SubclassId = new(0x48554F56); // "HUOV"
 
@@ -59,6 +64,10 @@ public sealed partial class HudOverlayWindow : Window
 
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
+
+        // Seed the cached scale from the HWND's current monitor; WM_DPICHANGED
+        // refreshes it thereafter (see SubclassCallback).
+        _dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
 
         SystemBackdrop = null;
         Title = Loc.Get("HudOverlay_WindowTitle");
@@ -288,7 +297,7 @@ public sealed partial class HudOverlayWindow : Window
         int dy = cursor.Y < top  ? top  - cursor.Y : (cursor.Y > bottom ? cursor.Y - bottom : 0);
         double distancePx = Math.Sqrt(dx * dx + dy * dy);
 
-        double scale  = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        double scale  = _dpiScale;
         double nearPx = NEAR_RADIUS_DIP * scale;
         double farPx  = FAR_RADIUS_DIP  * scale;
 
@@ -323,6 +332,14 @@ public sealed partial class HudOverlayWindow : Window
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam,
         UIntPtr uIdSubclass, IntPtr dwRefData)
     {
+        // Refresh the cached scale from the new DPI (LOWORD of wParam) instead
+        // of calling GetDpiForWindow per WM_INPUT tick in UpdateProximity. Not
+        // consumed — DefSubclassProc lets WinUI 3 run its own DPI layout.
+        if (uMsg == NativeMethods.WM_DPICHANGED)
+        {
+            _dpiScale = (wParam.ToInt32() & 0xFFFF) / 96.0;
+        }
+
         // Same zero-NC-area trick as HudWindow. WinUI 3 reapplies
         // WS_DLGFRAME / WS_EX_WINDOWEDGE on the top-level; we leave those bits
         // on and deny Windows any non-client area to paint into.

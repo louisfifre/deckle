@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
@@ -22,6 +23,13 @@ namespace Deckle.Playground;
 public sealed class DecklePlaygroundSource : DeckleEventSource
 {
     public static readonly DecklePlaygroundSource Log = new();
+
+    // Single nav-start clock for the PlaygroundWindow — same role as the
+    // SettingsWindow one. Restarted in OnNavSelectionChanged at nav-start;
+    // feeds NavTiming (Navigate-return) and the page's first-Loaded PageReady,
+    // so both measures share ONE timestamp. Static: the page Loaded handlers
+    // (HudPage/AmbientPage/SegmentationPage) see the provider, not the window.
+    public static readonly Stopwatch NavClock = new();
 
     private DecklePlaygroundSource() { }
 
@@ -50,6 +58,9 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     public const int EvtResolveLights                = 20;
     public const int EvtMatchEntertainmentArea       = 21;
     public const int EvtZoneSuggested                = 22;
+    // ── Page navigation timing (structured-verbose, ms) ──
+    public const int EvtNavTiming                    = 23;
+    public const int EvtPageReady                    = 24;
 
     // ── Navigation (PlaygroundWindow) ───────────────────────────────────────
 
@@ -91,6 +102,32 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtNavigationFailedDetail, page, reason, error);
+    }
+
+    // (a) Navigate-return duration on the success path (the Playground success
+    // branch previously logged nothing). Mirrors whisper ModelLoadComplete:
+    // measured ms, typed field, Verbose. From NavClock (set once per nav).
+    [Event(EvtNavTiming,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "nav timing | page={0} | duration_ms={1}")]
+    public void NavTiming(string page, long duration_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtNavTiming, page, duration_ms);
+    }
+
+    // (b) Time from nav-start (NavClock) to the page's first Loaded — captures
+    // the heavy work (ViewModel.Load, BuildTuningPanel, Win2D mount) that
+    // Navigate returns before. Verbose, ms.
+    [Event(EvtPageReady,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "page ready | page={0} | ready_ms={1}")]
+    public void PageReady(string page, long ready_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPageReady, page, ready_ms);
     }
 
     // ── ViewModel setters (tuning sliders) ──────────────────────────────────

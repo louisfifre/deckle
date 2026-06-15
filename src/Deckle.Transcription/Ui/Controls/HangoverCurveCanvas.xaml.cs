@@ -134,6 +134,27 @@ public sealed partial class HangoverCurveCanvas : UserControl
 
     private void OnPlotSizeChanged(object sender, SizeChangedEventArgs e) => RepositionHandles();
 
+    // ── Resize coalescing hook ───────────────────────────────────────────────────
+    //
+    // Set true by the host window while an interactive resize gesture is in flight
+    // (driven off the Shell's ResizeCoalescer). Kept a plain bool, pushed in from
+    // outside, so this control carries no Deckle.Shell or Win32 dependency. While
+    // true OnDraw still strokes the curves, grid and guides — cheap GPU line work —
+    // but drops the axis labels, whose per-frame DWrite text layout is the cost
+    // that made the drag lag. Toggling it schedules one Draw: the light pass on the
+    // way in, the full pass (labels back) on settle.
+    private bool _suspendExpensiveDraw;
+    public bool SuspendExpensiveDraw
+    {
+        get => _suspendExpensiveDraw;
+        set
+        {
+            if (_suspendExpensiveDraw == value) return;
+            _suspendExpensiveDraw = value;
+            Plot?.Invalidate();
+        }
+    }
+
     // ── PlotRect geometry ────────────────────────────────────────────────────────────
     //
     // The pixel frame of the plot, derived once from the current size and the
@@ -247,9 +268,14 @@ public sealed partial class HangoverCurveCanvas : UserControl
     }
 
     // Axis label, drawn into a fixed box so the text format's alignment lands it
-    // (right-aligned in the left gutter, centred under each X tick).
+    // (right-aligned in the left gutter, centred under each X tick). DWrite lays the
+    // string out on every call — the per-frame cost — so it is skipped while a
+    // resize gesture coalesces; the labels snap back when the size settles.
     private void AddLabel(CanvasDrawingSession ds, string text, double left, double top, double width, CanvasTextFormat format)
-        => ds.DrawText(text, new Rect(left, top, width, 16), ThemeColor("TextFillColorTertiaryBrush"), format);
+    {
+        if (_suspendExpensiveDraw) return;
+        ds.DrawText(text, new Rect(left, top, width, 16), ThemeColor("TextFillColorTertiaryBrush"), format);
+    }
 
     // "Nice" tick step (1 / 2 / 5 × 10ⁿ) so the ruler lands on round seconds
     // regardless of the current ramp bounds.

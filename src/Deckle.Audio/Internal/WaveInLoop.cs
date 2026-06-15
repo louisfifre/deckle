@@ -154,7 +154,7 @@ internal static class WaveInLoop
                         var data = new byte[hdr.dwBytesRecorded];
                         Marshal.Copy(hdr.lpData, data, 0, (int)hdr.dwBytesRecorded);
                         allBytes.AddRange(data);
-                        EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                        double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                         buffersReceived++;
 
                         // Per-buffer low-audio tracker. 16 kHz mono PCM16 = 32
@@ -173,7 +173,6 @@ internal static class WaveInLoop
 
                         if (!userVoiceConfirmed)
                         {
-                            double bufferDbfs = PcmConversion.ComputeBufferDbfs(data);
                             if (bufferDbfs >= NormalVoiceDbfsThreshold)
                             {
                                 healthyVoiceConsecutiveMs += bufferMs;
@@ -277,7 +276,9 @@ internal static class WaveInLoop
                 // _rmsLog covers the full session (the in-loop EmitSubWindows
                 // path stops as soon as the cancellation token fires, leaving
                 // the last 1-3 buffers undrained without this explicit pass).
-                EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                // The drain has no low-audio tracker, so the returned buffer
+                // dBFS is intentionally discarded here.
+                _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
             }
             NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
         }
@@ -302,7 +303,17 @@ internal static class WaveInLoop
     // accumulation runs unconditionally (independent of audioLevelCallback
     // subscription) so the Stop-time mic-telemetry summary reflects the
     // entire session even when the HUD isn't listening.
-    private static void EmitSubWindows(
+    //
+    // Returns the whole-buffer dBFS derived from the per-sub-window sumSq this
+    // method already accumulates — saving the low-audio tracker a second full
+    // scan of the buffer (it used to call PcmConversion.ComputeBufferDbfs). Each
+    // completed waveIn buffer is exactly one sub-window (a 1600-byte / 50 ms
+    // buffer == BytesPerSubWin), so bufferSumSq is the same single flat fold as
+    // ComputeBufferDbfs and the dBFS is bit-identical. A partial buffer (< 1600
+    // bytes, only possible at stop) yields zero complete sub-windows and floors
+    // at -120, mirroring ComputeBufferDbfs's empty-buffer floor; that path has
+    // no low-audio tracker, so the coarseness is harmless.
+    private static double EmitSubWindows(
         byte[]                pcm16,
         List<float>           rmsLog,
         System.Action<float>? audioLevelCallback,
@@ -312,6 +323,8 @@ internal static class WaveInLoop
         const int BytesPerSubWin   = 16000 * 2 * SubWindowMs / 1000; // 1600 bytes
         const int SamplesPerSubWin = BytesPerSubWin / 2;             // 800 samples
 
+        double bufferSumSq   = 0;   // Σ of each sub-window's sumSq — re-rooted at the end.
+        int    bufferSamples = 0;   // total samples covered (complete sub-windows only).
         int offset = 0;
         while (offset + BytesPerSubWin <= pcm16.Length)
         {
@@ -332,6 +345,8 @@ internal static class WaveInLoop
                 // buffer the backend ultimately receives.
                 if (frameSamples is not null) frameSamples[i] = (float)v;
             }
+            bufferSumSq   += sumSq;           // accumulate BEFORE the per-window clamp
+            bufferSamples += SamplesPerSubWin; // so the buffer fold is the true RMS
             double rms = System.Math.Sqrt(sumSq / SamplesPerSubWin);
             if (rms > 1.0) rms = 1.0;
             float rmsF = (float)rms;
@@ -340,5 +355,11 @@ internal static class WaveInLoop
             if (frameSamples is not null) frameCallback!.Invoke(new CaptureFrame(frameSamples, rmsF));
             offset += BytesPerSubWin;
         }
+
+        // Whole-buffer RMS → dBFS, mirroring PcmConversion.ComputeBufferDbfs
+        // (rms > 0 ? 20·log10(rms) : -120) and its empty-buffer -120 floor.
+        if (bufferSamples == 0) return -120.0;
+        double bufferRms = System.Math.Sqrt(bufferSumSq / bufferSamples);
+        return bufferRms > 0 ? 20.0 * System.Math.Log10(bufferRms) : -120.0;
     }
 }

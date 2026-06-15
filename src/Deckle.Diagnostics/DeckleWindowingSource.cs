@@ -27,8 +27,10 @@ namespace Deckle.Diagnostics;
 // EventSource parameters). Topmost/no-activate surfaces may ALSO emit
 // `WindowZOrderState` to capture the native result of a z-order transition. A
 // resizable window whose recompute is coalesced emits `WindowResizeSettled` once
-// per settled resize (never per WM_SIZE frame) — standalone, not a trunk
-// specialization, since a coalescer rather than a positioning site raises it.
+// per settled resize — standalone, not a trunk specialization, since a coalescer
+// rather than a positioning site raises it. Alongside it, `WindowResizeFrame`
+// traces each coalesced WM_SIZE frame (size, cadence, WinUI relayout cost) for
+// resize-latency diagnosis — deliberately chatty, Verbose-gated, off by default.
 //
 // Closed `window` vocabulary (short logical name for the common trunk):
 //   "hud"           — main HudWindow (bottom-center)
@@ -65,6 +67,8 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtPopupAnchored        = 3;
     public const int EvtWindowZOrderState    = 4;
     public const int EvtWindowResizeSettled  = 5;
+    public const int EvtWindowResizeFrame    = 6;
+    public const int EvtWindowLoadComplete   = 7;
 
     // Common trunk: emitted by every site that positions or resizes a window.
     // `window` is a short logical name (see closed vocabulary above). `hmon`
@@ -184,5 +188,46 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         WriteEvent(EvtWindowResizeSettled, window, trigger, frames, duration_ms);
+    }
+
+    // Per-frame companion to `WindowResizeSettled`, emitted by ResizeCoalescer for
+    // each coalesced WM_SIZE while a drag gesture is in flight — the granular view
+    // the rollup deliberately omits, for diagnosing resize lag. `frame` is the
+    // 1-based index within the gesture, `size` the client area this frame in
+    // pixels, `since_prev_ms` the wall time since the previous frame (the cadence
+    // Windows drives the modal resize loop at), and `relayout_ms` the cost of
+    // WinUI's synchronous layout pass for this frame (it runs inside
+    // DefSubclassProc). A near-zero `relayout_ms` under a tight `since_prev_ms`
+    // points the lag below the framework, at composition/present, not at our draw.
+    [Event(EvtWindowResizeFrame,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "resize frame | window={0} | frame={1} | size={2},{3} | since_prev_ms={4} | relayout_ms={5}")]
+    public void WindowResizeFrame(
+        string window, int frame, int size_w, int size_h, long since_prev_ms, long relayout_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowResizeFrame, window, frame, size_w, size_h, since_prev_ms, relayout_ms);
+    }
+
+    // Lazy first-open construction cost: one rolled-up event per lazily
+    // constructed secondary window (`window` reuses the closed logical-name
+    // vocabulary above — "log", "settings", "playground"). `load_ms` is the
+    // wall-clock of the one-shot construction span the call site brackets with a
+    // Stopwatch: `new <Window>()` plus the synchronous placement-restore and
+    // first-time wiring inside the lazy guard, NOT the per-open Show/Activate
+    // path. Mirrors the whisper ModelLoadComplete(load_ms) shape; emitted as a
+    // single complete event with no paired start, matching WindowResizeSettled —
+    // the source's existing one-shot rolled-up-duration idiom — since the span
+    // is synchronous, non-cancellable, and has no intermediate phase to bracket
+    // externally.
+    [Event(EvtWindowLoadComplete,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "window load complete | window={0} | load_ms={1}")]
+    public void WindowLoadComplete(string window, long load_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowLoadComplete, window, load_ms);
     }
 }

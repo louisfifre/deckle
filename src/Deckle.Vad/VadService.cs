@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
@@ -40,13 +41,20 @@ public sealed class VadService : IDisposable
 
         if (File.Exists(modelPath))
         {
+            // Time the hash verify + ONNX session construction together: both run
+            // at most once per service, on the first streaming take's critical path.
+            // Pure observability — the timer wraps the existing operations and does
+            // not reorder File.Exists / FileMatchesExpectedSha / new SileroVad.
+            var sw = Stopwatch.StartNew();
             if (FileMatchesExpectedSha(modelPath))
             {
                 try
                 {
                     _vad = new SileroVad(modelPath);
+                    sw.Stop();
                     DeckleVadSource.Log.SpeechTrimVadLoaded();
                     DeckleVadSource.Log.SpeechTrimVadLoadedDetail(modelPath);
+                    DeckleVadSource.Log.SpeechTrimVadLoadComplete(sw.ElapsedMilliseconds);
                     return _vad;
                 }
                 catch (Exception ex)

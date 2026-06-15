@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
@@ -29,6 +30,14 @@ namespace Deckle.Settings;
 public sealed class DeckleSettingsSource : DeckleEventSource
 {
     public static readonly DeckleSettingsSource Log = new();
+
+    // Single nav-start clock for the SettingsWindow. Restarted in
+    // OnNavSelectionChanged at nav-start; the Navigate-return elapsed feeds
+    // NavTiming (a) and the destination page's first Loaded feeds PageReady (b),
+    // so both measures share ONE timestamp set once per navigation. Static
+    // because the page's Loaded handler has no window reference but does see the
+    // provider. Single-window, single-threaded UI nav — no contention.
+    public static readonly Stopwatch NavClock = new();
 
     private DeckleSettingsSource() { }
 
@@ -122,6 +131,13 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtNavCompletedDetail                = 67;
     public const int EvtNavFailedThrewDetail              = 68;
     public const int EvtSectionResetDetail                = 69;
+
+    // ── Page navigation timing (structured-verbose, ms) ──
+    // Paired with the existing NavStarted milestone: NavTiming carries the
+    // Navigate-return wall time, PageReady the time to the page's first Loaded
+    // — both from NavClock (set once per nav). Numbers ⇒ Verbose only.
+    public const int EvtNavTiming                         = 70;
+    public const int EvtPageReady                         = 71;
 
     // ── Bootstrap ───────────────────────────────────────────────────────
 
@@ -652,6 +668,30 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public void NavCompletedDetail(string page_name)
     {
         if (IsEnabled()) WriteEvent(EvtNavCompletedDetail, page_name);
+    }
+
+    // (a) Navigate-return duration, from NavClock. Mirrors whisper's
+    // ModelLoadComplete(load_ms, backend): a measured ms as a typed field on a
+    // Verbose event. Pairs with the NavStarted milestone above.
+    [Event(EvtNavTiming,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "nav timing | page={0} | duration_ms={1}")]
+    public void NavTiming(string page_name, long duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtNavTiming, page_name, duration_ms);
+    }
+
+    // (b) Time from nav-start (NavClock) to the destination page's first
+    // Loaded — captures the heavy work (ViewModel.Load + control sync) that
+    // Navigate returns BEFORE. Verbose, ms.
+    [Event(EvtPageReady,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "page ready | page={0} | ready_ms={1}")]
+    public void PageReady(string page_name, long ready_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtPageReady, page_name, ready_ms);
     }
 
     [Event(EvtNavFailedThrew,

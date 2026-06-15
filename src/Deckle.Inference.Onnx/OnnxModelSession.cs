@@ -57,6 +57,30 @@ public sealed class OnnxModelSession : IDisposable
         return outputs;
     }
 
+    // Same inference pass, but writes each output into a caller-owned buffer by
+    // position instead of allocating a fresh float[] per output. A hot path (the
+    // VAD calls this once per 512-sample window) hands in reused destination
+    // buffers, so the run produces no per-window garbage: each output is read
+    // straight from the runtime's DenseTensor buffer (no ToArray copy) and copied
+    // into destinations[i], for the shorter of the two lengths. OnnxRuntime types
+    // stay inside this module.
+    public void Run(IReadOnlyList<OnnxTensorInput> inputs, IReadOnlyList<float[]> destinations)
+    {
+        var values = new NamedOnnxValue[inputs.Count];
+        for (int i = 0; i < inputs.Count; i++)
+            values[i] = inputs[i].ToNamedValue();
+
+        using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = _session.Run(values);
+
+        int o = 0;
+        foreach (DisposableNamedOnnxValue result in results)
+        {
+            ReadOnlySpan<float> src = ((DenseTensor<float>)result.AsTensor<float>()).Buffer.Span;
+            float[] dest = destinations[o++];
+            src.Slice(0, Math.Min(src.Length, dest.Length)).CopyTo(dest);
+        }
+    }
+
     public void Dispose()
     {
         _session.Dispose();

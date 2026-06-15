@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
@@ -25,7 +26,13 @@ public partial class App
     private PersonalDictionary? _autocorrectDictionary;
     private bool _autocorrectStarted;
 
-    private void InitializeAutocorrect()
+    // Builds the autocorrect engine off the UI thread. The lexicon load (gzip
+    // decode + dictionary/index build of the multi-MB FR frequency data) is the
+    // heavy part and runs on the thread pool; the cheap composition + settings
+    // reconciliation resume on the UI thread. Boot never blocks on this —
+    // OnLaunched fires it and moves on, and nothing else reads the engine
+    // synchronously, so the deferral is race-free at startup.
+    private async Task InitializeAutocorrectAsync()
     {
         try
         {
@@ -43,11 +50,24 @@ public partial class App
             if (!File.Exists(frenchPath))
                 return;
 
-            var french = FrequencyLexicon.LoadTsvGz(frenchPath);
-            var index = AccentIndex.Build(french);
-            var context = File.Exists(pairPath)
-                ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
-                : null;
+            // The heavy step: gzip decode + build of the FR frequency lexicon,
+            // its accent index, and the pair bigram model. Pure CPU/IO, no UI
+            // affinity — run it on the thread pool so boot is not blocked.
+            // Stopwatch wraps only the off-thread build; the elapsed ms lands
+            // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
+            // shape).
+            var loadStopwatch = Stopwatch.StartNew();
+            var (french, index, context) = await Task.Run(() =>
+            {
+                var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
+                var idx = AccentIndex.Build(fr);
+                var ctx = File.Exists(pairPath)
+                    ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
+                    : null;
+                return (fr, idx, ctx);
+            }).ConfigureAwait(true);
+            loadStopwatch.Stop();
+            DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
 
             // The only persisted text in the module — under the user data root,
             // inspectable and removable through the CLI `dict` command.
@@ -85,6 +105,10 @@ public partial class App
 
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
             ReconcileAutocorrect();
+
+            // Readiness edge: engine built, wired and reconciled. Concise
+            // milestone, no number — the timing is on LexiconLoadComplete above.
+            DeckleAutocorrectSource.Log.EngineReady();
         }
         catch
         {

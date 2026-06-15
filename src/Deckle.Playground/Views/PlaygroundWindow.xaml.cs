@@ -47,6 +47,11 @@ public sealed partial class PlaygroundWindow : Window
     // tree on every interaction.
     private HudPage? _hudPage;
     private AmbientPage? _ambientPage;
+    private SegmentationPage? _segmentationPage;
+
+    // Collapses the per-frame Win2D recompute the Segmentation curve pays during an
+    // interactive edge drag into a single crisp repaint on settle. See ResizeCoalescer.
+    private ResizeCoalescer? _resizeCoalescer;
 
     public PlaygroundWindow()
     {
@@ -133,6 +138,19 @@ public sealed partial class PlaygroundWindow : Window
         Nav.SelectedItem = Nav.MenuItems[0];
 
         this.Closed += OnWindowClosed;
+
+        // Resize coalescing. While the user drags a sizing border the Segmentation
+        // curve's Win2D surface would re-layout and reissue its label text every
+        // WM_SIZE — the visible lag. The coalescer flips the canvas's suspend flag
+        // on the gesture's rising edge and clears it, with a crisp final repaint,
+        // once the size settles. Pages without a Win2D surface see no-ops: the
+        // cached page reference stays null until that page is visited. HWND is
+        // already valid (captured above), so we register immediately.
+        _resizeCoalescer = new ResizeCoalescer(
+            _hwnd, "playground",
+            onResizeSettled: () => _segmentationPage?.SetCurveResizeSuspended(false),
+            onResizeStarted: () => _segmentationPage?.SetCurveResizeSuspended(true));
+        _resizeCoalescer.Register();
 
         // Theme: wires ActualThemeChanged on the XAML root. Playground is
         // singleton-hidden (lives for the whole app session once opened), so it
@@ -234,6 +252,9 @@ public sealed partial class PlaygroundWindow : Window
         try { _hudPage?.DisposeResources(); } catch { /* best effort */ }
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
 
+        // Remove the HWND subclass before the window is gone.
+        _resizeCoalescer?.Dispose();
+
         // Drop the shell's nav callback so a stale page reference can't
         // route into a destroyed window. ReferenceEquals (not ==) because
         // Window inherits the default object equality and the compiler
@@ -271,6 +292,9 @@ public sealed partial class PlaygroundWindow : Window
 
         if (PageFrame.CurrentSourcePageType == pageType) return;
 
+        // One nav-start timestamp for BOTH the Navigate-return NavTiming and the
+        // destination page's first-Loaded PageReady. Set once per navigation.
+        DecklePlaygroundSource.NavClock.Restart();
         try
         {
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
@@ -280,6 +304,8 @@ public sealed partial class PlaygroundWindow : Window
                 DecklePlaygroundSource.Log.NavigationFailedDetail(pageType.Name, "frame_returned_false", "");
                 return;
             }
+
+            DecklePlaygroundSource.Log.NavTiming(pageType.Name, DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
 
             // Cache the resolved page instance so ShowAndActivate /
             // DisposeResources don't have to walk the Frame's content
@@ -294,6 +320,9 @@ public sealed partial class PlaygroundWindow : Window
                     break;
                 case AmbientPage amb:
                     _ambientPage = amb;
+                    break;
+                case SegmentationPage seg:
+                    _segmentationPage = seg;
                     break;
             }
         }

@@ -75,6 +75,9 @@ public sealed partial class SegmentationPage : Page
         ViewModel.Load();
         UpdateReadouts();
         UpdateUnsavedBar();
+        // First Loaded = page ready after the load above (gated by _loaded).
+        // Measured from the nav-start clock set in PlaygroundWindow.
+        DecklePlaygroundSource.Log.PageReady(nameof(SegmentationPage), DecklePlaygroundSource.NavClock.ElapsedMilliseconds);
     }
 
     // The view-model is the single source : watch it to keep the two plain-text
@@ -129,6 +132,18 @@ public sealed partial class SegmentationPage : Page
 
     private void UpdateCurveResetReveal() =>
         CurveResetButton.Opacity = _curvePointerOver || _curveResetFocused ? 1 : 0;
+
+    // ── Resize coalescing ────────────────────────────────────────────────────────
+    //
+    // The host window drives this off its ResizeCoalescer: true on a resize
+    // gesture's rising edge, false when it settles. We forward it to the curve
+    // canvas, whose OnDraw drops the costly axis-label text layout while it's true.
+    // Guarded because the named part may not exist yet on a very early call.
+    public void SetCurveResizeSuspended(bool suspended)
+    {
+        if (HangoverCurve is not null)
+            HangoverCurve.SuspendExpensiveDraw = suspended;
+    }
 
     // ── Graph show / hide ────────────────────────────────────────────────────────
 
