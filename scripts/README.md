@@ -20,8 +20,9 @@ dev action by purpose:
 
 | Section | Action | Per-worktree? | Delegates to |
 |---|---|:---:|---|
-| **Build** | Build and run app (Debug) | yes | `lib/build-run.ps1 -Configuration Debug` |
-|  | Build and run app (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
+| **Launch** | Launch app | yes | `lib/launch-app.ps1 -Configuration Release` |
+| **Build** | Build and run app (Release) | yes | `lib/build-run.ps1 -Configuration Release` |
+|  | Build and run app (Debug) | yes | `lib/build-run.ps1 -Configuration Debug` |
 |  | Build app without running | yes | `lib/build-run.ps1 -Configuration Release -NoRun` |
 | **Release** | Publish app release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
 |  | Prepare app release artifacts | yes | `lib/publish-app.ps1` |
@@ -45,7 +46,8 @@ profile — `deckle.ps1` is purely additive.
 
 | File | Purpose | Common switches |
 |---|---|---|
-| [`lib/build-run.ps1`](lib/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build`, and launch the freshly built exe through `cmd /c start`. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
+| [`lib/launch-app.ps1`](lib/launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Pick`, `-Wait` |
+| [`lib/build-run.ps1`](lib/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build`, and launch the freshly built exe through ShellExecute. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
 | [`lib/clean.ps1`](lib/clean.ps1) | Kill running `Deckle.exe` (it locks the output), then remove the consolidated `artifacts/{bin,obj,publish,package}/` plus any straggler `bin/`+`obj/` under `src/`, `tests/`, `benchmark/cs/`. Keeps `artifacts/Deckle-v*` release staging unless `-IncludeReleases`. Guards against symlinks / junctions. Reports total freed bytes. | `-Target <worktree>`, `-Pick`, `-IncludeReleases` |
 | [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight files over 500 / 1000 raw lines, summarize modules by source LOC, list file types dynamically, and print the per-file module table. Excludes `bin/obj/artifacts/.vs/Properties` and generated files (`*.g.cs`, `*.g.i.cs`, `*.xaml.g.cs`). | `-Target <worktree>`, `-Pick`, `-Json <path>` |
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
@@ -54,7 +56,7 @@ profile — `deckle.ps1` is purely additive.
 | [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>` |
 | [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from the Conventional-Commit history — plain `git log` + PowerShell, no external tool or API. Default regenerates the whole `CHANGELOG.md` from the `v0.4.0` floor forward; `-NotesFor X.Y.Z` emits a single version's section for `gh … --notes-file` (consumed by `publish-app.ps1`). | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
-| [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
+| [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path) and `Select-Action` (Label/Value picker with optional `IsHeader` section dividers). Up/Down navigates, Enter confirms, Esc cancels. Imported by `deckle.ps1`, `launch-app.ps1 -Pick`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
 
 ## Git hooks — TREE.md auto-update
 

@@ -3,6 +3,7 @@
 # Run this with F5 in VSCodium (see .vscode/launch.json) or directly from
 # a PowerShell 7+ terminal. The menu groups actions by purpose:
 #
+#   Launch            — start an already-built app, per-worktree.
 #   Build             — daily compile + run loop, per-worktree.
 #   Release           — cut release artefacts / GitHub releases only,
 #                       per-worktree where applicable.
@@ -63,9 +64,12 @@ function Read-Optional {
 # Build the top-level action list. Headers (IsHeader=$true) render as
 # section dividers — Up/Down skips them automatically.
 $actions = @(
+    [pscustomobject]@{ Label = '── Launch ──';                      Value = $null;            IsHeader = $true  }
+    [pscustomobject]@{ Label = 'Launch app';                        Value = 'launch'                           }
+
     [pscustomobject]@{ Label = '── Build ──';                       Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Build and run app (Debug)';         Value = 'build-debug'                       }
     [pscustomobject]@{ Label = 'Build and run app (Release)';       Value = 'build-release'                     }
+    [pscustomobject]@{ Label = 'Build and run app (Debug)';         Value = 'build-debug'                       }
     [pscustomobject]@{ Label = 'Build app without running';         Value = 'build-norun'                       }
 
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
@@ -96,6 +100,13 @@ try {
 }
 
 switch ($action) {
+
+    # ----- Launch branches — per-worktree --------------------------------
+    'launch' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Release
+    }
 
     # ----- Build branches — per-worktree ---------------------------------
     'build-debug' {

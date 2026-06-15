@@ -3,7 +3,7 @@
     // then F5. Uses the PowerShell extension (ms-vscode.powershell).
     //
     // Le profil par défaut "Deckle" ouvre le menu unique :
-    //   - pick action (Build, Clean, Stats, Bootstrap)
+    //   - pick action (Launch, Build, Clean, Stats, Bootstrap)
     //   - per-worktree actions then prompt for a worktree.
     // VSCodium reste ouvert sur main, on choisit la branche et l'action
     // sans switcher. Voir scripts/deckle.ps1 et scripts/lib/_menu.psm1.
