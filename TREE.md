@@ -326,7 +326,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
 │   │   │   ├── HudComposition.Config.cs
+│   │   │   ├── HudComposition.ConicClonePreview.cs
 │   │   │   ├── HudComposition.cs
+│   │   │   ├── HudComposition.DigitReveal.cs
 │   │   │   ├── HudComposition.Factories.cs
 │   │   │   ├── HudComposition.NakedPreview.cs
 │   │   │   ├── HudComposition.Painting.cs
@@ -391,8 +393,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
+│   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary and the per-phase colour-state matrix (digits, do…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
+│   │   │   ├── HudChrono.RevealMask.cs
 │   │   │   ├── HudChrono.Stroke.cs
 │   │   │   ├── HudChrono.xaml
 │   │   │   └── HudChrono.xaml.cs
@@ -663,6 +667,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
+│   │   ├── Controls/
+│   │   │   ├── TunableRow.xaml
+│   │   │   ├── TunableRow.xaml.cs
+│   │   │   ├── TuningCard.xaml
+│   │   │   └── TuningCard.xaml.cs
 │   │   ├── Models/
 │   │   │   └── TuningModel.cs
 │   │   ├── Strings/
@@ -670,7 +679,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── AmbientViewModel.cs
-│   │   │   └── HudViewModel.cs
+│   │   │   ├── HudViewModel.cs
+│   │   │   └── SegmentationViewModel.cs
 │   │   ├── Views/
 │   │   │   ├── Ambient/
 │   │   │   │   ├── AmbientPage.HdrTuning.cs
@@ -688,6 +698,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MouseWheel/
 │   │   │   │   ├── MouseWheelPage.xaml
 │   │   │   │   └── MouseWheelPage.xaml.cs
+│   │   │   ├── Segmentation/
+│   │   │   │   ├── SegmentationPage.xaml
+│   │   │   │   └── SegmentationPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
@@ -803,6 +816,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorpusTier.cs
 │   │   │   ├── PromptTemplateHash.cs
 │   │   │   └── WavCorpusWriter.cs
+│   │   ├── Curves/
+│   │   │   └── UnitBezier.cs
 │   │   ├── Engine/
 │   │   │   ├── IAsrBackend.cs
 │   │   │   ├── PipelineProduction.cs
@@ -824,6 +839,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   └── Controls/
+│   │   │       ├── HangoverCurveCanvas.xaml
+│   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   └── WhisperViewModel.cs
 │   │   ├── CLAUDE.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
@@ -998,7 +1017,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
-│   │   └── StreamingBackendAudioTests.cs
+│   │   ├── StreamingBackendAudioTests.cs
+│   │   └── UnitBezierTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs

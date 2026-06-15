@@ -1,6 +1,7 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Deckle.Catalog;
 
 namespace Deckle.Playground;
 
@@ -21,10 +22,12 @@ namespace Deckle.Playground;
 
 public sealed partial class HudPage
 {
-    // Expander header hosts the section title and an aligned-right
-    // "Reset" HyperlinkButton. The HyperlinkButton intercepts the click
-    // (its routed Click marks Handled) so tapping Reset doesn't collapse
-    // the Expander it sits in.
+    // Expander header hosts the section title and an aligned-right "Reset
+    // section" button — icon + label, hidden until the section is hovered or the
+    // button is focused, the same Settings reveal as TuningCard's section reset.
+    // A Button absorbs its own click, so tapping Reset doesn't toggle the
+    // Expander it sits in. The button keeps its slot at rest, so the reveal
+    // never reflows the header.
     private StackPanel NewExpander(string title, Action resetAction, bool expanded = true)
     {
         var content = new StackPanel
@@ -46,15 +49,19 @@ public sealed partial class HudPage
         Grid.SetColumn(titleTb, 0);
         headerGrid.Children.Add(titleTb);
 
-        var resetBtn = new HyperlinkButton
+        var resetContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        resetContent.Children.Add(new FontIcon { Glyph = Glyphs.Refresh, FontSize = 14 });
+        resetContent.Children.Add(new TextBlock { Text = "Reset section" });
+
+        var resetBtn = new Button
         {
-            Content = "Reset",
+            Style = (Style)Application.Current.Resources["SubtleButtonStyle"],
+            Content = resetContent,
             VerticalAlignment = VerticalAlignment.Center,
-            // Tight padding so the Reset label doesn't bloat the header.
-            Padding = new Thickness(8, 2, 8, 2),
-            Margin = new Thickness(0, -4, 8, -4),
+            Margin = new Thickness(0, -4, 0, -4),
+            Opacity = 0,
         };
-        ToolTipService.SetToolTip(resetBtn, "Reset this section to defaults");
+        ToolTipService.SetToolTip(resetBtn, "Reset this section to its defaults");
         resetBtn.Click += (_, _) => resetAction();
         Grid.SetColumn(resetBtn, 1);
         headerGrid.Children.Add(resetBtn);
@@ -68,6 +75,17 @@ public sealed partial class HudPage
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Margin = new Thickness(0, 4, 0, 4),
         };
+
+        // Reveal the reset on hover / focus — instant, no animation, matching
+        // TuningCard. Hovering anywhere on the section (header or rows) shows it ;
+        // focusing the button keyboard-reveals it.
+        bool pointerOver = false, focused = false;
+        void UpdateReveal() => resetBtn.Opacity = pointerOver || focused ? 1 : 0;
+        expander.PointerEntered += (_, _) => { pointerOver = true;  UpdateReveal(); };
+        expander.PointerExited  += (_, _) => { pointerOver = false; UpdateReveal(); };
+        resetBtn.GotFocus       += (_, _) => { focused = true;  UpdateReveal(); };
+        resetBtn.LostFocus      += (_, _) => { focused = false; UpdateReveal(); };
+
         TuningStack.Children.Add(expander);
         return content;
     }

@@ -72,6 +72,12 @@
                         <FontIcon Glyph="{StaticResource Icon.Mouse}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Uid="PlaygroundNavSegmentation"
+                                    Tag="Deckle.Playground.SegmentationPage">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Speech}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <Frame x:Name="PageFrame" />

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Playground.Controls.TuningCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- One tuning section : a titled, described card hosting an arbitrary stack of
+         knobs, with a per-section reset that stays hidden until the card is hovered
+         or its reset is focused — the Windows 11 Settings reveal pattern. The card
+         chrome (Card brushes, ControlCornerRadius, 24 padding) is the same the
+         pages drew by hand ; folding it into one control removes the repetition and
+         makes "every section carries a Reset section" structural rather than
+         per-page discipline. The page wires OnResetClick to snap that section back
+         to its defaults. Children placed between the tags fill the body. -->
+    <Border x:Name="CardRoot"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="{ThemeResource ControlCornerRadius}"
+            Padding="24"
+            PointerEntered="OnPointerEntered"
+            PointerExited="OnPointerExited">
+
+        <VisualStateManager.VisualStateGroups>
+            <!-- Reveal the reset on hover / focus — instant, no animation. The
+                 button keeps its slot at rest so the reveal never reflows the
+                 header. -->
+            <VisualStateGroup x:Name="RevealStates">
+                <VisualState x:Name="Rest">
+                    <VisualState.Setters>
+                        <Setter Target="ResetButton.Opacity" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Revealed">
+                    <VisualState.Setters>
+                        <Setter Target="ResetButton.Opacity" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <StackPanel Spacing="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock x:Name="TitleText"
+                               Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock x:Name="DescriptionText"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               MaxWidth="640"
+                               Visibility="Collapsed" />
+                </StackPanel>
+
+                <!-- Reset section — icon + label, hidden (Opacity 0) until reveal.
+                     SubtleButton so it reads as a quiet header affordance ; GotFocus
+                     reveals it so a keyboard user sees it the moment it is tabbed
+                     to, not only on hover. -->
+                <Button x:Name="ResetButton" Grid.Column="1"
+                        Style="{ThemeResource SubtleButtonStyle}"
+                        VerticalAlignment="Top"
+                        Opacity="0"
+                        ToolTipService.ToolTip="Reset this section to its defaults"
+                        Click="OnResetClick"
+                        GotFocus="OnResetGotFocus"
+                        LostFocus="OnResetLostFocus">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                        <TextBlock x:Name="ResetLabelText" Text="Reset section" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <ContentPresenter Content="{x:Bind CardContent, Mode=OneWay}" />
+        </StackPanel>
+    </Border>
+</UserControl>

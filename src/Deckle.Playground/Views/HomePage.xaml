@@ -1,5 +1,5 @@
-<!-- Landing page : two SettingsCards routing to the HUD and Ambient
-     pages. Pattern mirrors Dev Home / Settings hub : a centred,
+<!-- Landing page : three SettingsCards routing to the HUD, Ambient and
+     Segmentation pages. Pattern mirrors Dev Home / Settings hub : a centred,
      readable column with an H1 and a stack of cards. Routing goes
      through PlaygroundShell.NavigateTo so the page doesn't hold a
      reference to the parent Window's NavigationView. -->
@@ -18,13 +18,13 @@
               Margin="32,32,32,32">
             <StackPanel Spacing="32">
 
-                <!-- Header block : H1 + one-line description.
-                     TitleLargeTextBlockStyle matches the Settings pages'
-                     header convention so the visual hierarchy stays
-                     consistent across the app's tuning surfaces. -->
+                <!-- Header block : H1 + one-line description. TitleTextBlockStyle
+                     (not TitleLarge) is the shared Playground header convention —
+                     the HUD page sets the reference, every page aligns to it so
+                     no surface reads oversized. -->
                 <StackPanel Spacing="8">
                     <TextBlock x:Uid="PlaygroundHomeHeader"
-                               Style="{ThemeResource TitleLargeTextBlockStyle}" />
+                               Style="{ThemeResource TitleTextBlockStyle}" />
                     <TextBlock x:Uid="PlaygroundHomeSubheader"
                                Style="{ThemeResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -54,6 +54,11 @@
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Mouse}}"
                                            IsClickEnabled="True"
                                            Click="OnMouseWheelCardClick" />
+                    <controls:SettingsCard x:Name="HomeSegmentationCard"
+                                           x:Uid="PlaygroundHomeSegmentationCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Speech}}"
+                                           IsClickEnabled="True"
+                                           Click="OnSegmentationCardClick" />
                 </StackPanel>
 
                 <!-- Notifications test surface. Manual probe for the toast

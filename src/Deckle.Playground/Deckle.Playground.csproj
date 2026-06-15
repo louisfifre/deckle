@@ -40,6 +40,9 @@
     <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+    <!-- Energy segmenter settings + the HangoverCurveCanvas control consumed by
+         the Segmentation tuning page. -->
+    <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>
 </Project>

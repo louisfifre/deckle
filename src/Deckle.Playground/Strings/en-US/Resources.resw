@@ -75,6 +75,9 @@
   <data name="PlaygroundNavMouseWheel.Content" xml:space="preserve">
     <value>Mouse wheel</value>
   </data>
+  <data name="PlaygroundNavSegmentation.Content" xml:space="preserve">
+    <value>Utterance segmentation</value>
+  </data>
 
   <data name="PlaygroundHomeHeader.Text" xml:space="preserve">
     <value>Deckle Playground</value>
@@ -100,15 +103,18 @@
   <data name="PlaygroundHomeMouseWheelCard.Description" xml:space="preserve">
     <value>Record raw wheel events to JSONL — cadence, deltas, axes — the reference data for mapping the wheel onto a two-finger gesture.</value>
   </data>
+  <data name="PlaygroundHomeSegmentationCard.Header" xml:space="preserve">
+    <value>Utterance segmentation</value>
+  </data>
+  <data name="PlaygroundHomeSegmentationCard.Description" xml:space="preserve">
+    <value>Shape the dynamic-hangover curve that decides where the streaming transcriber cuts one utterance from the next. Live plot + Save / Revert / Reset.</value>
+  </data>
 
   <data name="PlaygroundHudTunablesHeader.Text" xml:space="preserve">
-    <value>Tunables</value>
+    <value>HUD elements</value>
   </data>
   <data name="PlaygroundHudTunablesDescription.Text" xml:space="preserve">
-    <value>Tweak values live for the current session — nothing is saved. Restart Deckle to reset to defaults.</value>
-  </data>
-  <data name="PlaygroundHudResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
+    <value>Tweak values live for the current session — nothing is saved. Reset all to start over; the next launch is fresh anyway.</value>
   </data>
 
   <data name="PlaygroundAmbientHeader.Text" xml:space="preserve">
@@ -135,6 +141,12 @@
   </data>
   <data name="PlaygroundMouseWheelOpenFolderCard.Description" xml:space="preserve">
     <value>Open the folder where the capture files are written.</value>
+  </data>
+  <data name="PlaygroundSegmentationHeader.Text" xml:space="preserve">
+    <value>Utterance segmentation</value>
+  </data>
+  <data name="PlaygroundSegmentationSubheader.Text" xml:space="preserve">
+    <value>Shape the dynamic-hangover curve that decides where the streaming transcriber cuts one utterance from the next. Edits stay local until you save.</value>
   </data>
 
   <!-- Notifications test surface (HomePage). x:Uid bindings : the section

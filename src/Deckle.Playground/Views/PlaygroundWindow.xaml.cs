@@ -16,8 +16,8 @@ namespace Deckle.Playground;
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
 // Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
-// three pages : HomePage, HudPage, AmbientPage — each owning its tuning
-// surface, ViewModel, and runtime resources. The window itself only
+// four pages : HomePage, HudPage, AmbientPage, SegmentationPage — each owning
+// its tuning surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes
 // (SetRecordingState, ShowAndActivate, Closed→DisposeResources).
 //
@@ -316,11 +316,12 @@ public sealed partial class PlaygroundWindow : Window
     {
         string fullTag = shortTag switch
         {
-            "home"       => "Deckle.Playground.HomePage",
-            "hud"        => "Deckle.Playground.HudPage",
-            "ambient"    => "Deckle.Playground.AmbientPage",
-            "mousewheel" => "Deckle.Playground.MouseWheelPage",
-            _            => "",
+            "home"         => "Deckle.Playground.HomePage",
+            "hud"          => "Deckle.Playground.HudPage",
+            "ambient"      => "Deckle.Playground.AmbientPage",
+            "mousewheel"   => "Deckle.Playground.MouseWheelPage",
+            "segmentation" => "Deckle.Playground.SegmentationPage",
+            _              => "",
         };
         if (string.IsNullOrEmpty(fullTag)) return;
 

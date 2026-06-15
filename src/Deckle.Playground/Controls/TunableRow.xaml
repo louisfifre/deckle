@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Playground.Controls.TunableRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- One tunable knob : a bold label with a per-parameter reset wheel on the
+         right, a slider paired with an editable NumberBox sharing the same value
+         (the HUD tuning pattern), an optional unit suffix, and an optional caption
+         underneath. The slider and the box stay in sync through the code-behind
+         guard ; both step on the same increment so values land on round numbers.
+         The reset wheel is enabled only while the value differs from its default. -->
+    <StackPanel Spacing="6"
+                Background="Transparent"
+                PointerEntered="OnPointerEntered"
+                PointerExited="OnPointerExited">
+
+        <VisualStateManager.VisualStateGroups>
+            <!-- The per-knob reset wheel stays hidden until the row is hovered or
+                 the wheel is focused — same Settings reveal as the section reset on
+                 TuningCard, one level down. Instant, no animation ; the wheel keeps
+                 its slot so the reveal never reflows the label row. -->
+            <VisualStateGroup x:Name="RevealStates">
+                <VisualState x:Name="Rest">
+                    <VisualState.Setters>
+                        <Setter Target="ResetButton.Opacity" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Revealed">
+                    <VisualState.Setters>
+                        <Setter Target="ResetButton.Opacity" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="LabelText" Grid.Column="0"
+                       Style="{ThemeResource BodyStrongTextBlockStyle}"
+                       VerticalAlignment="Center" />
+            <Button x:Name="ResetButton" Grid.Column="1"
+                    Style="{ThemeResource SubtleButtonStyle}"
+                    Padding="6,4" MinWidth="0"
+                    VerticalAlignment="Center"
+                    Opacity="0"
+                    ToolTipService.ToolTip="Reset to default"
+                    Click="OnResetClick"
+                    GotFocus="OnResetGotFocus"
+                    LostFocus="OnResetLostFocus">
+                <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="12" />
+            </Button>
+        </Grid>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Slider x:Name="ValueSlider" Grid.Column="0"
+                    VerticalAlignment="Center"
+                    IsThumbToolTipEnabled="False"
+                    ValueChanged="OnSliderChanged" />
+            <NumberBox x:Name="ValueBox" Grid.Column="1"
+                       MinWidth="120"
+                       VerticalAlignment="Center"
+                       SpinButtonPlacementMode="Compact"
+                       ValidationMode="InvalidInputOverwritten"
+                       ValueChanged="OnNumberBoxChanged" />
+            <TextBlock x:Name="UnitText" Grid.Column="2"
+                       VerticalAlignment="Center"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Grid>
+
+        <TextBlock x:Name="DescriptionText"
+                   Style="{ThemeResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                   TextWrapping="Wrap"
+                   Visibility="Collapsed" />
+    </StackPanel>
+</UserControl>

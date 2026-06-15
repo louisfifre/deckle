@@ -317,6 +317,24 @@ public sealed partial class AmbientPage : Page
         UpdatePreviewViewboxVisibility();
     }
 
+    // ── Action bar ───────────────────────────────────────────────────────────
+
+    // Reset to defaults : the VM snaps the tuning surface back to the shipping
+    // defaults and saves ; the AmbientSettingsService.Changed observer
+    // (OnAmbientSettingsChanged) reloads the VM and repaints every slider, so
+    // there's nothing to push from here.
+    private void OnAmbientResetDefaultsClick(object sender, RoutedEventArgs e)
+        => ViewModel.ResetDefaults();
+
+    // Per-section resets from the TuningCard headers. Each writes the section's
+    // defaults onto the store and Save()s ; the Changed observer reloads the VM
+    // and PushViewModelToControls repaints the affected sliders.
+    private void OnResetHdrClick(object sender, RoutedEventArgs e)
+        => ViewModel.ResetHdrSection();
+
+    private void OnResetZoneClick(object sender, RoutedEventArgs e)
+        => ViewModel.ResetZoneSamplingSection();
+
     // ── Theme resource helper ───────────────────────────────────────────────
     //
     // Looking up a system fill colour brush from code-behind requires

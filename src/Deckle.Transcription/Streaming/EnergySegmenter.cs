@@ -42,8 +42,9 @@ internal readonly record struct SegmenterSnapshot(
 //   frame before declaring the utterance over, so a brief intra-phrase pause
 //   does not split a sentence. The required delay SHRINKS as the utterance
 //   grows: HangoverMaxMs while the utterance is below HangoverRampStartMs,
-//   HangoverMinMs at and above HangoverRampEndMs, log-linear decay in between.
-//   No hard cap — a very long utterance ends on a micro-pause, never mid-word.
+//   HangoverMinMs at and above HangoverRampEndMs, a cubic-Bézier decay in
+//   between (two control points). No hard cap — a very long
+//   utterance ends on a micro-pause, never mid-word.
 //
 //   Margin = CUT POSITION. The emitted span ends MarginMs after the last voiced
 //   frame. The silence between the margin and the hangover expiry is DROPPED.
@@ -66,6 +67,7 @@ internal sealed class EnergySegmenter
     private readonly int   _rampEndFrames;      // utterance length at/above which hangover = min
     private readonly int   _marginFrames;       // trailing silence frames kept after last voiced
     private readonly int   _minVoicedFrames;    // shorter voiced extent → dropped as a blip
+    private readonly UnitBezier _hangoverCurve;  // cubic-Bézier easing of the ramp decay
 
     private enum State { Silence, Speech, Hangover }
     private State _state = State.Silence;
@@ -92,6 +94,9 @@ internal sealed class EnergySegmenter
         _rampEndFrames     = FramesFromMs(settings.HangoverRampEndMs,   min: 1);
         _marginFrames      = FramesFromMs(settings.MarginMs,            min: 0);
         _minVoicedFrames   = FramesFromMs(settings.MinUtteranceMs,      min: 1);
+        _hangoverCurve     = new UnitBezier(
+            settings.HangoverCurveX1, settings.HangoverCurveY1,
+            settings.HangoverCurveX2, settings.HangoverCurveY2);
 
         // Min must not exceed Max, and RampEnd must not precede RampStart — keep
         // the curve monotone non-increasing even if settings are inconsistent.
@@ -103,11 +108,11 @@ internal sealed class EnergySegmenter
         => Math.Max(min, (int)Math.Round(ms / FrameMs));
 
     // Current hangover requirement, based on how long the open utterance has
-    // grown. Below RampStart: max. At/above RampEnd: min. In between: cubic
-    // ease-in (p³) wrapped around the log-linear decay — the hangover stays
-    // near the max in the first half of the ramp window, then drops sharply in
-    // the last quarter. This is the curve Louis wanted: long stability, then
-    // brutal switch.
+    // grown. Below RampStart: max. At/above RampEnd: min. In between, the delay
+    // eases from max to min along the cubic-Bézier curve (see UnitBezier), which
+    // declines from the very start of the ramp — no built-in plateau, whole-frame
+    // rounding aside — with entry and exit slopes set by the two control points.
+    // No hard cap — a long utterance still ends on a micro-pause, never mid-word.
     private int RequiredHangoverFrames()
     {
         int len = _frames.Count;
@@ -115,10 +120,9 @@ internal sealed class EnergySegmenter
         if (len >= _rampEndFrames)   return _hangoverMinFrames;
 
         double p = (double)(len - _rampStartFrames) / (_rampEndFrames - _rampStartFrames);
-        double pSteep = p * p * p;
-        double ratio = (double)_hangoverMinFrames / _hangoverMaxFrames;
-        int frames = (int)Math.Round(_hangoverMaxFrames * Math.Pow(ratio, pSteep));
-        return Math.Max(_hangoverMinFrames, frames);
+        double t = _hangoverCurve.Solve(p);
+        int frames = (int)Math.Round(_hangoverMaxFrames - (_hangoverMaxFrames - _hangoverMinFrames) * t);
+        return Math.Clamp(frames, _hangoverMinFrames, _hangoverMaxFrames);
     }
 
     // Feed one capture frame. Emits an Utterance via the callback if this frame
