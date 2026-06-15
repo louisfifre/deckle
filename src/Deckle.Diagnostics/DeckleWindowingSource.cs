@@ -68,6 +68,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public const int EvtWindowZOrderState    = 4;
     public const int EvtWindowResizeSettled  = 5;
     public const int EvtWindowResizeFrame    = 6;
+    public const int EvtWindowLoadComplete   = 7;
 
     // Common trunk: emitted by every site that positions or resizes a window.
     // `window` is a short logical name (see closed vocabulary above). `hmon`
@@ -207,5 +208,26 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         WriteEvent(EvtWindowResizeFrame, window, frame, size_w, size_h, since_prev_ms, relayout_ms);
+    }
+
+    // Lazy first-open construction cost: one rolled-up event per lazily
+    // constructed secondary window (`window` reuses the closed logical-name
+    // vocabulary above — "log", "settings", "playground"). `load_ms` is the
+    // wall-clock of the one-shot construction span the call site brackets with a
+    // Stopwatch: `new <Window>()` plus the synchronous placement-restore and
+    // first-time wiring inside the lazy guard, NOT the per-open Show/Activate
+    // path. Mirrors the whisper ModelLoadComplete(load_ms) shape; emitted as a
+    // single complete event with no paired start, matching WindowResizeSettled —
+    // the source's existing one-shot rolled-up-duration idiom — since the span
+    // is synchronous, non-cancellable, and has no intermediate phase to bracket
+    // externally.
+    [Event(EvtWindowLoadComplete,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "window load complete | window={0} | load_ms={1}")]
+    public void WindowLoadComplete(string window, long load_ms)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        WriteEvent(EvtWindowLoadComplete, window, load_ms);
     }
 }

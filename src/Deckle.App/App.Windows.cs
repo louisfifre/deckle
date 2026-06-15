@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Deckle.App;
+using Deckle.Diagnostics;
 using Deckle.Playground;
 
 namespace Deckle.App;
@@ -9,6 +12,9 @@ public partial class App
     {
         if (_logWindow is null)
         {
+            bool measure = DeckleWindowingSource.Log.IsEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
+            var sw = measure ? Stopwatch.StartNew() : null;
             var window = new LogWindow();
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
             window.AppWindow.Closing += (_, _) =>
@@ -23,6 +29,8 @@ public partial class App
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
+            if (sw is not null)
+                DeckleWindowingSource.Log.WindowLoadComplete("log", sw.ElapsedMilliseconds);
         }
         _logWindow.ShowAndActivate();
     }
@@ -31,6 +39,9 @@ public partial class App
     {
         if (_settingsWindow is null)
         {
+            bool measure = DeckleWindowingSource.Log.IsEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
+            var sw = measure ? Stopwatch.StartNew() : null;
             var window = new Settings.SettingsWindow
             {
                 OnShowLogsRequested = () => ShowLogWindowLazy(),
@@ -45,6 +56,8 @@ public partial class App
 
             _settingsWindow = window;
             ApplyThemeToSingle(window);
+            if (sw is not null)
+                DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
         }
         _settingsWindow.ShowAndActivate(pageTag);
     }
@@ -53,6 +66,9 @@ public partial class App
     {
         if (_playgroundWindow is null)
         {
+            bool measure = DeckleWindowingSource.Log.IsEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
+            var sw = measure ? Stopwatch.StartNew() : null;
             var window = new PlaygroundWindow();
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Playground);
             window.AppWindow.Closing += (_, _) =>
@@ -66,6 +82,8 @@ public partial class App
             _playgroundWindow = window;
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
+            if (sw is not null)
+                DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
         }
         _playgroundWindow.ShowAndActivate();
     }
