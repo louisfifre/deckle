@@ -25,8 +25,13 @@ namespace Deckle.Shell;
 //   • IsResizing — true between ENTER and EXIT. Expensive per-frame work (a Win2D
 //     Draw, a SizeChanged rebuild) gates on !IsResizing and renders a cheap
 //     placeholder, or nothing, while it is true.
-//   • onResizeSettled — the recompute callback, invoked once when the size
-//     settles, to repaint crisply.
+//   • onResizeStarted — the rising edge, invoked once on ENTER. Lets a consumer
+//     flip a reactive suspend flag the instant a drag begins, without polling
+//     IsResizing or arming a debounce timer. Only a real gesture raises it; the
+//     direct safety-net path below never does (a single settled frame needs no
+//     suspend).
+//   • onResizeSettled — the falling edge / recompute callback, invoked once when
+//     the size settles, to clear the suspend flag and repaint crisply.
 //
 // Safety net: maximize, snap and programmatic SetWindowPos do NOT enter the modal
 // loop, so they never raise ENTER/EXIT — they emit WM_SIZE alone. A WM_SIZE seen
@@ -46,6 +51,7 @@ public sealed class ResizeCoalescer : IDisposable
     private readonly IntPtr  _hwnd;
     private readonly string  _window;          // closed windowing vocabulary (DeckleWindowingSource)
     private readonly Action  _onResizeSettled;
+    private readonly Action? _onResizeStarted;
     private readonly ResizeGesture _gesture = new();
     private readonly Stopwatch     _gestureClock = new();
 
@@ -63,12 +69,14 @@ public sealed class ResizeCoalescer : IDisposable
 
     // `window` is the short logical name from the DeckleWindowingSource closed
     // vocabulary ("playground", "settings", "log", …). `onResizeSettled` runs the
-    // window's one deferred recompute and fires on the UI thread.
-    public ResizeCoalescer(IntPtr hwnd, string window, Action onResizeSettled)
+    // window's one deferred recompute, `onResizeStarted` (optional) the rising-edge
+    // suspend; both fire on the UI thread.
+    public ResizeCoalescer(IntPtr hwnd, string window, Action onResizeSettled, Action? onResizeStarted = null)
     {
         _hwnd = hwnd;
         _window = window;
         _onResizeSettled = onResizeSettled;
+        _onResizeStarted = onResizeStarted;
     }
 
     // Installs the subclass. Call once the window's HWND is valid (after
@@ -91,6 +99,7 @@ public sealed class ResizeCoalescer : IDisposable
             case NativeMethods.WM_ENTERSIZEMOVE:
                 _gesture.EnterSizeMove();
                 _gestureClock.Restart();
+                _onResizeStarted?.Invoke();
                 break;
 
             case NativeMethods.WM_EXITSIZEMOVE:
