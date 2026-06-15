@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
@@ -52,6 +53,10 @@ public partial class App
             // The heavy step: gzip decode + build of the FR frequency lexicon,
             // its accent index, and the pair bigram model. Pure CPU/IO, no UI
             // affinity — run it on the thread pool so boot is not blocked.
+            // Stopwatch wraps only the off-thread build; the elapsed ms lands
+            // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
+            // shape).
+            var loadStopwatch = Stopwatch.StartNew();
             var (french, index, context) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
@@ -61,6 +66,8 @@ public partial class App
                     : null;
                 return (fr, idx, ctx);
             }).ConfigureAwait(true);
+            loadStopwatch.Stop();
+            DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
 
             // The only persisted text in the module — under the user data root,
             // inspectable and removable through the CLI `dict` command.
@@ -98,6 +105,10 @@ public partial class App
 
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
             ReconcileAutocorrect();
+
+            // Readiness edge: engine built, wired and reconciled. Concise
+            // milestone, no number — the timing is on LexiconLoadComplete above.
+            DeckleAutocorrectSource.Log.EngineReady();
         }
         catch
         {
