@@ -22,9 +22,22 @@ namespace Deckle.Transcription;
 //                         Below this, the delay stays at HangoverMaxMs.
 //   HangoverRampEndMs   — utterance length at and above which the delay equals
 //                         HangoverMinMs. Between RampStart and RampEnd the delay
-//                         decays as Max × (Min/Max)^(p³) — cubic ease-in: stays
-//                         near the max in the first half of the ramp, then drops
-//                         sharply near the end.
+//                         eases from Max to Min along the shaped curve below.
+//
+//   The decay between RampStart and RampEnd follows a cubic Bézier easing — the
+//   same function CSS cubic-bezier(x1,y1,x2,y2) defines — with fixed endpoints
+//   (0,0) and (1,1) and two free control points. The four coordinates below ARE
+//   those two control points. They span the whole space the old contrast / knee
+//   knobs reached and more: pulling both handles into a corner gives a true
+//   right-angle hug, the diagonal gives a straight decline.
+//
+//   HangoverCurveX1/Y1  — first control point (P1), each in [0, 1]. Its direction
+//                         from (0,0) sets the curve's entry slope (Y1/X1).
+//   HangoverCurveX2/Y2  — second control point (P2), each in [0, 1]. Its direction
+//                         into (1,1) sets the exit slope ((1−Y2)/(1−X2)).
+//
+//   The default (0.85, 0.10, 0.90, 0.25) is the curve currently tuned in use:
+//   the delay holds near the max through most of the ramp, then drops late.
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
@@ -32,11 +45,15 @@ namespace Deckle.Transcription;
 //                         are dropped as noise blips rather than emitted.
 public sealed class EnergySegmenterSettings
 {
-    public double ThresholdDbfs        { get; set; } = -45.0;
-    public int    HangoverMaxMs        { get; set; } = 5_000;
-    public int    HangoverMinMs        { get; set; } = 500;
-    public int    HangoverRampStartMs  { get; set; } = 60_000;
-    public int    HangoverRampEndMs    { get; set; } = 180_000;
-    public int    MarginMs             { get; set; } = 150;
-    public int    MinUtteranceMs       { get; set; } = 250;
+    public double ThresholdDbfs       { get; set; } = -45.0;
+    public int    HangoverMaxMs       { get; set; } = 10_000;
+    public int    HangoverMinMs       { get; set; } = 500;
+    public int    HangoverRampStartMs { get; set; } = 15_000;
+    public int    HangoverRampEndMs   { get; set; } = 120_000;
+    public double HangoverCurveX1     { get; set; } = 0.85;
+    public double HangoverCurveY1     { get; set; } = 0.10;
+    public double HangoverCurveX2     { get; set; } = 0.90;
+    public double HangoverCurveY2     { get; set; } = 0.25;
+    public int    MarginMs            { get; set; } = 150;
+    public int    MinUtteranceMs      { get; set; } = 250;
 }

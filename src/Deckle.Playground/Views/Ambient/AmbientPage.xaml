@@ -29,7 +29,7 @@
             <StackPanel Grid.Row="0"
                         Orientation="Horizontal"
                         Spacing="8"
-                        Margin="32,24,16,12"
+                        Margin="24,24,12,12"
                         VerticalAlignment="Center">
                 <!-- Zones default OFF — the preview area shows the
                      placeholder until the user explicitly opts in.
@@ -59,7 +59,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="{ThemeResource ControlCornerRadius}"
-                    Margin="32,0,16,32"
+                    Margin="24,0,12,24"
                     Padding="24">
                 <Grid HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch">
@@ -102,24 +102,55 @@
             </Border>
         </Grid>
 
-        <!-- ── Col 1 — controls ────────────────────────────────────── -->
-        <ScrollViewer Grid.Column="1"
-                      MinWidth="380"
+        <!-- ── Col 1 — controls (Reset to defaults lives inline in the header) ─ -->
+        <Grid Grid.Column="1">
+
+            <ScrollViewer MinWidth="380"
                       MaxWidth="480"
-                      Padding="0,24,32,32"
+                      Padding="12,24,24,12"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="20">
 
-                <!-- Page title block — H1 + supporting paragraph. -->
-                <StackPanel Spacing="4">
-                    <TextBlock x:Uid="PlaygroundAmbientHeader"
-                               Style="{ThemeResource TitleLargeTextBlockStyle}" />
-                    <TextBlock x:Uid="PlaygroundAmbientSubheader"
+                <!-- Page title block — HUD-aligned : TitleTextBlockStyle header +
+                     Body description, with Reset to defaults inline on the right.
+                     Ambient is live-save, so the reset is the only action (no
+                     Save / Revert bar) ; it snaps the HDR + zone-sampling tuning
+                     and the Mode preset back to the shipping defaults, while
+                     pairing, the monitor source and the pipeline on/off state are
+                     preserved. -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               x:Uid="PlaygroundAmbientHeader"
+                               Style="{ThemeResource TitleTextBlockStyle}"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Row="0" Grid.Column="1"
+                            x:Name="AmbientResetDefaultsButton"
+                            Style="{ThemeResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            IsEnabled="{x:Bind ViewModel.CanReset, Mode=OneWay}"
+                            ToolTipService.ToolTip="Reset the tuning to the shipping defaults"
+                            Click="OnAmbientResetDefaultsClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                            <TextBlock Text="Reset to defaults" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                               x:Uid="PlaygroundAmbientSubheader"
                                Style="{ThemeResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+                </Grid>
 
                 <!-- Pipeline card. -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -741,6 +772,7 @@
                 </Border>
 
             </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Page>

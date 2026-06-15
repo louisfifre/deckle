@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Transcription.HangoverCurveCanvas"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives">
+
+    <UserControl.Resources>
+        <!-- Curve control-point handle : a filled accent dot with a ring in the
+             card colour so it reads as floating over the plotted curve. The Thumb
+             box (24) is larger than the visible dot (14) to give a comfortable
+             pointer target. -->
+        <Style x:Key="CurveHandleStyle" TargetType="primitives:Thumb">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="primitives:Thumb">
+                        <Grid Background="Transparent">
+                            <Ellipse Width="14" Height="14"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                     Stroke="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                                     StrokeThickness="2" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- Win2D immediate-mode plot. The curve, axes, labels and the two handle
+         stems are drawn procedurally in OnDraw — one Draw per Invalidate (a data
+         or theme change). CanvasControl reissues Draw itself on resize, so there
+         is NO XAML Shapes tree to Children.Clear and rebuild per SizeChanged
+         frame : that retained-mode rebuild was the source of the resize lag.
+
+         The Border owns the frame (LayerFill background, card stroke, rounded
+         corners) and an inner Padding so the plot breathes off the frame. On top
+         of the CanvasControl, a transparent Canvas hosts the two draggable
+         control-point handles (the curve editor) ; only the Thumbs hit-test, the
+         empty plot passes pointer events through. -->
+    <Border x:Name="PlotBorder"
+            Padding="12"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="{ThemeResource ControlCornerRadius}">
+        <Grid>
+            <canvas:CanvasControl x:Name="Plot" Draw="OnDraw" SizeChanged="OnPlotSizeChanged" />
+            <Canvas x:Name="HandleLayer">
+                <primitives:Thumb x:Name="Handle1" Style="{StaticResource CurveHandleStyle}" />
+                <primitives:Thumb x:Name="Handle2" Style="{StaticResource CurveHandleStyle}" />
+            </Canvas>
+        </Grid>
+    </Border>
+</UserControl>

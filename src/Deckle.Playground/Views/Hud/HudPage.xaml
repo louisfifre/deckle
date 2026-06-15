@@ -49,7 +49,7 @@
                  take at any moment without the icon swapping under
                  the cursor. Stop forces the preview back to its idle
                  frame regardless of where the play state was. -->
-            <Grid Margin="24,24,24,12">
+            <Grid Margin="24,24,12,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -187,7 +187,7 @@
             <Border Grid.Row="1"
                     Background="{ThemeResource LayerFillColorDefaultBrush}"
                     CornerRadius="{ThemeResource ControlCornerRadius}"
-                    Margin="24,0,24,24">
+                    Margin="24,0,12,24">
                 <Grid HorizontalAlignment="Center"
                       VerticalAlignment="Center">
                     <chrono:HudChrono x:Name="ChronoPreview"
@@ -211,17 +211,17 @@
         <ScrollViewer Grid.Column="1"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      Padding="24"
+                      Padding="12,24,24,24"
                       MinWidth="480"
                       MaxWidth="920">
             <StackPanel x:Name="TuningStack" Spacing="6">
 
-                <!-- Header : "Tunables" title + one-line description +
-                     "Reset all" button. The Playground is non-persistent
-                     by design — values live in memory for the current
-                     process, the next launch returns to compiled
-                     defaults. Reset all is the mid-session "snap
-                     back to defaults" shortcut. -->
+                <!-- Header : "Tunables" title + description, with Reset to defaults
+                     inline on the right. HUD tuning is memory-only (nothing
+                     persists ; a restart returns to the compiled defaults), so the
+                     reset is the only action — it snaps every section back to those
+                     defaults mid-session. BuildTuningPanel relies on this header
+                     staying child[0] of TuningStack. -->
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -231,31 +231,28 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Column="0" Grid.Row="0"
+                    <TextBlock Grid.Row="0" Grid.Column="0"
                                x:Uid="PlaygroundHudTunablesHeader"
                                Style="{ThemeResource TitleTextBlockStyle}"
                                VerticalAlignment="Center" />
-
-                    <Button Grid.Column="1" Grid.Row="0"
+                    <Button Grid.Row="0" Grid.Column="1"
                             x:Name="ResetAllButton"
                             Style="{ThemeResource SubtleButtonStyle}"
                             VerticalAlignment="Center"
                             ToolTipService.ToolTip="Reset every section to the shipping defaults"
                             Click="OnResetAllClick">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                            <TextBlock x:Uid="PlaygroundHudResetAllLabel" />
+                            <FontIcon Glyph="{StaticResource Icon.Refresh}" FontSize="14" />
+                            <TextBlock Text="Reset to defaults" />
                         </StackPanel>
                     </Button>
-
-                    <TextBlock Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2"
+                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                x:Uid="PlaygroundHudTunablesDescription"
-                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Style="{ThemeResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap"
-                               MaxWidth="400"
                                HorizontalAlignment="Left"
+                               MaxWidth="400"
                                Margin="0,4,0,0" />
                 </Grid>
                 <!-- Expanders appended programmatically below the

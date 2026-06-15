@@ -82,6 +82,16 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
+    // ── Command-enable flag ──────────────────────────────────────────────────
+    //
+    // Enabled only when the tuning surface (HDR + zone sampling + mode) differs
+    // from the shipping defaults — drives the Reset-to-defaults button in the
+    // page's action bar. Recomputed on every Load(), and every live-save edit
+    // round-trips through Load() via the AmbientSettingsService.Changed observer,
+    // so the button greys out the moment the surface is back at defaults.
+    [ObservableProperty]
+    public partial bool CanReset { get; set; }
+
     // ── Setter side-effects ──────────────────────────────────────────────────
     //
     // Tuning sliders implicitly switch the mode to Custom — that's the
@@ -289,5 +299,60 @@ public partial class AmbientViewModel : ObservableObject
         {
             _isSyncing = false;
         }
+        RecomputeCanReset();
+    }
+
+    // ── Reset to defaults ────────────────────────────────────────────────────
+    //
+    // Snaps the tuning surface — HDR grading, zone-sampling band, and the Mode
+    // preset — back to the AmbientSettings shipping defaults. Connection state
+    // (bridge pairing, last group, monitor) and the pipeline on/off flag are
+    // deliberately preserved : a reset shouldn't unpair the lights or kill a
+    // running pipeline. We write straight onto the store and Save() once (rather
+    // than going through the VM setters, which would fire a Save per field and
+    // flip Mode to Custom on each) ; Save() raises Changed, the page's observer
+    // reloads the VM and repaints every slider.
+    public void ResetDefaults()
+    {
+        var d   = new AmbientSettings();
+        var cur = AmbientSettingsService.Instance.Current;
+
+        cur.ExposureEv                     = d.ExposureEv;
+        cur.SaturationBoost                = d.SaturationBoost;
+        cur.MinBrightness                  = d.MinBrightness;
+        cur.BrightnessCurveType            = d.BrightnessCurveType;
+        cur.BrightnessCurveParam           = d.BrightnessCurveParam;
+        cur.BrightnessCurveSCurveSteepness = d.BrightnessCurveSCurveSteepness;
+        cur.ChangeThreshold                = d.ChangeThreshold;
+        cur.SmoothingAlpha                 = d.SmoothingAlpha;
+        cur.BorderMode                     = d.BorderMode;
+        cur.BorderDepth                    = d.BorderDepth;
+        cur.BorderCells                    = d.BorderCells;
+        cur.Mode                           = d.Mode;
+
+        AmbientSettingsService.Instance.Save();
+    }
+
+    // Compares the persisted tuning surface against a fresh AmbientSettings
+    // (the compiled defaults). Exact equality is fine : the sliders snap to
+    // discrete steps and the defaults are literals, so any user edit lands a
+    // value the default never holds.
+    private void RecomputeCanReset()
+    {
+        var d = new AmbientSettings();
+        var s = AmbientSettingsService.Instance.Current;
+        CanReset =
+            s.ExposureEv                     != d.ExposureEv ||
+            s.SaturationBoost                != d.SaturationBoost ||
+            s.MinBrightness                  != d.MinBrightness ||
+            s.BrightnessCurveType            != d.BrightnessCurveType ||
+            s.BrightnessCurveParam           != d.BrightnessCurveParam ||
+            s.BrightnessCurveSCurveSteepness != d.BrightnessCurveSCurveSteepness ||
+            s.ChangeThreshold                != d.ChangeThreshold ||
+            s.SmoothingAlpha                 != d.SmoothingAlpha ||
+            s.BorderMode                     != d.BorderMode ||
+            s.BorderDepth                    != d.BorderDepth ||
+            s.BorderCells                    != d.BorderCells ||
+            s.Mode                           != d.Mode;
     }
 }

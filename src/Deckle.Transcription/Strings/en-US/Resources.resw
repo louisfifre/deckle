@@ -1435,7 +1435,7 @@
     <value>Hangover ramp end</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
-    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover decays sharply (cubic ease-in). Default: 180000 ms (3 min).</value>
+    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover follows a shaped curve that declines from the start and steepens toward the end. Default: 180000 ms (3 min).</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>
