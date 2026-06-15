@@ -268,6 +268,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Input.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
+│   │   ├── App.MouseWheel.cs
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
@@ -439,7 +440,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyboardKeyEvent.cs
 │   │   │   └── MouseWheelEvent.cs
 │   │   ├── Telemetry/
-│   │   │   └── ContactFrameRecorder.cs
+│   │   │   ├── ContactFrameRecorder.cs
+│   │   │   └── WheelEventRecorder.cs
 │   │   ├── Touchpad/
 │   │   │   ├── ContactFrame.cs
 │   │   │   ├── ContactFrameAssembler.cs
@@ -450,6 +452,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
+│   │   ├── MouseWheelSettings.cs
+│   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.Autocorrect/
 │   │   ├── Data/
@@ -684,6 +688,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
+│   │   │   ├── MouseWheel/
+│   │   │   │   ├── MouseWheelPage.xaml
+│   │   │   │   └── MouseWheelPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml

@@ -32,6 +32,11 @@ public sealed partial class HomePage : Page
         PlaygroundShell.NavigateTo?.Invoke("ambient");
     }
 
+    private void OnMouseWheelCardClick(object sender, RoutedEventArgs e)
+    {
+        PlaygroundShell.NavigateTo?.Invoke("mousewheel");
+    }
+
     // Manual probe for the notification toast channel. Fires the Playground
     // TestPrompt descriptor through the dispatcher and reports the answer.
     // The TaskCompletionSource is SET on the OS activation callback thread, but

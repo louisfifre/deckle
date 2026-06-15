@@ -66,6 +66,12 @@
                         <FontIcon Glyph="{StaticResource Icon.Lightbulb}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Uid="PlaygroundNavMouseWheel"
+                                    Tag="Deckle.Playground.MouseWheelPage">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource Icon.Mouse}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <Frame x:Name="PageFrame" />

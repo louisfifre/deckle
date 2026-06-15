@@ -376,6 +376,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         InitializeInputHost();
         Milestone("input_host");
 
+        // Mouse-wheel capture — attaches the JSONL recorder to the shared
+        // host and reconciles it with the persisted settings (off by default;
+        // the host only spins up when a capture is on or autocorrect is).
+        InitializeMouseWheel();
+        Milestone("mouse_wheel");
+
         // Autocorrect module — keyboard Raw Input + diacritics restorer +
         // injector, reconciled with the persisted module settings (Enabled by
         // default; corrections land only on enrolled processes, Notepad out of

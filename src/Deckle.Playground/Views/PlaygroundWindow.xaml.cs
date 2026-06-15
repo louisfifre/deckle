@@ -316,10 +316,11 @@ public sealed partial class PlaygroundWindow : Window
     {
         string fullTag = shortTag switch
         {
-            "home"    => "Deckle.Playground.HomePage",
-            "hud"     => "Deckle.Playground.HudPage",
-            "ambient" => "Deckle.Playground.AmbientPage",
-            _         => "",
+            "home"       => "Deckle.Playground.HomePage",
+            "hud"        => "Deckle.Playground.HudPage",
+            "ambient"    => "Deckle.Playground.AmbientPage",
+            "mousewheel" => "Deckle.Playground.MouseWheelPage",
+            _            => "",
         };
         if (string.IsNullOrEmpty(fullTag)) return;
 

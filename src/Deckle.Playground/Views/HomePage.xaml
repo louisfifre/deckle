@@ -49,6 +49,11 @@
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}"
                                            IsClickEnabled="True"
                                            Click="OnAmbientCardClick" />
+                    <controls:SettingsCard x:Name="HomeMouseWheelCard"
+                                           x:Uid="PlaygroundHomeMouseWheelCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Mouse}}"
+                                           IsClickEnabled="True"
+                                           Click="OnMouseWheelCardClick" />
                 </StackPanel>
 
                 <!-- Notifications test surface. Manual probe for the toast
