@@ -38,15 +38,15 @@ public sealed class WhisperBackend : IAsrBackend
 
     private readonly ITranscriptionEngineHost _host;
     private readonly object _modelLock = new();
-    // Serialises whisper_full calls on the same _ctx. The orchestrator's state
-    // machine already prevents concurrent user-driven transcriptions, and the
-    // on-demand prime (EnsurePrimed) now runs its dummy inference synchronously
-    // on the same worker thread as the real transcription that follows — so no
-    // concurrent caller exists in practice today. The lock stays as a
-    // backend-local invariant: whisper.cpp is not thread-safe across concurrent
-    // calls on a single context (a native segfault no managed handler can
-    // rescue), and the IAsrBackend contract must not assume its caller stays
-    // single-threaded forever.
+    // Serialises whisper_full calls on the same _ctx. The orchestrator keeps the
+    // prime's dummy inference and the real transcription from overlapping at a
+    // higher level — the prime now runs on its own thread, concurrently with the
+    // capture, and the engine gates the first real call behind it (AwaitPrime) —
+    // so no concurrent caller is expected in practice. The lock is the hard
+    // backend-local guard underneath that: whisper.cpp is not thread-safe across
+    // concurrent calls on a single context (a native segfault no managed handler
+    // can rescue), and the IAsrBackend contract must not assume its caller stays
+    // serialised forever.
     private readonly object _transcribeLock = new();
 
     // volatile: prevents the JIT from caching this in a register so a

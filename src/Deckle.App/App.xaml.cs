@@ -657,11 +657,12 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         // No model warmup at boot: nothing is loaded into VRAM while the app
         // is idle. The model is loaded + its kernels compiled on demand on the
-        // first hotkey press, inside the engine worker (EnsurePrimed), while
-        // the HUD shows its Charging state; it is freed again after the idle
-        // timeout. There is no separate HUD composition warm at boot anymore:
-        // the first real visible transition pays that cost through the normal
-        // ShowNoActivate + fade-in path.
+        // first hotkey press, inside the engine worker (BeginPrime), now
+        // concurrently with the capture — so the HUD goes straight to Recording
+        // and the chrono ticks while the model warms behind it; it is freed again
+        // after the idle timeout. There is no separate HUD composition warm at
+        // boot anymore: the first real visible transition pays that cost through
+        // the normal ShowNoActivate + fade-in path.
 
         // Apply saved theme (System/Light/Dark).
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);

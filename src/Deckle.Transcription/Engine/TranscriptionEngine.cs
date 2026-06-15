@@ -162,12 +162,14 @@ public sealed partial class TranscriptionEngine : IDisposable
     // orchestrator observes it via CaptureResult.Outcome on return.
     private CancellationTokenSource? _recordCts;
 
-    // Second cancellation channel for the streaming CONSUMER (the per-utterance
-    // transcription loop). Fired ONLY by Dispose, never by Stop — this is what
-    // lets a user Stop drain the queued utterances losslessly (the consumer is
-    // not cancelled) while Dispose aborts the in-flight inference so the worker
-    // join stays bounded and whisper_free never runs on an active context. The
-    // monolithic path ignores it; only the streaming pipeline observes it.
+    // Second cancellation channel for the work that must survive a Stop and
+    // abort ONLY on Dispose: the streaming CONSUMER (the per-utterance
+    // transcription loop) AND the concurrent prime (its dummy inference). Firing
+    // it only on Dispose is what lets a user Stop drain the queued utterances
+    // losslessly and lets the prime finish warming the model even on a short
+    // take; Dispose aborts both so the worker join stays bounded and whisper_free
+    // never runs on an active context. The monolithic path observes it only
+    // through the prime; the streaming pipeline observes it for both.
     private CancellationTokenSource? _drainCts;
 
     // Signaled when the engine returns to Idle (worker exits + state reset).
@@ -209,6 +211,13 @@ public sealed partial class TranscriptionEngine : IDisposable
     // call, surfaced in the LatencyPayload. 0 when the call hit a hot model.
     private long _modelLoadMs;
 
+    // Wall time of the concurrent prime (model load + dummy inference) for the
+    // current run. Set by EnsurePrimed on the prime task and read by AwaitPrime
+    // at the gate (Task completion is the memory barrier). 0 on a warm worker —
+    // the prime task is never spawned — which is also how AwaitPrime tells cold
+    // from warm and skips the PrimeOverlap measure when there was nothing to hide.
+    private long _primeMs;
+
     // Stopwatch started at the beginning of each recording (used for logs).
     private System.Diagnostics.Stopwatch? _recordingSw;
 
@@ -224,9 +233,11 @@ public sealed partial class TranscriptionEngine : IDisposable
     // the entry of StartRecording so each run reports its own values.
     //
     //   _hotkeySw             — entry of StartRecording → just after waveInStart.
-    //                           On a cold run includes the model load (load
-    //                           runs on the worker thread before the mic
-    //                           opens), plus mic probe and worker spin-up.
+    //                           Covers the mic probe and worker spin-up only.
+    //                           Since the prime moved off this path (it now runs
+    //                           concurrently with capture), even a cold run no
+    //                           longer pays the model load here — that cost is in
+    //                           _modelLoadMs / the PrimeOverlap measure instead.
     //   _recordDrainDuration  — CT cancels → end of CaptureResult drain phase.
     //                           Captured from CaptureResult.DrainDuration on
     //                           Record() return.
@@ -345,16 +356,25 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     // Tray Quit → App.QuitApp → here. The state machine flips to Disposed
     // unconditionally so any in-flight worker thread or stray hotkey lands
-    // on a refusal path. Then we wait for the worker to actually exit
-    // before disposing the backend — the backend's own Dispose holds the
-    // model lock and waits for an in-flight inference to drain on its side
-    // before freeing the native context (whisper_free on a context with
-    // active inference is a native segfault that no managed handler can
-    // rescue, and that invariant lives inside the backend now).
+    // on a refusal path. Then we wait for the worker to actually exit before
+    // disposing the backend.
     //
-    // Timeout: a long inference on a GPU backend can take 5-15 s; 30 s is
-    // enough for normal cases. If it expires we log a Warning and leak the
-    // worker thread — the process is exiting anyway.
+    // What keeps whisper_free off an active context is the ORDERING here, NOT a
+    // backend lock: whisper_free runs under the backend's _modelLock while
+    // whisper_full runs under its _transcribeLock — two different locks that
+    // never contend, so the backend does not serialise free against an in-flight
+    // inference on its own. The guarantee is that worker.Join() below returns
+    // only after WorkerRun's finally has settled the run, and that finally waits
+    // the prime task before exiting — so a successful join means BOTH the real
+    // inference AND the off-thread prime's dummy inference have returned. Calling
+    // _backend.Dispose() (→ whisper_free) only after that is what makes it safe.
+    //
+    // Timeout: a long inference on a GPU backend can take 5-15 s; 30 s is enough
+    // for normal cases. If it expires we log a Warning and leak the worker thread
+    // — and we MUST then skip _backend.Dispose(), because freeing the context
+    // while that leaked worker may still be mid whisper_full is the one native
+    // segfault the join was protecting against. The process is exiting anyway, so
+    // leaking the native context (like the worker) is the safe trade.
     private const int DISPOSE_WORKER_JOIN_TIMEOUT_MS = 30_000;
 
     public void Dispose()
@@ -382,6 +402,9 @@ public sealed partial class TranscriptionEngine : IDisposable
         try { _drainCts?.Cancel(); }
         catch (ObjectDisposedException) { }
 
+        // Set when the join times out: the leaked worker may still be inside a
+        // whisper_full, so freeing the native context below would race it.
+        bool joinTimedOut = false;
         var worker = _worker;
         if (worker is not null && worker.IsAlive)
         {
@@ -391,6 +414,7 @@ public sealed partial class TranscriptionEngine : IDisposable
             swJoin.Stop();
             if (!joined)
             {
+                joinTimedOut = true;
                 DeckleWhispSource.Log.DisposeWorkerJoinTimeout();
                 DeckleWhispSource.Log.DisposeWorkerJoinTimeoutDetail(swJoin.ElapsedMilliseconds);
             }
@@ -407,11 +431,15 @@ public sealed partial class TranscriptionEngine : IDisposable
         // and Dispose'ing the event would turn that into an
         // ObjectDisposedException. The process is exiting anyway.
 
-        // Backend disposal frees the native model context. The backend
-        // serialises this against any inference still in flight via its
-        // internal model lock; from the orchestrator's perspective we just
-        // call Dispose and let the backend handle the rest.
-        _backend.Dispose();
+        // Backend disposal frees the native model context (whisper_free). Safe
+        // only because the worker joined above: that join returns after the run's
+        // finally has settled both the real inference and the off-thread prime, so
+        // nothing is in whisper_full now. If the join TIMED OUT we skip it — the
+        // leaked worker may still be mid-inference, and whisper_free on an active
+        // context is a native segfault. The native context leaks with the worker;
+        // the process is exiting, so the OS reclaims both.
+        if (!joinTimedOut)
+            _backend.Dispose();
 
         _capture.Dispose();
 
