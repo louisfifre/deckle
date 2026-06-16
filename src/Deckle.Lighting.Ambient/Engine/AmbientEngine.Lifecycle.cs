@@ -245,8 +245,8 @@ public sealed partial class AmbientEngine
             // so they pass the LogWindow drop filter even with
             // LogAmbientCaptureActivity off. From here on, Verbose
             // AMBIENT / SCREEN / HUE inside the loop are candidates
-            // for filtering: the App wires the drop filter on
-            // LogWindowEventListener at boot and the filter combines this gate
+            // for filtering: the App wires the central capture gate on the
+            // dispatcher at boot and it combines this gate
             // with the user toggle to decide. The window closes at the top of
             // Stop() so stop milestones pass too.
             AmbientCaptureGate.SetActive(true);

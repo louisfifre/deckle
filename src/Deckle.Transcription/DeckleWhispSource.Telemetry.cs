@@ -8,7 +8,7 @@ public sealed partial class DeckleWhispSource
     // ── Structured Heartbeats: Canonical JSONL ──────────────────────────
     //
     // LatencyRecorded, CorpusAsrRecorded, and CorpusRewriteRecorded are the
-    // events JsonlEventListener (and RoutedJsonlEventListener for both corpora)
+    // events JsonlSink (and RoutedJsonlSink for both corpora)
     // filters to write latency.jsonl and bucketed corpus.jsonl files. The
     // Message format is a one-line summary for LogWindow; the full payload is
     // serialized by EtwSelfDescribingEventFormat with snake_case names becoming

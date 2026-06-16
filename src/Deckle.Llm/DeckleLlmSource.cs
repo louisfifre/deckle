@@ -240,7 +240,7 @@ public sealed class DeckleLlmSource : DeckleEventSource
     }
 
     // ── UserFeedback (HUD bridge) ───────────────────────────────────────
-    // Canonical event consumed by HudFeedbackEventListener (filter on
+    // Canonical event consumed by HudFeedbackSink (filter on
     // event name). severity 0/1/2 = Info/Warning/Error,
     // role 0/1 = Replacement/Overlay.
 

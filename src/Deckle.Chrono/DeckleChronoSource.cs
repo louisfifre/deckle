@@ -30,8 +30,8 @@ public sealed class DeckleChronoSource : DeckleEventSource
     public const int EvtPilotEmittedDetail = 2;
 
     // Boot validation event. Emitted once at App startup to exercise
-    // EventSource → JsonlEventListener → app.jsonl and EventSource →
-    // LogWindowEventListener → LogWindow.
+    // EventSource → DispatchEventListener → JsonlSink → app.jsonl and →
+    // LogWindowSink → LogWindow.
     [Event(EvtPilotEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

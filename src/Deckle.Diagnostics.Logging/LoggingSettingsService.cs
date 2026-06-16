@@ -13,8 +13,8 @@ namespace Deckle.Diagnostics.Logging;
 // path (<UserDataRoot>/modules/logging/settings.json) to preserve existing user
 // settings through the switch.
 //
-// Main consumers: LogWindowEventListener drop filter and app.jsonl predicate
-// wired at boot by App (read LogAmbientCaptureActivity on each event). Uncached
+// Main consumer: the dispatcher's central capture gate, wired at boot by App
+// (read LogAmbientCaptureActivity on each event). Uncached
 // read: flipping the toggle in Settings takes effect on the next emission.
 // JsonSettingsStore keeps an in-memory snapshot, so access cost is negligible.
 //

@@ -25,7 +25,7 @@ namespace Deckle.App;
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
-    // ── ILogWindowSink (events from LogWindowEventListener) ────────────────────
+    // ── ILogWindowSink (events from LogWindowSink) ─────────────────────────────
 
     public void Write(EventEntry entry)
     {

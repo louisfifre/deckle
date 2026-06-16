@@ -443,7 +443,7 @@ public sealed class DeckleAppSource : DeckleEventSource
     // ── UserFeedback (HUD bridge) ───────────────────────────────────────
     // Canonical channel for user notifications emitted from the host app.
     // Severity 0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay.
-    // Filtered by HudFeedbackEventListener.
+    // Filtered by HudFeedbackSink.
 
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,

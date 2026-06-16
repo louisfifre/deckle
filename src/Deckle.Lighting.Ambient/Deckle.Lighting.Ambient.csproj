@@ -28,7 +28,7 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- Diagnostics.Logging carries AmbientCaptureGate (volatile bool
          consumed by AmbientEngine to signal the active capture loop
-         au LogWindowEventListener). -->
+         au gate central du dispatcher). -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
