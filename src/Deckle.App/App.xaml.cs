@@ -207,7 +207,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             return string.IsNullOrWhiteSpace(s) ? null : s;
         });
 
-        // Opt-in telemetry pipeline + LogWindow ring buffer. JsonlEventListeners
+        // Opt-in telemetry pipeline + LogWindow ring buffer. JsonlSinks
         // write directly to canonical paths `<TelemetryDir>/{app,latency,
         // microphone,corpus}.jsonl`; lazy LogWindow attaches via
         // `AttachLogWindowSink` on first open. The always-on local sinks were
@@ -215,7 +215,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         AppDiagnosticsBootstrap.InitializeTelemetry(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
-        // Wire user gates on the JsonlEventListeners side
+        // Wire user gates on the telemetry sinks side
         // (Deckle.Diagnostics.Telemetry). Direct read from the canonical
         // TelemetrySettingsService.
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
@@ -227,7 +227,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             _                      => false,
         });
 
-        // Capture drop filter: silence Verbose events from the two capture
+        // Central capture gate: silence Verbose events from the two capture
         // families when their respective gates are active AND the user has
         // not opted into the matching toggle. Ambient family (Ambient /
         // Vision / Lighting / Resource sub-provider) gated by
@@ -235,8 +235,10 @@ public partial class App : Microsoft.UI.Xaml.Application
         // transcription gated by StreamingCaptureGate +
         // LogStreamingTranscriptionActivity. Both gates live in
         // Deckle.Diagnostics.Logging; the engines flip them on Start / Stop.
-        AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropCaptureVerbose);
-        TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropCaptureVerbose);
+        // Wired ONCE on the dispatcher, before EventEntry construction, so every
+        // sink (live window and app.jsonl alike) observes the same gated stream
+        // — the former double wiring (LogWindow + app.jsonl) is gone.
+        AppDiagnosticsBootstrap.ConfigureCentralGate(ShouldDropCaptureVerbose);
 
         // app.jsonl is NOT gated by the LogWindow's All/Activity/Alerts selector.
         // That selector is a display lens over the live window, not an authority
@@ -399,7 +401,7 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
         // The ILogWindowSink is attached at that point via
-        // AppDiagnosticsBootstrap, which replays the LogWindowEventListener
+        // AppDiagnosticsBootstrap, which replays the LogWindowSink
         // ring buffer in the atomic operation so the viewer is complete as
         // soon as it opens. Avoids paying for a DComp swap chain + DWM visual
         // tree at boot for a window the user does not always need. Boot events
@@ -472,7 +474,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         _overlayManager = new HudOverlayManager(_hudWindow, _hudWindow.DispatcherQueue, _cursorSignal);
 
         // Unique HUD feedback sink (direct EventSource channel since
-        // sub-wave 6b). `HudFeedbackEventListener` (Deckle.Diagnostics)
+        // sub-wave 6b). `HudFeedbackSink` (Deckle.Diagnostics)
         // filters `UserFeedbackEmitted` events from any Deckle.* provider and
         // passes a `FeedbackEntry(title, body, severity:int, role:int)` to
         // this sink. The sink routes to the main surface (`ShowUserFeedback`)

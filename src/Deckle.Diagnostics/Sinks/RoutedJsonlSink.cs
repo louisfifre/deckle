@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
 using System.Text.Encodings.Web;
@@ -9,25 +7,25 @@ using System.Text.Json;
 
 namespace Deckle.Diagnostics;
 
-// Routed variant of JsonlEventListener. Same posture (one listener, one
-// predicate, one kindLabel, line-by-line JSON serialization, file lock to avoid
-// tearing), except the destination is no longer a path frozen at construction:
-// a `pathResolver` computes it per event from its EventEntry. Allows one
-// listener to spray the same event stream toward a dynamic tree of bucketed
-// `corpus.jsonl` files (for example
-// `corpus/raw/<tier>/corpus.jsonl` ou `corpus/rewrite-<name>-<id>/corpus.jsonl`
-// — see ADR-0006).
+// Routed variant of JsonlSink. Same posture (one predicate, one kindLabel,
+// line-by-line JSON serialization, file lock to avoid tearing), except the
+// destination is no longer frozen at construction: a `pathResolver` computes it
+// per event from its EventEntry. Allows one sink to spray the same event stream
+// toward a dynamic tree of bucketed `corpus.jsonl` files (for example
+// `corpus/raw/<tier>/corpus.jsonl` or `corpus/rewrite-<name>-<id>/corpus.jsonl`
+// — see ADR-0006). A passive ILogSink: it does not subscribe to any
+// EventSource, the dispatcher feeds it built entries.
 //
-// Why not inherit from JsonlEventListener. The corpus redesign brief decided:
-// no inheritance. The "routed" mode is not extra behavior over the "flat" mode;
-// it is another destination strategy. Exposing a mutable mode on the generic
-// listener side would make the API more fragile for zero gain (both types carry
-// a handful of lines in common, and their controlled duplication avoids
-// coupling their evolution cycles).
+// Why not inherit from JsonlSink. The corpus redesign brief decided: no
+// inheritance. The "routed" mode is not extra behavior over the "flat" mode; it
+// is another destination strategy. Exposing a mutable mode on the generic sink
+// would make the API more fragile for zero gain (both types carry a handful of
+// lines in common, and their controlled duplication avoids coupling their
+// evolution cycles).
 //
 // Concurrency. Several simultaneously resolved paths can land on different
 // files; a global lock would serialize writes that have no reason to block each
-// other. The listener keeps a `ConcurrentDictionary<string, object>` indexed by
+// other. The sink keeps a `ConcurrentDictionary<string, object>` indexed by
 // concrete path: each path has its own lock, lazily allocated by the first
 // event that writes to it. Parent directory creation piggybacks on that same
 // `GetOrAdd`: the first event for a path calls `Directory.CreateDirectory`
@@ -36,14 +34,12 @@ namespace Deckle.Diagnostics;
 // Safety. No path component validation here; it is the producer's (or
 // resolver's) responsibility to sanitize dynamic segments before they cross.
 // `CorpusPaths.Sanitize` is the intended producer-side utility for that.
-public sealed class RoutedJsonlEventListener : EventListener
+public sealed class RoutedJsonlSink : ILogSink
 {
     private readonly Func<EventEntry, string> _pathResolver;
     private readonly Func<EventEntry, bool> _predicate;
     private readonly string _kindLabel;
     private readonly ConcurrentDictionary<string, object> _pathLocks = new();
-    private readonly List<EventSource> _earlySources = new();
-    private bool _ready;
 
     private static readonly JsonWriterOptions _jsonOptions = new()
     {
@@ -52,16 +48,15 @@ public sealed class RoutedJsonlEventListener : EventListener
     };
 
     // `pathResolver` — computes the absolute destination from the EventEntry.
-    //                  Called for each event that passes the predicate. Must
-    //                  return an absolute, already-sanitized file path; a
-    //                  null/empty return silently skips the event.
-    // `kindLabel`    — value written under the JSONL "kind" key. Aligned with
-    //                  classic JsonlEventListener labels ("log", "latency",
-    //                  ...).
-    // `predicate`    — selects which events land in this listener. Receives
-    //                  the full EventEntry to filter on name, level, keywords,
-    //                  or payload.
-    public RoutedJsonlEventListener(
+    //                  Called for each event Wants accepted. Must return an
+    //                  absolute, already-sanitized file path; a null/empty
+    //                  return silently skips the event.
+    // `kindLabel`    — value written under the JSONL "kind" key, aligned with
+    //                  classic JsonlSink labels ("log", "latency", …).
+    // `predicate`    — selects which events land in this sink. Receives the full
+    //                  EventEntry to filter on name, level, keywords, or
+    //                  payload. Exposed through Wants.
+    public RoutedJsonlSink(
         Func<EventEntry, string> pathResolver,
         string kindLabel,
         Func<EventEntry, bool> predicate)
@@ -69,37 +64,12 @@ public sealed class RoutedJsonlEventListener : EventListener
         _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
         _kindLabel = kindLabel;
         _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
-
-        lock (_earlySources)
-        {
-            _ready = true;
-            foreach (var src in _earlySources)
-                EnableEvents(src, EventLevel.LogAlways, EventKeywords.All);
-            _earlySources.Clear();
-        }
     }
 
-    protected override void OnEventSourceCreated(EventSource eventSource)
+    public bool Wants(EventEntry entry) => _predicate(entry);
+
+    public void Write(EventEntry entry)
     {
-        if (eventSource.Name is null) return;
-        if (!eventSource.Name.StartsWith("Deckle-", StringComparison.Ordinal)) return;
-
-        lock (_earlySources)
-        {
-            if (!_ready)
-            {
-                _earlySources.Add(eventSource);
-                return;
-            }
-        }
-        EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
-    }
-
-    protected override void OnEventWritten(EventWrittenEventArgs eventData)
-    {
-        var entry = LogWindowEventListener.BuildEntry(eventData);
-        if (!_predicate(entry)) return;
-
         string path;
         try { path = _pathResolver(entry); }
         catch { return; }
@@ -111,8 +81,8 @@ public sealed class RoutedJsonlEventListener : EventListener
         }
         catch
         {
-            // Same posture as JsonlEventListener: failed I/O must not crash
-            // the emitter. Surfacing this kind of error (counter, dedicated
+            // Same posture as JsonlSink: failed I/O must not crash the
+            // dispatcher. Surfacing this kind of error (counter, dedicated
             // event) is a future observability task.
         }
     }
