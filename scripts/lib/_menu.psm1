@@ -257,9 +257,15 @@ function Write-GridLine {
     $width = [Console]::WindowWidth - 1
 
     if ($entry.Kind -eq 'title') {
-        $line = '  ' + $entry.Text
-        if ($line.Length -lt $width) { $line += (' ' * ($width - $line.Length)) }
-        Write-Host $line -ForegroundColor DarkCyan -NoNewline
+        # Section header: UPPERCASE label in the accent, then a thin rule that
+        # fills the row in a dimmer shade — a scannable horizontal band.
+        $label = '  ' + ([string]$entry.Text).ToUpperInvariant() + ' '
+        if ($label.Length -ge $width) {
+            Write-Host $label.PadRight($width).Substring(0, $width) -ForegroundColor Cyan -NoNewline
+        } else {
+            Write-Host $label -ForegroundColor Cyan -NoNewline
+            Write-Host (([string][char]0x2500) * ($width - $label.Length)) -ForegroundColor DarkCyan -NoNewline
+        }
     } elseif ($entry.Kind -eq 'footer') {
         $line = '   ' + $entry.Text
         if ($line.Length -lt $width) { $line += (' ' * ($width - $line.Length)) }
@@ -272,7 +278,7 @@ function Write-GridLine {
         Write-Host '   ' -NoNewline; $written += 3
         if ($PrefixW -gt 0) {
             $p = ([string]$entry.Prefix).PadRight($PrefixW)
-            Write-Host $p -NoNewline -ForegroundColor Gray; $written += $p.Length
+            Write-Host $p -NoNewline -ForegroundColor White; $written += $p.Length
         }
         for ($c = 0; $c -lt $entry.Cells.Count; $c++) {
             $txt = ([string]$entry.Cells[$c].Label).PadRight($ColW[$c])
