@@ -65,7 +65,8 @@ function Read-Optional {
 # section dividers — Up/Down skips them automatically.
 $actions = @(
     [pscustomobject]@{ Label = '── Launch ──';                      Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Launch app';                        Value = 'launch'                           }
+    [pscustomobject]@{ Label = 'Launch app (Release)';              Value = 'launch-release'                    }
+    [pscustomobject]@{ Label = 'Launch app (Debug)';                Value = 'launch-debug'                      }
 
     [pscustomobject]@{ Label = '── Build ──';                       Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Build and run app (Release)';       Value = 'build-release'                     }
@@ -105,10 +106,18 @@ try {
 switch ($action) {
 
     # ----- Launch branches — per-worktree --------------------------------
-    'launch' {
+    # Both configurations launch an ALREADY-built exe without recompiling;
+    # launch-app.ps1 resolves the freshest Deckle.exe under the matching
+    # release\ or debug\ pivot. Build the configuration first if it is missing.
+    'launch-release' {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Release
+    }
+    'launch-debug' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Debug
     }
 
     # ----- Build branches — per-worktree ---------------------------------
