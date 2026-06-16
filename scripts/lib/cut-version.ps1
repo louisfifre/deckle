@@ -50,18 +50,19 @@ Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 $Csproj = Join-Path $RepoRoot 'src\Deckle.App\Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle worktree?" }
 
-# ── Guard: clean working tree ────────────────────────────────────────────────
-# We stage and commit ONLY the version bump, so nothing else may be pending —
-# otherwise an unrelated change would ride into the release commit, or we'd tag
-# an uncommitted state. The bump runs on main just after a merge, where the
-# tree is already clean.
-Step 'Check working tree is clean'
-$dirty = & git -C $RepoRoot status --porcelain
+# ── Guard: no pending TRACKED change ─────────────────────────────────────────
+# We stage and commit ONLY the csproj, so no tracked change may be pending —
+# otherwise it could ride into the release commit, or we'd tag a half-done
+# state. Untracked files (scratch benches, in-progress notes) have nothing to
+# do with a version bump, so they are deliberately ignored (-uno). The bump
+# runs on main just after a merge, where the tracked state is already clean.
+Step 'Check no tracked change is pending'
+$dirty = & git -C $RepoRoot status --porcelain --untracked-files=no
 if ($LASTEXITCODE -ne 0) { throw "git status failed (code $LASTEXITCODE)" }
 if ($dirty) {
-    throw "Working tree is not clean — commit or stash first so the bump is the only change in its commit:`n$($dirty -join "`n")"
+    throw "Tracked changes are pending — commit or stash them first so the bump is the only change in its commit:`n$($dirty -join "`n")"
 }
-Ok 'Clean'
+Ok 'Clean (no tracked change pending)'
 
 # ── Read the current <Version> — the single source of truth ──────────────────
 Step 'Read current <Version>'
