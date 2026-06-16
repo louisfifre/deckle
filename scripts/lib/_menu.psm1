@@ -5,7 +5,7 @@
 # build-run.ps1 (-Pick), clean.ps1 (-Pick), and any future script that
 # needs the same flow.
 #
-# Two public functions:
+# Three public functions:
 #   - Select-Worktree : picks a worktree from `git worktree list`. Returns
 #                       the chosen path. Skips and returns automatically
 #                       when there is only one worktree.
@@ -14,6 +14,8 @@
 #                       Items with IsHeader=$true are rendered as
 #                       non-selectable section dividers (Up/Down skips
 #                       them); useful for grouping a flat list visually.
+#   - Select-Grid     : picks one cell from a 2-D grid with section titles,
+#                       ragged rows, and Up/Down/Left/Right navigation.
 #
 # Both honour the same key bindings: Up/Down to navigate, Enter to confirm,
 # Esc to cancel. The line truncation logic preserves the meaningful tail

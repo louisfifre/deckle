@@ -72,23 +72,23 @@ function Get-CsprojVersion {
     return $null
 }
 
-# Show a 1-D submenu: the given items plus a Back entry. Returns the chosen
-# Value, or $null when the user goes Back or presses Esc.
+# Show a submenu with the same 2-D grid renderer as the top-level menu. Returns
+# the chosen Value, or $null when the user goes Back or presses Esc.
 function Show-Submenu {
     param(
         [Parameter(Mandatory)][string]$Header,
-        [Parameter(Mandatory)][object[]]$Items
+        [Parameter(Mandatory)][object[]]$Rows,
+        [string]$Footer = 'same controls as the main menu; Esc also goes back'
     )
-    $withBack = @($Items) + @(
-        [pscustomobject]@{ Label = ''; Value = $null; IsHeader = $true }
-        [pscustomobject]@{ Label = '< Back'; Value = '__back__' }
+
+    $withBack = @($Rows) + @(
+        @{ Blank = $true }
+        @{ Title = 'Back' }
+        @{ Cells = @( @{ Label = '< Back'; Value = '__back__' } ) }
     )
-    try {
-        $v = Select-Action -Header $Header -Items $withBack
-    } catch {
-        return $null   # Esc = back
-    }
-    if ($v -eq '__back__') { return $null }
+
+    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer
+    if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
 }
 
@@ -234,13 +234,20 @@ function Invoke-SetupAssets {
     & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
 }
 
-# ── Submenu routers (1-D lists, reached from the grid's "More" row) ──────────
+# ── Submenu routers (same grid style, reached from the top-level "More" row) ─
 
 function Show-ReleaseMenu {
-    $v = Show-Submenu -Header 'Release:' -Items @(
-        [pscustomobject]@{ Label = 'Publish app release';            Value = 'publish'   }
-        [pscustomobject]@{ Label = 'Prepare app release artifacts';  Value = 'artifacts' }
-        [pscustomobject]@{ Label = 'Prepare native runtime release'; Value = 'native'    }
+    $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Esc back' -Rows @(
+        @{ Title = 'App release' }
+        @{ Prefix = 'App'; Cells = @(
+            @{ Label = 'Publish app release';           Value = 'publish'   }
+            @{ Label = 'Prepare app release artifacts'; Value = 'artifacts' }
+        ) }
+        @{ Blank = $true }
+        @{ Title = 'Native runtime' }
+        @{ Cells = @(
+            @{ Label = 'Prepare native runtime release'; Value = 'native' }
+        ) }
     )
     switch ($v) {
         'publish'   { Invoke-PublishRelease }
@@ -250,11 +257,18 @@ function Show-ReleaseMenu {
 }
 
 function Show-MaintenanceMenu {
-    $v = Show-Submenu -Header 'Maintenance:' -Items @(
-        [pscustomobject]@{ Label = 'Clean build outputs'; Value = 'clean'        }
-        [pscustomobject]@{ Label = 'Show module stats';   Value = 'stats'        }
-        [pscustomobject]@{ Label = 'Update README pulse'; Value = 'readme-stats' }
-        [pscustomobject]@{ Label = 'Update changelog';    Value = 'changelog'    }
+    $v = Show-Submenu -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Esc back' -Rows @(
+        @{ Title = 'Worktree' }
+        @{ Cells = @(
+            @{ Label = 'Clean build outputs'; Value = 'clean' }
+            @{ Label = 'Show module stats';   Value = 'stats' }
+        ) }
+        @{ Blank = $true }
+        @{ Title = 'Generated docs' }
+        @{ Cells = @(
+            @{ Label = 'Update README pulse'; Value = 'readme-stats' }
+            @{ Label = 'Update changelog';    Value = 'changelog'    }
+        ) }
     )
     switch ($v) {
         'clean'        { Invoke-WorktreeScript -Script 'clean.ps1' }
@@ -265,10 +279,17 @@ function Show-MaintenanceMenu {
 }
 
 function Show-SetupMenu {
-    $v = Show-Submenu -Header 'Setup:' -Items @(
-        [pscustomobject]@{ Label = 'Bootstrap dev environment'; Value = 'bootstrap' }
-        [pscustomobject]@{ Label = 'Set up runtime assets';     Value = 'assets'    }
-        [pscustomobject]@{ Label = 'Install git hooks';         Value = 'hooks'     }
+    $v = Show-Submenu -Header 'Deckle > Setup   -   ↑↓←→ move   Enter run   Esc back' -Rows @(
+        @{ Title = 'Machine' }
+        @{ Cells = @(
+            @{ Label = 'Bootstrap dev environment'; Value = 'bootstrap' }
+            @{ Label = 'Set up runtime assets';     Value = 'assets'    }
+        ) }
+        @{ Blank = $true }
+        @{ Title = 'Repository' }
+        @{ Cells = @(
+            @{ Label = 'Install git hooks'; Value = 'hooks' }
+        ) }
     )
     switch ($v) {
         'bootstrap' { Invoke-BootstrapDev }
