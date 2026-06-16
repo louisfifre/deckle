@@ -33,13 +33,17 @@ Calibration trap: a transient a retry loop absorbs on its own (no user-visible e
 
 Every `[Event]` is gated by `IsEnabled()` (or `IsEnabled(level, keywords)`) before any payload construction — zero allocation when no listener listens. The parameterized gate only earns its keep when it avoids a construction (string, array, computation).
 
-## Sinks — three consumer contracts
+## One dispatch, passive sinks
 
-- **HUD** — the canonical `UserFeedbackEmitted(int severity, string title, string body, int role)` event, filtered exclusively by `HudFeedbackEventListener`. `int` because EventSource rejects user enums; the App re-encodes on the sink side. A site wanting feedback calls the milestone event **and** `UserFeedbackEmitted` — no substitution.
-- **Live LogWindow** — listens to the whole `Deckle-*` family with no masking at emission; user filtering happens on the sink side.
-- **JSONL** — one listener per destination route, each with a selection predicate + envelope shape. Two envelopes: self-describing `app.jsonl` (rotated) vs frozen payload-only dataset channels. Concrete wiring lives in `Deckle.Diagnostics.Telemetry`.
+A single `DispatchEventListener` is the only `EventListener`: it subscribes to the whole `Deckle-*` family, applies the one transverse capture gate, builds the `EventEntry` once, then offers it to every registered `ILogSink`. A sink decides whether it `Wants` the entry and how to `Write` it — it never subscribes to an EventSource itself. The invariant this buys: an event is gated and built once, so the live window and the on-disk journal cannot diverge, and a new sink cannot forget the gate because the gate is not a sink concern. The central gate is provider-level (capture-Verbose silencing during ambient/streaming/autocorrect activity); everything else — routing by event name, user consent gates — lives per-sink in `Wants`.
 
-A single `SessionId` (`YYYY-MM-DD-XXXX`) is generated on the first emission and shared by all providers as a static on `DeckleEventSource`, so listeners group rows by process session without threading a parameter everywhere.
+Three consumer contracts, all passive sinks:
+
+- **HUD** — `HudFeedbackSink` watches the canonical `UserFeedbackEmitted(int severity, string title, string body, int role)` event and ignores everything else. `int` because EventSource rejects user enums; the sink re-encodes from the name-keyed payload. A site wanting feedback calls the milestone event **and** `UserFeedbackEmitted` — no substitution.
+- **Live LogWindow** — `LogWindowSink` takes the whole `Deckle-*` family with no masking at this layer (`Wants` is unconditional); user filtering happens on the UI side. It owns the boot-history ring buffer and replays it when the window attaches lazily.
+- **JSONL** — one `JsonlSink`/`RoutedJsonlSink` per destination route, each with a selection predicate + envelope shape. Two envelopes: self-describing `app.jsonl` (rotated) vs frozen payload-only dataset channels. Concrete wiring lives in `Deckle.Diagnostics.Telemetry`.
+
+A single `SessionId` (`YYYY-MM-DD-XXXX`) is generated on the first emission and shared by all providers as a static on `DeckleEventSource`, so sinks group rows by process session without threading a parameter everywhere.
 
 ## Durable rules
 

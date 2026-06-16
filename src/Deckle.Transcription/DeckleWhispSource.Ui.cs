@@ -9,7 +9,7 @@ public sealed partial class DeckleWhispSource
     //
     // Canonical channel for user notifications (HUD Replacement / Overlay).
     // Severity 0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay.
-    // Filtered by HudFeedbackEventListener.
+    // Filtered by HudFeedbackSink.
 
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,

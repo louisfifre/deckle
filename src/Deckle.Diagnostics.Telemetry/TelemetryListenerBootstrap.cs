@@ -1,30 +1,36 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.IO;
 using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Telemetry;
 
-// Boot-time configuration of the structured-telemetry JsonlEventListeners.
+// Boot-time configuration of the structured-telemetry JSONL sinks. Since the
+// dispatch refonte these are passive ILogSinks: this module builds them and
+// registers them on the host's single DispatchEventListener, which gates and
+// builds each EventEntry before offering it. The module no longer creates any
+// EventListener of its own.
 //
-// Two static entry points :
+// Entry points :
 //
-//   - Configure(...) instantiates the canonical JSONL listeners: app, latency,
-//     microphone, then two corpus routes (ASR + rewrite). Must be called only
-//     once at boot.
+//   - Configure(dispatch, …) builds the canonical JSONL sinks (app, latency,
+//     microphone, processed, then two corpus routes) and registers them on the
+//     passed-in dispatcher. Must be called only once at boot.
 //   - ConfigureGates(...) wires the delegate that reads user toggles on the
 //     host side. May be called before or after Configure; predicates read the
 //     last known value at each emission, so a delegate update propagates
-//     without reconstructing listeners.
-//   - ConfigureApplicationLogDropFilter(...) wires runtime filters for the
-//     application log (e.g. ambient Verbose during capture). The Telemetry
-//     module remains independent from Diagnostics.Logging: the host supplies
-//     the predicate.
+//     without rebuilding sinks.
+//   - ConfigureApplicationLogDropFilter(...) wires the entry-level projection
+//     filter for the application log (e.g. sharing the LogWindow Activity lens).
+//     The capture-Verbose silencing is NOT here — that is the dispatcher's
+//     central gate, applied once for every sink. This module keeps only the
+//     app.jsonl-specific entry-level filter, and stays independent from
+//     Deckle.Diagnostics.Logging: the host supplies the predicate.
 //
-// Why separate them? Configure creates listeners with their predicates frozen;
-// predicates must consult a mutable variable that can change after
-// instantiation when the user changes telemetry toggles.
+// Why separate Configure from the gate/filter wiring? Configure builds sinks
+// with their routing predicates frozen; those predicates must consult mutable
+// variables (consent toggles, the optional projection filter) that can change
+// after construction.
 //
 // Canonical destinations:
 //   app.jsonl                                      ← rendered application log
@@ -51,16 +57,20 @@ namespace Deckle.Diagnostics.Telemetry;
 //   corpus/rewrite-…/      ← CorpusEnabled == true
 //
 // Default posture: gates closed (false). Until ConfigureGates has been called,
-// no line touches disk: fail-safe behavior reproducing the old JsonlFileSink
-// posture when AppSettings was not ready yet.
+// no line touches disk: fail-safe behaviour reproducing the old posture when
+// AppSettings was not ready yet.
 //
-// Validation sub-directory. Configure(...) accepts a
-// `validationSubdirectory` flag for isolated comparison runs. Production
-// boot passes false so the listeners write the canonical files directly
-// under <telemetryDir>/{app,latency,microphone,corpus}.jsonl.
+// Validation sub-directory. Configure(...) accepts a `validationSubdirectory`
+// flag for isolated comparison runs. Production boot passes false so the sinks
+// write the canonical files directly under
+// <telemetryDir>/{app,latency,microphone,corpus}.jsonl.
 public static class TelemetryListenerBootstrap
 {
-    private static readonly List<EventListener> _listeners = new();
+    // The dispatcher these sinks were registered on, and the sinks themselves —
+    // held so ShutDown can unregister exactly what Configure added (tests, and
+    // an eventual host shutdown).
+    private static DispatchEventListener? _dispatch;
+    private static readonly List<ILogSink> _sinks = new();
     private static bool _configured;
 
     // External source of truth for user gates. Null = closed posture (every
@@ -68,12 +78,16 @@ public static class TelemetryListenerBootstrap
     // every emission so toggle flips in Settings take effect immediately.
     private static Func<string, bool>? _gateReader;
     private static Func<EventEntry, bool>? _applicationLogDropFilter;
-    private static Func<string, EventLevel, EventKeywords, bool>? _applicationLogProviderLevelDropFilter;
 
-    public static void Configure(string telemetryDirectory, bool validationSubdirectory = true)
+    public static void Configure(
+        DispatchEventListener dispatch,
+        string telemetryDirectory,
+        bool validationSubdirectory = true)
     {
+        if (dispatch is null) throw new ArgumentNullException(nameof(dispatch));
         if (_configured) return;
         _configured = true;
+        _dispatch = dispatch;
 
         string rootDirectory = validationSubdirectory
             ? Path.Combine(telemetryDirectory, "validation")
@@ -81,7 +95,7 @@ public static class TelemetryListenerBootstrap
 
         Directory.CreateDirectory(rootDirectory);
 
-        _listeners.Add(new JsonlEventListener(
+        Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "app.jsonl"),
             kindLabel: "log",
             predicate: e =>
@@ -92,7 +106,6 @@ public static class TelemetryListenerBootstrap
                 && e.EventName != "CorpusRewriteRecorded"
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
-            preEntryDropPredicate: ShouldDropApplicationLog,
             // app.jsonl is the persistent mirror of the live log:
             // self-describing envelope (provider/event/level/source/message/
             // line), rotated by line chunks into numbered generations in
@@ -102,13 +115,13 @@ public static class TelemetryListenerBootstrap
             schema:   JsonlSchema.SelfDescribing,
             rotation: new JsonlRotationPolicy(maxLines: 8000)));
 
-        _listeners.Add(new JsonlEventListener(
+        Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "latency.jsonl"),
             kindLabel: "latency",
             predicate: e => e.EventName == "LatencyRecorded"
                          && ReadGate("LatencyEnabled")));
 
-        _listeners.Add(new JsonlEventListener(
+        Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.jsonl"),
             kindLabel: "microphone",
             predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
@@ -120,19 +133,19 @@ public static class TelemetryListenerBootstrap
         // file: each loads as-is without filtering a discriminant, and
         // processed only exists when the DSP ran. Same consent: emission
         // already gates on MicrophoneTelemetry on the orchestrator side.
-        _listeners.Add(new JsonlEventListener(
+        Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.processed.jsonl"),
             kindLabel: "microphone_processed",
             predicate: e => e.EventName == "PreprocessedTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
-        // Normalized corpus: see ADR-0006. Two routed listeners spray
+        // Normalized corpus: see ADR-0006. Two routed sinks spray
         // CorpusAsr/RewriteRecorded over a bucketed tree. Both predicates gate
         // on CorpusEnabled and the resolver composes the path from the event
         // payload.
         string corpusRoot = Path.Combine(rootDirectory, "corpus");
 
-        _listeners.Add(new RoutedJsonlEventListener(
+        Register(new RoutedJsonlSink(
             pathResolver: e =>
             {
                 // The producer guarantees component presence and sanitization;
@@ -147,7 +160,7 @@ public static class TelemetryListenerBootstrap
             predicate: e => e.EventName == "CorpusAsrRecorded"
                          && ReadGate("CorpusEnabled")));
 
-        _listeners.Add(new RoutedJsonlEventListener(
+        Register(new RoutedJsonlSink(
             pathResolver: e =>
             {
                 string bucket = e.Payload.TryGetValue("bucket", out var b) ? b?.ToString() ?? "" : "";
@@ -159,38 +172,35 @@ public static class TelemetryListenerBootstrap
                          && ReadGate("CorpusEnabled")));
     }
 
+    // Registers a sink on the configured dispatcher and tracks it for ShutDown.
+    private static void Register(ILogSink sink)
+    {
+        _sinks.Add(sink);
+        _dispatch!.AddSink(sink);
+    }
+
     // Wires the user gate reader delegate. Accepts a symbolic name
     // ("ApplicationLogToDisk", "LatencyEnabled", "MicrophoneTelemetry",
-    // "CorpusEnabled") and returns the current bool. An unknown name must
-    // return false on the caller side.
+    // "CorpusEnabled") and returns the current bool. An unknown name must return
+    // false on the caller side.
     //
-    // Idempotent: calling ConfigureGates again replaces the delegate. Useful
-    // if the host migrates from the legacy source to the new one in a single
-    // swap.
+    // Idempotent: calling ConfigureGates again replaces the delegate.
     public static void ConfigureGates(Func<string, bool> gateReader)
     {
         if (gateReader is null) throw new ArgumentNullException(nameof(gateReader));
         _gateReader = gateReader;
     }
 
-    // Wires the predicate that removes some events from the persisted
-    // application log. The predicate reads the same EventEntry as the LogWindow
-    // drop filter, which keeps app.jsonl aligned with the live window without
-    // introducing a Telemetry → Logging reference.
+    // Wires the entry-level projection filter that removes some events from the
+    // persisted application log (e.g. sharing the LogWindow Activity lens). The
+    // predicate reads the same EventEntry as the live window, which keeps
+    // app.jsonl aligned without introducing a Telemetry → Logging reference.
+    // This is app.jsonl-specific; the transverse capture gate lives on the
+    // dispatcher, not here.
     public static void ConfigureApplicationLogDropFilter(Func<EventEntry, bool> filter)
     {
         if (filter is null) throw new ArgumentNullException(nameof(filter));
         _applicationLogDropFilter = filter;
-    }
-
-    // Early variant of the app.jsonl filter, evaluated before EventEntry
-    // creation when provider + level are enough. The ambient case uses it so
-    // the toggle also cuts loop log allocation cost, not only final writing.
-    public static void ConfigureApplicationLogProviderLevelDropFilter(
-        Func<string, EventLevel, EventKeywords, bool> filter)
-    {
-        if (filter is null) throw new ArgumentNullException(nameof(filter));
-        _applicationLogProviderLevelDropFilter = filter;
     }
 
     private static bool ReadGate(string gateName)
@@ -209,27 +219,18 @@ public static class TelemetryListenerBootstrap
         catch { return false; }
     }
 
-    private static bool ShouldDropApplicationLog(EventWrittenEventArgs eventData)
-    {
-        string? provider = eventData.EventSource.Name;
-        if (provider is null) return false;
-
-        var filter = _applicationLogProviderLevelDropFilter;
-        if (filter is null) return false;
-        try { return filter(provider, eventData.Level, eventData.Keywords); }
-        catch { return false; }
-    }
-
-    // Tears down every listener registered by Configure. Optional —
-    // process exit cleans up anyway, but the method is exposed for
-    // tests and for the eventual host shutdown sequence.
+    // Unregisters every sink Configure added from the dispatcher. Optional —
+    // process exit drops the dispatcher anyway — but exposed for tests and an
+    // eventual host shutdown sequence.
     public static void ShutDown()
     {
-        foreach (var listener in _listeners) listener.Dispose();
-        _listeners.Clear();
+        var dispatch = _dispatch;
+        if (dispatch is not null)
+            foreach (var sink in _sinks) dispatch.RemoveSink(sink);
+        _sinks.Clear();
+        _dispatch = null;
         _configured = false;
         _gateReader = null;
         _applicationLogDropFilter = null;
-        _applicationLogProviderLevelDropFilter = null;
     }
 }

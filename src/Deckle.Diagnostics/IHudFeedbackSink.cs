@@ -6,7 +6,7 @@ namespace Deckle.Diagnostics;
 // declares that same event with the canonical signature
 // (int severity, string title, string body, int role).
 //
-// The HudFeedbackEventListener filters on the event name and hands a
+// The HudFeedbackSink filters on the event name and hands a
 // FeedbackEntry to this sink. Severity and Role are integers on the
 // wire so EventSource accepts them as primitive parameters — the App
 // maps them back to its UserFeedbackSeverity / UserFeedbackRole enums

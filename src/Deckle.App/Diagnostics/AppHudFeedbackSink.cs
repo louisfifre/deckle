@@ -3,7 +3,7 @@ using Deckle.Diagnostics;
 namespace Deckle.App;
 
 // Concrete host sink that receives each `FeedbackEntry` captured by the
-// `HudFeedbackEventListener` (a `UserFeedbackEmitted` event emitted by a
+// `HudFeedbackSink` (a `UserFeedbackEmitted` event emitted by a
 // `Deckle.*` provider) and routes it to the right HUD surface by `Role`:
 //
 //   role 0 (Replacement) → surface principale `HudWindow.ShowUserFeedback`

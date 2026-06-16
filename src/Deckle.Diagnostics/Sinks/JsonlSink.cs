@@ -1,37 +1,34 @@
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Deckle.Diagnostics;
 
-// Persists Deckle.* events to a JSONL file. One listener instance per
-// destination file; the App boot wires several of them — one for the
-// general app log, one for latency rows, one for microphone telemetry,
-// one for corpus rows — each with its own predicate that selects which
-// events land in that file.
+// Persists Deckle.* events to a JSONL file. A passive ILogSink: it no longer
+// subscribes to any EventSource — the single DispatchEventListener gates and
+// builds each EventEntry, then offers it here. One JsonlSink instance per
+// destination file; the boot wires several — the general app log, latency rows,
+// microphone telemetry, corpus rows — each with its own selection predicate.
 //
-// The predicate sees the event's name (e.g. "LatencyRecorded") and the
-// EventEntry. It returns true to write, false to skip. Wiring the
-// per-file predicates lives in Deckle.Diagnostics.Telemetry, which
-// also reads user gates (telemetry settings) and skips emission
-// entirely when a gate is off.
+// The predicate (exposed as Wants) sees the built EventEntry and decides
+// whether the event lands in this file. The former pre-entry drop predicate is
+// gone: the EventEntry is built once by the dispatcher for the whole sink set,
+// so a per-sink pre-build optimization saved nothing, and a sink that wants to
+// exclude an event by provider/name simply expresses it in its predicate.
 //
-// Schema. Two envelope shapes, selected per listener via `JsonlSchema`:
+// Schema. Two envelope shapes, selected per sink via `JsonlSchema`:
 //   PayloadOnly (datasets) :
 //     { "timestamp", "kind", "session", "payload": {...} }
 //   SelfDescribing (app.jsonl) :
 //     { "timestamp", "kind", "session", "provider", "event", "level",
 //       "source", "message", "line", "payload": {...} }
-// `timestamp` is ISO 8601 with offset to local time. `kind` is the
-// channel label passed at construction. `session` is the process-local
-// DeckleEventSource.SessionId. `payload` is the flat dictionary of
-// [Event] parameters by their snake_case names. The SelfDescribing
-// channel adds the event identity the LogWindow renders, so the file is
-// a faithful, greppable mirror of the live journal rather than an
-// anonymous payload — a parameter-less event keeps its provider/event/
-// level instead of collapsing to an empty blob. See ADR-0007.
+// `timestamp` is ISO 8601 with offset to local time. `kind` is the channel
+// label passed at construction. `session` is the process-local
+// DeckleEventSource.SessionId. `payload` is the flat dictionary of [Event]
+// parameters by their snake_case names. The SelfDescribing channel adds the
+// event identity the LogWindow renders, so the file is a faithful, greppable
+// mirror of the live journal rather than an anonymous payload. See ADR-0007.
 //
 // Rotation. An optional `JsonlRotationPolicy` rolls the file once it reaches
 // MaxLines lines into a monotonically-numbered generation under an `archive/`
@@ -39,23 +36,19 @@ namespace Deckle.Diagnostics;
 // none is renamed or deleted. Datasets pass no policy and stay append-only.
 // See ADR-0007.
 //
-// Threading. Write happens on the emitter thread, guarded by a per-
-// listener lock so concurrent emissions don't tear lines and so a roll
-// never races a write. The file is opened in append mode and flushed at
-// every line, which lets a crash post-write keep the data on disk —
-// process-crash durable, not power-loss durable (no per-line WriteThrough
-// on the hot path).
-public sealed class JsonlEventListener : EventListener
+// Threading. Write happens on the dispatcher's emitting thread, guarded by a
+// per-sink lock so concurrent emissions don't tear lines and so a roll never
+// races a write. The file is opened in append mode and flushed at every line,
+// which lets a crash post-write keep the data on disk — process-crash durable,
+// not power-loss durable (no per-line WriteThrough on the hot path).
+public sealed class JsonlSink : ILogSink
 {
     private readonly string _filePath;
     private readonly System.Func<EventEntry, bool> _predicate;
-    private readonly System.Func<EventWrittenEventArgs, bool>? _preEntryDropPredicate;
     private readonly string _kindLabel;
     private readonly JsonlSchema _schema;
     private readonly JsonlRotationPolicy? _rotation;
     private readonly object _writeLock = new();
-    private readonly List<EventSource> _earlySources = new();
-    private bool _ready;
 
     // Running line count of the active file, maintained under _writeLock so
     // the rotation check is a counter compare instead of re-reading the file
@@ -68,41 +61,35 @@ public sealed class JsonlEventListener : EventListener
     {
         // Keep the JSON compact — one line per event.
         Indented = false,
-        // Match legacy JsonlFileSink: don't escape forward slashes /
-        // ampersands / unicode unnecessarily. The encoder defaults
-        // are paranoid for HTML contexts; we write to a file the
-        // user inspects directly.
+        // Don't escape forward slashes / ampersands / unicode unnecessarily.
+        // The encoder defaults are paranoid for HTML contexts; we write to a
+        // file the user inspects directly.
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    // `filePath` — absolute path of the target JSONL file. The listener
-    //              creates the parent directory at construction, so the sink is
-    //              self-sufficient and does not depend on creation order
-    //              elsewhere.
-    // `kindLabel` — the value written under the "kind" key. The legacy
-    //              schema uses lowercase strings ("log", "latency",
-    //              "corpus", "microphone"); pass the same value here.
-    // `predicate` — selects which events land in this file. Receives
-    //              the full EventEntry so it can filter on event name,
-    //              keywords, or level.
-    // `schema`    — envelope shape. PayloadOnly (default) for the frozen
-    //              dataset channels; SelfDescribing for the app.jsonl
-    //              journal.
-    // `rotation`  — optional line-count roll policy. Null (default) leaves
-    //              the file append-only without bound — correct for the
-    //              datasets, never for the application journal.
-    public JsonlEventListener(
+    // `filePath` — absolute path of the target JSONL file. The sink creates the
+    //              parent directory at construction, so it is self-sufficient
+    //              and does not depend on creation order elsewhere.
+    // `kindLabel` — the value written under the "kind" key ("log", "latency",
+    //              "corpus", "microphone", …).
+    // `predicate` — selects which events land in this file. Receives the full
+    //              EventEntry so it can filter on event name, keywords, or
+    //              level. Exposed through Wants.
+    // `schema`    — envelope shape. PayloadOnly (default) for the frozen dataset
+    //              channels; SelfDescribing for the app.jsonl journal.
+    // `rotation`  — optional line-count roll policy. Null (default) leaves the
+    //              file append-only without bound — correct for the datasets,
+    //              never for the application journal.
+    public JsonlSink(
         string filePath,
         string kindLabel,
         System.Func<EventEntry, bool> predicate,
-        System.Func<EventWrittenEventArgs, bool>? preEntryDropPredicate = null,
         JsonlSchema schema = JsonlSchema.PayloadOnly,
         JsonlRotationPolicy? rotation = null)
     {
         _filePath = filePath;
         _kindLabel = kindLabel;
         _predicate = predicate;
-        _preEntryDropPredicate = preEntryDropPredicate;
         _schema = schema;
         _rotation = rotation;
 
@@ -117,60 +104,27 @@ public sealed class JsonlEventListener : EventListener
         {
             _linesWritten = CountLines(_filePath);
         }
-
-        lock (_earlySources)
-        {
-            _ready = true;
-            foreach (var src in _earlySources)
-                EnableEvents(src, EventLevel.LogAlways, EventKeywords.All);
-            _earlySources.Clear();
-        }
     }
 
-    protected override void OnEventSourceCreated(EventSource eventSource)
+    public bool Wants(EventEntry entry) => _predicate(entry);
+
+    public void Write(EventEntry entry)
     {
-        if (eventSource.Name is null) return;
-        if (!eventSource.Name.StartsWith("Deckle-", System.StringComparison.Ordinal)) return;
-
-        lock (_earlySources)
-        {
-            if (!_ready)
-            {
-                _earlySources.Add(eventSource);
-                return;
-            }
-        }
-        EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
-    }
-
-    protected override void OnEventWritten(EventWrittenEventArgs eventData)
-    {
-        var preEntryDropPredicate = _preEntryDropPredicate;
-        if (preEntryDropPredicate is not null)
-        {
-            try { if (preEntryDropPredicate(eventData)) return; }
-            catch { /* A filter must never crash the listener. */ }
-        }
-
-        var entry = LogWindowEventListener.BuildEntry(eventData);
-        if (!_predicate(entry)) return;
-
         try
         {
             WriteLine(entry);
         }
         catch
         {
-            // I/O error must not crash the emitter — the legacy sink
-            // had the same posture (swallow silently). Surfacing
-            // this category of failure is a future improvement.
+            // I/O error must not crash the dispatcher — surfacing this category
+            // of failure is a future improvement.
         }
     }
 
     private void WriteLine(EventEntry entry)
     {
-        // Buffer the JSON in memory then append a single line. Using
-        // a Utf8JsonWriter on a MemoryStream avoids partial writes on
+        // Buffer the JSON in memory then append a single line. Using a
+        // Utf8JsonWriter on a MemoryStream avoids partial writes on
         // serialisation error.
         byte[] jsonBytes;
         using (var ms = new MemoryStream(capacity: 256))
@@ -321,9 +275,9 @@ public sealed class JsonlEventListener : EventListener
             case System.Guid g: writer.WriteString(name, g.ToString()); break;
             case System.DateTime dt: writer.WriteString(name, dt.ToString("o", System.Globalization.CultureInfo.InvariantCulture)); break;
             case System.DateTimeOffset dto: writer.WriteString(name, dto.ToString("o", System.Globalization.CultureInfo.InvariantCulture)); break;
-            // Fallback for unexpected types: stringify. EventSource
-            // only allows a limited set of primitives in [Event]
-            // signatures, so we should never reach here in practice.
+            // Fallback for unexpected types: stringify. EventSource only allows
+            // a limited set of primitives in [Event] signatures, so we should
+            // never reach here in practice.
             default:          writer.WriteString(name, value.ToString() ?? string.Empty); break;
         }
     }

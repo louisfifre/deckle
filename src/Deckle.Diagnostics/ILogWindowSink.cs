@@ -6,7 +6,7 @@ namespace Deckle.Diagnostics;
 //
 // The contract is intentionally a single Write(EventEntry) — no
 // filtering or formatting; that's the sink's job. The
-// LogWindowEventListener at the Diagnostics layer pushes every Deckle.*
+// LogWindowSink at the Diagnostics layer pushes every Deckle.*
 // event here unconditionally, and the sink applies whatever filter the
 // user has set via the LogWindow SelectorBar.
 public interface ILogWindowSink

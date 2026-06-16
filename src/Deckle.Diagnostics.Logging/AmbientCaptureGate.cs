@@ -7,9 +7,8 @@ namespace Deckle.Diagnostics.Logging;
 // `TelemetryService.SetCaptureActive(bool)` without reintroducing a central
 // telemetry hub.
 //
-// Consumption. The gate is consulted by delegates injected into
-// `LogWindowEventListener` and into the app.jsonl predicate at App boot. The
-// filter combines this gate with the user toggle
+// Consumption. The gate is consulted by the dispatcher's central capture gate,
+// wired at App boot. The filter combines this gate with the user toggle
 // `LoggingSettings.LogAmbientCaptureActivity` to decide whether a Verbose
 // emission from Ambient / Vision / Lighting providers should land in the live
 // or persistent journal. While the gate is open (capture loop active) AND the

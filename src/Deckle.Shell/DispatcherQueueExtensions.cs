@@ -36,14 +36,15 @@ namespace Deckle.Shell;
 // these wrappers and its own queue is closed, the logged Warning routes back to
 // LogWindow → re-TryEnqueue → re-fail → loop. A thread-static flag
 // short-circuits the second attempt. The guard remains relevant after the
-// EventSource migration: `LogWindowEventListener` still receives the Warning
-// event and pushes it back into the same LogWindow-side `DispatcherQueue`.
+// EventSource migration: `LogWindowSink` still receives the Warning event and
+// pushes it back into the same LogWindow-side `DispatcherQueue`.
 //
 // Anti-recursion guard `_emittingMarshal` (verbose path). Same loop class,
 // triggered by the *systematic* `MarshalQueued` emission in `TryEnqueueObserved`:
-// a `LogWindow.Write` call from `LogWindowEventListener.OnEventWritten` (on a
-// worker thread) goes through `TryEnqueueObserved`, which synchronously emits
-// `MarshalQueued`; the listener observes it and re-routes to `LogWindow.Write`
+// a `LogWindow.Write` call from `LogWindowSink.Write` (invoked by
+// `DispatchEventListener.OnEventWritten` on a worker thread) goes through
+// `TryEnqueueObserved`, which synchronously emits `MarshalQueued`; the
+// dispatcher observes it and re-routes to `LogWindow.Write`
 // → new emission → synchronous recursion → stack overflow. Empirically
 // observed on 2026-05-25; signature: JSONL tail flooded with `MarshalQueued
 // operation=log-append caller=log-window` at several kHz, then crash. When

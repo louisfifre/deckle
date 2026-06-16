@@ -10,7 +10,7 @@ namespace Deckle.Audio;
 // Singleton statique, instanciation thread-safe via `static readonly`.
 // The ETW manifest is self-describing (inherited from DeckleEventSource);
 // snake_case parameter names directly become JSON keys in the payload emitted
-// by JsonlEventListener.
+// by JsonlSink.
 //
 // Naming conventions for this provider:
 //   - Concise milestones (capitalized, Informational level) → past-tense verb

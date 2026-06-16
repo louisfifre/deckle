@@ -22,14 +22,14 @@ namespace Deckle.Transcription;
 //      by TelemetryListenerBootstrap). The three human [DONE] timings /
 //      llm_metrics / outputs lines are still emitted in parallel under
 //      PipelineTimings, PipelineLlmMetrics, and PipelineOutputs: this is the
-//      human reading path on the LogWindow side. JsonlEventListener latency.jsonl
+//      human reading path on the LogWindow side. JsonlSink latency.jsonl
 //      only picks up LatencyRecorded (24 flattened fields), not the three human
 //      lines.
 //
 //   3. UserFeedback is emitted through the canonical
 //      UserFeedbackEmitted(severity, title, body, role) channel: severity
 //      0/1/2 = Info/Warning/Error, role 0/1 = Replacement/Overlay. The mapping
-//      lives on the HudFeedbackEventListener side.
+//      lives on the HudFeedbackSink side.
 [EventSource(Name = "Deckle-Whisp")]
 public sealed partial class DeckleWhispSource : DeckleEventSource
 {

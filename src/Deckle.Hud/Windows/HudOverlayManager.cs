@@ -58,7 +58,7 @@ public sealed class HudOverlayManager : IDisposable
         if (!_dispatcher.HasThreadAccess)
         {
             // Threading: overlay enqueue from a non-UI thread
-            // (HudFeedbackEventListener on the Diagnostics side, or any
+            // (HudFeedbackSink on the Diagnostics side, or any
             // UserFeedbackEmitted emitter from a worker engine). An abnormal
             // wait_ms here indicates a saturated UI thread delaying overlay
             // display.
