@@ -177,7 +177,21 @@ public sealed partial class TranscriptionEngine
             // Stopping → Transcribing → Idle transitions (and the Stopping
             // → Transcribing CAS in particular — the cap-duration branch
             // inside Record() does the Recording → Stopping CAS).
-            _worker = new Thread(WorkerRun) { IsBackground = true, Name = "TranscriptionEngine.Worker" };
+            // AboveNormal, not Normal: this thread runs the waveIn capture loop,
+            // which only needs to be scheduled promptly when the buffer-done event
+            // fires (every 50 ms) — it sleeps the rest of the time. At Normal it
+            // loses its slot to the concurrent Whisper inference on the threadpool,
+            // and telemetry showed the WaitForSingleObject(100) returning at
+            // 200-480 ms instead of ~50 ms: past the 200 ms ring (4×50 ms) the
+            // driver has no free buffer and drops incoming audio. AboveNormal lets
+            // the producer win its slot; the thread is near-idle so this starves
+            // nothing. Highest is avoided — it would contend with the UI thread.
+            _worker = new Thread(WorkerRun)
+            {
+                IsBackground = true,
+                Name = "TranscriptionEngine.Worker",
+                Priority = ThreadPriority.AboveNormal,
+            };
             _worker.Start();
 
             committed = true;
