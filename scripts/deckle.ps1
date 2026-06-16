@@ -1,23 +1,26 @@
 # deckle.ps1 — Single interactive entry point for Deckle dev workflows.
 #
-# Run this with F5 in VSCodium (see .vscode/launch.json) or directly from
-# a PowerShell 7+ terminal. The menu groups actions by purpose:
+# Run this with F5 in VSCodium (see .vscode/launch.json) or directly from a
+# PowerShell 7+ terminal. The menu is a small router: a short top level of
+# verbs, where rare groups collapse into submenus reached with `▸` and left
+# with Back/Esc. It loops — an action runs, then you land back on the menu —
+# until you pick Quit (or press Esc at the top level).
 #
-#   Launch            — start an already-built app, per-worktree.
-#   Build             — daily compile + run loop, per-worktree.
-#   Release           — cut release artefacts / GitHub releases only,
-#                       per-worktree where applicable.
-#   Worktree maint    — clean artefacts, gather stats, update docs,
-#                       per-worktree.
-#   Setup             — bootstrap a fresh dev machine (global, no
-#                       worktree picker), install local git hooks, provision
-#                       optional runtime assets.
+#   Launch / Build    — pick the verb, then the worktree, then Release/Debug.
+#   Update version    — bump the csproj <Version> and tag it (frequent).
+#   Release ▸         — publish artefacts / GitHub releases (rare).
+#   MCP ▸             — publish the Anytype MCP host.
+#   Maintenance ▸     — clean, stats, docs.
+#   Setup ▸           — bootstrap a fresh machine, hooks, runtime assets.
 #
 # Per-worktree actions prompt for a worktree after the action is picked
-# (worktree auto-resolves when only the main repo exists). Global actions
-# go straight to a short parameter prompt (or run on defaults). Every
-# concrete action delegates to a single-purpose script in scripts/lib/;
-# those scripts remain usable on their own CLI for automation.
+# (auto-resolves when only the main repo exists). Every concrete action
+# delegates to a single-purpose script in scripts/lib/; those scripts remain
+# usable on their own CLI for automation.
+#
+# Colour semantics (consistent across the menu): default foreground = neutral
+# prompt/info, DarkGray = secondary/hint, Cyan = step title, Green = success,
+# Yellow = a real warning (public publish, destructive), Red = error.
 
 [CmdletBinding()]
 param()
@@ -28,28 +31,41 @@ $LibDir    = Join-Path $ScriptDir 'lib'
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 
-# Helper used by every per-worktree branch: pick a worktree and bail
-# gracefully on Esc (the menu module throws "Cancelled" in that case).
+# ── Small input helpers ──────────────────────────────────────────────────────
+
+# Pick a worktree, or return $null on Esc (Select-Worktree throws "Cancelled").
 function Get-WorktreeOrReturn {
     try {
         $wt = Select-Worktree -ContextDir $ScriptDir
         Write-Host "Worktree: $wt" -ForegroundColor DarkGray
         return $wt
     } catch {
-        Write-Host "Cancelled." -ForegroundColor Yellow
+        Write-Host "Cancelled." -ForegroundColor DarkGray
         return $null
     }
 }
 
-# Helper for short y/n prompts in global-action sub-flows. Returns
-# $true / $false; default applies on bare Enter.
+# Pick Release or Debug (Release default). Returns the string, or $null on Esc.
+function Get-Configuration {
+    try {
+        return Select-Action -Header 'Configuration:' -Items @(
+            [pscustomobject]@{ Label = 'Release'; Value = 'Release' }
+            [pscustomobject]@{ Label = 'Debug';   Value = 'Debug'   }
+        ) -Default 0
+    } catch {
+        return $null
+    }
+}
+
+# Short y/n prompt. Returns $true/$false; default applies on bare Enter. The
+# question prints in the default foreground (neutral) — never coloured.
 function Read-YesNo {
     param(
         [Parameter(Mandatory)][string]$Question,
         [bool]$Default = $false
     )
-    $hint  = if ($Default) { '[Y/n]' } else { '[y/N]' }
-    $ans   = Read-Host "$Question $hint"
+    $hint = if ($Default) { '[Y/n]' } else { '[y/N]' }
+    $ans  = Read-Host "$Question $hint"
     if ([string]::IsNullOrWhiteSpace($ans)) { return $Default }
     return ($ans -match '^(y|yes|o|oui)$')
 }
@@ -61,251 +77,263 @@ function Read-Optional {
     return $answer.Trim()
 }
 
-# Build the top-level action list. Headers (IsHeader=$true) render as
-# section dividers — Up/Down skips them automatically.
-$actions = @(
-    [pscustomobject]@{ Label = '── Launch ──';                      Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Launch app (Release)';              Value = 'launch-release'                    }
-    [pscustomobject]@{ Label = 'Launch app (Debug)';                Value = 'launch-debug'                      }
+# Read <Version> from a worktree's csproj. Returns the string or $null.
+function Get-CsprojVersion {
+    param([Parameter(Mandatory)][string]$Worktree)
+    $csproj = Join-Path $Worktree 'src\Deckle.App\Deckle.App.csproj'
+    $m = Select-String -Path $csproj -Pattern '<Version>([^<]+)</Version>' -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($m) { return $m.Matches[0].Groups[1].Value.Trim() }
+    return $null
+}
 
-    [pscustomobject]@{ Label = '── Build ──';                       Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Build and run app (Release)';       Value = 'build-release'                     }
-    [pscustomobject]@{ Label = 'Build and run app (Debug)';         Value = 'build-debug'                       }
-    [pscustomobject]@{ Label = 'Build app without running';         Value = 'build-norun'                       }
+# Show a submenu: the given items plus a Back entry. Returns the chosen Value,
+# or $null when the user goes Back or presses Esc.
+function Show-Submenu {
+    param(
+        [Parameter(Mandatory)][string]$Header,
+        [Parameter(Mandatory)][object[]]$Items
+    )
+    $withBack = @($Items) + @(
+        [pscustomobject]@{ Label = ''; Value = $null; IsHeader = $true }
+        [pscustomobject]@{ Label = '< Back'; Value = '__back__' }
+    )
+    try {
+        $v = Select-Action -Header $Header -Items $withBack
+    } catch {
+        return $null   # Esc = back
+    }
+    if ($v -eq '__back__') { return $null }
+    return $v
+}
 
-    [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Bump version + tag';                Value = 'cut-version'                       }
-    [pscustomobject]@{ Label = 'Publish app release';               Value = 'publish-release'                   }
-    [pscustomobject]@{ Label = 'Prepare app release artifacts';     Value = 'build-release-artifacts'           }
-    [pscustomobject]@{ Label = 'Prepare native runtime release';    Value = 'native-runtime'                    }
+# ── Action handlers (each bails with `return`, leaving the menu loop intact) ──
 
-    [pscustomobject]@{ Label = '── MCP ──';                         Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Install / update Anytype MCP';      Value = 'install-anytype-mcp'               }
+# Launch / Build: verb → worktree → Release/Debug, then delegate.
+function Invoke-LaunchOrBuild {
+    param([Parameter(Mandatory)][ValidateSet('launch', 'run', 'norun')][string]$Kind)
+    $wt = Get-WorktreeOrReturn
+    if ($null -eq $wt) { return }
+    Write-Host ""
+    $cfg = Get-Configuration
+    if ($null -eq $cfg) { Write-Host "Cancelled." -ForegroundColor DarkGray; return }
+    switch ($Kind) {
+        'launch' { & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration $cfg }
+        'run'    { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $cfg }
+        'norun'  { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $cfg -NoRun }
+    }
+}
 
-    [pscustomobject]@{ Label = '── Worktree maintenance ──';        Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Clean build outputs';               Value = 'clean'                             }
-    [pscustomobject]@{ Label = 'Show module stats';                 Value = 'stats'                             }
-    [pscustomobject]@{ Label = 'Update README pulse';               Value = 'readme-stats'                      }
-    [pscustomobject]@{ Label = 'Update changelog';                  Value = 'changelog'                         }
+# Run a per-worktree maintenance script with -Target.
+function Invoke-WorktreeScript {
+    param([Parameter(Mandatory)][string]$Script)
+    $wt = Get-WorktreeOrReturn
+    if ($null -eq $wt) { return }
+    & (Join-Path $LibDir $Script) -Target $wt
+}
 
-    [pscustomobject]@{ Label = '── Setup ──';                       Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Bootstrap dev environment';         Value = 'bootstrap-dev'                     }
-    [pscustomobject]@{ Label = 'Set up runtime assets';             Value = 'setup-assets'                      }
-    [pscustomobject]@{ Label = 'Install git hooks';                 Value = 'install-hooks'                     }
+# Update version: worktree → pick the increment (each option shows the
+# resulting number) → confirm. The tag is mechanics, kept to one grey line.
+function Invoke-UpdateVersion {
+    $wt = Get-WorktreeOrReturn
+    if ($null -eq $wt) { return }
+    $cur = Get-CsprojVersion -Worktree $wt
+    if (-not $cur -or $cur -notmatch '^\d+\.\d+\.\d+$') {
+        Write-Host "No MAJOR.MINOR.PATCH <Version> found in that worktree." -ForegroundColor Red
+        return
+    }
+    $n = $cur.Split('.') | ForEach-Object { [int]$_ }
+    $patch = "$($n[0]).$($n[1]).$($n[2] + 1)"
+    $minor = "$($n[0]).$($n[1] + 1).0"
+    $major = "$($n[0] + 1).0.0"
+    $items = @(
+        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Patch', "$cur -> $patch", 'a fix or small step'); Value = [pscustomobject]@{ Seg = 'patch'; Target = $patch } }
+        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Minor', "$cur -> $minor", 'a real cycle');        Value = [pscustomobject]@{ Seg = 'minor'; Target = $minor } }
+        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Major', "$cur -> $major", 'an overhaul');          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
+    )
+    try {
+        $choice = Select-Action -Header 'Update version - pick the increment:' -Items $items -Default 0
+    } catch {
+        Write-Host "Cancelled." -ForegroundColor DarkGray
+        return
+    }
+    Write-Host ""
+    Write-Host "Recorded on this worktree and tagged locally. Nothing is pushed." -ForegroundColor DarkGray
+    if (-not (Read-YesNo -Question "Set Deckle to v$($choice.Target)?" -Default $true)) {
+        Write-Host "Cancelled." -ForegroundColor DarkGray
+        return
+    }
+    & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $choice.Seg
+}
 
-    [pscustomobject]@{ Label = '';                                  Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Quit';                              Value = 'quit'                              }
+# Publish a PUBLIC GitHub Release — maintainer's act, behind a y/N gate. The
+# warning stays Yellow here: it is a genuine, outward-facing, hard-to-undo act.
+function Invoke-PublishRelease {
+    $wt = Get-WorktreeOrReturn
+    if ($null -eq $wt) { return }
+    $ver = Get-CsprojVersion -Worktree $wt
+    if (-not $ver) {
+        Write-Host "Could not read <Version> from that worktree." -ForegroundColor Red
+        return
+    }
+    Write-Host "This publishes a PUBLIC GitHub Release v$ver (creates tag v$ver, uploads the installer exe + app ZIP + sha256)." -ForegroundColor Yellow
+    if (-not (Read-YesNo -Question "Publish Deckle v$ver to GitHub now?" -Default $false)) {
+        Write-Host "Cancelled." -ForegroundColor DarkGray
+        return
+    }
+    & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
+}
+
+# Prepare release artefacts locally, no GitHub publish.
+function Invoke-PrepareArtifacts {
+    $wt = Get-WorktreeOrReturn
+    if ($null -eq $wt) { return }
+    & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
+}
+
+# Build (and optionally publish) the native runtime bundle. Global action.
+function Invoke-NativeRuntime {
+    $version = Read-Optional -Question 'Native bundle version (X.Y.Z)'
+    if (-not $version) { Write-Host "Cancelled: version is required." -ForegroundColor DarkGray; return }
+    $whisperRepo = Read-Optional -Question 'Path to whisper.cpp clone with build/bin'
+    if (-not $whisperRepo) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
+    $outDir  = Read-Optional -Question 'Output directory (blank = temp)'
+    $publish = Read-YesNo -Question 'Publish native runtime GitHub Release after building?' -Default $false
+    if ($publish) {
+        Write-Host "This publishes a PUBLIC GitHub Release native-v$version via gh." -ForegroundColor Yellow
+        if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false)) {
+            Write-Host "Cancelled." -ForegroundColor DarkGray
+            return
+        }
+    }
+    $nativeArgs = @{ Version = $version; WhisperRepo = $whisperRepo }
+    if ($outDir)  { $nativeArgs.OutDir = $outDir }
+    if ($publish) { $nativeArgs.Publish = $true }
+    & (Join-Path $LibDir 'publish-native-runtime.ps1') @nativeArgs
+}
+
+# Publish / update the Anytype MCP host. Maintainer's act, behind a y/N gate.
+function Invoke-AnytypeMcp {
+    Write-Host "Publishes the Anytype MCP to %LOCALAPPDATA%\Deckle\mcp\anytype\ (versioned + 'current' junction) and points .claude.json at current\ - AI clients stop locking the build output." -ForegroundColor DarkGray
+    Write-Host "Safe to re-run to cut a new version: open sessions keep theirs, new spawns get the fresh one." -ForegroundColor DarkGray
+    if (-not (Read-YesNo -Question 'Install / update the Anytype MCP now?' -Default $false)) {
+        Write-Host "Cancelled." -ForegroundColor DarkGray
+        return
+    }
+    & (Join-Path $LibDir 'install-anytype-mcp.ps1')
+}
+
+# Bootstrap a fresh dev machine. Global action.
+function Invoke-BootstrapDev {
+    $dryRun = Read-YesNo -Question 'Dry-run first (probe + plan, no install)?' -Default $true
+    $full   = Read-YesNo -Question 'Include Tier 2 (native recompile toolchain + Ollama)?' -Default $false
+    $bootstrapArgs = @{}
+    if ($dryRun) { $bootstrapArgs.DryRun = $true }
+    if ($full)   { $bootstrapArgs.Full = $true }
+    & (Join-Path $LibDir 'bootstrap-dev-env.ps1') @bootstrapArgs
+}
+
+# Provision runtime assets (native runtime + Whisper models). Global action.
+function Invoke-SetupAssets {
+    Write-Host "This may download native runtime and Whisper model files." -ForegroundColor DarkGray
+    if (-not (Read-YesNo -Question 'Continue with runtime asset setup?' -Default $false)) {
+        Write-Host "Cancelled." -ForegroundColor DarkGray
+        return
+    }
+    $assetArgs = @{}
+    $fromRelease = Read-Optional -Question 'Native runtime release version X.Y.Z (blank = local/sibling source or skip)'
+    if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
+    if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
+    if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false) { $assetArgs.Force = $true }
+    & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
+}
+
+# ── Submenu routers ──────────────────────────────────────────────────────────
+
+function Show-ReleaseMenu {
+    $v = Show-Submenu -Header 'Release:' -Items @(
+        [pscustomobject]@{ Label = 'Publish app release';            Value = 'publish'   }
+        [pscustomobject]@{ Label = 'Prepare app release artifacts';  Value = 'artifacts' }
+        [pscustomobject]@{ Label = 'Prepare native runtime release'; Value = 'native'    }
+    )
+    switch ($v) {
+        'publish'   { Invoke-PublishRelease }
+        'artifacts' { Invoke-PrepareArtifacts }
+        'native'    { Invoke-NativeRuntime }
+    }
+}
+
+function Show-McpMenu {
+    $v = Show-Submenu -Header 'MCP:' -Items @(
+        [pscustomobject]@{ Label = 'Install / update Anytype MCP'; Value = 'anytype' }
+    )
+    switch ($v) {
+        'anytype' { Invoke-AnytypeMcp }
+    }
+}
+
+function Show-MaintenanceMenu {
+    $v = Show-Submenu -Header 'Maintenance:' -Items @(
+        [pscustomobject]@{ Label = 'Clean build outputs'; Value = 'clean'        }
+        [pscustomobject]@{ Label = 'Show module stats';   Value = 'stats'        }
+        [pscustomobject]@{ Label = 'Update README pulse'; Value = 'readme-stats' }
+        [pscustomobject]@{ Label = 'Update changelog';    Value = 'changelog'    }
+    )
+    switch ($v) {
+        'clean'        { Invoke-WorktreeScript -Script 'clean.ps1' }
+        'stats'        { Invoke-WorktreeScript -Script 'stats.ps1' }
+        'readme-stats' { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
+        'changelog'    { Invoke-WorktreeScript -Script 'changelog.ps1' }
+    }
+}
+
+function Show-SetupMenu {
+    $v = Show-Submenu -Header 'Setup:' -Items @(
+        [pscustomobject]@{ Label = 'Bootstrap dev environment'; Value = 'bootstrap' }
+        [pscustomobject]@{ Label = 'Set up runtime assets';     Value = 'assets'    }
+        [pscustomobject]@{ Label = 'Install git hooks';         Value = 'hooks'     }
+    )
+    switch ($v) {
+        'bootstrap' { Invoke-BootstrapDev }
+        'assets'    { Invoke-SetupAssets }
+        'hooks'     { & (Join-Path $LibDir 'install-hooks.ps1') }
+    }
+}
+
+# ── Top-level menu loop ──────────────────────────────────────────────────────
+
+$topActions = @(
+    [pscustomobject]@{ Label = 'Launch';         Value = 'launch'         }
+    [pscustomobject]@{ Label = 'Build & run';    Value = 'build-run'      }
+    [pscustomobject]@{ Label = 'Build (no run)'; Value = 'build-norun'    }
+    [pscustomobject]@{ Label = '──────────';     Value = $null; IsHeader = $true }
+    [pscustomobject]@{ Label = 'Update version'; Value = 'update-version' }
+    [pscustomobject]@{ Label = 'Release  ▸';     Value = 'release-menu'   }
+    [pscustomobject]@{ Label = '──────────';     Value = $null; IsHeader = $true }
+    [pscustomobject]@{ Label = 'MCP  ▸';         Value = 'mcp-menu'       }
+    [pscustomobject]@{ Label = 'Maintenance  ▸'; Value = 'maintenance-menu' }
+    [pscustomobject]@{ Label = 'Setup  ▸';       Value = 'setup-menu'     }
+    [pscustomobject]@{ Label = '──────────';     Value = $null; IsHeader = $true }
+    [pscustomobject]@{ Label = 'Quit';           Value = 'quit'           }
 )
 
-try {
-    $action = Select-Action -Header 'Pick an action (Up/Down, Enter = confirm, Esc = cancel):' -Items $actions
-} catch {
-    Write-Host "Cancelled." -ForegroundColor Yellow
-    return
-}
-
-switch ($action) {
-
-    # ----- Launch branches — per-worktree --------------------------------
-    # Both configurations launch an ALREADY-built exe without recompiling;
-    # launch-app.ps1 resolves the freshest Deckle.exe under the matching
-    # release\ or debug\ pivot. Build the configuration first if it is missing.
-    'launch-release' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Release
+while ($true) {
+    try {
+        $action = Select-Action -Header 'Deckle - pick an action (Up/Down, Enter, Esc = quit):' -Items $topActions
+    } catch {
+        break   # Esc at the top level = quit
     }
-    'launch-debug' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Debug
-    }
-
-    # ----- Build branches — per-worktree ---------------------------------
-    'build-debug' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'build-run.ps1') -Target $wt -Configuration Debug
-    }
-    'build-release' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'build-run.ps1') -Target $wt -Configuration Release
-    }
-    'build-norun' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'build-run.ps1') -Target $wt -Configuration Release -NoRun
-    }
-
-    # ----- Release — per-worktree ----------------------------------------
-    # 'cut-version' bumps the single source-of-truth <Version> in the csproj,
-    # commits it as `chore(release): vX.Y.Z`, and lays the matching tag — one
-    # atomic act so csproj and tag never drift. It does NOT push; pushing and
-    # publishing stay separate, deliberate steps. Run it on main after a merge.
-    'cut-version' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        $csproj = Join-Path $wt 'src\Deckle.App\Deckle.App.csproj'
-        $cur = $null
-        $m = Select-String -Path $csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
-        if ($m) { $cur = $m.Matches[0].Groups[1].Value.Trim() }
-        if (-not $cur -or $cur -notmatch '^\d+\.\d+\.\d+$') {
-            Write-Host "Could not read a MAJOR.MINOR.PATCH <Version> from $csproj" -ForegroundColor Red
-            return
-        }
-        $seg = Read-Optional -Question 'Segment to bump (patch/minor/major) [patch]'
-        if (-not $seg) { $seg = 'patch' }
-        if ($seg -notin @('patch', 'minor', 'major')) {
-            Write-Host "Unknown segment '$seg' — expected patch, minor or major." -ForegroundColor Red
-            return
-        }
-        # Preview only; cut-version.ps1 re-reads and computes authoritatively.
-        $pp = $cur.Split('.') | ForEach-Object { [int]$_ }
-        switch ($seg) {
-            'major' { $pp = @($pp[0] + 1, 0, 0) }
-            'minor' { $pp = @($pp[0], $pp[1] + 1, 0) }
-            'patch' { $pp = @($pp[0], $pp[1], $pp[2] + 1) }
-        }
-        $nextVer = $pp -join '.'
-        Write-Host "Bump v$cur -> v$nextVer : commit 'chore(release): v$nextVer' + tag v$nextVer on '$wt'. No push." -ForegroundColor Yellow
-        if (-not (Read-YesNo -Question "Cut v$nextVer now?" -Default $false)) {
-            Write-Host "Cancelled." -ForegroundColor Yellow
-            return
-        }
-        & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $seg
-    }
-
-    # 'publish-release' builds both release artefacts (installer exe + app
-    # payload ZIP) and creates the public GitHub Release (tag + upload) via gh —
-    # the maintainer's act, gated behind an explicit confirmation. To build the
-    # artefacts locally WITHOUT publishing, call publish-app.ps1 (no -Publish).
-    'publish-release' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        # Read <Version> from the target worktree so the confirmation names the
-        # exact release. publish-app.ps1 -Publish runs `gh release create vX.Y.Z`,
-        # which creates the tag and a PUBLIC release — never silent, always behind
-        # this y/N gate (project hard rule: publish is the maintainer's act).
-        $csproj = Join-Path $wt 'src\Deckle.App\Deckle.App.csproj'
-        $ver    = $null
-        $m = Select-String -Path $csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
-        if ($m) { $ver = $m.Matches[0].Groups[1].Value.Trim() }
-        if (-not $ver) {
-            Write-Host "Could not read <Version> from $csproj" -ForegroundColor Red
-            return
-        }
-        Write-Host "This publishes a PUBLIC GitHub Release v$ver (creates tag v$ver, uploads the installer exe + app ZIP + sha256)." -ForegroundColor Yellow
-        if (-not (Read-YesNo -Question "Publish Deckle v$ver to GitHub now?" -Default $false)) {
-            Write-Host "Cancelled." -ForegroundColor Yellow
-            return
-        }
-        & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
-    }
-    'build-release-artifacts' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
-    }
-    'native-runtime' {
-        $version = Read-Optional -Question 'Native bundle version (X.Y.Z)'
-        if (-not $version) {
-            Write-Host "Cancelled: version is required." -ForegroundColor Yellow
-            return
-        }
-        $whisperRepo = Read-Optional -Question 'Path to whisper.cpp clone with build/bin'
-        if (-not $whisperRepo) {
-            Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor Yellow
-            return
-        }
-        $outDir = Read-Optional -Question 'Output directory (blank = temp)'
-        $publish = Read-YesNo -Question 'Publish native runtime GitHub Release after building?' -Default $false
-        if ($publish) {
-            Write-Host "This publishes a PUBLIC GitHub Release native-v$version via gh." -ForegroundColor Yellow
-            if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false)) {
-                Write-Host "Cancelled." -ForegroundColor Yellow
-                return
-            }
-        }
-
-        $nativeArgs = @{
-            Version = $version
-            WhisperRepo = $whisperRepo
-        }
-        if ($outDir)  { $nativeArgs.OutDir = $outDir }
-        if ($publish) { $nativeArgs.Publish = $true }
-        & (Join-Path $LibDir 'publish-native-runtime.ps1') @nativeArgs
-    }
-
-    # ----- MCP — publish a versioned host + repoint the `current` junction -
-    # 'install-anytype-mcp' publishes the Anytype MCP host into a fresh
-    # versioned dir under %LOCALAPPDATA%\Deckle\mcp\anytype\ and points the
-    # `current` junction (Scoop model) at it; .claude.json targets current\ once.
-    # AI clients stop spawning (and locking) the build-output exe. Re-run any
-    # time to cut a new version — no need to close clients, nothing running gets
-    # overwritten. publish is the maintainer's act — gated behind this y/N.
-    'install-anytype-mcp' {
-        Write-Host "Publishes the Anytype MCP to %LOCALAPPDATA%\Deckle\mcp\anytype\ (versioned + 'current' junction) and points .claude.json at current\ — AI clients stop locking the build output." -ForegroundColor Yellow
-        Write-Host "Safe to re-run to cut a new version: open sessions keep theirs, new spawns get the fresh one." -ForegroundColor Yellow
-        if (-not (Read-YesNo -Question 'Install / update the Anytype MCP now?' -Default $false)) {
-            Write-Host "Cancelled." -ForegroundColor Yellow
-            return
-        }
-        & (Join-Path $LibDir 'install-anytype-mcp.ps1')
-    }
-
-    # ----- Worktree maintenance ------------------------------------------
-    'clean' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'clean.ps1') -Target $wt
-    }
-    'stats' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'stats.ps1') -Target $wt
-    }
-    'readme-stats' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'update-readme-stats.ps1') -Target $wt
-    }
-    # 'changelog' regenerates CHANGELOG.md from the commit history (no publish,
-    # no confirmation — it only rewrites a tracked file the maintainer reviews).
-    'changelog' {
-        $wt = Get-WorktreeOrReturn
-        if ($null -eq $wt) { return }
-        & (Join-Path $LibDir 'changelog.ps1') -Target $wt
-    }
-
-    # ----- Setup — global (no worktree picker) ---------------------------
-    'bootstrap-dev' {
-        $dryRun = Read-YesNo -Question 'Dry-run first (probe + plan, no install)?' -Default $true
-        $full   = Read-YesNo -Question 'Include Tier 2 (native recompile toolchain + Ollama)?' -Default $false
-        $bootstrapArgs = @{}
-        if ($dryRun) { $bootstrapArgs.DryRun = $true }
-        if ($full)   { $bootstrapArgs.Full = $true }
-        & (Join-Path $LibDir 'bootstrap-dev-env.ps1') @bootstrapArgs
-    }
-    'setup-assets' {
-        Write-Host "This may download native runtime and Whisper model files." -ForegroundColor Yellow
-        if (-not (Read-YesNo -Question 'Continue with runtime asset setup?' -Default $false)) {
-            Write-Host "Cancelled." -ForegroundColor Yellow
-            return
-        }
-
-        $assetArgs = @{}
-        $fromRelease = Read-Optional -Question 'Native runtime release version X.Y.Z (blank = local/sibling source or skip)'
-        if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
-        if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
-        if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false) { $assetArgs.Force = $true }
-        & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
-    }
-    'install-hooks' {
-        & (Join-Path $LibDir 'install-hooks.ps1')
-    }
-
-    'quit' {
-        Write-Host "Bye." -ForegroundColor DarkGray
+    if ($action -eq 'quit') { break }
+    switch ($action) {
+        'launch'           { Invoke-LaunchOrBuild -Kind 'launch' }
+        'build-run'        { Invoke-LaunchOrBuild -Kind 'run' }
+        'build-norun'      { Invoke-LaunchOrBuild -Kind 'norun' }
+        'update-version'   { Invoke-UpdateVersion }
+        'release-menu'     { Show-ReleaseMenu }
+        'mcp-menu'         { Show-McpMenu }
+        'maintenance-menu' { Show-MaintenanceMenu }
+        'setup-menu'       { Show-SetupMenu }
     }
 }
+
+Write-Host "Bye." -ForegroundColor DarkGray
