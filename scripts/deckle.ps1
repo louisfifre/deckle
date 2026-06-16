@@ -3,8 +3,8 @@
 # Run this with F5 in VSCodium (see .vscode/launch.json) or directly from a
 # PowerShell 7+ terminal. The top level is a 2-D grid (↑↓←→ to move, Enter to
 # run): the verbs you reach for most sit up top, each with its Release/Debug
-# variant beside it, so one Enter picks both. The menu loops — an action runs,
-# then you land back on it — until Quit or Esc at the top level.
+# variant beside it, so one Enter picks both. The menu exits after a concrete
+# action runs; Back/cancel returns to the previous menu.
 #
 # The worktree is asked AFTER you pick the action, for the actions that act on
 # one (Launch, Build, Update version, Maintenance, app Release). It is the
@@ -24,6 +24,7 @@ param()
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir    = Join-Path $ScriptDir 'lib'
+$script:DeckleActionCompleted = $false
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 
@@ -72,27 +73,27 @@ function Get-CsprojVersion {
     return $null
 }
 
-# Show a submenu with the same 2-D grid renderer as the top-level menu. Returns
-# the chosen Value, or $null when the user goes Back or presses Esc.
+# Show a submenu with the same 2-D grid renderer as the top-level menu. Back is
+# first so a mistaken submenu entry is one Enter away from returning.
 function Show-Submenu {
     param(
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][object[]]$Rows,
-        [string]$Footer = 'same controls as the main menu; Esc also goes back'
+        [string]$Footer = 'Back returns to the main menu; Ctrl+C quits anytime'
     )
 
-    $withBack = @($Rows) + @(
-        @{ Blank = $true }
+    $withBack = @(
         @{ Title = 'Back' }
         @{ Cells = @( @{ Label = '< Back'; Value = '__back__' } ) }
-    )
+        @{ Blank = $true }
+    ) + @($Rows)
 
     $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer
     if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
 }
 
-# ── Action handlers (each bails with `return`, leaving the menu loop intact) ──
+# ── Action handlers ──────────────────────────────────────────────────────────
 
 # Launch / Build: verb and configuration are already chosen in the grid; only
 # the worktree is asked, last.
@@ -103,6 +104,7 @@ function Invoke-LaunchOrBuild {
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
+    $script:DeckleActionCompleted = $true
     switch ($Kind) {
         'launch' { & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration $Configuration }
         'run'    { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $Configuration }
@@ -115,6 +117,7 @@ function Invoke-WorktreeScript {
     param([Parameter(Mandatory)][string]$Script)
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir $Script) -Target $wt
 }
 
@@ -149,6 +152,7 @@ function Invoke-UpdateVersion {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $choice.Seg
 }
 
@@ -167,6 +171,7 @@ function Invoke-PublishRelease {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
 }
 
@@ -174,6 +179,7 @@ function Invoke-PublishRelease {
 function Invoke-PrepareArtifacts {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'publish-app.ps1') -Target $wt
 }
 
@@ -195,6 +201,7 @@ function Invoke-NativeRuntime {
     $nativeArgs = @{ Version = $version; WhisperRepo = $whisperRepo }
     if ($outDir)  { $nativeArgs.OutDir = $outDir }
     if ($publish) { $nativeArgs.Publish = $true }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'publish-native-runtime.ps1') @nativeArgs
 }
 
@@ -206,6 +213,7 @@ function Invoke-AnytypeMcp {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'install-anytype-mcp.ps1')
 }
 
@@ -216,6 +224,7 @@ function Invoke-BootstrapDev {
     $bootstrapArgs = @{}
     if ($dryRun) { $bootstrapArgs.DryRun = $true }
     if ($full)   { $bootstrapArgs.Full = $true }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'bootstrap-dev-env.ps1') @bootstrapArgs
 }
 
@@ -231,13 +240,14 @@ function Invoke-SetupAssets {
     if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
     if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
     if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false) { $assetArgs.Force = $true }
+    $script:DeckleActionCompleted = $true
     & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
 }
 
 # ── Submenu routers (same grid style, reached from the top-level "More" row) ─
 
 function Show-ReleaseMenu {
-    $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Esc back' -Rows @(
+    $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
         @{ Title = 'App release' }
         @{ Prefix = 'App'; Cells = @(
             @{ Label = 'Publish app release';           Value = 'publish'   }
@@ -257,7 +267,7 @@ function Show-ReleaseMenu {
 }
 
 function Show-MaintenanceMenu {
-    $v = Show-Submenu -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Esc back' -Rows @(
+    $v = Show-Submenu -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
         @{ Title = 'Worktree' }
         @{ Cells = @(
             @{ Label = 'Clean build outputs'; Value = 'clean' }
@@ -279,7 +289,7 @@ function Show-MaintenanceMenu {
 }
 
 function Show-SetupMenu {
-    $v = Show-Submenu -Header 'Deckle > Setup   -   ↑↓←→ move   Enter run   Esc back' -Rows @(
+    $v = Show-Submenu -Header 'Deckle > Setup   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
         @{ Title = 'Machine' }
         @{ Cells = @(
             @{ Label = 'Bootstrap dev environment'; Value = 'bootstrap' }
@@ -294,7 +304,7 @@ function Show-SetupMenu {
     switch ($v) {
         'bootstrap' { Invoke-BootstrapDev }
         'assets'    { Invoke-SetupAssets }
-        'hooks'     { & (Join-Path $LibDir 'install-hooks.ps1') }
+        'hooks'     { $script:DeckleActionCompleted = $true; & (Join-Path $LibDir 'install-hooks.ps1') }
     }
 }
 
@@ -317,10 +327,11 @@ $mainRows = @(
 
 while ($true) {
     $v = Select-Grid `
-        -Header 'Deckle   -   ↑↓←→ move   Enter run   Esc quit' `
-        -Footer 'the worktree is asked after you pick (skipped when there is only one)' `
-        -Rows $mainRows -StartSel 1 -StartCol 0
-    if ($null -eq $v -or $v -eq 'quit') { break }
+        -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
+        -Footer 'the worktree is asked after you pick; the menu exits after an action runs' `
+        -Rows $mainRows -StartSel 1 -StartCol 0 -EscapeAction Ignore
+    if ($null -eq $v) { continue }
+    if ($v -eq 'quit') { break }
 
     if ($v -match '^(launch|run|norun):(Release|Debug)$') {
         Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
@@ -333,6 +344,8 @@ while ($true) {
             'setup-menu'       { Show-SetupMenu }
         }
     }
+
+    if ($script:DeckleActionCompleted) { break }
 }
 
 Write-Host "Bye." -ForegroundColor DarkGray

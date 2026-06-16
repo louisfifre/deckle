@@ -18,6 +18,8 @@ under [`lib/`](lib/) and stay usable on their own CLI for automation.
 a terminal for daily work. It opens an arrow-key menu grouping every
 dev action by purpose. The first screen is the daily grid; `More` opens
 the same grid-style submenus for release, maintenance, and setup work:
+their first selectable cell is always `< Back`, so a mistaken submenu entry is
+one Enter away from returning.
 
 | Section | Action | Per-worktree? | Delegates to |
 |---|---|:---:|---|
@@ -39,7 +41,9 @@ the same grid-style submenus for release, maintenance, and setup work:
 
 Per-worktree actions prompt for a worktree right after the action is
 picked (auto-resolved when only the main repo exists). Global actions
-go straight to a short parameter prompt where needed.
+go straight to a short parameter prompt where needed. Once a concrete action
+has been launched, the menu exits instead of returning to the launcher. Use
+`Quit` or Ctrl+C to leave without running an action.
 
 ## Worker scripts — `lib/`
 

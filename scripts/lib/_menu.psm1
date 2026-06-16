@@ -16,6 +16,8 @@
 #                       them); useful for grouping a flat list visually.
 #   - Select-Grid     : picks one cell from a 2-D grid with section titles,
 #                       ragged rows, and Up/Down/Left/Right navigation.
+#                       Escape returns $null by default, or can be ignored
+#                       for root menus that quit through an explicit command.
 #
 # Both honour the same key bindings: Up/Down to navigate, Enter to confirm,
 # Esc to cancel. The line truncation logic preserves the meaningful tail
@@ -308,7 +310,9 @@ function Invoke-GridLoop {
         [object[]]$Rows,
         [string]$Footer,
         [int]$StartSel = 0,
-        [int]$StartCol = 0
+        [int]$StartCol = 0,
+        [ValidateSet('Cancel', 'Ignore')]
+        [string]$EscapeAction = 'Cancel'
     )
     $GAP = 3
     $body = @()
@@ -383,6 +387,7 @@ function Invoke-GridLoop {
                     return $body[$sel[$selIdx].BodyIndex].Cells[$colIdx].Value
                 }
                 'Escape' {
+                    if ($EscapeAction -eq 'Ignore') { continue }
                     [Console]::SetCursorPosition(0, $bottom)
                     return $null
                 }
@@ -403,9 +408,11 @@ function Select-Grid {
         [Parameter(Mandatory)][object[]]$Rows,
         [string]$Footer,
         [int]$StartSel = 0,
-        [int]$StartCol = 0
+        [int]$StartCol = 0,
+        [ValidateSet('Cancel', 'Ignore')]
+        [string]$EscapeAction = 'Cancel'
     )
-    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol
+    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol -EscapeAction $EscapeAction
 }
 
 Export-ModuleMember -Function Select-Worktree, Select-Action, Select-Grid
