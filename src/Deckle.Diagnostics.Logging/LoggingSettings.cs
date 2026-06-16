@@ -37,6 +37,17 @@ public sealed class LoggingSettings
     // siblings.
     public bool LogAutocorrectActivity { get; set; } = false;
 
+    // When false (the default), the Deckle-Windowing provider's Verbose
+    // firehose is dropped from the live LogWindow and app.jsonl — window
+    // placement and DPI, overlay stacking, popup anchoring, z-order checks,
+    // resize frames and first-open construction timings. Unlike the ambient
+    // and streaming gates there is no capture window, and unlike autocorrect
+    // there is no surviving sub-stream: the provider emits Verbose only, so
+    // off means the windowing channel is fully silent. On surfaces everything,
+    // for a placement / multi-monitor / resize-lag deep dive. Off-by-default —
+    // same quiet-by-default posture as its siblings.
+    public bool LogWindowingActivity { get; set; } = false;
+
     // Current journal projection. Search text stays UI-local, but the
     // level-family selector is persisted and reused by app.jsonl so the
     // disk journal follows the same broad visibility mode for new events.

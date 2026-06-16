@@ -73,6 +73,8 @@ public static class Glyphs
     public const string AudioRecording = "";
     public const string VoiceLevel = "";
 
+    public const string Window = "";
+
     // Ambient / Hue specifics
     public const string Bridge = "";
     public const string Endpoint = "";

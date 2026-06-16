@@ -1256,6 +1256,12 @@
   <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
     <value>Per-focus surface checks, learning signals and the periodic activity summary from the autocorrect engine. With this off, only applied corrections are logged — what changed (reason and lengths), never the word itself.</value>
   </data>
+  <data name="LoggingWindowingCard.Header" xml:space="preserve">
+    <value>Log windowing activity</value>
+  </data>
+  <data name="LoggingWindowingCard.Description" xml:space="preserve">
+    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
+  </data>
   <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
     <value>Telemetry</value>
   </data>

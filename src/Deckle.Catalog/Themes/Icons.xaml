@@ -75,6 +75,9 @@
     <x:String x:Key="Icon.AppLog">&#xE9A4;</x:String>
     <x:String x:Key="Icon.AudioRecording">&#xEFA9;</x:String>
     <x:String x:Key="Icon.VoiceLevel">&#xE993;</x:String>
+    <!-- Segoe Fluent "NewWindow" (E78B) — the windowing-activity log gate:
+         placement / sizing / z-order of every app window. -->
+    <x:String x:Key="Icon.Window">&#xE78B;</x:String>
 
     <!-- ─── Ambient / Hue specifics ──────────────────────────────── -->
     <x:String x:Key="Icon.Bridge">&#xE839;</x:String>

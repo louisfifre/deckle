@@ -65,6 +65,14 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LogAutocorrectActivity { get; set; }
 
+    // Windowing Verbose toggle: when off (default), the whole Deckle-Windowing
+    // firehose is dropped — placement, overlay slots, popup anchoring, z-order,
+    // resize frames, first-open timings. The provider emits Verbose only, so off
+    // means a fully silent channel; on surfaces everything for a placement /
+    // resize-lag dive. Sister to LogAutocorrectActivity, no capture window.
+    [ObservableProperty]
+    public partial bool LogWindowingActivity { get; set; }
+
     // ── Telemetry — opt-in disk persistence ─────────────────────────────────
 
     // Application log — mirrors every in-app log line to app.jsonl. Top of
@@ -127,6 +135,13 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsSource.Log.SettingChanged("Logging.LogAutocorrectActivity", value.ToString());
+        PushLoggingToSettings();
+    }
+
+    partial void OnLogWindowingActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsSource.Log.SettingChanged("Logging.LogWindowingActivity", value.ToString());
         PushLoggingToSettings();
     }
 
@@ -201,6 +216,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         LogAmbientCaptureActivity = false;
         LogStreamingTranscriptionActivity = false;
         LogAutocorrectActivity = false;
+        LogWindowingActivity = false;
         ApplicationLogToDisk = false;
         MicrophoneTelemetry = false;
         TelemetryLatencyEnabled = false;
@@ -221,6 +237,7 @@ public partial class DiagnosticsViewModel : ObservableObject
             LogAmbientCaptureActivity = l.LogAmbientCaptureActivity;
             LogStreamingTranscriptionActivity = l.LogStreamingTranscriptionActivity;
             LogAutocorrectActivity = l.LogAutocorrectActivity;
+            LogWindowingActivity = l.LogWindowingActivity;
 
             var t = TelemetrySettingsService.Instance.Current;
             ApplicationLogToDisk = t.ApplicationLogToDisk;
@@ -243,6 +260,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         l.LogAmbientCaptureActivity = LogAmbientCaptureActivity;
         l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
         l.LogAutocorrectActivity = LogAutocorrectActivity;
+        l.LogWindowingActivity = LogWindowingActivity;
         LoggingSettingsService.Instance.Save();
     }
 
@@ -271,6 +289,7 @@ public partial class DiagnosticsViewModel : ObservableObject
             LogAmbientCaptureActivity = false;
             LogStreamingTranscriptionActivity = false;
             LogAutocorrectActivity = false;
+            LogWindowingActivity = false;
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();

@@ -117,6 +117,15 @@ public partial class App : Microsoft.UI.Xaml.Application
             return (keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) == 0;
         }
 
+        // ── Windowing ──────────────────────────────────────────────────────
+        // No capture gate and no surviving sub-stream: the cross-cutting
+        // Deckle-Windowing provider emits Verbose only (placement, overlay
+        // slots, popup anchoring, z-order, resize frames, first-open timings).
+        // Off: the whole channel is silent — there are no milestones to spare,
+        // by design. On: everything passes, for a placement / resize-lag dive.
+        if (provider == "Deckle-Windowing")
+            return !LoggingSettingsService.Instance.Current.LogWindowingActivity;
+
         return false;
     }
 
