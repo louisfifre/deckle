@@ -326,10 +326,34 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterSettingsSnapshot,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "segmenter | threshold_dbfs={0:F1} | hangover_max_ms={1} | hangover_min_ms={2} | ramp_start_ms={3} | ramp_end_ms={4} | margin_ms={5} | min_utterance_ms={6}")]
-    public void SegmenterSettingsSnapshot(double threshold_dbfs, int hangover_max_ms, int hangover_min_ms, int ramp_start_ms, int ramp_end_ms, int margin_ms, int min_utterance_ms)
+           Message = "segmenter | threshold_dbfs={0:F1} | hangover_max_ms={1} | hangover_min_ms={2} | ramp_start_ms={3} | ramp_end_ms={4} | curve=({5:F2},{6:F2},{7:F2},{8:F2}) | margin_ms={9} | min_utterance_ms={10}")]
+    public void SegmenterSettingsSnapshot(
+        double threshold_dbfs,
+        int hangover_max_ms,
+        int hangover_min_ms,
+        int ramp_start_ms,
+        int ramp_end_ms,
+        double curve_x1,
+        double curve_y1,
+        double curve_x2,
+        double curve_y2,
+        int margin_ms,
+        int min_utterance_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtSegmenterSettingsSnapshot, threshold_dbfs, hangover_max_ms, hangover_min_ms, ramp_start_ms, ramp_end_ms, margin_ms, min_utterance_ms);
+        if (IsEnabled())
+            WriteEvent(
+                EvtSegmenterSettingsSnapshot,
+                threshold_dbfs,
+                hangover_max_ms,
+                hangover_min_ms,
+                ramp_start_ms,
+                ramp_end_ms,
+                curve_x1,
+                curve_y1,
+                curve_x2,
+                curve_y2,
+                margin_ms,
+                min_utterance_ms);
     }
 
     // Producer side: emitted when the segmenter discards a voiced span shorter

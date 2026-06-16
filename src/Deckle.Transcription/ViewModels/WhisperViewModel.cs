@@ -245,7 +245,8 @@ public partial class WhisperViewModel : ObservableObject
     // PipelineStrategyKind (Streaming / Monolithic). The Seg* values are the
     // energy-segmenter parameters, consulted only when streaming is on. The
     // hangover is dynamic: HangoverMax at the start of an utterance, decaying
-    // log-linearly to HangoverMin between RampStart and RampEnd lengths.
+    // along the configured Bézier curve to HangoverMin between RampStart and
+    // RampEnd lengths.
 
     [ObservableProperty]
     public partial bool StreamingEnabled { get; set; }
@@ -357,8 +358,8 @@ public partial class WhisperViewModel : ObservableObject
         SegThresholdDbfs = -45.0;
         SegHangoverMaxMs = 5_000;
         SegHangoverMinMs = 500;
-        SegHangoverRampStartMs = 60_000;
-        SegHangoverRampEndMs = 180_000;
+        SegHangoverRampStartMs = 15_000;
+        SegHangoverRampEndMs = 120_000;
         SegMarginMs = 150;
         SegMinUtteranceMs = 250;
 

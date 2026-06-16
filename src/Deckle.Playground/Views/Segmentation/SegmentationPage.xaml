@@ -256,12 +256,12 @@
                                 Description="Floor the delay decays to for long utterances — a shorter pause is treated as intra-word." />
 
                             <controls:TunableRow Label="Ramp start" Unit="s"
-                                Minimum="0.0" Maximum="180.0" Step="5.0" Default="60.0"
+                                Minimum="0.0" Maximum="180.0" Step="5.0" Default="15.0"
                                 Value="{x:Bind ViewModel.RampStartSec, Mode=TwoWay}"
                                 Description="Utterance length where the delay starts shrinking from the max." />
 
                             <controls:TunableRow Label="Ramp end" Unit="s"
-                                Minimum="30.0" Maximum="240.0" Step="5.0" Default="180.0"
+                                Minimum="30.0" Maximum="240.0" Step="5.0" Default="120.0"
                                 Value="{x:Bind ViewModel.RampEndSec, Mode=TwoWay}"
                                 Description="Utterance length where the delay reaches the minimum." />
                         </StackPanel>

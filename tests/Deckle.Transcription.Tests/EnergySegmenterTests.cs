@@ -144,6 +144,45 @@ public class EnergySegmenterTests
     }
 
     [Fact]
+    public void BezierControlPointsShapeIntermediateHangover()
+    {
+        var linear = new EnergySegmenterSettings
+        {
+            HangoverMaxMs       = 5_000,
+            HangoverMinMs       = 500,
+            HangoverRampStartMs = 1_000,
+            HangoverRampEndMs   = 5_000,
+            HangoverCurveX1     = 0.0,
+            HangoverCurveY1     = 0.0,
+            HangoverCurveX2     = 1.0,
+            HangoverCurveY2     = 1.0,
+            MinUtteranceMs      = 50,
+        };
+
+        var lateDrop = new EnergySegmenterSettings
+        {
+            HangoverMaxMs       = linear.HangoverMaxMs,
+            HangoverMinMs       = linear.HangoverMinMs,
+            HangoverRampStartMs = linear.HangoverRampStartMs,
+            HangoverRampEndMs   = linear.HangoverRampEndMs,
+            HangoverCurveX1     = 0.85,
+            HangoverCurveY1     = 0.10,
+            HangoverCurveX2     = 0.90,
+            HangoverCurveY2     = 0.25,
+            MinUtteranceMs      = linear.MinUtteranceMs,
+        };
+
+        var linearSeg = new EnergySegmenter(linear, _ => { });
+        var lateSeg = new EnergySegmenter(lateDrop, _ => { });
+
+        PushN(linearSeg, voiced: true, 60);
+        PushN(lateSeg, voiced: true, 60);
+
+        Assert.Equal(55, linearSeg.Snapshot().RequiredHangoverFrames);
+        Assert.True(lateSeg.Snapshot().RequiredHangoverFrames > linearSeg.Snapshot().RequiredHangoverFrames);
+    }
+
+    [Fact]
     public void HangoverStaysAtMaxBeforeRamp()
     {
         var got = new List<Utterance>();

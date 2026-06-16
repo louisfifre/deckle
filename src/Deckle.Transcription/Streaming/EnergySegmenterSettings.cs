@@ -46,7 +46,7 @@ namespace Deckle.Transcription;
 public sealed class EnergySegmenterSettings
 {
     public double ThresholdDbfs       { get; set; } = -45.0;
-    public int    HangoverMaxMs       { get; set; } = 10_000;
+    public int    HangoverMaxMs       { get; set; } = 5_000;
     public int    HangoverMinMs       { get; set; } = 500;
     public int    HangoverRampStartMs { get; set; } = 15_000;
     public int    HangoverRampEndMs   { get; set; } = 120_000;

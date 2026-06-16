@@ -58,6 +58,8 @@ public sealed partial class TranscriptionEngine
             segCfg.ThresholdDbfs,
             segCfg.HangoverMaxMs, segCfg.HangoverMinMs,
             segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
+            segCfg.HangoverCurveX1, segCfg.HangoverCurveY1,
+            segCfg.HangoverCurveX2, segCfg.HangoverCurveY2,
             segCfg.MarginMs, segCfg.MinUtteranceMs);
 
         // External Silero VAD pre-trim (default on). Resolved here on the worker

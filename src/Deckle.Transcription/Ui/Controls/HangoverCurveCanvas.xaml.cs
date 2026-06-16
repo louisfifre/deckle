@@ -114,12 +114,12 @@ public sealed partial class HangoverCurveCanvas : UserControl
 
     public static readonly DependencyProperty RampStartSecProperty =
         DependencyProperty.Register(nameof(RampStartSec), typeof(double), typeof(HangoverCurveCanvas),
-            new PropertyMetadata(60.0, OnAnyVisualChanged));
+            new PropertyMetadata(15.0, OnAnyVisualChanged));
     public double RampStartSec { get => (double)GetValue(RampStartSecProperty); set => SetValue(RampStartSecProperty, value); }
 
     public static readonly DependencyProperty RampEndSecProperty =
         DependencyProperty.Register(nameof(RampEndSec), typeof(double), typeof(HangoverCurveCanvas),
-            new PropertyMetadata(180.0, OnAnyVisualChanged));
+            new PropertyMetadata(120.0, OnAnyVisualChanged));
     public double RampEndSec { get => (double)GetValue(RampEndSecProperty); set => SetValue(RampEndSecProperty, value); }
 
     private static void OnAnyVisualChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

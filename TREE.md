@@ -1019,6 +1019,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   └── UnitBezierTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj

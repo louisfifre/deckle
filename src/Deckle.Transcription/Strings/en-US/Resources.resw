@@ -1429,13 +1429,13 @@
     <value>Hangover ramp start</value>
   </data>
   <data name="WhisperSegHangoverRampStartCard.Description" xml:space="preserve">
-    <value>Utterance length (in milliseconds) at which the hangover starts shrinking from the max toward the min. Below this, the hangover stays at the max. Default: 60000 ms (1 min).</value>
+    <value>Utterance length (in milliseconds) at which the hangover starts shrinking from the max toward the min. Below this, the hangover stays at the max. Default: 15000 ms (15 s).</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Header" xml:space="preserve">
     <value>Hangover ramp end</value>
   </data>
   <data name="WhisperSegHangoverRampEndCard.Description" xml:space="preserve">
-    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover follows a shaped curve that declines from the start and steepens toward the end. Default: 180000 ms (3 min).</value>
+    <value>Utterance length at and above which the hangover equals the min. Between the ramp start and end, the hangover follows a shaped curve that declines from the start and steepens toward the end. Default: 120000 ms (2 min).</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>

@@ -48,8 +48,44 @@ public sealed class TranscriptionSettingsService
             logInfo:     msg => DeckleWhispSource.Log.WhispSettingsPrefixed($"[transcription] {msg}"),
             logVerbose:  msg => DeckleWhispSource.Log.SettingsLoadComplete($"[transcription] {msg}"),
             logWarning:  msg => DeckleWhispSource.Log.SettingsLoadWarning($"[transcription] {msg}"),
-            logError:    msg => DeckleWhispSource.Log.SettingsLoadError($"[transcription] {msg}"));
+            logError:    msg => DeckleWhispSource.Log.SettingsLoadError($"[transcription] {msg}"),
+            postLoadMigration: ApplyPostLoadMigrations);
     }
+
+    internal static bool ApplyPostLoadMigrations(TranscriptionSettings settings)
+    {
+        EnergySegmenterSettings segmenter = settings.Streaming.Segmenter;
+        if (!HasDefaultHangoverCurve(segmenter))
+            return false;
+
+        bool migrated = false;
+
+        if (segmenter.HangoverMaxMs == 10_000
+            && segmenter.HangoverMinMs == 500
+            && segmenter.HangoverRampStartMs == 15_000
+            && segmenter.HangoverRampEndMs == 120_000)
+        {
+            segmenter.HangoverMaxMs = 5_000;
+            migrated = true;
+        }
+
+        if (segmenter.HangoverMaxMs == 5_000
+            && segmenter.HangoverMinMs == 500
+            && segmenter.HangoverRampStartMs == 60_000
+            && segmenter.HangoverRampEndMs == 120_000)
+        {
+            segmenter.HangoverRampStartMs = 15_000;
+            migrated = true;
+        }
+
+        return migrated;
+    }
+
+    private static bool HasDefaultHangoverCurve(EnergySegmenterSettings segmenter)
+        => segmenter.HangoverCurveX1 == 0.85
+        && segmenter.HangoverCurveY1 == 0.10
+        && segmenter.HangoverCurveX2 == 0.90
+        && segmenter.HangoverCurveY2 == 0.25;
 
     /// <summary>Schedule a debounced disk write (300 ms).</summary>
     public void Save() => _store.Save();
