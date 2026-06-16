@@ -119,6 +119,18 @@ public sealed partial class AnytypeApiClient : IDisposable
         return Inner(root, "object");
     }
 
+    // DELETE object → moves it to Anytype's restorable bin (the native trash),
+    // NOT a hard delete (verified 2026-06-12, see JOURNAL). Returns the inner
+    // "object" node when the API echoes the archived object, and tolerates an
+    // empty body by returning the bare root.
+    public async Task<JsonObject> DeleteObjectAsync(string id, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        JsonObject root = await SendAsync(HttpMethod.Delete, $"{_spacePath}/objects/{id}", null, ct)
+            .ConfigureAwait(false);
+        return root["object"] as JsonObject ?? root;
+    }
+
     // GET the space's properties (one page) → returns the root node
     // ({data, pagination}). Each item is {object, id, key, name, format}. The
     // property's ID — not its key — is what the tag-options endpoint addresses, so

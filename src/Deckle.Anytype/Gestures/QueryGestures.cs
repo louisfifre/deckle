@@ -165,6 +165,42 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Mis à jour : {QueryProp.Name(obj)} ({string.Join(", ", applied)}).";
     }
 
+    // Sets the transversal « Archivé » checkbox to take an object out of the views
+    // (value true) or bring it back (false). A lifecycle verb kept distinct from
+    // update for the small model's sake, though update can write the same checkbox.
+    // The checkbox lives on almost every type but NOT on rapport (a report is never
+    // archived — it stays searchable); a type that does not carry it is refused with
+    // the schema-true message rather than sending a no-op PATCH.
+    public async Task<string> ArchiveAsync(string selector, bool value = true, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+
+        string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+
+        using var _ = await api.AcquireWriteScopeAsync("archive", id, ct);
+        JsonObject obj = await api.GetObjectAsync(id, ct);
+        string objType = QueryProp.TypeKey(obj) ?? "";
+
+        if (!DevSpace.PropertiesFor(objType).Any(p => p.Key == DevSpace.Props.Archive))
+            throw new InvalidOperationException(
+                $"Le type {objType} ne porte pas de case « Archivé » — rien à archiver.");
+
+        var payload = new JsonObject
+        {
+            ["properties"] = new JsonArray
+            {
+                new JsonObject { ["key"] = DevSpace.Props.Archive, ["checkbox"] = value },
+            },
+        };
+        JsonObject updated = await api.UpdateObjectAsync(id, payload, ct);
+
+        DeckleAnytypeSource.Log.GestureCompleted("archive", Elapsed(started));
+
+        string name = QueryProp.Name(updated);
+        if (name.Length == 0) name = QueryProp.Name(obj);
+        return value ? $"Archivé : {name}" : $"Désarchivé : {name}";
+    }
+
     // Replaces the body under a markdown heading and verifies the write landed.
     // The body PATCH is a full replacement (Anytype has no block-level REST edit),
     // so this reads the current body, splices the one targeted section

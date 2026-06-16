@@ -5,20 +5,17 @@ using Xunit;
 namespace Deckle.Anytype.Tests;
 
 // Integration tests for QueryGestures.UpdateAsync over the shared
-// FakeAnytypeServer. They pin the owner's guarantee: the library cannot create a
-// tag option. A select/multi_select value must resolve to an EXISTING option —
-// frozen vocabularies in DevSpace, free (space-managed) ones against the live
-// options endpoint — and an unknown value throws BEFORE any PATCH leaves.
+// FakeAnytypeServer. They pin two guarantees: a select value must resolve to an
+// EXISTING option (frozen vocabularies in DevSpace, an unknown value throwing
+// before any PATCH), and the now-unmapped « tag » property is refused outright.
+// The free-vocabulary live-resolution path itself is exercised directly in
+// LiveTagResolverTests (no mapped property routes there since « tag » was dropped).
 //
 // Selector is a bafy* id so the resolver short-circuits (no /search route).
 [Trait("Category", "integration")]
 public class QueryGesturesTests
 {
     const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-
-    // The « tag » property is a free multi_select (no frozen vocabulary). Its live
-    // id, as the property-list endpoint would return it.
-    const string TagPropId = "bafyreiTagPropaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     static QueryGestures NewGestures(FakeAnytypeServer server)
     {
@@ -53,95 +50,39 @@ public class QueryGesturesTests
         },
     };
 
-    // The space's property list, mapping the « tag » key to its id.
-    static JsonObject PropertiesPage() => new()
+    // A rapport GET response — the type that does NOT carry the « Archivé »
+    // checkbox, so archive must refuse it.
+    static JsonObject RapportObject() => new()
     {
-        ["data"] = new JsonArray
+        ["object"] = new JsonObject
         {
-            new JsonObject
-            {
-                ["object"] = "property",
-                ["id"] = TagPropId,
-                ["key"] = DevSpace.Props.Tag,
-                ["name"] = "Tag",
-                ["format"] = "multi_select",
-            },
+            ["id"] = TaskId,
+            ["name"] = "Un rapport",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Rapport },
+            ["properties"] = new JsonArray(),
         },
-        ["pagination"] = new JsonObject { ["has_more"] = false },
     };
 
-    // A property's existing options, in the live endpoint's shape.
-    static JsonObject TagsPage(params (string Key, string Name)[] options)
-    {
-        var data = new JsonArray();
-        foreach ((string key, string name) in options)
-            data.Add(new JsonObject
-            {
-                ["object"] = "tag",
-                ["id"] = $"bafyreiTagId{key}",
-                ["key"] = key,
-                ["name"] = name,
-                ["color"] = "grey",
-            });
-        return new JsonObject
-        {
-            ["data"] = data,
-            ["pagination"] = new JsonObject { ["has_more"] = false },
-        };
-    }
-
-    // (a) Unknown value on a free-vocabulary multi_select → throws, no PATCH sent.
+    // « tag » is intentionally mapped onto no type (Anytype's auto-transversal
+    // residue, unused). update must therefore REFUSE it before any write — both a
+    // regression guard on the schema decision and the reason the live-resolution
+    // path is no longer reached through update.
     [Fact]
-    public async Task UpdateWithUnknownFreeVocabularyValueThrowsAndSendsNoPatch()
+    public async Task UpdateRefusesTheUnmappedTagPropertyAndSendsNoPatch()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(TaskId, TaskObject());
-        server.OnListProperties(PropertiesPage());
-        // The property exists, with one option « urgent » — but the caller asks
-        // for « inconnu », which names none.
-        server.OnListPropertyTags(TagPropId, TagsPage(("urgent", "Urgent")));
 
-        var gestures = NewGestures(server);
-        var props = new JsonObject { ["tag"] = "inconnu" };
+        var props = new JsonObject { ["tag"] = "urgent" };
 
-        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => gestures.UpdateAsync(TaskId, props));
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(TaskId, props));
 
-        // The error names the unknown value and lists the valid option — the
-        // model-facing affordance.
-        Assert.Contains("inconnu", ex.Message);
-        Assert.Contains("urgent", ex.Message);
-
-        // The guarantee: nothing was PATCHed, so the API was never asked to take
-        // (and possibly auto-create) the unknown option.
+        Assert.Contains("tag", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
-    // (b) A value matching a live option resolves; the PATCH carries the option key.
-    [Fact]
-    public async Task UpdateWithKnownFreeVocabularyValueResolvesToTheLiveOptionKey()
-    {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskObject());
-        server.OnListProperties(PropertiesPage());
-        // The live option « Urgent » carries the wire key « urgent ».
-        server.OnListPropertyTags(TagPropId, TagsPage(("urgent", "Urgent")));
-        server.OnPatchObject(TaskId, TaskObject());
-
-        // Caller passes the DISPLAY NAME; it must resolve to the existing key.
-        var props = new JsonObject { ["tag"] = "Urgent" };
-        await NewGestures(server).UpdateAsync(TaskId, props);
-
-        JsonObject patched = server.LastBodyFor("PATCH");
-        var entries = Assert.IsType<JsonArray>(patched["properties"]);
-        JsonObject entry = Assert.IsType<JsonObject>(Assert.Single(entries));
-        Assert.Equal(DevSpace.Props.Tag, entry["key"]!.GetValue<string>());
-
-        var values = Assert.IsType<JsonArray>(entry["multi_select"]);
-        Assert.Equal("urgent", Assert.Single(values)!.GetValue<string>());
-    }
-
-    // (c) Frozen-vocabulary behavior is unchanged: « etat » resolves in memory, no
+    // Frozen-vocabulary behavior is unchanged: « etat » resolves in memory, no
     // live lookup, and an unknown value still throws with no PATCH.
     [Fact]
     public async Task UpdateOnFrozenVocabularyResolvesInMemoryWithoutALiveLookup()
@@ -176,6 +117,52 @@ public class QueryGesturesTests
         await Assert.ThrowsAsync<ArgumentException>(
             () => NewGestures(server).UpdateAsync(TaskId, props));
 
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // ── ArchiveAsync ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ArchiveSetsTheArchivedCheckboxTrue()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).ArchiveAsync(TaskId);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
+        Assert.Equal(DevSpace.Props.Archive, entry["key"]!.GetValue<string>());
+        Assert.True(entry["checkbox"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task ArchiveWithValueFalseRestoresTheObject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).ArchiveAsync(TaskId, value: false);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
+        Assert.False(entry["checkbox"]!.GetValue<bool>());
+    }
+
+    // A rapport carries no « Archivé » checkbox (it stays searchable on purpose):
+    // archive refuses it before any write, naming the checkbox in the message.
+    [Fact]
+    public async Task ArchiveOnARapportIsRefusedAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, RapportObject());
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).ArchiveAsync(TaskId));
+
+        Assert.Contains("Archivé", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 

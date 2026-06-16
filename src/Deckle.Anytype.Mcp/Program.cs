@@ -18,6 +18,7 @@ internal static class Program
     private static async Task<int> Main(string[] args)
     {
         ToolProfile profile = ToolProfileParser.Parse(args);
+        bool managementEnabled = ManagementFlag.IsEnabled(args);
 
         // The listener must subscribe before any provider emits, so attach it
         // first — its EnableEvents also lights up sources created later.
@@ -45,6 +46,7 @@ internal static class Program
             var projects = new ProjectGestures(api, resolver);
             var query = new QueryGestures(api, resolver);
             var dialogues = new DialogueGestures(api, resolver);
+            var management = new ManagementGestures(api, resolver);
 
             var tools = profile switch
             {
@@ -63,6 +65,19 @@ internal static class Program
                 ToolProfile.All => McpServer.AllDescriptor,
                 _ => McpServer.ProjectManagementDescriptor,
             };
+
+            // Mount the supervised management catalog on demand, additive to the
+            // object-management surface. The Dialogues-only profile has no object to
+            // delete, so the flag is a no-op there. Default (flag off) serves none of
+            // these destructive tools.
+            if (managementEnabled && profile != ToolProfile.Dialogues)
+            {
+                tools = tools.Concat(ManagementToolCatalog.Build(management)).ToArray();
+                descriptor = descriptor with
+                {
+                    Instructions = descriptor.Instructions + "\n\n" + ManagementToolCatalog.Instructions,
+                };
+            }
 
             var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             using var stdin = new StreamReader(Console.OpenStandardInput(), utf8NoBom);
@@ -104,6 +119,31 @@ internal enum ToolProfile
     ProjectManagement,
     Dialogues,
     All,
+}
+
+// The management catalog is mounted on demand, never by default: a consumer
+// opts in through its mcp.json, either with the --management launch arg or by
+// setting DECKLE_ANYTYPE_MANAGEMENT to a truthy value. An unsupervised consumer
+// is served no destructive tool.
+internal static class ManagementFlag
+{
+    const string EnvVar = "DECKLE_ANYTYPE_MANAGEMENT";
+
+    public static bool IsEnabled(string[] args)
+    {
+        foreach (string arg in args)
+            if (string.Equals(arg, "--management", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+        return IsTruthy(Environment.GetEnvironmentVariable(EnvVar));
+    }
+
+    static bool IsTruthy(string? value) =>
+        value is not null &&
+        (value == "1"
+         || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+         || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase)
+         || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase));
 }
 
 internal static class ToolProfileParser

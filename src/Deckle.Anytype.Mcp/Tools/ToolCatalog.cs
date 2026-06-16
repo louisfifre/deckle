@@ -6,7 +6,7 @@ namespace Deckle.Anytype.Mcp;
 
 // ─── Tool catalog ─────────────────────────────────────────────────────────────
 //
-// Builds the 14 MCP tools over the four gesture classes. Each descriptor pairs a
+// Builds the 15 base MCP tools over the four gesture classes. Each descriptor pairs a
 // JSON Schema (2020-12, additionalProperties:false) with a handler that reads and
 // type-checks the arguments before invoking the gesture.
 //
@@ -80,12 +80,22 @@ public static class ToolCatalog
                         IntOpt(args, "priority"), StrOpt(args, "body"), ct)),
 
             new(
-                "task_done",
-                "Mark a task done by checking its built-in done checkbox. Nothing is archived and the task's checklist items are untouched.",
+                "complete",
+                "Set a task's built-in completion checkbox: omit done to mark it done, pass done:false to reopen it. This is the canonical 'task finished' signal, distinct from the état select (Ouvert/En cours/Terminé…). Nothing is archived and the checklist items are untouched.",
                 Schema(
-                    required: [Prop("task", "string", "Task, name or id.")]),
+                    required: [Prop("task", "string", "Task, name or id.")],
+                    optional: [Prop("done", "boolean", "Completion state; omit to mark done, pass false to reopen.")]),
                 async (args, ct) =>
-                    await tasks.DoneAsync(Str(args, "task"), ct)),
+                    await tasks.CompleteAsync(Str(args, "task"), BoolOpt(args, "done") ?? true, ct)),
+
+            new(
+                "archive",
+                "Set an object's Archivé checkbox: omit archived to archive it (take it out of the views), pass archived:false to bring it back. Works on any object that carries the checkbox — not reports, which stay searchable. Archiving is the lifecycle mechanism; the état select is separate.",
+                Schema(
+                    required: [Prop("object", "string", "Object, name or id.")],
+                    optional: [Prop("archived", "boolean", "Archive state; omit to archive, pass false to restore.")]),
+                async (args, ct) =>
+                    await query.ArchiveAsync(Str(args, "object"), BoolOpt(args, "archived") ?? true, ct)),
 
             new(
                 "link",
