@@ -3,9 +3,10 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
 
-// Shared projection for the live application journal. The LogWindow uses
-// it for its in-memory visible list; app.jsonl uses the same predicate so
-// disk persistence follows the chosen level family for new events.
+// Display projection for the live LogWindow: it computes the in-memory
+// visible list from the chosen level family. It is a viewer lens only —
+// app.jsonl does NOT route through it, so the disk journal never depends on
+// what the window happens to be showing.
 public static class LogWindowFilter
 {
     public static bool IsStructuredTelemetry(string eventName)

@@ -120,12 +120,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         return false;
     }
 
-    private static bool ShouldDropApplicationLogEntry(Deckle.Diagnostics.EventEntry entry)
-    {
-        var mode = LoggingSettingsService.Instance.Current.LogWindowVisibilityMode;
-        return !Deckle.Diagnostics.Logging.LogWindowFilter.IsVisible(entry, mode);
-    }
-
     public App()
     {
         InitializeComponent();
@@ -243,7 +237,15 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Deckle.Diagnostics.Logging; the engines flip them on Start / Stop.
         AppDiagnosticsBootstrap.ConfigureLogWindowProviderLevelDropFilter(ShouldDropCaptureVerbose);
         TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(ShouldDropCaptureVerbose);
-        TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(ShouldDropApplicationLogEntry);
+
+        // app.jsonl is NOT gated by the LogWindow's All/Activity/Alerts selector.
+        // That selector is a display lens over the live window, not an authority
+        // over what exists: the disk journal must stay a complete machine record,
+        // governed only by the user-authorized Diagnostics gates above and the
+        // ApplicationLogToDisk toggle. Wiring the view selector into the disk
+        // predicate (the former ShouldDropApplicationLogEntry) meant switching the
+        // window to Alerts silently stopped persisting Verbose — a view preference
+        // deciding what gets recorded. Removed.
 
         // Boot-time sanity marker for the EventSource pipeline. It has no
         // product behaviour; it simply proves provider discovery, JSONL
