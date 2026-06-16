@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using Deckle.Diagnostics;
@@ -9,34 +10,34 @@ namespace Deckle.Diagnostics.Tests;
 // Rotation of the application journal: roll by line count into a monotonically
 // numbered generation under an `archive/` subfolder, full `.jsonl` extension
 // preserved and a zero-padded index appended after it (app.jsonl →
-// archive/app.jsonl.0001). Generations accumulate — none is renamed or
-// deleted. Drives the real JsonlEventListener against a temp directory;
-// isolation is by provider name so events from other Deckle.* sources active
-// in the test process never land in the file under test.
+// archive/app.jsonl.0001). Generations accumulate — none is renamed or deleted.
+//
+// Since the dispatch refonte JsonlSink is a passive ILogSink, no longer an
+// EventListener: rotation is a property of Write(EventEntry), so the test drives
+// the sink directly with fabricated entries. No EventSource, no cross-source
+// isolation hack — deterministic and fast.
 [Trait("Category", "integration")]
-public sealed class JsonlEventListenerRotationTests
+public sealed class JsonlSinkRotationTests
 {
-    [EventSource(Name = "Deckle-RotationTest")]
-    private sealed class RotationTestSource : EventSource
-    {
-        public static readonly RotationTestSource Log = new();
-
-        private RotationTestSource() { }
-
-        [Event(1, Level = EventLevel.Informational, Message = "line | n={0}")]
-        public void Line(int n)
-        {
-            if (IsEnabled()) WriteEvent(1, n);
-        }
-    }
-
-    private static JsonlEventListener NewListener(string active, int maxLines) =>
+    private static JsonlSink NewSink(string active, int maxLines) =>
         new(
             filePath:  active,
             kindLabel: "log",
-            predicate: e => e.Provider == "Deckle-RotationTest",
+            predicate: _ => true,
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines));
+
+    // A minimal self-describing entry whose payload carries the line index, so
+    // an assertion can locate a specific line across generations.
+    private static EventEntry Line(int n) =>
+        new(
+            timestamp:        DateTimeOffset.Now,
+            provider:         "Deckle-RotationTest",
+            eventName:        "Line",
+            level:            EventLevel.Informational,
+            keywords:         EventKeywords.None,
+            formattedMessage: $"line | n={n}",
+            payload:          new Dictionary<string, object?> { ["n"] = n });
 
     private static string NewTempDir(string tag)
     {
@@ -54,13 +55,13 @@ public sealed class JsonlEventListenerRotationTests
         string dir = NewTempDir("roll");
         string active = Path.Combine(dir, "app.jsonl");
 
-        var listener = NewListener(active, maxLines: 3);
+        var sink = NewSink(active, maxLines: 3);
         try
         {
             // Lines 0..2 fill the active file to the cap; line 3 triggers the
             // roll, so the active file restarts and the first generation lands
             // in the archive subfolder under a padded index.
-            for (int i = 0; i < 4; i++) RotationTestSource.Log.Line(i);
+            for (int i = 0; i < 4; i++) sink.Write(Line(i));
 
             Assert.True(File.Exists(active));
             Assert.Single(File.ReadAllLines(active));               // line 3 only
@@ -69,7 +70,6 @@ public sealed class JsonlEventListenerRotationTests
         }
         finally
         {
-            listener.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }
@@ -83,10 +83,10 @@ public sealed class JsonlEventListenerRotationTests
         // maxLines=1 → every line after the first rolls. Five lines yield four
         // generations; nothing is dropped and .0001 keeps the very first line
         // (proving no rename or overwrite as the index climbs).
-        var listener = NewListener(active, maxLines: 1);
+        var sink = NewSink(active, maxLines: 1);
         try
         {
-            for (int i = 0; i < 5; i++) RotationTestSource.Log.Line(i);
+            for (int i = 0; i < 5; i++) sink.Write(Line(i));
 
             Assert.True(File.Exists(Generation(dir, 1)));
             Assert.True(File.Exists(Generation(dir, 2)));
@@ -99,7 +99,6 @@ public sealed class JsonlEventListenerRotationTests
         }
         finally
         {
-            listener.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }
@@ -110,15 +109,15 @@ public sealed class JsonlEventListenerRotationTests
         string dir = NewTempDir("reseed");
         string active = Path.Combine(dir, "app.jsonl");
 
-        // A prior session already wrote 3 lines. A fresh listener capped at 3
-        // must re-count them at construction and roll on the first new line,
-        // not append a fourth.
+        // A prior session already wrote 3 lines. A fresh sink capped at 3 must
+        // re-count them at construction and roll on the first new line, not
+        // append a fourth.
         File.WriteAllText(active, "{}\n{}\n{}\n");
 
-        var listener = NewListener(active, maxLines: 3);
+        var sink = NewSink(active, maxLines: 3);
         try
         {
-            RotationTestSource.Log.Line(99);
+            sink.Write(Line(99));
 
             Assert.True(File.Exists(Generation(dir, 1)));
             Assert.Equal(3, File.ReadAllLines(Generation(dir, 1)).Length);
@@ -126,33 +125,28 @@ public sealed class JsonlEventListenerRotationTests
         }
         finally
         {
-            listener.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }
 
     [Fact]
-    public void ContinuesGenerationNumberingAcrossListenerRestart()
+    public void ContinuesGenerationNumberingAcrossSinkRestart()
     {
         string dir = NewTempDir("restart");
         string active = Path.Combine(dir, "app.jsonl");
 
         // First session rolls once → archive/app.jsonl.0001 holds line 0.
-        var first = NewListener(active, maxLines: 1);
-        try
-        {
-            RotationTestSource.Log.Line(0);
-            RotationTestSource.Log.Line(1);
-        }
-        finally { first.Dispose(); }
+        var first = NewSink(active, maxLines: 1);
+        first.Write(Line(0));
+        first.Write(Line(1));
 
-        // A fresh listener over the same files must scan the archive and roll
-        // into .0002, never overwriting .0001 — the numbering continues with
-        // no persisted state.
-        var second = NewListener(active, maxLines: 1);
+        // A fresh sink over the same files must scan the archive and roll into
+        // .0002, never overwriting .0001 — the numbering continues with no
+        // persisted state.
+        var second = NewSink(active, maxLines: 1);
         try
         {
-            RotationTestSource.Log.Line(2);
+            second.Write(Line(2));
 
             Assert.True(File.Exists(Generation(dir, 1)));
             Assert.Contains("n=0", File.ReadAllText(Generation(dir, 1))); // still the first line
@@ -161,7 +155,6 @@ public sealed class JsonlEventListenerRotationTests
         }
         finally
         {
-            second.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }

@@ -957,7 +957,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
-│   │   └── JsonlEventListenerRotationTests.cs
+│   │   └── JsonlSinkRotationTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs

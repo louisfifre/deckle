@@ -1,11 +1,19 @@
 using System.Diagnostics.Tracing;
 using System.Text.Json.Nodes;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Xunit;
 
 namespace Deckle.Diagnostics.Telemetry.Tests;
 
+// Since the dispatch refonte the telemetry JSONL sinks are passive ILogSinks
+// registered on a single DispatchEventListener. Each test builds its own
+// dispatcher, hands it to Configure, emits real events through a test
+// EventSource, and disposes the dispatcher in the finally so no subscription
+// leaks across tests. The capture gate is wired on the dispatcher
+// (ConfigureCentralGate), not on the bootstrap — it is the single transverse
+// drop now.
 [Trait("Category", "regression")]
 public sealed class TelemetryListenerBootstrapTests
 {
@@ -48,7 +56,7 @@ public sealed class TelemetryListenerBootstrapTests
     }
 
     [Fact]
-    public void ApplicationLogRespectsRuntimeDropFilter()
+    public void ApplicationLogRespectsCentralGate()
     {
         string root = Path.Combine(
             AppContext.BaseDirectory,
@@ -56,28 +64,29 @@ public sealed class TelemetryListenerBootstrapTests
         string appLog = Path.Combine(root, "app.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
+        var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
-            TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter(
-                (provider, _, _) => provider == "Deckle-TelemetryTests");
+            dispatch.ConfigureCentralGate((provider, _, _) => provider == "Deckle-TelemetryTests");
 
-            TestTelemetrySource.Log.InfoLine("dropped-by-filter");
+            TestTelemetrySource.Log.InfoLine("dropped-by-gate");
 
             Assert.False(File.Exists(appLog));
 
-            TelemetryListenerBootstrap.ConfigureApplicationLogProviderLevelDropFilter((_, _, _) => false);
-            TestTelemetrySource.Log.InfoLine("written-after-filter");
+            dispatch.ConfigureCentralGate((_, _, _) => false);
+            TestTelemetrySource.Log.InfoLine("written-after-gate");
 
             Assert.True(File.Exists(appLog));
             string jsonl = File.ReadAllText(appLog);
-            Assert.Contains("written-after-filter", jsonl);
-            Assert.DoesNotContain("dropped-by-filter", jsonl);
+            Assert.Contains("written-after-gate", jsonl);
+            Assert.DoesNotContain("dropped-by-gate", jsonl);
         }
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
+            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
@@ -91,9 +100,10 @@ public sealed class TelemetryListenerBootstrapTests
         string appLog = Path.Combine(root, "app.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
+        var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
 
             TestTelemetrySource.Log.InfoLine("journal-metadata");
@@ -110,6 +120,7 @@ public sealed class TelemetryListenerBootstrapTests
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
+            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
@@ -123,9 +134,10 @@ public sealed class TelemetryListenerBootstrapTests
         string appLog = Path.Combine(root, "app.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
+        var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
 
             TestTelemetrySource.Log.CorpusAsrRecorded("sensitive-asr-text");
@@ -140,6 +152,7 @@ public sealed class TelemetryListenerBootstrapTests
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
+            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
@@ -154,9 +167,10 @@ public sealed class TelemetryListenerBootstrapTests
         string processed = Path.Combine(root, "microphone.processed.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
+        var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(
                 name => name == "ApplicationLogToDisk" || name == "MicrophoneTelemetry");
 
@@ -173,6 +187,7 @@ public sealed class TelemetryListenerBootstrapTests
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
+            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
@@ -186,9 +201,10 @@ public sealed class TelemetryListenerBootstrapTests
         string appLog = Path.Combine(root, "app.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
+        var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
             TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(
                 entry => !LogWindowFilter.IsVisible(entry, LogWindowVisibilityMode.Activity));
@@ -203,6 +219,7 @@ public sealed class TelemetryListenerBootstrapTests
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
+            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
