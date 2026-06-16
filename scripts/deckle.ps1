@@ -65,7 +65,8 @@ function Read-Optional {
 # section dividers — Up/Down skips them automatically.
 $actions = @(
     [pscustomobject]@{ Label = '── Launch ──';                      Value = $null;            IsHeader = $true  }
-    [pscustomobject]@{ Label = 'Launch app';                        Value = 'launch'                           }
+    [pscustomobject]@{ Label = 'Launch app (Release)';              Value = 'launch-release'                    }
+    [pscustomobject]@{ Label = 'Launch app (Debug)';                Value = 'launch-debug'                      }
 
     [pscustomobject]@{ Label = '── Build ──';                       Value = $null;            IsHeader = $true  }
     [pscustomobject]@{ Label = 'Build and run app (Release)';       Value = 'build-release'                     }
@@ -73,6 +74,7 @@ $actions = @(
     [pscustomobject]@{ Label = 'Build app without running';         Value = 'build-norun'                       }
 
     [pscustomobject]@{ Label = '── Release ──';                     Value = $null;            IsHeader = $true  }
+    [pscustomobject]@{ Label = 'Bump version + tag';                Value = 'cut-version'                       }
     [pscustomobject]@{ Label = 'Publish app release';               Value = 'publish-release'                   }
     [pscustomobject]@{ Label = 'Prepare app release artifacts';     Value = 'build-release-artifacts'           }
     [pscustomobject]@{ Label = 'Prepare native runtime release';    Value = 'native-runtime'                    }
@@ -105,10 +107,18 @@ try {
 switch ($action) {
 
     # ----- Launch branches — per-worktree --------------------------------
-    'launch' {
+    # Both configurations launch an ALREADY-built exe without recompiling;
+    # launch-app.ps1 resolves the freshest Deckle.exe under the matching
+    # release\ or debug\ pivot. Build the configuration first if it is missing.
+    'launch-release' {
         $wt = Get-WorktreeOrReturn
         if ($null -eq $wt) { return }
         & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Release
+    }
+    'launch-debug' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration Debug
     }
 
     # ----- Build branches — per-worktree ---------------------------------
@@ -129,6 +139,43 @@ switch ($action) {
     }
 
     # ----- Release — per-worktree ----------------------------------------
+    # 'cut-version' bumps the single source-of-truth <Version> in the csproj,
+    # commits it as `chore(release): vX.Y.Z`, and lays the matching tag — one
+    # atomic act so csproj and tag never drift. It does NOT push; pushing and
+    # publishing stay separate, deliberate steps. Run it on main after a merge.
+    'cut-version' {
+        $wt = Get-WorktreeOrReturn
+        if ($null -eq $wt) { return }
+        $csproj = Join-Path $wt 'src\Deckle.App\Deckle.App.csproj'
+        $cur = $null
+        $m = Select-String -Path $csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
+        if ($m) { $cur = $m.Matches[0].Groups[1].Value.Trim() }
+        if (-not $cur -or $cur -notmatch '^\d+\.\d+\.\d+$') {
+            Write-Host "Could not read a MAJOR.MINOR.PATCH <Version> from $csproj" -ForegroundColor Red
+            return
+        }
+        $seg = Read-Optional -Question 'Segment to bump (patch/minor/major) [patch]'
+        if (-not $seg) { $seg = 'patch' }
+        if ($seg -notin @('patch', 'minor', 'major')) {
+            Write-Host "Unknown segment '$seg' — expected patch, minor or major." -ForegroundColor Red
+            return
+        }
+        # Preview only; cut-version.ps1 re-reads and computes authoritatively.
+        $pp = $cur.Split('.') | ForEach-Object { [int]$_ }
+        switch ($seg) {
+            'major' { $pp = @($pp[0] + 1, 0, 0) }
+            'minor' { $pp = @($pp[0], $pp[1] + 1, 0) }
+            'patch' { $pp = @($pp[0], $pp[1], $pp[2] + 1) }
+        }
+        $nextVer = $pp -join '.'
+        Write-Host "Bump v$cur -> v$nextVer : commit 'chore(release): v$nextVer' + tag v$nextVer on '$wt'. No push." -ForegroundColor Yellow
+        if (-not (Read-YesNo -Question "Cut v$nextVer now?" -Default $false)) {
+            Write-Host "Cancelled." -ForegroundColor Yellow
+            return
+        }
+        & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $seg
+    }
+
     # 'publish-release' builds both release artefacts (installer exe + app
     # payload ZIP) and creates the public GitHub Release (tag + upload) via gh —
     # the maintainer's act, gated behind an explicit confirmation. To build the
