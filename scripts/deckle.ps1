@@ -1,26 +1,22 @@
 # deckle.ps1 — Single interactive entry point for Deckle dev workflows.
 #
 # Run this with F5 in VSCodium (see .vscode/launch.json) or directly from a
-# PowerShell 7+ terminal. The menu is a small router: a short top level of
-# verbs, where rare groups collapse into submenus reached with `▸` and left
-# with Back/Esc. It loops — an action runs, then you land back on the menu —
-# until you pick Quit (or press Esc at the top level).
+# PowerShell 7+ terminal. The top level is a 2-D grid (↑↓←→ to move, Enter to
+# run): the verbs you reach for most sit up top, each with its Release/Debug
+# variant beside it, so one Enter picks both. The menu loops — an action runs,
+# then you land back on it — until Quit or Esc at the top level.
 #
-#   Launch / Build    — pick the verb, then the worktree, then Release/Debug.
-#   Update version    — bump the csproj <Version> and tag it (frequent).
-#   Release ▸         — publish artefacts / GitHub releases (rare).
-#   MCP ▸             — publish the Anytype MCP host.
-#   Maintenance ▸     — clean, stats, docs.
-#   Setup ▸           — bootstrap a fresh machine, hooks, runtime assets.
+# The worktree is asked AFTER you pick the action, for the actions that act on
+# one (Launch, Build, Update version, Maintenance, app Release). It is the
+# point of the menu, and it auto-resolves when only one worktree exists. Global
+# actions (MCP, native runtime, Setup) never ask for a worktree.
 #
-# Per-worktree actions prompt for a worktree after the action is picked
-# (auto-resolves when only the main repo exists). Every concrete action
-# delegates to a single-purpose script in scripts/lib/; those scripts remain
-# usable on their own CLI for automation.
+# Every concrete action delegates to a single-purpose script in scripts/lib/;
+# those scripts remain usable on their own CLI for automation.
 #
-# Colour semantics (consistent across the menu): default foreground = neutral
-# prompt/info, DarkGray = secondary/hint, Cyan = step title, Green = success,
-# Yellow = a real warning (public publish, destructive), Red = error.
+# Colour semantics: default foreground = neutral, DarkGray = secondary/hint,
+# Cyan = step title, Green = success, Yellow = a real warning (public publish),
+# Red = error.
 
 [CmdletBinding()]
 param()
@@ -34,6 +30,7 @@ Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 # ── Small input helpers ──────────────────────────────────────────────────────
 
 # Pick a worktree, or return $null on Esc (Select-Worktree throws "Cancelled").
+# Auto-resolves silently when there is only one worktree.
 function Get-WorktreeOrReturn {
     try {
         $wt = Select-Worktree -ContextDir $ScriptDir
@@ -41,18 +38,6 @@ function Get-WorktreeOrReturn {
         return $wt
     } catch {
         Write-Host "Cancelled." -ForegroundColor DarkGray
-        return $null
-    }
-}
-
-# Pick Release or Debug (Release default). Returns the string, or $null on Esc.
-function Get-Configuration {
-    try {
-        return Select-Action -Header 'Configuration:' -Items @(
-            [pscustomobject]@{ Label = 'Release'; Value = 'Release' }
-            [pscustomobject]@{ Label = 'Debug';   Value = 'Debug'   }
-        ) -Default 0
-    } catch {
         return $null
     }
 }
@@ -87,8 +72,8 @@ function Get-CsprojVersion {
     return $null
 }
 
-# Show a submenu: the given items plus a Back entry. Returns the chosen Value,
-# or $null when the user goes Back or presses Esc.
+# Show a 1-D submenu: the given items plus a Back entry. Returns the chosen
+# Value, or $null when the user goes Back or presses Esc.
 function Show-Submenu {
     param(
         [Parameter(Mandatory)][string]$Header,
@@ -109,18 +94,19 @@ function Show-Submenu {
 
 # ── Action handlers (each bails with `return`, leaving the menu loop intact) ──
 
-# Launch / Build: verb → worktree → Release/Debug, then delegate.
+# Launch / Build: verb and configuration are already chosen in the grid; only
+# the worktree is asked, last.
 function Invoke-LaunchOrBuild {
-    param([Parameter(Mandatory)][ValidateSet('launch', 'run', 'norun')][string]$Kind)
+    param(
+        [Parameter(Mandatory)][ValidateSet('launch', 'run', 'norun')][string]$Kind,
+        [Parameter(Mandatory)][ValidateSet('Release', 'Debug')][string]$Configuration
+    )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    Write-Host ""
-    $cfg = Get-Configuration
-    if ($null -eq $cfg) { Write-Host "Cancelled." -ForegroundColor DarkGray; return }
     switch ($Kind) {
-        'launch' { & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration $cfg }
-        'run'    { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $cfg }
-        'norun'  { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $cfg -NoRun }
+        'launch' { & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration $Configuration }
+        'run'    { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $Configuration }
+        'norun'  { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $Configuration -NoRun }
     }
 }
 
@@ -167,7 +153,7 @@ function Invoke-UpdateVersion {
 }
 
 # Publish a PUBLIC GitHub Release — maintainer's act, behind a y/N gate. The
-# warning stays Yellow here: it is a genuine, outward-facing, hard-to-undo act.
+# warning stays Yellow: it is a genuine, outward-facing, hard-to-undo act.
 function Invoke-PublishRelease {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
@@ -248,7 +234,7 @@ function Invoke-SetupAssets {
     & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
 }
 
-# ── Submenu routers ──────────────────────────────────────────────────────────
+# ── Submenu routers (1-D lists, reached from the grid's "More" row) ──────────
 
 function Show-ReleaseMenu {
     $v = Show-Submenu -Header 'Release:' -Items @(
@@ -260,15 +246,6 @@ function Show-ReleaseMenu {
         'publish'   { Invoke-PublishRelease }
         'artifacts' { Invoke-PrepareArtifacts }
         'native'    { Invoke-NativeRuntime }
-    }
-}
-
-function Show-McpMenu {
-    $v = Show-Submenu -Header 'MCP:' -Items @(
-        [pscustomobject]@{ Label = 'Install / update Anytype MCP'; Value = 'anytype' }
-    )
-    switch ($v) {
-        'anytype' { Invoke-AnytypeMcp }
     }
 }
 
@@ -300,39 +277,40 @@ function Show-SetupMenu {
     }
 }
 
-# ── Top-level menu loop ──────────────────────────────────────────────────────
+# ── Top-level grid loop ──────────────────────────────────────────────────────
+# Launch/Build rows carry their config in the Value (e.g. 'run:Release'); the
+# rest carry a plain action token. The cursor starts on Build & run / Release.
 
-$topActions = @(
-    [pscustomobject]@{ Label = 'Launch';         Value = 'launch'         }
-    [pscustomobject]@{ Label = 'Build & run';    Value = 'build-run'      }
-    [pscustomobject]@{ Label = 'Build (no run)'; Value = 'build-norun'    }
-    [pscustomobject]@{ Label = '──────────';     Value = $null; IsHeader = $true }
-    [pscustomobject]@{ Label = 'Update version'; Value = 'update-version' }
-    [pscustomobject]@{ Label = 'Release  ▸';     Value = 'release-menu'   }
-    [pscustomobject]@{ Label = '──────────';     Value = $null; IsHeader = $true }
-    [pscustomobject]@{ Label = 'MCP  ▸';         Value = 'mcp-menu'       }
-    [pscustomobject]@{ Label = 'Maintenance  ▸'; Value = 'maintenance-menu' }
-    [pscustomobject]@{ Label = 'Setup  ▸';       Value = 'setup-menu'     }
-    [pscustomobject]@{ Label = '──────────';     Value = $null; IsHeader = $true }
-    [pscustomobject]@{ Label = 'Quit';           Value = 'quit'           }
+$mainRows = @(
+    @{ Title  = 'Run' }
+    @{ Prefix = 'Launch';         Cells = @( @{ Label = 'Release'; Value = 'launch:Release' }, @{ Label = 'Debug'; Value = 'launch:Debug' } ) }
+    @{ Prefix = 'Build & run';    Cells = @( @{ Label = 'Release'; Value = 'run:Release' },    @{ Label = 'Debug'; Value = 'run:Debug' } ) }
+    @{ Prefix = 'Build (no run)'; Cells = @( @{ Label = 'Release'; Value = 'norun:Release' },  @{ Label = 'Debug'; Value = 'norun:Debug' } ) }
+    @{ Blank  = $true }
+    @{ Title  = 'Project' }
+    @{ Cells  = @( @{ Label = 'Update version'; Value = 'update-version' }, @{ Label = 'Anytype MCP'; Value = 'mcp' } ) }
+    @{ Blank  = $true }
+    @{ Title  = 'More' }
+    @{ Cells  = @( @{ Label = 'Release…'; Value = 'release-menu' }, @{ Label = 'Maintenance…'; Value = 'maintenance-menu' }, @{ Label = 'Setup…'; Value = 'setup-menu' }, @{ Label = 'Quit'; Value = 'quit' } ) }
 )
 
 while ($true) {
-    try {
-        $action = Select-Action -Header 'Deckle - pick an action (Up/Down, Enter, Esc = quit):' -Items $topActions
-    } catch {
-        break   # Esc at the top level = quit
-    }
-    if ($action -eq 'quit') { break }
-    switch ($action) {
-        'launch'           { Invoke-LaunchOrBuild -Kind 'launch' }
-        'build-run'        { Invoke-LaunchOrBuild -Kind 'run' }
-        'build-norun'      { Invoke-LaunchOrBuild -Kind 'norun' }
-        'update-version'   { Invoke-UpdateVersion }
-        'release-menu'     { Show-ReleaseMenu }
-        'mcp-menu'         { Show-McpMenu }
-        'maintenance-menu' { Show-MaintenanceMenu }
-        'setup-menu'       { Show-SetupMenu }
+    $v = Select-Grid `
+        -Header 'Deckle   -   ↑↓←→ move   Enter run   Esc quit' `
+        -Footer 'the worktree is asked after you pick (skipped when there is only one)' `
+        -Rows $mainRows -StartSel 1 -StartCol 0
+    if ($null -eq $v -or $v -eq 'quit') { break }
+
+    if ($v -match '^(launch|run|norun):(Release|Debug)$') {
+        Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
+    } else {
+        switch ($v) {
+            'update-version'   { Invoke-UpdateVersion }
+            'mcp'              { Invoke-AnytypeMcp }
+            'release-menu'     { Show-ReleaseMenu }
+            'maintenance-menu' { Show-MaintenanceMenu }
+            'setup-menu'       { Show-SetupMenu }
+        }
     }
 }
 

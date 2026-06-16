@@ -236,4 +236,168 @@ function Select-Action {
     return $Items[$idx].Value
 }
 
-Export-ModuleMember -Function Select-Worktree, Select-Action
+# ─────────────────────────────────────────────────────────────────────────────
+#  2-D grid menu — cursor moves up/down AND left/right over a ragged grid of
+#  cells laid out in aligned columns, under optional section titles. Used for
+#  the top-level launcher so a verb and its variant (Release/Debug) sit side by
+#  side and are picked in a single Enter. Cells in the same column index align
+#  vertically across the whole grid.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Internal: render one body line at its absolute row. The active cell (when
+# this is the active row) is drawn as a highlighted block; everything else uses
+# default/section colours. Pads to the window width to overwrite the old line.
+function Write-GridLine {
+    param(
+        [int]$Top, [int]$Index, [object[]]$Body, [hashtable]$ColW, [int]$PrefixW,
+        [int]$ActiveBodyIndex, [int]$ActiveCol
+    )
+    $entry = $Body[$Index]
+    [Console]::SetCursorPosition(0, $Top + $Index)
+    $width = [Console]::WindowWidth - 1
+
+    if ($entry.Kind -eq 'title') {
+        $line = '  ' + $entry.Text
+        if ($line.Length -lt $width) { $line += (' ' * ($width - $line.Length)) }
+        Write-Host $line -ForegroundColor DarkCyan -NoNewline
+    } elseif ($entry.Kind -eq 'footer') {
+        $line = '   ' + $entry.Text
+        if ($line.Length -lt $width) { $line += (' ' * ($width - $line.Length)) }
+        Write-Host $line -ForegroundColor DarkGray -NoNewline
+    } elseif ($entry.Kind -eq 'blank') {
+        Write-Host (' ' * $width) -NoNewline
+    } else {
+        # 'row'
+        $written = 0
+        Write-Host '   ' -NoNewline; $written += 3
+        if ($PrefixW -gt 0) {
+            $p = ([string]$entry.Prefix).PadRight($PrefixW)
+            Write-Host $p -NoNewline -ForegroundColor Gray; $written += $p.Length
+        }
+        for ($c = 0; $c -lt $entry.Cells.Count; $c++) {
+            $txt = ([string]$entry.Cells[$c].Label).PadRight($ColW[$c])
+            $written += $txt.Length
+            if (($Index -eq $ActiveBodyIndex) -and ($c -eq $ActiveCol)) {
+                Write-Host $txt -ForegroundColor Black -BackgroundColor Gray -NoNewline
+            } else {
+                Write-Host $txt -NoNewline
+            }
+        }
+        if ($written -lt $width) { Write-Host (' ' * ($width - $written)) -NoNewline }
+    }
+}
+
+# Internal: drive the 2-D arrow loop. $Rows is an array of hashtables:
+#   @{ Title = 'Run' }                          — section divider
+#   @{ Blank = $true }                          — spacer
+#   @{ Prefix = 'Launch'; Cells = @(...) }      — selectable row (optional Prefix)
+# Each cell is @{ Label = '...'; Value = ... }. Up/Down move between selectable
+# rows (keeping the column, clamped); Left/Right move within the row. Returns
+# the chosen cell's Value, or $null on Esc.
+function Invoke-GridLoop {
+    param(
+        [string]$Header,
+        [object[]]$Rows,
+        [string]$Footer,
+        [int]$StartSel = 0,
+        [int]$StartCol = 0
+    )
+    $GAP = 3
+    $body = @()
+    $sel  = @()          # selectable rows: @{ BodyIndex; NCells }
+    $prefixW = 0
+    $colW = @{}
+
+    foreach ($r in $Rows) {
+        if ($r.ContainsKey('Title')) {
+            $body += @{ Kind = 'title'; Text = [string]$r['Title'] }
+        } elseif ($r.ContainsKey('Cells')) {
+            $prefix = if ($r.ContainsKey('Prefix') -and $r['Prefix']) { [string]$r['Prefix'] } else { '' }
+            if ($prefix.Length -gt $prefixW) { $prefixW = $prefix.Length }
+            $cells = @($r['Cells'])
+            for ($c = 0; $c -lt $cells.Count; $c++) {
+                $len = ([string]$cells[$c].Label).Length
+                if (-not $colW.ContainsKey($c) -or $len -gt $colW[$c]) { $colW[$c] = $len }
+            }
+            $body += @{ Kind = 'row'; Prefix = $prefix; Cells = $cells }
+            $sel  += @{ BodyIndex = ($body.Count - 1); NCells = $cells.Count }
+        } else {
+            $body += @{ Kind = 'blank' }
+        }
+    }
+    if ($sel.Count -eq 0) { return $null }
+    if ($prefixW -gt 0) { $prefixW += $GAP }
+    foreach ($k in @($colW.Keys)) { $colW[$k] = $colW[$k] + $GAP }
+
+    if ($Footer) {
+        $body += @{ Kind = 'blank' }
+        $body += @{ Kind = 'footer'; Text = $Footer }
+    }
+
+    $selIdx = [Math]::Min([Math]::Max($StartSel, 0), $sel.Count - 1)
+    $colIdx = [Math]::Min([Math]::Max($StartCol, 0), $sel[$selIdx].NCells - 1)
+
+    Write-Host ""
+    Write-Host $Header -ForegroundColor Cyan
+    for ($i = 0; $i -lt $body.Count; $i++) { Write-Host "" }   # reserve rows
+    $bottom = [Console]::CursorTop
+    $top = [Math]::Max(0, $bottom - $body.Count)
+
+    $render = {
+        for ($i = 0; $i -lt $body.Count; $i++) {
+            Write-GridLine -Top $top -Index $i -Body $body -ColW $colW -PrefixW $prefixW `
+                -ActiveBodyIndex $sel[$selIdx].BodyIndex -ActiveCol $colIdx
+        }
+    }
+
+    [Console]::CursorVisible = $false
+    try {
+        & $render
+        while ($true) {
+            $key = [Console]::ReadKey($true)
+            switch ($key.Key) {
+                'UpArrow' {
+                    if ($selIdx -gt 0) {
+                        $selIdx--
+                        if ($colIdx -gt $sel[$selIdx].NCells - 1) { $colIdx = $sel[$selIdx].NCells - 1 }
+                    }
+                }
+                'DownArrow' {
+                    if ($selIdx -lt $sel.Count - 1) {
+                        $selIdx++
+                        if ($colIdx -gt $sel[$selIdx].NCells - 1) { $colIdx = $sel[$selIdx].NCells - 1 }
+                    }
+                }
+                'LeftArrow'  { if ($colIdx -gt 0) { $colIdx-- } }
+                'RightArrow' { if ($colIdx -lt $sel[$selIdx].NCells - 1) { $colIdx++ } }
+                'Enter' {
+                    [Console]::SetCursorPosition(0, $bottom)
+                    return $body[$sel[$selIdx].BodyIndex].Cells[$colIdx].Value
+                }
+                'Escape' {
+                    [Console]::SetCursorPosition(0, $bottom)
+                    return $null
+                }
+            }
+            & $render
+        }
+    } finally {
+        [Console]::CursorVisible = $true
+    }
+}
+
+# Public: show a 2-D grid menu and return the chosen cell's Value, or $null
+# when the user presses Esc. See Invoke-GridLoop for the $Rows shape.
+function Select-Grid {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Header,
+        [Parameter(Mandatory)][object[]]$Rows,
+        [string]$Footer,
+        [int]$StartSel = 0,
+        [int]$StartCol = 0
+    )
+    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol
+}
+
+Export-ModuleMember -Function Select-Worktree, Select-Action, Select-Grid
