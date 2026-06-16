@@ -209,6 +209,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
 │   │   │   ├── LiveTagResolver.cs
+│   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
@@ -216,7 +217,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
-│   │   │   └── DevSpace.cs
+│   │   │   ├── DevSpace.cs
+│   │   │   └── SCHEMA.md
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
@@ -226,6 +228,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
 │   │   │   ├── DialogueToolCatalog.cs
+│   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
 │   │   ├── Deckle.Anytype.Mcp.csproj
@@ -915,12 +918,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
+│   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpServerTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
+│   │   ├── LiveTagResolverTests.cs
+│   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs

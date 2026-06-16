@@ -125,15 +125,15 @@ public class TaskGesturesTests
         Assert.Equal("# Titre\nUn paragraphe libre.\n\n- [x] une étape\nUne note finale.", next);
     }
 
-    // ── DoneAsync ─────────────────────────────────────────────────────────────
+    // ── CompleteAsync ─────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task DoneSendsThePatchWithTheDoneCheckboxTrue()
+    public async Task CompleteSendsThePatchWithTheDoneCheckboxTrue()
     {
         using var server = new FakeAnytypeServer();
         server.OnPatchObject(TaskId, TaskObject(""));
 
-        await NewGestures(server).DoneAsync(TaskId);
+        await NewGestures(server).CompleteAsync(TaskId);
 
         // The PATCH carries properties:[{key:"done", checkbox:true}].
         JsonObject patched = server.LastBodyFor("PATCH");
@@ -142,6 +142,21 @@ public class TaskGesturesTests
         JsonObject doneProp = Assert.IsType<JsonObject>(props!.Single());
         Assert.Equal(DevSpace.Props.Done, doneProp["key"]!.GetValue<string>());
         Assert.True(doneProp["checkbox"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task CompleteWithValueFalseReopensTheTask()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPatchObject(TaskId, TaskObject(""));
+
+        // The décochage path: value:false clears the done checkbox.
+        await NewGestures(server).CompleteAsync(TaskId, value: false);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject doneProp = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
+        Assert.Equal(DevSpace.Props.Done, doneProp["key"]!.GetValue<string>());
+        Assert.False(doneProp["checkbox"]!.GetValue<bool>());
     }
 }
 
@@ -197,6 +212,9 @@ internal sealed class FakeAnytypeServer : IDisposable
 
     public void OnPostObject(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/objects", 200, response.ToJsonString()));
+
+    public void OnDeleteObject(string id, JsonObject response) =>
+        _routes.Add(new("DELETE", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
 
     public void OnPostChat(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/chats", 201, response.ToJsonString()));

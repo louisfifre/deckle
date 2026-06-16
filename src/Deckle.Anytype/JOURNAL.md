@@ -7,6 +7,25 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-16 — Management + lifecycle layer; schema resync
+
+- Lifecycle split into two verbs, not one generic command. A naming pass found a
+  single "set a lifecycle checkbox" tool (done + archived behind one param) carries
+  an inherent collision with the « état » select for a small model — any lifecycle
+  name slides toward "Terminé". Degrouped into `complete` (task `done`, set/clear)
+  and `archive` (transversal `archive`, archive/restore; refused on rapport, which
+  has no such checkbox). `task_done` removed — folded into `complete`. Base: 15 tools.
+- `delete` → restorable bin, supervised + two-step, pinned by id. Lives in a separate
+  `ManagementToolCatalog`, mounted only behind a launch flag (`--management` arg or
+  `DECKLE_ANYTYPE_MANAGEMENT` env); a default consumer is served no destructive tool.
+  Stateless two-step: first call previews the target (name/type/id), a second call
+  with that id and `confirm:true` commits. No server token (reserved for the deferred
+  batch). Added `DeleteObjectAsync` (DELETE /objects/{id}).
+- Schema resync (DevSpace): `tag` unmapped from every type table (auto-transversal
+  residue, unused); `Charge estimée/réelle` mapped onto Task; `État` removed from Idée.
+  Consequence: `update` now refuses `tag`, and `LiveTagResolver` (free-vocabulary live
+  resolution) is no longer reached by any mapped property — kept as dormant infra.
+
 ## 2026-06-15 — MCP host consumed via a `current` junction, off the build tree
 
 The host AI clients spawn no longer points at the build output (`artifacts\bin\Deckle.Anytype.Mcp\debug\Deckle.Anytype.Mcp.exe`). A running .exe is locked on Windows, so a live client (Claude Code, Codex) held that file and any rebuild of the host failed with MSB3026 — the cause behind "can't rebuild/restart while a session is up". Chose the Scoop model under `%LOCALAPPDATA%\Deckle\mcp\anytype\` (sibling of `modules\anytype\`, the credentials home): each publish lands in `versions\<timestamp>\`, a `current` junction points at the active one, and `.claude.json` targets `current\Deckle.Anytype.Mcp.exe` once. An update republishes into a new dir and re-points the junction — it never overwrites a running exe, so clients stay open (live sessions keep their version until they respawn; old dirs prune once released). `scripts/lib/install-anytype-mcp.ps1` (Setup menu) owns publish + junction + the surgical, idempotent config repoint. The junction is deleted with `Directory.Delete(path,$false)` (reparse-point only, never its target).

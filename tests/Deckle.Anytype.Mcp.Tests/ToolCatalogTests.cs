@@ -8,15 +8,15 @@ namespace Deckle.Anytype.Mcp.Tests;
 // Unit tests for ToolCatalog.Build. The gestures wrap a real AnytypeApiClient
 // built from dummy credentials, but Build only constructs descriptors (the
 // handlers are lazy lambdas) so no HTTP call is ever made here. These pin the
-// advertised surface: exactly the 13 named tools, each with a well-formed object
-// input schema that forbids extra properties.
+// advertised surface: exactly the 15 base named tools, each with a well-formed
+// object input schema that forbids extra properties.
 [Trait("Category", "unit")]
 public class ToolCatalogTests
 {
     static readonly string[] ExpectedToolNames =
     {
         "session_start", "log", "get", "project_overview", "create_task",
-        "task_done", "link", "list_projects", "search", "subtask",
+        "complete", "archive", "link", "list_projects", "search", "subtask",
         "create_project", "create_idea", "update", "replace_section",
     };
 
@@ -38,14 +38,25 @@ public class ToolCatalogTests
     }
 
     [Fact]
-    public void BuildExposesExactlyTheFourteenNamedTools()
+    public void BuildExposesExactlyTheFifteenNamedTools()
     {
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
-        Assert.Equal(14, names.Length);
+        Assert.Equal(15, names.Length);
         Assert.Equal(
             ExpectedToolNames.OrderBy(n => n),
             names.OrderBy(n => n));
+    }
+
+    [Fact]
+    public void BuildDoesNotExposeAnyDestructiveTool()
+    {
+        // delete lives only in the supervised ManagementToolCatalog; the base
+        // surface must never carry it. task_done was folded into complete.
+        var names = BuildCatalog().Select(t => t.Name).ToArray();
+
+        Assert.DoesNotContain("delete", names);
+        Assert.DoesNotContain("task_done", names);
     }
 
     [Fact]

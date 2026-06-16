@@ -85,7 +85,11 @@ public static class DevSpace
     {
         public const string Etat              = "etat";                     // select
         public const string Priorite          = "67c6d714341c1628147d7b1d"; // select — OPAQUE id
-        public const string Tag               = "tag";                      // multi_select
+        // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
+        // to every object and resists deletion. It is deliberately NOT mapped onto
+        // any type table below — unused, left out of every digest — so the key only
+        // survives here to document the residue (see SCHEMA.md § Résidus).
+        public const string Tag               = "tag";                      // multi_select — auto-transversal, unmapped
         public const string Archive           = "archive";                  // checkbox
         public const string DefinitionDeFini  = "definition_de_fini";       // text
         public const string Version           = "version";                  // text
@@ -260,7 +264,6 @@ public static class DevSpace
     [
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.Tag, "Tag", "multi_select"),
         new(Props.Version, "Version", "text"),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
         new(Props.DueDate, "Date cible", "date"),
@@ -276,7 +279,6 @@ public static class DevSpace
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.PhaseProjet, "Phase projet", "select", PhaseProjet.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.Tag, "Tag", "multi_select"),
         new(Props.Version, "Version", "text"),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
         new(Props.DueDate, "Date cible", "date"),
@@ -294,13 +296,14 @@ public static class DevSpace
         new(Props.Priorite, "Priorité", "select", Priority.All),
         new(Props.TypeDeTache, "Type de tâche", "select", TypeDeTache.All),
         new(Props.Done, "Terminé", "checkbox"),
-        new(Props.Tag, "Tag", "multi_select"),
         new(Props.DueDate, "Date cible", "date"),
         new(Props.RelationProjet, "Projet(s) lié(s)", "objects"),
         new(Props.ContactLie, "Contact(s) lié(s)", "objects"),
         new(Props.FichiersLies, "Fichier(s) lié(s)", "files"),
         new(Props.Livrables, "Livrable(s)", "multi_select", Livrable.All),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
+        new(Props.ChargeEstimee, "Charge estimée", "number"),
+        new(Props.ChargeReelle, "Charge réelle", "number"),
         new(Props.Archive, "Archivé", "checkbox"),
     ];
 
@@ -314,8 +317,6 @@ public static class DevSpace
 
     static readonly PropertyDef[] IdeeProps =
     [
-        new(Props.Etat, "État", "select", Etat.All),
-        new(Props.Tag, "Tag", "multi_select"),
         new(Props.Archive, "Archivé", "checkbox"),
     ];
 
@@ -323,7 +324,6 @@ public static class DevSpace
     [
         new(Props.TypeDeDocument, "Type de document", "select", TypeDeDocument.All),
         new(Props.DocumentSysteme, "Document système", "checkbox"),
-        new(Props.Tag, "Tag", "multi_select"),
         new(Props.Version, "Version", "text"),
     ];
 

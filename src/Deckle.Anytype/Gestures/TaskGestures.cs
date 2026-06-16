@@ -5,8 +5,9 @@ using Deckle.Anytype;
 
 namespace Deckle.Anytype;
 
-// Task gestures: create an action-layout task under a project, mark it done,
-// and toggle/append inline checklist items in its markdown body.
+// Task gestures: create an action-layout task under a project, set its
+// completion checkbox (complete / reopen), and toggle/append inline checklist
+// items in its markdown body.
 //
 // The action-layout "done" state is set through the object's `done` checkbox
 // property: the vendor reference (anytypeHelper) maps the action/todo layout
@@ -80,26 +81,28 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     /// <summary>
-    /// Marks the task done (sets the action-layout done checkbox to true).
+    /// Sets the task's action-layout completion checkbox. <paramref name="value"/>
+    /// true marks it done, false reopens it (the décochage path); default true.
     /// </summary>
-    public async Task<string> DoneAsync(string task, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string task, bool value = true, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
 
         string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
 
-        using var _ = await api.AcquireWriteScopeAsync("task_done", taskId, ct);
+        using var _ = await api.AcquireWriteScopeAsync("complete", taskId, ct);
         var payload = new JsonObject
         {
-            ["properties"] = new JsonArray { CheckboxProp(DevSpace.Props.Done, true) },
+            ["properties"] = new JsonArray { CheckboxProp(DevSpace.Props.Done, value) },
         };
 
         JsonObject updated = await api.UpdateObjectAsync(taskId, payload, ct);
 
         sw.Stop();
-        DeckleAnytypeSource.Log.GestureCompleted("task_done", sw.Elapsed.TotalMilliseconds);
+        DeckleAnytypeSource.Log.GestureCompleted("complete", sw.Elapsed.TotalMilliseconds);
 
-        return $"Tâche terminée : {NameOf(updated, task)}";
+        string name = NameOf(updated, task);
+        return value ? $"Tâche terminée : {name}" : $"Tâche rouverte : {name}";
     }
 
     /// <summary>
