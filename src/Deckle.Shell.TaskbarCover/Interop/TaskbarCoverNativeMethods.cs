@@ -122,8 +122,9 @@ internal static class TaskbarCoverNativeMethods
     // EVENT_SYSTEM_FOREGROUND (same hook family, same thread) drives the
     // immediate half of the fullscreen/z-order reconciliation: on a foreground
     // change we re-evaluate suppression and climb back above the taskbar, which
-    // Explorer re-asserts topmost on fullscreen exit. The 5 s poll stays as the
-    // fallback and the sole path for F11, which raises no foreground event.
+    // Explorer re-asserts topmost on fullscreen exit. An in-place F11 toggle
+    // raises no foreground event; the location-change hook on the foreground
+    // window catches that one instead — no poll on either path.
     // GetShellWindow / GetDesktopWindow let the fullscreen geometry probe
     // exclude the desktop itself — clicking the wallpaper makes it foreground
     // and it covers the whole monitor, so without the guard it reads as a

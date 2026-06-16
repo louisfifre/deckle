@@ -15,10 +15,10 @@ namespace Deckle.Shell.TaskbarCover;
 //   • the cursor entering the reveal zone hides the band instantly;
 //     leaving it re-covers after RecoverDelayMs;
 //   • a fullscreen / presentation foreground app suppresses the band;
-//     a foreground-change WinEvent reconciles it — and the band's z-order
-//     above the taskbar — the instant the foreground changes, with a 5 s
-//     poll behind it as the fallback and the sole path for F11, which
-//     changes no foreground window;
+//     two WinEvent signals reconcile it — and the band's z-order above the
+//     taskbar — the instant it happens: a foreground change (another app
+//     comes forward) and a location change on the foreground window itself
+//     (an in-place F11 toggle, which raises no foreground event). No poll;
 //   • sleep and session lock park the machine entirely.
 //
 // Cursor movement arrives through a WinEvent hook
@@ -39,15 +39,8 @@ public sealed class TaskbarCoverHost : IDisposable
     // calibrated in daily use; a constant, not a setting.
     public const uint RecoverDelayMs = 5000;
 
-    // Fullscreen-suppression poll cadence — latency is acceptable for the
-    // fullscreen transition, overhead minimal. Doubles as the topmost
-    // re-assertion tick while the band is visible.
-    private const uint SuppressionPollMs = 5000;
-
-    private const uint TIMER_RECOVER_ID     = 1;
-    private const uint TIMER_SUPPRESSION_ID = 2;
-    private static readonly UIntPtr TIMER_RECOVER     = new(TIMER_RECOVER_ID);
-    private static readonly UIntPtr TIMER_SUPPRESSION = new(TIMER_SUPPRESSION_ID);
+    private const uint TIMER_RECOVER_ID = 1;
+    private static readonly UIntPtr TIMER_RECOVER = new(TIMER_RECOVER_ID);
 
     private readonly object _stateLock = new();
 
@@ -84,6 +77,12 @@ public sealed class TaskbarCoverHost : IDisposable
     private bool _recoverTimerArmed;
     private bool _appSuppressed;
     private bool _systemSuspended;
+
+    // Last foreground window — tracked by the foreground hook so the
+    // location-change hook can recognise an in-place resize of *that* window
+    // (the F11 fullscreen toggle) with a pointer compare, no syscall on the
+    // input-cadence path.
+    private IntPtr _foregroundHwnd;
 
     private bool _layoutKnown;
     private bool _layoutFailureLogged;
@@ -255,7 +254,7 @@ public sealed class TaskbarCoverHost : IDisposable
 
         // Without the cursor signal the band would cover the taskbar and
         // never reveal it — a dead hook fails the whole start.
-        _cursorHookDelegate = OnCursorEvent;
+        _cursorHookDelegate = OnLocationChange;
         _cursorHook = SetWinEventHook(
             EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
             IntPtr.Zero, _cursorHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
@@ -292,24 +291,10 @@ public sealed class TaskbarCoverHost : IDisposable
     {
         RebuildLayout("boot");
         ResetZoneStateFromCursor();
+        _foregroundHwnd = NativeMethods.GetForegroundWindow();
         EvaluateAppSuppressed();
 
-        ArmSuppressionTimer();
-
         UpdateCover("boot");
-    }
-
-    // Observed-only: on failure the fullscreen poll, the layout retry and
-    // the topmost re-assertion stay dead until the next resume or restart —
-    // degraded but visible in the logs instead of silent.
-    private void ArmSuppressionTimer()
-    {
-        if (SetTimer(_hwnd, TIMER_SUPPRESSION, SuppressionPollMs, IntPtr.Zero) == UIntPtr.Zero)
-        {
-            int error = Marshal.GetLastWin32Error(); // before any WriteEvent clobbers it
-            DeckleShellTaskbarCoverSource.Log.TimerArmFailed();
-            DeckleShellTaskbarCoverSource.Log.TimerArmFailedDetail("suppression", error);
-        }
     }
 
     private void RunPump()
@@ -336,7 +321,6 @@ public sealed class TaskbarCoverHost : IDisposable
         }
         if (_hwnd != IntPtr.Zero)
         {
-            KillTimer(_hwnd, TIMER_SUPPRESSION);
             if (_recoverTimerArmed) KillTimer(_hwnd, TIMER_RECOVER);
             WTSUnRegisterSessionNotification(_hwnd);
             NativeMethods.DestroyWindow(_hwnd);
@@ -360,6 +344,7 @@ public sealed class TaskbarCoverHost : IDisposable
         _recoverTimerArmed  = false;
         _appSuppressed      = false;
         _systemSuspended    = false;
+        _foregroundHwnd     = IntPtr.Zero;
         _layoutKnown        = false;
         _layoutFailureLogged = false;
         _recoverArmFailureLogged = false;
@@ -385,7 +370,6 @@ public sealed class TaskbarCoverHost : IDisposable
 
             case WM_TIMER:
                 if ((long)wParam == TIMER_RECOVER_ID) OnRecoverTimer();
-                else if ((long)wParam == TIMER_SUPPRESSION_ID) OnSuppressionTimer();
                 return IntPtr.Zero;
 
             case WM_POWERBROADCAST:
@@ -404,16 +388,30 @@ public sealed class TaskbarCoverHost : IDisposable
 
     // ── Cursor signal ─────────────────────────────────────────────────────
 
-    private void OnCursorEvent(
+    // The single EVENT_OBJECT_LOCATIONCHANGE hook carries two signals across
+    // every process: the cursor (hwnd == NULL + OBJID_CURSOR) drives the
+    // reveal-zone machine; a geometry change on the *foreground* window
+    // (OBJID_WINDOW, hwnd == _foregroundHwnd) is the in-place F11 toggle,
+    // which raises no foreground event. Runs at input cadence — everything
+    // here is a few comparisons, plus one GetCursorPos on the cursor path.
+    private void OnLocationChange(
         IntPtr hWinEventHook, uint evt, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
     {
-        // LOCATIONCHANGE also fires for windows and carets across every
-        // process — the cursor signature is hwnd == NULL + OBJID_CURSOR.
-        // This callback runs at input cadence; everything below is a few
-        // comparisons and one GetCursorPos.
-        if (idObject != OBJID_CURSOR || hwnd != IntPtr.Zero) return;
         if (_systemSuspended || !_layoutKnown) return;
+
+        // The foreground window resized in place (F11): re-evaluate
+        // suppression and, while visible, climb back over the taskbar.
+        if (idObject == OBJID_WINDOW && idChild == 0
+            && hwnd != IntPtr.Zero && hwnd == _foregroundHwnd)
+        {
+            EvaluateAppSuppressed();
+            if (_coverVisible) ReassertTopmost();
+            return;
+        }
+
+        // Cursor moves: the reveal-zone state machine.
+        if (idObject != OBJID_CURSOR || hwnd != IntPtr.Zero) return;
         if (!NativeMethods.GetCursorPos(out var p)) return;
 
         bool inZone = CoverGeometry.Contains(_zone, p);
@@ -466,33 +464,10 @@ public sealed class TaskbarCoverHost : IDisposable
         UpdateCover("zone_exit_delay");
     }
 
-    private void OnSuppressionTimer()
-    {
-        // Retry path for a shell that was not ready at boot — TaskbarCreated
-        // covers the normal case, this tick the degenerate ones.
-        if (!_layoutKnown) RebuildLayout("retry");
-
-        EvaluateAppSuppressed();
-
-        // Fallback z-order re-assertion: the foreground hook handles the
-        // common case the instant it happens, this slow tick catches whatever
-        // re-ordered the band without raising a foreground event (F11 included).
-        if (_coverVisible)
-        {
-            ReassertTopmost();
-            // Steady-state witness: if the band lost the topmost race at boot
-            // and the assert above doesn't re-stack it over Shell_TrayWnd, this
-            // tick keeps logging the taskbar as the occluder every poll — the
-            // proof the re-assert is a no-op against an already-topmost sibling.
-            WindowingProbe.EmitWindowZOrderState(_hwnd, "taskbar-cover", "suppression_poll");
-        }
-    }
-
-    // Foreground changed: reconcile suppression now instead of at the next
-    // poll, and — while the band is up — climb back above the taskbar, which
-    // Explorer re-asserts topmost on fullscreen exit. This is the event-driven
-    // half; the suppression poll remains the fallback (and the only path for
-    // F11, which raises no foreground event).
+    // Another app came to the foreground: track it (the location-change hook
+    // compares against it to catch an in-place F11 resize), reconcile
+    // suppression, and — while the band is up — climb back above the taskbar,
+    // which Explorer re-asserts topmost on fullscreen exit.
     private void OnForegroundEvent(
         IntPtr hWinEventHook, uint evt, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
@@ -500,6 +475,7 @@ public sealed class TaskbarCoverHost : IDisposable
         if (idObject != OBJID_WINDOW) return;
         if (_systemSuspended || !_layoutKnown) return;
 
+        _foregroundHwnd = hwnd;
         EvaluateAppSuppressed();
         if (_coverVisible) ReassertTopmost();
     }
@@ -573,7 +549,6 @@ public sealed class TaskbarCoverHost : IDisposable
         if (_systemSuspended) return;
         _systemSuspended = true;
 
-        KillTimer(_hwnd, TIMER_SUPPRESSION);
         if (_recoverTimerArmed)
         {
             KillTimer(_hwnd, TIMER_RECOVER);
@@ -591,8 +566,8 @@ public sealed class TaskbarCoverHost : IDisposable
         _systemSuspended = false;
 
         ResetZoneStateFromCursor();
+        _foregroundHwnd = NativeMethods.GetForegroundWindow();
         EvaluateAppSuppressed();
-        ArmSuppressionTimer();
 
         UpdateCover("resumed");
         DeckleShellTaskbarCoverSource.Log.SystemResumed();

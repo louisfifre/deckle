@@ -251,7 +251,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtForegroundHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The foreground hook is unavailable — fullscreen and z-order recovery fall back to the slow poll")]
+           Message = "The foreground hook is unavailable — fullscreen and z-order recovery no longer follow app switches")]
     public void ForegroundHookFailed()
     {
         if (IsEnabled()) WriteEvent(EvtForegroundHookFailed);
@@ -260,7 +260,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtTimerArmFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A timer failed to arm — re-cover or fullscreen detection degraded")]
+           Message = "The re-cover timer failed to arm — the band may not re-cover after the cursor leaves")]
     public void TimerArmFailed()
     {
         if (IsEnabled()) WriteEvent(EvtTimerArmFailed);
