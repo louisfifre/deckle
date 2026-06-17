@@ -181,6 +181,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── pre-commit
 │   │   └── update-tree.ps1
 │   ├── lib/
+│   │   ├── launcher/
+│   │   │   ├── actions.ps1
+│   │   │   ├── context.ps1
+│   │   │   └── menus.ps1
+│   │   ├── menu/
+│   │   │   ├── chrome.ps1
+│   │   │   ├── grid-picker.ps1
+│   │   │   ├── list-picker.ps1
+│   │   │   └── session.ps1
 │   │   ├── _menu.psm1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1

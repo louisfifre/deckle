@@ -16,8 +16,12 @@ under [`lib/`](lib/) and stay usable on their own CLI for automation.
 `deckle.ps1` is what F5 runs in VSCodium (see
 [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from
 a terminal for daily work. It opens an arrow-key menu grouping every
-dev action by purpose. The first screen is the daily grid; `More` opens
-the same grid-style submenus for release, maintenance, and setup work:
+dev action by purpose. The launcher uses a full-screen terminal flow:
+while you navigate, it runs in the terminal's alternate screen buffer, so
+`More`, worktree selection, and version selection replace the current screen
+instead of appending below. When a concrete action starts, the normal terminal
+is restored first so build and publish logs remain visible. The release,
+maintenance, and setup submenus keep the same grid style:
 their first selectable cell is always `< Back`, so a mistaken submenu entry is
 one Enter away from returning.
 
@@ -50,6 +54,11 @@ has been launched, the menu exits instead of returning to the launcher. Use
 Each worker is callable directly from a terminal or a `launch.json`
 profile — `deckle.ps1` is purely additive.
 
+`lib/` keeps the public script entry points at the top level so existing
+direct calls do not break. Internal implementation is split by role:
+`lib/menu/` owns the reusable terminal UI engine, while `lib/launcher/`
+owns the `deckle.ps1` menu context, actions, and submenu definitions.
+
 | File | Purpose | Common switches |
 |---|---|---|
 | [`lib/launch-app.ps1`](lib/launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Pick`, `-Wait` |
@@ -64,7 +73,7 @@ profile — `deckle.ps1` is purely additive.
 | [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>` |
 | [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from the Conventional-Commit history — plain `git log` + PowerShell, no external tool or API. Default regenerates the whole `CHANGELOG.md` from the `v0.4.0` floor forward; `-NotesFor X.Y.Z` emits a single version's section for `gh … --notes-file` (consumed by `publish-app.ps1`). | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
-| [`lib/_menu.psm1`](lib/_menu.psm1) | Module exposing `Select-Worktree` (lists `git worktree list`, returns the chosen path), `Select-Action` (1-D Label/Value picker with optional section dividers), and `Select-Grid` (2-D grid picker used by the main launcher and its submenus). Imported by `deckle.ps1`, `launch-app.ps1 -Pick`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
+| [`lib/_menu.psm1`](lib/_menu.psm1) | Public facade over `lib/menu/`, exposing `Start-MenuSession`, `Stop-MenuSession`, `Suspend-MenuSession`, `Select-Worktree`, `Select-Action`, and `Select-Grid`. Pickers can clear the terminal before rendering so nested screens replace each other; the launcher can also use the terminal alternate screen buffer for a full-screen flow. Imported by `deckle.ps1`, `launch-app.ps1 -Pick`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
 
 ## Git hooks — TREE.md auto-update
 
