@@ -97,6 +97,8 @@ public class SessionGesturesTests
         var props = (JsonArray)create["properties"]!;
         JsonObject dateProp = FindProp(props, DevSpace.Props.DateDuJournal);
         Assert.Equal(Today(), dateProp["date"]!.GetValue<string>());
+        // Independent of the Today() mirror: the wire date stays ISO yyyy-MM-dd.
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", dateProp["date"]!.GetValue<string>());
 
         JsonObject taskProp = FindProp(props, DevSpace.Props.TachesLiees);
         Assert.Equal(TaskId, ((JsonArray)taskProp["objects"]!).Single()!.GetValue<string>());
