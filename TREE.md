@@ -217,6 +217,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── changelog.ps1
 │   │   ├── clean.ps1
 │   │   ├── cut-version.ps1
+│   │   ├── deckle-process.ps1
 │   │   ├── fetch-autocorrect-data.ps1
 │   │   ├── install-anytype-mcp.ps1
 │   │   ├── install-hooks.ps1

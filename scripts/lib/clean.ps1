@@ -48,6 +48,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
 . (Join-Path $ScriptDir 'build-server-cleanup.ps1')
+. (Join-Path $ScriptDir 'deckle-process.ps1')
 
 $Workflow = 'Clean build outputs'
 $RepoRoot = $null
@@ -149,10 +150,9 @@ function Remove-OutputDir {
 # 0. Stop the running Deckle instance — it locks Deckle.exe + DLLs under
 #    artifacts\bin\Deckle.App\, which would make the delete throw and abort.
 # =============================================================================
-Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
-    Write-Host "Killing Deckle PID $($_.Id)" -ForegroundColor Yellow
-    $_ | Stop-Process -Force
-}
+Stop-DeckleProcess `
+    -WriteOk { param([string]$Message) Write-Host $Message -ForegroundColor Green } `
+    -WriteWarn { param([string]$Message) Write-Host $Message -ForegroundColor Yellow }
 
 # Stop .NET build servers left by manual, menu, or agent builds. This is
 # intentionally machine-wide: MSBuild/Roslyn servers are developer cache

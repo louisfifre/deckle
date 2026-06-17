@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+. (Join-Path $ScriptDir 'deckle-process.ps1')
 
 function Step($msg) { Write-Host "`n[launch] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
@@ -50,12 +51,7 @@ $AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
 Step 'Stop running Deckle instance'
-$runningDeckle = @(Get-Process -Name Deckle -ErrorAction SilentlyContinue)
-foreach ($proc in $runningDeckle) {
-    Warn "Killing Deckle PID $($proc.Id)"
-    $proc | Stop-Process -Force
-}
-if ($runningDeckle.Count -eq 0) { Ok 'No running Deckle.exe found' }
+Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 
 Step "Resolve built executable ($Configuration)"
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |

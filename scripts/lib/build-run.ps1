@@ -24,6 +24,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir  = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
+. (Join-Path $ScriptDir 'deckle-process.ps1')
 
 function Step($msg) { Write-Host "`n[build] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
@@ -91,12 +92,7 @@ $PivotPrefix     = $Configuration.ToLowerInvariant()
 
 # 1. Kill running instance (otherwise the .exe is locked)
 Step 'Stop running Deckle instance'
-$runningDeckle = @(Get-Process -Name Deckle -ErrorAction SilentlyContinue)
-foreach ($proc in $runningDeckle) {
-    Warn "Killing Deckle PID $($proc.Id)"
-    $proc | Stop-Process -Force
-}
-if ($runningDeckle.Count -eq 0) { Ok 'No running Deckle.exe found' }
+Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 
 # 2. Build via `dotnet build`. Restore is implicit (separate evaluation
 # phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)

@@ -144,7 +144,8 @@ if (-not $ConfigOnly) {
     & dotnet publish $Csproj `
         '-c:Release' `
         '-o' $newVersionDir `
-        '-v:m' '-nologo'
+        '-v:m' '-nologo' `
+        '/nr:false' '/p:UseSharedCompilation=false'
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (code $LASTEXITCODE)" }
     if (-not (Test-Path $newExe)) { throw "MCP exe missing from publish output — $newExe" }
     $fileCount = (Get-ChildItem $newVersionDir -Recurse -File).Count

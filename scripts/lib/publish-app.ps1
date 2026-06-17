@@ -55,6 +55,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
+. (Join-Path $ScriptDir 'deckle-process.ps1')
 
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
@@ -102,6 +103,11 @@ Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
+
+# Publishing rebuilds the app payload. A running Release instance keeps the
+# current app DLLs locked and makes MSBuild retry for a minute before failing.
+Step 'Stop running Deckle instance'
+Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 
 # ── Read <Version> — single source of truth is the csproj ────────────────────
 $Version  = $null
@@ -161,7 +167,8 @@ Step 'dotnet publish (Release, win-x64, self-contained folder)'
     '-p:SelfContained=true' `
     '-p:Platform=x64' `
     '-o' $PublishDir `
-    '-v:m' '-nologo'
+    '-v:m' '-nologo' `
+    '/nr:false' '/p:UseSharedCompilation=false'
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed (code $LASTEXITCODE)" }
 
 # ── Sanity: the two files a misconfigured publish silently drops ─────────────
@@ -211,7 +218,8 @@ if (-not (Test-Path $InstallerCsproj)) { throw "Installer csproj not found at $I
     '-c:Release' `
     '-r' 'win-x64' `
     '-o' $InstallerPubDir `
-    '-v:m' '-nologo'
+    '-v:m' '-nologo' `
+    '/nr:false' '/p:UseSharedCompilation=false'
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish (installer) failed (code $LASTEXITCODE)" }
 
 # AssemblyName is Deckle-Installer → the linker emits Deckle-Installer.exe. Copy
