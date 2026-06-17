@@ -16,6 +16,13 @@ public sealed class AutocorrectEngine : IDisposable
 {
     private const double RollupPeriodMs = 30_000;
 
+    // The revert gesture is honoured only when the Backspace lands within this
+    // window of the correction. A later Backspace — the user moved on, then came
+    // back to delete the sentence — is a plain edit, not an undo, and must never
+    // be read as a revert: that would restore the typo AND write a false
+    // « reverted » learning signal against a correction the user kept.
+    private const double RevertWindowMs = 2_000;
+
     // Learning eligibility: a word already living in the base lexicons needs no
     // adoption; an English form above this frequency is "known English", not a
     // personal word. Calibration constant, not a setting.
@@ -34,10 +41,11 @@ public sealed class AutocorrectEngine : IDisposable
 
     private volatile FocusedSurface _surface = FocusedSurface.Unknown;
 
-    // Armed after a correction lands; the very next physical keystroke either
-    // triggers the revert (Backspace) or disarms it. The « come back later »
-    // variant of the revert needs caret-position knowledge v1 does not have.
-    private (string Original, string Replacement)? _revertArmed;
+    // Armed after a correction lands, stamped with the commit time; the very next
+    // physical keystroke either triggers the revert (a Backspace within
+    // RevertWindowMs) or disarms it. The « come back later » variant of the revert
+    // needs caret-position knowledge v1 does not have.
+    private (string Original, string Replacement, double ArmedAtMs)? _revertArmed;
 
     // Apps already offered for enrollment this run — a would-be correction on an
     // undecided surface prompts once, then stays silent until the user answers.
@@ -152,9 +160,12 @@ public sealed class AutocorrectEngine : IDisposable
         if (_revertArmed is { } armed)
         {
             _revertArmed = null;
-            if (k.Kind == KeystrokeKind.Backspace)
+            // Only an immediate Backspace is an undo. Past the window it is a
+            // plain delete — disarm and let it flow to the tracker untouched.
+            if (k.Kind == KeystrokeKind.Backspace
+                && k.TimestampMs - armed.ArmedAtMs <= RevertWindowMs)
             {
-                HandleRevert(armed, k);
+                HandleRevert((armed.Original, armed.Replacement), k);
                 return;
             }
         }
@@ -280,7 +291,7 @@ public sealed class AutocorrectEngine : IDisposable
         if (_injector.Replace(current, target))
         {
             _tracker.ReplaceLastCommitted(decision.Replacement);
-            _revertArmed = (decision.Original, decision.Replacement);
+            _revertArmed = (decision.Original, decision.Replacement, commit.TimestampMs);
             _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
             DeckleAutocorrectSource.Log.CorrectionDetail(
