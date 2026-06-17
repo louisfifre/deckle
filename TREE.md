@@ -153,8 +153,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   └── validate_judge_prompt.py
 │   │   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   │   ├── __init__.py
+│   │   ├── AGENTS.md  — [agent-instructions] ASR-specific benchmark workspace — sources, judges, corpora, metrics, and froze…
 │   │   ├── build_corpus.py
-│   │   ├── CLAUDE.md  — [agent-instructions] ASR-specific benchmark workspace — sources, judges, corpora, metrics, and froze…
+│   │   ├── CLAUDE.md
 │   │   ├── JOURNAL.md  — [module-journal] Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
 │   │   └── README.md  — readme-benchmark-asr [module-readme] Human-facing entry point for benchmark/asr — ASR-specific harness pieces and fr…
 │   ├── autoresearch/
@@ -168,7 +169,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── README.md  — readme-autoresearch-prompts [module-readme] Prompt templates owned by generic autoresearch campaigns.
 │   │   ├── runners/
 │   │   │   └── README.md  — readme-autoresearch-runners [module-readme] Runner helpers for autoresearch campaigns.
-│   │   ├── CLAUDE.md  — [agent-instructions] Autoresearch benchmark workspace — reusable iterative optimization loops.
+│   │   ├── AGENTS.md  — [agent-instructions] Autoresearch benchmark workspace — reusable iterative optimization loops.
+│   │   ├── CLAUDE.md
 │   │   └── README.md  — readme-autoresearch [module-readme] Generic autoresearch workspace for measurable iterative generation, editing, ju…
 │   ├── lib/
 │   │   ├── monitor/
@@ -182,7 +184,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py
-│   ├── CLAUDE.md  — [agent-instructions] Benchmark workspace router — choose the right benchmark family before touching…
+│   ├── AGENTS.md  — [agent-instructions] Benchmark workspace router — choose the right benchmark family before touching…
+│   ├── CLAUDE.md
 │   ├── Directory.Build.props
 │   ├── Directory.Packages.props
 │   ├── HANDOFF.md  — handoff-benchmark-reorg [handoff] Session handoff for the benchmark workspace reorganization.
@@ -190,7 +193,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
-│   │   └── CLAUDE.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
+│   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
+│   │   └── CLAUDE.md
 │   └── research/
 │       ├── 2026-06-12--notifications-catalogue.md
 │       ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
@@ -294,6 +298,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Hotkeys.cs
@@ -308,7 +313,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
 │   │   ├── AutocorrectNotifications.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
 │   │   ├── LogWindow.Chrome.cs
@@ -333,12 +338,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Audio module — the home for capturing and analyzing sound: microphone capture,…
 │   │   ├── AudioLevelMapper.cs
 │   │   ├── CaptureFrame.cs
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Audio module — the home for capturing and analyzing sound: microphone capture,…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
@@ -349,7 +355,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Catalog/
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
-│   │   ├── CLAUDE.md  — [agent-instructions] UI resource catalog — localized strings (Loc / x:Uid) and Segoe Fluent glyphs,…
+│   │   ├── AGENTS.md  — [agent-instructions] UI resource catalog — localized strings (Loc / x:Uid) and Segoe Fluent glyphs,…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
 │   │   └── Loc.cs
@@ -397,7 +404,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
 │   │   │   └── RoutedJsonlSink.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Observability foundation — EventSource providers, levels, sinks, JSONL contract.
+│   │   ├── AGENTS.md  — [agent-instructions] Observability foundation — EventSource providers, levels, sinks, JSONL contract.
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -415,8 +423,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatter.cs
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
+│   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
 │   │   ├── AmbientCaptureGate.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Logging.csproj
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
@@ -424,7 +433,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindowVisibilityMode.cs
 │   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
-│   │   ├── CLAUDE.md  — [agent-instructions] Structured JSONL persistence and consent gates.
+│   │   ├── AGENTS.md  — [agent-instructions] Structured JSONL persistence and consent gates.
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
 │   │   ├── TelemetryListenerBootstrap.cs
 │   │   ├── TelemetrySettings.cs
@@ -453,7 +463,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
 │   │   │   └── WindowSlideAnimator.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
+│   │   ├── AGENTS.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
 │   │   ├── HudMessage.xaml
@@ -461,7 +472,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes, render doctrine, and deferred work for Deckle.Hud — read on de…
 │   │   └── ProximityRollupAggregator.cs
 │   ├── Deckle.Inference.Onnx/
-│   │   ├── CLAUDE.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
+│   │   ├── AGENTS.md  — [agent-instructions] ONNX Runtime CPU inference substrate — isolates the OnnxRuntime dependency behi…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Inference.Onnx.csproj
 │   │   └── OnnxModelSession.cs
 │   ├── Deckle.Input/
@@ -487,7 +499,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TouchpadContact.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
+│   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input — founding choices, measurements,…
@@ -544,9 +557,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── AutocorrectAppRow.cs
 │   │   │   └── AutocorrectViewModel.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsService.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, m…
@@ -582,7 +596,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   └── TrackpadViewModel.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
+│   │   ├── AGENTS.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
 │   │   ├── TrackpadSettings.cs
@@ -603,7 +618,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
 │   │   │   └── ConsoleUi.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] NativeAOT console stub that downloads, installs, and uninstalls Deckle per-user…
+│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT console stub that downloads, installs, and uninstalls Deckle per-user…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Installer.csproj
 │   │   └── Program.cs
 │   ├── Deckle.Lighting/
@@ -622,7 +638,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueProjectedState.cs
 │   │   │   └── HueRestLightOutput.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Generalist light-output driver — the ILightOutput abstraction and the REST Hue…
+│   │   ├── AGENTS.md  — [agent-instructions] Generalist light-output driver — the ILightOutput abstraction and the REST Hue…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
 │   │   ├── ILightOutput.cs
@@ -701,7 +718,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── INotificationChannel.cs
 │   │   │   ├── NotificationDispatcher.cs
 │   │   │   └── NotificationResponse.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Notification catalogue, dispatcher, and delivery channels — modules declare des…
+│   │   ├── AGENTS.md  — [agent-instructions] Notification catalogue, dispatcher, and delivery channels — modules declare des…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
@@ -743,7 +761,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
 │   │   │   └── PlaygroundWindow.xaml.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
+│   │   ├── AGENTS.md  — [agent-instructions] Dev-only tuning sandbox — live-adjust the running pipelines without a rebuild,…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Playground.csproj
 │   │   ├── DecklePlaygroundSource.cs
 │   │   ├── PlaygroundNotifications.cs
@@ -778,7 +797,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiagnosticsViewModel.cs
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── RecordingViewModel.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
+│   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
 │   │   ├── SettingsHost.cs
@@ -788,9 +808,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard provisioning ASR runtimes and models — owns the flow, delegate…
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] First-run wizard provisioning ASR runtimes and models — owns the flow, delegate…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Setup.csproj
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── InstallingPage.xaml
@@ -801,8 +822,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SummaryPage.xaml
 │   │   └── SummaryPage.xaml.cs
 │   ├── Deckle.Shell/
+│   │   ├── AGENTS.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
 │   │   ├── AutostartService.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
+│   │   ├── CLAUDE.md
 │   │   ├── CursorMovementSignal.cs
 │   │   ├── Deckle.Shell.csproj
 │   │   ├── DeckleShellSource.cs
@@ -817,7 +839,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Taskbar cover module — an opaque topmost band that masks the taskbar until the…
+│   │   ├── AGENTS.md  — [agent-instructions] Taskbar cover module — an opaque topmost band that masks the taskbar until the…
+│   │   ├── CLAUDE.md
 │   │   ├── CoverGeometry.cs
 │   │   ├── Deckle.Shell.TaskbarCover.csproj
 │   │   ├── DeckleShellTaskbarCoverSource.cs
@@ -829,7 +852,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrayMenuNativeMethods.cs
 │   │   ├── Themes/
 │   │   │   └── TrayMenu.xaml
-│   │   ├── CLAUDE.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
+│   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 tray context menu — the carrier-window pattern and the DWM pitfalls it…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Shell.TrayMenu.csproj
 │   │   ├── DeckleShellTrayMenuSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated diagnostics for Deckle.Shell.TrayMenu — the tray-menu density, gap, and f…
@@ -840,8 +864,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
 │   ├── Deckle.Speech/
+│   │   ├── AGENTS.md  — [agent-instructions] Read-aloud (TTS) output module — the ISpeechBackend boundary, the placeholder s…
 │   │   ├── ChatterboxSpeechBackend.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Read-aloud (TTS) output module — the ISpeechBackend boundary, the placeholder s…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Speech.csproj
 │   │   ├── DeckleSpeechSource.cs
 │   │   ├── ISpeechBackend.cs
@@ -883,7 +908,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   └── WhisperViewModel.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
+│   │   ├── AGENTS.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
@@ -908,13 +934,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Setup/
 │   │   │   ├── NativeRuntime.cs
 │   │   │   └── SpeechModels.cs
-│   │   ├── CLAUDE.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
+│   │   ├── AGENTS.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
+│   │   ├── CLAUDE.md
 │   │   ├── Deckle.Transcription.Whisper.csproj
 │   │   ├── KnownHallucinations.cs
 │   │   ├── RepetitionDetector.cs
 │   │   ├── WhisperBackend.cs
 │   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
+│   │   ├── AGENTS.md
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Vad.csproj
 │   │   ├── DeckleVadSource.cs
@@ -926,8 +954,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpeechTrimResult.cs
 │   │   └── VadService.cs
 │   └── Deckle.Vision/
+│       ├── AGENTS.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
 │       ├── CapturedFrame.cs
-│       ├── CLAUDE.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
+│       ├── CLAUDE.md
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
@@ -1075,9 +1104,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
-├── AGENTS.md  — [agent-instructions] Minimal Codex bridge for Deckle — Claude-maintained files remain the source of…
+├── AGENTS.md  — [agent-instructions] Root agent-instructions for Deckle — identity, hard rules, posture, and where t…
 ├── CHANGELOG.md
-├── CLAUDE.md  — [agent-instructions] Root agent-instructions for Deckle — identity, hard rules, posture, and where t…
+├── CLAUDE.md
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
 ├── deckle.code-workspace
 ├── Deckle.Tests.sln
