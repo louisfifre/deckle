@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -74,8 +75,8 @@ public class SileroSpeechTimestampsTests
     [Fact]
     public void HysteresisDeadBandKeepsTheSpanOpen()
     {
-        // 0.4 sits in the dead-band (release 0.35 <= 0.4 < threshold 0.5): it
-        // neither confirms nor closes, so the span bridges it.
+        // 0.4 sits in the dead-band of the default band (release 0.35 <= 0.4 <
+        // threshold 0.5): it neither confirms nor closes, so the span bridges it.
         var segs = Compute(Probs((0.9f, 10), (0.4f, 3), (0.9f, 10)));
         Assert.Single(segs);
         Assert.Equal((0, 11776), segs[0]);
@@ -160,9 +161,9 @@ public class SileroSpeechTimestampsTests
     [Fact]
     public void TriggerThresholdExactlyStartsSpan()
     {
-        // p == threshold counts as speech (p >= threshold), so an exactly-0.5 run
-        // opens and sustains a span. Pins the >= edge against a > regression.
-        var segs = Compute(Probs((0.5f, 20)));
+        // p == Threshold opens and sustains a span (p >= threshold). Pins the >=
+        // edge against a > regression, whatever the shipped default retunes to.
+        var segs = Compute(Probs((SileroVadOptions.Default.Threshold, 20)));
         Assert.Single(segs);
         Assert.Equal((0, 10240), segs[0]);
     }
@@ -170,10 +171,11 @@ public class SileroSpeechTimestampsTests
     [Fact]
     public void ReleaseThresholdExactlyStaysInDeadBand()
     {
-        // p == release-threshold (0.35) is NOT silence (close uses p < negThreshold),
+        // p == the release threshold is NOT silence (close uses p < negThreshold),
         // so it sits in the dead-band and bridges the span. Pins the < edge against
-        // a <= regression.
-        var segs = Compute(Probs((0.9f, 10), (0.35f, 3), (0.9f, 10)));
+        // a <= regression. Mirror prod's negThreshold so a retune tracks here too.
+        float release = MathF.Max(SileroVadOptions.Default.Threshold - 0.15f, 0.01f);
+        var segs = Compute(Probs((0.9f, 10), (release, 3), (0.9f, 10)));
         Assert.Single(segs);
         Assert.Equal((0, 11776), segs[0]);
     }
