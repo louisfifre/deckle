@@ -29,6 +29,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtLexiconLoadComplete = 11;
     public const int EvtEngineReady         = 12;
     public const int EvtRerankerStatus      = 13;
+    public const int EvtRerankSlotPending   = 14;
+    public const int EvtRerankSubmitted     = 15;
+    public const int EvtRerankVerdict       = 16;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -135,6 +138,53 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void InjectionFailed(int backspaces, int text_len)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailed, backspaces, text_len);
+    }
+
+    // ── Contextual reranker decisions ─────────────────────────────────────
+    //
+    // The slot's life across the deferred second stage, so a "why didn't it
+    // correct?" reads off the trace: a SlotPending with no Submitted means the
+    // right-context deferral was never met; a Submitted with no Verdict means the
+    // inference is still running or died; an abstain/stale Verdict says the model
+    // declined or the sentence was reset under it. Counts and a closed outcome
+    // vocabulary only — no typed text crosses (module hard rule).
+
+    // A real-word ambiguity the synchronous gate left intact is now an open slot,
+    // waiting for enough right-context (or a sentence-ender) before the CamemBERT
+    // reranker decides it. candidates is the closed candidate-set size.
+    [Event(EvtRerankSlotPending,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "rerank slot pending | candidates={0} | word_len={1}")]
+    public void RerankSlotPending(int candidates, int word_len)
+    {
+        if (IsEnabled()) WriteEvent(EvtRerankSlotPending, candidates, word_len);
+    }
+
+    // The slot crossed the deferral threshold (or a sentence-ender flushed it)
+    // and was handed to the background reranker. slot is its index within the
+    // submitted window; context_words the window size around it.
+    [Event(EvtRerankSubmitted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "rerank submitted | slot={0} | context_words={1}")]
+    public void RerankSubmitted(int slot, int context_words)
+    {
+        if (IsEnabled()) WriteEvent(EvtRerankSubmitted, slot, context_words);
+    }
+
+    // The reranker verdict landed. outcome is a closed vocabulary: applied (slot
+    // rewritten), equal (model chose the typed form), abstain (model not
+    // confident — left as typed), stale (the sentence was reset under the
+    // in-flight request), resolved (slot already decided), blocked (the in-place
+    // rewrite was refused by the target surface).
+    [Event(EvtRerankVerdict,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "rerank verdict | outcome={0}")]
+    public void RerankVerdict(string outcome)
+    {
+        if (IsEnabled()) WriteEvent(EvtRerankVerdict, outcome);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

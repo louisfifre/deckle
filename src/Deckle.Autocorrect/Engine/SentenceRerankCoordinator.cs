@@ -128,6 +128,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
             {
                 entry.IsAmbiguous = true;
                 entry.Candidates = candidates;
+                DeckleAutocorrectSource.Log.RerankSlotPending(candidates.Count, finalForm.Length);
             }
         }
 
@@ -208,7 +209,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
             if (s.IsAmbiguous && !s.Resolved && s.RightContextCount >= DeferralWords)
             {
                 _inFlight = true;
-                _lane.Submit(BuildRequest(i));
+                RerankRequest request = BuildRequest(i);
+                DeckleAutocorrectSource.Log.RerankSubmitted(request.SlotIndex, request.Sentence.Count);
+                _lane.Submit(request);
                 return;
             }
         }
@@ -233,6 +236,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // Stale (the sentence was reset under it) or out of range after a drop.
         if (result.Epoch != _epoch || result.SlotIndex < 0 || result.SlotIndex >= _buffer.Count)
         {
+            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale);
             TrySubmitNext();
             return;
         }
@@ -240,6 +244,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         SlotEntry slot = _buffer[result.SlotIndex];
         if (!slot.IsAmbiguous || slot.Resolved)
         {
+            DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Resolved);
             TrySubmitNext();
             return;
         }
@@ -250,12 +255,20 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (slot.NeedsCap)
             target = Capitalize(target);
 
-        if (!string.Equals(target, slot.Form, StringComparison.Ordinal))
+        if (string.Equals(target, slot.Form, StringComparison.Ordinal))
+        {
+            // Nothing to write: the model declined (abstain) or affirmed the typed
+            // form (equal). Either way the slot stays as the user left it.
+            DeckleAutocorrectSource.Log.RerankVerdict(
+                result.Chosen is null ? Outcome.Abstain : Outcome.Equal);
+        }
+        else
         {
             CorrectionReason reason = result.Chosen is not null
                 ? CorrectionReason.SentenceReranker
                 : CorrectionReason.Capitalization;
-            ApplySlotRewrite(result.SlotIndex, target, reason);
+            bool applied = ApplySlotRewrite(result.SlotIndex, target, reason);
+            DeckleAutocorrectSource.Log.RerankVerdict(applied ? Outcome.Applied : Outcome.Blocked);
         }
 
         TrySubmitNext();
@@ -278,7 +291,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // on-screen tail from the buffer's own forms and appends the live partial word
     // identically on both sides, so InjectionPlan preserves it and the backspace
     // count is right even mid-word. Bounded by the tail length (a few words).
-    private void ApplySlotRewrite(int slotIndex, string newForm, CorrectionReason reason)
+    // Returns true when the rewrite reached the surface, false on a no-op diff or
+    // a refused (UIPI-blocked) send — the caller turns that into the verdict.
+    private bool ApplySlotRewrite(int slotIndex, string newForm, CorrectionReason reason)
     {
         SlotEntry slot = _buffer[slotIndex];
         string oldForm = slot.Form;
@@ -295,7 +310,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         string current = currentTail.Append(partial).ToString();
         string target = targetTail.Append(partial).ToString();
         if (string.Equals(current, target, StringComparison.Ordinal))
-            return;
+            return false;
 
         if (_injector.Replace(current, target))
         {
@@ -306,13 +321,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
             if (slotIndex == _buffer.Count - 1)
                 _realignLastCommitted?.Invoke(newForm);
             _onApplied?.Invoke(new CorrectionDecision(oldForm, newForm, reason));
+            return true;
         }
-        else
-        {
-            // A partial / UIPI-blocked send leaves the tail in an unknown state.
-            // Trust nothing further; drop the model rather than rewrite a half-edit.
-            Invalidate(ResetReason.Navigation);
-        }
+
+        // A partial / UIPI-blocked send leaves the tail in an unknown state.
+        // Trust nothing further; drop the model rather than rewrite a half-edit.
+        Invalidate(ResetReason.Navigation);
+        return false;
     }
 
     public void Dispose()
@@ -333,6 +348,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     private static string Capitalize(string form) =>
         form.Length == 0 ? form : char.ToUpperInvariant(form[0]) + form[1..];
+
+    // The closed vocabulary for the rerank verdict log — one spelling, one place,
+    // so a grep on an outcome finds every occurrence (logging doctrine).
+    private static class Outcome
+    {
+        public const string Applied  = "applied";
+        public const string Equal    = "equal";
+        public const string Abstain  = "abstain";
+        public const string Stale    = "stale";
+        public const string Resolved = "resolved";
+        public const string Blocked  = "blocked";
+    }
 
     // One word in the rolling sentence model. Mutable: Form is rewritten in place
     // when a slot resolves so later tail reconstructions see the corrected text.
