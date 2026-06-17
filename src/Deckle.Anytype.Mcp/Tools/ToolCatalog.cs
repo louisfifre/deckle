@@ -165,15 +165,19 @@ public static class ToolCatalog
 
             new(
                 "update",
-                "Set properties on an object; keys or display names map to values. Select and multi-select values must name existing options — an unknown value is rejected with the valid options listed; options are created by hand in Anytype, never through this tool. Properties only — the markdown body is not a property and cannot be written with this tool.",
+                "Rename an object and/or set its properties: pass `name` to retitle it, `properties` to set fields (keys or display names map to values). At least one of the two is required. Select and multi-select values must name existing options — an unknown value is rejected with the valid options listed; options are created by hand in Anytype, never through this tool. The markdown body is not a property and cannot be written with this tool.",
                 Schema(
                     required:
                     [
                         Prop("object", "string", "Object to update, name or id."),
+                    ],
+                    optional:
+                    [
+                        Prop("name", "string", "New title for the object; omit to leave it unchanged. Rejected on rapport/idee, whose title is the first line of their body."),
                         ObjectProp("properties", "Map of property key or display name to value."),
                     ]),
                 async (args, ct) =>
-                    await query.UpdateAsync(Str(args, "object"), Obj(args, "properties"), ct)),
+                    await query.UpdateAsync(Str(args, "object"), StrOpt(args, "name"), ObjOpt(args, "properties"), ct)),
 
             new(
                 "replace_section",
@@ -329,6 +333,18 @@ public static class ToolCatalog
     {
         if (args is null || !args.TryGetPropertyValue(name, out var node) || node is null)
             throw new ArgumentException($"Missing required argument '{name}'.", name);
+        if (node is not JsonObject obj)
+            throw new ArgumentException($"Argument '{name}' must be an object.", name);
+        // Detach from the parent document so the gesture owns a free-standing node.
+        return (JsonObject)obj.DeepClone();
+    }
+
+    // Optional twin of Obj: returns null when the argument is absent instead of
+    // throwing, so a tool can carry an object arg that the caller may omit.
+    static JsonObject? ObjOpt(JsonObject? args, string name)
+    {
+        if (args is null || !args.TryGetPropertyValue(name, out var node) || node is null)
+            return null;
         if (node is not JsonObject obj)
             throw new ArgumentException($"Argument '{name}' must be an object.", name);
         // Detach from the parent document so the gesture owns a free-standing node.

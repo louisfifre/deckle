@@ -76,7 +76,7 @@ public class QueryGesturesTests
         var props = new JsonObject { ["tag"] = "urgent" };
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).UpdateAsync(TaskId, props));
+            () => NewGestures(server).UpdateAsync(TaskId, null, props));
 
         Assert.Contains("tag", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
@@ -94,7 +94,7 @@ public class QueryGesturesTests
         // must resolve without touching the live options endpoint.
 
         var props = new JsonObject { ["etat"] = "En cours" };
-        await NewGestures(server).UpdateAsync(TaskId, props);
+        await NewGestures(server).UpdateAsync(TaskId, null, props);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         var entries = Assert.IsType<JsonArray>(patched["properties"]);
@@ -115,8 +115,89 @@ public class QueryGesturesTests
         var props = new JsonObject { ["etat"] = "pas-un-etat" };
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => NewGestures(server).UpdateAsync(TaskId, props));
+            () => NewGestures(server).UpdateAsync(TaskId, null, props));
 
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // ── UpdateAsync — rename ──────────────────────────────────────────────────
+
+    // A name-only update PATCHes the new title at the payload ROOT (mirroring
+    // create) and carries no `properties` array — nothing else was asked.
+    [Fact]
+    public async Task UpdateWithNameOnlyPatchesTheTitleAtTheRootWithoutProperties()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", null);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        Assert.Equal("Nouveau titre", patched["name"]!.GetValue<string>());
+        Assert.False(patched.ContainsKey("properties"));
+    }
+
+    // Name AND properties land in ONE PATCH: the title at the root, the resolved
+    // property entries under `properties` — never two round-trips.
+    [Fact]
+    public async Task UpdateWithNameAndPropertiesComposesASinglePatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        var props = new JsonObject { ["etat"] = "En cours" };
+        await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", props);
+
+        // Exactly one PATCH carried both the root name and the property entries.
+        Assert.Equal(1, server.Requests.Count(r => r.Method == "PATCH"));
+        JsonObject patched = server.LastBodyFor("PATCH");
+        Assert.Equal("Nouveau titre", patched["name"]!.GetValue<string>());
+        JsonObject entry = Assert.IsType<JsonObject>(Assert.Single((JsonArray)patched["properties"]!));
+        Assert.Equal(DevSpace.Props.Etat, entry["key"]!.GetValue<string>());
+        Assert.Equal("en_cours", entry["select"]!.GetValue<string>());
+    }
+
+    // A blank name is a shape error refused before any write.
+    [Fact]
+    public async Task UpdateWithABlankNameThrowsAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).UpdateAsync(TaskId, "   ", null));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // Neither name nor properties is a shape error refused before any write — and
+    // before any GET, since the request is empty on its face.
+    [Fact]
+    public async Task UpdateWithNeitherNameNorPropertiesThrowsAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).UpdateAsync(TaskId, null, null));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // rapport is body-titled (title = first line of its body), so a rename on it is
+    // refused before any write, pointing the model at replace_section.
+    [Fact]
+    public async Task UpdateRenamingARapportIsRefusedAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, RapportObject());
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(TaskId, "Un autre titre", null));
+
+        Assert.Contains("replace_section", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
