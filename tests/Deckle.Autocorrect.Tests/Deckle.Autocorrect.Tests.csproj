@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <!-- The harvest sink (HarvestData / HarvestFilter) and the Morphalou reader
+         live in the Lab module — maintainer dev tooling, not engine code — so
+         their unit tests reach into the Lab project. -->
+    <ProjectReference Include="..\..\src\Deckle.Autocorrect.Lab\Deckle.Autocorrect.Lab.csproj" />
+  </ItemGroup>
+</Project>

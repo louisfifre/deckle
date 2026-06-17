@@ -84,7 +84,7 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
-    <ProjectReference Include="..\Deckle.Input.Autocorrect\Deckle.Input.Autocorrect.csproj" />
+    <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
@@ -122,14 +122,14 @@
 
   <!-- The autocorrect lexicons must sit flat under Data/ beside the executable,
        where App.Autocorrect loads them. Transitive Content from
-       Deckle.Input.Autocorrect lands under "Deckle.Input.Autocorrect\Data\"
+       Deckle.Autocorrect lands under "Deckle.Autocorrect\Data\"
        instead (the SDK prefixes referenced-project content with the project
        name) and re-declaring it here loses to that copy on source-path dedup,
        so the engine silently finds nothing and never arms. Flatten it
        deterministically after the build instead. -->
   <Target Name="FlattenAutocorrectLexicons" AfterTargets="Build">
     <ItemGroup>
-      <_AutocorrectLexicon Include="..\Deckle.Input.Autocorrect\Data\**\*" />
+      <_AutocorrectLexicon Include="..\Deckle.Autocorrect\Data\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(_AutocorrectLexicon)"
           DestinationFiles="@(_AutocorrectLexicon->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')"

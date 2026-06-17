@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
-using Deckle.Input.Autocorrect;
+using Deckle.Autocorrect;
 using Deckle.Input;
 using Deckle.Notifications;
 

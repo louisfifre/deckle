@@ -95,13 +95,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Shell.TaskbarCover.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Shell.TaskbarCover", "src\Deckle.Shell.TaskbarCover\Deckle.Shell.TaskbarCover.csproj", "{00406FCF-0B47-4EF1-8EBE-F077DE939890}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Input.Autocorrect.Tests", "tests\Deckle.Input.Autocorrect.Tests\Deckle.Input.Autocorrect.Tests.csproj", "{B967EBE1-72E1-4F50-8194-612C4A12119D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Autocorrect.Tests", "tests\Deckle.Autocorrect.Tests\Deckle.Autocorrect.Tests.csproj", "{B967EBE1-72E1-4F50-8194-612C4A12119D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Input.Autocorrect", "src\Deckle.Input.Autocorrect\Deckle.Input.Autocorrect.csproj", "{E0364F56-C996-4981-AFAD-50AE54A5B30A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Autocorrect", "src\Deckle.Autocorrect\Deckle.Autocorrect.csproj", "{E0364F56-C996-4981-AFAD-50AE54A5B30A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Input.Autocorrect.Mlm", "src\Deckle.Input.Autocorrect.Mlm\Deckle.Input.Autocorrect.Mlm.csproj", "{BAF91DD0-05AB-4C65-BB08-A31B35D7A114}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Autocorrect.Mlm", "src\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj", "{BAF91DD0-05AB-4C65-BB08-A31B35D7A114}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Input.Autocorrect.Lab", "src\Deckle.Input.Autocorrect.Lab\Deckle.Input.Autocorrect.Lab.csproj", "{768B5B49-BE18-4509-A272-9CCE1C287ADD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Autocorrect.Lab", "src\Deckle.Autocorrect.Lab\Deckle.Autocorrect.Lab.csproj", "{768B5B49-BE18-4509-A272-9CCE1C287ADD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Speech", "src\Deckle.Speech\Deckle.Speech.csproj", "{C7704418-0059-4585-BB3D-BF7D4345DAB5}"
 EndProject
