@@ -55,7 +55,7 @@ public sealed class TranscriptionSettingsService
     internal static bool ApplyPostLoadMigrations(TranscriptionSettings settings)
     {
         EnergySegmenterSettings segmenter = settings.Streaming.Segmenter;
-        if (!HasDefaultHangoverCurve(segmenter))
+        if (!segmenter.HasDefaultHangoverCurve())
             return false;
 
         bool migrated = false;
@@ -80,12 +80,6 @@ public sealed class TranscriptionSettingsService
 
         return migrated;
     }
-
-    private static bool HasDefaultHangoverCurve(EnergySegmenterSettings segmenter)
-        => segmenter.HangoverCurveX1 == 0.85
-        && segmenter.HangoverCurveY1 == 0.10
-        && segmenter.HangoverCurveX2 == 0.90
-        && segmenter.HangoverCurveY2 == 0.25;
 
     /// <summary>Schedule a debounced disk write (300 ms).</summary>
     public void Save() => _store.Save();
