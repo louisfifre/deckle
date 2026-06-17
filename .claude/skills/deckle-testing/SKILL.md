@@ -13,3 +13,5 @@ Code is built to be testable; the drift to avoid is "testable but unusable". Cov
 ## How
 
 Test what the code does, not how it does it — so a test survives a refactor.
+
+Test against the value the code uses, not a copy of it — so a test follows a re-tune; a literal is fair only when it is itself the contract.
