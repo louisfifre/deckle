@@ -111,7 +111,13 @@ public partial class App
                 personal: _autocorrectDictionary,
                 options: new TypoOptions());
 
-            var policy = new CompositeCorrectionPolicy(diacritics, typo);
+            // Stage two-bis, ahead of the typo corrector: restore a dropped elision
+            // apostrophe in a glued proclitic ("cest" → "c'est", "jai" → "j'ai").
+            // It must precede the typo corrector, which would otherwise rewrite
+            // "cest" to "est" by a plain edit before the apostrophe is considered.
+            var elision = new ElisionCorrector(french, _autocorrectDictionary);
+
+            var policy = new CompositeCorrectionPolicy(diacritics, elision, typo);
 
             _autocorrectEngine = new AutocorrectEngine(
                 host: _keyboardMouseHost,

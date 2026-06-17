@@ -340,6 +340,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ConservativeTypoCorrector.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── DiacriticsRestorer.cs
+│   │   │   ├── ElisionCorrector.cs
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
@@ -979,6 +980,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ConservativeTypoCorrectorTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrequencyLexiconTests.cs
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs

@@ -12,6 +12,8 @@ public enum CorrectionReason
     PersonalWord,
     /// <summary>A non-word spell-fixed to the single common French word one edit away.</summary>
     TypoCorrection,
+    /// <summary>A dropped elision apostrophe restored in a glued proclitic (cest → c'est).</summary>
+    Elision,
     /// <summary>Ambiguity resolved by the post-sentence bidirectional reranker.</summary>
     SentenceReranker,
     /// <summary>The first word of a sentence raised to a capital.</summary>
