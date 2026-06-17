@@ -132,12 +132,26 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return $"Lié : {QueryProp.Name(sourceObj)} → {total} cible(s), {added} ajout(s).";
     }
 
-    // Property names or keys → values. Resolves the selector to any type, maps
-    // each display-name-or-key to a schema property key, builds the format-typed
-    // entry (select/multi_select values resolved name-or-key), and PATCHes.
-    public async Task<string> UpdateAsync(string selector, JsonObject properties, CancellationToken ct = default)
+    // Renames an object and/or sets its properties in ONE PATCH. The name (when
+    // given) rides at the payload root, mirroring create; the properties map each
+    // display-name-or-key to a schema property key and build the format-typed entry
+    // (select/multi_select values resolved name-or-key). At least one of the two
+    // must be present, and a blank name is refused — both are shape errors thrown
+    // before any network call, ahead of the GET.
+    public async Task<string> UpdateAsync(string selector, string? name, JsonObject? properties, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
+
+        // Shape refusals first — no GET needed to know the request is empty or the
+        // name is blank, so refuse before resolving the selector or hitting the wire.
+        bool hasName = name is not null;
+        if (hasName && string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Le nom ne peut pas être vide.", nameof(name));
+
+        bool hasProps = properties is { Count: > 0 };
+        if (!hasName && !hasProps)
+            throw new ArgumentException(
+                "Rien à mettre à jour : fournissez un nom, des propriétés, ou les deux.", nameof(properties));
 
         string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
 
@@ -145,23 +159,46 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         JsonObject obj = await api.GetObjectAsync(id, ct);
         string objType = QueryProp.TypeKey(obj) ?? "";
 
+        // rapport and idee are body-titled (empty `name`, title = first line of the
+        // body): they have no own name to rewrite. Refuse a rename on them and point
+        // at replace_section, the body-editing gesture. Type-key detection — the GET
+        // carries no `layout` field, and these are exactly the two types the module
+        // already treats as body-titled.
+        if (hasName && (objType == DevSpace.Types.Rapport || objType == DevSpace.Types.Idee))
+            throw new InvalidOperationException(
+                $"Le type {objType} tire son titre de la première ligne de son corps — " +
+                "il n'a pas de nom propre à renommer. Édite le corps (replace_section) plutôt que de passer un nom.");
+
         var entries = new JsonArray();
         var applied = new List<string>();
-        foreach ((string nameOrKey, JsonNode? value) in properties)
-        {
-            if (!DevSpace.TryResolveProperty(objType, nameOrKey, out string key, out string format))
-                throw new InvalidOperationException(
-                    $"Propriété inconnue « {nameOrKey} » pour le type {objType}. " +
-                    $"Connues : {string.Join(", ", DevSpace.PropertiesFor(objType).Select(p => p.Label))}.");
+        if (hasProps)
+            foreach ((string nameOrKey, JsonNode? value) in properties!)
+            {
+                if (!DevSpace.TryResolveProperty(objType, nameOrKey, out string key, out string format))
+                    throw new InvalidOperationException(
+                        $"Propriété inconnue « {nameOrKey} » pour le type {objType}. " +
+                        $"Connues : {string.Join(", ", DevSpace.PropertiesFor(objType).Select(p => p.Label))}.");
 
-            entries.Add(await BuildEntryAsync(key, format, value, ct));
-            applied.Add(DevSpace.PropertyLabel(key) ?? key);
-        }
+                entries.Add(await BuildEntryAsync(key, format, value, ct));
+                applied.Add(DevSpace.PropertyLabel(key) ?? key);
+            }
 
-        var payload = new JsonObject { ["properties"] = entries };
+        // One composed PATCH: name at the root (as create writes it), the resolved
+        // property entries when any exist — never two round-trips.
+        var payload = new JsonObject();
+        if (hasName) payload["name"] = name;
+        if (entries.Count > 0) payload["properties"] = entries;
         await api.UpdateObjectAsync(id, payload, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("update", Elapsed(started));
+
+        // QueryProp.Name(obj) is the pre-PATCH title (the GET ran before the rename);
+        // that frames « object X was updated », and the new title is shown explicitly.
+        if (hasName)
+        {
+            string suffix = applied.Count > 0 ? ", " + string.Join(", ", applied) : "";
+            return $"Mis à jour : {QueryProp.Name(obj)} (renommé en « {name} »{suffix}).";
+        }
         return $"Mis à jour : {QueryProp.Name(obj)} ({string.Join(", ", applied)}).";
     }
 
