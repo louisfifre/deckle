@@ -1,4 +1,4 @@
-"""Chargement de ``benchmark/.env`` sans dépendance python-dotenv.
+"""Chargement d'un fichier ``.env`` de benchmark sans dépendance python-dotenv.
 
 Format ``KEY=value`` ligne par ligne, ``#`` pour les commentaires, lignes
 vides ignorées. Pas de quotes interprétées (la valeur est prise telle

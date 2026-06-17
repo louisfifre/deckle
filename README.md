@@ -209,7 +209,7 @@ service, nothing machine-wide.
 │   └── Deckle.Setup/                 First-run wizard (natives + models)
 ├── scripts/                    Build, publish, setup, launcher (deckle.ps1 + lib/)
 ├── docs/                       ADRs, reference sheets, research notes
-├── benchmark/                  Python benchmark suite (optional, to be extracted)
+├── benchmark/                  Benchmark workspaces (ASR suite, autoresearch loops)
 └── LICENSE, README.md, SECURITY.md, NOTICE.md
 ```
 

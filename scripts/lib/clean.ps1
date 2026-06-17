@@ -8,8 +8,9 @@
 # (root Directory.Build.props sets ArtifactsPath):
 #   - artifacts\{bin,obj,publish,package}\  — the consolidated output of
 #     every src/ and tests/ project (they share the root layout).
-#   - src\<m>\{bin,obj}\, tests\<m>\{bin,obj}\, benchmark\cs\<m>\{bin,obj}\
-#     — stragglers: benchmark/ keeps the classic per-project layout (its
+#   - src\<m>\{bin,obj}\, tests\<m>\{bin,obj}\,
+#     benchmark\asr\studies\<m>\{bin,obj}\
+#     — stragglers: benchmark keeps the classic per-project layout (its
 #     own Directory.Build.props opts out), and a worktree built before the
 #     artifacts migration may still carry old per-module folders. Cleaned
 #     too so a single run leaves the tree pristine.
@@ -201,21 +202,21 @@ if (Test-Path -LiteralPath $ArtifactsDir) {
 }
 
 # =============================================================================
-# 2. Straggler per-project bin/obj — benchmark/ (classic layout, opts out of
+# 2. Straggler per-project bin/obj — benchmark/asr studies (classic layout, opts out of
 #    the root props) plus any pre-migration leftovers under src/ and tests/.
 # =============================================================================
 $stragglerRoots = @(
     (Join-Path $RepoRoot 'src'),
     (Join-Path $RepoRoot 'tests'),
-    (Join-Path $RepoRoot 'benchmark\cs')
+    (Join-Path $RepoRoot 'benchmark\asr\studies')
 ) | Where-Object { Test-Path -LiteralPath $_ }
 
 Write-Host ""
-Write-Host "Cleaning straggler bin/ and obj/ under src/, tests/, benchmark/cs/ ..." -ForegroundColor Cyan
+Write-Host "Cleaning straggler bin/ and obj/ under src/, tests/, benchmark/asr/studies/ ..." -ForegroundColor Cyan
 foreach ($root in $stragglerRoots) {
     $rootName = Split-Path $root -Leaf
     $rootParent = Split-Path $root -Parent
-    if ((Split-Path $rootParent -Leaf) -eq 'benchmark') { $rootName = "benchmark\$rootName" }
+    if ((Split-Path $rootParent -Leaf) -eq 'asr') { $rootName = "benchmark\asr\$rootName" }
     foreach ($module in (Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue)) {
         foreach ($name in @('bin', 'obj')) {
             $dir = Join-Path $module.FullName $name

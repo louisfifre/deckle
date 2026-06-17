@@ -1,14 +1,13 @@
 <Project>
 
-  <!-- The benchmark/ suite is a deliberately autonomous sandbox (see benchmark/CLAUDE.md):
-       a different target framework (net10.0-windows, RID-pinned) and its own package set
-       driven by ASR experiments, not the app's release discipline.
+  <!-- The benchmark workspace is outside the app's release discipline. Its
+       studies may use different target frameworks, RIDs, and package versions.
 
        This file's mere presence stops the root Directory.Build.props conventions from
        reaching the bench projects (MSBuild uses the nearest Directory.Build.props only).
-       It also opts the bench out of Central Package Management, so PhiBench keeps its
-       self-contained inline PackageReference versions instead of resolving them from
-       the root Directory.Packages.props. -->
+       Central Package Management is cut off by the sibling Directory.Packages.props,
+       so C# benchmark studies keep self-contained inline PackageReference versions
+       instead of resolving them from the root Directory.Packages.props. -->
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>

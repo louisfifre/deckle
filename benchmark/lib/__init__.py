@@ -1,9 +1,7 @@
-"""Briques réutilisables pour les benches sous ``benches/``.
+"""Shared helpers for benchmark workspaces.
 
-Sous-packages :
-  - ``corpus``   : lecture des corpora curated sous ``corpora/<slug>/``
-  - ``sources``  : drivers de transcription (Whisper, Voxtral, futurs)
-  - ``judges``   : juges de qualité (Claude API, Ollama legacy)
-  - ``metrics``  : règles objectives (WER, looping, leak patterns)
-  - ``monitor``  : observabilité ressources (script PowerShell GPU/RAM)
+This package is intentionally domain-neutral. Put only infrastructure here:
+path resolution, environment loading, event logging, and resource monitoring.
+Domain-specific corpora, sources, judges, metrics, and prompts belong in the
+workspace that owns them, for example ``benchmark/asr/lib``.
 """

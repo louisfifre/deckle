@@ -67,107 +67,126 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── .vscode/
 │   └── launch.json
 ├── benchmark/
-│   ├── lib/
+│   ├── asr/
+│   │   ├── lib/
+│   │   │   ├── judges/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── _base.py
+│   │   │   │   ├── claude.py
+│   │   │   │   └── gemini.py
+│   │   │   ├── metrics/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── leak.py
+│   │   │   │   ├── looping.py
+│   │   │   │   └── wer.py
+│   │   │   ├── sources/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── _base.py
+│   │   │   │   ├── _voxtral_common.py
+│   │   │   │   ├── gemini_audio.py
+│   │   │   │   ├── voxtral_chat.py
+│   │   │   │   ├── voxtral_llamacpp.py
+│   │   │   │   ├── voxtral_transcribe.py
+│   │   │   │   ├── voxtral_transformers.py
+│   │   │   │   └── whisper_cpp.py
+│   │   │   ├── __init__.py
+│   │   │   └── corpus.py
+│   │   ├── prompts/
+│   │   │   ├── judges/
+│   │   │   │   ├── claude_per_row.md
+│   │   │   │   ├── gemini_per_row.md
+│   │   │   │   └── legacy_ollama_judge.md
+│   │   │   ├── transcription/
+│   │   │   │   ├── gemini_audio.toml
+│   │   │   │   ├── voxtral_chat.toml
+│   │   │   │   ├── voxtral_transcribe.toml
+│   │   │   │   └── voxtral_validation.toml
+│   │   │   └── whisper_initial.txt
+│   │   ├── studies/
+│   │   │   ├── perf-cap/
+│   │   │   │   ├── download-models.ps1
+│   │   │   │   ├── parse_vulkan_log.py
+│   │   │   │   ├── profile-config.ps1
+│   │   │   │   ├── profile-server-text.ps1
+│   │   │   │   ├── README.md  — readme-study-perf-cap [study] Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llam…
+│   │   │   │   └── run-all.ps1
+│   │   │   ├── PhiBench/
+│   │   │   │   ├── Models/
+│   │   │   │   │   ├── Regime.cs
+│   │   │   │   │   ├── Sample.cs
+│   │   │   │   │   └── TranscriptionResult.cs
+│   │   │   │   ├── CorpusLoader.cs
+│   │   │   │   ├── CorpusRunner.cs
+│   │   │   │   ├── JsonlWriter.cs
+│   │   │   │   ├── Phi4Transcriber.cs
+│   │   │   │   ├── PhiBench.csproj
+│   │   │   │   ├── Program.cs
+│   │   │   │   ├── README.md  — readme-study-phibench [study] Suspended C# bench for Phi-4 multimodal audio via ONNX Runtime GenAI (OGA). Blo…
+│   │   │   │   ├── RegimesLoader.cs
+│   │   │   │   ├── SingleRunner.cs
+│   │   │   │   └── WavHeader.cs
+│   │   │   ├── tts-audition/
+│   │   │   │   ├── _harness.py
+│   │   │   │   ├── .gitignore
+│   │   │   │   ├── build_player.py
+│   │   │   │   ├── chatterbox_synth.py
+│   │   │   │   ├── f5_synth.py
+│   │   │   │   ├── orpheus_synth.py
+│   │   │   │   ├── README.md  — readme-bench-tts-audition [bench-scenario] Local French TTS audition — a by-ear comparison of ONNX-local TTS engines on th…
+│   │   │   │   ├── supertonic_synth.py
+│   │   │   │   └── synth_onnx.py
+│   │   │   ├── voxtral-onnx-poc/
+│   │   │   │   ├── README.md  — readme-study-voxtral-onnx [study] Completed POC — Voxtral Mini 3B via ONNX Runtime + DirectML. Smoke pipeline kep…
+│   │   │   │   └── smoke_test.py
+│   │   │   ├── voxtral-poc/
+│   │   │   │   ├── bench.py
+│   │   │   │   └── README.md  — readme-bench-voxtral-poc [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
+│   │   │   ├── voxtral-transformers/
+│   │   │   │   ├── perf_rtf.py
+│   │   │   │   ├── README.md  — readme-study-voxtral-transformers [study] Completed study — Voxtral Mini 3B BF16 via Transformers + torch-ROCm on Windows…
+│   │   │   │   ├── sanity_check.py
+│   │   │   │   └── smoke_chat_regimes.py
+│   │   │   ├── voxtral-validation/
+│   │   │   │   ├── aggregate_verdicts.py
+│   │   │   │   ├── bench.py
+│   │   │   │   ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
+│   │   │   │   └── validate_judge_prompt.py
+│   │   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
+│   │   ├── __init__.py
+│   │   ├── build_corpus.py
+│   │   ├── CLAUDE.md  — [agent-instructions] ASR-specific benchmark workspace — sources, judges, corpora, metrics, and froze…
+│   │   ├── JOURNAL.md  — [module-journal] Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
+│   │   └── README.md  — readme-benchmark-asr [module-readme] Human-facing entry point for benchmark/asr — ASR-specific harness pieces and fr…
+│   ├── autoresearch/
+│   │   ├── campaigns/
+│   │   │   └── README.md  — readme-autoresearch-campaigns [module-readme] How to store individual autoresearch campaign folders.
 │   │   ├── judges/
-│   │   │   ├── __init__.py
-│   │   │   ├── _base.py
-│   │   │   ├── claude.py
-│   │   │   └── gemini.py
+│   │   │   └── README.md  — readme-autoresearch-judges [module-readme] Generic judge rubrics and wrappers for autoresearch loops.
 │   │   ├── metrics/
-│   │   │   ├── __init__.py
-│   │   │   ├── leak.py
-│   │   │   ├── looping.py
-│   │   │   └── wer.py
+│   │   │   └── README.md  — readme-autoresearch-metrics [module-readme] Generic metric wrappers for autoresearch loops.
+│   │   ├── prompts/
+│   │   │   └── README.md  — readme-autoresearch-prompts [module-readme] Prompt templates owned by generic autoresearch campaigns.
+│   │   ├── runners/
+│   │   │   └── README.md  — readme-autoresearch-runners [module-readme] Runner helpers for autoresearch campaigns.
+│   │   ├── CLAUDE.md  — [agent-instructions] Autoresearch benchmark workspace — reusable iterative optimization loops.
+│   │   └── README.md  — readme-autoresearch [module-readme] Generic autoresearch workspace for measurable iterative generation, editing, ju…
+│   ├── lib/
 │   │   ├── monitor/
 │   │   │   ├── gpu_monitor.ps1
 │   │   │   └── joiner.py
-│   │   ├── sources/
-│   │   │   ├── __init__.py
-│   │   │   ├── _base.py
-│   │   │   ├── _voxtral_common.py
-│   │   │   ├── gemini_audio.py
-│   │   │   ├── voxtral_chat.py
-│   │   │   ├── voxtral_llamacpp.py
-│   │   │   ├── voxtral_transcribe.py
-│   │   │   ├── voxtral_transformers.py
-│   │   │   └── whisper_cpp.py
 │   │   ├── __init__.py
 │   │   ├── _base_compat.py
-│   │   ├── corpus.py
 │   │   ├── env.py
 │   │   ├── event_log.py
 │   │   └── paths.py
-│   ├── prompts/
-│   │   ├── judges/
-│   │   │   ├── claude_per_row.md
-│   │   │   ├── gemini_per_row.md
-│   │   │   └── legacy_ollama_judge.md
-│   │   ├── transcription/
-│   │   │   ├── gemini_audio.toml
-│   │   │   ├── voxtral_chat.toml
-│   │   │   ├── voxtral_transcribe.toml
-│   │   │   └── voxtral_validation.toml
-│   │   └── whisper_initial.txt
-│   ├── studies/
-│   │   ├── perf-cap/
-│   │   │   ├── download-models.ps1
-│   │   │   ├── parse_vulkan_log.py
-│   │   │   ├── profile-config.ps1
-│   │   │   ├── profile-server-text.ps1
-│   │   │   ├── README.md  — readme-study-perf-cap [study] Frozen Voxtral GGUF performance-characterization session (2026-05-26) over llam…
-│   │   │   └── run-all.ps1
-│   │   ├── PhiBench/
-│   │   │   ├── Models/
-│   │   │   │   ├── Regime.cs
-│   │   │   │   ├── Sample.cs
-│   │   │   │   └── TranscriptionResult.cs
-│   │   │   ├── CorpusLoader.cs
-│   │   │   ├── CorpusRunner.cs
-│   │   │   ├── JsonlWriter.cs
-│   │   │   ├── Phi4Transcriber.cs
-│   │   │   ├── PhiBench.csproj
-│   │   │   ├── Program.cs
-│   │   │   ├── README.md  — readme-study-phibench [study] Suspended C# bench for Phi-4 multimodal audio via ONNX Runtime GenAI (OGA). Blo…
-│   │   │   ├── RegimesLoader.cs
-│   │   │   ├── SingleRunner.cs
-│   │   │   └── WavHeader.cs
-│   │   ├── tts-audition/
-│   │   │   ├── _harness.py
-│   │   │   ├── .gitignore
-│   │   │   ├── build_player.py
-│   │   │   ├── chatterbox_synth.py
-│   │   │   ├── f5_synth.py
-│   │   │   ├── orpheus_synth.py
-│   │   │   ├── README.md  — readme-bench-tts-audition [bench-scenario] Local French TTS audition — a by-ear comparison of ONNX-local TTS engines on th…
-│   │   │   ├── supertonic_synth.py
-│   │   │   └── synth_onnx.py
-│   │   ├── voxtral-onnx-poc/
-│   │   │   ├── README.md  — readme-study-voxtral-onnx [study] Completed POC — Voxtral Mini 3B via ONNX Runtime + DirectML. Smoke pipeline kep…
-│   │   │   └── smoke_test.py
-│   │   ├── voxtral-poc/
-│   │   │   ├── bench.py
-│   │   │   └── README.md  — readme-bench-voxtral-poc [module-readme] Bench scenario evaluating Voxtral Mini 3B as a Whisper alternative in the Deckl…
-│   │   ├── voxtral-transformers/
-│   │   │   ├── perf_rtf.py
-│   │   │   ├── README.md  — readme-study-voxtral-transformers [study] Completed study — Voxtral Mini 3B BF16 via Transformers + torch-ROCm on Windows…
-│   │   │   ├── sanity_check.py
-│   │   │   └── smoke_chat_regimes.py
-│   │   ├── voxtral-validation/
-│   │   │   ├── aggregate_verdicts.py
-│   │   │   ├── bench.py
-│   │   │   ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
-│   │   │   └── validate_judge_prompt.py
-│   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py
-│   ├── .env.example
-│   ├── build_corpus_voxtral_val_30.py
-│   ├── CLAUDE.md  — [agent-instructions] Autonomous box measuring ASR backend quality and performance on private corpora…
+│   ├── CLAUDE.md  — [agent-instructions] Benchmark workspace router — choose the right benchmark family before touching…
 │   ├── Directory.Build.props
-│   ├── JOURNAL.md  — [module-journal] Dated findings from the Voxtral/ASR benchmark spike — backends, quantization, a…
-│   ├── pregenerate_groundtruth_gemini.py
-│   └── README.md  — readme-benchmark [module-readme] Human-facing entry point for the benchmark/ suite — the live harness, the froze…
+│   ├── Directory.Packages.props
+│   ├── HANDOFF.md  — handoff-benchmark-reorg [handoff] Session handoff for the benchmark workspace reorganization.
+│   └── README.md  — readme-benchmark [module-readme] Index for Deckle benchmark workspaces — routes ASR evaluation and generic autor…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…

@@ -1,9 +1,9 @@
-"""Paths du bench — séparation entre code (worktree) et data (AppData).
+"""Paths shared by benchmark workspaces.
 
-Le **code** (lib/, benches/, viewers/, scripts/) vit dans le repo et bouge
-avec le worktree courant. Les **données** (corpora curated, runs avec
-ground truth Gemini, runs avec verdicts judge) sont précieuses et doivent
-**survivre aux worktrees** — sinon chaque rebase ou nettoyage les perd.
+Le **code** vit sous `benchmark/` et bouge avec le worktree courant. Les
+**données** (corpora curated, runs avec ground truth, runs avec verdicts judge)
+sont précieuses et doivent **survivre aux worktrees** — sinon chaque rebase ou
+nettoyage les perd.
 
 La séparation :
 
@@ -15,18 +15,17 @@ La séparation :
 Tout consommateur qui lit/écrit des **résultats** ou des **corpora** passe
 par ``CORPORA_DIR`` et ``RUNS_DIR`` exposés ici.
 
-Nommage canonique d'un run : ``<modèle>-<phase>-<NNNN>`` où :
-  - ``modèle`` est le slug du modèle testé (``voxtral``, ``whisper``,
-    ``gemma3``)
+Nommage canonique d'un run : ``<candidat>-<phase>-<NNNN>`` où :
+  - ``candidat`` est le slug de l'objet testé
   - ``phase`` ∈ ``{poc, debug, testing, integration}`` — le bench est un
     harnais récurrent, pas un one-shot
   - ``NNNN`` est un compteur incrémental à 4 chiffres par couple
-    (modèle, phase)
+    (candidat, phase)
 
-Exemples : ``voxtral-poc-0001``, ``voxtral-debug-0003``,
-``whisper-testing-0001``.
+Exemples : ``candidate-poc-0001``, ``prompt-debug-0003``,
+``backend-testing-0001``.
 
-Tri naturel : modèle d'abord, phase ensuite, id en dernier.
+Tri naturel : candidat d'abord, phase ensuite, id en dernier.
 """
 
 from __future__ import annotations
@@ -59,33 +58,26 @@ BENCHMARK_DATA_DIR = _resolve_data_dir()
 """Racine des données persistantes du bench. Survit aux worktrees."""
 
 CORPORA_DIR = BENCHMARK_DATA_DIR / "corpora"
-"""Corpora curated avec leur ``corpus.jsonl`` enrichi (ground truth
-Gemini, références Whisper sticky, etc.). Un sous-dossier par slug."""
+"""Corpora curated avec leur ``corpus.jsonl`` enrichi. Un sous-dossier par slug."""
 
 RUNS_DIR = BENCHMARK_DATA_DIR / "runs"
 """Résultats des passes de bench. Un sous-dossier par run au format
-``<modèle>-<phase>-<NNNN>``."""
+``<candidat>-<phase>-<NNNN>``."""
 
 
-# ── Modèles GGUF — répertoire central, partagé avec Ollama et autres ─
+# ── Modèles — répertoire central, partagé avec Ollama et autres ─
 
 def _resolve_models_dir() -> Path:
     override = os.environ.get("DECKLE_MODELS_DIR")
     if override:
         return Path(override)
-    # Convention Deckle : tous les GGUF Voxtral/Whisper/etc. vivent
-    # sous ``D:\models\llm\``, à côté du store Ollama. Évite la
-    # duplication entre worktrees.
+    # Convention Deckle : les modèles lourds vivent sous ``D:\models\llm\``,
+    # à côté du store Ollama. Évite la duplication entre worktrees.
     return Path(r"D:\models\llm")
 
 
 MODELS_DIR = _resolve_models_dir()
-"""Répertoire central des modèles GGUF. Partagé avec le store Ollama
-(``blobs/`` et ``manifests/`` du voisinage) et les GGUF tirés à la main."""
-
-VOXTRAL_DIR = MODELS_DIR / "voxtral"
-"""Sous-dossier dédié Voxtral (modèles + mmproj) pour ne pas mélanger
-avec les autres GGUF du dossier parent."""
+"""Répertoire central des modèles lourds partagés entre benchmarks."""
 
 
 # ── Helpers ─────────────────────────────────────────────────────────

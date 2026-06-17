@@ -374,7 +374,7 @@ def enrich_run(run_dir: Path) -> dict[str, Any]:
 def format_summary_console(summary: dict[str, Any]) -> str:
     """Met en forme le summary pour affichage en fin de bench. Deux
     lignes par phase : la première rassemble les peaks GPU+RAM (les
-    axes critiques pour Voxtral), la seconde les peaks CPU+disk
+    axes critiques pour les modèles lourds), la seconde les peaks CPU+disk
     (utiles surtout pour les tests de pression I/O ou multi-process)."""
     lines = ["=== system summary ==="]
     phases = summary.get("phases") or {}

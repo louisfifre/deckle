@@ -1,0 +1,107 @@
+"""Lecture des corpora pour le bench (layout v2).
+
+Un corpus est un dossier sous ``%LOCALAPPDATA%\\Deckle\\benchmark\\corpora\\<slug>\\``
+qui contient :
+
+  - ``corpus.jsonl`` : une ligne par sample, schéma payload Deckle telemetry
+    (cf. corpus_asr dans Deckle.Diagnostics.Telemetry). Champs obligatoires
+    utilisés ici : ``transcription_id``, ``audio_file``, ``text`` (réf
+    Whisper large-v3), ``duration_seconds``, ``tier``.
+  - ``<audio_file>`` : un WAV par sample, nom exact référencé dans
+    ``payload.audio_file``.
+
+Les corpora vivent **hors du worktree** sous ``%LOCALAPPDATA%\\Deckle\\benchmark\\``
+(cf. ``lib/paths.py``) pour survivre aux changements de worktree et aux
+rebases. Pas versionnés Git — chaque machine apporte ses samples. Le
+``corpus.jsonl`` enrichi (ground truth Gemini, références Whisper) reste
+précieux et persistant.
+
+Le corpus est traité en lecture seule par les benches — on ne touche
+jamais aux fichiers sources, seulement aux résultats sous ``RUNS_DIR``.
+
+Pourquoi un module séparé : ce loader est appelé par les benches ASR
+(voxtral-validation, voxtral-debug, whisper-testing futur, etc.) donc
+il vit en ``lib/`` — pas en duplication dans chaque bench.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+from lib import paths
+
+
+CORPORA_DIR = paths.CORPORA_DIR
+
+
+@dataclass(frozen=True)
+class Sample:
+    """Un sample du corpus, prêt à être consommé par une Source.
+
+    ``reference_text`` reste la référence par défaut (Whisper large-v3
+    quand le corpus vient de la télémétrie Deckle), pour rétrocompat.
+    ``reference_text_gemini`` est optionnel — vide si le corpus n'a pas
+    été enrichi par une passe ground-truth Gemini. Les benches qui
+    veulent comparer contre Gemini lisent ce champ et tombent en erreur
+    explicite si vide, plutôt que de retomber silencieusement sur la
+    référence Whisper.
+    """
+    id: str
+    audio_path: Path
+    duration_s: float
+    tier: str
+    reference_text: str
+    reference_words: int
+    reference_text_gemini: str = ""
+
+
+def available() -> list[str]:
+    """Liste les slugs de corpora dispo sur la machine. Pratique pour
+    l'erreur ``corpus introuvable`` ou un menu CLI."""
+    if not CORPORA_DIR.exists():
+        return []
+    return sorted(p.name for p in CORPORA_DIR.iterdir()
+                  if p.is_dir() and (p / "corpus.jsonl").exists())
+
+
+def load(slug: str) -> list[Sample]:
+    """Charge un corpus depuis ``corpora/<slug>/corpus.jsonl``.
+
+    Trie par durée croissante (utile pour le bench : on commence par les
+    petits samples, le pipeline se réchauffe avant les longs). Filtre
+    silencieusement les samples dont l'audio est introuvable — un corpus
+    peut être partiel (ex. user a supprimé un WAV pour tester).
+    """
+    corpus_dir = CORPORA_DIR / slug
+    jsonl_path = corpus_dir / "corpus.jsonl"
+    if not jsonl_path.exists():
+        raise FileNotFoundError(
+            f"corpus {slug!r} introuvable : attendu {jsonl_path}\n"
+            f"  Corpora disponibles sur cette machine : {available() or '<aucun>'}\n"
+            f"  Les corpora ne sont PAS versionnés (gitignored). Tu dois "
+            f"déposer tes propres samples sous {CORPORA_DIR}\\<slug>\\."
+        )
+
+    samples: list[Sample] = []
+    for line in jsonl_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        entry = json.loads(line)
+        payload = entry["payload"]
+        wav_path = corpus_dir / payload["audio_file"]
+        if not wav_path.exists():
+            continue
+        samples.append(Sample(
+            id=str(payload["transcription_id"]),
+            audio_path=wav_path,
+            duration_s=float(payload["duration_seconds"]),
+            tier=str(payload["tier"]),
+            reference_text=str(payload["text"]),
+            reference_words=int(payload["text_words"]),
+            reference_text_gemini=str(payload.get("reference_text_gemini", "")),
+        ))
+    samples.sort(key=lambda s: s.duration_s)
+    return samples

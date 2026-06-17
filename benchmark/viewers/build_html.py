@@ -13,7 +13,7 @@ Pour n'importe quel run de bench respectant le format normalisé Deckle :
 
 Produit un HTML autonome avec :
   - audio player HTML5 par sample (path relatif vers le corpus)
-  - table des transcriptions Gemini GT / Whisper / régimes du bench
+  - table des références du corpus et des sorties par régime
   - judge collapsible par sample (axes + verdict prose, si présent)
   - textarea de notes persistées en localStorage par audio_id
   - export JSON des notes (download ou clipboard)
@@ -23,8 +23,8 @@ Pour overrider les labels lisibles (sinon = identifiants techniques bruts),
 passer un mapping JSON via ``--labels``. Format :
 
     {
-      "regimes": {"T1_baseline": "Voxtral T1 baseline", "T2_verbatim": "..."},
-      "references": {"reference_text_gemini": "Gemini GT", "reference_text_whisper": "Whisper large-v3 (sticky)"}
+      "regimes": {"T1_baseline": "Baseline", "T2_verbatim": "..."},
+      "references": {"reference_text_gemini": "Gemini GT", "text": "Deckle"}
     }
 """
 
@@ -43,7 +43,7 @@ import sys
 sys.path.insert(0, str(BENCHMARK_CODE_DIR))
 from lib import paths  # noqa: E402
 
-# Ordre canonique des tiers Deckle (cf. build_corpus_voxtral_val_30.py).
+# Ordre canonique des tiers Deckle (cf. benchmark/asr/build_corpus.py).
 # Tout tier inconnu tombe à la fin, ordre alphabétique.
 TIER_ORDER = ["very-short", "short", "medium", "long", "very-long-edge", "edge"]
 

@@ -9,7 +9,7 @@ namespace Deckle.Speech;
 // 24 kHz — audible, asset-free, and unmistakably a stub.
 //
 // The real implementation ports the proven 4-graph pure-ONNX decode
-// (benchmark/benches/tts-audition/chatterbox_synth.py): speech_encoder,
+// (benchmark/asr/studies/tts-audition/chatterbox_synth.py): speech_encoder,
 // embed_tokens, language_model_fp16, conditional_decoder — and moves to its
 // own Deckle.Speech.Chatterbox module when it pulls Microsoft.ML.OnnxRuntime.
 public sealed class ChatterboxSpeechBackend : ISpeechBackend

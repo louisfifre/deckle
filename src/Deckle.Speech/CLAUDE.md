@@ -13,7 +13,7 @@ One `ISpeechBackend` drives synthesis — the mirror of `IAsrBackend`. The skele
 
 ## The coming ONNX port — frozen constraints
 
-The audition is closed: Chatterbox-Multilingual (MIT), retained, runs as **four pure-ONNX graphs** (`speech_encoder`, `embed_tokens`, `language_model_fp16`, `conditional_decoder`) — no PyTorch at inference. The proven recipe — and the on-disk location of the weights, provisioned outside the repo — lives in `benchmark/benches/tts-audition/chatterbox_synth.py`.
+The audition is closed: Chatterbox-Multilingual (MIT), retained, runs as **four pure-ONNX graphs** (`speech_encoder`, `embed_tokens`, `language_model_fp16`, `conditional_decoder`) — no PyTorch at inference. The proven recipe — and the on-disk location of the weights, provisioned outside the repo — lives in `benchmark/asr/studies/tts-audition/chatterbox_synth.py`.
 
 - **fp16, never Q4/INT4** — the project no-Q4 ASR/TTS doctrine. fp16 is the high-precision variant, not a quantization.
 - **`conditional_decoder` pinned to CPU** — it is ConvTranspose-heavy and hits the AMD DirectML wall (error 80070057, no auto-fallback). The three transformer/encoder graphs may ride DirectML; CPU vs GPU only moves latency, never the voice.

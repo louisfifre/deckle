@@ -12,8 +12,8 @@
        overriding a central version with VersionOverride — versions move here or
        not at all.
 
-       The benchmark/ suite opts out (ManagePackageVersionsCentrally=false in
-       benchmark/Directory.Build.props) and keeps its own inline versions. -->
+       The benchmark workspace opts out with its own Directory.Packages.props and
+       keeps its experimental inline versions. -->
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
