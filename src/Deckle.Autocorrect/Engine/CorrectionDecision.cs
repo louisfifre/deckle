@@ -14,6 +14,8 @@ public enum CorrectionReason
     TypoCorrection,
     /// <summary>Ambiguity resolved by the post-sentence bidirectional reranker.</summary>
     SentenceReranker,
+    /// <summary>The first word of a sentence raised to a capital.</summary>
+    Capitalization,
     /// <summary>The étape-2 toy hotstring — dev only.</summary>
     ToyHotstring,
 }

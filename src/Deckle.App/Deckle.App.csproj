@@ -85,6 +85,9 @@
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <!-- CamemBERT masked-LM reranker for the live contextual (la/là) stage; the
+         App composition root loads its ONNX model off-thread and wires it in. -->
+    <ProjectReference Include="..\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />

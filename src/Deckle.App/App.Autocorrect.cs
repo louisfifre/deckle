@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
 using Deckle.Autocorrect;
+using Deckle.Autocorrect.Mlm;
 using Deckle.Input;
 using Deckle.Notifications;
 
@@ -18,11 +19,19 @@ namespace Deckle.App;
 // default (AutocorrectSettings); corrections land only on enrolled processes
 // (Notepad out of the box) and never on a password surface.
 //
-// The CamemBERT reranker is an offline eval/iteration tool only — the live
-// engine uses the small bigram pair model, so the only runtime data is the two
-// gzip lexicons shipped beside the executable under Data/.
+// The CamemBERT reranker is the live post-sentence contextual stage (real-word
+// ambiguities — la/là, a/à, ou/où — plus sentence-initial capitals). Its ~440 MB
+// ONNX model is optional: loaded off-thread beside the lexicons, and absent it the
+// engine simply runs gate + typo. The model lives under the user data root
+// (models\camembert-base\), fetched by setup-assets, never shipped in the build.
 public partial class App
 {
+    // Contextual reranker calibration — mirrors the offline EvaluateReranked
+    // operating point: act only on a clear top-vs-second logit gap, and prefer the
+    // common form. Starting points to ground by the eval, not measured optima.
+    private const double RerankerMargin = 2.0;
+    private const double RerankerFreqPrior = 1.0;
+
     private AutocorrectEngine? _autocorrectEngine;
     private PersonalDictionary? _autocorrectDictionary;
     private bool _autocorrectStarted;
@@ -58,14 +67,20 @@ public partial class App
             // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
             // shape).
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, index, context) = await Task.Run(() =>
+            var (french, index, context, reranker) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
                 var idx = AccentIndex.Build(fr);
                 var ctx = File.Exists(pairPath)
                     ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
                     : null;
-                return (fr, idx, ctx);
+                // The contextual reranker's model is large (~440 MB) and optional:
+                // TryLoad returns null when it is absent, leaving gate + typo only.
+                // Loaded here, off the UI thread, alongside the lexicons.
+                string modelDir = Path.Combine(AppPaths.ModelsDirectory, "camembert-base");
+                ISentenceReranker? rr = CamembertReranker.TryLoad(
+                    modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
+                return (fr, idx, ctx, rr);
             }).ConfigureAwait(true);
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
@@ -108,7 +123,11 @@ public partial class App
                 settings: () => AutocorrectSettingsService.Instance.Current,
                 dictionary: _autocorrectDictionary,
                 french: french,
-                english: null);
+                english: null,
+                // The post-sentence contextual stage: the reranker (null when its
+                // model is absent) and the diacritics gate reused as the slot probe.
+                reranker: reranker,
+                probe: diacritics);
 
             // Reactive enrollment: a would-be correction on an undecided app
             // raises this on the engine's input thread. Detach the prompt so we
@@ -117,6 +136,8 @@ public partial class App
 
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
             ReconcileAutocorrect();
+
+            DeckleAutocorrectSource.Log.RerankerStatus(reranker is not null);
 
             // Readiness edge: engine built, wired and reconciled. Concise
             // milestone, no number — the timing is on LexiconLoadComplete above.

@@ -39,6 +39,12 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly FrequencyLexicon? _french;
     private readonly FrequencyLexicon? _english;
 
+    // The post-sentence contextual stage. Null when no reranker model is present
+    // — the engine then runs exactly as before, gate + typo only. The lane owns
+    // the background inference thread; the coordinator owns the sentence model.
+    private readonly SentenceRerankCoordinator? _coordinator;
+    private readonly IRerankLane? _lane;
+
     private volatile FocusedSurface _surface = FocusedSurface.Unknown;
 
     // Armed after a correction lands, stamped with the commit time; the very next
@@ -94,7 +100,9 @@ public sealed class AutocorrectEngine : IDisposable
         Func<AutocorrectSettings> settings,
         PersonalDictionary? dictionary = null,
         FrequencyLexicon? french = null,
-        FrequencyLexicon? english = null)
+        FrequencyLexicon? english = null,
+        ISentenceReranker? reranker = null,
+        IAmbiguityProbe? probe = null)
     {
         _host = host;
         _decoder = decoder;
@@ -106,6 +114,20 @@ public sealed class AutocorrectEngine : IDisposable
         _dictionary = dictionary;
         _french = french;
         _english = english;
+
+        // The contextual stage exists only with both a model and a probe. The lane
+        // marshals inference off this thread and the verdict back via the host pump.
+        if (reranker is not null && probe is not null)
+        {
+            _lane = new BackgroundRerankLane(reranker, host);
+            _coordinator = new SentenceRerankCoordinator(
+                lane: _lane,
+                probe: probe,
+                injector: injector,
+                currentPartial: () => tracker.CurrentWord,
+                realignLastCommitted: tracker.ReplaceLastCommitted,
+                onApplied: OnCoordinatorApplied);
+        }
     }
 
     public bool Start()
@@ -115,6 +137,7 @@ public sealed class AutocorrectEngine : IDisposable
         _host.FocusChanged += OnFocusChanged;
         _tracker.WordCommitted += OnWordCommitted;
         _tracker.WordEdited += OnWordEdited;
+        _tracker.TrackerReset += OnTrackerReset;
 
         if (!_host.Start())
         {
@@ -131,11 +154,19 @@ public sealed class AutocorrectEngine : IDisposable
     {
         _host.Stop();
         Unsubscribe();
+        _coordinator?.Invalidate(ResetReason.FocusChanged); // drop the sentence model
         _dictionary?.Flush();
         DeckleAutocorrectSource.Log.EngineStopped();
     }
 
-    public void Dispose() => Stop();
+    // Permanent teardown: stop, then tear down the rerank lane (joins its worker
+    // and releases the model). Stop alone is reused across enable/disable cycles.
+    public void Dispose()
+    {
+        Stop();
+        _coordinator?.Dispose();
+        _lane?.Dispose();
+    }
 
     private void Unsubscribe()
     {
@@ -144,6 +175,7 @@ public sealed class AutocorrectEngine : IDisposable
         _host.FocusChanged -= OnFocusChanged;
         _tracker.WordCommitted -= OnWordCommitted;
         _tracker.WordEdited -= OnWordEdited;
+        _tracker.TrackerReset -= OnTrackerReset;
     }
 
     // ── Input thread handlers ────────────────────────────────────────────
@@ -156,6 +188,11 @@ public sealed class AutocorrectEngine : IDisposable
         var stroke = _decoder.Decode(e);
         if (stroke is null) return;
         var k = stroke.Value;
+
+        // The coordinator sees the live word as it stood BEFORE the tracker
+        // consumes this stroke — so a Backspace into committed text invalidates its
+        // model. Resets proper arrive via OnTrackerReset.
+        _coordinator?.NotePhysicalKey(k, _tracker.CurrentWord);
 
         if (_revertArmed is { } armed)
         {
@@ -205,6 +242,23 @@ public sealed class AutocorrectEngine : IDisposable
         _tracker.NotifyPointerInteraction();
     }
 
+    // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
+    // model. Enter is forwarded verbatim so the coordinator can vouch the next word
+    // as sentence-initial; every other reason is a caret move to an unknown spot.
+    private void OnTrackerReset(ResetReason reason) => _coordinator?.Invalidate(reason);
+
+    // A correction the contextual stage applied behind the caret. It is NOT
+    // revertable by the one-Backspace gesture (the slot is no longer adjacent), so
+    // it never arms _revertArmed; it only counts and logs like any correction.
+    private void OnCoordinatorApplied(CorrectionDecision decision)
+    {
+        _rollupCorrections++;
+        DeckleAutocorrectSource.Log.CorrectionApplied();
+        DeckleAutocorrectSource.Log.CorrectionDetail(
+            decision.Reason.ToString(), decision.Original.Length, decision.Replacement.Length, 0);
+        CorrectionApplied?.Invoke(decision);
+    }
+
     private void OnFocusChanged()
     {
         _revertArmed = null;
@@ -230,6 +284,7 @@ public sealed class AutocorrectEngine : IDisposable
         if (!settings.Enabled || !surface.IsTextEditable || surface.IsPassword)
         {
             _rollupGated++;
+            _coordinator?.Invalidate(ResetReason.PasswordSurface);
             MaybeRollup(commit.TimestampMs);
             return;
         }
@@ -242,6 +297,7 @@ public sealed class AutocorrectEngine : IDisposable
         if (!enabledHere && !undecided)
         {
             _rollupGated++;
+            _coordinator?.Invalidate(ResetReason.FocusChanged);
             MaybeRollup(commit.TimestampMs);
             return;
         }
@@ -268,6 +324,12 @@ public sealed class AutocorrectEngine : IDisposable
                 RecordCommitLearning(commit.Word);
             else
                 ApplyCorrection(commit, decision);
+
+            // Feed the contextual stage the on-screen form (post-gate). A null
+            // decision means the gate left a literal — the only case a real-word
+            // ambiguity survives for the reranker.
+            _coordinator?.OnWordCommitted(
+                decision?.Replacement ?? commit.Word, commit.Boundary, gateLeftLiteral: decision is null);
         }
         else
         {
@@ -276,6 +338,7 @@ public sealed class AutocorrectEngine : IDisposable
             if (decision is not null)
                 MaybeSuggestEnrollment(surface.ProcessName);
             _rollupGated++;
+            _coordinator?.Invalidate(ResetReason.FocusChanged);
         }
 
         MaybeRollup(commit.TimestampMs);

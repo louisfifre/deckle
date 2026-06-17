@@ -28,6 +28,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtEnrollmentSuggested = 10;
     public const int EvtLexiconLoadComplete = 11;
     public const int EvtEngineReady         = 12;
+    public const int EvtRerankerStatus      = 13;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -74,6 +75,17 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void EngineReady()
     {
         if (IsEnabled()) WriteEvent(EvtEngineReady);
+    }
+
+    // Whether the contextual (CamemBERT) stage came up: true when its model was
+    // present and loaded, false when the engine runs gate + typo only.
+    [Event(EvtRerankerStatus,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Autocorrect contextual stage | model_present={0}")]
+    public void RerankerStatus(bool model_present)
+    {
+        if (IsEnabled()) WriteEvent(EvtRerankerStatus, model_present);
     }
 
     // ── Surface gate ─────────────────────────────────────────────────────

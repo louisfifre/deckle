@@ -333,6 +333,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── pair-bigrams-fr.tsv.gz
 │   │   ├── Engine/
 │   │   │   ├── AutocorrectEngine.cs
+│   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
@@ -344,6 +345,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ISentenceReranker.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
+│   │   │   ├── SentenceRerankCoordinator.cs
 │   │   │   ├── TrainerReport.cs
 │   │   │   ├── TypoOptions.cs
 │   │   │   └── WordShape.cs
@@ -400,6 +402,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── RestorationReport.cs
 │   ├── Deckle.Autocorrect.Mlm/
 │   │   ├── CamembertMlmScorer.cs
+│   │   ├── CamembertReranker.cs
 │   │   ├── CamembertSentenceReranker.cs
 │   │   ├── Deckle.Autocorrect.Mlm.csproj
 │   │   └── MlmProbe.cs
@@ -971,6 +974,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineRevertTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
+│   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
@@ -984,6 +988,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
+│   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Chrono.Tests/
