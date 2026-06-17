@@ -12,7 +12,8 @@ namespace Deckle.App;
 
 // Autocorrect module composition — same posture as App.Trackpad: the App owns
 // the engine and reconciles it with the persisted module settings. The engine
-// is the live diacritics restorer (lexical gate + bigram left-context), wired
+// chains the diacritics restorer (lexical gate + bigram left-context) and a
+// conservative typo corrector (non-words → nearest common French word), wired
 // to the real keyboard, repairing words on enrolled surfaces. Enabled by
 // default (AutocorrectSettings); corrections land only on enrolled processes
 // (Notepad out of the box) and never on a password surface.
@@ -77,7 +78,7 @@ public partial class App
 
             // French-first: no English guard. The bigram model resolves the
             // ambiguous residue; the reranker stays an offline tool.
-            var policy = new DiacriticsRestorer(
+            var diacritics = new DiacriticsRestorer(
                 french: french,
                 english: null,
                 index: index,
@@ -85,6 +86,17 @@ public partial class App
                 context: context,
                 personal: _autocorrectDictionary,
                 personalVariants: BuildAutocorrectPersonalVariants(_autocorrectDictionary));
+
+            // Stage two: Android-style spell-fix for true non-words the gate
+            // leaves untouched ("bonjuor" → "bonjour"). Disjoint from diacritics
+            // by construction; the composite makes the precedence explicit.
+            var typo = new ConservativeTypoCorrector(
+                french: french,
+                english: null,
+                personal: _autocorrectDictionary,
+                options: new TypoOptions());
+
+            var policy = new CompositeCorrectionPolicy(diacritics, typo);
 
             _autocorrectEngine = new AutocorrectEngine(
                 host: _keyboardMouseHost,

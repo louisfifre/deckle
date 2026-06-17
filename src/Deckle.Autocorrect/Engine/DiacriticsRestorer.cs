@@ -63,7 +63,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
 
         // 4. Internal uppercase on a not-all-uppercase word is an identifier
         //    (camelCase, fooBar) — never a dictated French word.
-        if (HasInternalUpper(word))
+        if (WordShape.HasInternalUpper(word))
             return null;
 
         // 5. A trailing apostrophe is an elision token ("l'") — the prefix, not a word.
@@ -78,7 +78,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         // 6b. Proper-noun guard (opt-in): a title-cased word mid-utterance is a
         //     name (Git, Azure), not a dictated French word. Sentence-initial
         //     capitals are exempt — there a capital is the ordinary case.
-        if (_options.GuardCapitalizedMidSentence && leftContext.Count > 0 && IsTitleCase(word))
+        if (_options.GuardCapitalizedMidSentence && leftContext.Count > 0 && WordShape.IsTitleCase(word))
             return null;
 
         string lower = word.ToLowerInvariant();
@@ -181,7 +181,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         foreach (char c in word)
             if (char.IsDigit(c) || (!char.IsLetter(c) && c is not '\'' and not '’' and not '-'))
                 return Array.Empty<AccentVariant>();
-        if (HasInternalUpper(word) || word[^1] is '\'' or '’' || AccentFolding.HasDiacritics(word))
+        if (WordShape.HasInternalUpper(word) || word[^1] is '\'' or '’' || AccentFolding.HasDiacritics(word))
             return Array.Empty<AccentVariant>();
 
         string lower = word.ToLowerInvariant();
@@ -240,42 +240,6 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
 
         kept.Sort(static (a, b) => b.FrequencyPerMillion.CompareTo(a.FrequencyPerMillion));
         return kept;
-    }
-
-    // True for camelCase/PascalCase identifiers: an uppercase past index 0 on a
-    // word that is not entirely uppercase.
-    private static bool HasInternalUpper(string word)
-    {
-        bool anyLower = false;
-        foreach (char c in word)
-            if (char.IsLower(c)) { anyLower = true; break; }
-
-        if (!anyLower)
-            return false; // all-upper (or no cased letters) — not an identifier.
-
-        for (int i = 1; i < word.Length; i++)
-            if (char.IsUpper(word[i]))
-                return true;
-        return false;
-    }
-
-    // True for a plain title-cased token: a leading capital, a lowercase tail,
-    // and no internal capital ("Git", "Azure"). All-caps acronyms and camelCase
-    // (internal capital) are deliberately excluded — and so are hyphenated names
-    // carrying an internal capital ("États-Unis"), which stay eligible.
-    private static bool IsTitleCase(string word)
-    {
-        if (word.Length < 2 || !char.IsUpper(word[0]))
-            return false;
-        bool anyLower = false;
-        for (int i = 1; i < word.Length; i++)
-        {
-            if (char.IsUpper(word[i]))
-                return false;
-            if (char.IsLower(word[i]))
-                anyLower = true;
-        }
-        return anyLower;
     }
 
     // The disambiguator's contract is lowercased context; the live engine hands

@@ -335,13 +335,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AutocorrectEngine.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
+│   │   │   ├── CompositeCorrectionPolicy.cs
+│   │   │   ├── ConservativeTypoCorrector.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
+│   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
-│   │   │   └── TrainerReport.cs
+│   │   │   ├── TrainerReport.cs
+│   │   │   ├── TypoOptions.cs
+│   │   │   └── WordShape.cs
 │   │   ├── Injection/
 │   │   │   ├── InjectionPlan.cs
 │   │   │   ├── ITextInjector.cs
@@ -967,6 +972,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CasePatternTests.cs
+│   │   ├── ConservativeTypoCorrectorTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
