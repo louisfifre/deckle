@@ -45,15 +45,51 @@ param(
 
     # Only re-point the client config(s) at current\ (no rebuild). Useful to
     # heal a config without cutting a new version.
-    [switch]$ConfigOnly
+    [switch]$ConfigOnly,
+
+    # Mount or remove the supervised management catalog (complete / archive /
+    # delete) in the consumer's MCP args. 'on' writes `--management`; 'off' clears
+    # it; omitted leaves the args untouched — so a routine republish never silently
+    # strips a flag the maintainer set earlier. Default consumer = no destructive
+    # tool.
+    [ValidateSet('on', 'off')]
+    [string]$Management
 )
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[mcp] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "      $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "      $msg" -ForegroundColor Yellow }
+
+$Workflow = 'Install Anytype MCP'
+$RepoRoot = $null
+$UserDataRoot = $null
+$InstallRoot = $null
+$CurrentLink = $null
+$StableExe = $null
+$versionId = $null
+$fileCount = $null
+$ConfigStatus = 'Pending'
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Anytype MCP install/update failed before completion." `
+        -Details ([ordered]@{
+            Worktree     = $RepoRoot
+            'Install root' = $InstallRoot
+            Version      = $versionId
+            'Stable exe' = $StableExe
+            Config       = $ConfigStatus
+            Management   = $(if ($Management) { $Management } else { 'unchanged' })
+            Error        = $_.Exception.Message
+        })
+    throw
+}
 
 # ── RepoRoot resolution (mirrors publish-app.ps1) ─────────────────────────────
 if ($Pick) {
@@ -141,6 +177,22 @@ if (-not $ConfigOnly) {
 
 if ($NoConfig) {
     Step 'config repoint skipped (-NoConfig)'
+    $ConfigStatus = 'Skipped (-NoConfig)'
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Success `
+        -Sentence "Anytype MCP was published and pointed at current; client config was left untouched." `
+        -Details ([ordered]@{
+            Worktree       = $RepoRoot
+            'Install root' = $InstallRoot
+            Version        = $versionId
+            Files          = $fileCount
+            Current        = $CurrentLink
+            'Stable exe'   = $StableExe
+            Config         = $ConfigStatus
+            Management     = $(if ($Management) { $Management } else { 'unchanged' })
+        }) `
+        -Next @("Point clients at $StableExe if they are not already configured.")
     return
 }
 
@@ -151,39 +203,66 @@ if ($NoConfig) {
 # ending in Deckle.Anytype.Mcp.exe. Backslashes are doubled to match how the
 # existing JSON string escapes a Windows path. After the first run the value is
 # already current\…exe, so this is a no-op forever after.
-function Update-McpCommand {
-    param([string]$ConfigPath, [string]$NewExe)
+#
+# The same surgical pass optionally mounts the supervised management flag in that
+# server's args. The args array is anchored on the command, so we touch only the
+# Anytype block; it relies on the client writing "args" right after "command"
+# (Claude Code's layout). $Management $null leaves the args alone.
+function Update-McpConfig {
+    param([string]$ConfigPath, [string]$NewExe, [object]$Management)
 
     if (-not (Test-Path $ConfigPath)) { Warn "absent, skipped: $(Split-Path $ConfigPath -Leaf)"; return }
 
-    $raw     = Get-Content $ConfigPath -Raw
-    $pattern = '"command"\s*:\s*"[^"]*Deckle\.Anytype\.Mcp\.exe"'
-    if ($raw -notmatch $pattern) {
+    $raw   = Get-Content $ConfigPath -Raw
+    $cmdRx = '"command"\s*:\s*"[^"]*Deckle\.Anytype\.Mcp\.exe"'
+    if ($raw -notmatch $cmdRx) {
         Warn "no Anytype MCP command found in $(Split-Path $ConfigPath -Leaf) — repoint by hand if this client uses another mechanism"
         return
     }
 
-    $escaped     = $NewExe -replace '\\', '\\'
-    $replacement = '"command": "{0}"' -f $escaped
-    $updated     = [regex]::Replace($raw, $pattern, $replacement)
-    if ($updated -ceq $raw) { Ok "already at current\: $(Split-Path $ConfigPath -Leaf)"; return }
+    # 1) Retarget the command at current\…exe.
+    $escaped = $NewExe -replace '\\', '\\'
+    $updated = [regex]::Replace($raw, $cmdRx, ('"command": "{0}"' -f $escaped))
+
+    # 2) Mount / clear --management in the SAME server's args (skipped when omitted).
+    if ($null -ne $Management) {
+        $argsValue = if ($Management) { '["--management"]' } else { '[]' }
+        $argsRx    = '("command"\s*:\s*"[^"]*Deckle\.Anytype\.Mcp\.exe"\s*,\s*"args"\s*:\s*)\[[^\]]*\]'
+        if ($updated -match $argsRx) {
+            $updated = [regex]::Replace($updated, $argsRx, ('${1}' + $argsValue))
+        } else {
+            Warn "args array not found beside the Anytype command in $(Split-Path $ConfigPath -Leaf) — set --management by hand"
+        }
+    }
+
+    if ($updated -ceq $raw) { Ok "already current: $(Split-Path $ConfigPath -Leaf)"; return }
 
     # One-time backup beside the file, in case the swap ever needs reverting.
     $bak = "$ConfigPath.deckle-mcp.bak"
     if (-not (Test-Path $bak)) { Copy-Item $ConfigPath $bak }
     Set-Content -Path $ConfigPath -Value $updated -Encoding utf8 -NoNewline
-    Ok "repointed $(Split-Path $ConfigPath -Leaf) -> current\"
+    $note = if ($Management -eq $true) { ' + management' } elseif ($Management -eq $false) { ' - management' } else { '' }
+    Ok "repointed $(Split-Path $ConfigPath -Leaf) -> current\$note"
 }
 
 Step 'repoint client configs'
-Update-McpCommand -ConfigPath (Join-Path $env:USERPROFILE '.claude.json') -NewExe $StableExe
+$wantManagement = switch ($Management) { 'on' { $true } 'off' { $false } default { $null } }
+Update-McpConfig -ConfigPath (Join-Path $env:USERPROFILE '.claude.json') -NewExe $StableExe -Management $wantManagement
+$ConfigStatus = 'Checked .claude.json'
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 Step 'done'
+$mgmtNote = switch ($Management) {
+    'on'    { "  Management   : mounted — complete / archive / delete served to this consumer`n" }
+    'off'   { "  Management   : not mounted`n" }
+    default { '' }
+}
 Write-Host @"
 
   Live version : $CurrentLink  (junction)
   Consumed at  : $StableExe   (stable — .claude.json points here once)
+$mgmtNote  Restart the AI client to pick up this version (and any args change):
+  a live session keeps the host it spawned until it respawns.
 
   Re-run this any time to cut a new version: it republishes and re-points the
   junction without overwriting anything running. Open sessions keep the version
@@ -193,3 +272,19 @@ Write-Host @"
     $StableExe
 
 "@ -ForegroundColor Green
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "Anytype MCP is installed behind the stable current junction." `
+    -Details ([ordered]@{
+        Worktree       = $RepoRoot
+        'Install root' = $InstallRoot
+        Version        = $(if ($ConfigOnly) { 'Not published (-ConfigOnly)' } else { $versionId })
+        Files          = $(if ($ConfigOnly) { 'Not published (-ConfigOnly)' } else { $fileCount })
+        Current        = $CurrentLink
+        'Stable exe'   = $StableExe
+        Config         = $ConfigStatus
+        Management     = $(if ($Management) { $Management } else { 'unchanged' })
+    }) `
+    -Next @("Restart the AI client to pick up this version or args change.")

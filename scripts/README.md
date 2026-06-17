@@ -58,6 +58,10 @@ profile — `deckle.ps1` is purely additive.
 direct calls do not break. Internal implementation is split by role:
 `lib/menu/` owns the reusable terminal UI engine, while `lib/launcher/`
 owns the `deckle.ps1` menu context, actions, and submenu definitions.
+Concrete worker scripts end with the same human-readable action summary:
+a short sentence, a `Workflow`, a `Result` (`Success`, `Failed`, `Partial`,
+or `Skipped`), then the fields that matter for that workflow. The detailed
+step logs stay above it for diagnosis.
 
 | File | Purpose | Common switches |
 |---|---|---|
@@ -73,6 +77,7 @@ owns the `deckle.ps1` menu context, actions, and submenu definitions.
 | [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>` |
 | [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from the Conventional-Commit history — plain `git log` + PowerShell, no external tool or API. Default regenerates the whole `CHANGELOG.md` from the `v0.4.0` floor forward; `-NotesFor X.Y.Z` emits a single version's section for `gh … --notes-file` (consumed by `publish-app.ps1`). | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, optionally publish it to GitHub Release as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
+| [`lib/action-summary.ps1`](lib/action-summary.ps1) | Internal shared writer for the final action summary used by worker scripts. | |
 | [`lib/_menu.psm1`](lib/_menu.psm1) | Public facade over `lib/menu/`, exposing `Start-MenuSession`, `Stop-MenuSession`, `Suspend-MenuSession`, `Select-Worktree`, `Select-Action`, and `Select-Grid`. Pickers can clear the terminal before rendering so nested screens replace each other; the launcher can also use the terminal alternate screen buffer for a full-screen flow. Imported by `deckle.ps1`, `launch-app.ps1 -Pick`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
 
 ## Git hooks — TREE.md auto-update
