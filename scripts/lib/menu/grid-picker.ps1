@@ -94,6 +94,8 @@ function Invoke-GridLoop {
         & $render
         while ($true) {
             $key = [Console]::ReadKey($true)
+            $prevSelIdx = $selIdx
+            $prevColIdx = $colIdx
             switch ($key.Key) {
                 'UpArrow' {
                     if ($selIdx -gt 0) {
@@ -119,7 +121,7 @@ function Invoke-GridLoop {
                     return $null
                 }
             }
-            & $render
+            if ($selIdx -ne $prevSelIdx -or $colIdx -ne $prevColIdx) { & $render }
         }
     } finally {
         [Console]::CursorVisible = $true

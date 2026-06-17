@@ -101,15 +101,24 @@ function Invoke-MenuLoop {
 function Format-WorktreeLabel {
     param([string]$Branch, [string]$Path)
 
-    $maxLineLen = [Console]::WindowWidth - 5  # "  > " prefix + trailing gap
-    $branchLbl  = "{0,-28}" -f "[$Branch]"
-    $budget     = $maxLineLen - $branchLbl.Length - 1
-    if ($budget -lt 4) {
-        $Path = [char]0x2026
-    } elseif ($Path.Length -gt $budget) {
-        $Path = ([char]0x2026) + $Path.Substring($Path.Length - ($budget - 1))
+    try {
+        $windowWidth = [Console]::WindowWidth
+    } catch {
+        $windowWidth = 100
     }
-    "$branchLbl $Path"
+
+    $maxLineLen = [Math]::Max(40, $windowWidth - 5)  # "  > " prefix + trailing gap
+    $branchText = "[$Branch]"
+    $nameText = Split-Path -Leaf $Path
+
+    $branchWidth = [Math]::Min(30, [Math]::Max(18, [int]($maxLineLen * 0.30)))
+    $nameWidth = [Math]::Max(12, $maxLineLen - $branchWidth - 2)
+
+    $branchCol = Limit-MenuText -Text $branchText -Width $branchWidth
+    $branchCol = $branchCol.PadRight($branchWidth)
+
+    $nameCol = Limit-MenuText -Text $nameText -Width $nameWidth
+    "$branchCol  $nameCol"
 }
 
 function Select-Worktree {
