@@ -47,6 +47,24 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
+
+$Workflow = 'Show module stats'
+$RepoRoot = $null
+$SrcDir = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Module statistics failed before completion." `
+        -Details ([ordered]@{
+            Worktree = $RepoRoot
+            Source   = $SrcDir
+            Error    = $_.Exception.Message
+        })
+    throw
+}
 
 if ($Pick) {
     Import-Module (Join-Path $ScriptDir '_menu.psm1') -Force
@@ -649,3 +667,22 @@ if ($Json) {
         Set-Content -LiteralPath $Json -Encoding UTF8
     Write-Host "Wrote $Json" -ForegroundColor DarkGray
 }
+
+$tooLargeFiles = @($longFiles | Where-Object { $_.RawLines -ge $TooLargeThreshold })
+$watchFiles = @($longFiles | Where-Object { $_.RawLines -lt $TooLargeThreshold })
+$tooLargeResources = @($resourceFiles | Where-Object { $_.ReswKeys -ge $ResourceTooLargeThreshold })
+$watchResources = @($resourceFiles | Where-Object { $_.ReswKeys -lt $ResourceTooLargeThreshold })
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "Deckle module inventory was measured across $($rows.Count) src module(s)." `
+    -Details ([ordered]@{
+        Worktree          = $RepoRoot
+        Modules           = $rows.Count
+        Files             = $tot.Files
+        'LOC total'       = ('{0:N0}' -f $tot.LocTotal)
+        'Long files'      = "$($watchFiles.Count) watch / $($tooLargeFiles.Count) too large"
+        'Resource files'  = "$($watchResources.Count) watch / $($tooLargeResources.Count) too large"
+        'JSON output'     = $Json
+    })

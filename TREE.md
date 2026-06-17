@@ -191,6 +191,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── list-picker.ps1
 │   │   │   └── session.ps1
 │   │   ├── _menu.psm1
+│   │   ├── action-summary.ps1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
 │   │   ├── changelog.ps1

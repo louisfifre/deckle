@@ -59,6 +59,27 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
+
+$Workflow = 'Bootstrap dev environment'
+$plan = $null
+$results = $null
+$RuntimeAssetsStatus = 'Skipped'
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Development environment bootstrap failed before completion." `
+        -Details ([ordered]@{
+            Tier             = $(if ($Full) { 'Full' } else { 'Default' })
+            'Dry run'        = $(if ($DryRun) { 'Yes' } else { 'No' })
+            'Planned items'  = $(if ($plan) { $plan.Count } else { $null })
+            'Runtime assets' = $RuntimeAssetsStatus
+            Error            = $_.Exception.Message
+        })
+    throw
+}
 
 # =============================================================================
 # Helpers
@@ -324,6 +345,20 @@ if ($plan.Count -eq 0) {
 
 if ($DryRun) {
     Write-Section "Dry run — exiting before any install."
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Success `
+        -Sentence "Development environment bootstrap was probed only; no install was run." `
+        -Details ([ordered]@{
+            Tier            = $(if ($Full) { 'Full' } else { 'Default' })
+            'Dry run'       = 'Yes'
+            'Planned items' = $plan.Count
+            Winget          = $(if ($state.Winget) { 'Present' } else { 'Missing' })
+            Git             = $(if ($state.Git) { 'Present' } else { 'Missing' })
+            Dotnet          = $(if ($state.Dotnet) { 'Present' } else { 'Missing' })
+            VisualStudio    = $(if (Get-VsInfo) { 'Present' } else { 'Missing' })
+        }) `
+        -Next @("Re-run without -DryRun to apply the plan.")
     return
 }
 
@@ -412,13 +447,16 @@ if ($IncludeAssets -and -not $SkipAssets) {
     $setup = Join-Path $ScriptDir 'setup-assets.ps1'
     if (-not (Test-Path $setup)) {
         Write-Fail "setup-assets.ps1 not found at $setup"
+        $RuntimeAssetsStatus = 'Failed: setup-assets.ps1 missing'
     } else {
         Write-Step "Invoking setup-assets.ps1 -FromRelease $AssetsRelease"
         & $setup -FromRelease $AssetsRelease
+        $RuntimeAssetsStatus = "Requested from native-v$AssetsRelease"
     }
 } else {
     Write-Section "Runtime assets"
     Write-Skip "Skipped — handled by the app's first-run wizard. Pass -IncludeAssets to provision from this script."
+    $RuntimeAssetsStatus = 'Skipped: handled by first-run wizard'
 }
 
 # =============================================================================
@@ -506,3 +544,32 @@ if ($Full) {
     Write-Host "       ollama pull phi3:mini        # ~2 GB, comparable" -ForegroundColor DarkGray
 }
 Write-Host ""
+
+$summaryResult = if ($failedCount -gt 0) { 'Partial' } else { 'Success' }
+$summarySentence = if ($DryRun) {
+    "Development environment bootstrap was probed only; no install was run."
+} elseif ($plan.Count -eq 0) {
+    "Development environment already covered the requested tier."
+} elseif ($failedCount -gt 0) {
+    "Development environment bootstrap attempted $($plan.Count) install(s), with $failedCount failure(s)."
+} else {
+    "Development environment bootstrap completed $installedCount install step(s) for the requested tier."
+}
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result $summaryResult `
+    -Sentence $summarySentence `
+    -Details ([ordered]@{
+        Tier             = $(if ($Full) { 'Full' } else { 'Default' })
+        'Dry run'        = $(if ($DryRun) { 'Yes' } else { 'No' })
+        'Planned items'  = $plan.Count
+        Succeeded        = $installedCount
+        Failed           = $failedCount
+        'Runtime assets' = $RuntimeAssetsStatus
+    }) `
+    -Next @(
+        "Open a new PowerShell terminal."
+        "Run scripts\lib\bootstrap-dev-env.ps1 -DryRun to verify."
+        "Run scripts\deckle.ps1 and choose Build & run."
+    )

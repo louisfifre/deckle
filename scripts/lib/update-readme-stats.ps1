@@ -19,10 +19,28 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[readme] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
+
+$Workflow = 'Update README pulse'
+$RepoRoot = $null
+$ReadmePath = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "README development pulse update failed before completion." `
+        -Details ([ordered]@{
+            Worktree = $RepoRoot
+            README   = $ReadmePath
+            Error    = $_.Exception.Message
+        })
+    throw
+}
 
 if ($Pick) {
     Import-Module (Join-Path $ScriptDir '_menu.psm1') -Force
@@ -160,8 +178,25 @@ if ($normalizedUpdated -ne $normalizedReadme) {
     Write-StatsSummary
     Step 'Done'
     Ok "README.md development pulse updated"
+    $readmeChanged = $true
 } else {
     Write-StatsSummary
     Step 'Done'
     Ok "README.md development pulse already up to date"
+    $readmeChanged = $false
 }
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence $(if ($readmeChanged) { "README development pulse was regenerated and written." } else { "README development pulse was already up to date." }) `
+    -Details ([ordered]@{
+        Worktree              = $RepoRoot
+        README                = $ReadmePath
+        Changed               = $(if ($readmeChanged) { 'Yes' } else { 'No' })
+        Commits               = (Format-Count $commitCount)
+        'Active days'         = (Format-Count $activeDays)
+        'Tracked text files'  = (Format-Count $trackedTextFiles)
+        'Current text lines'  = (Format-Count $trackedTextLines)
+        'Generated on'        = $generatedDate
+    })

@@ -23,10 +23,32 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir  = $PSScriptRoot                                  # scripts/lib/
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[build] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "        $msg" -ForegroundColor Yellow }
+
+$Workflow = if ($NoRun) { 'Build' } else { 'Build & run' }
+$RepoRoot = $null
+$ExePath = $null
+$LaunchMode = if ($NoRun) { 'Skipped (-NoRun)' } else { 'Pending' }
+$WaitResult = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "$Workflow failed before completion." `
+        -Details ([ordered]@{
+            Worktree      = $RepoRoot
+            Configuration = "$Configuration x64"
+            Executable    = $ExePath
+            Launch        = $LaunchMode
+            Error         = $_.Exception.Message
+        })
+    throw
+}
 
 # =============================================================================
 # RepoRoot resolution
@@ -89,6 +111,16 @@ Ok 'Build succeeded'
 if ($NoRun) {
     Step 'Done'
     Ok 'Launch skipped because -NoRun was set'
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Success `
+        -Sentence "Deckle was built in $Configuration x64; launch was skipped." `
+        -Details ([ordered]@{
+            Worktree      = $RepoRoot
+            Configuration = "$Configuration x64"
+            Executable    = 'Not resolved (-NoRun)'
+            Launch        = $LaunchMode
+        })
     return
 }
 
@@ -141,8 +173,10 @@ Step 'Launch Deckle'
 Start-DeckleViaShell -FilePath $ExePath -DeckleArgs $launchArgs
 if ($launchArgs.Count) {
     Ok ("Started with args: {0}" -f ($launchArgs -join ' '))
+    $LaunchMode = "Started with args: $($launchArgs -join ' ')"
 } else {
     Ok 'Started without post-build restart args'
+    $LaunchMode = 'Started without post-build restart args'
 }
 
 if ($Wait) {
@@ -159,7 +193,21 @@ if ($Wait) {
         Step "Wait for Deckle PID $($proc.Id)"
         $proc.WaitForExit()
         Ok "Deckle exited with code $($proc.ExitCode)"
+        $WaitResult = "Deckle PID $($proc.Id) exited with code $($proc.ExitCode)"
     } else {
         Warn 'Deckle process did not appear within 5 seconds'
+        $WaitResult = 'Deckle process did not appear within 5 seconds'
     }
 }
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "Deckle was built in $Configuration x64 and launched from this worktree." `
+    -Details ([ordered]@{
+        Worktree      = $RepoRoot
+        Configuration = "$Configuration x64"
+        Executable    = $ExePath
+        Launch        = $LaunchMode
+        Wait          = $WaitResult
+    })

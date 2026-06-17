@@ -43,6 +43,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 # Repo root — two levels up: scripts/lib -> scripts -> repo root. Never
 # hardcode the worktree path; this resolves relative to where the script
@@ -58,6 +60,26 @@ function Step($msg) { Write-Host "`n[fetch] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
 function Info($msg) { Write-Host "         $msg" -ForegroundColor Gray }
+
+$Workflow = 'Fetch autocorrect data'
+$lexiqueRows = $null
+$norvigRows = $null
+$trainCount = $null
+$evalCount = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Autocorrect data fetch failed before completion." `
+        -Details ([ordered]@{
+            OutputRoot = $OutputRoot
+            RawDir     = $RawDir
+            Force      = $(if ($Force) { 'Yes' } else { 'No' })
+            Error      = $_.Exception.Message
+        })
+    throw
+}
 
 function Get-SizeMB($path) { [math]::Round((Get-Item $path).Length / 1MB, 2) }
 
@@ -338,3 +360,28 @@ foreach ($f in @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'wiki
     else              { Warn "MISSING $f" }
 }
 Write-Host "`n         wall time: $([math]::Round($swTotal.Elapsed.TotalMinutes, 1)) min" -ForegroundColor Gray
+
+$missingFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'wiki-fr-train.txt', 'wiki-fr-eval.txt') |
+    Where-Object { -not (Test-Path (Join-Path $RawDir $_)) }
+$summaryResult = if ($missingFiles.Count -gt 0) { 'Partial' } else { 'Success' }
+$summarySentence = if ($missingFiles.Count -gt 0) {
+    "Autocorrect data fetch finished with $($missingFiles.Count) missing file(s)."
+} else {
+    "Autocorrect data sources were fetched under $RawDir."
+}
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result $summaryResult `
+    -Sentence $summarySentence `
+    -Details ([ordered]@{
+        OutputRoot     = $OutputRoot
+        RawDir         = $RawDir
+        Force          = $(if ($Force) { 'Yes' } else { 'No' })
+        'Lexique rows' = $lexiqueRows
+        'Norvig rows'  = $norvigRows
+        Train          = $(if ($trainCount -ne $null) { "$trainCount article(s)" } else { 'Already present or not rebuilt' })
+        Eval           = $(if ($evalCount -ne $null) { "$evalCount article(s)" } else { 'Already present or not rebuilt' })
+        Missing        = ($missingFiles -join ', ')
+        'Wall time'    = "$([math]::Round($swTotal.Elapsed.TotalMinutes, 1)) min"
+    })

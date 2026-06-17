@@ -45,6 +45,28 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
+
+$Workflow = 'Clean build outputs'
+$RepoRoot = $null
+$removed = 0
+$skipped = 0
+$totalBytes = [int64]0
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Build output cleanup failed before completion." `
+        -Details ([ordered]@{
+            Worktree          = $RepoRoot
+            'Removed folders' = $removed
+            'Skipped folders' = $skipped
+            'Freed bytes'     = $totalBytes
+            Error             = $_.Exception.Message
+        })
+    throw
+}
 
 # =============================================================================
 # RepoRoot resolution — mirrors build-run.ps1 so the two scripts behave
@@ -123,10 +145,6 @@ Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
     $_ | Stop-Process -Force
 }
 
-$removed    = 0
-$skipped    = 0
-$totalBytes = [int64]0
-
 function Add-Result {
     param($Result)
     $script:removed    += $Result.Removed
@@ -189,3 +207,22 @@ if ($skipped -gt 0) {
 if (-not $IncludeReleases) {
     Write-Host "Kept artifacts\Deckle-v* release staging (pass -IncludeReleases to purge)." -ForegroundColor DarkGray
 }
+
+$summaryResult = if ($skipped -gt 0) { 'Partial' } else { 'Success' }
+$summarySentence = if ($skipped -gt 0) {
+    "Build output cleanup removed $removed folder(s), but skipped $skipped reparse-point folder(s)."
+} else {
+    "Build output cleanup removed $removed folder(s) and freed $(Format-Size $totalBytes)."
+}
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result $summaryResult `
+    -Sentence $summarySentence `
+    -Details ([ordered]@{
+        Worktree          = $RepoRoot
+        'Removed folders' = $removed
+        'Skipped folders' = $skipped
+        Freed             = (Format-Size $totalBytes)
+        'Release staging' = $(if ($IncludeReleases) { 'Purged with artifacts\Deckle-v*' } else { 'Kept artifacts\Deckle-v*' })
+    })

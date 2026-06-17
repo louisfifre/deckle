@@ -54,10 +54,37 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "           $msg" -ForegroundColor Yellow }
+
+$Workflow = if ($Publish) { 'Publish app release' } else { 'Prepare app release artifacts' }
+$RepoRoot = $null
+$Version = $null
+$OutDir = $null
+$SetupPath = $null
+$ZipPath = $null
+$ZipSha256 = $null
+$Published = $false
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "$Workflow failed before completion." `
+        -Details ([ordered]@{
+            Worktree  = $RepoRoot
+            Version   = $(if ($Version) { "v$Version" } else { $null })
+            OutDir    = $OutDir
+            Installer = $SetupPath
+            Payload   = $ZipPath
+            Published = $Published
+            Error     = $_.Exception.Message
+        })
+    throw
+}
 
 # ── RepoRoot resolution (mirrors build-run.ps1) ──────────────────────────────
 if ($Pick) {
@@ -238,4 +265,29 @@ if ($Publish) {
     & gh @ghArgs
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
     Ok "Released as $tag"
+    $Published = $true
 }
+
+$releaseTag = if ($Version) { "v$Version" } else { $null }
+$releaseUrl = if ($Published) { "https://github.com/$OwnerRepo/releases/tag/$releaseTag" } else { $null }
+$sentence = if ($Published) {
+    "Deckle $releaseTag was built and published as a GitHub Release."
+} else {
+    "Deckle $releaseTag release artifacts were built locally for inspection."
+}
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence $sentence `
+    -Details ([ordered]@{
+        Worktree      = $RepoRoot
+        Version       = $releaseTag
+        OutDir        = $OutDir
+        Installer     = $SetupPath
+        Payload       = $ZipPath
+        SHA256        = $ZipSha256
+        Published     = $(if ($Published) { 'Yes' } else { 'No' })
+        'Release URL' = $releaseUrl
+    }) `
+    -Next $(if (-not $Published) { @("Run with -Publish, or use the menu: Release > Publish app release.") } else { @("Verify the GitHub release page and downloaded installer asset.") })

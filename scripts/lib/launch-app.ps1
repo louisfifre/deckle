@@ -9,10 +9,30 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[launch] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
+
+$Workflow = 'Launch'
+$RepoRoot = $null
+$ExePath = $null
+$WaitResult = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Deckle launch failed before completion." `
+        -Details ([ordered]@{
+            Worktree      = $RepoRoot
+            Configuration = $Configuration
+            Executable    = $ExePath
+            Error         = $_.Exception.Message
+        })
+    throw
+}
 
 if ($Pick) {
     Import-Module (Join-Path $ScriptDir '_menu.psm1') -Force
@@ -68,7 +88,21 @@ if ($Wait) {
         Step "Wait for Deckle PID $($proc.Id)"
         $proc.WaitForExit()
         Ok "Deckle exited with code $($proc.ExitCode)"
+        $WaitResult = "Deckle PID $($proc.Id) exited with code $($proc.ExitCode)"
     } else {
         Warn 'Deckle process did not appear within 5 seconds'
+        $WaitResult = 'Deckle process did not appear within 5 seconds'
     }
 }
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "Deckle was launched from the existing $Configuration build; no build was run." `
+    -Details ([ordered]@{
+        Worktree      = $RepoRoot
+        Configuration = $Configuration
+        Executable    = $ExePath
+        Launch        = 'Started without build'
+        Wait          = $WaitResult
+    })

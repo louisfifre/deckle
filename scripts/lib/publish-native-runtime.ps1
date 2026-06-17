@@ -46,6 +46,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 # ── Catalog ──────────────────────────────────────────────────────────────────
 #
@@ -65,6 +67,29 @@ $MingwDlls = @(
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "           $msg" -ForegroundColor Yellow }
+
+$Workflow = if ($Publish) { 'Publish native runtime release' } else { 'Prepare native runtime release' }
+$ZipPath = $null
+$ZipSha256 = $null
+$ZipBytes = $null
+$ZipSize = $null
+$Published = $false
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "$Workflow failed before completion." `
+        -Details ([ordered]@{
+            Version     = "native-v$Version"
+            WhisperRepo = $WhisperRepo
+            OutDir      = $OutDir
+            Zip         = $ZipPath
+            Published   = $Published
+            Error       = $_.Exception.Message
+        })
+    throw
+}
 
 # ── Resolve sources ──────────────────────────────────────────────────────────
 
@@ -282,4 +307,27 @@ if ($Publish) {
     & gh @ghArgs
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
     Ok "Released as $tag"
+    $Published = $true
 }
+
+$nativeTag = "native-v$Version"
+$sentence = if ($Published) {
+    "Native runtime $nativeTag was packaged and published as a GitHub Release."
+} else {
+    "Native runtime $nativeTag was packaged locally for inspection."
+}
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence $sentence `
+    -Details ([ordered]@{
+        Version     = $nativeTag
+        WhisperRepo = $WhisperRepo
+        OutDir      = $OutDir
+        Zip         = $ZipPath
+        Size        = $(if ($ZipBytes) { "$ZipBytes bytes ($ZipSize MB)" } else { $null })
+        SHA256      = $ZipSha256
+        Published   = $(if ($Published) { 'Yes' } else { 'No' })
+    }) `
+    -Next $(if (-not $Published) { @("Run again with -Publish to create the GitHub Release.") } else { @("Update NativeRuntime.CurrentBundle if the app should consume this bundle.") })

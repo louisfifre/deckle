@@ -58,6 +58,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 # Repo paths — two levels up: scripts/lib → scripts → repo root
 $Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -78,6 +80,26 @@ $TargetModels = Join-Path $TargetRoot 'models'
 function Step($msg) { Write-Host "`n[setup] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "         $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "         $msg" -ForegroundColor Yellow }
+
+$Workflow = 'Set up runtime assets'
+$NativeSource = $null
+$NativeRuntimeStatus = 'Pending'
+$ModelStatus = 'Pending'
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Runtime asset setup failed before completion." `
+        -Details ([ordered]@{
+            'Data root'      = $TargetRoot
+            Native          = $NativeRuntimeStatus
+            'Native source' = $NativeSource
+            Models          = $ModelStatus
+            Error           = $_.Exception.Message
+        })
+    throw
+}
 
 # Catalog (matches Deckle.Setup.NativeRuntime.RequiredDllNames and
 # scripts/lib/publish-native-runtime.ps1 — divergence is a bug)
@@ -145,6 +167,7 @@ if ($FromRelease) {
     # is a dev convenience and doesn't ship a hash table.
     $url = "https://github.com/$DeckleRepoSlug/releases/download/native-v$FromRelease/deckle-native-$FromRelease.zip"
     $tmpZip = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-native-$FromRelease.zip"
+    $NativeSource = "GitHub Release native-v$FromRelease"
 
     if ($Force -and (Test-Path $tmpZip)) { Remove-Item $tmpZip -Force }
     Ok "url $url"
@@ -173,6 +196,7 @@ if ($FromRelease) {
         $archive.Dispose()
     }
     Remove-Item $tmpZip -Force
+    $NativeRuntimeStatus = "Extracted from $NativeSource"
 }
 else {
     # Modes B + C — local whisper.cpp build tree. -WhisperRepo wins,
@@ -185,6 +209,7 @@ else {
 
     $whisperBin = Join-Path $resolved 'build\bin'
     if (Test-Path $whisperBin) {
+        $NativeSource = $whisperBin
         Ok "whisper.cpp build : $whisperBin"
         foreach ($name in $WhisperDlls) {
             $src = Join-Path $whisperBin $name
@@ -209,8 +234,14 @@ else {
             }
         } else {
             Warn "MinGW Scoop install not found at $ScoopMingw — runtime DLLs skipped"
+            $NativeRuntimeStatus = 'Partial: whisper.cpp DLLs copied, MinGW runtime missing'
+        }
+        if ($NativeRuntimeStatus -eq 'Pending') {
+            $NativeRuntimeStatus = "Copied from $NativeSource"
         }
     } else {
+        $NativeSource = $resolved
+        $NativeRuntimeStatus = 'Skipped: no native source found'
         Warn "no native source found"
         Warn "  tried -WhisperRepo, DECKLE_WHISPER_REPO, $resolved"
         Warn "  pass -FromRelease <X.Y.Z> to fetch the published bundle, or"
@@ -244,11 +275,35 @@ Download `
     'https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx' `
     $vadDst `
     2200KB
+$ModelStatus = if ($WithLarge) { 'Base, large, and Silero VAD present' } else { 'Base and Silero VAD present; large skipped' }
 
 # Final summary.
 $nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count
 $modelCount  = (Get-ChildItem $TargetModels -File -ErrorAction SilentlyContinue | Measure-Object).Count
+$nativeCatalogCount = @(($WhisperDlls + $MingwDlls) | Where-Object { Test-Path (Join-Path $TargetNative $_) }).Count
 Step 'done'
 Write-Host "         $TargetNative : $nativeCount file(s)"
 Write-Host "         $TargetModels : $modelCount file(s)"
 Write-Host "`nNext: scripts\deckle.ps1 (Build & run)" -ForegroundColor Cyan
+
+$summaryResult = if ($nativeCatalogCount -lt ($WhisperDlls.Count + $MingwDlls.Count)) { 'Partial' } else { 'Success' }
+$summarySentence = if ($summaryResult -eq 'Partial') {
+    "Runtime asset setup finished, but the native runtime catalog is incomplete."
+} else {
+    "Runtime assets were set up under $TargetRoot."
+}
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result $summaryResult `
+    -Sentence $summarySentence `
+    -Details ([ordered]@{
+        'Data root'      = $TargetRoot
+        Native          = $NativeRuntimeStatus
+        'Native catalog' = "$nativeCatalogCount / $($WhisperDlls.Count + $MingwDlls.Count)"
+        'Native files'  = $nativeCount
+        Models          = $ModelStatus
+        'Model files'   = $modelCount
+        Force           = $(if ($Force) { 'Yes' } else { 'No' })
+    }) `
+    -Next @("Run scripts\deckle.ps1 and choose Build & run.")

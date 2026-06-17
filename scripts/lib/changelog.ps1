@@ -52,10 +52,31 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[changelog] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "           $msg" -ForegroundColor Yellow }
+
+$Workflow = if ($NotesFor) { 'Generate release notes' } else { 'Update changelog' }
+$RepoRoot = $null
+$range = $null
+$dest = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "$Workflow failed before completion." `
+        -Details ([ordered]@{
+            Worktree = $RepoRoot
+            Version  = $NotesFor
+            Range    = $range
+            Output   = $dest
+            Error    = $_.Exception.Message
+        })
+    throw
+}
 
 # ── RepoRoot resolution (mirrors build-run.ps1 / publish-app.ps1) ────────────
 if ($Pick) {
@@ -224,9 +245,22 @@ if ($NotesFor) {
     if ($OutFile) {
         [System.IO.File]::WriteAllText($OutFile, $section + "`n", [System.Text.UTF8Encoding]::new($false))
         Ok "Notes written to $OutFile"
+        $dest = $OutFile
     } else {
         Write-Output $section
+        $dest = 'stdout'
     }
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Success `
+        -Sentence "Release notes for v$version were generated from $range." `
+        -Details ([ordered]@{
+            Worktree = $RepoRoot
+            Version  = "v$version"
+            Range    = $range
+            Commits  = $subjects.Count
+            Output   = $dest
+        })
     return
 }
 
@@ -274,3 +308,15 @@ $dest = if ($OutFile) { $OutFile } else { Join-Path $RepoRoot 'CHANGELOG.md' }
 [System.IO.File]::WriteAllText($dest, $doc, [System.Text.UTF8Encoding]::new($false))
 Step "Done"
 Ok "Wrote $dest"
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "CHANGELOG.md was regenerated from $FloorTag through $($tags[-1])." `
+    -Details ([ordered]@{
+        Worktree     = $RepoRoot
+        Output       = $dest
+        'Floor tag'  = $FloorTag
+        'Latest tag' = $tags[-1]
+        Sections     = $sections.Count
+    })

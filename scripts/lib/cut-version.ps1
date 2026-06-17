@@ -30,10 +30,31 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
+. (Join-Path $ScriptDir 'action-summary.ps1')
 
 function Step($msg) { Write-Host "`n[cut-version] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "             $msg"   -ForegroundColor Green }
 function Warn($msg) { Write-Host "             $msg"   -ForegroundColor Yellow }
+
+$Workflow = 'Update version'
+$RepoRoot = $null
+$current = $null
+$tag = $null
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Version update failed before completion." `
+        -Details ([ordered]@{
+            Worktree = $RepoRoot
+            Bump     = $Bump
+            From     = $(if ($current) { "v$current" } else { $null })
+            To       = $tag
+            Error    = $_.Exception.Message
+        })
+    throw
+}
 
 # ── Resolve the target worktree (same shape as launch-app.ps1) ───────────────
 if ($Pick) {
@@ -102,6 +123,19 @@ Ok 'csproj written'
 
 if ($NoCommit) {
     Warn 'NoCommit: wrote the bump only. No commit, no tag.'
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Success `
+        -Sentence "Deckle version was updated from v$current to $tag without committing or tagging." `
+        -Details ([ordered]@{
+            Worktree = $RepoRoot
+            Bump     = $Bump
+            From     = "v$current"
+            To       = $tag
+            Commit   = 'Skipped (-NoCommit)'
+            Tag      = 'Skipped (-NoCommit)'
+        }) `
+        -Next @("Inspect the csproj diff before committing manually.")
     return
 }
 
@@ -124,3 +158,22 @@ Write-Host "Cut v$current -> $tag on $RepoRoot" -ForegroundColor Green
 Write-Host 'Not pushed. To ship this version:' -ForegroundColor DarkGray
 Write-Host "  git -C `"$RepoRoot`" push; git -C `"$RepoRoot`" push origin $tag" -ForegroundColor DarkGray
 Write-Host "  then menu: Release > Publish app release  (gh reuses the existing tag $tag)" -ForegroundColor DarkGray
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "Deckle version was bumped from v$current to $tag, committed, and tagged locally." `
+    -Details ([ordered]@{
+        Worktree = $RepoRoot
+        Bump     = $Bump
+        From     = "v$current"
+        To       = $tag
+        Commit   = "chore(release): $tag"
+        Tag      = $tag
+        Pushed   = 'No'
+    }) `
+    -Next @(
+        "git -C `"$RepoRoot`" push"
+        "git -C `"$RepoRoot`" push origin $tag"
+        "Menu: Release > Publish app release"
+    )

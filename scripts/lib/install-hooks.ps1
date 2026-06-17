@@ -7,6 +7,9 @@
 #>
 
 $ErrorActionPreference = 'Stop'
+$scriptDir = $PSScriptRoot
+. (Join-Path $scriptDir 'action-summary.ps1')
+
 $repoRoot  = (git rev-parse --show-toplevel).Trim()
 $hooksDir  = Join-Path (git -C $repoRoot rev-parse --absolute-git-dir).Trim() 'hooks'
 $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
@@ -14,6 +17,23 @@ $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
 function Step($msg) { Write-Host "`n[hooks] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "        $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "        $msg" -ForegroundColor Yellow }
+
+$Workflow = 'Install git hooks'
+$InstalledHooks = New-Object System.Collections.Generic.List[string]
+
+trap {
+    Write-DeckleActionSummary `
+        -Workflow $Workflow `
+        -Result Failed `
+        -Sentence "Git hook installation failed before completion." `
+        -Details ([ordered]@{
+            Worktree          = $repoRoot
+            'Hooks directory' = $hooksDir
+            Installed         = ($InstalledHooks.ToArray() -join ', ')
+            Error             = $_.Exception.Message
+        })
+    throw
+}
 
 Write-Host "Repo: $repoRoot" -ForegroundColor DarkGray
 Write-Host "Hooks: $hooksDir" -ForegroundColor DarkGray
@@ -33,6 +53,7 @@ foreach ($hookFile in $hookFiles) {
     }
     Copy-Item $src $dst -Force
     Ok "Installed $hookFile"
+    $InstalledHooks.Add($hookFile) | Out-Null
 }
 
 # Merge driver used by .gitattributes for TREE.md. `ours` keeps the local side
@@ -42,3 +63,14 @@ foreach ($hookFile in $hookFiles) {
 Step "Register TREE.md merge driver"
 git config merge.ours.driver true
 Ok "Registered merge.ours driver"
+
+Write-DeckleActionSummary `
+    -Workflow $Workflow `
+    -Result Success `
+    -Sentence "Deckle git hooks were installed and the TREE.md merge driver was registered." `
+    -Details ([ordered]@{
+        Worktree          = $repoRoot
+        'Hooks directory' = $hooksDir
+        Installed         = ($InstalledHooks.ToArray() -join ', ')
+        'Merge driver'    = 'merge.ours.driver=true'
+    })
