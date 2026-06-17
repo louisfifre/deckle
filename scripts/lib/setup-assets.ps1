@@ -52,6 +52,11 @@ param(
     # default to keep first-time setup fast.
     [switch]$WithLarge,
 
+    # Stage the CamemBERT reranker model (~440 MB ONNX) under
+    # models\camembert-base. Off by default — not yet consumed by the live
+    # engine; fetched on demand and referenced from one canonical location.
+    [switch]$WithCamembert,
+
     # Re-copy / re-download even if the destination already exists with
     # the matching size.
     [switch]$Force
@@ -276,6 +281,29 @@ Download `
     $vadDst `
     2200KB
 $ModelStatus = if ($WithLarge) { 'Base, large, and Silero VAD present' } else { 'Base and Silero VAD present; large skipped' }
+
+# 4. CamemBERT masked-LM (ONNX) — the autocorrect post-sentence reranker's model,
+# fetched from the Xenova ONNX export into <TargetRoot>\models\camembert-base\.
+# The three files CamembertMlmScorer loads (model.onnx + tokenizer.json +
+# sentencepiece.bpe.model) sit flat in that one directory, alongside the small
+# config jsons. Gated behind -WithCamembert (~440 MB): the live engine does not
+# consume it yet, so it is staged on demand from one canonical location the
+# installer can reference, not pulled on every setup.
+if ($WithCamembert) {
+    Step 'download CamemBERT reranker model'
+    $camDir = Join-Path $TargetModels 'camembert-base'
+    if (-not (Test-Path $camDir)) { New-Item -ItemType Directory -Path $camDir -Force | Out-Null }
+    $camBase = 'https://huggingface.co/Xenova/camembert-base/resolve/main'
+    Download "$camBase/onnx/model.onnx"         (Join-Path $camDir 'model.onnx')              400MB
+    Download "$camBase/tokenizer.json"          (Join-Path $camDir 'tokenizer.json')          1MB
+    Download "$camBase/sentencepiece.bpe.model" (Join-Path $camDir 'sentencepiece.bpe.model') 500KB
+    Download "$camBase/config.json"             (Join-Path $camDir 'config.json')             100
+    Download "$camBase/tokenizer_config.json"   (Join-Path $camDir 'tokenizer_config.json')   100
+    Download "$camBase/special_tokens_map.json" (Join-Path $camDir 'special_tokens_map.json') 100
+    Ok "camembert-base staged under $camDir"
+} else {
+    Ok 'skipped camembert-base (pass -WithCamembert to fetch ~440 MB reranker model)'
+}
 
 # Final summary.
 $nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count

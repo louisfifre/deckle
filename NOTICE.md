@@ -125,3 +125,14 @@ redistributed in this repository.
 - Used as : the `silero_vad.onnx` v6.2 model, downloaded on demand to the
   models directory and run by `Deckle.Inference.Onnx` for external voice
   activity detection. Not redistributed in this repository.
+
+### CamemBERT (ONNX)
+
+- Repository : https://huggingface.co/Xenova/camembert-base — ONNX export of
+  [almanach/camembert-base](https://huggingface.co/almanach/camembert-base)
+  (Inria — Martin, Müller, Suárez et al.).
+- License : MIT — the CamemBERT weights.
+- Used as : the `camembert-base` masked-LM (`model.onnx` + `tokenizer.json` +
+  `sentencepiece.bpe.model`), downloaded on demand to the models directory and
+  run by `Deckle.Autocorrect.Mlm` for the post-sentence reranker. Not
+  redistributed in this repository.
