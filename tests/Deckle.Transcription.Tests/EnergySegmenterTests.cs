@@ -179,7 +179,9 @@ public class EnergySegmenterTests
         PushN(lateSeg, voiced: true, 60);
 
         Assert.Equal(55, linearSeg.Snapshot().RequiredHangoverFrames);
-        Assert.True(lateSeg.Snapshot().RequiredHangoverFrames > linearSeg.Snapshot().RequiredHangoverFrames);
+        // The shaped late-drop curve at p=0.5 yields a far longer hangover than the
+        // linear baseline (55) — pin the exact value, not merely "greater than".
+        Assert.Equal(92, lateSeg.Snapshot().RequiredHangoverFrames);
     }
 
     [Fact]

@@ -59,17 +59,19 @@ public class UnitBezierTests
         Assert.True(b.Solve(0.05) > 0.5, $"expected already-high near the start, got {b.Solve(0.05)}");
     }
 
-    [Theory]
-    // The shipping default tracks the previous slope-integral curve (contrast 3,
-    // position 0.8, sharpness 20) to within ~0.03 across the ramp.
-    [InlineData(0.2, 0.143)]
-    [InlineData(0.5, 0.357)]
-    [InlineData(0.7, 0.508)]
-    [InlineData(0.9, 0.794)]
-    public void DefaultReproducesThePreviousCurve(double x, double expected)
+    [Fact]
+    public void DefaultCurveHugsLowThenRisesLate()
     {
-        var b = new UnitBezier(0.42, 0.30, 0.85, 0.50);
-        Assert.True(System.Math.Abs(b.Solve(x) - expected) < 0.035,
-            $"x={x}: got {b.Solve(x):F3}, expected ≈ {expected:F3}");
+        // Read the shipped segmenter default rather than copying its control points,
+        // so this tracks any future retune instead of freezing a dead curve.
+        var s = new EnergySegmenterSettings();
+        var b = new UnitBezier(s.HangoverCurveX1, s.HangoverCurveY1, s.HangoverCurveX2, s.HangoverCurveY2);
+
+        // The default control points sit low (y << x): the easing stays near 0 through
+        // most of the ramp and rises steeply only at the end — in the segmenter this
+        // keeps the hangover delay near its max early and collapses it late.
+        Assert.True(b.Solve(0.5) < 0.25,  $"mid easing should still hug low, got {b.Solve(0.5):F3}");
+        Assert.True(b.Solve(0.9) < 0.65,  $"easing should not have collapsed yet at 0.9, got {b.Solve(0.9):F3}");
+        Assert.True(b.Solve(0.95) > b.Solve(0.5), "easing must rise toward the end");
     }
 }
