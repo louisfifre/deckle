@@ -183,3 +183,37 @@ function Select-Action {
     if ($idx -lt 0) { throw "Cancelled" }
     return $Items[$idx].Value
 }
+
+function Select-YesNo {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Question,
+        [bool]$Default = $false,
+        [switch]$ClearScreen
+    )
+
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+        $hint = if ($Default) { '[Y/n]' } else { '[y/N]' }
+        $answer = Read-Host "$Question $hint"
+        if ([string]::IsNullOrWhiteSpace($answer)) { return $Default }
+        return ($answer -match '^(y|yes|o|oui)$')
+    }
+
+    $rows = @(
+        @{ Cells = @(
+            @{ Label = 'Yes'; Value = $true }
+            @{ Label = 'No';  Value = $false; Role = 'back' }
+        ) }
+    )
+
+    $choice = Select-Grid `
+        -Header $Question `
+        -Footer 'Left/Right move   Enter confirm' `
+        -Rows $rows `
+        -StartSel 0 `
+        -StartCol $(if ($Default) { 0 } else { 1 }) `
+        -EscapeAction Ignore `
+        -ClearScreen:$ClearScreen
+
+    return [bool]$choice
+}

@@ -60,6 +60,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+Import-Module (Join-Path $ScriptDir '_menu.psm1') -Force
 
 $Workflow = 'Bootstrap dev environment'
 $plan = $null
@@ -377,8 +378,7 @@ if ($plan.Count -gt 0 -and -not $Yes) {
         Write-Host "Stay at the keyboard to click 'Yes' when it appears." -ForegroundColor Yellow
         Write-Host ""
     }
-    $reply = Read-Host "Proceed? [y/N]"
-    if ($reply -notmatch '^[yY]') {
+    if (-not (Select-YesNo -Question 'Proceed with environment bootstrap?' -Default $false)) {
         Write-Host "Aborted." -ForegroundColor Yellow
         return
     }

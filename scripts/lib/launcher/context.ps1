@@ -43,10 +43,7 @@ function Read-YesNo {
         [Parameter(Mandatory)][string]$Question,
         [bool]$Default = $false
     )
-    $hint = if ($Default) { '[Y/n]' } else { '[y/N]' }
-    $ans  = Read-Host "$Question $hint"
-    if ([string]::IsNullOrWhiteSpace($ans)) { return $Default }
-    return ($ans -match '^(y|yes|o|oui)$')
+    return (Select-YesNo -Question $Question -Default $Default)
 }
 
 function Read-Optional {

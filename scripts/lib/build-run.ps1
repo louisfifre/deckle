@@ -102,8 +102,13 @@ if ($runningDeckle.Count -eq 0) { Ok 'No running Deckle.exe found' }
 # phase before Build), so the WindowsAppSDK targets (CompileXaml etc.)
 # get imported from the freshly-regenerated .nuget.g.targets — no
 # CS5001 / CS0103 InitializeComponent surprise in a fresh worktree.
+#
+# Keep the maintainer machine responsive after repeated agent/menu builds:
+# MSBuild node reuse and Roslyn shared compilation leave .NET Host /
+# VBCSCompiler processes behind for faster follow-up builds, which is hostile
+# to parallel worktrees and WinUI responsiveness diagnostics.
 Step "dotnet build ($Configuration x64)"
-& dotnet build $Csproj "-c:$Configuration" '-p:Platform=x64' '-v:m' '-nologo'
+& dotnet build $Csproj "-c:$Configuration" '-p:Platform=x64' '-v:m' '-nologo' '/nr:false' '/p:UseSharedCompilation=false'
 if ($LASTEXITCODE -ne 0) { throw "dotnet build failed (code $LASTEXITCODE)" }
 Ok 'Build succeeded'
 

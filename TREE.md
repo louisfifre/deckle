@@ -205,6 +205,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── setup-assets.ps1
 │   │   ├── stats.ps1
+│   │   ├── stop-build-servers.ps1
 │   │   └── update-readme-stats.ps1
 │   ├── deckle.ps1
 │   └── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…

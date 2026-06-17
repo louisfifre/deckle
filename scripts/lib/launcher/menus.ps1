@@ -35,9 +35,12 @@ function Show-ReleaseMenu {
 
 function Show-MaintenanceMenu {
     $v = Show-Submenu -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
-        @{ Prefix = 'Worktree'; Cells = @(
-            @{ Label = 'Clean build outputs'; Value = 'clean' }
-            @{ Label = 'Show module stats';   Value = 'stats' }
+        @{ Prefix = 'Clean'; Cells = @(
+            @{ Label = 'Clean build outputs';     Value = 'clean' }
+            @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
+        ) }
+        @{ Prefix = 'Inspect'; Cells = @(
+            @{ Label = 'Show module stats'; Value = 'stats' }
         ) }
         @{ Prefix = 'Docs'; Cells = @(
             @{ Label = 'Update README pulse'; Value = 'readme-stats' }
@@ -45,10 +48,11 @@ function Show-MaintenanceMenu {
         ) }
     )
     switch ($v) {
-        'clean'        { Invoke-WorktreeScript -Script 'clean.ps1' }
-        'stats'        { Invoke-WorktreeScript -Script 'stats.ps1' }
-        'readme-stats' { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
-        'changelog'    { Invoke-WorktreeScript -Script 'changelog.ps1' }
+        'clean'         { Invoke-WorktreeScript -Script 'clean.ps1' }
+        'build-servers' { Invoke-StopBuildServers }
+        'stats'         { Invoke-WorktreeScript -Script 'stats.ps1' }
+        'readme-stats'  { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
+        'changelog'     { Invoke-WorktreeScript -Script 'changelog.ps1' }
     }
 }
 

@@ -111,7 +111,9 @@ anything. The same flow is reachable via the interactive menu at
 - **Visual Studio 2026 Community** with the *WinUI application development*
   workload — installs the Windows SDK, the WinUI 3 templates, and the C++
   toolchain needed for native module work. The build itself runs through
-  `dotnet build`.
+  `dotnet build`; for repeated local or agent builds, prefer
+  `/nr:false /p:UseSharedCompilation=false` so MSBuild/Roslyn build servers
+  do not remain in the background.
 
 #### Tier 2 — recompile whisper.cpp native DLLs (rare, maintainer-only)
 

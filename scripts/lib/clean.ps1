@@ -52,6 +52,7 @@ $RepoRoot = $null
 $removed = 0
 $skipped = 0
 $totalBytes = [int64]0
+$buildServersStopped = 'Not attempted'
 
 trap {
     Write-DeckleActionSummary `
@@ -63,6 +64,7 @@ trap {
             'Removed folders' = $removed
             'Skipped folders' = $skipped
             'Freed bytes'     = $totalBytes
+            'Build servers'   = $buildServersStopped
             Error             = $_.Exception.Message
         })
     throw
@@ -145,6 +147,21 @@ Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
     $_ | Stop-Process -Force
 }
 
+# Stop .NET build servers left by manual, menu, or agent builds. This is
+# intentionally machine-wide: MSBuild/Roslyn servers are developer cache
+# processes, not repo artifacts, and they are the usual source of lingering
+# ".NET Host" rows after a Deckle build.
+Write-Host ""
+Write-Host "Stopping .NET build servers ..." -ForegroundColor Cyan
+& dotnet build-server shutdown
+if ($LASTEXITCODE -eq 0) {
+    $buildServersStopped = 'Stopped'
+    Write-Host "  - dotnet build-server shutdown" -ForegroundColor DarkGray
+} else {
+    $buildServersStopped = "Failed (code $LASTEXITCODE)"
+    Write-Host "  ! dotnet build-server shutdown failed (code $LASTEXITCODE)" -ForegroundColor Yellow
+}
+
 function Add-Result {
     param($Result)
     $script:removed    += $Result.Removed
@@ -224,5 +241,6 @@ Write-DeckleActionSummary `
         'Removed folders' = $removed
         'Skipped folders' = $skipped
         Freed             = (Format-Size $totalBytes)
+        'Build servers'   = $buildServersStopped
         'Release staging' = $(if ($IncludeReleases) { 'Purged with artifacts\Deckle-v*' } else { 'Kept artifacts\Deckle-v*' })
     })

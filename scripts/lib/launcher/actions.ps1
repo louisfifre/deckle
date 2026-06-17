@@ -22,6 +22,11 @@ function Invoke-WorktreeScript {
     & (Join-Path $LibDir $Script) -Target $wt
 }
 
+function Invoke-StopBuildServers {
+    Begin-DeckleAction
+    & (Join-Path $LibDir 'stop-build-servers.ps1')
+}
+
 function Invoke-UpdateVersion {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
