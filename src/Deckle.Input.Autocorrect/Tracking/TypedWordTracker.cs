@@ -18,7 +18,7 @@ namespace Deckle.Input.Autocorrect;
 // a hard reset. Re-committing a different word emits WordEdit(original, new).
 public sealed class TypedWordTracker
 {
-    private const int BufferCap = 64;
+    internal const int BufferCap = 64;
 
     private readonly StringBuilder _buffer = new();
 

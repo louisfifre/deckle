@@ -20,7 +20,7 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
     private const double AdoptionThreshold = 3.0;
     private const double HalfLifeDays      = 14.0;
     private const double DustThreshold     = 0.05;
-    private const int    MaxWords          = 5000;
+    internal const int   MaxWords          = 5000;
 
     // Signal boosts: commit is weak repeated evidence; a hand-fixed accent is
     // stronger ("the user went back for it"); a revert is instant adoption

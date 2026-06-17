@@ -329,7 +329,7 @@ public class TypedWordTrackerTests
         var t = new TypedWordTracker();
         var rec = new Recorder(t);
 
-        Type(t, new string('a', 65)); // dépasse le cap de 64
+        Type(t, new string('a', TypedWordTracker.BufferCap + 1)); // un caractère au-delà du cap déclenche le hard reset
 
         Assert.Equal(new[] { ResetReason.BufferLimit }, rec.Resets.ToArray());
         Assert.Equal(string.Empty, t.CurrentWord);

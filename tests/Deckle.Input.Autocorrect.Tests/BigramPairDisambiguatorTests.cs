@@ -23,12 +23,14 @@ public class BigramPairDisambiguatorTests
     [Fact]
     public void ChoosesAccentedFormAfterFavoringContext()
     {
-        // "à" dominates after "va"; the bare form has no support there.
+        // "à" dominates after "va"; the bare form has no support there. Margin
+        // pinned at 3× like its sibling — the verdict reflects dominance, not the
+        // calibration default.
         var d = FromRows(new[]
         {
             ("a", "à", "va", 20L),
             ("a", "à", "", 20L),
-        });
+        }, new DisambiguatorOptions { MarginRatio = 3.0 });
 
         Assert.Equal("à", d.Choose(["va"], Candidates));
     }
@@ -77,15 +79,16 @@ public class BigramPairDisambiguatorTests
     [Fact]
     public void ReturnsNullWhenMarginNotMet()
     {
-        // Bigrams after "x" are near-even (6 vs 6): even with the literal bias
-        // the winner does not clear the margin.
+        // Bigrams after "x" are near-even (6 vs 6): even with the literal bias the
+        // winner stays short. Margin pinned at 3× like its siblings — at that bar
+        // the 14-vs-7 race is below threshold → null.
         var d = FromRows(new[]
         {
             ("a", "a", "x", 6L),
             ("a", "à", "x", 6L),
             ("a", "a", "", 6L),
             ("a", "à", "", 6L),
-        });
+        }, new DisambiguatorOptions { MarginRatio = 3.0 });
 
         Assert.Null(d.Choose(["x"], Candidates));
     }
@@ -93,12 +96,13 @@ public class BigramPairDisambiguatorTests
     [Fact]
     public void ReturnsNullWhenEvidenceBelowMinimum()
     {
-        // Total raw evidence is 2 (< MinEvidence 5): never guess from thin air,
-        // however lopsided the smoothed ratio looks.
+        // One short of the real minimum, all evidence on one form: only the evidence
+        // gate can refuse — if it stopped firing, the lopsided margin would clear.
+        var min = new DisambiguatorOptions().MinEvidence;
         var d = FromRows(new[]
         {
-            ("a", "a", "", 1L),
-            ("a", "à", "", 1L),
+            ("a", "a", "", (long)(min - 1)),
+            ("a", "à", "", 0L),
         });
 
         Assert.Null(d.Choose([], Candidates));

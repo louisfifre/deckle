@@ -59,16 +59,21 @@ public sealed class PersonalDictionaryTests : IDisposable
     {
         using var dict = New();
 
-        // Revert ⇒ poids 3.5 (adopté tout de suite, au-dessus du seuil).
+        // Revert ⇒ adopté tout de suite, au-dessus du seuil.
         dict.RecordRevert("café", "cafe");
         Assert.True(dict.IsAdopted("café"));
 
-        // Avance d'une demi-vie (14 jours) : effectif 3.5 → 1.75, sous le seuil.
+        // Poids effectif au revert : horloge non avancée (days ≤ 0 ⇒ pas de
+        // décroissance), donc c'est le boost shippé, non figé ici.
+        var w0 = dict.SnapshotWords().Single(w => w.Word == "café").EffectiveWeight;
+
+        // Après une demi-vie (14 jours), le poids effectif est divisé par deux —
+        // l'invariant tient quel que soit le boost.
         _now = _now.AddDays(14);
         Assert.False(dict.IsAdopted("café"));
 
         var snap = dict.SnapshotWords().Single(w => w.Word == "café");
-        Assert.Equal(1.75, snap.EffectiveWeight, precision: 3);
+        Assert.Equal(w0 / 2.0, snap.EffectiveWeight, precision: 3);
         Assert.False(snap.Adopted);
     }
 
@@ -147,21 +152,21 @@ public sealed class PersonalDictionaryTests : IDisposable
     {
         using var dict = New();
 
-        // 5000 mots à poids 1.0 (un commit chacun) + un mot lourd à 3.0.
+        // Cap mots légers (un commit chacun) + un mot lourd à 3.0.
         const string heavy = "héritage";
         dict.RecordCommit(heavy);
         dict.RecordCommit(heavy);
         dict.RecordCommit(heavy);
 
-        for (int i = 0; i < 5000; i++)
+        for (int i = 0; i < PersonalDictionary.MaxWords; i++)
             dict.RecordCommit($"light{i}");
 
-        // Cap = 5000 : l'insertion au-delà élague le plus léger. Le mot lourd
-        // doit survivre, et un mot léger doit avoir été évincé.
+        // L'insertion au-delà du cap élague le plus léger : le total reste plafonné,
+        // le mot lourd survit, et exactement un léger a été évincé.
         var words = dict.SnapshotWords();
-        Assert.Equal(5000, words.Count);
+        Assert.Equal(PersonalDictionary.MaxWords, words.Count);
         Assert.Contains(words, w => w.Word == heavy);
-        Assert.Equal(5000, words.Count(w => w.Word.StartsWith("light")) + 1);
+        Assert.Equal(PersonalDictionary.MaxWords - 1, words.Count(w => w.Word.StartsWith("light")));
     }
 
     [Fact]

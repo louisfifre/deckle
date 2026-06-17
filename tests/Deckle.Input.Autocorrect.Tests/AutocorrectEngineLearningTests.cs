@@ -122,16 +122,19 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         using var dict = NewDictionary();
         using var h = Harness(dict); // NeverCorrects
 
+        h.Type("widget "); // a neutral word: an ordinary commit, no accent fix — the baseline
+
         h.Type("cafe ");  // commit the bare form, opening the edit window
         h.Backspace();    // re-open "cafe" as the live buffer
         h.Backspace();    // drop the 'e'  → "caf"
         h.Type("é ");     // retype the accented form → commit "café" as an edit of "cafe"
 
-        // "café" carried BOTH the commit boost (1.0) and the manual-accent-fix
-        // boost (1.5): a weight of 2.5 proves the manual-fix path fired, not
-        // just the ordinary commit.
+        // Same frozen clock, so weight == effective weight: the manual-fix path
+        // adds strictly more than an ordinary commit on its own. Measure the
+        // baseline in-test rather than pinning the absolute magnitude.
+        double baseline = Assert.Single(dict.SnapshotWords(), w => w.Word == "widget").EffectiveWeight;
         var entry = Assert.Single(dict.SnapshotWords(), w => w.Word == "café");
-        Assert.Equal(2.5, entry.EffectiveWeight, precision: 3);
+        Assert.True(entry.EffectiveWeight > baseline);
     }
 
     [Fact]
@@ -156,6 +159,8 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         using var dict = NewDictionary();
         using var h = Harness(dict); // NeverCorrects
 
+        h.Type("widget "); // a plain commit under the same clock — the ordinary-commit baseline
+
         h.Type("cat ");  // commit "cat", open the edit window
         h.Backspace();   // re-open "cat" as the live buffer
         h.Backspace();   // "ca"
@@ -163,10 +168,12 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         h.Backspace();   // "" — still re-opened (the boundary was eaten on the first Backspace)
         h.Type("dog ");  // recommit a DIFFERENT word: an edit, but not an accent fix
 
-        // Fold("cat") != Fold("dog"), so the manual-accent-fix boost (+1.5) must
-        // NOT apply: "dog" carries the ordinary commit weight (1.0) alone.
+        // Fold("cat") != Fold("dog"), so the manual-accent-fix boost must NOT
+        // apply: "dog" carries the ordinary commit weight alone, equal to the
+        // baseline — not the heavier weight of a real accent fix.
+        double baseline = Assert.Single(dict.SnapshotWords(), w => w.Word == "widget").EffectiveWeight;
         var dog = Assert.Single(dict.SnapshotWords(), w => w.Word == "dog");
-        Assert.Equal(1.0, dog.EffectiveWeight, precision: 3);
+        Assert.Equal(baseline, dog.EffectiveWeight, precision: 3);
     }
 
     [Fact]

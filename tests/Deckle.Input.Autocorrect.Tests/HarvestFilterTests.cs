@@ -26,9 +26,16 @@ public sealed class HarvestFilterTests
     [InlineData("c#", false)]                         // symbol
     [InlineData("l'", false)]                         // trailing-apostrophe elision marker
     [InlineData("-mot", false)]                       // leading connector
-    [InlineData("anticonstitutionnellement", false)]  // 25 chars — over the length cap
     public void IsHarvestableTokenKeepsOnlyAlphabeticFrenchShapedTokens(string word, bool expected) =>
         Assert.Equal(expected, HarvestFilter.IsHarvestableToken(word));
+
+    [Fact]
+    public void LengthCapIsEnforcedAtItsBoundary()
+    {
+        // Drive the boundary off the real cap, both sides of the strict '>'.
+        Assert.True(HarvestFilter.IsHarvestableToken(new string('a', HarvestFilter.MaxTokenLength)));
+        Assert.False(HarvestFilter.IsHarvestableToken(new string('a', HarvestFilter.MaxTokenLength + 1)));
+    }
 
     [Fact]
     public void ACorrectionPairNeedsBothSidesHarvestableAndDifferent()

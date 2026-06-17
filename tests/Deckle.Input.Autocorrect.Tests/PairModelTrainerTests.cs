@@ -82,9 +82,10 @@ public class PairModelTrainerTests
     [Fact]
     public void MinPairCountPrunesThinBigramsButKeepsUnigram()
     {
-        // Default MinPairCount = 3: the count-2 bigrams are below the floor and
-        // dropped, but the unigram "" totals must survive.
-        var model = Train(new TrainerOptions { MinPairCount = 3 });
+        // The shipped default floor must sit above the fabricated count-2 bigrams,
+        // so they are pruned while the unigram totals survive.
+        Assert.True(new TrainerOptions().MinPairCount > 2);
+        var model = Train();
 
         Assert.Equal(0L, model.Bigram("a", "a", "il"));
         Assert.Equal(0L, model.Bigram("a", "à", "va"));

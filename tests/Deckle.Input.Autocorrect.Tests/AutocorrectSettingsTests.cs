@@ -15,12 +15,12 @@ public sealed class AutocorrectSettingsTests
     [Fact]
     public void LegacyEnrolledProcessesMigrateIntoApps()
     {
-        const string legacy = """{"enabled":true,"enrolledProcesses":["notepad","claude"]}""";
+        const string legacy = """{"enabled":true,"enrolledProcesses":["signal","claude"]}""";
 
         var s = JsonSerializer.Deserialize<AutocorrectSettings>(legacy, Options)!;
 
         Assert.True(s.Apps["claude"]);
-        Assert.True(s.Apps["NOTEPAD"]);     // Apps is case-insensitive
+        Assert.True(s.Apps["SIGNAL"]);      // non-default: only migration can set it, and case-insensitively
         Assert.Null(s.EnrolledProcesses);   // folded in and dropped, never written again
     }
 
