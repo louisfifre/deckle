@@ -23,10 +23,16 @@ function Write-MenuLine {
         $rule = New-MenuRule -MaxWidth ($InnerWidth - $written) -Style Section
         Write-MenuContentSegment -Text $rule -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor Gray -BackgroundColor $null
     } else {
-        Write-MenuContentSegment -Text '    ' -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor DarkGray -BackgroundColor $null
         $itemRole = Get-MenuCellRole -Cell ([pscustomobject]@{ Label = $Label; Role = $Role })
         $colors = Get-MenuRoleColor -Role $itemRole -Selected:$Selected
-        Write-MenuContentSegment -Text $Label -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
+        if ($Selected) {
+            $line = ('    ' + $Label)
+            if ($line.Length -lt $InnerWidth) { $line += ' ' * ($InnerWidth - $line.Length) }
+            Write-MenuContentSegment -Text $line -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
+        } else {
+            Write-MenuContentSegment -Text '    ' -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor DarkGray -BackgroundColor $null
+            Write-MenuContentSegment -Text $Label -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
+        }
     }
     Write-MenuLineRemainder -InnerWidth $InnerWidth -Written $written
 }
@@ -150,6 +156,7 @@ function Select-Worktree {
         [pscustomobject]@{
             Label    = (Format-WorktreeLabel -Branch $e.Branch -Path $e.Path)
             IsHeader = $false
+            Role     = $null
         }
     }
     $idx = Invoke-MenuLoop -Header 'Pick a worktree (Up/Down, Enter = confirm, Esc = cancel):' -Items $items -ClearScreen:$false

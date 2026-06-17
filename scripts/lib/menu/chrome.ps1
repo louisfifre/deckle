@@ -31,7 +31,7 @@ function Get-MenuRoleColor {
     )
 
     if ($Selected) {
-        return @{ Foreground = 'White'; Background = 'Black' }
+        return @{ Foreground = 'Black'; Background = 'Gray' }
     }
 
     switch ($Role) {
