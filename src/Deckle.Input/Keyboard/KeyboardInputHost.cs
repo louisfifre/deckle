@@ -40,6 +40,11 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private const string ClassName = "DeckleKeyboardHost";
     private const double RollupPeriodMs = 30_000;
 
+    // A bare thread message (hwnd == 0) the pump relays as DrainRequested. WM_APP is
+    // the first id reserved for application-private messages, so it never collides
+    // with a system message; it carries no payload — the consumer drains its own queue.
+    private const uint WM_APP_DRAIN = 0x8000; // WM_APP
+
     private readonly object _stateLock = new();
 
     private Thread? _thread;
@@ -79,6 +84,9 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
     /// <summary>Raised on the input thread when the foreground window or focused element changes.</summary>
     public event Action? FocusChanged;
+
+    /// <summary>Raised on the input thread when a drain request reaches the pump (see <see cref="RequestDrain"/>).</summary>
+    public event Action? DrainRequested;
 
     public bool IsRunning { get { lock (_stateLock) return _refCount > 0; } }
 
@@ -165,6 +173,18 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     }
 
     public void Dispose() => Stop();
+
+    /// <summary>
+    /// Posts a drain request to the input thread. Safe from any thread — PostThreadMessage is
+    /// the documented cross-thread primitive. A no-op before the pump's thread id is known or
+    /// after the thread has quit (the message is simply never retrieved).
+    /// </summary>
+    public void RequestDrain()
+    {
+        uint threadId = _threadId;
+        if (threadId != 0)
+            RawInputInterop.PostThreadMessage(threadId, WM_APP_DRAIN, IntPtr.Zero, IntPtr.Zero);
+    }
 
     // ── Input thread ─────────────────────────────────────────────────────
 
@@ -257,6 +277,13 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     {
         while (RawInputInterop.GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)
         {
+            // A bare thread message (hwnd == 0) never reaches WndProc via DispatchMessage —
+            // WndProc only handles WM_INPUT — so the drain must be relayed here, in the loop body.
+            if (msg.message == WM_APP_DRAIN)
+            {
+                DrainRequested?.Invoke();
+                continue;
+            }
             RawInputInterop.TranslateMessage(ref msg);
             RawInputInterop.DispatchMessage(ref msg);
         }

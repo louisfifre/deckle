@@ -150,6 +150,7 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
     public event Action? PointerInteraction;
     public event Action<MouseWheelEvent>? WheelObserved;
     public event Action? FocusChanged;
+    public event Action? DrainRequested;
 
     public bool StartResult = true;
     public int StartCount;
@@ -157,6 +158,7 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
 
     public bool Start() { StartCount++; return StartResult; }
     public void Stop() => StopCount++;
+    public void RequestDrain() => DrainRequested?.Invoke();
 
     public void RaiseKey(KeyboardKeyEvent e) => KeyReceived?.Invoke(e);
     public void RaisePointer() => PointerInteraction?.Invoke();
