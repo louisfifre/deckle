@@ -11,8 +11,10 @@ param()
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+. (Join-Path $ScriptDir 'build-server-cleanup.ps1')
 
 $Workflow = 'Stop .NET build servers'
+$cleanup = $null
 
 trap {
     Write-DeckleActionSummary `
@@ -26,17 +28,35 @@ trap {
 }
 
 Write-Host "Stopping .NET build servers ..." -ForegroundColor Cyan
-& dotnet build-server shutdown
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet build-server shutdown failed (code $LASTEXITCODE)"
+$cleanup = Stop-DotnetBuildServers
+if (-not $cleanup.Succeeded) {
+    throw "dotnet build-server shutdown failed (code $($cleanup.ExitCode))"
 }
 
 Write-Host "  - dotnet build-server shutdown" -ForegroundColor DarkGray
+Write-Host ("  - before:  {0}" -f $cleanup.BeforeSummary) -ForegroundColor DarkGray
+Write-Host ("  - stopped: {0}" -f $cleanup.StoppedSummary) -ForegroundColor DarkGray
+Write-Host ("  - remain:  {0}" -f $cleanup.RemainingSummary) -ForegroundColor DarkGray
+
+$summarySentence = if ($cleanup.BeforeCount -eq 0) {
+    "No .NET build servers were running."
+} elseif ($cleanup.RemainingCount -eq 0) {
+    "Stopped $($cleanup.StoppedCount) .NET build server process(es)."
+} else {
+    "Stopped $($cleanup.StoppedCount) .NET build server process(es); $($cleanup.RemainingCount) still running."
+}
+$commandExit = if ($cleanup.ExitCode -eq 0) { '0' } else { "$($cleanup.ExitCode) (no servers remained)" }
 
 Write-DeckleActionSummary `
     -Workflow $Workflow `
     -Result Success `
-    -Sentence "Stopped .NET build servers left by local, menu, or agent builds." `
+    -Sentence $summarySentence `
     -Details ([ordered]@{
-        Command = 'dotnet build-server shutdown'
+        Before    = $cleanup.BeforeSummary
+        Stopped   = $cleanup.StoppedSummary
+        Processes = $cleanup.StoppedList
+        Remaining = $cleanup.RemainingSummary
+        'Still running' = $cleanup.RemainingList
+        'Command exit' = $commandExit
+        Command   = 'dotnet build-server shutdown'
     })

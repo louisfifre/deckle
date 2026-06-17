@@ -194,6 +194,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── action-summary.ps1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
+│   │   ├── build-server-cleanup.ps1
 │   │   ├── changelog.ps1
 │   │   ├── clean.ps1
 │   │   ├── cut-version.ps1

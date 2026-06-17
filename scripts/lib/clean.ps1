@@ -46,6 +46,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+. (Join-Path $ScriptDir 'build-server-cleanup.ps1')
 
 $Workflow = 'Clean build outputs'
 $RepoRoot = $null
@@ -53,6 +54,9 @@ $removed = 0
 $skipped = 0
 $totalBytes = [int64]0
 $buildServersStopped = 'Not attempted'
+$removedLabels = @()
+$skippedLabels = @()
+$buildServerCleanup = $null
 
 trap {
     Write-DeckleActionSummary `
@@ -65,6 +69,8 @@ trap {
             'Skipped folders' = $skipped
             'Freed bytes'     = $totalBytes
             'Build servers'   = $buildServersStopped
+            Removed           = $removedLabels
+            Skipped           = $skippedLabels
             Error             = $_.Exception.Message
         })
     throw
@@ -112,13 +118,13 @@ function Format-Size {
 }
 
 # Delete one folder, with size tally and reparse-point guard. Returns a
-# hashtable { Removed; Skipped; Bytes } so the caller can accumulate.
+# hashtable { Removed; Skipped; Bytes; Label } so the caller can accumulate.
 function Remove-OutputDir {
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][string]$Label
     )
-    $result = @{ Removed = 0; Skipped = 0; Bytes = [int64]0 }
+    $result = @{ Removed = 0; Skipped = 0; Bytes = [int64]0; Label = $Label }
     if (-not (Test-Path -LiteralPath $Path)) { return $result }
 
     # Symlink / junction guard — don't recurse into a reparse point;
@@ -153,13 +159,16 @@ Get-Process -Name Deckle -ErrorAction SilentlyContinue | ForEach-Object {
 # ".NET Host" rows after a Deckle build.
 Write-Host ""
 Write-Host "Stopping .NET build servers ..." -ForegroundColor Cyan
-& dotnet build-server shutdown
-if ($LASTEXITCODE -eq 0) {
-    $buildServersStopped = 'Stopped'
+$buildServerCleanup = Stop-DotnetBuildServers
+if ($buildServerCleanup.Succeeded) {
+    $buildServersStopped = $buildServerCleanup.StoppedSummary
     Write-Host "  - dotnet build-server shutdown" -ForegroundColor DarkGray
+    Write-Host ("  - before:  {0}" -f $buildServerCleanup.BeforeSummary) -ForegroundColor DarkGray
+    Write-Host ("  - stopped: {0}" -f $buildServerCleanup.StoppedSummary) -ForegroundColor DarkGray
+    Write-Host ("  - remain:  {0}" -f $buildServerCleanup.RemainingSummary) -ForegroundColor DarkGray
 } else {
-    $buildServersStopped = "Failed (code $LASTEXITCODE)"
-    Write-Host "  ! dotnet build-server shutdown failed (code $LASTEXITCODE)" -ForegroundColor Yellow
+    $buildServersStopped = "Failed (code $($buildServerCleanup.ExitCode))"
+    Write-Host "  ! dotnet build-server shutdown failed (code $($buildServerCleanup.ExitCode))" -ForegroundColor Yellow
 }
 
 function Add-Result {
@@ -167,6 +176,8 @@ function Add-Result {
     $script:removed    += $Result.Removed
     $script:skipped    += $Result.Skipped
     $script:totalBytes += $Result.Bytes
+    if ($Result.Removed -gt 0) { $script:removedLabels += $Result.Label }
+    if ($Result.Skipped -gt 0) { $script:skippedLabels += $Result.Label }
 }
 
 # =============================================================================
@@ -231,6 +242,15 @@ $summarySentence = if ($skipped -gt 0) {
 } else {
     "Build output cleanup removed $removed folder(s) and freed $(Format-Size $totalBytes)."
 }
+$buildServerExit = if (-not $buildServerCleanup) {
+    'Unknown'
+} elseif ($buildServerCleanup.ExitCode -eq 0) {
+    '0'
+} elseif ($buildServerCleanup.Succeeded) {
+    "$($buildServerCleanup.ExitCode) (no servers remained)"
+} else {
+    "$($buildServerCleanup.ExitCode)"
+}
 
 Write-DeckleActionSummary `
     -Workflow $Workflow `
@@ -239,8 +259,13 @@ Write-DeckleActionSummary `
     -Details ([ordered]@{
         Worktree          = $RepoRoot
         'Removed folders' = $removed
+        Removed           = $(if ($removedLabels.Count -gt 0) { $removedLabels } else { 'None' })
         'Skipped folders' = $skipped
+        Skipped           = $(if ($skippedLabels.Count -gt 0) { $skippedLabels } else { 'None' })
         Freed             = (Format-Size $totalBytes)
         'Build servers'   = $buildServersStopped
+        'Stopped servers' = $(if ($buildServerCleanup) { $buildServerCleanup.StoppedList } else { 'Unknown' })
+        'Still running'   = $(if ($buildServerCleanup) { $buildServerCleanup.RemainingList } else { 'Unknown' })
+        'Build server exit' = $buildServerExit
         'Release staging' = $(if ($IncludeReleases) { 'Purged with artifacts\Deckle-v*' } else { 'Kept artifacts\Deckle-v*' })
     })

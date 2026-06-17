@@ -73,6 +73,9 @@ $StableExe = $null
 $versionId = $null
 $fileCount = $null
 $ConfigStatus = 'Pending'
+$PrunedVersions = New-Object System.Collections.Generic.List[string]
+$KeptVersions = New-Object System.Collections.Generic.List[string]
+$ConfigResults = New-Object System.Collections.Generic.List[string]
 
 trap {
     Write-DeckleActionSummary `
@@ -85,6 +88,9 @@ trap {
             Version      = $versionId
             'Stable exe' = $StableExe
             Config       = $ConfigStatus
+            'Config detail' = ($ConfigResults.ToArray() -join ', ')
+            'Pruned versions' = ($PrunedVersions.ToArray() -join ', ')
+            'Kept versions' = ($KeptVersions.ToArray() -join ', ')
             Management   = $(if ($Management) { $Management } else { 'unchanged' })
             Error        = $_.Exception.Message
         })
@@ -167,9 +173,11 @@ if (-not $ConfigOnly) {
         try {
             Remove-Item $_.FullName -Recurse -Force
             Ok "pruned old version $($_.Name)"
+            $PrunedVersions.Add($_.Name) | Out-Null
         } catch {
             $kept++
             Warn "kept $($_.Name) (still in use by a running client)"
+            $KeptVersions.Add($_.Name) | Out-Null
         }
     }
     if ($kept) { Warn "$kept old version(s) left in place — they reap on the next run" }
@@ -190,6 +198,9 @@ if ($NoConfig) {
             Current        = $CurrentLink
             'Stable exe'   = $StableExe
             Config         = $ConfigStatus
+            'Config detail' = $(if ($ConfigResults.Count -gt 0) { $ConfigResults.ToArray() } else { 'None' })
+            'Pruned versions' = $(if ($PrunedVersions.Count -gt 0) { $PrunedVersions.ToArray() } else { 'None' })
+            'Kept versions' = $(if ($KeptVersions.Count -gt 0) { $KeptVersions.ToArray() } else { 'None' })
             Management     = $(if ($Management) { $Management } else { 'unchanged' })
         }) `
         -Next @("Point clients at $StableExe if they are not already configured.")
@@ -211,13 +222,18 @@ if ($NoConfig) {
 function Update-McpConfig {
     param([string]$ConfigPath, [string]$NewExe, [object]$Management)
 
-    if (-not (Test-Path $ConfigPath)) { Warn "absent, skipped: $(Split-Path $ConfigPath -Leaf)"; return }
+    $name = Split-Path $ConfigPath -Leaf
+
+    if (-not (Test-Path $ConfigPath)) {
+        Warn "absent, skipped: $name"
+        return "${name}: absent"
+    }
 
     $raw   = Get-Content $ConfigPath -Raw
     $cmdRx = '"command"\s*:\s*"[^"]*Deckle\.Anytype\.Mcp\.exe"'
     if ($raw -notmatch $cmdRx) {
-        Warn "no Anytype MCP command found in $(Split-Path $ConfigPath -Leaf) — repoint by hand if this client uses another mechanism"
-        return
+        Warn "no Anytype MCP command found in $name — repoint by hand if this client uses another mechanism"
+        return "${name}: no Anytype command"
     }
 
     # 1) Retarget the command at current\…exe.
@@ -231,23 +247,27 @@ function Update-McpConfig {
         if ($updated -match $argsRx) {
             $updated = [regex]::Replace($updated, $argsRx, ('${1}' + $argsValue))
         } else {
-            Warn "args array not found beside the Anytype command in $(Split-Path $ConfigPath -Leaf) — set --management by hand"
+            Warn "args array not found beside the Anytype command in $name — set --management by hand"
         }
     }
 
-    if ($updated -ceq $raw) { Ok "already current: $(Split-Path $ConfigPath -Leaf)"; return }
+    if ($updated -ceq $raw) {
+        Ok "already current: $name"
+        return "${name}: already current"
+    }
 
     # One-time backup beside the file, in case the swap ever needs reverting.
     $bak = "$ConfigPath.deckle-mcp.bak"
     if (-not (Test-Path $bak)) { Copy-Item $ConfigPath $bak }
     Set-Content -Path $ConfigPath -Value $updated -Encoding utf8 -NoNewline
     $note = if ($Management -eq $true) { ' + management' } elseif ($Management -eq $false) { ' - management' } else { '' }
-    Ok "repointed $(Split-Path $ConfigPath -Leaf) -> current\$note"
+    Ok "repointed $name -> current\$note"
+    return "${name}: repointed$note"
 }
 
 Step 'repoint client configs'
 $wantManagement = switch ($Management) { 'on' { $true } 'off' { $false } default { $null } }
-Update-McpConfig -ConfigPath (Join-Path $env:USERPROFILE '.claude.json') -NewExe $StableExe -Management $wantManagement
+$ConfigResults.Add((Update-McpConfig -ConfigPath (Join-Path $env:USERPROFILE '.claude.json') -NewExe $StableExe -Management $wantManagement)) | Out-Null
 $ConfigStatus = 'Checked .claude.json'
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -285,6 +305,9 @@ Write-DeckleActionSummary `
         Current        = $CurrentLink
         'Stable exe'   = $StableExe
         Config         = $ConfigStatus
+        'Config detail' = $(if ($ConfigResults.Count -gt 0) { $ConfigResults.ToArray() } else { 'None' })
+        'Pruned versions' = $(if ($PrunedVersions.Count -gt 0) { $PrunedVersions.ToArray() } else { 'None' })
+        'Kept versions' = $(if ($KeptVersions.Count -gt 0) { $KeptVersions.ToArray() } else { 'None' })
         Management     = $(if ($Management) { $Management } else { 'unchanged' })
     }) `
     -Next @("Restart the AI client to pick up this version or args change.")
