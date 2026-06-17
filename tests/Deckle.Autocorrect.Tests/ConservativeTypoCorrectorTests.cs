@@ -98,11 +98,12 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
-    public void NonAdjacentSubstitutionIsNotAPlausibleSlip()
+    public void NonAdjacentSubstitutionOnAShortWordIsNotAPlausibleSlip()
     {
-        // "zonjour" → "bonjour" needs z→b, but z and b do not touch on QWERTY,
-        // so it is not a candidate and the literal stays.
-        Assert.Null(Corrector().Evaluate("zonjour", []));
+        // "zhat" → "chat" needs z→c, but z and c do not touch on QWERTY, so it is
+        // no near candidate; and at four letters the word is below the far tier's
+        // length floor, so the two-edit path cannot rescue it either.
+        Assert.Null(Corrector().Evaluate("zhat", []));
     }
 
     [Fact]
@@ -124,9 +125,9 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void ShortWordIsLeftAlone()
     {
-        // "cha" is below MinWordLength — too little signal — even though "chat"
-        // is one insertion away.
-        Assert.Null(Corrector().Evaluate("cha", []));
+        // "ch" is below MinWordLength (3) — too little signal — even though "chat"
+        // is two edits away.
+        Assert.Null(Corrector().Evaluate("ch", []));
     }
 
     [Fact]
@@ -169,6 +170,38 @@ public class ConservativeTypoCorrectorTests
     public void GibberishWithNoNeighbourIsLeftAlone()
     {
         Assert.Null(Corrector().Evaluate("zzzzz", []));
+    }
+
+    // ── The far tier: two edits, stricter bar ───────────────────────────────
+
+    [Fact]
+    public void CorrectsTwoEditFault()
+    {
+        // "bonjuro" is two transpositions from "bonjour" with nothing one edit
+        // away — the far tier reaches it.
+        var d = Corrector().Evaluate("bonjuro", []);
+
+        Assert.Equal("bonjour", d!.Replacement);
+        Assert.Equal(CorrectionReason.TypoCorrection, d.Reason);
+    }
+
+    [Fact]
+    public void TwoEditFaultOnShortWordIsLeftAlone()
+    {
+        // "xonde" is two edits from "monde" (delete x, insert m), but at five
+        // letters it is below the far tier's length floor — left untouched.
+        Assert.Null(Corrector().Evaluate("xonde", []));
+    }
+
+    [Fact]
+    public void RelaxedDominanceResolvesAModerateRatio()
+    {
+        // ballet 600 vs billet 100: ratio 6 clears the relaxed 5× near bar (it
+        // would have stayed ambiguous under the former 10×).
+        var d = Corrector("ballet\t600\nbillet\t100\n").Evaluate("bllet", []);
+
+        Assert.Equal("ballet", d!.Replacement);
+        Assert.Equal(CorrectionReason.TypoCorrection, d.Reason);
     }
 
     // ── Stub ────────────────────────────────────────────────────────────────
