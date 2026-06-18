@@ -126,6 +126,52 @@ public sealed class CorrectionTrace
         return value.ToString("0.###", CultureInfo.InvariantCulture);
     }
 
+    // ── Revert gesture (same dataset, joined by id) ──────────────────────────
+    //
+    // The revert record is the third line of the decisions dataset (after the
+    // synchronous decision and the deferred reranker verdict), so its closed
+    // vocabularies live here too — one spelling in one place. A revert is not
+    // threaded through the chain; these are plain classifiers, not stage state.
+
+    // The boundary char a revert Backspace consumed, bucketed. The known misfire
+    // lives in `Punctuation`: deleting a misplaced comma/period right after a
+    // correction, misread as an undo. Closed vocabulary.
+    public static class BoundaryKinds
+    {
+        public const string Whitespace  = "whitespace";
+        public const string Punctuation = "punctuation";
+        public const string Apostrophe  = "apostrophe";
+        public const string Other       = "other";
+    }
+
+    // The fate of the revert injection. Closed vocabulary.
+    public static class RevertOutcomes
+    {
+        public const string Restored = "restored"; // the literal was rewritten back
+        public const string Desynced = "desynced"; // the rewrite did not land — screen disagrees
+    }
+
+    // Buckets the consumed boundary char. Apostrophe first: it is punctuation to
+    // the framework but a distinct, attached boundary class in this engine.
+    public static string ClassifyBoundary(char boundary)
+    {
+        if (boundary == '\'')                                      return BoundaryKinds.Apostrophe;
+        if (char.IsWhiteSpace(boundary))                           return BoundaryKinds.Whitespace;
+        if (char.IsPunctuation(boundary) || char.IsSymbol(boundary)) return BoundaryKinds.Punctuation;
+        return BoundaryKinds.Other;
+    }
+
+    // Renders the consumed boundary char readably — whitespace as a name so the
+    // line never carries an invisible or line-breaking glyph, else the char itself.
+    public static string RenderBoundary(char boundary) => boundary switch
+    {
+        ' '  => "space",
+        '\t' => "tab",
+        '\n' => "newline",
+        '\r' => "return",
+        _    => boundary.ToString(),
+    };
+
     // The committed word's fate. Closed vocabulary.
     public static class Outcomes
     {

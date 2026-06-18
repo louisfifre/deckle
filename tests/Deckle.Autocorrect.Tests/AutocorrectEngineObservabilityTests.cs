@@ -62,6 +62,52 @@ public sealed class AutocorrectEngineObservabilityTests
         AssertNoTypedWordLeaked(events, "ca", "ça");
     }
 
+    // With the opt-in decision dataset on, the revert leaves a structured record
+    // that joins the correction it undoes by word id — the diagnostic the task
+    // exists for. A punctuation boundary ("ca," then Backspace) is the known
+    // misfire: deleting a misplaced comma, misread as an undo.
+    [Fact]
+    public void ARevertJoinsTheCorrectionItUndoesOnTheDecisionDataset()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(
+            ScriptedPolicy.Maps("ca", "ça"), decisionTelemetry: () => true);
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Start();
+
+        h.Type("ca,");   // the comma commits and corrects; the boundary is punctuation
+        h.Backspace();   // deleting the comma is read as a revert
+
+        var decision = Assert.Single(listener.Events,
+            e => e.EventId == DeckleAutocorrectSource.EvtAutocorrectDecision);
+        var revert = Assert.Single(listener.Events,
+            e => e.EventId == DeckleAutocorrectSource.EvtAutocorrectRevert);
+
+        Assert.Equal(PayloadValue(decision, "id"), PayloadValue(revert, "id"));
+        Assert.Equal("ca", PayloadValue(revert, "original"));
+        Assert.Equal("ça", PayloadValue(revert, "replacement"));
+        Assert.Equal("punctuation", PayloadValue(revert, "boundaryKind"));
+        Assert.Equal("restored", PayloadValue(revert, "outcome"));
+    }
+
+    // The opt-in gate holds for the revert too: with the dataset off (the default
+    // harness), the gesture emits only the count-only CorrectionReverted, never the
+    // word-carrying record.
+    [Fact]
+    public void ARevertEmitsNoStructuredRecordWhenTheDatasetIsOff()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Start();
+
+        h.Type("ca,");
+        h.Backspace();
+
+        Assert.Contains(listener.Events, e => e.EventId == DeckleAutocorrectSource.EvtCorrectionReverted);
+        Assert.DoesNotContain(listener.Events, e => e.EventId == DeckleAutocorrectSource.EvtAutocorrectRevert);
+    }
+
     // The hard rule, asserted directly: no string payload on any captured event
     // equals a word the user typed or the engine produced. Reasons (enum names)
     // and the process name are metadata, not typed content.

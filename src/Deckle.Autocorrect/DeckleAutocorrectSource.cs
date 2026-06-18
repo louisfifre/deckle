@@ -36,6 +36,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtAutocorrectDecision = 17;
     public const int EvtAutocorrectRerank   = 18;
     public const int EvtAutocorrectText     = 19;
+    public const int EvtAutocorrectRevert   = 20;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -241,6 +242,35 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtAutocorrectRerank, id, word, outcome, chosen, scores, margin);
+    }
+
+    // The revert gesture as a per-word record, joined to the correction it undoes
+    // by `id` — the same monotonic word id AutocorrectDecisionRecorded carried, so
+    // the revert line sits beside the decision that fired. Carries the pair (the
+    // literal restored, the correction undone) and the boundary the Backspace
+    // consumed: its kind buckets the known misfire — a `punctuation` boundary is
+    // the user deleting a misplaced comma/period right after a correction, misread
+    // as an undo, where a `whitespace` boundary is the plausible genuine "I didn't
+    // want that". delta_ms is the gap from the correction commit to the revert;
+    // outcome is restored (the literal landed) or desynced (the rewrite did not).
+    // Text by design like its sibling decision events — routed to the same opt-in
+    // autocorrect.decisions dataset, off by default, and excluded from app.jsonl.
+    [Event(EvtAutocorrectRevert,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "revert | {1} ← {2} | {4} | {6}")]
+    public void AutocorrectRevertRecorded(
+        long   id,
+        string original,
+        string replacement,
+        string boundary,
+        string boundaryKind,
+        long   delta_ms,
+        string outcome)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtAutocorrectRevert,
+            id, original, replacement, boundary, boundaryKind, delta_ms, outcome);
     }
 
     // ── Typed-sentence corpus ─────────────────────────────────────────────

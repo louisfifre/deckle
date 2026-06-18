@@ -43,7 +43,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         ICorrectionPolicy? policy = null,
         PersonalDictionary? dictionary = null,
         FrequencyLexicon? french = null,
-        FrequencyLexicon? english = null)
+        FrequencyLexicon? english = null,
+        Func<bool>? decisionTelemetry = null)
     {
         Policy = policy ?? NeverCorrects;
 
@@ -60,7 +61,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
 
         Engine = new AutocorrectEngine(
             Host, _decoder, Tracker, Prober, Policy, Injector,
-            () => Settings, dictionary, french, english);
+            () => Settings, dictionary, french, english,
+            decisionTelemetry: decisionTelemetry);
 
         Engine.SurfaceChanged += (s, e) => SurfaceChanges.Add((s, e));
         Engine.CorrectionApplied += d => Applied.Add(d);
