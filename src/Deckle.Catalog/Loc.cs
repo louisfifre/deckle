@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Globalization;
 using Microsoft.Windows.ApplicationModel.Resources;
 
@@ -30,6 +31,12 @@ public static class Loc
     // .resw under Strings/<lang>/Resources.resw).
     private static readonly Lazy<ResourceLoader> _loader =
         new(static () => new ResourceLoader());
+
+    // One loader per class-library resource subtree, created on demand. Code in a
+    // module resolves ITS OWN .resw through GetFrom; XAML in the module uses
+    // x:Uid (component context) instead. The default _loader above only sees the
+    // host app's root map, which a module's x:Uid strings are not part of.
+    private static readonly ConcurrentDictionary<string, ResourceLoader> _libLoaders = new();
 
     /// <summary>
     /// Returns the localized string for <paramref name="key"/>. In
@@ -70,4 +77,52 @@ public static class Loc
     /// </summary>
     public static string Format(string key, params object?[] args)
         => string.Format(CultureInfo.CurrentCulture, Get(key), args);
+
+    /// <summary>
+    /// Returns the localized string for <paramref name="key"/> from a referenced
+    /// class library's resources, addressed by the library's PRI subtree
+    /// ("<paramref name="library"/>/Resources"). The default <see cref="Get"/>
+    /// only sees the host app's root resource map; a library's own .resw — the
+    /// x:Uid strings of its pages — lives under its own subtree, so code that
+    /// builds a module's UI programmatically (the settings composer) must target
+    /// it explicitly. Same miss contract as <see cref="Get"/> (a DEBUG marker).
+    /// </summary>
+    public static string GetFrom(string library, string key)
+    {
+        string? s = TryGetFrom(library, key);
+#if DEBUG
+        if (string.IsNullOrEmpty(s))
+        {
+            return "[!" + library + "/" + key + "]";
+        }
+#endif
+        return s ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Miss-tolerant variant of <see cref="GetFrom"/>: returns null on absence,
+    /// with no DEBUG marker — for optional strings such as a setting card's
+    /// description, which may legitimately not exist.
+    /// </summary>
+    public static string? GetFromOptional(string library, string key)
+    {
+        string? s = TryGetFrom(library, key);
+        return string.IsNullOrEmpty(s) ? null : s;
+    }
+
+    private static string? TryGetFrom(string library, string key)
+    {
+        ResourceLoader loader = _libLoaders.GetOrAdd(library, static lib =>
+            new ResourceLoader(ResourceLoader.GetDefaultResourceFilePath(), lib + "/Resources"));
+        try
+        {
+            return loader.GetString(key);
+        }
+        catch
+        {
+            // Unpackaged MRT throws on a missing key instead of returning empty;
+            // fold it into the miss contract — same reason as Get().
+            return null;
+        }
+    }
 }
