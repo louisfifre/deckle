@@ -27,12 +27,6 @@ public sealed partial class WhisperPage : Page
     private Visibility VisibleWhenStreaming(bool on) =>
         on ? Visibility.Visible : Visibility.Collapsed;
 
-    // Same doctrine for the Silero detection parameters: they only apply when the
-    // VAD toggle is on, so they appear under it only then (mirrors the segmenter
-    // cards gating on the streaming toggle).
-    private Visibility VisibleWhenVad(bool on) =>
-        on ? Visibility.Visible : Visibility.Collapsed;
-
     // Guards the Language combo's SelectionChanged and the model
     // AutoSuggestBox's SuggestionChosen during initial sync — these handlers
     // set VM properties which would trigger PushToSettings() needlessly.
@@ -52,7 +46,6 @@ public sealed partial class WhisperPage : Page
     // (it migrated off PathsSettings into the Whisp module's POCO).
     private static readonly TranscriptionSettings _transcriptionDefaults = new();
     private static readonly EngineSettings _engineDefaults = new();
-    private static readonly SpeechTrimSettings _speechTrimDefaults = new();
     private static readonly DecodingSettings _decodingDefaults = new();
     private static readonly ConfidenceSettings _confidenceDefaults = new();
     private static readonly OutputFilterSettings _outputDefaults = new();
@@ -78,7 +71,6 @@ public sealed partial class WhisperPage : Page
             LogprobSlider.Minimum = -1.5;
             LogprobSlider.Maximum = -0.4;
             NoSpeechSlider.Minimum = 0.05;
-            VadThresholdSlider.Minimum = 0.1;
 
             DeckleWhispSource.Log.PageBuggedSliderSet();
         }
@@ -96,6 +88,14 @@ public sealed partial class WhisperPage : Page
         IsTabStop = true;
 
         NavigationCacheMode = NavigationCacheMode.Required;
+
+        // Compose the VAD and Streaming folds before the first Load(). Load() runs
+        // in OnNavigatedTo (after this constructor), so each composer's
+        // PropertyChanged subscription is already in place to catch Load()'s refresh
+        // — the same Compose-before-Load ordering RecordingPage uses. The composers
+        // are held in fields so their subscriptions live as long as the cached page.
+        ComposeVadSection();
+        ComposeStreamingSection();
 
         Loaded += (_, _) =>
         {
@@ -129,15 +129,9 @@ public sealed partial class WhisperPage : Page
                 // resolved path instead). Set once on first load; the value
                 // is stable for the lifetime of the process.
                 ModelsDirectoryPicker.DefaultPath = AppPaths.ModelsDirectory;
-                // VadEnabledCard is a SettingsExpander (header toggle + the four
-                // Silero parameter children) — hook the pointer directly for the
-                // header reset, then WireHover each child card for its own reset.
-                VadEnabledCard.PointerEntered += (_, _) => VadEnabledReset.Opacity = 1;
-                VadEnabledCard.PointerExited += (_, _) => VadEnabledReset.Opacity = 0;
-                WireHover(VadThresholdCard, VadThresholdReset);
-                WireHover(VadMinSpeechCard, VadMinSpeechReset);
-                WireHover(VadMinSilenceCard, VadMinSilenceReset);
-                WireHover(VadSpeechPadCard, VadSpeechPadReset);
+                // The VAD fold (toggle + four Silero parameters) is composed now —
+                // the composer wires its own per-card reset reveal, so no WireHover
+                // for those cards here.
                 WireHover(TemperatureCard, TemperatureReset);
                 WireHover(TemperatureIncrementCard, TemperatureIncrementReset);
                 WireHover(EntropyCard, EntropyReset);
@@ -164,6 +158,32 @@ public sealed partial class WhisperPage : Page
                 DeckleWhispSource.Log.PageStackTrace(ex.StackTrace ?? "(no stack)");
             }
         };
+    }
+
+    // ── Composed folds (VAD + Streaming) ────────────────────────────────────
+    //
+    // The page only hosts: each method hands the host StackPanel and the VM's
+    // settings manifest (declared beside the VM in WhisperViewModel.Settings.cs)
+    // to a composer, which builds the SettingsExpander — master toggle, child
+    // cards, per-card and per-group reset — and subscribes to the VM so the
+    // controls reflect Load() and any external reset without per-control binding
+    // here. Composed in the constructor (before the first Load() in OnNavigatedTo)
+    // so the subscription catches Load()'s refresh; held in fields so it lives as
+    // long as the cached page.
+
+    private SettingsComposer? _vadComposer;
+    private SettingsComposer? _streamingComposer;
+
+    private void ComposeVadSection()
+    {
+        _vadComposer = new SettingsComposer(VadHost, ViewModel);
+        _vadComposer.Compose(ViewModel.VadSettings);
+    }
+
+    private void ComposeStreamingSection()
+    {
+        _streamingComposer = new SettingsComposer(StreamingHost, ViewModel);
+        _streamingComposer.Compose(ViewModel.StreamingSettings);
     }
 
     // NavigationCacheMode.Required reuses the page instance. Loaded + hover
@@ -216,9 +236,6 @@ public sealed partial class WhisperPage : Page
     private static string FmtTwo(double v) =>
         v.ToString("0.00", CultureInfo.InvariantCulture);
 
-    private static string FmtInt(double v) =>
-        ((int)v).ToString(CultureInfo.InvariantCulture);
-
     private void TemperatureSlider_ValueChanged(object sender,
         Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
         TemperatureValue.Text = Fmt(e.NewValue);
@@ -241,22 +258,6 @@ public sealed partial class WhisperPage : Page
     private void NoSpeechSlider_ValueChanged(object sender,
         Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
         NoSpeechValue.Text = FmtTwo(e.NewValue);
-
-    private void VadThresholdSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadThresholdValue.Text = FmtTwo(e.NewValue);
-
-    private void VadMinSpeechSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadMinSpeechValue.Text = FmtInt(e.NewValue);
-
-    private void VadMinSilenceSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadMinSilenceValue.Text = FmtInt(e.NewValue);
-
-    private void VadSpeechPadSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        VadSpeechPadValue.Text = FmtInt(e.NewValue);
 
     // ── Combo handlers (Model, Language) ────────────────────────────────────
     //
@@ -429,21 +430,6 @@ public sealed partial class WhisperPage : Page
 
     private void InitialPromptReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.InitialPrompt = _engineDefaults.InitialPrompt;
-
-    private void VadEnabledReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadEnabled = _speechTrimDefaults.Enabled;
-
-    private void VadThresholdReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadThreshold = _speechTrimDefaults.Threshold;
-
-    private void VadMinSpeechReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadMinSpeechDurationMs = _speechTrimDefaults.MinSpeechDurationMs;
-
-    private void VadMinSilenceReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadMinSilenceDurationMs = _speechTrimDefaults.MinSilenceDurationMs;
-
-    private void VadSpeechPadReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.VadSpeechPadMs = _speechTrimDefaults.SpeechPadMs;
 
     private void TemperatureReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.Temperature = _decodingDefaults.Temperature;

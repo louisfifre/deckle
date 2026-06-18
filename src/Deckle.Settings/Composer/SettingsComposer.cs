@@ -184,6 +184,9 @@ public sealed class SettingsComposer
             case SettingKind.Slider:
                 BuildSlider(card, s);
                 break;
+            case SettingKind.Number:
+                BuildNumber(card, s);
+                break;
             case SettingKind.Path:
                 BuildPath(card, s);
                 break;
@@ -437,6 +440,54 @@ public sealed class SettingsComposer
             // (e.g. nothing changed on this PropertyChanged), so refresh the
             // readout unconditionally to stay in sync after Load()/Reset.
             valueText.Text = FormatValue(value, args.StepFrequency);
+            updateReset?.Invoke();
+            ApplyReactiveState(card, s);
+        });
+    }
+
+    // NumberBox over a double, on the card's trailing edge — the same control the
+    // hand-authored segmenter and MaxTokens cards use: spin buttons hidden (no
+    // flyout pushing the layout, keyboard + wheel only), a fixed MinWidth so the
+    // row does not reflow as digits change. Same sync discipline as BuildSlider —
+    // seed Value before subscribing so the assignment does not fire ValueChanged,
+    // and a NaN-guard so a CLEARED field (NumberBox.Value goes NaN) never reaches
+    // the setter, matching the VM's own double.IsNaN guards on the Seg* setters.
+    private void BuildNumber(SettingsCard card, SettingDescriptor s)
+    {
+        // Required by Setting.Number, so the cast is safe; a wrong-kind args here
+        // is a manifest bug, not a runtime input, hence the hard cast.
+        var args = (NumberArgs)s.Args!;
+
+        var box = new NumberBox
+        {
+            Minimum = args.Minimum,
+            Maximum = args.Maximum,
+            SmallChange = args.SmallChange,
+            LargeChange = args.LargeChange,
+            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Hidden,
+            MinWidth = 100,
+            Value = AsDouble(s.GetValue()),
+        };
+
+        // Subscribe AFTER the initial Value assignment above so it does not fire.
+        box.ValueChanged += (_, _) =>
+        {
+            if (_syncingFromModel) return;
+            // A cleared field surfaces as NaN; swallow it so it never persists, the
+            // same guard the VM's Seg* setters apply on the other side.
+            if (double.IsNaN(box.Value)) return;
+            s.SetValue(box.Value);
+        };
+
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, box, s);
+        card.Content = content;
+
+        _refreshers.Add(() =>
+        {
+            double value = AsDouble(s.GetValue());
+            // Don't write NaN back into the box, and don't fight a value the box
+            // already shows (which would also re-fire ValueChanged needlessly).
+            if (box.Value != value && !double.IsNaN(value)) box.Value = value;
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });

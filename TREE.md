@@ -913,7 +913,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       ├── HangoverCurveCanvas.xaml
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
-│   │   │   └── WhisperViewModel.cs
+│   │   │   ├── WhisperViewModel.cs
+│   │   │   └── WhisperViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Transcription.csproj

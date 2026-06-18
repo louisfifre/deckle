@@ -32,6 +32,20 @@ public sealed record SliderArgs(
     double StepFrequency,
     string? Unit = null) : SettingArgs;
 
+// ── NumberArgs ────────────────────────────────────────────────────────────────
+//
+// Range and increments for a Number setting, mirroring the NumberBox properties
+// the composer sets (Minimum/Maximum/SmallChange/LargeChange — keyboard arrow vs
+// PageUp/PageDown nudge). No Unit, unlike SliderArgs: the segmenter cards read as
+// bare figures (the unit lives in the card's header/description), so a trailing
+// suffix would only add chrome. Like a slider's bounds these describe the
+// CONTROL, not the value type (double, fixed by the kind).
+public sealed record NumberArgs(
+    double Minimum,
+    double Maximum,
+    double SmallChange,
+    double LargeChange) : SettingArgs;
+
 // ── FolderPickerMode ──────────────────────────────────────────────────────────
 //
 // Whether a folder-path setting lets the user repoint the folder (Configure) or

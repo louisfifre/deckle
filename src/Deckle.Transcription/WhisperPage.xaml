@@ -218,118 +218,15 @@
                            Margin="1,0,0,8"
                            Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}" />
 
-                <!-- VAD is a SettingsExpander : the on/off toggle lives in the
-                     header, the four Silero detection parameters are revealed as
-                     inline children (gated on the toggle, same as the streaming
-                     segmenter cards below). -->
-                <controls:SettingsExpander x:Name="VadEnabledCard"
-                                           x:Uid="WhisperVadEnabledCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}"
-                                           Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <ToggleSwitch x:Name="VadEnabledToggle"
-                                      IsOn="{x:Bind ViewModel.VadEnabled, Mode=TwoWay}" />
-                        <Button x:Name="VadEnabledReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="VadEnabledReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                    <controls:SettingsExpander.Items>
-
-                        <controls:SettingsCard x:Name="VadThresholdCard"
-                                               x:Uid="WhisperVadThresholdCard"
-                                               ContentAlignment="Vertical"
-                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="VadThresholdSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Maximum="0.9"
-                                        StepFrequency="0.05"
-                                        TickFrequency="0.1"
-                                        Value="{x:Bind ViewModel.VadThreshold, Mode=TwoWay}"
-                                        ValueChanged="VadThresholdSlider_ValueChanged" />
-                                <TextBlock x:Name="VadThresholdValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="VadThresholdReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="VadThresholdReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="VadMinSpeechCard"
-                                               x:Uid="WhisperVadMinSpeechCard"
-                                               ContentAlignment="Vertical"
-                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="VadMinSpeechSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="1000"
-                                        StepFrequency="50"
-                                        TickFrequency="100"
-                                        Value="{x:Bind ViewModel.VadMinSpeechDurationMs, Mode=TwoWay}"
-                                        ValueChanged="VadMinSpeechSlider_ValueChanged" />
-                                <TextBlock x:Name="VadMinSpeechValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="VadMinSpeechReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="VadMinSpeechReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="VadMinSilenceCard"
-                                               x:Uid="WhisperVadMinSilenceCard"
-                                               ContentAlignment="Vertical"
-                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="VadMinSilenceSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="1000"
-                                        StepFrequency="50"
-                                        TickFrequency="100"
-                                        Value="{x:Bind ViewModel.VadMinSilenceDurationMs, Mode=TwoWay}"
-                                        ValueChanged="VadMinSilenceSlider_ValueChanged" />
-                                <TextBlock x:Name="VadMinSilenceValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="VadMinSilenceReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="VadMinSilenceReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="VadSpeechPadCard"
-                                               x:Uid="WhisperVadSpeechPadCard"
-                                               ContentAlignment="Vertical"
-                                               Visibility="{x:Bind VisibleWhenVad(ViewModel.VadEnabled), Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="VadSpeechPadSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="200"
-                                        StepFrequency="10"
-                                        TickFrequency="20"
-                                        Value="{x:Bind ViewModel.VadSpeechPadMs, Mode=TwoWay}"
-                                        ValueChanged="VadSpeechPadSlider_ValueChanged" />
-                                <TextBlock x:Name="VadSpeechPadValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="VadSpeechPadReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="VadSpeechPadReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- VAD fold — composed. The on/off toggle is the group master,
+                     the four Silero detection parameters its children; the whole
+                     expander collapses when streaming is off (the group's
+                     visibleWhen gates on StreamingEnabled, matching the former
+                     VisibleWhenStreaming bind). ComposeVadSection() builds it into
+                     this host; the section header + body above stay hand-authored
+                     (the composer governs cards, not section chrome). -->
+                <StackPanel x:Name="VadHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Output filters ──────────────────────────────────────── -->
                 <TextBlock x:Uid="WhisperPageOutputFiltersHeaderLabel"
@@ -574,106 +471,13 @@
                            TextWrapping="Wrap"
                            Margin="1,0,0,8" />
 
-                <controls:SettingsExpander x:Name="StreamingEnabledCard"
-                                           x:Uid="WhisperStreamingEnabledCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
-                    <ToggleSwitch x:Name="StreamingEnabledToggle"
-                                  IsOn="{x:Bind ViewModel.StreamingEnabled, Mode=TwoWay}" />
-                    <controls:SettingsExpander.Items>
-
-                        <controls:SettingsCard x:Name="SegThresholdCard"
-                                               x:Uid="WhisperSegThresholdCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegThresholdBox"
-                                       Minimum="-90"
-                                       Maximum="0"
-                                       SmallChange="1"
-                                       LargeChange="5"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegThresholdDbfs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegHangoverMaxCard"
-                                               x:Uid="WhisperSegHangoverMaxCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegHangoverMaxBox"
-                                       Minimum="500"
-                                       Maximum="15000"
-                                       SmallChange="100"
-                                       LargeChange="500"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegHangoverMaxMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegHangoverMinCard"
-                                               x:Uid="WhisperSegHangoverMinCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegHangoverMinBox"
-                                       Minimum="100"
-                                       Maximum="2000"
-                                       SmallChange="50"
-                                       LargeChange="100"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegHangoverMinMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegHangoverRampStartCard"
-                                               x:Uid="WhisperSegHangoverRampStartCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegHangoverRampStartBox"
-                                       Minimum="0"
-                                       Maximum="600000"
-                                       SmallChange="5000"
-                                       LargeChange="30000"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegHangoverRampStartMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegHangoverRampEndCard"
-                                               x:Uid="WhisperSegHangoverRampEndCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegHangoverRampEndBox"
-                                       Minimum="30000"
-                                       Maximum="900000"
-                                       SmallChange="5000"
-                                       LargeChange="30000"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegHangoverRampEndMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegMarginCard"
-                                               x:Uid="WhisperSegMarginCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegMarginBox"
-                                       Minimum="0"
-                                       Maximum="1000"
-                                       SmallChange="50"
-                                       LargeChange="100"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegMarginMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="SegMinUtteranceCard"
-                                               x:Uid="WhisperSegMinUtteranceCard"
-                                               Visibility="{x:Bind VisibleWhenStreaming(ViewModel.StreamingEnabled), Mode=OneWay}">
-                            <NumberBox x:Name="SegMinUtteranceBox"
-                                       Minimum="0"
-                                       Maximum="2000"
-                                       SmallChange="50"
-                                       LargeChange="100"
-                                       SpinButtonPlacementMode="Hidden"
-                                       MinWidth="100"
-                                       Value="{x:Bind ViewModel.SegMinUtteranceMs, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- Streaming fold — composed. The on/off toggle is the group
+                     master, the seven energy-segmenter parameters its Number-box
+                     children; the composer hides them while streaming is off.
+                     ComposeStreamingSection() builds it into this host; the section
+                     header + body above stay hand-authored. -->
+                <StackPanel x:Name="StreamingHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>
             </Grid>

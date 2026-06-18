@@ -68,6 +68,33 @@ public static class Setting
             Default = defaultValue is null ? null : () => defaultValue(),
         };
 
+    // NumberBox over a double. Like Slider, the range/increments live in
+    // NumberArgs (the control's bounds, not the value) and are required — a
+    // NumberBox without Minimum/Maximum has no clamp. Same boxed selectors as
+    // Slider, including the optional default for the per-card reset.
+    public static SettingDescriptor Number(
+        string labelKey,
+        Func<double> get,
+        Action<double> set,
+        NumberArgs args,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<double>? defaultValue = null) => new()
+        {
+            Kind = SettingKind.Number,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = args,
+            GetValue = () => get(),
+            SetValue = value => set((double)value!),
+            EnabledWhen = enabledWhen,
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+        };
+
     // Folder path as a string. PathArgs carries the picker mode and the
     // deferred default-path lookup; like Slider's args it is required, since a
     // FolderPickerCard needs at minimum its mode.
