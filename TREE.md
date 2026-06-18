@@ -392,7 +392,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentFolding.cs
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
-│   │   │   └── FrequencyLexicon.cs
+│   │   │   ├── FrequencyLexicon.cs
+│   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1045,6 +1046,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
+│   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
