@@ -55,6 +55,10 @@ public sealed class SettingsComposer
     // (which would re-persist and, for floating-point controls, risk a loop).
     private bool _syncingFromModel;
 
+    // The displayed "dose" captured at Compose, so a group can filter its own
+    // advanced children the same way the top level filters advanced settings.
+    private bool _showAdvanced = true;
+
     public SettingsComposer(Panel host, INotifyPropertyChanged? source)
     {
         _host = host;
@@ -68,10 +72,12 @@ public sealed class SettingsComposer
     // built once, so changing the dose means rebuilding the region).
     public void Compose(IReadOnlyList<SettingDescriptor> settings, bool showAdvanced = true)
     {
+        _showAdvanced = showAdvanced;
+
         foreach (SettingDescriptor s in settings)
         {
             if (s.IsAdvanced && !showAdvanced) continue;
-            _host.Children.Add(BuildCard(s));
+            _host.Children.Add(BuildElement(s));
         }
 
         if (_source is not null && _refreshers.Count > 0)
@@ -94,6 +100,12 @@ public sealed class SettingsComposer
             _syncingFromModel = false;
         }
     }
+
+    // Dispatches a descriptor to its element: a Group becomes a SettingsExpander
+    // (master toggle + children), every leaf kind a SettingsCard. Both derive
+    // from Control, so the host panel holds them side by side.
+    private FrameworkElement BuildElement(SettingDescriptor s)
+        => s.Kind == SettingKind.Group ? BuildGroup(s) : BuildCard(s);
 
     private SettingsCard BuildCard(SettingDescriptor s)
     {
@@ -146,6 +158,71 @@ public sealed class SettingsComposer
             if (toggle.IsOn != value) toggle.IsOn = value;
             ApplyReactiveState(card, s);
         });
+    }
+
+    // A master toggle that reveals child settings, rendered as the Win11
+    // SettingsExpander the hand-authored overlay/backup groups already use: the
+    // group's header carries the master ToggleSwitch (in the expander's Content
+    // slot, its trailing-edge control), and each child is a SettingsCard in the
+    // expander's Items. The master toggle wires exactly like BuildToggle — set
+    // IsOn before subscribing so the seed does not fire, guard the write-back
+    // during a model refresh.
+    //
+    // Children are gated on the master: each is composed with its EnabledWhen
+    // wrapped to also require the master on, so the row greys out while the
+    // feature is off (the doctrine's "merely unavailable → greyed", matching the
+    // overlay reference) and re-enables on the master's PropertyChanged via the
+    // shared RefreshAll. Reusing BuildCard means a child is wired identically to a
+    // top-level card — same selectors, same sync discipline, same reactive state.
+    private SettingsExpander BuildGroup(SettingDescriptor s)
+    {
+        var args = (GroupArgs)s.Args!;
+
+        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey) };
+
+        string? description = ResolveDescription(s.LabelKey);
+        if (description is not null) expander.Description = description;
+
+        IconElement? icon = BuildIcon(s.Glyph);
+        if (icon is not null) expander.HeaderIcon = icon;
+
+        var master = new ToggleSwitch { IsOn = AsBool(s.GetValue()) };
+        // Subscribe AFTER the initial assignment above so it does not fire Toggled.
+        master.Toggled += (_, _) =>
+        {
+            if (_syncingFromModel) return;
+            s.SetValue(master.IsOn);
+        };
+        expander.Content = master;
+
+        // The master's current state, read live so child gating tracks it on
+        // every RefreshAll (a master toggle raises PropertyChanged, which refreshes
+        // all rows including these children).
+        bool MasterOn() => AsBool(s.GetValue());
+
+        foreach (SettingDescriptor child in args.Children)
+        {
+            if (child.Kind == SettingKind.Group)
+                throw new NotSupportedException(
+                    "A Group's children must be leaf settings — folds never nest.");
+            if (child.IsAdvanced && !_showAdvanced) continue;
+
+            Func<bool>? childEnabled = child.EnabledWhen;
+            SettingDescriptor gated = child with
+            {
+                EnabledWhen = () => MasterOn() && (childEnabled?.Invoke() ?? true),
+            };
+            expander.Items.Add(BuildCard(gated));
+        }
+
+        _refreshers.Add(() =>
+        {
+            bool value = AsBool(s.GetValue());
+            if (master.IsOn != value) master.IsOn = value;
+            ApplyReactiveState(expander, s);
+        });
+
+        return expander;
     }
 
     // Slider over a double, laid out like the RecordingPage "Voice level" rows:
@@ -317,11 +394,11 @@ public sealed class SettingsComposer
 
     // Reactive enabled/visible: re-evaluated on every refresh. Null predicates
     // leave the framework defaults (enabled, visible) untouched.
-    private static void ApplyReactiveState(SettingsCard card, SettingDescriptor s)
+    private static void ApplyReactiveState(Control control, SettingDescriptor s)
     {
-        if (s.EnabledWhen is not null) card.IsEnabled = s.EnabledWhen();
+        if (s.EnabledWhen is not null) control.IsEnabled = s.EnabledWhen();
         if (s.VisibleWhen is not null)
-            card.Visibility = s.VisibleWhen() ? Visibility.Visible : Visibility.Collapsed;
+            control.Visibility = s.VisibleWhen() ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // Resolves a card's header/description from the OWNING MODULE's .resw — the

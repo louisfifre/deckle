@@ -37,14 +37,37 @@ public partial class GeneralViewModel
             glyph: Glyphs.Theme),
     ];
 
-    // Behaviour section — the flat auto-paste toggle. The overlay group above it
-    // stays a hand-authored SettingsExpander (its master/child toggles and the
-    // position ComboBox are bound to the expander's structure), so this manifest
-    // covers only the single composable card that sits below it. The change
-    // handler (OnAutoPasteEnabledChanged → PushToSettings) and persistence are
-    // unchanged; the composer only drives the UI.
+    // Behaviour section — the overlay group, then the flat auto-paste toggle. The
+    // overlay is the first Group descriptor: a master toggle (OverlayEnabled) that
+    // reveals three children — fade-on-proximity and animations toggles, and the
+    // position Choice — each greyed by the composer while the master is off, as
+    // the hand-authored SettingsExpander did via IsEnabled. The position Choice
+    // matches the canonical "TopCenter"/"BottomCenter" values the VM normalizes on
+    // Load (legacy corner values folded to a centre), so a persisted value always
+    // selects a real option. Every change handler (OnOverlay*Changed →
+    // PushToSettings) is unchanged; the composer only drives the UI.
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
     [
+        Setting.Group("GeneralOverlayExpander",
+            () => OverlayEnabled,
+            value => OverlayEnabled = value,
+            [
+                Setting.Toggle("GeneralOverlayFadeCard",
+                    () => OverlayFadeOnProximity,
+                    value => OverlayFadeOnProximity = value),
+                Setting.Toggle("GeneralOverlayAnimationsCard",
+                    () => OverlayAnimations,
+                    value => OverlayAnimations = value),
+                Setting.Choice<string>("GeneralOverlayPositionCard",
+                    () => OverlayPosition,
+                    value => OverlayPosition = value,
+                    [
+                        ("TopCenter", "GeneralOverlayPositionTop"),
+                        ("BottomCenter", "GeneralOverlayPositionBottom"),
+                    ]),
+            ],
+            glyph: Glyphs.Overlay),
+
         Setting.Toggle("GeneralAutoPasteCard",
             () => AutoPasteEnabled,
             value => AutoPasteEnabled = value,

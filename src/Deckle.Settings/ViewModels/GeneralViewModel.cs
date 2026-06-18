@@ -197,7 +197,11 @@ public partial class GeneralViewModel : ObservableObject
             OverlayEnabled = shell.Overlay.Enabled;
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
             OverlayAnimations = shell.Overlay.Animations;
-            OverlayPosition = shell.Overlay.Position;
+            // Normalize legacy corner values (TopLeft/BottomRight…) to the two
+            // centre positions the picker now exposes, so the composed Choice
+            // always matches a real option. Was done in the page's combo sync,
+            // which the Group migration removed.
+            OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
             AutostartEnabled = AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
         }

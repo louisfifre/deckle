@@ -73,3 +73,16 @@ public sealed record ChoiceOption(object? Value, string LabelKey);
 // The options belong in args, like a slider's bounds: they describe the control's
 // shape, while the value type is fixed by the kind's selectors.
 public sealed record ChoiceArgs(IReadOnlyList<ChoiceOption> Options) : SettingArgs;
+
+// ── GroupArgs ─────────────────────────────────────────────────────────────────
+//
+// The child settings a Group reveals, in display order. They are ordinary leaf
+// descriptors (Toggle, Slider, Path, Choice) — the composer renders each as a
+// SettingsCard inside the group's SettingsExpander and greys them while the
+// master toggle is off. Like a slider's bounds or a choice's options, the
+// children describe the control's shape and so belong in args, not in the
+// descriptor's value selectors (which carry the master toggle's own bool).
+//
+// Children may not themselves be groups: folds never nest (settings-UX doctrine),
+// and the composer enforces it.
+public sealed record GroupArgs(IReadOnlyList<SettingDescriptor> Children) : SettingArgs;

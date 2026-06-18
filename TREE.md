@@ -724,11 +724,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Notifications.csproj
 │   │   └── DeckleNotificationsSource.cs
 │   ├── Deckle.Playground/
-│   │   ├── Controls/
-│   │   │   ├── TunableRow.xaml
-│   │   │   ├── TunableRow.xaml.cs
-│   │   │   ├── TuningCard.xaml
-│   │   │   └── TuningCard.xaml.cs
 │   │   ├── Models/
 │   │   │   └── TuningModel.cs
 │   │   ├── Strings/
@@ -766,11 +761,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Settings/
+│   │   ├── Composer/
+│   │   │   ├── Setting.cs
+│   │   │   ├── SettingArgs.cs
+│   │   │   ├── SettingDescriptor.cs
+│   │   │   ├── SettingKind.cs
+│   │   │   └── SettingsComposer.cs
 │   │   ├── Controls/
 │   │   │   ├── FolderPickerCard.xaml
 │   │   │   ├── FolderPickerCard.xaml.cs
 │   │   │   ├── FolderPickerEditableCard.xaml
-│   │   │   └── FolderPickerEditableCard.xaml.cs
+│   │   │   ├── FolderPickerEditableCard.xaml.cs
+│   │   │   ├── TunableRow.xaml
+│   │   │   ├── TunableRow.xaml.cs
+│   │   │   ├── TuningCard.xaml
+│   │   │   └── TuningCard.xaml.cs
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
@@ -793,8 +798,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
 │   │   │   ├── DiagnosticsViewModel.cs
+│   │   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   │   ├── GeneralViewModel.cs
-│   │   │   └── RecordingViewModel.cs
+│   │   │   ├── GeneralViewModel.Settings.cs
+│   │   │   ├── RecordingViewModel.cs
+│   │   │   └── RecordingViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj

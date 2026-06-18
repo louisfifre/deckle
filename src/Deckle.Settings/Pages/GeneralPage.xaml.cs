@@ -16,10 +16,6 @@ public sealed partial class GeneralPage : Page
 {
     public GeneralViewModel ViewModel { get; } = new();
 
-    // Guards combo SelectionChanged during initial sync — the ThemeCombo
-    // handler sets a VM property which would trigger PushToSettings().
-    private bool _initializing;
-
     public GeneralPage()
     {
         InitializeComponent();
@@ -53,10 +49,11 @@ public sealed partial class GeneralPage : Page
     //
     // The page only hosts: it hands the host panel and the ViewModel's settings
     // manifest (declared beside the VM in GeneralViewModel.Settings.cs) to the
-    // composer, which builds the SettingsCards. Only the flat auto-paste card is
-    // composed — the overlay group above it stays a hand-authored
-    // SettingsExpander. The composer subscribes to the ViewModel so the toggle
-    // reflects Load() and the section "Reset" without any per-toggle binding
+    // composer, which builds the cards. The manifest now carries the overlay
+    // Group (master toggle + fade/animations/position children) ahead of the flat
+    // auto-paste toggle, so the whole section is composed — the hand-authored
+    // overlay SettingsExpander is gone. The composer subscribes to the ViewModel
+    // so the controls reflect Load() and the section "Reset" without any binding
     // here. Composed before LoadAndSync so the subscription catches Load()'s
     // PropertyChanged. Held in a field so the subscription lives as long as the
     // (cached) page.
@@ -92,61 +89,16 @@ public sealed partial class GeneralPage : Page
         LoadAndSync();
     }
 
-    // x:Bind TwoWay bindings apply their initial value to the visual tree
-    // during the first layout pass — AFTER the ctor returns. That causes
-    // ToggleSwitch.Toggled to fire unsynchronously for the seed value, so
-    // a simple `_initializing = false` at the end of this method would come
-    // too early and let the handler think the user flipped the switch.
-    // Deferring the flag release via DispatcherQueue priority Low pushes it
-    // past the layout pass, after all initial bindings have settled.
+    // Refills the VM from settings and refreshes the page's few hand-authored
+    // readouts. The composed sections (Appearance, Behaviour, Startup) need no
+    // sync pass: each composer subscribes to the VM, so Load()'s PropertyChanged
+    // re-syncs their controls. The old _initializing guard (and its deferred
+    // DispatcherQueue release) is gone with the last hand-wired combo handler.
     private void LoadAndSync()
     {
-        _initializing = true;
         ViewModel.Load();
-        SyncOverlayPositionCombo();
         SyncFolderPickerDefaults();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
-        DispatcherQueue.TryEnqueueObserved(
-            operation: "init-flag-clear", caller: "general-page",
-            callback: () => _initializing = false,
-            rejectSource: "SETTINGS", rejectWhat: "init flag",
-            priority: DispatcherQueuePriority.Low);
-    }
-
-    // ── Overlay position ─────────────────────────────────────────────────────
-    //
-    // ComboBoxItem with Tag: not TwoWay-bindable, manual conversion.
-    // Older settings.json may carry corner values (TopLeft / BottomRight…)
-    // that the combo no longer exposes — Sync normalizes them to
-    // TopCenter / BottomCenter on Load.
-
-    private void SyncOverlayPositionCombo()
-    {
-        string current = ViewModel.OverlayPosition ?? "BottomCenter";
-        string normalized = current.StartsWith("Top") ? "TopCenter" : "BottomCenter";
-        if (normalized != current)
-            ViewModel.OverlayPosition = normalized;
-
-        for (int i = 0; i < OverlayPositionCombo.Items.Count; i++)
-        {
-            if (OverlayPositionCombo.Items[i] is ComboBoxItem item &&
-                item.Tag as string == normalized)
-            {
-                OverlayPositionCombo.SelectedIndex = i;
-                return;
-            }
-        }
-        OverlayPositionCombo.SelectedIndex = 0;
-    }
-
-    private void OverlayPositionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_initializing) return;
-        if (OverlayPositionCombo.SelectedItem is ComboBoxItem item &&
-            item.Tag is string position)
-        {
-            ViewModel.OverlayPosition = position;
-        }
     }
 
     // ── Folder picker defaults ───────────────────────────────────────────────
@@ -173,10 +125,10 @@ public sealed partial class GeneralPage : Page
 
     private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
     {
+        // Reset raises PropertyChanged on the overlay properties; the Behaviour
+        // composer's subscription re-selects the master toggle, the child toggles
+        // and the position Choice. No manual combo sync here anymore.
         ViewModel.ResetBehaviourDefaults();
-        _initializing = true;
-        try { SyncOverlayPositionCombo(); }
-        finally { _initializing = false; }
     }
 
     // Opens the UserDataRoot in File Explorer — entry point for users who
@@ -272,24 +224,15 @@ public sealed partial class GeneralPage : Page
         // Changed. Refill the VM from the new in-memory snapshot. Other
         // pages (RecordingPage, DiagnosticsPage, WhisperPage) will refill
         // their own VMs on next OnNavigatedTo via NavigationCacheMode.
-        _initializing = true;
-        try
-        {
-            ViewModel.Load();
-            SyncOverlayPositionCombo();
-            SyncFolderPickerDefaults();
+        ViewModel.Load();
+        SyncFolderPickerDefaults();
 
-            // The Appearance composer re-selects the theme ComboBox off the Load()
-            // PropertyChanged; we still apply the theme side-effect explicitly,
-            // since Load() runs under the VM's sync guard which suppresses it.
-            // Apply theme side-effect beyond the VM — RecordingViewModel
-            // owns the level-window mapper push so we don't touch it from
-            // here anymore.
-            SettingsHost.ApplyTheme?.Invoke(ViewModel.Theme);
-        }
-        finally
-        {
-            _initializing = false;
-        }
+        // The Appearance composer re-selects the theme ComboBox off the Load()
+        // PropertyChanged; we still apply the theme side-effect explicitly,
+        // since Load() runs under the VM's sync guard which suppresses it.
+        // Apply theme side-effect beyond the VM — RecordingViewModel
+        // owns the level-window mapper push so we don't touch it from
+        // here anymore.
+        SettingsHost.ApplyTheme?.Invoke(ViewModel.Theme);
     }
 }

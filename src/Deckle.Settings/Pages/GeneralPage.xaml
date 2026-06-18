@@ -112,34 +112,13 @@
                                      Click="ResetBehaviour_Click" />
                 </Grid>
 
-                <controls:SettingsExpander x:Uid="GeneralOverlayExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Overlay}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.OverlayEnabled, Mode=TwoWay}" />
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Uid="GeneralOverlayFadeCard"
-                                               IsEnabled="{x:Bind ViewModel.OverlayEnabled, Mode=OneWay}">
-                            <ToggleSwitch IsOn="{x:Bind ViewModel.OverlayFadeOnProximity, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Uid="GeneralOverlayAnimationsCard"
-                                               IsEnabled="{x:Bind ViewModel.OverlayEnabled, Mode=OneWay}">
-                            <ToggleSwitch IsOn="{x:Bind ViewModel.OverlayAnimations, Mode=TwoWay}" />
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Uid="GeneralOverlayPositionCard"
-                                               IsEnabled="{x:Bind ViewModel.OverlayEnabled, Mode=OneWay}">
-                            <ComboBox x:Name="OverlayPositionCombo"
-                                      MinWidth="160"
-                                      SelectionChanged="OverlayPositionCombo_SelectionChanged">
-                                <ComboBoxItem x:Uid="GeneralOverlayPositionTop" Tag="TopCenter" />
-                                <ComboBoxItem x:Uid="GeneralOverlayPositionBottom" Tag="BottomCenter" />
-                            </ComboBox>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
-
-                <!-- Composed: the flat auto-paste toggle. The overlay expander
-                     above stays hand-authored (structural grouping); only this
-                     single composable card is hosted for the composer to build,
-                     from GeneralViewModel.BehaviourSettings. -->
+                <!-- Composed: the overlay group (a Group descriptor — master
+                     toggle + fade/animations/position children) followed by the
+                     flat auto-paste toggle, both built from
+                     GeneralViewModel.BehaviourSettings into this host. The overlay
+                     SettingsExpander that stood here is now produced by the
+                     composer; the position ComboBox's value-matching replaces the
+                     old Tag-based combo sync in the code-behind. -->
                 <StackPanel x:Name="BehaviourHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
