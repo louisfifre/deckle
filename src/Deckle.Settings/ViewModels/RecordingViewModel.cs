@@ -173,12 +173,19 @@ public partial class RecordingViewModel : ObservableObject
     {
         _isSyncing = true;
 
+        // Seed from the POCO initializers, not hand-copied literals — the same
+        // single source the composer's reset defaults read. The level-window and
+        // pre-processing values thus live in ONE place (the audio settings POCOs);
+        // duplicating them here was the third copy that drifted. The device id has
+        // no composed default (runtime hardware enumeration), so its -1 sentinel
+        // stays an explicit literal here.
+        var levelWindow = new LevelWindowSettings();
         AudioInputDeviceId = -1;
-        LevelWindowMinDbfs = -55;
-        LevelWindowMaxDbfs = -32;
-        LevelWindowExponent = 1.0;
-        LevelWindowAutoCalibration = false;
-        PreprocessingEnabled = false;
+        LevelWindowMinDbfs = levelWindow.MinDbfs;
+        LevelWindowMaxDbfs = levelWindow.MaxDbfs;
+        LevelWindowExponent = levelWindow.DbfsCurveExponent;
+        LevelWindowAutoCalibration = levelWindow.AutoCalibrationEnabled;
+        PreprocessingEnabled = new PreprocessingSettings().Enabled;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -217,22 +224,9 @@ public partial class RecordingViewModel : ObservableObject
         CaptureSettingsService.Instance.Save();
     }
 
-    public void ResetRecordingDefaults()
-    {
-        _isSyncing = true;
-        try
-        {
-            AudioInputDeviceId = -1;
-            LevelWindowMinDbfs = -55;
-            LevelWindowMaxDbfs = -32;
-            LevelWindowExponent = 1.0;
-            LevelWindowAutoCalibration = false;
-            PreprocessingEnabled = false;
-        }
-        finally { _isSyncing = false; }
-        PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Recording");
-    }
+    // ResetRecordingDefaults is gone: the composed values (pre-processing toggle,
+    // voice-level group) now reset through their composers' ResetAll(), each value
+    // driven back to the POCO-sourced default — no hand-copied literal list to keep
+    // in sync. The page handler (ResetRecording_Click) orchestrates both composers
+    // and the non-composed device-id reset, and owns the section-reset logging.
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Deckle.Audio;
 using Deckle.Catalog;
 
 namespace Deckle.Settings;
@@ -20,12 +21,17 @@ public partial class RecordingViewModel
     // the change handler (OnPreprocessingEnabledChanged → PushToSettings) and
     // persistence are unchanged, the composer only drives the UI. Reuses the
     // existing x:Uid as the localization key.
+    //
+    // The default selector reads the POCO initializer (new PreprocessingSettings().Enabled),
+    // so the resettable default and the persisted default are the one same literal —
+    // the per-card reset goes active exactly when the toggle leaves that value.
     public IReadOnlyList<SettingDescriptor> PreprocessingSettings =>
     [
         Setting.Toggle("RecordingPagePreprocessingCard",
             () => PreprocessingEnabled,
             value => PreprocessingEnabled = value,
-            glyph: Glyphs.AudioRecording),
+            glyph: Glyphs.AudioRecording,
+            defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 
     // Voice level window — the calibration group, with INVERTED master semantics.
@@ -38,6 +44,14 @@ public partial class RecordingViewModel
     // only this projection flips the bool. The child setters carry the live
     // AudioLevelMapper push (SettingsHost.ApplyLevelWindow) untouched. Bounds copied
     // verbatim from the former hand-authored SettingsExpander.
+    //
+    // Defaults read the POCO initializer (new LevelWindowSettings().<Field>) — the
+    // single source of truth, the same literals SettingsService persists. The master
+    // default mirrors the master's own inversion: master = "set manually" =
+    // !AutoCalibrationEnabled, so its default is !new LevelWindowSettings().
+    // AutoCalibrationEnabled. Each child slider takes its raw field as a double; the
+    // float→double widening is implicit. The group's reset thus restores the shipping
+    // calibration window and re-arms auto-calibration in one gesture.
     public IReadOnlyList<SettingDescriptor> VoiceLevelSettings =>
     [
         Setting.Group("GeneralVoiceLevelExpander",
@@ -47,16 +61,20 @@ public partial class RecordingViewModel
                 Setting.Slider("GeneralVoiceLevelFloorCard",
                     () => LevelWindowMinDbfs,
                     value => LevelWindowMinDbfs = value,
-                    new SliderArgs(-90, -10, 1, Unit: "dBFS")),
+                    new SliderArgs(-90, -10, 1, Unit: "dBFS"),
+                    defaultValue: () => new LevelWindowSettings().MinDbfs),
                 Setting.Slider("GeneralVoiceLevelCeilingCard",
                     () => LevelWindowMaxDbfs,
                     value => LevelWindowMaxDbfs = value,
-                    new SliderArgs(-60, -10, 1, Unit: "dBFS")),
+                    new SliderArgs(-60, -10, 1, Unit: "dBFS"),
+                    defaultValue: () => new LevelWindowSettings().MaxDbfs),
                 Setting.Slider("GeneralVoiceLevelCurveCard",
                     () => LevelWindowExponent,
                     value => LevelWindowExponent = value,
-                    new SliderArgs(0.3, 3.0, 0.05)),
+                    new SliderArgs(0.3, 3.0, 0.05),
+                    defaultValue: () => new LevelWindowSettings().DbfsCurveExponent),
             ],
-            glyph: Glyphs.VoiceLevel),
+            glyph: Glyphs.VoiceLevel,
+            defaultValue: () => !new LevelWindowSettings().AutoCalibrationEnabled),
     ];
 }
