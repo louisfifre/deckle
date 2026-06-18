@@ -58,6 +58,21 @@ function Invoke-MenuLoop {
     # Clamp Default to a valid selectable index.
     $selected = if ($selectableIdx -contains $Default) { $Default } else { $selectableIdx[0] }
 
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+        Write-Host $Header
+        for ($i = 0; $i -lt $selectableIdx.Count; $i++) {
+            $idx = $selectableIdx[$i]
+            Write-Host ('  {0}) {1}' -f ($i + 1), $Items[$idx].Label)
+        }
+        $answer = Read-Host 'Pick a number (Enter = default)'
+        if ([string]::IsNullOrWhiteSpace($answer)) { return $selected }
+        $choice = 0
+        if ([int]::TryParse($answer, [ref]$choice) -and $choice -ge 1 -and $choice -le $selectableIdx.Count) {
+            return $selectableIdx[$choice - 1]
+        }
+        return -1
+    }
+
     $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $Items.Count -ClearScreen:$ClearScreen
 
     for ($i = 0; $i -lt $Items.Count; $i++) {
@@ -81,11 +96,11 @@ function Invoke-MenuLoop {
                     if ($pos -lt $selectableIdx.Count - 1) { $selected = $selectableIdx[$pos + 1] }
                 }
                 'Enter'  {
-                    [Console]::SetCursorPosition(0, $viewport.Bottom)
+                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
                     return $selected
                 }
                 'Escape' {
-                    [Console]::SetCursorPosition(0, $viewport.Bottom)
+                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
                     return -1
                 }
             }

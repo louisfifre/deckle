@@ -48,6 +48,10 @@ function Invoke-GridLoop {
         [string]$EscapeAction = 'Cancel',
         [switch]$ClearScreen
     )
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+        throw 'Invoke-GridLoop requires an interactive console (input or output is redirected).'
+    }
+
     $GAP = 3
     $body = @()
     $sel  = @()          # selectable rows: @{ BodyIndex; NCells }
@@ -61,6 +65,7 @@ function Invoke-GridLoop {
             $prefix = if ($r.ContainsKey('Prefix') -and $r['Prefix']) { [string]$r['Prefix'] } else { '' }
             if ($prefix.Length -gt $prefixW) { $prefixW = $prefix.Length }
             $cells = @($r['Cells'])
+            if ($cells.Count -eq 0) { throw 'Invoke-GridLoop: a row has empty Cells; use a Blank row for separators.' }
             for ($c = 0; $c -lt $cells.Count; $c++) {
                 $len = ([string]$cells[$c].Label).Length + 2
                 if (-not $colW.ContainsKey($c) -or $len -gt $colW[$c]) { $colW[$c] = $len }
@@ -112,12 +117,12 @@ function Invoke-GridLoop {
                 'LeftArrow'  { if ($colIdx -gt 0) { $colIdx-- } }
                 'RightArrow' { if ($colIdx -lt $sel[$selIdx].NCells - 1) { $colIdx++ } }
                 'Enter' {
-                    [Console]::SetCursorPosition(0, $viewport.Bottom)
+                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
                     return $body[$sel[$selIdx].BodyIndex].Cells[$colIdx].Value
                 }
                 'Escape' {
                     if ($EscapeAction -eq 'Ignore') { continue }
-                    [Console]::SetCursorPosition(0, $viewport.Bottom)
+                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
                     return $null
                 }
             }
