@@ -45,7 +45,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtKeyboardHostStopped      = 22;
     public const int EvtKeyboardHostStartFailed  = 23;
     public const int EvtKeyboardRollup           = 24;
-    // Wheel observation + recording sessions (ids 25-31).
+    // Wheel observation + recording sessions (ids 25-33).
     public const int EvtWheelRecordingStarted      = 25;
     public const int EvtWheelRecordingStartedDetail = 26;
     public const int EvtWheelRecordingStopped      = 27;
@@ -53,6 +53,8 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtWheelRecordingFailed       = 29;
     public const int EvtWheelRecordingFailedDetail = 30;
     public const int EvtWheelDeviceObserved        = 31;
+    public const int EvtMouseWheelHookFailed       = 32;
+    public const int EvtMouseWheelHookFailedDetail = 33;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -293,6 +295,24 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
+    }
+
+    [Event(EvtMouseWheelHookFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Mouse wheel hook failed to start")]
+    public void MouseWheelHookFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtMouseWheelHookFailed);
+    }
+
+    [Event(EvtMouseWheelHookFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "mouse wheel hook failed | win32_error={0}")]
+    public void MouseWheelHookFailedDetail(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtMouseWheelHookFailedDetail, win32_error);
     }
 
     // ── Wheel recording sessions ─────────────────────────────────────────

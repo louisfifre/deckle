@@ -7,9 +7,11 @@ namespace Deckle.Input;
 // The process's shared keyboard-and-mouse Raw Input host: its own
 // message-only window, its own GetMessage pump, registration for the
 // Generic Desktop keyboard (0x01:0x06) and mouse (0x01:0x02) usages with
-// RIDEV_INPUTSINK (events regardless of focus), no RIDEV_DEVNOTIFY
-// (presence is irrelevant here — we observe transitions, not which device
-// produced them).
+// RIDEV_INPUTSINK (events regardless of focus), plus a WH_MOUSE_LL hook for
+// wheel messages that Windows may synthesize from Precision Touchpad
+// gestures instead of surfacing as raw mouse wheel reports. No
+// RIDEV_DEVNOTIFY (presence is irrelevant here — we observe transitions,
+// not which device produced them).
 //
 // The mouse is a single Raw Input resource per process — only one window
 // may receive it (the last one registered wins), so this host is the sole
@@ -49,8 +51,10 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private IntPtr _hInstance;
     private NativeMethods.WndProc? _wndProcDelegate;          // rooted for the GC, same rule as RawInputHost
     private WinEventInterop.WinEventDelegate? _winEventDelegate; // rooted for the GC, same rule as the WndProc
+    private LowLevelMouseHookInterop.LowLevelMouseProc? _mouseHookDelegate;
     private IntPtr _foregroundHook;
     private IntPtr _focusHook;
+    private IntPtr _mouseHook;
 
     private IntPtr _rawBuffer;
     private int _rawBufferSize;
@@ -250,6 +254,18 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             WinEventInterop.EVENT_OBJECT_FOCUS, WinEventInterop.EVENT_OBJECT_FOCUS,
             IntPtr.Zero, _winEventDelegate, 0, 0, flags);
 
+        _mouseHookDelegate = MouseHookProc;
+        _mouseHook = LowLevelMouseHookInterop.SetWindowsHookEx(
+            LowLevelMouseHookInterop.WH_MOUSE_LL,
+            _mouseHookDelegate,
+            _hInstance,
+            0);
+        if (_mouseHook == IntPtr.Zero)
+        {
+            DeckleInputSource.Log.MouseWheelHookFailed();
+            DeckleInputSource.Log.MouseWheelHookFailedDetail(Marshal.GetLastWin32Error());
+        }
+
         DeckleInputSource.Log.KeyboardHostStarted(_hwnd.ToInt64(), (int)_threadId);
     }
 
@@ -291,6 +307,11 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             WinEventInterop.UnhookWinEvent(_focusHook);
             _focusHook = IntPtr.Zero;
         }
+        if (_mouseHook != IntPtr.Zero)
+        {
+            LowLevelMouseHookInterop.UnhookWindowsHookEx(_mouseHook);
+            _mouseHook = IntPtr.Zero;
+        }
 
         TearDownWindow();
 
@@ -330,6 +351,30 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         _rollupFocusChanges++;
         FocusChanged?.Invoke();
         TrackRollup(RawInputHost.NowMs);
+    }
+
+    private IntPtr MouseHookProc(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode >= 0)
+        {
+            int message = wParam.ToInt32();
+            bool vertical = message == LowLevelMouseHookInterop.WM_MOUSEWHEEL;
+            bool horizontal = message == LowLevelMouseHookInterop.WM_MOUSEHWHEEL;
+            if (vertical || horizontal)
+            {
+                var hook = Marshal.PtrToStructure<LowLevelMouseHookInterop.MSLLHOOKSTRUCT>(lParam);
+                _rollupWheel++;
+                WheelObserved?.Invoke(new MouseWheelEvent(
+                    Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
+                    Delta:       LowLevelMouseHookInterop.GetWheelDelta(hook.mouseData),
+                    TimestampMs: RawInputHost.NowMs,
+                    Device:      IntPtr.Zero,
+                    Source:      WheelEventSource.MessageHook));
+                TrackRollup(RawInputHost.NowMs);
+            }
+        }
+
+        return LowLevelMouseHookInterop.CallNextHookEx(_mouseHook, nCode, wParam, lParam);
     }
 
     // ── WM_INPUT → key transitions and pointer-down signals ──────────────
@@ -378,20 +423,26 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
         // Wheel reports ride the same button-flags word but set no button
         // bit; the signed detent sits in usButtonData (+6). A report carries
-        // one wheel axis at a time.
+        // one wheel axis at a time. When the low-level hook is installed it is
+        // the single wheel source; Raw Input stays as fallback if the hook was
+        // unavailable.
         bool vertical   = (buttonFlags & RawInputInterop.RI_MOUSE_WHEEL)  != 0;
         bool horizontal = (buttonFlags & RawInputInterop.RI_MOUSE_HWHEEL) != 0;
         if (vertical || horizontal)
         {
-            short delta = Marshal.ReadInt16(
-                _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
-            _rollupWheel++;
-            WheelObserved?.Invoke(new MouseWheelEvent(
-                Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
-                Delta:       delta,
-                TimestampMs: RawInputHost.NowMs,
-                Device:      header.hDevice));
-            TrackRollup(RawInputHost.NowMs);
+            if (_mouseHook == IntPtr.Zero)
+            {
+                short delta = Marshal.ReadInt16(
+                    _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
+                _rollupWheel++;
+                WheelObserved?.Invoke(new MouseWheelEvent(
+                    Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
+                    Delta:       delta,
+                    TimestampMs: RawInputHost.NowMs,
+                    Device:      header.hDevice,
+                    Source:      WheelEventSource.RawInput));
+                TrackRollup(RawInputHost.NowMs);
+            }
             return;
         }
 

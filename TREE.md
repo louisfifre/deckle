@@ -481,6 +481,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── MouseInjector.cs
 │   │   ├── Interop/
 │   │   │   ├── HidInterop.cs
+│   │   │   ├── LowLevelMouseHookInterop.cs
 │   │   │   ├── RawInputInterop.cs
 │   │   │   ├── SendInputInterop.cs
 │   │   │   └── WinEventInterop.cs
@@ -1049,7 +1050,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
-│   │   └── Deckle.Input.Tests.csproj
+│   │   ├── Deckle.Input.Tests.csproj
+│   │   └── LowLevelMouseHookInteropTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   └── ThreeFingerDragRecognizerTests.cs

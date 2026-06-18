@@ -37,48 +37,23 @@ public sealed class WheelEventRecorder : IDisposable
 
     private StreamWriter? _writer;
     private string? _path;
+    private bool _armed;
     private long _events;
     private double _firstEventMs = -1;
     private double _lastFlushMs;
 
     public bool IsRecording
     {
-        get { lock (_lock) return _writer is not null; }
+        get { lock (_lock) return _armed; }
     }
 
-    /// <summary>Opens a new session file. Device lines are written lazily as wheel devices first appear.</summary>
+    /// <summary>Arms a capture session. The JSONL file opens on the first actual wheel event.</summary>
     public void Start()
     {
         lock (_lock)
         {
-            if (_writer is not null) return;
-
-            try
-            {
-                string fileName = $"wheel-events-{DateTime.Now:yyyyMMdd-HHmmss}.jsonl";
-                _path = Path.Combine(AppPaths.MouseWheelTelemetryDirectory, fileName);
-                _writer = new StreamWriter(_path, append: false, Encoding.UTF8) { AutoFlush = false };
-                _events = 0;
-                _firstEventMs = -1;
-                _lastFlushMs = 0;
-                _devices.Clear();
-
-                _writer.WriteLine(
-                    $"{{\"type\":\"session\",\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
-                    $"\"started\":\"{DateTime.Now.ToString("o", CultureInfo.InvariantCulture)}\"}}");
-                _writer.Flush();
-
-                DeckleInputSource.Log.WheelRecordingStarted();
-                DeckleInputSource.Log.WheelRecordingStartedDetail(_path);
-            }
-            catch (Exception ex)
-            {
-                DeckleInputSource.Log.WheelRecordingFailed();
-                DeckleInputSource.Log.WheelRecordingFailedDetail(ex.GetType().Name, ex.Message);
-                _writer?.Dispose();
-                _writer = null;
-                _path = null;
-            }
+            if (_armed) return;
+            _armed = true;
         }
     }
 
@@ -87,10 +62,13 @@ public sealed class WheelEventRecorder : IDisposable
     {
         lock (_lock)
         {
-            if (_writer is null) return;
+            if (!_armed) return;
 
             try
             {
+                if (_writer is null && !OpenSession()) return;
+                var writer = _writer!;
+
                 if (_firstEventMs < 0)
                 {
                     _firstEventMs = e.TimestampMs;
@@ -106,17 +84,18 @@ public sealed class WheelEventRecorder : IDisposable
                 _line.Clear();
                 _line.Append("{\"t\":").Append(t.ToString("F1", CultureInfo.InvariantCulture));
                 _line.Append(",\"dev\":").Append(slot.Index);
+                _line.Append(",\"src\":\"").Append(e.Source == WheelEventSource.MessageHook ? "hook" : "raw").Append('"');
                 _line.Append(",\"axis\":\"").Append(e.Axis == WheelAxis.Vertical ? 'v' : 'h').Append('"');
                 _line.Append(",\"d\":").Append(e.Delta);
                 _line.Append(",\"gap\":").Append(gap.ToString("F1", CultureInfo.InvariantCulture));
                 _line.Append('}');
 
-                _writer.WriteLine(_line);
+                writer.WriteLine(_line);
                 _events++;
 
                 if (e.TimestampMs - _lastFlushMs >= FlushPeriodMs)
                 {
-                    _writer.Flush();
+                    writer.Flush();
                     _lastFlushMs = e.TimestampMs;
                 }
             }
@@ -132,6 +111,8 @@ public sealed class WheelEventRecorder : IDisposable
     {
         lock (_lock)
         {
+            if (!_armed) return;
+            _armed = false;
             if (_writer is null) return;
 
             string path = _path!;
@@ -166,6 +147,39 @@ public sealed class WheelEventRecorder : IDisposable
 
     public void Dispose() => Stop();
 
+    private bool OpenSession()
+    {
+        try
+        {
+            string fileName = $"wheel-events-{DateTime.Now:yyyyMMdd-HHmmss}.jsonl";
+            _path = Path.Combine(AppPaths.MouseWheelTelemetryDirectory, fileName);
+            _writer = new StreamWriter(_path, append: false, Encoding.UTF8) { AutoFlush = false };
+            _events = 0;
+            _firstEventMs = -1;
+            _lastFlushMs = 0;
+            _devices.Clear();
+
+            _writer.WriteLine(
+                $"{{\"type\":\"session\",\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
+                $"\"started\":\"{DateTime.Now.ToString("o", CultureInfo.InvariantCulture)}\"}}");
+            _writer.Flush();
+
+            DeckleInputSource.Log.WheelRecordingStarted();
+            DeckleInputSource.Log.WheelRecordingStartedDetail(_path);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DeckleInputSource.Log.WheelRecordingFailed();
+            DeckleInputSource.Log.WheelRecordingFailedDetail(ex.GetType().Name, ex.Message);
+            _writer?.Dispose();
+            _writer = null;
+            _path = null;
+            _armed = false;
+            return false;
+        }
+    }
+
     // First sight of a device: assign a stable short index, resolve its HID
     // name, parse the vid/pid out of it, and write the `device` line so the
     // file is self-describing. Caller holds _lock.
@@ -174,8 +188,8 @@ public sealed class WheelEventRecorder : IDisposable
         if (_devices.TryGetValue(handle, out var existing)) return existing;
 
         int index = _devices.Count;
-        string name = TryGetDeviceName(handle) ?? "(unknown)";
-        (uint vid, uint pid) = ParseVidPid(name);
+        string name = handle == IntPtr.Zero ? "(mouse hook)" : TryGetDeviceName(handle) ?? "(unknown)";
+        (uint vid, uint pid) = handle == IntPtr.Zero ? (0, 0) : ParseVidPid(name);
 
         string escaped = name.Replace("\\", "\\\\").Replace("\"", "\\\"");
         _writer!.WriteLine(
@@ -194,6 +208,7 @@ public sealed class WheelEventRecorder : IDisposable
         _writer?.Dispose();
         _writer = null;
         _path = null;
+        _armed = false;
     }
 
     // RIDI_DEVICENAME, the same two-call pattern the touchpad path uses: a

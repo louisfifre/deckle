@@ -32,52 +32,28 @@ public sealed class ContactFrameRecorder : IDisposable
 
     private StreamWriter? _writer;
     private string? _path;
+    private bool _armed;
+    private TouchpadCapabilities? _pendingTouchpad;
     private long _frames;
     private double _firstFrameMs = -1;
     private double _lastFlushMs;
 
     public bool IsRecording
     {
-        get { lock (_lock) return _writer is not null; }
+        get { lock (_lock) return _armed; }
     }
 
     /// <summary>
-    /// Opens a new session file. A null <paramref name="touchpad"/> is
-    /// fine (no device yet) — a `device` line follows whenever one
-    /// arrives via <see cref="NoteDevice"/>.
+    /// Arms a capture session. A null <paramref name="touchpad"/> is fine
+    /// (no device yet) — the JSONL file opens only on the first actual frame.
     /// </summary>
     public void Start(TouchpadCapabilities? touchpad)
     {
         lock (_lock)
         {
-            if (_writer is not null) return;
-
-            try
-            {
-                string fileName = $"trackpad-frames-{DateTime.Now:yyyyMMdd-HHmmss}.jsonl";
-                _path = Path.Combine(AppPaths.TrackpadTelemetryDirectory, fileName);
-                _writer = new StreamWriter(_path, append: false, Encoding.UTF8) { AutoFlush = false };
-                _frames = 0;
-                _firstFrameMs = -1;
-                _lastFlushMs = 0;
-
-                _writer.WriteLine(
-                    $"{{\"type\":\"session\",\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
-                    $"\"started\":\"{DateTime.Now.ToString("o", CultureInfo.InvariantCulture)}\"}}");
-                if (touchpad is not null) WriteDeviceLine(touchpad);
-                _writer.Flush();
-
-                DeckleInputSource.Log.RecordingStarted();
-                DeckleInputSource.Log.RecordingStartedDetail(_path);
-            }
-            catch (Exception ex)
-            {
-                DeckleInputSource.Log.RecordingFailed();
-                DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
-                _writer?.Dispose();
-                _writer = null;
-                _path = null;
-            }
+            if (_armed) return;
+            _armed = true;
+            _pendingTouchpad = touchpad;
         }
     }
 
@@ -86,7 +62,12 @@ public sealed class ContactFrameRecorder : IDisposable
     {
         lock (_lock)
         {
-            if (_writer is null) return;
+            if (!_armed) return;
+            if (_writer is null)
+            {
+                _pendingTouchpad = touchpad;
+                return;
+            }
             try
             {
                 WriteDeviceLine(touchpad);
@@ -103,10 +84,13 @@ public sealed class ContactFrameRecorder : IDisposable
     {
         lock (_lock)
         {
-            if (_writer is null) return;
+            if (!_armed) return;
 
             try
             {
+                if (_writer is null && !OpenSession(_pendingTouchpad)) return;
+                var writer = _writer!;
+
                 if (_firstFrameMs < 0)
                 {
                     _firstFrameMs = frame.TimestampMs;
@@ -136,12 +120,12 @@ public sealed class ContactFrameRecorder : IDisposable
                 }
                 _line.Append("]}");
 
-                _writer.WriteLine(_line);
+                writer.WriteLine(_line);
                 _frames++;
 
                 if (frame.TimestampMs - _lastFlushMs >= FlushPeriodMs)
                 {
-                    _writer.Flush();
+                    writer.Flush();
                     _lastFlushMs = frame.TimestampMs;
                 }
             }
@@ -157,6 +141,9 @@ public sealed class ContactFrameRecorder : IDisposable
     {
         lock (_lock)
         {
+            if (!_armed) return;
+            _armed = false;
+            _pendingTouchpad = null;
             if (_writer is null) return;
 
             string path = _path!;
@@ -191,6 +178,40 @@ public sealed class ContactFrameRecorder : IDisposable
 
     public void Dispose() => Stop();
 
+    private bool OpenSession(TouchpadCapabilities? touchpad)
+    {
+        try
+        {
+            string fileName = $"trackpad-frames-{DateTime.Now:yyyyMMdd-HHmmss}.jsonl";
+            _path = Path.Combine(AppPaths.TrackpadTelemetryDirectory, fileName);
+            _writer = new StreamWriter(_path, append: false, Encoding.UTF8) { AutoFlush = false };
+            _frames = 0;
+            _firstFrameMs = -1;
+            _lastFlushMs = 0;
+
+            _writer.WriteLine(
+                $"{{\"type\":\"session\",\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
+                $"\"started\":\"{DateTime.Now.ToString("o", CultureInfo.InvariantCulture)}\"}}");
+            if (touchpad is not null) WriteDeviceLine(touchpad);
+            _writer.Flush();
+
+            DeckleInputSource.Log.RecordingStarted();
+            DeckleInputSource.Log.RecordingStartedDetail(_path);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DeckleInputSource.Log.RecordingFailed();
+            DeckleInputSource.Log.RecordingFailedDetail(ex.GetType().Name, ex.Message);
+            _writer?.Dispose();
+            _writer = null;
+            _path = null;
+            _armed = false;
+            _pendingTouchpad = null;
+            return false;
+        }
+    }
+
     private void WriteDeviceLine(TouchpadCapabilities c)
     {
         string name = c.DeviceName.Replace("\\", "\\\\").Replace("\"", "\\\"");
@@ -208,5 +229,7 @@ public sealed class ContactFrameRecorder : IDisposable
         _writer?.Dispose();
         _writer = null;
         _path = null;
+        _armed = false;
+        _pendingTouchpad = null;
     }
 }
