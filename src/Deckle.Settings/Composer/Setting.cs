@@ -118,12 +118,12 @@ public static class Setting
     // A master toggle that reveals child settings. Like Toggle, the get/set
     // selectors are the master's own bool — what the composer wires to the
     // ToggleSwitch in the expander header; the children are the dependent
-    // settings the composer greys while the master is off. The children are
+    // settings the composer HIDES while the master is off. The children are
     // declared with the same Setting.* factories, so the group is just "a Toggle
     // that carries a payload of other settings".
     //
     // EnabledWhen/VisibleWhen here gate the GROUP itself (rare — a whole feature
-    // unavailable in some context); the per-child gating on the master toggle is
+    // unavailable in some context); the per-child masking on the master toggle is
     // implicit and applied by the composer.
     public static SettingDescriptor Group(
         string labelKey,

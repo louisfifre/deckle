@@ -168,12 +168,14 @@ public sealed class SettingsComposer
     // IsOn before subscribing so the seed does not fire, guard the write-back
     // during a model refresh.
     //
-    // Children are gated on the master: each is composed with its EnabledWhen
-    // wrapped to also require the master on, so the row greys out while the
-    // feature is off (the doctrine's "merely unavailable → greyed", matching the
-    // overlay reference) and re-enables on the master's PropertyChanged via the
-    // shared RefreshAll. Reusing BuildCard means a child is wired identically to a
-    // top-level card — same selectors, same sync discipline, same reactive state.
+    // Children are gated on the master by VISIBILITY, not enabled-state: each is
+    // composed with its VisibleWhen wrapped to also require the master on, so the
+    // row is HIDDEN (collapsed) while the feature is off and reappears on the
+    // master's PropertyChanged via the shared RefreshAll. Microsoft-first
+    // dependency gating masks, never greys — a dependent that does not apply is
+    // hidden, not disabled (settings-UX doctrine: "hidden entirely, never greyed
+    // out"). Reusing BuildCard means a child is wired identically to a top-level
+    // card — same selectors, same sync discipline, same reactive state.
     private SettingsExpander BuildGroup(SettingDescriptor s)
     {
         var args = (GroupArgs)s.Args!;
@@ -207,10 +209,13 @@ public sealed class SettingsComposer
                     "A Group's children must be leaf settings — folds never nest.");
             if (child.IsAdvanced && !_showAdvanced) continue;
 
-            Func<bool>? childEnabled = child.EnabledWhen;
+            // Compose the master into the child's own VisibleWhen so the child is
+            // hidden while the master is off (and stays hidden when its own
+            // predicate also collapses it).
+            Func<bool>? childVisible = child.VisibleWhen;
             SettingDescriptor gated = child with
             {
-                EnabledWhen = () => MasterOn() && (childEnabled?.Invoke() ?? true),
+                VisibleWhen = () => MasterOn() && (childVisible?.Invoke() ?? true),
             };
             expander.Items.Add(BuildCard(gated));
         }

@@ -40,8 +40,9 @@ public partial class GeneralViewModel
     // Behaviour section — the overlay group, then the flat auto-paste toggle. The
     // overlay is the first Group descriptor: a master toggle (OverlayEnabled) that
     // reveals three children — fade-on-proximity and animations toggles, and the
-    // position Choice — each greyed by the composer while the master is off, as
-    // the hand-authored SettingsExpander did via IsEnabled. The position Choice
+    // position Choice — each HIDDEN by the composer while the master is off. The
+    // hand-authored SettingsExpander greyed them (IsEnabled); the composer masks
+    // them instead, the Microsoft-first dependency gating. The position Choice
     // matches the canonical "TopCenter"/"BottomCenter" values the VM normalizes on
     // Load (legacy corner values folded to a centre), so a persisted value always
     // selects a real option. Every change handler (OnOverlay*Changed →

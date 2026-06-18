@@ -78,8 +78,9 @@ public sealed record ChoiceArgs(IReadOnlyList<ChoiceOption> Options) : SettingAr
 //
 // The child settings a Group reveals, in display order. They are ordinary leaf
 // descriptors (Toggle, Slider, Path, Choice) — the composer renders each as a
-// SettingsCard inside the group's SettingsExpander and greys them while the
-// master toggle is off. Like a slider's bounds or a choice's options, the
+// SettingsCard inside the group's SettingsExpander and HIDES them while the
+// master toggle is off (Microsoft-first dependency gating masks, never greys).
+// Like a slider's bounds or a choice's options, the
 // children describe the control's shape and so belong in args, not in the
 // descriptor's value selectors (which carry the master toggle's own bool).
 //
