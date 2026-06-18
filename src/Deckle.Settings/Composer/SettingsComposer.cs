@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Threading.Tasks;
 using CommunityToolkit.WinUI.Controls;
 using Deckle.Catalog;
 using Microsoft.UI.Xaml;
@@ -206,11 +207,56 @@ public sealed class SettingsComposer
         var toggle = new ToggleSwitch { IsOn = AsBool(s.GetValue()) };
 
         // Subscribe AFTER the initial assignment above so it does not fire Toggled.
-        toggle.Toggled += (_, _) =>
+        if (s.ConfirmOnEnable is null)
         {
-            if (_syncingFromModel) return;
-            s.SetValue(toggle.IsOn);
-        };
+            // The common path: the write-back is synchronous, the model takes the
+            // toggle's new state immediately.
+            toggle.Toggled += (_, _) =>
+            {
+                if (_syncingFromModel) return;
+                s.SetValue(toggle.IsOn);
+            };
+        }
+        else
+        {
+            // A consent toggle: the OFF→ON write is HELD until the gate says yes, so
+            // the model never transiently flips on. Disabling stays free. The
+            // per-toggle confirmInFlight ignores re-entrant flips while the dialog is
+            // open (the user clicking the switch again behind a modal), and the revert
+            // on refusal is wrapped in _syncingFromModel so flipping the switch back
+            // off does not re-enter this handler.
+            bool confirmInFlight = false;
+            toggle.Toggled += async (_, _) =>
+            {
+                if (_syncingFromModel) return;
+                if (!toggle.IsOn) { s.SetValue(false); return; }
+                if (confirmInFlight) return;
+
+                confirmInFlight = true;
+                try
+                {
+                    bool ok = await s.ConfirmOnEnable!(_host.XamlRoot);
+                    if (ok)
+                    {
+                        // Persist ONLY after yes — the first write the model sees is the
+                        // confirmed enable.
+                        s.SetValue(true);
+                    }
+                    else
+                    {
+                        // Refusal: revert the visual to off without persisting, guarded
+                        // so the revert does not bounce back through this handler.
+                        _syncingFromModel = true;
+                        try { toggle.IsOn = false; }
+                        finally { _syncingFromModel = false; }
+                    }
+                }
+                finally
+                {
+                    confirmInFlight = false;
+                }
+            };
+        }
 
         (FrameworkElement content, Action? updateReset) = WrapWithReset(card, toggle, s);
         card.Content = content;

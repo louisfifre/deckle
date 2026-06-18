@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 
 namespace Deckle.Settings;
 
@@ -21,6 +23,11 @@ namespace Deckle.Settings;
 // setting needs them — we type a control the first time we meet it, not before.
 public static class Setting
 {
+    // confirmOnEnable, when supplied, gates the OFF→ON flip behind an async
+    // confirmation (its Task<bool> = "allow the enable?"); the composer holds the
+    // write until it resolves. It lives only on Toggle, not the other factories:
+    // confirmation is a property of an activation, and the only consumers are leaf
+    // consent toggles. Null — the default — leaves the toggle's write synchronous.
     public static SettingDescriptor Toggle(
         string labelKey,
         Func<bool> get,
@@ -29,7 +36,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<bool>? defaultValue = null) => new()
+        Func<bool>? defaultValue = null,
+        Func<XamlRoot, Task<bool>>? confirmOnEnable = null) => new()
         {
             Kind = SettingKind.Toggle,
             LabelKey = labelKey,
@@ -40,6 +48,7 @@ public static class Setting
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
             Default = defaultValue is null ? null : () => defaultValue(),
+            ConfirmOnEnable = confirmOnEnable,
         };
 
     // Slider over a double. The range/step live in SliderArgs (the control's

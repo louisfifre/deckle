@@ -40,15 +40,32 @@ public partial class DiagnosticsViewModel
             glyph: Glyphs.Window),
     ];
 
-    // Telemetry opt-ins (the "Telemetry" section). Only the Latency toggle is
-    // composable: it is a plain TwoWay switch with no side effect beyond the VM
-    // setter. The other telemetry rows stay hand-authored in the page — each
-    // carries an off→on consent dialog (Application log, Microphone, Corpus,
-    // Audio corpus), a nested expander layout, a RadioButtons choice, or a folder
-    // path — none expressible by a plain Toggle descriptor. So this single
-    // contiguous run is hosted on its own between the bespoke cards.
+    // Telemetry opt-ins (the "Telemetry" section). Three composable toggles now:
+    // the two consent opt-ins (Application log, Microphone) carry a confirmOnEnable
+    // gate so the composer holds their OFF→ON write behind the consent dialog —
+    // exactly the off→on-shows-a-dialog flow the hand-authored cards ran, now
+    // declared rather than wired in the page. Latency is a plain TwoWay switch.
+    // Declared in on-screen order (Application log first by user request, then
+    // Microphone, then Latency), so the composed host reproduces the former card
+    // order. The remaining telemetry rows stay hand-authored in the page — the
+    // Corpus expander, the Audio-corpus RadioButtons choice, the storage folder
+    // path — none expressible by a plain Toggle descriptor.
+    //
+    // No defaultValue on the consent toggles: a privacy opt-in has no "resettable
+    // default" affordance per row (the section "Reset" clears them), so the composer
+    // renders no per-card reset wheel for them — which is correct.
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
+        Setting.Toggle("GeneralAppLogCard",
+            () => ApplicationLogToDisk,
+            value => ApplicationLogToDisk = value,
+            glyph: Glyphs.AppLog,
+            confirmOnEnable: root => ApplicationLogConsentDialog.ShowAsync(root)),
+        Setting.Toggle("GeneralLogMicrophoneCard",
+            () => MicrophoneTelemetry,
+            value => MicrophoneTelemetry = value,
+            glyph: Glyphs.Microphone,
+            confirmOnEnable: root => MicrophoneTelemetryConsentDialog.ShowAsync(root)),
         Setting.Toggle("GeneralLatencyCard",
             () => TelemetryLatencyEnabled,
             value => TelemetryLatencyEnabled = value,

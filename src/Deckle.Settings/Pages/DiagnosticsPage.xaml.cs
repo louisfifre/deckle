@@ -29,8 +29,6 @@ public sealed partial class DiagnosticsPage : Page
     // retrigger Toggled in turn.
     private bool _suppressCorpusToggle;
     private bool _suppressAudioCorpusToggle;
-    private bool _suppressApplicationLogToggle;
-    private bool _suppressMicrophoneTelemetryToggle;
 
     public DiagnosticsPage()
     {
@@ -109,32 +107,11 @@ public sealed partial class DiagnosticsPage : Page
     // via _suppress*Toggle to avoid re-entering this handler during the
     // revert). On → Off : no confirmation — the user can turn it back on
     // later if needed.
-
-    private async void ApplicationLogToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_initializing || _suppressApplicationLogToggle) return;
-        if (!ApplicationLogToggle.IsOn) return;
-
-        bool confirmed = await ApplicationLogConsentDialog.ShowAsync(this.XamlRoot);
-        if (confirmed) return;
-
-        _suppressApplicationLogToggle = true;
-        try { ApplicationLogToggle.IsOn = false; }
-        finally { _suppressApplicationLogToggle = false; }
-    }
-
-    private async void MicrophoneTelemetryToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_initializing || _suppressMicrophoneTelemetryToggle) return;
-        if (!MicrophoneTelemetryToggle.IsOn) return;
-
-        bool confirmed = await MicrophoneTelemetryConsentDialog.ShowAsync(this.XamlRoot);
-        if (confirmed) return;
-
-        _suppressMicrophoneTelemetryToggle = true;
-        try { MicrophoneTelemetryToggle.IsOn = false; }
-        finally { _suppressMicrophoneTelemetryToggle = false; }
-    }
+    //
+    // Application log and Microphone telemetry once lived here too; they now run
+    // the same flow through the composer's confirmOnEnable gate (their descriptors
+    // in DiagnosticsViewModel.TelemetrySettings), so only the Corpus pair — nested
+    // under a bespoke expander the composer doesn't build — stays hand-authored.
 
     private async void CorpusLoggingToggle_Toggled(object sender, RoutedEventArgs e)
     {

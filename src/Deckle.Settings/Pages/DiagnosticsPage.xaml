@@ -94,29 +94,17 @@
                                      Click="ResetTelemetry_Click" />
                 </Grid>
 
-                <!-- Application log first (user request : the most asked-for
-                     diagnostic when troubleshooting). -->
-                <controls:SettingsCard x:Uid="GeneralAppLogCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AppLog}}">
-                    <ToggleSwitch x:Name="ApplicationLogToggle"
-                                  IsOn="{x:Bind ViewModel.ApplicationLogToDisk, Mode=TwoWay}"
-                                  Toggled="ApplicationLogToggle_Toggled" />
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Uid="GeneralLogMicrophoneCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}">
-                    <ToggleSwitch x:Name="MicrophoneTelemetryToggle"
-                                  IsOn="{x:Bind ViewModel.MicrophoneTelemetry, Mode=TwoWay}"
-                                  Toggled="MicrophoneTelemetryToggle_Toggled" />
-                </controls:SettingsCard>
-
-                <!-- Composed region — the lone plain-toggle telemetry opt-in.
-                     It sits between bespoke cards (Microphone above, the Corpus
-                     expander below), each of which carries a consent dialog or a
-                     non-toggle layout the composer can't express. So only this
-                     one contiguous card migrates: DiagnosticsPage.ComposeTelemetrySection()
-                     declares it as a SettingDescriptor and the composer builds the
-                     SettingsCard into this host, exactly where the card stood. -->
+                <!-- Composed region — the telemetry opt-ins that ARE plain toggles.
+                     Application log and Microphone each carry an off→on consent
+                     dialog and Latency carries none, but all three are now declared
+                     in DiagnosticsViewModel.TelemetrySettings (the two consent rows
+                     via a confirmOnEnable gate the composer runs before persisting
+                     the enable). ComposeTelemetrySection() hands them to the composer,
+                     which builds the SettingsCards into this host in the former
+                     on-screen order (Application log, Microphone, Latency). The
+                     Corpus expander and the storage-folder card below stay
+                     hand-authored — a nested layout and a folder path the composer
+                     can't express. -->
                 <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 

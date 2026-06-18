@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 
 namespace Deckle.Settings;
 
@@ -59,4 +61,14 @@ public sealed record SettingDescriptor
     // disabled — but a dependent that is merely unavailable is greyed).
     public Func<bool>? EnabledWhen { get; init; }
     public Func<bool>? VisibleWhen { get; init; }
+
+    // Optional gate run ONLY on the OFF→ON transition, before the enable is
+    // allowed to persist — its Task<bool> resolving true lets the value flip on,
+    // false leaves it off and writes nothing. Turning the setting back off never
+    // runs it (disabling is always free). The XamlRoot is passed so the gate can
+    // host a ContentDialog; it is read at user-interaction time, when the host is
+    // live. Null for the vast majority of toggles — only a leaf that must secure
+    // explicit consent before activating (the Diagnostics privacy opt-ins) carries
+    // one, and the composer holds the write back until it returns.
+    public Func<XamlRoot, Task<bool>>? ConfirmOnEnable { get; init; }
 }
