@@ -33,37 +33,39 @@ public sealed class ElisionCorrector : ICorrectionPolicy
         _personal = personal;
     }
 
-    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
+    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
     {
+        StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Elision);
+
         // A proclitic (>=1) plus a two-letter tail: nothing shorter can elide.
         if (word.Length < 3)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
         // Letters only: an apostrophe means the elision is already there; a digit
         // or hyphen is out of scope.
         foreach (char c in word)
             if (!char.IsLetter(c))
-                return null;
+                return Abstain(st, CorrectionTrace.Reasons.NonWordChar);
 
         // A camelCase/PascalCase identifier is never an elision — the user meant
         // it. An accented tail, by contrast, IS in scope ("jétais" → "j'étais"):
         // there the accent was typed and only the apostrophe was dropped.
         if (WordShape.HasInternalUpper(word))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.InternalCaps);
 
         // A capitalised word mid-utterance is almost always a proper noun; a
         // sentence-initial capital is the ordinary case and stays in scope.
         if (leftContext.Count > 0 && WordShape.IsTitleCase(word))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ProperNounGuard);
 
         string lower = word.ToLowerInvariant();
 
         // The defining guard: a glued elision is never itself a valid word.
         // "dune", "quelle", "tas", "ces" are real and must pass through untouched.
         if (_french.Contains(lower))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
         if (_personal?.IsAdopted(lower) == true)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 
         foreach (string proclitic in Proclitics)
         {
@@ -80,10 +82,20 @@ public sealed class ElisionCorrector : ICorrectionPolicy
                 continue;
 
             string restored = proclitic + "'" + tail;
+            st?.AddCandidate(restored, _french.FrequencyOf(tail), CorrectionTrace.Sources.Index)
+              .Fire(CorrectionTrace.Reasons.Elision);
             return new CorrectionDecision(
                 word, CasePattern.Apply(word, restored), CorrectionReason.Elision);
         }
 
+        return Abstain(st, CorrectionTrace.Reasons.NoProclitic);
+    }
+
+    // Records the abstain reason onto the stage trace (when present) and leaves
+    // the literal untouched.
+    private static CorrectionDecision? Abstain(StageTrace? st, string reason)
+    {
+        st?.Abstain(reason);
         return null;
     }
 

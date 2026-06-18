@@ -29,7 +29,12 @@ public sealed record CorrectionDecision(string Original, string Replacement, Cor
 // leftContext is the preceding words on this surface (already corrected),
 // most recent last, empty at the start of an utterance or after a reset.
 // Returns null to leave the literal untouched — the conservative default.
+//
+// trace is an optional decision ledger: when non-null the policy records its exit
+// reason, candidate pool and safety gauges into it for the decision telemetry. It
+// is observation only — the decision must never read back from it — and null by
+// default, so the live chain runs untouched and the tests stay terse.
 public interface ICorrectionPolicy
 {
-    CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext);
+    CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null);
 }

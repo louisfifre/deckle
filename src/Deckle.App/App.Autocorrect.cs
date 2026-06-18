@@ -133,7 +133,15 @@ public partial class App
                 // The post-sentence contextual stage: the reranker (null when its
                 // model is absent) and the diacritics gate reused as the slot probe.
                 reranker: reranker,
-                probe: diacritics);
+                probe: diacritics,
+                // Opt-in per-word decision telemetry, read live so a Settings flip
+                // takes effect without a rebuild. Off by default.
+                decisionTelemetry: () =>
+                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectDecisions,
+                // Opt-in typed-sentence corpus, same live read. Off by default; the
+                // heaviest text capture, behind its own consent toggle.
+                textTelemetry: () =>
+                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText);
 
             // Reactive enrollment: a would-be correction on an undecided app
             // raises this on the engine's input thread. Detach the prompt so we

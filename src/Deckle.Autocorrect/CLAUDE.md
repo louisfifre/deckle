@@ -11,7 +11,7 @@ Top-level domain module — machine-wide text autocorrect: French diacritics res
 
 **Password surfaces are gated before buffering.** When the focused element is a password control, keystrokes are neither decoded, buffered, nor counted — a rule, not a setting.
 
-**Typed text never crosses the EventSource** — events carry counts, lengths and reasons only. The engine's only persisted text is the personal dictionary, inspectable and removable. The one exception is the opt-in `harvest` maintainer command, which persists two filtered signal streams (never the raw stream), DPAPI-encrypted and purgeable, password-gated like every observation path.
+**No typed text on the default observability path** — the always-on EventSource events carry counts, lengths and reasons only; text never reaches `app.jsonl`. Words cross only on explicit opt-in, off by default and routed to a dedicated consented dataset (the `harvest` maintainer command; the per-word decision telemetry behind its settings toggle). Both stay local, password-gated and purgeable; the engine's only other persisted text is the personal dictionary, inspectable and removable.
 
 ## Engine doctrine
 

@@ -43,43 +43,45 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         _personalVariants = personalVariants;
     }
 
-    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
+    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
     {
+        StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Diacritics);
+
         // 1. Too short to carry signal — and the single-char class is blacklisted.
         if (word.Length < _options.MinWordLength)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
         foreach (char c in word)
         {
             // 2. A digit anywhere makes it a token class we never touch (win11).
             if (char.IsDigit(c))
-                return null;
+                return Abstain(st, CorrectionTrace.Reasons.HasDigit);
 
             // 3. Only letters, apostrophes and hyphens are word material; anything
             //    else (punctuation, symbols) is out of scope for restoration.
             if (!char.IsLetter(c) && c is not '\'' and not '’' and not '-')
-                return null;
+                return Abstain(st, CorrectionTrace.Reasons.NonWordChar);
         }
 
         // 4. Internal uppercase on a not-all-uppercase word is an identifier
         //    (camelCase, fooBar) — never a dictated French word.
         if (WordShape.HasInternalUpper(word))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.InternalCaps);
 
         // 5. A trailing apostrophe is an elision token ("l'") — the prefix, not a word.
         if (word[^1] is '\'' or '’')
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.TrailingApostrophe);
 
         // 6. The user typed accents deliberately — never second-guess an
         //    already-accented word.
         if (AccentFolding.HasDiacritics(word))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.AlreadyAccented);
 
         // 6b. Proper-noun guard (opt-in): a title-cased word mid-utterance is a
         //     name (Git, Azure), not a dictated French word. Sentence-initial
         //     capitals are exempt — there a capital is the ordinary case.
         if (_options.GuardCapitalizedMidSentence && leftContext.Count > 0 && WordShape.IsTitleCase(word))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ProperNounGuard);
 
         string lower = word.ToLowerInvariant();
 
@@ -88,28 +90,32 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         //    candidates as first-rank, and only the pair model may overturn it.
         bool literalValid = _french.Contains(lower);
         if (literalValid && !(_options.CorrectValidFormsWithContext && _context is not null))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
 
         // 8. Bilingual guard: no language detection in v1, so a form frequent
         //    in English must never be frenchified (frequency bar, not
         //    membership — the EN web counts contain bare-stripped French).
         if (_english is not null
             && _english.FrequencyOf(lower) >= _options.EnglishGuardMinPerMillion)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.FrequentEnglish);
 
         // 9. The user's own adopted words shield themselves from correction.
         if (_personal?.IsAdopted(lower) == true)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 
         // 10. Gather candidates from the index, merge the personal dictionary's
         //     own variants (personal wins ties), filter by frequency floor and
         //     drop any pair the user has suppressed. A valid literal competes
         //     as a candidate of its own.
         var candidates = BuildCandidates(lower, literalValid, out var fromPersonal);
+        st?.WithCandidates(candidates, v =>
+            fromPersonal.Contains(v.Form) ? CorrectionTrace.Sources.Personal
+            : v.Form == lower             ? CorrectionTrace.Sources.Literal
+            :                               CorrectionTrace.Sources.Index);
 
         // 11. Nothing to propose — leave the literal.
         if (candidates.Count == 0)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.NoCandidates);
 
         // 12. A single candidate is deterministic — the lexical gate fires.
         //     (With a valid literal the single candidate is the literal itself:
@@ -118,45 +124,54 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         {
             string form = candidates[0].Form;
             if (form == lower)
-                return null;
-            CorrectionReason reason = fromPersonal.Contains(form)
-                ? CorrectionReason.PersonalWord
-                : CorrectionReason.LexicalGate;
-            return new CorrectionDecision(word, CasePattern.Apply(word, form), reason);
+                return Abstain(st, CorrectionTrace.Reasons.LiteralSingleton);
+            bool personal = fromPersonal.Contains(form);
+            st?.Fire(personal ? CorrectionTrace.Reasons.PersonalWord : CorrectionTrace.Reasons.LexicalGate);
+            return new CorrectionDecision(word, CasePattern.Apply(word, form),
+                personal ? CorrectionReason.PersonalWord : CorrectionReason.LexicalGate);
         }
 
         // 13. Multiple candidates: let the left-context pair model decide. It
         //     returns null unless one variant clears its margin; choosing the
-        //     bare literal means « keep it ».
+        //     bare literal means « keep it ». The disambiguator records its own
+        //     per-candidate scores and margin gauges into this stage's trace.
         if (_context is not null)
         {
-            string? chosen = _context.Choose(LowercaseContext(leftContext), candidates);
+            string? chosen = _context.Choose(LowercaseContext(leftContext), candidates, st);
             if (chosen is not null && chosen != lower)
             {
-                CorrectionReason reason = fromPersonal.Contains(chosen)
-                    ? CorrectionReason.PersonalWord
-                    : CorrectionReason.ContextPair;
-                return new CorrectionDecision(word, CasePattern.Apply(word, chosen), reason);
+                bool personal = fromPersonal.Contains(chosen);
+                st?.Fire(personal ? CorrectionTrace.Reasons.PersonalWord : CorrectionTrace.Reasons.ContextPair);
+                return new CorrectionDecision(word, CasePattern.Apply(word, chosen),
+                    personal ? CorrectionReason.PersonalWord : CorrectionReason.ContextPair);
             }
             if (chosen is not null)
-                return null;
+                return Abstain(st, CorrectionTrace.Reasons.ContextKeptLiteral);
         }
 
         // Only the pair model may overturn a valid form — dominance never does.
         if (literalValid)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ContextKeptLiteral);
 
         // 14. No context verdict — fall back to frequency dominance. Correct only
         //     when the top variant overwhelms the runner-up AND is common enough;
         //     never a bare argmax.
         AccentVariant top = candidates[0];
         AccentVariant second = candidates[1];
+        double ratio = second.FrequencyPerMillion > 0.0
+            ? top.FrequencyPerMillion / second.FrequencyPerMillion
+            : double.PositiveInfinity;
+        st?.Gauge("dominance", ratio)
+          .Gauge("dominance_min", _options.DominanceRatio)
+          .Gauge("top_freq", top.FrequencyPerMillion)
+          .Gauge("top_freq_min", _options.MinDominantFrequencyPerMillion);
         bool dominant =
             second.FrequencyPerMillion > 0.0
-            && top.FrequencyPerMillion / second.FrequencyPerMillion >= _options.DominanceRatio
+            && ratio >= _options.DominanceRatio
             && top.FrequencyPerMillion >= _options.MinDominantFrequencyPerMillion;
         if (dominant)
         {
+            st?.Fire(CorrectionTrace.Reasons.FrequencyDominance);
             return new CorrectionDecision(
                 word,
                 CasePattern.Apply(word, top.Form),
@@ -164,6 +179,14 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         }
 
         // 15. Ambiguity without evidence — the literal stays.
+        return Abstain(st, CorrectionTrace.Reasons.NotDominant);
+    }
+
+    // Records the abstain reason onto the stage trace (when present) and leaves
+    // the literal untouched — the single conservative return.
+    private static CorrectionDecision? Abstain(StageTrace? st, string reason)
+    {
+        st?.Abstain(reason);
         return null;
     }
 

@@ -23,7 +23,7 @@ public class RestorationEvaluatorTests
 
         public string? LastPrevForA { get; private set; }
 
-        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
+        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
         {
             string? previousWord = leftContext.Count > 0 ? leftContext[^1] : null;
             if (word == "a")
@@ -165,7 +165,7 @@ public class RestorationEvaluatorTests
     // sentence boundary.
     private sealed class OnlyAtSentenceStartPolicy : ICorrectionPolicy
     {
-        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext) =>
+        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null) =>
             word == "etait" && leftContext.Count == 0
                 ? new CorrectionDecision(word, "était", CorrectionReason.LexicalGate)
                 : null;

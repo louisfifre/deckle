@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-06-18 — Typed-sentence corpus
+
+Second opt-in text dataset (autocorrect.text.jsonl), nested under the decision toggle, off by default: per sentence typed at the keyboard on an enrolled surface, the verbatim typed form paired with the corrected one — the substrate for modelling the user's own error patterns. A pure SentenceCorpus accumulator rebuilds the sentence from the word-commit stream: boundary chars rejoin the words so a ';'-for-apostrophe substitution survives on both sides, the elision apostrophe collapses to avoid doubling, manual re-edits fold into their slot, and any run interrupted before a sentence end is dropped (paste and dictation never reach the word stream). Direction: maximise the reranker first, an LLM later. Durable finding: the keyboard-substitution class (';' for an apostrophe) sits below the reranker — it splits the token at tokenisation — so it needs a pre-tokenisation repair, not reranker tuning.
+
+## 2026-06-18 — Per-word decision telemetry; the text-free rule rescoped
+
+The « typed text never crosses the EventSource » rule is rescinded as an absolute and rescoped: the default path (app.jsonl) stays text-free, but words may cross on explicit opt-in. A per-word decision dataset (autocorrect.decisions.jsonl) records each evaluated word with its candidates, scores, margins and the deciding guard, behind a settings toggle + consent dialog, excluded from app.jsonl, off by default, password-gated. Two new Verbose/Heartbeat events (AutocorrectDecisionRecorded, AutocorrectRerankRecorded) carry the text; the synchronous decision and the deferred reranker verdict join on a per-word id.
+
 ## 2026-06-14 — Chromium/Electron editable surfaces
 
 Broaden focused-element editability beyond the Edit/Document control types to UIA control patterns (the TextEdit pattern, a writable Value, or a Text provider), so a Chromium/Electron contenteditable composer — a Group control (50026) exposing the Text/TextEdit pattern, as Claude and Anytype do — is seen as editable and gets corrected; the strict gate had silently withheld every correction there. The paste probe (IsFocusedElementTextEditable) stays Edit/Document only. SurfaceChanged now carries the raw UIA signature for auditing.

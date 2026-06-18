@@ -204,6 +204,34 @@
     <value>The log is chatty — expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
   </data>
 
+  <!-- Autocorrect decisions consent — per-word decision dataset, clear text. -->
+  <data name="AutocorrectDecisionsConsent_Title" xml:space="preserve">
+    <value>Enable autocorrect decision log</value>
+  </data>
+  <data name="AutocorrectDecisionsConsent_Body_Intro" xml:space="preserve">
+    <value>Deckle will write one line for every word the autocorrect engine weighs on an enrolled app — corrected or left as you typed it — to a local JSONL file (autocorrect.decisions.jsonl), so you can see exactly why it did or did not act.</value>
+  </data>
+  <data name="AutocorrectDecisionsConsent_Body_What" xml:space="preserve">
+    <value>Each word you type on an enrolled surface, its preceding context words, the candidate forms with their frequencies and scores, the safety margins, and the rule that made the call. Nothing is sent over the network. Password fields are never seen.</value>
+  </data>
+  <data name="AutocorrectDecisionsConsent_Body_Remind" xml:space="preserve">
+    <value>This records the words you type on enrolled apps in clear text. Keep it on only while diagnosing the corrector, turn it off when you are done, and purge the file — it is not rotated.</value>
+  </data>
+
+  <!-- Autocorrect text consent — the typed-sentence corpus, verbatim input. -->
+  <data name="AutocorrectTextConsent_Title" xml:space="preserve">
+    <value>Keep a record of the text you type</value>
+  </data>
+  <data name="AutocorrectTextConsent_Body_Intro" xml:space="preserve">
+    <value>Deckle will save each sentence you type at the keyboard on an enrolled app to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. This builds a corpus of your own writing — and your own mistakes — to make the corrector better at the way you type.</value>
+  </data>
+  <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
+    <value>The full text you type at the keyboard on enrolled apps, verbatim — including errors the corrector did not catch. Text you paste or dictate is not recorded, only what you physically type. Nothing is sent over the network. Password fields are never seen.</value>
+  </data>
+  <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
+    <value>This is the most complete text capture in Deckle — a verbatim record of what you type. It stays on this device. Turn it off when you have gathered enough, and delete the file when you no longer need it — it is not rotated.</value>
+  </data>
+
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
   <data name="AudioCorpusConsent_Title" xml:space="preserve">
     <value>Enable audio corpus</value>
@@ -765,6 +793,18 @@
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
     <value>Mirror every in-app log line to app.jsonl to diagnose a specific issue across restarts. Verbose — around 2 MB per 30 min of active use. Rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …).</value>
+  </data>
+  <data name="DiagnosticsAutocorrectDecisionsExpander.Header" xml:space="preserve">
+    <value>Autocorrect decisions</value>
+  </data>
+  <data name="DiagnosticsAutocorrectDecisionsExpander.Description" xml:space="preserve">
+    <value>Record every corrected or left-alone word on an enrolled app to autocorrect.decisions.jsonl — its candidates, scores, margins and the rule that decided it. The deep view for tuning the corrector. Includes the words you type.</value>
+  </data>
+  <data name="DiagnosticsAutocorrectTextCard.Header" xml:space="preserve">
+    <value>Keep the text I type</value>
+  </data>
+  <data name="DiagnosticsAutocorrectTextCard.Description" xml:space="preserve">
+    <value>Also record each sentence you type at the keyboard on an enrolled app to autocorrect.text.jsonl — verbatim, paired with the corrected form — to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Paste and dictation are never recorded.</value>
   </data>
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
     <value>Corpus</value>

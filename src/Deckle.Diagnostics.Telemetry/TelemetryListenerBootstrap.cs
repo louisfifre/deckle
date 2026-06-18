@@ -47,6 +47,10 @@ namespace Deckle.Diagnostics.Telemetry;
 //   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
 //                                                    events (routed, no tier;
 //                                                    see ADR-0006)
+//   autocorrect.decisions.jsonl                    ← Autocorrect{Decision,
+//                                                    Rerank}Recorded events
+//   autocorrect.text.jsonl                         ← AutocorrectTextRecorded
+//                                                    events (typed corpus)
 //
 // User gate semantics:
 //   app.jsonl                  ← ApplicationLogToDisk == true
@@ -55,6 +59,8 @@ namespace Deckle.Diagnostics.Telemetry;
 //   microphone.processed.jsonl ← MicrophoneTelemetry == true
 //   corpus/raw/…,
 //   corpus/rewrite-…/      ← CorpusEnabled == true
+//   autocorrect.decisions.jsonl ← AutocorrectDecisions == true
+//   autocorrect.text.jsonl      ← AutocorrectText == true
 //
 // Default posture: gates closed (false). Until ConfigureGates has been called,
 // no line touches disk: fail-safe behaviour reproducing the old posture when
@@ -104,6 +110,9 @@ public static class TelemetryListenerBootstrap
                 && e.EventName != "PreprocessedTelemetryRecorded"
                 && e.EventName != "CorpusAsrRecorded"
                 && e.EventName != "CorpusRewriteRecorded"
+                && e.EventName != "AutocorrectDecisionRecorded"
+                && e.EventName != "AutocorrectRerankRecorded"
+                && e.EventName != "AutocorrectTextRecorded"
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
             // app.jsonl is the persistent mirror of the live log:
@@ -138,6 +147,31 @@ public static class TelemetryListenerBootstrap
             kindLabel: "microphone_processed",
             predicate: e => e.EventName == "PreprocessedTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
+
+        // Per-word autocorrect decision dataset: every corrected or left-literal
+        // word on an enrolled surface with its candidates, scores, margins and the
+        // guard that decided it — the diagnostic surface for tuning the corrector.
+        // Both the synchronous decision and its deferred reranker verdict land here,
+        // joined by id. Carries typed words by design (see DeckleAutocorrectSource),
+        // so it is gated on the dedicated opt-in consent toggle. PayloadOnly, append
+        // -only like the other datasets — the words are the record, never rotated.
+        Register(new JsonlSink(
+            filePath:  Path.Combine(rootDirectory, "autocorrect.decisions.jsonl"),
+            kindLabel: "autocorrect_decision",
+            predicate: e => (e.EventName == "AutocorrectDecisionRecorded"
+                          || e.EventName == "AutocorrectRerankRecorded")
+                         && ReadGate("AutocorrectDecisions")));
+
+        // Typed-sentence corpus: each sentence typed at the keyboard on an enrolled
+        // surface, verbatim form paired with the corrected one — the substrate for
+        // modelling the user's own error patterns. Verbatim typed input, the heaviest
+        // text capture, so it carries its own opt-in consent toggle, separate from the
+        // decision dataset. PayloadOnly, append-only — the text is the record.
+        Register(new JsonlSink(
+            filePath:  Path.Combine(rootDirectory, "autocorrect.text.jsonl"),
+            kindLabel: "autocorrect_text",
+            predicate: e => e.EventName == "AutocorrectTextRecorded"
+                         && ReadGate("AutocorrectText")));
 
         // Normalized corpus: see ADR-0006. Two routed sinks spray
         // CorpusAsr/RewriteRecorded over a bucketed tree. Both predicates gate
@@ -181,8 +215,8 @@ public static class TelemetryListenerBootstrap
 
     // Wires the user gate reader delegate. Accepts a symbolic name
     // ("ApplicationLogToDisk", "LatencyEnabled", "MicrophoneTelemetry",
-    // "CorpusEnabled") and returns the current bool. An unknown name must return
-    // false on the caller side.
+    // "CorpusEnabled", "AutocorrectDecisions", "AutocorrectText") and returns the
+    // current bool. An unknown name must return false on the caller side.
     //
     // Idempotent: calling ConfigureGates again replaces the delegate.
     public static void ConfigureGates(Func<string, bool> gateReader)

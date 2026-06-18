@@ -39,6 +39,19 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly FrequencyLexicon? _french;
     private readonly FrequencyLexicon? _english;
 
+    // Opt-in per-word decision telemetry. When this returns true, each evaluated
+    // word on an enrolled surface emits a structured trace (candidates, scores,
+    // margins, the guard that left it literal) to the autocorrect.decisions dataset.
+    // Null/false = the chain runs untouched, no trace allocated. Off by default.
+    private readonly Func<bool>? _decisionTelemetry;
+
+    // Opt-in typed-sentence corpus. When this returns true, each committed word on
+    // an enrolled surface feeds the accumulator, which emits the (typed, final)
+    // sentence pair to the autocorrect.text dataset. Null = no accumulator built.
+    // Off by default. The heaviest text capture — a verbatim record of typed input.
+    private readonly Func<bool>? _textTelemetry;
+    private readonly SentenceCorpus? _corpus;
+
     // The post-sentence contextual stage. Null when no reranker model is present
     // — the engine then runs exactly as before, gate + typo only. The lane owns
     // the background inference thread; the coordinator owns the sentence model.
@@ -56,6 +69,10 @@ public sealed class AutocorrectEngine : IDisposable
     // Apps already offered for enrollment this run — a would-be correction on an
     // undecided surface prompts once, then stays silent until the user answers.
     private readonly HashSet<string> _suggested = new(StringComparer.OrdinalIgnoreCase);
+
+    // Monotonic per-word id, input thread only. Stamps each evaluated word so its
+    // synchronous decision line and the deferred reranker verdict join on one id.
+    private long _wordId;
 
     // Rollup accumulators — input thread only.
     private double _rollupStartMs = -1;
@@ -102,7 +119,9 @@ public sealed class AutocorrectEngine : IDisposable
         FrequencyLexicon? french = null,
         FrequencyLexicon? english = null,
         ISentenceReranker? reranker = null,
-        IAmbiguityProbe? probe = null)
+        IAmbiguityProbe? probe = null,
+        Func<bool>? decisionTelemetry = null,
+        Func<bool>? textTelemetry = null)
     {
         _host = host;
         _decoder = decoder;
@@ -114,6 +133,9 @@ public sealed class AutocorrectEngine : IDisposable
         _dictionary = dictionary;
         _french = french;
         _english = english;
+        _decisionTelemetry = decisionTelemetry;
+        _textTelemetry = textTelemetry;
+        _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
 
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
@@ -126,7 +148,8 @@ public sealed class AutocorrectEngine : IDisposable
                 injector: injector,
                 currentPartial: () => tracker.CurrentWord,
                 realignLastCommitted: tracker.ReplaceLastCommitted,
-                onApplied: OnCoordinatorApplied);
+                onApplied: OnCoordinatorApplied,
+                decisionTelemetry: decisionTelemetry);
         }
     }
 
@@ -245,7 +268,14 @@ public sealed class AutocorrectEngine : IDisposable
     // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
     // model. Enter is forwarded verbatim so the coordinator can vouch the next word
     // as sentence-initial; every other reason is a caret move to an unknown spot.
-    private void OnTrackerReset(ResetReason reason) => _coordinator?.Invalidate(reason);
+    private void OnTrackerReset(ResetReason reason)
+    {
+        // Close the corpus sentence first (Enter emits it, any other reason drops
+        // the partial run); the emit is gated downstream by the sink, so a flip to
+        // off between accumulation and reset cannot leak a sentence to disk.
+        _corpus?.Reset(reason);
+        _coordinator?.Invalidate(reason);
+    }
 
     // A correction the contextual stage applied behind the caret. It is NOT
     // revertable by the one-Backspace gesture (the slot is no longer adjacent), so
@@ -310,16 +340,27 @@ public sealed class AutocorrectEngine : IDisposable
             : commit.PreviousPreviousWord is null
                 ? new[] { commit.PreviousWord }
                 : new[] { commit.PreviousPreviousWord, commit.PreviousWord };
-        var decision = _policy.Evaluate(commit.Word, leftContext);
+
+        // The decision ledger is built only on an enrolled surface and only when
+        // the opt-in toggle is on — otherwise null, and the chain runs at no cost.
+        CorrectionTrace? trace = enabledHere && _decisionTelemetry?.Invoke() == true
+            ? new CorrectionTrace()
+            : null;
+        var decision = _policy.Evaluate(commit.Word, leftContext, trace);
 
         // A reverted pair stays suppressed whatever the policy says — enforced
         // here so even a policy without dictionary access honors the gesture.
         if (decision is not null
             && _dictionary?.IsSuppressed(decision.Original, decision.Replacement) == true)
+        {
             decision = null;
+            trace?.MarkSuppressed(); // a stage fired, a learned revert vetoed it
+        }
 
         if (enabledHere)
         {
+            long wordId = ++_wordId;
+
             // Learning feeds on words the engine leaves alone. A corrected commit
             // must NOT reinforce the bare typo, or a few repetitions would adopt
             // it and silently disable its own correction.
@@ -328,11 +369,20 @@ public sealed class AutocorrectEngine : IDisposable
             else
                 ApplyCorrection(commit, decision);
 
+            if (trace is not null)
+                EmitDecision(wordId, commit.Word, leftContext, trace);
+
+            // Feed the typed-sentence corpus the (typed, on-screen) pair. Gated on
+            // the dedicated toggle, so nothing accumulates when it is off.
+            if (_textTelemetry?.Invoke() == true)
+                _corpus?.Word(commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary);
+
             // Feed the contextual stage the on-screen form (post-gate). A null
             // decision means the gate left a literal — the only case a real-word
             // ambiguity survives for the reranker.
             _coordinator?.OnWordCommitted(
-                decision?.Replacement ?? commit.Word, commit.Boundary, gateLeftLiteral: decision is null);
+                decision?.Replacement ?? commit.Word, commit.Boundary,
+                gateLeftLiteral: decision is null, wordId);
         }
         else
         {
@@ -372,6 +422,32 @@ public sealed class AutocorrectEngine : IDisposable
         }
     }
 
+    // The synchronous decision line of the per-word telemetry: the word, its left
+    // context, the outcome, the decisive stage/reason, that stage's candidate pool
+    // and safety gauges, and the full per-stage trail. The deferred reranker verdict
+    // (when the word becomes an ambiguous slot) joins it later on the same id.
+    // Emits one completed corpus sentence on the dedicated dataset, tagged with the
+    // current process. Runs on the input thread (the accumulator is synchronous), so
+    // _surface is the live surface that produced the sentence.
+    private void EmitText(string typed, string final)
+    {
+        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(_surface.ProcessName, typed, final);
+    }
+
+    private static void EmitDecision(long id, string word, IReadOnlyList<string> leftContext, CorrectionTrace trace)
+    {
+        DeckleAutocorrectSource.Log.AutocorrectDecisionRecorded(
+            id,
+            word,
+            string.Join(' ', leftContext),
+            trace.Outcome,
+            trace.PrimaryStage,
+            trace.PrimaryReason,
+            trace.RenderCandidates(),
+            trace.RenderGauges(),
+            trace.RenderTrail());
+    }
+
     private void OnWordEdited(WordEdit edit)
     {
         var surface = _surface;
@@ -392,6 +468,11 @@ public sealed class AutocorrectEngine : IDisposable
             _rollupLearning++;
             DeckleAutocorrectSource.Log.LearningSignal("manual_accent_fix");
         }
+
+        // Fold the hand-fix into the corpus sentence: the typed side keeps the
+        // first attempt, the final side takes the retype.
+        if (_textTelemetry?.Invoke() == true)
+            _corpus?.Edit(edit.Original, edit.Replacement);
     }
 
     // Commits feed adoption only for plain out-of-lexicon words — the base

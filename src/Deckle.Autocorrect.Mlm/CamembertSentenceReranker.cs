@@ -38,14 +38,14 @@ internal sealed class CamembertSentenceReranker : ISentenceReranker, IDisposable
         _freqPrior = freqPrior;
     }
 
-    public string? Rerank(IReadOnlyList<string> sentence, int slotIndex, IReadOnlyList<AccentVariant> candidates)
+    public RerankOutcome Rerank(IReadOnlyList<string> sentence, int slotIndex, IReadOnlyList<AccentVariant> candidates)
     {
         // Each candidate must be a single leading piece, else abstain.
         var ids = new int[candidates.Count];
         for (int k = 0; k < candidates.Count; k++)
         {
             int id = _scorer.LeadingPieceId(candidates[k].Form.ToLowerInvariant());
-            if (id < 0) return null;
+            if (id < 0) return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.MultiToken);
             ids[k] = id;
         }
 
@@ -62,6 +62,7 @@ internal sealed class CamembertSentenceReranker : ISentenceReranker, IDisposable
         for (int k = 0; k < candidates.Count; k++)
             logFreqMax = Math.Max(logFreqMax, Math.Log(Math.Max(candidates[k].FrequencyPerMillion, FreqFloor)));
 
+        var scores = new RerankCandidateScore[candidates.Count];
         int bestK = 0;
         double best = double.NegativeInfinity, second = double.NegativeInfinity;
         for (int k = 0; k < ids.Length; k++)
@@ -69,11 +70,19 @@ internal sealed class CamembertSentenceReranker : ISentenceReranker, IDisposable
             double prior = _freqPrior *
                 (Math.Log(Math.Max(candidates[k].FrequencyPerMillion, FreqFloor)) - logFreqMax);
             double s = logits[ids[k]] + prior;
+            scores[k] = new RerankCandidateScore(candidates[k].Form, s);
             if (s > best) { second = best; best = s; bestK = k; }
             else if (s > second) second = s;
         }
 
-        return best - second >= _margin ? candidates[bestK].Form : null;
+        double margin = best - second;
+        bool cleared = margin >= _margin;
+        return new RerankOutcome(
+            cleared ? candidates[bestK].Form : null,
+            scores,
+            margin,
+            _margin,
+            cleared ? null : RerankOutcome.AbstainReasons.BelowMargin);
     }
 
     private static IEnumerable<string> Slice(IReadOnlyList<string> list, int start, int end)

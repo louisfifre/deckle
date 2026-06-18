@@ -165,7 +165,7 @@ public static class RestorationEvaluator
                     var w = words[i];
                     if (w.Candidates.Count < 2)
                         continue;
-                    string? chosen = reranker.Rerank(sequence, i, w.Candidates);
+                    string? chosen = reranker.Rerank(sequence, i, w.Candidates).Chosen;
                     if (chosen is null)
                         continue;
                     string newOutput = CasePattern.Apply(w.Typed, chosen);
@@ -247,7 +247,7 @@ public static class RestorationEvaluator
                 var w = words[i];
                 if (w.Candidates.Count < 2)
                     continue;
-                string? chosen = reranker.Rerank(sequence, i, w.Candidates);
+                string? chosen = reranker.Rerank(sequence, i, w.Candidates).Chosen;
                 if (chosen is null)
                     continue;
                 string newOutput = CasePattern.Apply(w.Typed, chosen);

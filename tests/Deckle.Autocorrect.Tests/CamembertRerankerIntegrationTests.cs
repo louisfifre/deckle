@@ -55,7 +55,7 @@ public class CamembertRerankerIntegrationTests : IClassFixture<CamembertModelFix
 
         // « c'est là que ça se passe » — the locative "là", not the article "la".
         string? chosen = _model.Reranker.Rerank(
-            new[] { "c'est", "là", "que", "ça", "se", "passe" }, slotIndex: 1, LaLà());
+            new[] { "c'est", "là", "que", "ça", "se", "passe" }, slotIndex: 1, LaLà()).Chosen;
 
         Assert.Equal("là", chosen);
     }
@@ -67,7 +67,7 @@ public class CamembertRerankerIntegrationTests : IClassFixture<CamembertModelFix
 
         // « je vais à la mer » — the article "la", not the locative "là".
         string? chosen = _model.Reranker.Rerank(
-            new[] { "je", "vais", "à", "la", "mer" }, slotIndex: 3, LaLà());
+            new[] { "je", "vais", "à", "la", "mer" }, slotIndex: 3, LaLà()).Chosen;
 
         Assert.Equal("la", chosen);
     }

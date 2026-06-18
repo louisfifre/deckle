@@ -168,7 +168,10 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
     public int SlotCount => _model.SlotCount;
     public long RowCount => _model.RowCount;
 
-    public string? Choose(IReadOnlyList<string> leftContext, IReadOnlyList<AccentVariant> candidates)
+    public string? Choose(
+        IReadOnlyList<string> leftContext,
+        IReadOnlyList<AccentVariant> candidates,
+        StageTrace? trace = null)
     {
         if (candidates.Count < 2)
             return null;
@@ -220,6 +223,21 @@ public sealed class BigramPairDisambiguator : IPairDisambiguator
             {
                 secondScore = score;
             }
+        }
+
+        // The context decision's safety gauges, for the decision telemetry: the
+        // smoothed best/second scores, the margin they form against its threshold,
+        // and the raw evidence against its floor. Recorded onto the caller's
+        // (diacritics) stage trace before the gates below read them.
+        if (trace is not null)
+        {
+            double margin = secondScore > 0.0 ? bestScore / secondScore : double.PositiveInfinity;
+            trace.Gauge("ctx_best", bestScore)
+                 .Gauge("ctx_second", secondScore)
+                 .Gauge("ctx_margin", margin)
+                 .Gauge("ctx_margin_min", _options.MarginRatio)
+                 .Gauge("ctx_evidence", rawSum)
+                 .Gauge("ctx_evidence_min", _options.MinEvidence);
         }
 
         // Never guess from thin air.

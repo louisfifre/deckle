@@ -40,49 +40,54 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
         _options = options ?? new TypoOptions();
     }
 
-    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
+    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
     {
+        StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Typo);
+
         if (word.Length < _options.MinWordLength)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
         // Letters only: an apostrophe, hyphen or digit takes the token out of
         // scope — elisions, compounds and identifiers are not plain typos.
         foreach (char c in word)
             if (!char.IsLetter(c))
-                return null;
+                return Abstain(st, CorrectionTrace.Reasons.NonWordChar);
 
         // camelCase/PascalCase identifiers and already-accented forms are never
         // typo-corrected: the user meant the identifier, and an accented form is
         // another stage's concern.
-        if (WordShape.HasInternalUpper(word) || AccentFolding.HasDiacritics(word))
-            return null;
+        if (WordShape.HasInternalUpper(word))
+            return Abstain(st, CorrectionTrace.Reasons.InternalCaps);
+        if (AccentFolding.HasDiacritics(word))
+            return Abstain(st, CorrectionTrace.Reasons.AlreadyAccented);
 
         // A capitalised word mid-utterance is almost always a proper noun (a
         // name, a brand): never spell-fix it. Sentence-initial capitals are
         // exempt — there a capital is the ordinary case.
         if (leftContext.Count > 0 && WordShape.IsTitleCase(word))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ProperNounGuard);
 
         string lower = word.ToLowerInvariant();
 
         // The defining gate: this stage only ever acts on a NON-word. A valid
         // French form is the diacritics gate's business and was already settled.
         if (_french.Contains(lower))
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
 
         // Never frenchify a word that is itself frequent English.
         if (_english is not null
             && _english.FrequencyOf(lower) >= _options.EnglishGuardMinPerMillion)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.FrequentEnglish);
 
         // The user's own adopted words shield themselves.
         if (_personal?.IsAdopted(lower) == true)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 
         // Near tier: a single edit away — the high-confidence case.
         var near = ValidNeighbours(lower, twoEdits: false);
         if (near.Count > 0)
-            return Decide(word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio);
+            return Decide(word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
+                st, CorrectionTrace.Reasons.TypoNear);
 
         // Far tier: two edits away, for a bigger fault — only when nothing sits
         // one edit away, on a long-enough word, and held to a stricter bar.
@@ -93,9 +98,18 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
             var far = ValidNeighbours(lower, twoEdits: true);
             if (far.Count > 0)
                 return Decide(
-                    word, far, _options.Edits2MinFrequencyPerMillion, _options.Edits2DominanceRatio);
+                    word, far, _options.Edits2MinFrequencyPerMillion, _options.Edits2DominanceRatio,
+                    st, CorrectionTrace.Reasons.TypoFar);
         }
 
+        return Abstain(st, CorrectionTrace.Reasons.NoNeighbour);
+    }
+
+    // Records the abstain reason onto the stage trace (when present) and leaves
+    // the literal untouched.
+    private static CorrectionDecision? Abstain(StageTrace? st, string reason)
+    {
+        st?.Abstain(reason);
         return null;
     }
 
@@ -108,20 +122,36 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
 
     // Applies a tier's frequency floor and dominance ratio to the ranked
     // neighbours, returning the winning correction or null when the evidence is
-    // too weak (a rare best, or a close rival).
+    // too weak (a rare best, or a close rival). Records the tier's candidate pool,
+    // its safety gauges and the exit reason onto the stage trace when present.
     private CorrectionDecision? Decide(
-        string word, List<Candidate> candidates, double minFrequency, double dominanceRatio)
+        string word, List<Candidate> candidates, double minFrequency, double dominanceRatio,
+        StageTrace? st, string fireReason)
     {
         Candidate top = candidates[0];
+        double ratio = candidates.Count >= 2 && candidates[1].Frequency > 0.0
+            ? top.Frequency / candidates[1].Frequency
+            : double.PositiveInfinity;
+
+        if (st is not null)
+        {
+            foreach (Candidate c in candidates)
+                st.AddCandidate(c.Form, c.Frequency, CorrectionTrace.Sources.Index);
+            st.Gauge("top_freq", top.Frequency)
+              .Gauge("top_freq_min", minFrequency)
+              .Gauge("dominance", ratio)
+              .Gauge("dominance_min", dominanceRatio);
+        }
 
         // Common enough to be the obvious intent — a rare neighbour is no evidence.
         if (top.Frequency < minFrequency)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.TooRare);
 
         // With rivals, the best must dominate; a close second means real ambiguity.
         if (candidates.Count >= 2 && top.Frequency < candidates[1].Frequency * dominanceRatio)
-            return null;
+            return Abstain(st, CorrectionTrace.Reasons.NotDominant);
 
+        st?.Fire(fireReason);
         return new CorrectionDecision(
             word, CasePattern.Apply(word, top.Form), CorrectionReason.TypoCorrection);
     }

@@ -62,17 +62,18 @@ public sealed class BackgroundRerankLane : IRerankLane
         {
             foreach (RerankRequest req in _queue.GetConsumingEnumerable(_cts.Token))
             {
-                string? chosen;
+                RerankOutcome outcome;
                 try
                 {
-                    chosen = _reranker.Rerank(req.Sentence, req.SlotIndex, req.Candidates);
+                    outcome = _reranker.Rerank(req.Sentence, req.SlotIndex, req.Candidates);
                 }
                 catch
                 {
-                    chosen = null; // a scoring failure abstains, never crashes the lane
+                    // A scoring failure abstains, never crashes the lane.
+                    outcome = RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
                 }
 
-                _completed.Enqueue(new RerankResult(req.SlotIndex, req.Epoch, chosen));
+                _completed.Enqueue(new RerankResult(req.SlotIndex, req.Epoch, outcome));
                 if (!_disposed)
                     _host.RequestDrain();
             }

@@ -203,7 +203,7 @@ internal sealed class ScriptedPolicy : ICorrectionPolicy
             ? new CorrectionDecision(word, to, reason)
             : null);
 
-    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
+    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
     {
         string? previousWord = leftContext.Count > 0 ? leftContext[^1] : null;
         Calls.Add((word, previousWord));

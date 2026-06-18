@@ -246,7 +246,7 @@ public class DiacriticsRestorerTests
     {
         public string? LastPrevious { get; private set; }
 
-        public string? Choose(IReadOnlyList<string> leftContext, IReadOnlyList<AccentVariant> candidates)
+        public string? Choose(IReadOnlyList<string> leftContext, IReadOnlyList<AccentVariant> candidates, StageTrace? trace = null)
         {
             LastPrevious = leftContext.Count > 0 ? leftContext[^1] : null;
             return chosen;

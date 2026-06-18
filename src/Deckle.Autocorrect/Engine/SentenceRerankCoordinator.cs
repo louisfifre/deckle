@@ -9,9 +9,10 @@ namespace Deckle.Autocorrect;
 public readonly record struct RerankRequest(
     IReadOnlyList<string> Sentence, int SlotIndex, IReadOnlyList<AccentVariant> Candidates, int Epoch);
 
-// The reranker's verdict for one slot: the chosen surface form (or null to leave
-// it), tagged with the buffer index and epoch it was computed against.
-public readonly record struct RerankResult(int SlotIndex, int Epoch, string? Chosen);
+// The reranker's verdict for one slot: the full outcome (chosen form plus the
+// per-candidate scores and margin for the decision telemetry), tagged with the
+// buffer index and epoch it was computed against.
+public readonly record struct RerankResult(int SlotIndex, int Epoch, RerankOutcome Outcome);
 
 // The threading boundary between the input-thread coordinator and the heavy ONNX
 // inference. Submit is called on the input thread and must never block; the lane
@@ -78,6 +79,10 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private readonly Func<string> _currentPartial;
     private readonly Action<string>? _realignLastCommitted;
     private readonly Action<CorrectionDecision>? _onApplied;
+    // Gate for the per-word decision telemetry: when it returns true the deferred
+    // reranker verdict is emitted to the autocorrect.decisions dataset (scores and
+    // margin included). Null or false = no rerank line, no rendering cost.
+    private readonly Func<bool>? _decisionTelemetry;
 
     private readonly List<SlotEntry> _buffer = new();
     private int _epoch;
@@ -96,7 +101,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         ITextInjector injector,
         Func<string> currentPartial,
         Action<string>? realignLastCommitted = null,
-        Action<CorrectionDecision>? onApplied = null)
+        Action<CorrectionDecision>? onApplied = null,
+        Func<bool>? decisionTelemetry = null)
     {
         _lane = lane;
         _probe = probe;
@@ -104,6 +110,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         _currentPartial = currentPartial;
         _realignLastCommitted = realignLastCommitted;
         _onApplied = onApplied;
+        _decisionTelemetry = decisionTelemetry;
         _lane.ResultSink = ApplyResult;
     }
 
@@ -111,8 +118,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     // A word committed (after the synchronous gate ran). finalForm is what is on
     // screen; gateLeftLiteral is true when the gate corrected nothing — the only
-    // case a real-word ambiguity survives for the reranker.
-    public void OnWordCommitted(string finalForm, char boundary, bool gateLeftLiteral)
+    // case a real-word ambiguity survives for the reranker. wordId is the engine's
+    // per-word id, carried so a deferred verdict joins its synchronous decision line.
+    public void OnWordCommitted(string finalForm, char boundary, bool gateLeftLiteral, long wordId = 0)
     {
         if (_disposed) return;
 
@@ -123,7 +131,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
         bool sentenceInitial = _nextWordIsSentenceInitial;
         _nextWordIsSentenceInitial = false;
 
-        var entry = new SlotEntry { Form = finalForm, Boundary = boundary, IsSentenceInitial = sentenceInitial };
+        var entry = new SlotEntry
+        {
+            Form = finalForm,
+            Boundary = boundary,
+            IsSentenceInitial = sentenceInitial,
+            WordId = wordId,
+        };
 
         if (gateLeftLiteral)
         {
@@ -240,6 +254,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         int slotIndex = _inFlightSlot;   // the absolute index we submitted
         _inFlightSlot = -1;
 
+        RerankOutcome outcome = result.Outcome;
+
         // Stale: the sentence was reset (epoch bumped) under the in-flight request,
         // so the buffer no longer holds the slot we submitted. result.Epoch is the
         // freshness check; the slot is identified by our own _inFlightSlot, never by
@@ -261,27 +277,64 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
         slot.Resolved = true; // decided either way — never reconsidered
 
-        string target = result.Chosen ?? slot.Form;
+        string word = slot.Form; // the form the slot held before any rewrite
+        string target = outcome.Chosen ?? slot.Form;
         if (slot.NeedsCap)
             target = Capitalize(target);
 
+        string verdict;
         if (string.Equals(target, slot.Form, StringComparison.Ordinal))
         {
             // Nothing to write: the model declined (abstain) or affirmed the typed
             // form (equal). Either way the slot stays as the user left it.
-            DeckleAutocorrectSource.Log.RerankVerdict(
-                result.Chosen is null ? Outcome.Abstain : Outcome.Equal);
+            verdict = outcome.Chosen is null ? Outcome.Abstain : Outcome.Equal;
         }
         else
         {
-            CorrectionReason reason = result.Chosen is not null
+            CorrectionReason reason = outcome.Chosen is not null
                 ? CorrectionReason.SentenceReranker
                 : CorrectionReason.Capitalization;
             bool applied = ApplySlotRewrite(slotIndex, target, reason);
-            DeckleAutocorrectSource.Log.RerankVerdict(applied ? Outcome.Applied : Outcome.Blocked);
+            verdict = applied ? Outcome.Applied : Outcome.Blocked;
         }
 
+        DeckleAutocorrectSource.Log.RerankVerdict(verdict);
+        EmitRerankDecision(slot.WordId, word, verdict, outcome);
+
         TrySubmitNext();
+    }
+
+    // The rerank line of the decision telemetry: the reranker's verdict for this
+    // slot with its per-candidate scores and margin, joined to the synchronous
+    // decision by the word id. Gated by the opt-in toggle — no rendering when off.
+    private void EmitRerankDecision(long id, string word, string verdict, RerankOutcome outcome)
+    {
+        if (_decisionTelemetry?.Invoke() != true) return;
+        DeckleAutocorrectSource.Log.AutocorrectRerankRecorded(
+            id, word, verdict, outcome.Chosen ?? "", RenderScores(outcome.Scores), RenderMargin(outcome));
+    }
+
+    // "form@score|…" highest-favoured first as the reranker ranked them.
+    private static string RenderScores(IReadOnlyList<RerankCandidateScore> scores)
+    {
+        var sb = new StringBuilder();
+        foreach (RerankCandidateScore s in scores)
+        {
+            if (sb.Length > 0) sb.Append('|');
+            sb.Append(s.Form).Append('@').Append(CorrectionTrace.Num(s.Score));
+        }
+        return sb.ToString();
+    }
+
+    // "Δ|margin_min=threshold[|why=reason]" — the top-vs-second gap against the bar.
+    private static string RenderMargin(RerankOutcome outcome)
+    {
+        var sb = new StringBuilder();
+        sb.Append(CorrectionTrace.Num(outcome.Margin))
+          .Append("|margin_min=").Append(CorrectionTrace.Num(outcome.Threshold));
+        if (outcome.AbstainReason is not null)
+            sb.Append("|why=").Append(outcome.AbstainReason);
+        return sb.ToString();
     }
 
     private void ApplyCapitalizationOnly(int slotIndex)
@@ -383,5 +436,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public int RightContextCount;
         public bool NeedsCap;
         public bool IsSentenceInitial;
+        // The engine's per-word id, carried so the deferred reranker verdict joins
+        // the synchronous decision record on the same id in the decision telemetry.
+        public long WordId;
     }
 }

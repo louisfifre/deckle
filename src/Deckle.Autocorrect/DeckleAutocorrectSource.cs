@@ -6,9 +6,10 @@ namespace Deckle.Autocorrect;
 // Autocorrect module provider. Covers the engine lifecycle, surface
 // transitions, applied/reverted corrections and learning signals.
 //
-// Typed text NEVER crosses this provider (module hard rule): events carry
-// counts, lengths and reasons only. The live words are visible solely in
-// the CLI console, by explicit dev action.
+// The default events carry counts, lengths and reasons only — no typed text on
+// the always-on path. A few opt-in, consent-gated events deliberately carry words
+// (the per-word decision and reranker records; the typed-sentence corpus), routed
+// to dedicated datasets and off by default.
 [EventSource(Name = "Deckle-Autocorrect")]
 public sealed class DeckleAutocorrectSource : DeckleEventSource
 {
@@ -32,6 +33,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtRerankSlotPending   = 14;
     public const int EvtRerankSubmitted     = 15;
     public const int EvtRerankVerdict       = 16;
+    public const int EvtAutocorrectDecision = 17;
+    public const int EvtAutocorrectRerank   = 18;
+    public const int EvtAutocorrectText     = 19;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -147,7 +151,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // right-context deferral was never met; a Submitted with no Verdict means the
     // inference is still running or died; an abstain/stale Verdict says the model
     // declined or the sentence was reset under it. Counts and a closed outcome
-    // vocabulary only — no typed text crosses (module hard rule).
+    // vocabulary only — no typed text on these pipeline events.
 
     // A real-word ambiguity the synchronous gate left intact is now an open slot,
     // waiting for enough right-context (or a sentence-ender) before the CamemBERT
@@ -185,6 +189,78 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void RerankVerdict(string outcome)
     {
         if (IsEnabled()) WriteEvent(EvtRerankVerdict, outcome);
+    }
+
+    // ── Correction decision dataset ──────────────────────────────────────
+    //
+    // The per-word decision ledger — the deep "why did(n't) it correct?" surface.
+    // Unlike every event above (counts, lengths and a closed outcome vocabulary
+    // only), these two DELIBERATELY carry text: the typed word, its left context,
+    // and the candidate forms with their scores. That is the whole point — to see
+    // the behaviour fully before adding any new correction. They are routed solely
+    // to the dedicated, opt-in autocorrect.decisions.jsonl telemetry sink (gated by
+    // AutocorrectDecisionsEnabled, off by default) and excluded from app.jsonl; no
+    // other path reads them. The synchronous decision and its deferred reranker
+    // verdict share `id`, so the two lines join.
+    //
+    // Fields are flat and self-reading (no re-encoded JSON): candidates as
+    // "form@freq@source", gauges as "name=value" with their "…_min/…_max" bounds,
+    // trail as "stage:reason" across the chain. CorrectionTrace renders them.
+
+    [Event(EvtAutocorrectDecision,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "decision | {1} → {3} | {4}/{5}")]
+    public void AutocorrectDecisionRecorded(
+        long   id,
+        string word,
+        string context,
+        string outcome,
+        string stage,
+        string reason,
+        string candidates,
+        string gauges,
+        string trail)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtAutocorrectDecision,
+            id, word, context, outcome, stage, reason, candidates, gauges, trail);
+    }
+
+    [Event(EvtAutocorrectRerank,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "rerank | {1} → {3} | {2} | {5}")]
+    public void AutocorrectRerankRecorded(
+        long   id,
+        string word,
+        string outcome,
+        string chosen,
+        string scores,
+        string margin)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtAutocorrectRerank, id, word, outcome, chosen, scores, margin);
+    }
+
+    // ── Typed-sentence corpus ─────────────────────────────────────────────
+    //
+    // One sentence the user typed on an enrolled surface, as two parallel strings:
+    // `typed` verbatim (keyboard substitutions and all — the telling ';' for an
+    // apostrophe survives) and `final` after the corrector. Feeds the per-user
+    // error-pattern corpus; routed to the dedicated, opt-in autocorrect.text.jsonl
+    // sink (gated by AutocorrectText, off by default) and excluded from app.jsonl.
+    // The heaviest text capture in the module — a verbatim record of typed input —
+    // so its consent toggle stands on its own.
+
+    [Event(EvtAutocorrectText,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "text | {0} | {1}")]
+    public void AutocorrectTextRecorded(string process, string typed, string final)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtAutocorrectText, process, typed, final);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

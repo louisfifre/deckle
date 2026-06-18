@@ -286,7 +286,10 @@ public class SentenceRerankCoordinatorTests
         private void Deliver(RerankRequest request)
         {
             string? chosen = Reranker?.Invoke(request);
-            ResultSink?.Invoke(new RerankResult(request.SlotIndex, request.Epoch, chosen));
+            RerankOutcome outcome = chosen is null
+                ? RerankOutcome.Abstained(RerankOutcome.AbstainReasons.BelowMargin)
+                : new RerankOutcome(chosen, System.Array.Empty<RerankCandidateScore>(), 0.0, 0.0, null);
+            ResultSink?.Invoke(new RerankResult(request.SlotIndex, request.Epoch, outcome));
         }
 
         public void Dispose() { }

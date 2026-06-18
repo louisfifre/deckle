@@ -13,11 +13,11 @@ public sealed class CompositeCorrectionPolicy : ICorrectionPolicy
     public CompositeCorrectionPolicy(params ICorrectionPolicy[] policies) =>
         _policies = policies;
 
-    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext)
+    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
     {
         foreach (ICorrectionPolicy policy in _policies)
         {
-            CorrectionDecision? decision = policy.Evaluate(word, leftContext);
+            CorrectionDecision? decision = policy.Evaluate(word, leftContext, trace);
             if (decision is not null)
                 return decision;
         }

@@ -339,6 +339,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
 │   │   │   ├── CorrectionDecision.cs
+│   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── ElisionCorrector.cs
 │   │   │   ├── IAmbiguityProbe.cs
@@ -346,6 +347,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ISentenceReranker.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
+│   │   │   ├── SentenceCorpus.cs
 │   │   │   ├── SentenceRerankCoordinator.cs
 │   │   │   ├── TrainerReport.cs
 │   │   │   ├── TypoOptions.cs
@@ -746,6 +748,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
+│   │   │   ├── AutocorrectDecisionsConsentDialog.cs
+│   │   │   ├── AutocorrectTextConsentDialog.cs
 │   │   │   ├── CorpusConsentDialog.cs
 │   │   │   └── MicrophoneTelemetryConsentDialog.cs
 │   │   ├── Pages/
@@ -978,6 +982,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
+│   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── ElisionCorrectorTests.cs
@@ -990,6 +995,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
+│   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   └── WordBoundariesTests.cs
