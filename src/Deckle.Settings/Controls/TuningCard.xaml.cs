@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Markup;
 
-namespace Deckle.Playground.Controls;
+namespace Deckle.Settings.Controls;
 
 // A titled tuning section with a hover/focus-revealed per-section reset. Mirrors
 // TunableRow's shape (UserControl, DP-driven, theme resources only) one level up :

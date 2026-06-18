@@ -11,7 +11,7 @@
     x:Class="Deckle.Playground.SegmentationPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:Deckle.Playground.Controls"
+    xmlns:controls="using:Deckle.Settings.Controls"
     xmlns:transcription="using:Deckle.Transcription">
 
     <Grid>

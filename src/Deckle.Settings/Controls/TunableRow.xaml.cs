@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.Globalization.NumberFormatting;
 
-namespace Deckle.Playground.Controls;
+namespace Deckle.Settings.Controls;
 
 // One reusable tuning row : a labelled slider + editable NumberBox sharing a
 // single Value, with a per-parameter "reset to default" wheel. Mirrors the HUD
