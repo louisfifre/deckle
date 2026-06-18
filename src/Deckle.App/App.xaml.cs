@@ -229,11 +229,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         // TelemetrySettingsService.
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
         {
-            "ApplicationLogToDisk" => TelemetrySettingsService.Instance.Current.ApplicationLogToDisk,
-            "LatencyEnabled"       => TelemetrySettingsService.Instance.Current.LatencyEnabled,
-            "MicrophoneTelemetry"  => TelemetrySettingsService.Instance.Current.MicrophoneTelemetry,
-            "CorpusEnabled"        => TelemetrySettingsService.Instance.Current.CorpusEnabled,
-            _                      => false,
+            "ApplicationLogToDisk"  => TelemetrySettingsService.Instance.Current.ApplicationLogToDisk,
+            "LatencyEnabled"        => TelemetrySettingsService.Instance.Current.LatencyEnabled,
+            "MicrophoneTelemetry"   => TelemetrySettingsService.Instance.Current.MicrophoneTelemetry,
+            "CorpusEnabled"         => TelemetrySettingsService.Instance.Current.CorpusEnabled,
+            "AutocorrectDecisions"  => TelemetrySettingsService.Instance.Current.AutocorrectDecisions,
+            "AutocorrectText"       => TelemetrySettingsService.Instance.Current.AutocorrectText,
+            _                       => false,
         });
 
         // Central capture gate: silence Verbose events from the two capture

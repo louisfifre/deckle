@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Deckle.Autocorrect.AutocorrectPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:vm="using:Deckle.Autocorrect">
+
+    <!-- Canonical Settings page layout, identical to TrackpadPage /
+         AmbientPage : ScrollViewer Padding 32,24, a StackPanel max 1000 inside
+         a Grid, Spacing=4 between cards, section headers in BodyStrong with
+         Margin 1,30,0,6. The master switch sits in its own card ; below it,
+         the apps the user has decided on — each a card with an on/off switch
+         and a "forget" button. -->
+    <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+        <Style x:Key="SettingsSectionHeaderTextBlockStyle"
+               BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+               TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="1,30,0,6" />
+            </Style.Setters>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <TextBlock x:Uid="AutocorrectPage_Title"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           Margin="0,0,0,8" />
+
+                <TextBlock x:Uid="AutocorrectPage_Subtitle"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12" />
+
+                <!-- ── Master switch ─────────────────────────────────────────── -->
+                <controls:SettingsCard x:Uid="AutocorrectPage_MasterCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Autocorrect}}">
+                    <ToggleSwitch IsOn="{x:Bind ViewModel.Enabled, Mode=TwoWay}" />
+                </controls:SettingsCard>
+
+                <!-- ── Apps ──────────────────────────────────────────────────── -->
+                <TextBlock x:Uid="AutocorrectPage_Section_Apps"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <TextBlock x:Uid="AutocorrectPage_Apps_Body"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8" />
+
+                <!-- Shown only when no app has been decided on yet ; the list
+                     and this line trade places from code-behind off
+                     Apps.CollectionChanged. -->
+                <TextBlock x:Name="EmptyState"
+                           x:Uid="AutocorrectPage_Empty"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed" />
+
+                <ItemsControl x:Name="AppsList"
+                              ItemsSource="{x:Bind ViewModel.Apps}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="4">
+                                <StackPanel.ChildrenTransitions>
+                                    <TransitionCollection>
+                                        <AddDeleteThemeTransition />
+                                    </TransitionCollection>
+                                </StackPanel.ChildrenTransitions>
+                            </StackPanel>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AutocorrectAppRow">
+                            <controls:SettingsCard Header="{x:Bind DisplayName}">
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}" />
+                                    <Button x:Uid="AutocorrectPage_ForgetButton"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Command="{x:Bind ForgetCommand}">
+                                        <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                  FontSize="16" />
+                                    </Button>
+                                </StackPanel>
+                            </controls:SettingsCard>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

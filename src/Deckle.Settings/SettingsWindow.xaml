@@ -56,7 +56,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="SettingsNavAutocorrect"
-                                    Tag="Deckle.Input.Autocorrect.AutocorrectPage, Deckle.Input.Autocorrect">
+                                    Tag="Deckle.Autocorrect.AutocorrectPage, Deckle.Autocorrect">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{StaticResource Icon.Autocorrect}" />
                     </NavigationViewItem.Icon>

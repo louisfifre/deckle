@@ -352,6 +352,90 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MicrophoneCapture.cs
 │   │   ├── ProbeResult.cs
 │   │   └── SpeakerOutput.cs
+│   ├── Deckle.Autocorrect/
+│   │   ├── Data/
+│   │   │   ├── lexicon-en.tsv.gz
+│   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   └── pair-bigrams-fr.tsv.gz
+│   │   ├── Engine/
+│   │   │   ├── AutocorrectEngine.cs
+│   │   │   ├── BackgroundRerankLane.cs
+│   │   │   ├── BigramPairDisambiguator.cs
+│   │   │   ├── CasePattern.cs
+│   │   │   ├── CompositeCorrectionPolicy.cs
+│   │   │   ├── ConservativeTypoCorrector.cs
+│   │   │   ├── CorrectionDecision.cs
+│   │   │   ├── CorrectionTrace.cs
+│   │   │   ├── DiacriticsRestorer.cs
+│   │   │   ├── ElisionCorrector.cs
+│   │   │   ├── IAmbiguityProbe.cs
+│   │   │   ├── IPairDisambiguator.cs
+│   │   │   ├── ISentenceReranker.cs
+│   │   │   ├── QwertyAdjacency.cs
+│   │   │   ├── RestorerOptions.cs
+│   │   │   ├── SentenceCorpus.cs
+│   │   │   ├── SentenceRerankCoordinator.cs
+│   │   │   ├── TrainerReport.cs
+│   │   │   ├── TypoOptions.cs
+│   │   │   └── WordShape.cs
+│   │   ├── Injection/
+│   │   │   ├── InjectionPlan.cs
+│   │   │   ├── ITextInjector.cs
+│   │   │   └── TextInjector.cs
+│   │   ├── Interop/
+│   │   │   └── KeyboardStateInterop.cs
+│   │   ├── Learning/
+│   │   │   ├── IPersonalLexicon.cs
+│   │   │   ├── PersonalDictionary.cs
+│   │   │   └── PersonalDictionaryData.cs
+│   │   ├── Lexicon/
+│   │   │   ├── AccentFolding.cs
+│   │   │   ├── AccentIndex.cs
+│   │   │   ├── AccentVariant.cs
+│   │   │   └── FrequencyLexicon.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Surfaces/
+│   │   │   ├── FocusedSurface.cs
+│   │   │   ├── ISurfaceProber.cs
+│   │   │   └── SurfaceProber.cs
+│   │   ├── Tracking/
+│   │   │   ├── KeyDecoder.cs
+│   │   │   ├── Keystroke.cs
+│   │   │   ├── TypedWordTracker.cs
+│   │   │   ├── WordBoundaries.cs
+│   │   │   └── WordCommit.cs
+│   │   ├── Ui/
+│   │   │   ├── AutocorrectPage.xaml
+│   │   │   └── AutocorrectPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── AutocorrectAppRow.cs
+│   │   │   └── AutocorrectViewModel.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
+│   │   ├── AutocorrectSettings.cs
+│   │   ├── AutocorrectSettingsService.cs
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Autocorrect.csproj
+│   │   ├── DeckleAutocorrectSource.cs
+│   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
+│   ├── Deckle.Autocorrect.Lab/
+│   │   ├── DataSet.cs
+│   │   ├── Deckle.Autocorrect.Lab.csproj
+│   │   ├── HarvestData.cs
+│   │   ├── HarvestFilter.cs
+│   │   ├── HarvestStore.cs
+│   │   ├── LexiconBuilder.cs
+│   │   ├── MorphalouReader.cs
+│   │   ├── PairModelTrainer.cs
+│   │   ├── RestorationEvaluator.cs
+│   │   └── RestorationReport.cs
+│   ├── Deckle.Autocorrect.Mlm/
+│   │   ├── CamembertMlmScorer.cs
+│   │   ├── CamembertReranker.cs
+│   │   ├── CamembertSentenceReranker.cs
+│   │   ├── Deckle.Autocorrect.Mlm.csproj
+│   │   └── MlmProbe.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
@@ -508,79 +592,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
-│   ├── Deckle.Input.Autocorrect/
-│   │   ├── Data/
-│   │   │   ├── lexicon-en.tsv.gz
-│   │   │   ├── lexicon-fr.tsv.gz
-│   │   │   └── pair-bigrams-fr.tsv.gz
-│   │   ├── Engine/
-│   │   │   ├── AutocorrectEngine.cs
-│   │   │   ├── BigramPairDisambiguator.cs
-│   │   │   ├── CasePattern.cs
-│   │   │   ├── CorrectionDecision.cs
-│   │   │   ├── DiacriticsRestorer.cs
-│   │   │   ├── IAmbiguityProbe.cs
-│   │   │   ├── IPairDisambiguator.cs
-│   │   │   ├── ISentenceReranker.cs
-│   │   │   ├── RestorerOptions.cs
-│   │   │   └── TrainerReport.cs
-│   │   ├── Injection/
-│   │   │   ├── InjectionPlan.cs
-│   │   │   ├── ITextInjector.cs
-│   │   │   └── TextInjector.cs
-│   │   ├── Interop/
-│   │   │   └── KeyboardStateInterop.cs
-│   │   ├── Learning/
-│   │   │   ├── IPersonalLexicon.cs
-│   │   │   ├── PersonalDictionary.cs
-│   │   │   └── PersonalDictionaryData.cs
-│   │   ├── Lexicon/
-│   │   │   ├── AccentFolding.cs
-│   │   │   ├── AccentIndex.cs
-│   │   │   ├── AccentVariant.cs
-│   │   │   └── FrequencyLexicon.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── Surfaces/
-│   │   │   ├── FocusedSurface.cs
-│   │   │   ├── ISurfaceProber.cs
-│   │   │   └── SurfaceProber.cs
-│   │   ├── Tracking/
-│   │   │   ├── KeyDecoder.cs
-│   │   │   ├── Keystroke.cs
-│   │   │   ├── TypedWordTracker.cs
-│   │   │   ├── WordBoundaries.cs
-│   │   │   └── WordCommit.cs
-│   │   ├── Ui/
-│   │   │   ├── AutocorrectPage.xaml
-│   │   │   └── AutocorrectPage.xaml.cs
-│   │   ├── ViewModels/
-│   │   │   ├── AutocorrectAppRow.cs
-│   │   │   └── AutocorrectViewModel.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
-│   │   ├── AutocorrectSettings.cs
-│   │   ├── AutocorrectSettingsService.cs
-│   │   ├── CLAUDE.md
-│   │   ├── Deckle.Input.Autocorrect.csproj
-│   │   ├── DeckleAutocorrectSource.cs
-│   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input.Autocorrect — founding choices, m…
-│   ├── Deckle.Input.Autocorrect.Lab/
-│   │   ├── DataSet.cs
-│   │   ├── Deckle.Input.Autocorrect.Lab.csproj
-│   │   ├── HarvestData.cs
-│   │   ├── HarvestFilter.cs
-│   │   ├── HarvestStore.cs
-│   │   ├── LexiconBuilder.cs
-│   │   ├── MorphalouReader.cs
-│   │   ├── PairModelTrainer.cs
-│   │   ├── RestorationEvaluator.cs
-│   │   └── RestorationReport.cs
-│   ├── Deckle.Input.Autocorrect.Mlm/
-│   │   ├── CamembertMlmScorer.cs
-│   │   ├── CamembertSentenceReranker.cs
-│   │   ├── Deckle.Input.Autocorrect.Mlm.csproj
-│   │   └── MlmProbe.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
@@ -774,6 +785,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
+│   │   │   ├── AutocorrectDecisionsConsentDialog.cs
+│   │   │   ├── AutocorrectTextConsentDialog.cs
 │   │   │   ├── CorpusConsentDialog.cs
 │   │   │   └── MicrophoneTelemetryConsentDialog.cs
 │   │   ├── Pages/
@@ -1000,6 +1013,39 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs
+│   ├── Deckle.Autocorrect.Tests/
+│   │   ├── AccentFoldingTests.cs
+│   │   ├── AccentIndexTests.cs
+│   │   ├── AutocorrectDecisionMapTests.cs
+│   │   ├── AutocorrectEngineCorrectionTests.cs
+│   │   ├── AutocorrectEngineGateTests.cs
+│   │   ├── AutocorrectEngineHarness.cs
+│   │   ├── AutocorrectEngineLearningTests.cs
+│   │   ├── AutocorrectEngineLifecycleTests.cs
+│   │   ├── AutocorrectEngineObservabilityTests.cs
+│   │   ├── AutocorrectEngineRevertTests.cs
+│   │   ├── AutocorrectSettingsTests.cs
+│   │   ├── BigramPairDisambiguatorTests.cs
+│   │   ├── CamembertRerankerIntegrationTests.cs
+│   │   ├── CasePatternTests.cs
+│   │   ├── ConservativeTypoCorrectorTests.cs
+│   │   ├── CorrectionTraceTests.cs
+│   │   ├── Deckle.Autocorrect.Tests.csproj
+│   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── ElisionCorrectorTests.cs
+│   │   ├── FrequencyLexiconTests.cs
+│   │   ├── HarvestDataTests.cs
+│   │   ├── HarvestFilterTests.cs
+│   │   ├── InjectionPlanTests.cs
+│   │   ├── KeyDecoderTests.cs
+│   │   ├── MorphalouReaderTests.cs
+│   │   ├── PairModelTrainerTests.cs
+│   │   ├── PersonalDictionaryTests.cs
+│   │   ├── RestorationEvaluatorTests.cs
+│   │   ├── SentenceCorpusTests.cs
+│   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── TypedWordTrackerTests.cs
+│   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs
@@ -1021,33 +1067,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
-│   ├── Deckle.Input.Autocorrect.Tests/
-│   │   ├── AccentFoldingTests.cs
-│   │   ├── AccentIndexTests.cs
-│   │   ├── AutocorrectDecisionMapTests.cs
-│   │   ├── AutocorrectEngineCorrectionTests.cs
-│   │   ├── AutocorrectEngineGateTests.cs
-│   │   ├── AutocorrectEngineHarness.cs
-│   │   ├── AutocorrectEngineLearningTests.cs
-│   │   ├── AutocorrectEngineLifecycleTests.cs
-│   │   ├── AutocorrectEngineObservabilityTests.cs
-│   │   ├── AutocorrectEngineRevertTests.cs
-│   │   ├── AutocorrectSettingsTests.cs
-│   │   ├── BigramPairDisambiguatorTests.cs
-│   │   ├── CasePatternTests.cs
-│   │   ├── Deckle.Input.Autocorrect.Tests.csproj
-│   │   ├── DiacriticsRestorerTests.cs
-│   │   ├── FrequencyLexiconTests.cs
-│   │   ├── HarvestDataTests.cs
-│   │   ├── HarvestFilterTests.cs
-│   │   ├── InjectionPlanTests.cs
-│   │   ├── KeyDecoderTests.cs
-│   │   ├── MorphalouReaderTests.cs
-│   │   ├── PairModelTrainerTests.cs
-│   │   ├── PersonalDictionaryTests.cs
-│   │   ├── RestorationEvaluatorTests.cs
-│   │   ├── TypedWordTrackerTests.cs
-│   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj

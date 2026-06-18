@@ -110,6 +110,23 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial int AudioCorpusContentIndex { get; set; }
 
+    // Autocorrect decisions — the per-word decision dataset
+    // (autocorrect.decisions.jsonl): every corrected or left-literal word on an
+    // enrolled surface with its candidates, scores, margins and the guard that
+    // decided it. Carries typed words by design — the diagnostic surface for tuning
+    // the corrector before adding grammar — so it is consent-gated like the other
+    // text captures. Off by default.
+    [ObservableProperty]
+    public partial bool AutocorrectDecisions { get; set; }
+
+    // Autocorrect text — the typed-sentence corpus (autocorrect.text.jsonl): each
+    // sentence typed at the keyboard on an enrolled surface, verbatim form paired
+    // with the corrected one. The substrate for modelling the user's own error
+    // patterns. The heaviest text capture — a verbatim record of typed input — so it
+    // is nested under the decision toggle in the UI and off by default.
+    [ObservableProperty]
+    public partial bool AutocorrectText { get; set; }
+
     // Storage folder override — empty = AppPaths.TelemetryDirectory.
     // FolderPickerCard.DefaultPath is wired to the resolved default in
     // the page code-behind ; the picker shows it as a placeholder when
@@ -190,6 +207,20 @@ public partial class DiagnosticsViewModel : ObservableObject
         PushTelemetryToSettings();
     }
 
+    partial void OnAutocorrectDecisionsChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.AutocorrectDecisions", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnAutocorrectTextChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsSource.Log.SettingChanged("Telemetry.AutocorrectText", value.ToString());
+        PushTelemetryToSettings();
+    }
+
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
@@ -223,6 +254,8 @@ public partial class DiagnosticsViewModel : ObservableObject
         TelemetryCorpusEnabled = false;
         RecordAudioCorpus = false;
         AudioCorpusContentIndex = 0;
+        AutocorrectDecisions = false;
+        AutocorrectText = false;
         TelemetryStorageDirectory = "";
 
         // _isSyncing stays true — Load() will set it to false.
@@ -246,6 +279,8 @@ public partial class DiagnosticsViewModel : ObservableObject
             TelemetryCorpusEnabled = t.CorpusEnabled;
             RecordAudioCorpus = t.RecordAudioCorpus;
             AudioCorpusContentIndex = (int)t.AudioCorpusContent;
+            AutocorrectDecisions = t.AutocorrectDecisions;
+            AutocorrectText = t.AutocorrectText;
             TelemetryStorageDirectory = t.StorageDirectory;
         }
         finally
@@ -275,6 +310,8 @@ public partial class DiagnosticsViewModel : ObservableObject
         t.AudioCorpusContent = AudioCorpusContentIndex < 0
             ? AudioCorpusContent.MatchTranscription
             : (AudioCorpusContent)AudioCorpusContentIndex;
+        t.AutocorrectDecisions = AutocorrectDecisions;
+        t.AutocorrectText = AutocorrectText;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
         TelemetrySettingsService.Instance.Save();
     }
@@ -308,6 +345,8 @@ public partial class DiagnosticsViewModel : ObservableObject
             TelemetryCorpusEnabled = false;
             RecordAudioCorpus = false;
             AudioCorpusContentIndex = 0;
+            AutocorrectDecisions = false;
+            AutocorrectText = false;
             TelemetryStorageDirectory = "";
         }
         finally { _isSyncing = false; }

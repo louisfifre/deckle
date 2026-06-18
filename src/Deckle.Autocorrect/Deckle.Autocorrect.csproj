@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Autocorrect</RootNamespace>
+    <!-- WinUI XAML compilation : the module ships its own Settings page
+         (AutocorrectPage.xaml), following the "each module carries its own
+         settings page" doctrine. Same lib-with-PRI pattern as
+         Deckle.Input.Trackpad / Deckle.Transcription. The live engine itself
+         depends on none of this — only the page does. -->
+    <UseWinUI>true</UseWinUI>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <!-- MVVM Toolkit — [ObservableProperty] / [RelayCommand] in the page
+         view-models (AutocorrectViewModel, AutocorrectAppRow). -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- SettingsCard — AutocorrectPage canonical layout. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Support layer: raw keyboard stream, injection interop. -->
+    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <!-- Icons catalog + shared styles (SubtleButtonStyle) for the page. -->
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Derived lexical artifacts (build-data output) ride next to the binary.
+         Note: this Content lands flat under "Data\" in THIS project's own output,
+         but does NOT transit flat into a consuming app — the SDK prefixes it with
+         the project name there. Deckle.App flattens it back with a post-build
+         target (FlattenAutocorrectLexicons) so the engine finds it beside the exe. -->
+    <Content Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output. Convention
+         documented in ../Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+</Project>
