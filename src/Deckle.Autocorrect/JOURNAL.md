@@ -5,6 +5,16 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-06-18 — Grammar brick: approach and the agreement rule
+
+Grammar/conjugation correction is a home-grown deterministic rule engine over Lexique morphology, in-process, no JVM — not LanguageTool embedded or ported. LanguageTool's ~7000 French rules match on POS tags, not surface, so they are inseparable from its Java tagger/disambiguator; "recover existing rules" is taken as recovering the rule knowledge for a safe subset, expressed in our own engine, the morphology lifted from Lexique 3.83 (CC BY-SA, already vendored).
+
+The verb morphology Lexique carries but build-data dropped is now emitted as verbs-fr.tsv.gz (form, lemma, infover codes, a verb-only flag read off cgramortho) and read back through VerbMorphology (readings per form, reverse conjugation, the ambiguity guard). First rule: subject–verb agreement on an adjacent subject-only pronoun (je/tu/il/elle/on/ils/elles; nous/vous excluded — they double as object clitics), firing only on a verb-only form with a unique agreeing target, else the literal stands. Wired last in the composite, optional — absent the artifact the chain runs as before.
+
+é/er/ez (infinitive vs participle vs 2nd-plural) is deferred: the safe trigger set is a calibration question — the "rien de cassé" adjectival trap after "de", participles tagged ADJ — better grounded on the live decision telemetry than guessed.
+
+Note: LexiconBuilder.Run has no in-repo caller; the artifact regenerates through the maintainer's build-data gesture.
+
 ## 2026-06-18 — Revert in the decision dataset
 
 The revert gesture now leaves a structured record (AutocorrectRevertRecorded, id 20) in autocorrect.decisions.jsonl, joined to the correction it undoes by the per-word id, under the same AutocorrectDecisions gate — no new toggle. It carries the pair, the consumed boundary char, its kind (whitespace/punctuation/apostrophe/other) and the commit→revert delta. The current discriminator (first Backspace within 2 s) only ever consumes the trailing boundary, so a `punctuation`-kind revert is the signature of the known misfire — deleting a misplaced comma/period, misread as an undo. This is the diagnostic precursor; the discriminator fix (fire only when the Backspace bites into the corrected word) is deferred until the data confirms.

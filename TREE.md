@@ -368,6 +368,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── ElisionCorrector.cs
+│   │   │   ├── GrammarCorrector.cs
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
@@ -392,7 +393,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentFolding.cs
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
-│   │   │   └── FrequencyLexicon.cs
+│   │   │   ├── FrequencyLexicon.cs
+│   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1034,6 +1036,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrequencyLexiconTests.cs
+│   │   ├── GrammarCorrectorTests.cs
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
@@ -1045,6 +1048,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
+│   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs

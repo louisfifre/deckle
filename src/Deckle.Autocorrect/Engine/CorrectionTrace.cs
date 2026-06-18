@@ -186,15 +186,17 @@ public sealed class CorrectionTrace
         public const string Diacritics = "diacritics";
         public const string Elision    = "elision";
         public const string Typo       = "typo";
+        public const string Grammar    = "grammar";
         public const string None       = "none";
     }
 
     // Where a candidate surface form came from. Closed vocabulary.
     public static class Sources
     {
-        public const string Index    = "index";    // the accent index variants
-        public const string Literal  = "literal";  // the typed form, itself valid French
-        public const string Personal = "personal"; // the user's adopted dictionary
+        public const string Index       = "index";       // the accent index variants
+        public const string Literal     = "literal";     // the typed form, itself valid French
+        public const string Personal    = "personal";    // the user's adopted dictionary
+        public const string Conjugation = "conjugation"; // synthesised from the verb paradigm
     }
 
     // Every guard exit and firing reason a stage can record. Closed vocabulary —
@@ -240,6 +242,15 @@ public sealed class CorrectionTrace
         public const string TooRare   = "too_rare";        // best neighbour below the frequency floor
         public const string TypoNear  = "typo_near";       // fired: one edit away
         public const string TypoFar   = "typo_far";        // fired: two edits away
+
+        // Grammar outcomes.
+        public const string NoSubjectPronoun = "no_subject_pronoun"; // no subject pronoun immediately before
+        public const string NotAVerb         = "not_a_verb";          // the form carries no verb reading
+        public const string VerbAmbiguous    = "verb_ambiguous";      // form doubles as a noun/adjective
+        public const string NotFinite        = "not_finite";          // no person-bearing reading to agree
+        public const string AlreadyAgrees    = "already_agrees";      // a reading already matches the subject
+        public const string NoUniqueTarget   = "no_unique_target";    // zero or several agreeing forms — unsafe
+        public const string SubjectVerbAgreement = "subject_verb_agreement"; // fired: re-conjugated to the subject
     }
 }
 

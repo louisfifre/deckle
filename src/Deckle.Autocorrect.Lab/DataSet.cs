@@ -13,6 +13,7 @@ internal sealed class DataSet
     public const string FrenchFile = "lexicon-fr.tsv.gz";
     public const string EnglishFile = "lexicon-en.tsv.gz";
     public const string PairFile = "pair-bigrams-fr.tsv.gz";
+    public const string VerbsFile = "verbs-fr.tsv.gz";
 
     public required FrequencyLexicon French { get; init; }
     public FrequencyLexicon? English { get; init; }
@@ -22,6 +23,7 @@ internal sealed class DataSet
     public static string FrenchPath(string dataDir) => Path.Combine(dataDir, FrenchFile);
     public static string EnglishPath(string dataDir) => Path.Combine(dataDir, EnglishFile);
     public static string PairPath(string dataDir) => Path.Combine(dataDir, PairFile);
+    public static string VerbsPath(string dataDir) => Path.Combine(dataDir, VerbsFile);
 
     // Loads the dataset. English and the pair model are pulled only when their
     // files exist and the caller asks for them. The pair model carries the
