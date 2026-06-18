@@ -54,6 +54,7 @@ public partial class App
             string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
             string frenchPath = Path.Combine(dataDir, "lexicon-fr.tsv.gz");
             string pairPath = Path.Combine(dataDir, "pair-bigrams-fr.tsv.gz");
+            string verbsPath = Path.Combine(dataDir, "verbs-fr.tsv.gz");
 
             // The French lexicon is the gate; without it there is nothing to do,
             // so leave autocorrect unbuilt rather than start a no-op engine.
@@ -67,20 +68,24 @@ public partial class App
             // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
             // shape).
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, index, context, reranker) = await Task.Run(() =>
+            var (french, index, context, reranker, verbs) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
                 var idx = AccentIndex.Build(fr);
                 var ctx = File.Exists(pairPath)
                     ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
                     : null;
+                // Verb morphology drives the grammar stage (subject–verb
+                // agreement). Optional like the pair model — absent its artifact
+                // the engine simply runs the chain without agreement correction.
+                var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
                 // The contextual reranker's model is large (~440 MB) and optional:
                 // TryLoad returns null when it is absent, leaving gate + typo only.
                 // Loaded here, off the UI thread, alongside the lexicons.
                 string modelDir = Path.Combine(AppPaths.ModelsDirectory, "camembert-base");
                 ISentenceReranker? rr = CamembertReranker.TryLoad(
                     modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
-                return (fr, idx, ctx, rr);
+                return (fr, idx, ctx, rr, vb);
             }).ConfigureAwait(true);
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
@@ -117,7 +122,18 @@ public partial class App
             // "cest" to "est" by a plain edit before the apostrophe is considered.
             var elision = new ElisionCorrector(french, _autocorrectDictionary);
 
-            var policy = new CompositeCorrectionPolicy(diacritics, elision, typo);
+            // Stage three: subject–verb agreement on a valid-but-misconjugated
+            // word the stages above leave alone ("tu mange" → "tu manges").
+            // Present only when the verb-morphology artifact loaded; last in the
+            // chain, since it acts on the forms the earlier stages pass through.
+            var grammar = verbs is not null
+                ? new GrammarCorrector(verbs, _autocorrectDictionary)
+                : null;
+
+            var policies = new List<ICorrectionPolicy> { diacritics, elision, typo };
+            if (grammar is not null)
+                policies.Add(grammar);
+            var policy = new CompositeCorrectionPolicy(policies.ToArray());
 
             _autocorrectEngine = new AutocorrectEngine(
                 host: _keyboardMouseHost,

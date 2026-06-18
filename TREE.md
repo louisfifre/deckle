@@ -368,6 +368,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── ElisionCorrector.cs
+│   │   │   ├── GrammarCorrector.cs
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
@@ -1035,6 +1036,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrequencyLexiconTests.cs
+│   │   ├── GrammarCorrectorTests.cs
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs

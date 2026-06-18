@@ -18,6 +18,8 @@ public enum CorrectionReason
     SentenceReranker,
     /// <summary>The first word of a sentence raised to a capital.</summary>
     Capitalization,
+    /// <summary>A verb re-conjugated to agree with its adjacent subject pronoun.</summary>
+    SubjectVerbAgreement,
     /// <summary>The étape-2 toy hotstring — dev only.</summary>
     ToyHotstring,
 }
