@@ -1,4 +1,4 @@
-namespace Deckle.Settings;
+namespace Deckle.Catalog;
 
 // ── SettingKind ──────────────────────────────────────────────────────────────
 //

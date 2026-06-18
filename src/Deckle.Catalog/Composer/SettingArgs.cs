@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Deckle.Settings;
+namespace Deckle.Catalog;
 
 // ── SettingArgs ──────────────────────────────────────────────────────────────
 //

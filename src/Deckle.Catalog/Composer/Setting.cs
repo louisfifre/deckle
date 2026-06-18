@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 
-namespace Deckle.Settings;
+namespace Deckle.Catalog;
 
 // ── Setting ──────────────────────────────────────────────────────────────────
 //

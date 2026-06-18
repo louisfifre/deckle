@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 
-namespace Deckle.Settings;
+namespace Deckle.Catalog;
 
 // ── SettingDescriptor ────────────────────────────────────────────────────────
 //

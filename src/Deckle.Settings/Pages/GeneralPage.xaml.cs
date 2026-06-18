@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Settings;
-using Deckle.Settings.Dialogs;
 using Deckle.Core;
 using Deckle.Shell;
 

@@ -444,6 +444,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         Settings.SettingsHost.ApplyLevelWindow = ApplyLevelWindow;
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
+        // The Path-kind picker control is module-owned (FolderPickerCard needs the
+        // Settings window + ETW source), so the floor composer builds it through
+        // this factory — same lib-exposes-delegate / App-owns-contract pattern.
+        Catalog.SettingsComposer.PathControlFactory = args => new Settings.FolderPickerCard
+        {
+            Mode = args.Mode,
+            DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
+        };
         Settings.SettingsHost.OpenSetupWizard  = () =>
         {
             // Wizard XAML lives in the standalone Deckle.Setup module

@@ -4,6 +4,7 @@ using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
+using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 
@@ -23,8 +24,12 @@ namespace Deckle.Settings;
 // TextBlock falls back to DefaultPath in the same secondary styling at
 // reduced opacity — same UX as the legacy TextBox PlaceholderText, but
 // without the misleading affordance of an editable input field.
-public sealed partial class FolderPickerCard : UserControl
+public sealed partial class FolderPickerCard : UserControl, IPathControl
 {
+    // IPathControl: the floor composer hosts this control as a SettingsCard's
+    // content for a Path setting; Path and PathChanged below complete the contract.
+    public FrameworkElement View => this;
+
     public static readonly DependencyProperty PathProperty =
         DependencyProperty.Register(
             nameof(Path), typeof(string), typeof(FolderPickerCard),

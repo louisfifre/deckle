@@ -4,11 +4,10 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Threading.Tasks;
 using CommunityToolkit.WinUI.Controls;
-using Deckle.Catalog;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Deckle.Settings;
+namespace Deckle.Catalog;
 
 // ── SettingsComposer ─────────────────────────────────────────────────────────
 //
@@ -67,6 +66,14 @@ public sealed class SettingsComposer
     // The displayed "dose" captured at Compose, so a group can filter its own
     // advanced children the same way the top level filters advanced settings.
     private bool _showAdvanced = true;
+
+    // Host-supplied factory for the Path kind's picker control. The concrete
+    // FolderPickerCard lives in Settings (it needs the Settings window and the
+    // module's ETW source), so the floor composer cannot new it up; the app wires
+    // this at boot, beside the SettingsHost delegates. Null until wired — a Path
+    // setting composed before then throws, surfacing the gap loudly rather than
+    // rendering a dead card.
+    public static Func<PathArgs, IPathControl>? PathControlFactory { get; set; }
 
     public SettingsComposer(Panel host, INotifyPropertyChanged? source)
     {
@@ -547,14 +554,17 @@ public sealed class SettingsComposer
     {
         var args = (PathArgs)s.Args!;
 
-        var picker = new FolderPickerCard
-        {
-            Mode = args.Mode,
-            // Deferred lookup invoked once here: the empty-value fallback display
-            // and the Open target both resolve from AppPaths at compose time.
-            DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
-            Path = AsString(s.GetValue()),
-        };
+        // The picker control is module-owned (see PathControlFactory): the composer
+        // builds it through the host's factory, which resolves Mode and the deferred
+        // DefaultPath (the empty-value fallback computed from AppPaths at compose
+        // time), then bridges its Path to the descriptor selectors.
+        if (PathControlFactory is null)
+            throw new InvalidOperationException(
+                "SettingsComposer.PathControlFactory is not wired — the host must " +
+                "register the folder-picker control before a Path setting is composed.");
+
+        IPathControl picker = PathControlFactory(args);
+        picker.Path = AsString(s.GetValue());
 
         // The card's content stacks the path readout on its own row below the
         // description, so it hosts vertically rather than on the trailing edge.
@@ -566,7 +576,7 @@ public sealed class SettingsComposer
             s.SetValue(picker.Path);
         };
 
-        card.Content = picker;
+        card.Content = picker.View;
 
         _refreshers.Add(() =>
         {

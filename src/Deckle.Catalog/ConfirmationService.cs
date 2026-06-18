@@ -2,14 +2,14 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Deckle.Settings.Dialogs;
+namespace Deckle.Catalog;
 
 // ─── ConfirmationService ───────────────────────────────────────────────────
 //
 // One reusable "are you sure?" gate for destructive commands. Any page that
 // guards an irreversible action (restore-over, wipe, reset-to-default) builds
 // a ConfirmationRequest and awaits RequestAsync — same ContentDialog shape and
-// theme as the consent dialogs in this folder, so the look stays consistent.
+// theme as the modules' consent dialogs, so the look stays consistent.
 //
 // The service is deliberately copy-agnostic: the caller passes the already-
 // resolved, already-formatted Title/Body/PrimaryVerb (its own Loc keys, its
@@ -35,7 +35,7 @@ public static class ConfirmationService
                 Text = request.Body
             },
             PrimaryButtonText = request.PrimaryVerb,
-            CloseButtonText = Deckle.Catalog.Loc.Get("Common_Cancel"),
+            CloseButtonText = Loc.Get("Common_Cancel"),
             // A destructive action defaults to the SAFE button: Enter commits
             // nothing, the user has to reach for the verb on purpose. A merely
             // confirming (non-destructive) action keeps Primary as default.

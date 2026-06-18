@@ -16,5 +16,11 @@
          par process. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <!-- SettingsCard / SettingsExpander. The settings composer (relocated here
+         from Deckle.Settings so every settings-bearing module can compose
+         against the floor, not the Settings shell) builds these controls, so the
+         package belongs with it. Modules that reference Catalog get the control
+         set transitively. Version centralised in Directory.Packages.props. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
 </Project>

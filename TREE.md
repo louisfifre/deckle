@@ -353,10 +353,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProbeResult.cs
 │   │   └── SpeakerOutput.cs
 │   ├── Deckle.Catalog/
+│   │   ├── Composer/
+│   │   │   ├── IPathControl.cs
+│   │   │   ├── Setting.cs
+│   │   │   ├── SettingArgs.cs
+│   │   │   ├── SettingDescriptor.cs
+│   │   │   ├── SettingKind.cs
+│   │   │   └── SettingsComposer.cs
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
 │   │   ├── AGENTS.md  — [agent-instructions] UI resource catalog — localized strings (Loc / x:Uid) and Segoe Fluent glyphs,…
 │   │   ├── CLAUDE.md
+│   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
 │   │   └── Loc.cs
@@ -761,12 +769,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Settings/
-│   │   ├── Composer/
-│   │   │   ├── Setting.cs
-│   │   │   ├── SettingArgs.cs
-│   │   │   ├── SettingDescriptor.cs
-│   │   │   ├── SettingKind.cs
-│   │   │   └── SettingsComposer.cs
 │   │   ├── Controls/
 │   │   │   ├── FolderPickerCard.xaml
 │   │   │   ├── FolderPickerCard.xaml.cs
@@ -779,7 +781,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
-│   │   │   ├── ConfirmationService.cs
 │   │   │   ├── CorpusConsentDialog.cs
 │   │   │   └── MicrophoneTelemetryConsentDialog.cs
 │   │   ├── Pages/
