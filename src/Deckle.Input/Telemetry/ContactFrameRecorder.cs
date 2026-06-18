@@ -5,7 +5,7 @@ using Deckle.Core;
 namespace Deckle.Input;
 
 // Writes raw contact frames to a dedicated JSONL file — one file per
-// recording session under <UserDataRoot>/telemetry/, separate from the
+// recording session under <UserDataRoot>/telemetry/trackpad/, separate from the
 // app.jsonl pipeline by design: frames flow at report cadence and would
 // drown the shared log; here they land in a self-describing dataset
 // made to be replayed and analyzed (cadence, gaps, bursts, hybrid
@@ -55,7 +55,7 @@ public sealed class ContactFrameRecorder : IDisposable
             try
             {
                 string fileName = $"trackpad-frames-{DateTime.Now:yyyyMMdd-HHmmss}.jsonl";
-                _path = Path.Combine(AppPaths.TelemetryDirectory, fileName);
+                _path = Path.Combine(AppPaths.TrackpadTelemetryDirectory, fileName);
                 _writer = new StreamWriter(_path, append: false, Encoding.UTF8) { AutoFlush = false };
                 _frames = 0;
                 _firstFrameMs = -1;

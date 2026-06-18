@@ -13,8 +13,9 @@ public sealed class MouseWheelSettings
 {
     /// <summary>
     /// Diagnostics — record raw wheel events (cadence, deltas, axes) to a
-    /// dedicated JSONL file under telemetry/. Holds the shared keyboard/mouse
-    /// input host up for the duration, independent of any other consumer.
+    /// dedicated JSONL file under telemetry/mouse-wheel/. Holds the shared
+    /// keyboard/mouse input host up for the duration, independent of any other
+    /// consumer.
     /// </summary>
     public bool RecordEvents { get; set; } = false;
 }

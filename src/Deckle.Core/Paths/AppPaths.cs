@@ -11,7 +11,8 @@ namespace Deckle.Core;
 //
 //   • settings.json — single config file, sits at the root
 //   • backups/      — settings backup snapshots
-//   • telemetry/    — JSONL files (app, latency, microphone) + per-profile corpus
+//   • telemetry/    — JSONL files (app, latency, microphone), raw-capture
+//                     subfolders, and per-profile corpus
 //   • diagnostics/  — always-on local logs (setup, errors); never transmitted
 //   • models/       — Whisper ggml-*.bin
 //   • native/       — libwhisper.dll, ggml*.dll
@@ -42,15 +43,17 @@ public static class AppPaths
     // Empty/unset → default location.
     public const string DataRootEnvVar = "DECKLE_DATA_ROOT";
 
-    public static string UserDataRoot            { get; }
-    public static string SettingsFilePath        { get; }
-    public static string SettingsBackupDirectory { get; }
-    public static string TelemetryDirectory      { get; }
-    public static string DiagnosticsDirectory    { get; }
-    public static string ModelsDirectory         { get; }
-    public static string NativeDirectory         { get; }
-    public static string BenchmarkDirectory      { get; }
-    public static string ModulesDirectory        { get; }
+    public static string UserDataRoot                 { get; }
+    public static string SettingsFilePath             { get; }
+    public static string SettingsBackupDirectory      { get; }
+    public static string TelemetryDirectory           { get; }
+    public static string TrackpadTelemetryDirectory   { get; }
+    public static string MouseWheelTelemetryDirectory { get; }
+    public static string DiagnosticsDirectory         { get; }
+    public static string ModelsDirectory              { get; }
+    public static string NativeDirectory              { get; }
+    public static string BenchmarkDirectory           { get; }
+    public static string ModulesDirectory             { get; }
 
     /// <summary>
     /// Returns the per-module data directory under
@@ -76,15 +79,17 @@ public static class AppPaths
 
     static AppPaths()
     {
-        UserDataRoot            = ResolveUserDataRoot();
-        SettingsFilePath        = Path.Combine(UserDataRoot, "settings.json");
-        SettingsBackupDirectory = Path.Combine(UserDataRoot, "backups");
-        TelemetryDirectory      = Path.Combine(UserDataRoot, "telemetry");
-        DiagnosticsDirectory    = Path.Combine(UserDataRoot, "diagnostics");
-        ModelsDirectory         = Path.Combine(UserDataRoot, "models");
-        NativeDirectory         = Path.Combine(UserDataRoot, "native");
-        BenchmarkDirectory      = Path.Combine(UserDataRoot, "benchmark");
-        ModulesDirectory        = Path.Combine(UserDataRoot, "modules");
+        UserDataRoot                 = ResolveUserDataRoot();
+        SettingsFilePath             = Path.Combine(UserDataRoot, "settings.json");
+        SettingsBackupDirectory      = Path.Combine(UserDataRoot, "backups");
+        TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
+        TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
+        MouseWheelTelemetryDirectory = Path.Combine(TelemetryDirectory, "mouse-wheel");
+        DiagnosticsDirectory         = Path.Combine(UserDataRoot, "diagnostics");
+        ModelsDirectory              = Path.Combine(UserDataRoot, "models");
+        NativeDirectory              = Path.Combine(UserDataRoot, "native");
+        BenchmarkDirectory           = Path.Combine(UserDataRoot, "benchmark");
+        ModulesDirectory             = Path.Combine(UserDataRoot, "modules");
 
         // UserDataRoot, telemetry, and diagnostics are created eagerly — the
         // locations the app writes to from boot during normal operation.
@@ -97,6 +102,8 @@ public static class AppPaths
         // first write by SettingsBackupService.
         Directory.CreateDirectory(UserDataRoot);
         Directory.CreateDirectory(TelemetryDirectory);
+        Directory.CreateDirectory(TrackpadTelemetryDirectory);
+        Directory.CreateDirectory(MouseWheelTelemetryDirectory);
         Directory.CreateDirectory(DiagnosticsDirectory);
 
         TryMigrateLegacySettingsLayout();

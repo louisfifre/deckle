@@ -1,3 +1,4 @@
+using Deckle.Input;
 using Deckle.Notifications;
 using Deckle.Shell;
 using Microsoft.UI.Xaml;
@@ -7,7 +8,8 @@ using Microsoft.UI.Xaml.Navigation;
 namespace Deckle.Playground;
 
 // Landing page of the Playground. Holds no state, no settings, no
-// timers — just three routing handlers. Lives in NavigationCacheMode.Required
+// timers — just three routing handlers and lightweight diagnostic probes.
+// Lives in NavigationCacheMode.Required
 // for consistency with the other pages (cheap to keep around, avoids
 // re-instantiation on every back-nav).
 public sealed partial class HomePage : Page
@@ -16,6 +18,7 @@ public sealed partial class HomePage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        MouseWheelRecordToggle.IsOn = MouseWheelSettingsService.Instance.Current.RecordEvents;
     }
 
     // Route via the shell's callback registry — the page doesn't reach
@@ -32,14 +35,20 @@ public sealed partial class HomePage : Page
         PlaygroundShell.NavigateTo?.Invoke("ambient");
     }
 
-    private void OnMouseWheelCardClick(object sender, RoutedEventArgs e)
-    {
-        PlaygroundShell.NavigateTo?.Invoke("mousewheel");
-    }
-
     private void OnSegmentationCardClick(object sender, RoutedEventArgs e)
     {
         PlaygroundShell.NavigateTo?.Invoke("segmentation");
+    }
+
+    // Persist the intent; App.ReconcileMouseWheel turns the setting into a
+    // start/stop on the shared keyboard/mouse input host. The equality guard
+    // skips the constructor's seed assignment.
+    private void OnMouseWheelRecordToggled(object sender, RoutedEventArgs e)
+    {
+        var settings = MouseWheelSettingsService.Instance.Current;
+        if (settings.RecordEvents == MouseWheelRecordToggle.IsOn) return;
+        settings.RecordEvents = MouseWheelRecordToggle.IsOn;
+        MouseWheelSettingsService.Instance.Save();
     }
 
     // Manual probe for the notification toast channel. Fires the Playground

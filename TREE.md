@@ -751,9 +751,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── MouseWheel/
-│   │   │   │   ├── MouseWheelPage.xaml
-│   │   │   │   └── MouseWheelPage.xaml.cs
 │   │   │   ├── Segmentation/
 │   │   │   │   ├── SegmentationPage.xaml
 │   │   │   │   └── SegmentationPage.xaml.cs

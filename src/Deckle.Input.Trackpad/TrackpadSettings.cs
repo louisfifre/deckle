@@ -17,7 +17,7 @@ public sealed class TrackpadSettings
 
     /// <summary>
     /// Diagnostics — record raw contact frames to a dedicated JSONL file
-    /// under telemetry/ (independent of the master switch, so real
+    /// under telemetry/trackpad/ (independent of the master switch, so real
     /// Bluetooth sessions can be captured with the recognizer off).
     /// </summary>
     public bool RecordFrames { get; set; } = false;

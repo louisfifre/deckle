@@ -190,6 +190,6 @@
     <value>Record raw contact frames</value>
   </data>
   <data name="TrackpadPage_RecordFramesCard.Description" xml:space="preserve">
-    <value>Writes every contact frame to a JSONL file in the telemetry folder. Works whether or not three-finger drag is on.</value>
+    <value>Writes every contact frame to a JSONL file in telemetry\trackpad. Works whether or not three-finger drag is on.</value>
   </data>
 </root>

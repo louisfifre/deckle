@@ -348,7 +348,6 @@ public sealed partial class PlaygroundWindow : Window
             "home"         => "Deckle.Playground.HomePage",
             "hud"          => "Deckle.Playground.HudPage",
             "ambient"      => "Deckle.Playground.AmbientPage",
-            "mousewheel"   => "Deckle.Playground.MouseWheelPage",
             "segmentation" => "Deckle.Playground.SegmentationPage",
             _              => "",
         };

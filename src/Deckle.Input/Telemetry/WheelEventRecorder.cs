@@ -6,11 +6,12 @@ using Deckle.Core;
 namespace Deckle.Input;
 
 // Writes raw mouse-wheel events to a dedicated JSONL file — one file per
-// recording session under <UserDataRoot>/telemetry/, the wheel counterpart
-// of ContactFrameRecorder. The two share a clock (RawInputHost.NowMs) and a
-// layout on purpose: the measurement package compares wheel cadence against
-// trackpad gesture cadence, and that comparison is only honest if both
-// streams carry the same `t` and the same self-describing header.
+// recording session under <UserDataRoot>/telemetry/mouse-wheel/, the wheel
+// counterpart of ContactFrameRecorder. The two share a clock
+// (RawInputHost.NowMs) and a layout on purpose: the measurement package
+// compares wheel cadence against trackpad gesture cadence, and that comparison
+// is only honest if both streams carry the same `t` and the same
+// self-describing header.
 //
 // File layout: a `session` header line (session id, start time), a `device`
 // line per wheel-emitting device seen (a short index, the HID name, and the
@@ -55,7 +56,7 @@ public sealed class WheelEventRecorder : IDisposable
             try
             {
                 string fileName = $"wheel-events-{DateTime.Now:yyyyMMdd-HHmmss}.jsonl";
-                _path = Path.Combine(AppPaths.TelemetryDirectory, fileName);
+                _path = Path.Combine(AppPaths.MouseWheelTelemetryDirectory, fileName);
                 _writer = new StreamWriter(_path, append: false, Encoding.UTF8) { AutoFlush = false };
                 _events = 0;
                 _firstEventMs = -1;
