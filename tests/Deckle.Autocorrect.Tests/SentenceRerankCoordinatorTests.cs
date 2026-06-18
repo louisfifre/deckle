@@ -106,6 +106,29 @@ public class SentenceRerankCoordinatorTests
         Assert.EndsWith("me", inj.Calls[0].Target);
     }
 
+    [Fact]
+    public void ResolvesASlotBeyondTheContextWindow()
+    {
+        // A slot more than ContextWindow (12) words into the sentence: the request
+        // carries a window-relative index, but the verdict must rewrite the correct
+        // ABSOLUTE slot — not a word twelve positions earlier. This is the
+        // relative/absolute mismatch that produced a resubmit storm of "resolved".
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        for (int k = 0; k < 13; k++)
+            coord.OnWordCommitted("mot", ' ', gateLeftLiteral: true); // unambiguous
+        coord.OnWordCommitted("la", ' ', gateLeftLiteral: true);      // slot index 13
+        coord.OnWordCommitted("x", ' ', true);
+        coord.OnWordCommitted("y", ' ', true);
+        coord.OnWordCommitted("z", ' ', true);                        // 3 words → fires
+
+        Assert.Single(inj.Calls);
+        Assert.StartsWith("la ", inj.Calls[0].Current);
+        Assert.StartsWith("là ", inj.Calls[0].Target);
+    }
+
     // ── Staleness guards ────────────────────────────────────────────────────
 
     [Fact]

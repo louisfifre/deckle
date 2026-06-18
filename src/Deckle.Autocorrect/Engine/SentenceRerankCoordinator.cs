@@ -82,6 +82,10 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private readonly List<SlotEntry> _buffer = new();
     private int _epoch;
     private bool _inFlight;
+    // The ABSOLUTE buffer index of the slot currently submitted. The request
+    // carries a window-relative index (for the model), so the verdict cannot be
+    // trusted to identify the slot — single-flight lets us remember it here.
+    private int _inFlightSlot = -1;
     private bool _nextWordIsSentenceInitial;
     private int _pendingCapSlot = -1;
     private bool _disposed;
@@ -209,8 +213,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
             if (s.IsAmbiguous && !s.Resolved && s.RightContextCount >= DeferralWords)
             {
                 _inFlight = true;
+                _inFlightSlot = i;
                 RerankRequest request = BuildRequest(i);
-                DeckleAutocorrectSource.Log.RerankSubmitted(request.SlotIndex, request.Sentence.Count);
+                DeckleAutocorrectSource.Log.RerankSubmitted(i, request.Sentence.Count);
                 _lane.Submit(request);
                 return;
             }
@@ -232,16 +237,21 @@ public sealed class SentenceRerankCoordinator : IDisposable
     {
         if (_disposed) return;
         _inFlight = false;
+        int slotIndex = _inFlightSlot;   // the absolute index we submitted
+        _inFlightSlot = -1;
 
-        // Stale (the sentence was reset under it) or out of range after a drop.
-        if (result.Epoch != _epoch || result.SlotIndex < 0 || result.SlotIndex >= _buffer.Count)
+        // Stale: the sentence was reset (epoch bumped) under the in-flight request,
+        // so the buffer no longer holds the slot we submitted. result.Epoch is the
+        // freshness check; the slot is identified by our own _inFlightSlot, never by
+        // result.SlotIndex (which is window-relative, for the model only).
+        if (result.Epoch != _epoch || slotIndex < 0 || slotIndex >= _buffer.Count)
         {
             DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale);
             TrySubmitNext();
             return;
         }
 
-        SlotEntry slot = _buffer[result.SlotIndex];
+        SlotEntry slot = _buffer[slotIndex];
         if (!slot.IsAmbiguous || slot.Resolved)
         {
             DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Resolved);
@@ -267,7 +277,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
             CorrectionReason reason = result.Chosen is not null
                 ? CorrectionReason.SentenceReranker
                 : CorrectionReason.Capitalization;
-            bool applied = ApplySlotRewrite(result.SlotIndex, target, reason);
+            bool applied = ApplySlotRewrite(slotIndex, target, reason);
             DeckleAutocorrectSource.Log.RerankVerdict(applied ? Outcome.Applied : Outcome.Blocked);
         }
 
