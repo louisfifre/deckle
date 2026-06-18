@@ -123,74 +123,16 @@
                          IsClosable="False" Severity="Error"
                          IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}" />
 
-                <!-- Voice level window — same calibration block as before. The
-                     master toggle in the header enables auto-calibration; the
-                     three sliders push live into AudioLevelMapper statics via
-                     SettingsHost.ApplyLevelWindow. -->
-                <controls:SettingsExpander x:Uid="GeneralVoiceLevelExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.VoiceLevel}}">
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <TextBlock x:Uid="GeneralVoiceLevelAutoLabel"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <ToggleSwitch IsOn="{x:Bind ViewModel.LevelWindowAutoCalibration, Mode=TwoWay}"
-                                      OnContent=""
-                                      OffContent="" />
-                    </StackPanel>
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Uid="GeneralVoiceLevelFloorCard">
-                            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                <Slider x:Name="LevelWindowMinSlider"
-                                        Minimum="-90" Maximum="-10"
-                                        Value="{x:Bind ViewModel.LevelWindowMinDbfs, Mode=TwoWay}"
-                                        StepFrequency="1"
-                                        Width="220"
-                                        IsThumbToolTipEnabled="False"
-                                        VerticalAlignment="Center" />
-                                <TextBlock Text="{x:Bind ViewModel.LevelWindowMinDbfs, Mode=OneWay}"
-                                           MinWidth="36"
-                                           VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <TextBlock Text="dBFS"
-                                           VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Uid="GeneralVoiceLevelCeilingCard">
-                            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                <Slider x:Name="LevelWindowMaxSlider"
-                                        Minimum="-60" Maximum="-10"
-                                        Value="{x:Bind ViewModel.LevelWindowMaxDbfs, Mode=TwoWay}"
-                                        StepFrequency="1"
-                                        Width="220"
-                                        IsThumbToolTipEnabled="False"
-                                        VerticalAlignment="Center" />
-                                <TextBlock Text="{x:Bind ViewModel.LevelWindowMaxDbfs, Mode=OneWay}"
-                                           MinWidth="36"
-                                           VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                <TextBlock Text="dBFS"
-                                           VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Uid="GeneralVoiceLevelCurveCard">
-                            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                                <Slider x:Name="LevelWindowExponentSlider"
-                                        Minimum="0.3" Maximum="3.0"
-                                        Value="{x:Bind ViewModel.LevelWindowExponent, Mode=TwoWay}"
-                                        StepFrequency="0.05"
-                                        Width="220"
-                                        IsThumbToolTipEnabled="False"
-                                        VerticalAlignment="Center" />
-                                <TextBlock Text="{x:Bind ViewModel.LevelWindowExponent, Mode=OneWay}"
-                                           MinWidth="36"
-                                           VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- Voice level window — the calibration group, composed. The
+                     master toggle is "set the window manually": ON reveals the
+                     three sliders, OFF re-enables auto-calibration and the Group
+                     hides them. RecordingPage.ComposeVoiceLevelSection() declares
+                     it as a Group SettingDescriptor (RecordingViewModel.Settings.cs)
+                     with master selectors projecting the inverse of
+                     LevelWindowAutoCalibration; the sliders push live into
+                     AudioLevelMapper via the VM setters' SettingsHost.ApplyLevelWindow. -->
+                <StackPanel x:Name="VoiceLevelHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>
         </Grid>

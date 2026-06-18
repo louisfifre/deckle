@@ -10,11 +10,10 @@ namespace Deckle.Settings;
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
 // own properties — and SettingsComposer turns the list into SettingsCards.
 //
-// Only the standalone capture-pipeline toggle migrates here. The microphone
-// ComboBox (runtime waveIn enumeration), the mic-check command + InfoBars
-// (diagnostic readouts, not values), and the voice-level expander (sliders with
-// AudioLevelMapper side effects, nested under a header toggle) stay hand-authored
-// in the page — none fits the flat get/set descriptor model today.
+// The microphone ComboBox (runtime waveIn enumeration) and the mic-check command
+// + InfoBars (diagnostic readouts, not values) stay hand-authored in the page —
+// neither fits the flat get/set descriptor model. The capture-pipeline toggle and
+// the voice-level window migrate here.
 public partial class RecordingViewModel
 {
     // Transcription pre-processing (the DSP black box). A single opt-in toggle;
@@ -27,5 +26,37 @@ public partial class RecordingViewModel
             () => PreprocessingEnabled,
             value => PreprocessingEnabled = value,
             glyph: Glyphs.AudioRecording),
+    ];
+
+    // Voice level window — the calibration group, with INVERTED master semantics.
+    // The fold's reveal model shows children when the master is ON, hides them when
+    // OFF. Here the three sliders are the MANUAL window, and they matter precisely
+    // when auto-calibration is OFF (auto overwrites them from measured percentiles).
+    // So the master is "set the level window manually" — true when auto is off — and
+    // the selectors project the inverse of LevelWindowAutoCalibration. The VM
+    // property and its OnLevelWindowAutoCalibrationChanged side effect are unchanged;
+    // only this projection flips the bool. The child setters carry the live
+    // AudioLevelMapper push (SettingsHost.ApplyLevelWindow) untouched. Bounds copied
+    // verbatim from the former hand-authored SettingsExpander.
+    public IReadOnlyList<SettingDescriptor> VoiceLevelSettings =>
+    [
+        Setting.Group("GeneralVoiceLevelExpander",
+            () => !LevelWindowAutoCalibration,
+            value => LevelWindowAutoCalibration = !value,
+            [
+                Setting.Slider("GeneralVoiceLevelFloorCard",
+                    () => LevelWindowMinDbfs,
+                    value => LevelWindowMinDbfs = value,
+                    new SliderArgs(-90, -10, 1, Unit: "dBFS")),
+                Setting.Slider("GeneralVoiceLevelCeilingCard",
+                    () => LevelWindowMaxDbfs,
+                    value => LevelWindowMaxDbfs = value,
+                    new SliderArgs(-60, -10, 1, Unit: "dBFS")),
+                Setting.Slider("GeneralVoiceLevelCurveCard",
+                    () => LevelWindowExponent,
+                    value => LevelWindowExponent = value,
+                    new SliderArgs(0.3, 3.0, 0.05)),
+            ],
+            glyph: Glyphs.VoiceLevel),
     ];
 }

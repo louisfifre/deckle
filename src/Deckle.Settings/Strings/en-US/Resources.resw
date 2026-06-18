@@ -692,10 +692,10 @@
     <value>Also tries to paste into the focused field. The paste is strict and only fires when the target can be safely confirmed — so it rarely triggers. The clipboard is always the reliable path.</value>
   </data>
   <data name="GeneralVoiceLevelExpander.Header" xml:space="preserve">
-    <value>Voice level window</value>
+    <value>Set the level window manually</value>
   </data>
   <data name="GeneralVoiceLevelExpander.Description" xml:space="preserve">
-    <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Calibrate once against your mic and forget it, or let auto-calibration update it from your measured percentiles.</value>
+    <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Leave this off to let auto-calibration set the range from your measured percentiles; turn it on to set the floor, ceiling, and curve yourself.</value>
   </data>
   <data name="GeneralVoiceLevelAutoLabel.Text" xml:space="preserve">
     <value>Auto</value>

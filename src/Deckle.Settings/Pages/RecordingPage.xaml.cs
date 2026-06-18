@@ -29,6 +29,7 @@ public sealed partial class RecordingPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposePreprocessingSection();
+        ComposeVoiceLevelSection();
         LoadAndSync();
     }
 
@@ -47,6 +48,23 @@ public sealed partial class RecordingPage : Page
     {
         _preprocessingComposer = new SettingsComposer(PreprocessingHost, ViewModel);
         _preprocessingComposer.Compose(ViewModel.PreprocessingSettings);
+    }
+
+    // ── Composed voice-level group ────────────────────────────────────────────
+    //
+    // Same host-only pattern as the pre-processing card: the page hands the host
+    // panel and the VM's voice-level manifest to the composer, which builds the
+    // SettingsExpander (master toggle + three sliders). The master projects the
+    // inverse of LevelWindowAutoCalibration, so it reads "set the window manually";
+    // the composer hides the sliders while the master is off (auto on). Composed
+    // before LoadAndSync so the subscription catches Load()'s PropertyChanged, and
+    // held in a field so the subscription lives as long as the (cached) page.
+    private SettingsComposer? _voiceLevelComposer;
+
+    private void ComposeVoiceLevelSection()
+    {
+        _voiceLevelComposer = new SettingsComposer(VoiceLevelHost, ViewModel);
+        _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
