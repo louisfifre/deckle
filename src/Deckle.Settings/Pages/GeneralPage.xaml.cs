@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Settings;
+using Deckle.Settings.Dialogs;
 using Deckle.Core;
 using Deckle.Shell;
 
@@ -224,18 +225,18 @@ public sealed partial class GeneralPage : Page
             return;
         }
 
-        var dialog = new ContentDialog
-        {
-            XamlRoot = this.XamlRoot,
-            Title = Loc.Get("Settings_RestoreDialog_Title"),
-            Content = Loc.Format("Settings_RestoreDialog_Content_Format", latest.DisplayName),
-            PrimaryButtonText = Loc.Get("Settings_RestoreDialog_PrimaryButton"),
-            CloseButtonText = Loc.Get("Common_Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary) return;
+        // Restoring overwrites the live settings.json with the snapshot — an
+        // irreversible swap, so it goes through the shared destructive-confirm
+        // gate (Close is the default button; Enter does nothing). Same three
+        // restore strings as before; the service owns only the Cancel verb.
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_RestoreDialog_Title"),
+                Loc.Format("Settings_RestoreDialog_Content_Format", latest.DisplayName),
+                Loc.Get("Settings_RestoreDialog_PrimaryButton"),
+                IsDestructive: true));
+        if (!confirmed) return;
 
         bool ok = SettingsBackupService.RestoreFromBackup(latest.Path);
         if (!ok) return;

@@ -779,6 +779,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
+│   │   │   ├── ConfirmationService.cs
 │   │   │   ├── CorpusConsentDialog.cs
 │   │   │   └── MicrophoneTelemetryConsentDialog.cs
 │   │   ├── Pages/
