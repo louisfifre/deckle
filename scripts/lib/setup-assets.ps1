@@ -140,7 +140,9 @@ function Download($url, $dst, $expectedMinBytes) {
     }
     Write-Host "         downloading $name ..."
     & curl.exe -L --fail --retry 3 --progress-bar -o $dst $url
-    if ($LASTEXITCODE -ne 0) { throw "curl failed for $url" }
+    $curlExitCode = $LASTEXITCODE
+    Write-Host ''
+    if ($curlExitCode -ne 0) { throw "curl failed for $url" }
     Ok "downloaded $name ($([math]::Round((Get-Item $dst).Length/1MB,1)) MB)"
 }
 
@@ -172,7 +174,9 @@ if ($FromRelease) {
     if ($Force -and (Test-Path $tmpZip)) { Remove-Item $tmpZip -Force }
     Ok "url $url"
     & curl.exe -L --fail --retry 3 --progress-bar -o $tmpZip $url
-    if ($LASTEXITCODE -ne 0) { throw "curl failed for $url" }
+    $curlExitCode = $LASTEXITCODE
+    Write-Host ''
+    if ($curlExitCode -ne 0) { throw "curl failed for $url" }
     Ok "downloaded $(Split-Path $tmpZip -Leaf) ($([math]::Round((Get-Item $tmpZip).Length/1MB,1)) MB)"
 
     # Extract only the catalog entries — same defense-in-depth filter the

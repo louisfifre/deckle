@@ -15,6 +15,9 @@ function Begin-DeckleAction {
     if ($script:DeckleMenuSessionActive) {
         Suspend-MenuSession
         $script:DeckleMenuSessionActive = $false
+        if (-not [Console]::IsOutputRedirected) {
+            Write-Host ''
+        }
     }
 }
 

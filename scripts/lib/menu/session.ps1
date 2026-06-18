@@ -43,6 +43,7 @@ function Stop-MenuSession {
     if ($script:MenuSessionDepth -gt 0) { return }
 
     [Console]::CursorVisible = $true
+    Write-Ansi "$([char]27)[0m"
     if ($script:MenuSessionUsesAlternateScreen) {
         Write-Ansi "$([char]27)[?1049l"
     }
