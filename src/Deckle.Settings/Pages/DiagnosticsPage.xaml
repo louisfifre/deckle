@@ -133,6 +133,26 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
+                <!-- Decisions is the primary (lighter) opt-in on the header; the
+                     verbatim typed corpus is nested below as the heavier opt-in,
+                     its own switch and consent. The two are independent — nesting
+                     is progressive disclosure, not a dependency. Mirrors the
+                     audio-corpus expander above. -->
+                <controls:SettingsExpander x:Uid="DiagnosticsAutocorrectDecisionsExpander"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
+                    <ToggleSwitch x:Name="AutocorrectDecisionsToggle"
+                                  IsOn="{x:Bind ViewModel.AutocorrectDecisions, Mode=TwoWay}"
+                                  Toggled="AutocorrectDecisionsToggle_Toggled" />
+                    <controls:SettingsExpander.Items>
+                        <controls:SettingsCard x:Name="AutocorrectTextCard"
+                                               x:Uid="DiagnosticsAutocorrectTextCard">
+                            <ToggleSwitch x:Name="AutocorrectTextToggle"
+                                          IsOn="{x:Bind ViewModel.AutocorrectText, Mode=TwoWay}"
+                                          Toggled="AutocorrectTextToggle_Toggled" />
+                        </controls:SettingsCard>
+                    </controls:SettingsExpander.Items>
+                </controls:SettingsExpander>
+
                 <controls:SettingsCard x:Uid="GeneralStorageFolderCard"
                                        ContentAlignment="Vertical">
                     <settings:FolderPickerCard x:Name="TelemetryFolderPicker"

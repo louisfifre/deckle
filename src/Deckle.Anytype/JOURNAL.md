@@ -7,6 +7,41 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-18 — Provisioning wizard (grilling session, branch E)
+
+Designing the wizard that installs the headless backend and wires the MCP clients. Architecture (ADR-0001) untouched. CLI/sync facts verified against anyproto/anytype-cli + any-sync source.
+
+Verified facts:
+- **`anytype-cli` is a real official binary** (`anytype`, repo anyproto/anytype-cli), embeds heart; ports gRPC 31010 / web 31011 / **REST 31012** (the default). REST only comes up **after an account login** (the listen-addr is propagated at auth), not on bare `serve` → health = `GET /docs/openapi.json` 200 (unauth, also carries the API version), never the PID.
+- **Distribution** = GitHub Releases asset `anytype-cli-vX.Y.Z-windows-amd64.zip`; ~3-10 day cadence, each release bumps embedded heart. Three version layers: CLI semver / heart / REST API date (`2025-11-08`). The server does **not** validate the incoming `Anytype-Version` — compat is implicit, not negotiated.
+- **Secrets print once on stdout.** `auth create <name>` is non-interactive, prints the account key once (stored in Windows Credential Manager via go-keyring, plaintext-file fallback); **not idempotent** — rerun makes a new account and overwrites. `apikey create <name>` prints the bearer once (`list` truncates to 8 chars). Authorship: the API key is a local app linked to the single account → all writes authored by the one bot.
+- **Space membership = invite-link handshake.** Owner generates a link (CID+key) in Anytype, bot runs `space join <link>` = a *join request*, owner *approves* (async), bot confirms via `space list` (status Active). CLI has no approve / pending-detection command. Owner-side generate+approve exist **only in private gRPC** (`RpcSpaceInviteGenerate` / `RpcSpaceRequestApprove`), not REST (REST exposes list-spaces + read-only list-members), and the Desktop gRPC port is non-discoverable → owner-side automation rejected.
+- **any-sync**: local-first; objects are signed change-DAGs (CRDT, field-grain merge — the REST whole-body PATCH is the only lossy layer); sync relayed via sync nodes (not pure P2P); E2E-encrypted per space via an ACL (read key resealed per member). A non-member account cannot enumerate or read a space (unguessable CID ids, no registry). Account = keys; node = instance; the same account can run on several nodes if its key is transported.
+
+Decisions (Louis):
+- **Wizard = resumable, predicate-driven state machine** — each step a verifiable predicate on the real world; reopening re-probes, no stored progress counter. Absorbs both the from-zero install and Louis's migration on the same machine.
+- **Inventory**: backend trunk (binary → service → bot account → space membership → API key → end-to-end auth health) provisioned once, then a per-client branch (host up → client token → client config). The client token is ours (the host validates it), distinct from the Anytype API key the host presents to the backend.
+- **Space scope = the invitation itself** — no separate space-selector; the bot sees only the spaces it is invited into.
+- **Server deployment = noted horizon, not pursued.** Windows-first wizard; the creds-storage boundary kept isolatable (a Linux host would need a non-DPAPI vault).
+- **Version policy = pin a known-good version + signal newer, never auto-update**; prove compat via `openapi.json` at start, not just a port ping. Moving the pin is a maintainer act.
+- **Binary delivery = download the pinned asset at first provisioning** into `%LOCALAPPDATA%\Programs\Deckle`, integrity-checked before extract; not bundled in the installer (Anytype needs the network anyway).
+- **Backend lifecycle**: starts with Deckle, runs **detached in the user context** (for Credential Manager access), **persists across Deckle crash/rebuild**, stopped **only on explicit quit**; Deckle supervises (health-check + relaunch) without owning the process. Exact Windows mechanism (scheduled task vs per-user service) + user-context keyring access **TBD via Microsoft docs**.
+- **`Deckle.Security` = general Deckle credential vault** for all secrets (Anytype API key, client tokens, future third-party API keys for transcription/rewrite), with an inspectable surface later. Storage mechanism (DPAPI vs Windows Credential Manager) + management UI **still to grill**.
+
+Still open / next: the keyring-context Windows mechanism (Microsoft-docs check), `Deckle.Security` storage mechanism + UI, robust per-client config writing (Claude JSON `type:http`+`headers`; Codex TOML `url`+`bearer_token_env_var`/`http_headers` — young, validate empirically), retiring `install-anytype-mcp.ps1`. A lifecycle ADR is a candidate once the Windows mechanism is frozen.
+
+## 2026-06-18 — Headless runtime + single HTTP MCP host (grilling session)
+
+Founding architecture for the Anytype/MCP/Deckle integration, decided with Louis. Runtime/API facts verified against anytype-cli + anytype-heart source.
+
+- **Backend = headless `anytype-cli`** (embeds `heart`), run as a Deckle-supervised Windows user service — not a Deckle child (survives rebuilds), not Desktop. Same REST `/v1` on fixed `127.0.0.1:31012` (Desktop = 31007-31009). Bot account via `anytype auth create` (account key → Windows Credential Manager, no GUI challenge); API key via `anytype auth apikey create`; space join is CLI/gRPC (`anytype space join`), not REST. Deckle orchestrates lifecycle + access, never owns/reimplements the data.
+- **Transport = HTTP, one host in Deckle's resident core.** Clients connect by URL + per-client bearer. Kills the exe-lock + `current` junction (no client-spawned binary) and the Claude-only config script. stdio reduced to a deferred thin gateway for stdio-only clients (Claude Desktop chat). Verified: Claude Code + Codex CLI both consume HTTP MCP by URL (Codex rmcp client still experimental). Internal Deckle tools bypass the MCP entirely (lib in-process); the MCP serves external clients only.
+- **Surfaces split by capability, not space** (`space_id` is a call parameter): PM (exists), Dialogue (exists), Cartography (to build, low priority, create/update/read modules+deps in the Deckle space, AI-co-written) — all endpoints of the one host.
+- **One bot to start.** Verified: one headless = one account = one author; API keys are wallet-sharing "link apps", not identities, so N authors need N headless instances = N independent syncs (rejected — Louis won't duplicate the Dev-space sync). Codex/Claude told apart by speaker label / actor field in content; per-client access differences live in host token-scoping, not separate accounts. Extra bots + a dedicated Deckle-internal bot deferred.
+- **Layout:** executables + libs + models → `%LOCALAPPDATA%\Programs\Deckle` (per the installer's `InstallPaths`); user data + credentials → `%LOCALAPPDATA%\Deckle`. `native\` currently misplaced in the data root → to move. Heavy-asset relocation (models off a saturated C:) becomes an install/after-the-fact disk chooser. Credentials (bot API key + client tokens) encrypted via a new `Deckle.Security` module (DPAPI); the CLI's own account key is already OS-protected.
+- **Concurrency → stay HTTP.** REST has no optimistic concurrency (no ETag/If-Match); body PATCH = full delete-all + paste, so concurrent read-modify-write loses updates; the CRDT does not merge it; write rate-limit 1 rps / burst 60 (429, writes only), reads free; gin serves requests in parallel. Transport is not the crux — stdio only removes the single coordination point. `SpaceWriteLock` (cross-process OS file lock held over the whole GET→PATCH) already serializes; under one HTTP host it becomes an in-process single-consumer queue, the file lock kept as backstop. Rule: never raw-replace a body — always go through `replace_section`.
+- **Open:** provisioning wizard, robust per-client config writing, same-target conflict feedback in the write queue, the official-Anytype-MCP relation, and an ADR (proposed, pending Louis) for the headless-service + single-HTTP-host + serialization cluster.
+
 ## 2026-06-16 — Management + lifecycle layer; schema resync
 
 - Lifecycle split into two verbs, not one generic command. A naming pass found a

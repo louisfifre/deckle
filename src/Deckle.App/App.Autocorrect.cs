@@ -4,7 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
-using Deckle.Input.Autocorrect;
+using Deckle.Autocorrect;
+using Deckle.Autocorrect.Mlm;
 using Deckle.Input;
 using Deckle.Notifications;
 
@@ -12,16 +13,25 @@ namespace Deckle.App;
 
 // Autocorrect module composition — same posture as App.Trackpad: the App owns
 // the engine and reconciles it with the persisted module settings. The engine
-// is the live diacritics restorer (lexical gate + bigram left-context), wired
+// chains the diacritics restorer (lexical gate + bigram left-context) and a
+// conservative typo corrector (non-words → nearest common French word), wired
 // to the real keyboard, repairing words on enrolled surfaces. Enabled by
 // default (AutocorrectSettings); corrections land only on enrolled processes
 // (Notepad out of the box) and never on a password surface.
 //
-// The CamemBERT reranker is an offline eval/iteration tool only — the live
-// engine uses the small bigram pair model, so the only runtime data is the two
-// gzip lexicons shipped beside the executable under Data/.
+// The CamemBERT reranker is the live post-sentence contextual stage (real-word
+// ambiguities — la/là, a/à, ou/où — plus sentence-initial capitals). Its ~440 MB
+// ONNX model is optional: loaded off-thread beside the lexicons, and absent it the
+// engine simply runs gate + typo. The model lives under the user data root
+// (models\camembert-base\), fetched by setup-assets, never shipped in the build.
 public partial class App
 {
+    // Contextual reranker calibration — mirrors the offline EvaluateReranked
+    // operating point: act only on a clear top-vs-second logit gap, and prefer the
+    // common form. Starting points to ground by the eval, not measured optima.
+    private const double RerankerMargin = 2.0;
+    private const double RerankerFreqPrior = 1.0;
+
     private AutocorrectEngine? _autocorrectEngine;
     private PersonalDictionary? _autocorrectDictionary;
     private bool _autocorrectStarted;
@@ -44,6 +54,7 @@ public partial class App
             string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
             string frenchPath = Path.Combine(dataDir, "lexicon-fr.tsv.gz");
             string pairPath = Path.Combine(dataDir, "pair-bigrams-fr.tsv.gz");
+            string verbsPath = Path.Combine(dataDir, "verbs-fr.tsv.gz");
 
             // The French lexicon is the gate; without it there is nothing to do,
             // so leave autocorrect unbuilt rather than start a no-op engine.
@@ -57,14 +68,24 @@ public partial class App
             // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
             // shape).
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, index, context) = await Task.Run(() =>
+            var (french, index, context, reranker, verbs) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
                 var idx = AccentIndex.Build(fr);
                 var ctx = File.Exists(pairPath)
                     ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
                     : null;
-                return (fr, idx, ctx);
+                // Verb morphology drives the grammar stage (subject–verb
+                // agreement). Optional like the pair model — absent its artifact
+                // the engine simply runs the chain without agreement correction.
+                var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
+                // The contextual reranker's model is large (~440 MB) and optional:
+                // TryLoad returns null when it is absent, leaving gate + typo only.
+                // Loaded here, off the UI thread, alongside the lexicons.
+                string modelDir = Path.Combine(AppPaths.ModelsDirectory, "camembert-base");
+                ISentenceReranker? rr = CamembertReranker.TryLoad(
+                    modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
+                return (fr, idx, ctx, rr, vb);
             }).ConfigureAwait(true);
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
@@ -77,7 +98,7 @@ public partial class App
 
             // French-first: no English guard. The bigram model resolves the
             // ambiguous residue; the reranker stays an offline tool.
-            var policy = new DiacriticsRestorer(
+            var diacritics = new DiacriticsRestorer(
                 french: french,
                 english: null,
                 index: index,
@@ -85,6 +106,34 @@ public partial class App
                 context: context,
                 personal: _autocorrectDictionary,
                 personalVariants: BuildAutocorrectPersonalVariants(_autocorrectDictionary));
+
+            // Stage two: Android-style spell-fix for true non-words the gate
+            // leaves untouched ("bonjuor" → "bonjour"). Disjoint from diacritics
+            // by construction; the composite makes the precedence explicit.
+            var typo = new ConservativeTypoCorrector(
+                french: french,
+                english: null,
+                personal: _autocorrectDictionary,
+                options: new TypoOptions());
+
+            // Stage two-bis, ahead of the typo corrector: restore a dropped elision
+            // apostrophe in a glued proclitic ("cest" → "c'est", "jai" → "j'ai").
+            // It must precede the typo corrector, which would otherwise rewrite
+            // "cest" to "est" by a plain edit before the apostrophe is considered.
+            var elision = new ElisionCorrector(french, _autocorrectDictionary);
+
+            // Stage three: subject–verb agreement on a valid-but-misconjugated
+            // word the stages above leave alone ("tu mange" → "tu manges").
+            // Present only when the verb-morphology artifact loaded; last in the
+            // chain, since it acts on the forms the earlier stages pass through.
+            var grammar = verbs is not null
+                ? new GrammarCorrector(verbs, _autocorrectDictionary)
+                : null;
+
+            var policies = new List<ICorrectionPolicy> { diacritics, elision, typo };
+            if (grammar is not null)
+                policies.Add(grammar);
+            var policy = new CompositeCorrectionPolicy(policies.ToArray());
 
             _autocorrectEngine = new AutocorrectEngine(
                 host: _keyboardMouseHost,
@@ -96,7 +145,19 @@ public partial class App
                 settings: () => AutocorrectSettingsService.Instance.Current,
                 dictionary: _autocorrectDictionary,
                 french: french,
-                english: null);
+                english: null,
+                // The post-sentence contextual stage: the reranker (null when its
+                // model is absent) and the diacritics gate reused as the slot probe.
+                reranker: reranker,
+                probe: diacritics,
+                // Opt-in per-word decision telemetry, read live so a Settings flip
+                // takes effect without a rebuild. Off by default.
+                decisionTelemetry: () =>
+                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectDecisions,
+                // Opt-in typed-sentence corpus, same live read. Off by default; the
+                // heaviest text capture, behind its own consent toggle.
+                textTelemetry: () =>
+                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText);
 
             // Reactive enrollment: a would-be correction on an undecided app
             // raises this on the engine's input thread. Detach the prompt so we
@@ -105,6 +166,8 @@ public partial class App
 
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
             ReconcileAutocorrect();
+
+            DeckleAutocorrectSource.Log.RerankerStatus(reranker is not null);
 
             // Readiness edge: engine built, wired and reconciled. Concise
             // milestone, no number — the timing is on LexiconLoadComplete above.

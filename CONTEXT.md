@@ -146,3 +146,37 @@ _Avoid_ : rewrite (which regenerates text — correction only repairs a span), a
 **Rewrite** :
 A generative regeneration of a span — a sentence or a paragraph — into new text: removing disfluencies and recomposing, restructuring into paragraphs, regrouping by theme. Because it rewrites the wording, it can drift from the original meaning, so it is offered after the fact (suggested or confirmed) rather than applied silently — until trust is earned. The same operation is meant to serve both finalized dictation and typed text.
 _Avoid_ : correction (a bounded repair, not new text), reformulation (Rewrite is the Deckle term).
+
+## Anytype — runtime, host, attribution
+
+Vocabulary of the Anytype/MCP integration. Three layers are constantly conflated — the data runtime, the protocol adapter, and the Deckle process that hosts it — and "bot" versus "token" carries the authorship question.
+
+**Anytype backend** :
+The headless `anytype-cli` runtime (embedding `heart`) that holds the data and serves the local REST API on `127.0.0.1:31012`. Run as a Deckle-supervised Windows service; Deckle orchestrates its lifecycle and access but never owns or reimplements it.
+_Avoid_ : Anytype Desktop (the GUI, no longer a runtime dependency), MCP server (a different layer).
+
+**MCP host** :
+The single adapter that exposes the `Deckle.Anytype` gestures to external clients over HTTP, from Deckle's resident core. One instance, several capability endpoints.
+_Avoid_ : backend, Anytype server.
+
+**Deckle resident core** :
+The always-on Deckle process (global hotkeys, orchestration) that hosts the MCP host and the lib and starts at login — distinct from the visible windows (HUD, Settings) that come and go.
+
+**MCP surface** :
+A capability exposed as one endpoint of the host — PM, Dialogue, Cartography. The unit of separation is the *capability*, never the space (a space is a per-call `space_id` parameter).
+_Avoid_ : profile (the earlier name), server (there is only one).
+
+**Bot** :
+An Anytype account distinct from Louis, under which the headless writes, invited per space. One headless = one account = one author; one bot to start.
+_Avoid_ : user, API key (an access credential, not the identity).
+
+**Client token** :
+The bearer each client presents to the host; it carries *access* (which surfaces and spaces are allowed), not *authorship* (the author is always the backend's bot).
+_Avoid_ : identity, account key.
+
+### Example conversation
+
+> — Le « MCP Anytype », c'est l'exe qu'on lançait ?
+> — Plus maintenant. L'**hôte MCP** est un seul serveur HTTP dans le **noyau résident** ; les clients s'y connectent par URL. L'exe spawné, c'était le monde stdio.
+> — Et quand Codex crée une tâche, c'est qui l'auteur ?
+> — Le **bot** unique du **backend**. Le **jeton** de Codex ne dit que ce qu'il a le droit de toucher, pas qui signe.

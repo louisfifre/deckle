@@ -20,6 +20,20 @@ public interface IKeyboardInputHost
     /// <summary>Raised on the input thread when the foreground window or focused element changes.</summary>
     event Action? FocusChanged;
 
+    /// <summary>
+    /// Raised on the input thread after <see cref="RequestDrain"/> posted to the pump. The
+    /// marshalling point for a background consumer (the autocorrect reranker) to apply a result
+    /// back on the input thread, where the engine's state lives.
+    /// </summary>
+    event Action? DrainRequested;
+
+    /// <summary>
+    /// Posts a drain request to the input thread; safe to call from any thread (a bare thread
+    /// message). The pump raises <see cref="DrainRequested"/> on the input thread when it arrives.
+    /// A no-op before the pump exists or after it has quit.
+    /// </summary>
+    void RequestDrain();
+
     /// <summary>Spawns the host and begins observation; false (and logged) when native setup failed.</summary>
     bool Start();
 

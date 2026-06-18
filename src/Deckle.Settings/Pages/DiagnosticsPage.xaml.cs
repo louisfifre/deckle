@@ -30,6 +30,8 @@ public sealed partial class DiagnosticsPage : Page
     // retrigger Toggled in turn.
     private bool _suppressCorpusToggle;
     private bool _suppressAudioCorpusToggle;
+    private bool _suppressAutocorrectDecisionsToggle;
+    private bool _suppressAutocorrectTextToggle;
 
     public DiagnosticsPage()
     {
@@ -138,6 +140,32 @@ public sealed partial class DiagnosticsPage : Page
         _suppressAudioCorpusToggle = true;
         try { AudioCorpusToggle.IsOn = false; }
         finally { _suppressAudioCorpusToggle = false; }
+    }
+
+    private async void AutocorrectDecisionsToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _suppressAutocorrectDecisionsToggle) return;
+        if (!AutocorrectDecisionsToggle.IsOn) return;
+
+        bool confirmed = await AutocorrectDecisionsConsentDialog.ShowAsync(this.XamlRoot);
+        if (confirmed) return;
+
+        _suppressAutocorrectDecisionsToggle = true;
+        try { AutocorrectDecisionsToggle.IsOn = false; }
+        finally { _suppressAutocorrectDecisionsToggle = false; }
+    }
+
+    private async void AutocorrectTextToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _suppressAutocorrectTextToggle) return;
+        if (!AutocorrectTextToggle.IsOn) return;
+
+        bool confirmed = await AutocorrectTextConsentDialog.ShowAsync(this.XamlRoot);
+        if (confirmed) return;
+
+        _suppressAutocorrectTextToggle = true;
+        try { AutocorrectTextToggle.IsOn = false; }
+        finally { _suppressAutocorrectTextToggle = false; }
     }
 
     private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
