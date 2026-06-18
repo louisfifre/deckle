@@ -43,6 +43,15 @@ public sealed record SettingDescriptor
     public required Func<object?> GetValue { get; init; }
     public required Action<object?> SetValue { get; init; }
 
+    // The resettable default, boxed and lazy exactly like GetValue — the factories
+    // build it from a Func<T> so the call site (e.g. () => new AppearanceSettings()
+    // .Theme) reads the POCO initializer, the single source of truth for defaults.
+    // Lazy because a default may not exist at declaration time (it is re-read on
+    // each reset, never cached). Null means the setting has no resettable default —
+    // a runtime-enumerated value such as a device id, where "default" is meaningless
+    // — and the composer then renders no reset affordance for it.
+    public Func<object?>? Default { get; init; }
+
     // Optional reactive state, re-evaluated whenever the source model raises
     // PropertyChanged. EnabledWhen greys the row out; VisibleWhen collapses it
     // entirely. The call site picks which fits the setting (per the settings-UX

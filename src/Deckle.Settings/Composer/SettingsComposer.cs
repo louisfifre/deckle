@@ -50,6 +50,14 @@ public sealed class SettingsComposer
     // PropertyChanged and once at the end of Compose.
     private readonly List<Action> _refreshers = new();
 
+    // Parallel to _refreshers but sparse: only rows (and groups) that carry a
+    // resettable Default register here. A dirty-check answers "does this row's
+    // value differ from its default?"; its paired reset-action drives the value
+    // back to that default through the normal setter. IsDirty()/ResetAll() fold
+    // over these — the reset surface for the whole composed region.
+    private readonly List<Func<bool>> _dirtyChecks = new();
+    private readonly List<Action> _resetActions = new();
+
     // Guards the model→UI direction so that updating a control's value from the
     // getter does not bounce back through its change handler into the setter
     // (which would re-persist and, for floating-point controls, risk a loop).
@@ -99,6 +107,57 @@ public sealed class SettingsComposer
         {
             _syncingFromModel = false;
         }
+
+        // The refreshers have just re-evaluated every dirty-check (each reset
+        // button's IsEnabled now reflects the model), so the aggregate dirtiness is
+        // settled — raise after the loop, not during, so a listener that calls
+        // IsDirty() reads the post-refresh truth.
+        DirtyChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // ── Reset surface ────────────────────────────────────────────────────────
+    //
+    // The composed region's collective default-state, for a page-level "Reset all"
+    // affordance to gate and act on. Each composed row/group that carries a Default
+    // contributed a dirty-check and a reset-action at build time; these fold over
+    // them. ResetAll drives each value back through its own setter, exactly the path
+    // a per-card reset uses — the model's PropertyChanged then re-syncs the surface
+    // (and re-raises DirtyChanged) via RefreshAll, no special re-read needed here.
+
+    // Raised at the END of every RefreshAll, once the dirty-checks have settled —
+    // so a "Reset all" button can re-gate its own enabled-state off IsDirty().
+    public event EventHandler? DirtyChanged;
+
+    // True when any composed value differs from its default. Cheap at settings
+    // scale (tens of rows); recomputed on demand rather than cached, so it cannot
+    // drift from the live model.
+    public bool IsDirty()
+    {
+        foreach (Func<bool> dirty in _dirtyChecks)
+            if (dirty()) return true;
+        return false;
+    }
+
+    // Drives every defaulted value back to its default. Each reset-action calls the
+    // descriptor's setter, which raises PropertyChanged; RefreshAll then re-syncs
+    // the controls and re-evaluates dirtiness — the same round-trip the section
+    // resets already rely on, so no manual UI refresh is needed here.
+    public void ResetAll()
+    {
+        foreach (Action reset in _resetActions) reset();
+    }
+
+    // Dictated dirtiness equality: doubles compare with the slider/readout tolerance
+    // (a difference beyond 1e-9 is a real edit, anything finer is float dust and
+    // counts as equal); everything else is plain value-equality. "Dirty" is the
+    // negation — NOT equal. Mirrors TunableRow's reset tolerance and the composer's
+    // own FormatValue rounding, so what the eye reads as "default" is what this
+    // calls clean.
+    private static bool DefaultEquals(object? a, object? b)
+    {
+        if (a is double da && b is double db)
+            return Math.Abs(da - db) <= 1e-9;
+        return Equals(a, b);
     }
 
     // Dispatches a descriptor to its element: a Group becomes a SettingsExpander
@@ -150,12 +209,14 @@ public sealed class SettingsComposer
             s.SetValue(toggle.IsOn);
         };
 
-        card.Content = toggle;
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, toggle, s);
+        card.Content = content;
 
         _refreshers.Add(() =>
         {
             bool value = AsBool(s.GetValue());
             if (toggle.IsOn != value) toggle.IsOn = value;
+            updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
     }
@@ -195,12 +256,19 @@ public sealed class SettingsComposer
             if (_syncingFromModel) return;
             s.SetValue(master.IsOn);
         };
-        expander.Content = master;
 
         // The master's current state, read live so child gating tracks it on
         // every RefreshAll (a master toggle raises PropertyChanged, which refreshes
         // all rows including these children).
         bool MasterOn() => AsBool(s.GetValue());
+
+        // Children that carry a resettable default — collected so the group-header
+        // reset can drive the WHOLE fold back, master plus every defaulted child,
+        // including one currently hidden because the master is off (it still counts
+        // toward dirtiness and is still reset). The original descriptor is captured,
+        // not the master-gated copy, but the `with` copies Default, so either would
+        // do — the original keeps the intent plain.
+        var defaultedChildren = new List<SettingDescriptor>();
 
         foreach (SettingDescriptor child in args.Children)
         {
@@ -208,6 +276,8 @@ public sealed class SettingsComposer
                 throw new NotSupportedException(
                     "A Group's children must be leaf settings — folds never nest.");
             if (child.IsAdvanced && !_showAdvanced) continue;
+
+            if (child.Default is not null) defaultedChildren.Add(child);
 
             // Compose the master into the child's own VisibleWhen so the child is
             // hidden while the master is off (and stays hidden when its own
@@ -220,10 +290,72 @@ public sealed class SettingsComposer
             expander.Items.Add(BuildCard(gated));
         }
 
+        // The group-header reset, beside the master toggle, when the fold has
+        // anything resettable — the master itself or any child. It is the
+        // section-style "reset the whole fold"; the per-child cards keep their own
+        // inline resets (built by BuildCard above), which is desirable, not
+        // redundant: one resets a single row, this resets the section.
+        Action? updateGroupReset = null;
+        bool groupHasDefault = s.Default is not null || defaultedChildren.Count > 0;
+        if (groupHasDefault)
+        {
+            Button reset = BuildResetButton();
+            // Reveal on the EXPANDER's hover and the BUTTON's focus, like a per-card
+            // reset reveals on its card.
+            WireReveal(expander, reset);
+
+            // Group dirty = master-dirty OR any-child-dirty. A child hidden because
+            // the master is off still counts (its getter/default are read directly,
+            // not through its collapsed card).
+            bool GroupDirty()
+            {
+                if (s.Default is not null && !DefaultEquals(s.GetValue(), s.Default())) return true;
+                foreach (SettingDescriptor child in defaultedChildren)
+                    if (!DefaultEquals(child.GetValue(), child.Default!())) return true;
+                return false;
+            }
+
+            void ResetGroup()
+            {
+                if (s.Default is not null) s.SetValue(s.Default());
+                foreach (SettingDescriptor child in defaultedChildren)
+                    child.SetValue(child.Default!());
+            }
+
+            _dirtyChecks.Add(GroupDirty);
+            _resetActions.Add(ResetGroup);
+            reset.Click += (_, _) => ResetGroup();
+
+            // [reset | master] in the expander's trailing-edge Content slot — the
+            // master stays where a fold's master toggle is expected, the reset to
+            // its left, mirroring the per-card [reset | value] order.
+            var header = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 4,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            header.Children.Add(reset);
+            header.Children.Add(master);
+            expander.Content = header;
+
+            string tooltip = ResolveResetTooltip();
+            updateGroupReset = () =>
+            {
+                reset.IsEnabled = GroupDirty();
+                ToolTipService.SetToolTip(reset, tooltip);
+            };
+        }
+        else
+        {
+            expander.Content = master;
+        }
+
         _refreshers.Add(() =>
         {
             bool value = AsBool(s.GetValue());
             if (master.IsOn != value) master.IsOn = value;
+            updateGroupReset?.Invoke();
             ApplyReactiveState(expander, s);
         });
 
@@ -294,7 +426,8 @@ public sealed class SettingsComposer
             s.SetValue(e.NewValue);
         };
 
-        card.Content = content;
+        (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s);
+        card.Content = cardContent;
 
         _refreshers.Add(() =>
         {
@@ -304,6 +437,7 @@ public sealed class SettingsComposer
             // (e.g. nothing changed on this PropertyChanged), so refresh the
             // readout unconditionally to stay in sync after Load()/Reset.
             valueText.Text = FormatValue(value, args.StepFrequency);
+            updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
     }
@@ -376,12 +510,14 @@ public sealed class SettingsComposer
             s.SetValue(args.Options[combo.SelectedIndex].Value);
         };
 
-        card.Content = combo;
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, combo, s);
+        card.Content = content;
 
         _refreshers.Add(() =>
         {
             int index = IndexOfValue(args, s.GetValue());
             if (combo.SelectedIndex != index) combo.SelectedIndex = index;
+            updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
     }
@@ -396,6 +532,104 @@ public sealed class SettingsComposer
             if (Equals(args.Options[i].Value, value)) return i;
         return -1;
     }
+
+    // ── Per-card reset ─────────────────────────────────────────────────────────
+    //
+    // Wraps a value control with an inline reset affordance when its descriptor
+    // carries a Default. Returns the element to assign as the card's Content and an
+    // optional updateState closure the row's refresher must call: that closure
+    // re-gates the button's IsEnabled off the live dirty-check (active-when-dirty,
+    // the Playground model — a reset is offered only when the value actually drifts
+    // from its default) and pins its tooltip.
+    //
+    // When the descriptor has no Default the value control is returned unchanged and
+    // updateState is null — no reset chrome for a setting that has no resettable
+    // default (a runtime-enumerated value), and the refresher then has nothing extra
+    // to do.
+    //
+    // The button sits LEFT of the value control (least chrome, the value stays where
+    // the eye expects it on the trailing edge), reveals on hover/focus exactly like
+    // TunableRow, and registers this row's dirty-check and reset-action into the
+    // composer's reset surface.
+    private (FrameworkElement Content, Action? UpdateState) WrapWithReset(
+        SettingsCard card, FrameworkElement valueControl, SettingDescriptor s)
+    {
+        if (s.Default is null) return (valueControl, null);
+
+        Button reset = BuildResetButton();
+
+        // Reveal on the CARD's hover and the BUTTON's keyboard focus — either keeps
+        // it shown, so leaving one while the other holds doesn't hide it early.
+        WireReveal(card, reset);
+
+        // active-when-dirty: a difference from the default is what enables the
+        // reset, evaluated live so it tracks every model change through the
+        // refresher below.
+        bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
+        _dirtyChecks.Add(Dirty);
+        _resetActions.Add(() => s.SetValue(s.Default!()));
+
+        reset.Click += (_, _) => s.SetValue(s.Default!());
+
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            // Tight spacing between the reset glyph and the value control — matches
+            // the hand-authored per-card reset rows the composed cards sit beside.
+            Spacing = 4,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        content.Children.Add(reset);
+        content.Children.Add(valueControl);
+
+        // The tooltip string is constant, but resolved once here (not per refresh)
+        // so the dirty-driven refresher only flips IsEnabled, never re-hits Loc.
+        string tooltip = ResolveResetTooltip();
+        void UpdateState()
+        {
+            reset.IsEnabled = Dirty();
+            ToolTipService.SetToolTip(reset, tooltip);
+        }
+
+        return (content, UpdateState);
+    }
+
+    // A subtle 32×32 reset wheel, built imperatively to match the hand-authored
+    // per-card reset (WhisperPage's ResetButtonStyle) and the Playground's
+    // NewExpander: SubtleButtonStyle from the app root, a Glyphs.Refresh FontIcon,
+    // and Opacity 0 at rest so it is invisible until the reveal shows it. The glyph
+    // comes from the Glyphs.* C# mirror, the blessed programmatic-FontIcon path.
+    private static Button BuildResetButton() => new()
+    {
+        Style = Application.Current.Resources["SubtleButtonStyle"] as Style,
+        Width = 32,
+        Height = 32,
+        Padding = new Thickness(0),
+        VerticalAlignment = VerticalAlignment.Center,
+        Opacity = 0,
+        Content = new FontIcon { Glyph = Glyphs.Refresh, FontSize = 14 },
+    };
+
+    // Instant hover/focus reveal, mirroring TunableRow and the Playground's reset:
+    // either the host being pointer-over OR the button holding keyboard focus shows
+    // it; both released hides it. No Storyboard — a flat Opacity flip — and the
+    // button keeps its layout slot at rest, so the reveal never reflows the row.
+    private static void WireReveal(FrameworkElement host, Button button)
+    {
+        bool pointerOver = false, focused = false;
+        void Update() => button.Opacity = pointerOver || focused ? 1 : 0;
+        host.PointerEntered += (_, _) => { pointerOver = true; Update(); };
+        host.PointerExited += (_, _) => { pointerOver = false; Update(); };
+        button.GotFocus += (_, _) => { focused = true; Update(); };
+        button.LostFocus += (_, _) => { focused = false; Update(); };
+    }
+
+    // The reset tooltip from the OWNING MODULE's .resw (module-aware like the header
+    // resolution, falling back to the root map when no module is supplied).
+    private string ResolveResetTooltip()
+        => _module is null
+            ? Loc.Get("SettingsComposer_ResetToDefault")
+            : Loc.GetFrom(_module, "SettingsComposer_ResetToDefault");
 
     // Reactive enabled/visible: re-evaluated on every refresh. Null predicates
     // leave the framework defaults (enabled, visible) untouched.

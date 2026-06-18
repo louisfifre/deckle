@@ -75,7 +75,8 @@
                     <TextBlock x:Uid="GeneralPageAppearanceHeaderLabel"
                                Grid.Column="0"
                                Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Uid="Settings_SectionResetLink"
+                    <HyperlinkButton x:Name="AppearanceResetLink"
+                                     x:Uid="Settings_SectionResetLink"
                                      Grid.Column="1"
                                      VerticalAlignment="Bottom"
                                      Margin="0,0,0,2"
@@ -105,7 +106,8 @@
                     <TextBlock x:Uid="GeneralPageBehaviourHeaderLabel"
                                Grid.Column="0"
                                Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Uid="Settings_SectionResetLink"
+                    <HyperlinkButton x:Name="BehaviourResetLink"
+                                     x:Uid="Settings_SectionResetLink"
                                      Grid.Column="1"
                                      VerticalAlignment="Bottom"
                                      Margin="0,0,0,2"
@@ -131,7 +133,8 @@
                     <TextBlock x:Uid="GeneralPageStartupHeaderLabel"
                                Grid.Column="0"
                                Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Uid="Settings_SectionResetLink"
+                    <HyperlinkButton x:Name="StartupResetLink"
+                                     x:Uid="Settings_SectionResetLink"
                                      Grid.Column="1"
                                      VerticalAlignment="Bottom"
                                      Margin="0,0,0,2"

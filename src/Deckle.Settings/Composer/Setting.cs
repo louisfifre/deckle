@@ -10,6 +10,13 @@ namespace Deckle.Settings;
 // never drift from the kind, and the boxing into the composer's object-typed
 // selectors happens here, once.
 //
+// The optional defaultValue selector follows the same front-door boxing as
+// get/set: a strongly-typed Func<T> from the call site, boxed into the object?
+// Default the composer reads to gate (and act on) its per-row reset. It stays
+// optional — a setting with no resettable default omits it and renders no reset
+// affordance. Point it at the POCO initializer (e.g. () => new XxxSettings().Prop)
+// so the default has exactly one source of truth.
+//
 // New kinds are added here alongside their case in SettingsComposer, when a real
 // setting needs them — we type a control the first time we meet it, not before.
 public static class Setting
@@ -21,7 +28,8 @@ public static class Setting
         string? glyph = null,
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null) => new()
+        Func<bool>? visibleWhen = null,
+        Func<bool>? defaultValue = null) => new()
         {
             Kind = SettingKind.Toggle,
             LabelKey = labelKey,
@@ -31,6 +39,7 @@ public static class Setting
             SetValue = value => set((bool)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
         };
 
     // Slider over a double. The range/step live in SliderArgs (the control's
@@ -44,7 +53,8 @@ public static class Setting
         string? glyph = null,
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null) => new()
+        Func<bool>? visibleWhen = null,
+        Func<double>? defaultValue = null) => new()
         {
             Kind = SettingKind.Slider,
             LabelKey = labelKey,
@@ -55,6 +65,7 @@ public static class Setting
             SetValue = value => set((double)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
         };
 
     // Folder path as a string. PathArgs carries the picker mode and the
@@ -68,7 +79,8 @@ public static class Setting
         string? glyph = null,
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null) => new()
+        Func<bool>? visibleWhen = null,
+        Func<string>? defaultValue = null) => new()
         {
             Kind = SettingKind.Path,
             LabelKey = labelKey,
@@ -79,6 +91,7 @@ public static class Setting
             SetValue = value => set((string)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
         };
 
     // Choice among a small fixed set, over any value type T (the VM property's
@@ -95,7 +108,8 @@ public static class Setting
         string? glyph = null,
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null)
+        Func<bool>? visibleWhen = null,
+        Func<T>? defaultValue = null)
     {
         var boxed = new List<ChoiceOption>(options.Count);
         foreach ((T value, string optionKey) in options)
@@ -112,6 +126,10 @@ public static class Setting
             SetValue = value => set((T)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
+            // Box the typed default into object? — for a Choice the boxed value is
+            // what IndexOfValue/DefaultEquals match against the options, the same
+            // currency as GetValue.
+            Default = defaultValue is null ? null : () => defaultValue(),
         };
     }
 
@@ -133,7 +151,8 @@ public static class Setting
         string? glyph = null,
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
-        Func<bool>? visibleWhen = null) => new()
+        Func<bool>? visibleWhen = null,
+        Func<bool>? defaultValue = null) => new()
         {
             Kind = SettingKind.Group,
             LabelKey = labelKey,
@@ -144,5 +163,9 @@ public static class Setting
             SetValue = value => set((bool)value!),
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
+            // The master's own default. The group-header reset combines this (when
+            // present) with each child's Default; a master without a resettable
+            // default still resets its children.
+            Default = defaultValue is null ? null : () => defaultValue(),
         };
 }

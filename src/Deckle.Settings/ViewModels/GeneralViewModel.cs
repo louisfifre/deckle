@@ -174,14 +174,28 @@ public partial class GeneralViewModel : ObservableObject
     {
         _isSyncing = true;
 
-        Theme = "System";
-        AutoPasteEnabled = false;
-        OverlayEnabled = true;
-        OverlayFadeOnProximity = true;
-        OverlayAnimations = true;
-        OverlayPosition = "BottomCenter";
-        AutostartEnabled = false;
-        BackupDirectory = "";
+        // Seed from the POCO initializers — the single source of truth for defaults,
+        // shared with the composed manifest's reset selectors. No literal default
+        // is spelled here; change a default in AppSettings and both the seed and the
+        // per-card reset follow. Load() overwrites these with persisted values; this
+        // only covers the gap before the first Load.
+        var appearance = new AppearanceSettings();
+        var paste = new PasteSettings();
+        var overlay = new OverlaySettings();
+        var paths = new PathsSettings();
+
+        Theme = appearance.Theme;
+        AutoPasteEnabled = paste.AutoPasteEnabled;
+        OverlayEnabled = overlay.Enabled;
+        OverlayFadeOnProximity = overlay.FadeOnProximity;
+        OverlayAnimations = overlay.Animations;
+        // Same normalization Load() applies, so the seeded position matches a picker
+        // option even if the POCO default were ever a legacy corner value.
+        OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+        // Autostart is registry-backed, not an AppSettings POCO — its conceptual
+        // default lives on the service.
+        AutostartEnabled = AutostartService.DefaultEnabled;
+        BackupDirectory = paths.BackupDirectory;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -228,51 +242,10 @@ public partial class GeneralViewModel : ObservableObject
         SettingsService.Instance.Save();
     }
 
-    // ── Reset per section ───────────────────────────────────────────────────
-
-    public void ResetAppearanceDefaults()
-    {
-        _isSyncing = true;
-        try { Theme = "System"; }
-        finally { _isSyncing = false; }
-        PushToSettings();
-        SettingsHost.ApplyTheme?.Invoke(Theme);
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Appearance");
-    }
-
-    public void ResetBehaviourDefaults()
-    {
-        _isSyncing = true;
-        try
-        {
-            AutoPasteEnabled = false;
-            OverlayEnabled = true;
-            OverlayFadeOnProximity = true;
-            OverlayAnimations = true;
-            OverlayPosition = "BottomCenter";
-        }
-        finally { _isSyncing = false; }
-        PushToSettings();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Behaviour");
-    }
-
-    public void ResetStartupDefaults()
-    {
-        // Autostart lives in the registry — AutostartService handles the write
-        // and returns false when the write is refused (GPO, ACL…). Mirror the
-        // actual registry state back into the VM so the toggle matches reality.
-        AutostartService.Disable();
-
-        _isSyncing = true;
-        try
-        {
-            AutostartEnabled = AutostartService.IsEnabled();
-        }
-        finally { _isSyncing = false; }
-        PushToSettings();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Startup");
-    }
+    // Section resets moved out of the VM in the composer-reset slice: the composed
+    // manifest carries each setting's default (read from the POCO), and the page's
+    // section "Reset" links call the matching SettingsComposer.ResetAll(), which
+    // drives every value back through its own setter. The old ResetXxxDefaults
+    // methods were a second copy of the defaults and the seed above a third — both
+    // now read new XxxSettings(), so the literal defaults live in one place.
 }

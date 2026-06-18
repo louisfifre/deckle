@@ -42,6 +42,11 @@ public sealed partial class GeneralPage : Page
     private void ComposeAppearanceSection()
     {
         _appearanceComposer = new SettingsComposer(AppearanceHost, ViewModel);
+        // Gate the section "Reset" link on the composer's dirtiness, re-evaluated
+        // each time it raises DirtyChanged (after every RefreshAll). Subscribed
+        // before Compose so its closing RefreshAll lands the initial gate too.
+        _appearanceComposer.DirtyChanged += (_, _) =>
+            AppearanceResetLink.IsEnabled = _appearanceComposer.IsDirty();
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
     }
 
@@ -62,6 +67,8 @@ public sealed partial class GeneralPage : Page
     private void ComposeBehaviourSection()
     {
         _behaviourComposer = new SettingsComposer(BehaviourHost, ViewModel);
+        _behaviourComposer.DirtyChanged += (_, _) =>
+            BehaviourResetLink.IsEnabled = _behaviourComposer.IsDirty();
         _behaviourComposer.Compose(ViewModel.BehaviourSettings);
     }
 
@@ -76,6 +83,8 @@ public sealed partial class GeneralPage : Page
     private void ComposeStartupSection()
     {
         _startupComposer = new SettingsComposer(StartupHost, ViewModel);
+        _startupComposer.DirtyChanged += (_, _) =>
+            StartupResetLink.IsEnabled = _startupComposer.IsDirty();
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
@@ -109,26 +118,37 @@ public sealed partial class GeneralPage : Page
     }
 
     // ── Reset per section ───────────────────────────────────────────────────
-
-    private void ResetStartup_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.ResetStartupDefaults();
-    }
+    //
+    // Each section "Reset" link drives its composer's ResetAll(): every defaulted
+    // card and group goes back to its POCO default through its own setter, which
+    // raises PropertyChanged and re-syncs the surface (and re-gates the link via
+    // DirtyChanged). The value-setting side effects ride the setters — Appearance's
+    // ApplyTheme in OnThemeChanged, Startup's registry write in
+    // OnAutostartEnabledChanged — so the handler only triggers the reset and keeps
+    // the section-reset log line the VM methods used to emit.
 
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {
-        // Reset sets Theme back to its default, which raises PropertyChanged; the
-        // Appearance composer's subscription re-selects the ComboBox. No manual
-        // combo sync here anymore.
-        ViewModel.ResetAppearanceDefaults();
+        _appearanceComposer?.ResetAll();
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Appearance");
     }
 
     private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
     {
-        // Reset raises PropertyChanged on the overlay properties; the Behaviour
-        // composer's subscription re-selects the master toggle, the child toggles
-        // and the position Choice. No manual combo sync here anymore.
-        ViewModel.ResetBehaviourDefaults();
+        _behaviourComposer?.ResetAll();
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Behaviour");
+    }
+
+    private void ResetStartup_Click(object sender, RoutedEventArgs e)
+    {
+        // The autostart toggle's default is off; ResetAll() sets it off, whose
+        // setter calls AutostartService.Disable() — the registry write rides along,
+        // exactly as a manual toggle would, so no direct Disable() here anymore.
+        _startupComposer?.ResetAll();
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("Startup");
     }
 
     // Opens the UserDataRoot in File Explorer — entry point for users who

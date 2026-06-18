@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
+using Deckle.Shell;
 
 namespace Deckle.Settings;
 
@@ -10,12 +11,13 @@ namespace Deckle.Settings;
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
 // own properties — and SettingsComposer turns the list into SettingsCards.
 //
-// Only the section's flat, value-backed cards live here. GeneralPage's other
-// controls stay hand-authored: the read-only shortcut readouts, the overlay
-// SettingsExpander and its position ComboBox (structural grouping the composer
-// has no shape for, and a choice gated inside it), the autostart toggle (registry
-// side-effect with revert-on-refusal), and the command/diagnostic cards under
-// Application data. The composer drives only what it cleanly can.
+// The Appearance, Behaviour and Startup sections are composed from here — theme
+// picker, overlay group (master + fade/animations/position), auto-paste, and the
+// registry-backed autostart toggle. Each descriptor also carries its reset default,
+// read from the matching AppSettings POCO initializer so the literal defaults live
+// in one place. GeneralPage's remaining controls stay hand-authored: the read-only
+// shortcut readouts and the command/diagnostic cards under Application data. The
+// composer drives only what it cleanly can.
 public partial class GeneralViewModel
 {
     // Appearance section — the theme picker. A Choice over the theme string the VM
@@ -34,7 +36,10 @@ public partial class GeneralViewModel
                 ("Light", "GeneralThemeLight"),
                 ("Dark", "GeneralThemeDark"),
             ],
-            glyph: Glyphs.Theme),
+            glyph: Glyphs.Theme,
+            // The default is the POCO initializer, the one source of truth — the VM
+            // no longer carries its own copy. ("System".)
+            defaultValue: () => new AppearanceSettings().Theme),
     ];
 
     // Behaviour section — the overlay group, then the flat auto-paste toggle. The
@@ -55,24 +60,37 @@ public partial class GeneralViewModel
             [
                 Setting.Toggle("GeneralOverlayFadeCard",
                     () => OverlayFadeOnProximity,
-                    value => OverlayFadeOnProximity = value),
+                    value => OverlayFadeOnProximity = value,
+                    defaultValue: () => new OverlaySettings().FadeOnProximity),
                 Setting.Toggle("GeneralOverlayAnimationsCard",
                     () => OverlayAnimations,
-                    value => OverlayAnimations = value),
+                    value => OverlayAnimations = value,
+                    defaultValue: () => new OverlaySettings().Animations),
                 Setting.Choice<string>("GeneralOverlayPositionCard",
                     () => OverlayPosition,
                     value => OverlayPosition = value,
                     [
                         ("TopCenter", "GeneralOverlayPositionTop"),
                         ("BottomCenter", "GeneralOverlayPositionBottom"),
-                    ]),
+                    ],
+                    // The descriptor value is the NORMALIZED position string the
+                    // picker exposes; the POCO default may be a legacy corner value,
+                    // so fold it through the same Top→TopCenter / else→BottomCenter
+                    // rule Load() applies, or the reset would target a non-option.
+                    defaultValue: () =>
+                        (new OverlaySettings().Position ?? "").StartsWith("Top")
+                            ? "TopCenter"
+                            : "BottomCenter"),
             ],
-            glyph: Glyphs.Overlay),
+            glyph: Glyphs.Overlay,
+            // The master's default is the overlay POCO's Enabled initializer (true).
+            defaultValue: () => new OverlaySettings().Enabled),
 
         Setting.Toggle("GeneralAutoPasteCard",
             () => AutoPasteEnabled,
             value => AutoPasteEnabled = value,
-            glyph: Glyphs.Paste),
+            glyph: Glyphs.Paste,
+            defaultValue: () => new PasteSettings().AutoPasteEnabled),
     ];
 
     // Startup section — "start with Windows". A plain TwoWay toggle, but its
@@ -87,6 +105,11 @@ public partial class GeneralViewModel
         Setting.Toggle("GeneralAutostartCard",
             () => AutostartEnabled,
             value => AutostartEnabled = value,
-            glyph: Glyphs.Launch),
+            glyph: Glyphs.Launch,
+            // The registry is the source of truth; "not registered" is the default
+            // (AutostartService.DefaultEnabled, false). Resetting drives the toggle
+            // off, whose setter calls AutostartService.Disable() — the registry
+            // write rides the setter exactly like the theme/overlay side effects.
+            defaultValue: () => AutostartService.DefaultEnabled),
     ];
 }

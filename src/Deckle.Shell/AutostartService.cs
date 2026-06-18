@@ -36,6 +36,11 @@ public static class AutostartService
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName  = "Deckle";
 
+    // The registry is the source of truth for autostart, so the conceptual default
+    // is "not registered" — off. Exposed so the composed Startup toggle resets to
+    // the same fact a fresh profile starts from, without a literal duplicated here.
+    public static bool DefaultEnabled => false;
+
     public static bool IsEnabled()
     {
         try
