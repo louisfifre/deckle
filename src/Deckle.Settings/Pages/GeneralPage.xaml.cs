@@ -25,7 +25,61 @@ public sealed partial class GeneralPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
+        ComposeAppearanceSection();
+        ComposeBehaviourSection();
+        ComposeStartupSection();
         LoadAndSync();
+    }
+
+    // ── Composed Appearance section ───────────────────────────────────────────
+    //
+    // Host-only, like the Behaviour section below: the page hands the host panel
+    // and the ViewModel's Appearance manifest to the composer, which builds the
+    // theme ComboBox (a Choice descriptor). The composer subscribes to the
+    // ViewModel, so the picker reflects Load() and the section "Reset" with no
+    // SyncThemeCombo pass here — the old hand-wired ThemeCombo handler and its
+    // sync method are gone. Composed before LoadAndSync so the subscription
+    // catches Load()'s PropertyChanged; held in a field so it lives as long as
+    // the (cached) page.
+    private SettingsComposer? _appearanceComposer;
+
+    private void ComposeAppearanceSection()
+    {
+        _appearanceComposer = new SettingsComposer(AppearanceHost, ViewModel);
+        _appearanceComposer.Compose(ViewModel.AppearanceSettings);
+    }
+
+    // ── Composed Behaviour section ────────────────────────────────────────────
+    //
+    // The page only hosts: it hands the host panel and the ViewModel's settings
+    // manifest (declared beside the VM in GeneralViewModel.Settings.cs) to the
+    // composer, which builds the SettingsCards. Only the flat auto-paste card is
+    // composed — the overlay group above it stays a hand-authored
+    // SettingsExpander. The composer subscribes to the ViewModel so the toggle
+    // reflects Load() and the section "Reset" without any per-toggle binding
+    // here. Composed before LoadAndSync so the subscription catches Load()'s
+    // PropertyChanged. Held in a field so the subscription lives as long as the
+    // (cached) page.
+    private SettingsComposer? _behaviourComposer;
+
+    private void ComposeBehaviourSection()
+    {
+        _behaviourComposer = new SettingsComposer(BehaviourHost, ViewModel);
+        _behaviourComposer.Compose(ViewModel.BehaviourSettings);
+    }
+
+    // ── Composed Startup section ──────────────────────────────────────────────
+    //
+    // Same host-only pattern: the "start with Windows" toggle, whose registry
+    // write and revert-on-refusal live in the VM setter, composes like any toggle.
+    // No code-behind sync for it — the composer's subscription reflects Load(),
+    // the section Reset, and the setter's own revert via PropertyChanged.
+    private SettingsComposer? _startupComposer;
+
+    private void ComposeStartupSection()
+    {
+        _startupComposer = new SettingsComposer(StartupHost, ViewModel);
+        _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
     // NavigationCacheMode.Required reuses the page instance — the constructor
@@ -49,7 +103,6 @@ public sealed partial class GeneralPage : Page
     {
         _initializing = true;
         ViewModel.Load();
-        SyncThemeCombo();
         SyncOverlayPositionCombo();
         SyncFolderPickerDefaults();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
@@ -58,32 +111,6 @@ public sealed partial class GeneralPage : Page
             callback: () => _initializing = false,
             rejectSource: "SETTINGS", rejectWhat: "init flag",
             priority: DispatcherQueuePriority.Low);
-    }
-
-    // ── Theme ────────────────────────────────────────────────────────────────
-
-    private void SyncThemeCombo()
-    {
-        for (int i = 0; i < ThemeCombo.Items.Count; i++)
-        {
-            if (ThemeCombo.Items[i] is ComboBoxItem item &&
-                item.Tag as string == ViewModel.Theme)
-            {
-                ThemeCombo.SelectedIndex = i;
-                return;
-            }
-        }
-        ThemeCombo.SelectedIndex = 0;
-    }
-
-    private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_initializing) return;
-        if (ThemeCombo.SelectedItem is ComboBoxItem item &&
-            item.Tag is string theme)
-        {
-            ViewModel.Theme = theme;
-        }
     }
 
     // ── Overlay position ─────────────────────────────────────────────────────
@@ -138,10 +165,10 @@ public sealed partial class GeneralPage : Page
 
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {
+        // Reset sets Theme back to its default, which raises PropertyChanged; the
+        // Appearance composer's subscription re-selects the ComboBox. No manual
+        // combo sync here anymore.
         ViewModel.ResetAppearanceDefaults();
-        _initializing = true;
-        try { SyncThemeCombo(); }
-        finally { _initializing = false; }
     }
 
     private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
@@ -249,10 +276,12 @@ public sealed partial class GeneralPage : Page
         try
         {
             ViewModel.Load();
-            SyncThemeCombo();
             SyncOverlayPositionCombo();
             SyncFolderPickerDefaults();
 
+            // The Appearance composer re-selects the theme ComboBox off the Load()
+            // PropertyChanged; we still apply the theme side-effect explicitly,
+            // since Load() runs under the VM's sync guard which suppresses it.
             // Apply theme side-effect beyond the VM — RecordingViewModel
             // owns the level-window mapper push so we don't touch it from
             // here anymore.

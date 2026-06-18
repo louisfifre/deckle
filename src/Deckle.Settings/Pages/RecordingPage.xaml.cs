@@ -28,7 +28,25 @@ public sealed partial class RecordingPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        ComposePreprocessingSection();
         LoadAndSync();
+    }
+
+    // ── Composed pre-processing card ──────────────────────────────────────────
+    //
+    // The page only hosts: it hands the host panel and the ViewModel's settings
+    // manifest (declared beside the VM in RecordingViewModel.Settings.cs) to the
+    // composer, which builds the single SettingsCard. The composer subscribes to
+    // the ViewModel so the toggle reflects Load() and the section "Reset" without
+    // any per-toggle binding here. Composed before LoadAndSync so the
+    // subscription catches Load()'s PropertyChanged. Held in a field so the
+    // subscription lives as long as the (cached) page.
+    private SettingsComposer? _preprocessingComposer;
+
+    private void ComposePreprocessingSection()
+    {
+        _preprocessingComposer = new SettingsComposer(PreprocessingHost, ViewModel);
+        _preprocessingComposer.Compose(ViewModel.PreprocessingSettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

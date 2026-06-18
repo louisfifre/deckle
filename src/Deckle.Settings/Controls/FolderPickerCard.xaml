@@ -27,7 +27,8 @@
                    TextWrapping="NoWrap"
                    ToolTipService.ToolTip="{x:Bind PathTextBlock.Text, Mode=OneWay}" />
 
-        <Button Grid.Column="1"
+        <Button x:Name="PickButton"
+                Grid.Column="1"
                 x:Uid="FolderPickerCard_PickButton"
                 Click="PickButton_Click" />
 

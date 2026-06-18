@@ -36,7 +36,43 @@ public sealed partial class DiagnosticsPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        ComposeLoggingSection();
+        ComposeTelemetrySection();
         LoadAndSync();
+    }
+
+    // ── Composed Logging section ──────────────────────────────────────────────
+    //
+    // The page only hosts: it hands the host panel and the ViewModel's settings
+    // manifest (declared beside the VM in DiagnosticsViewModel.Settings.cs) to
+    // the composer, which builds the SettingsCards. The composer subscribes to
+    // the ViewModel so the toggles reflect Load() and the section "Reset" without
+    // any per-toggle binding here. Composed before LoadAndSync so the
+    // subscription catches Load()'s PropertyChanged. Held in a field so the
+    // subscription lives as long as the (cached) page.
+    private SettingsComposer? _loggingComposer;
+
+    private void ComposeLoggingSection()
+    {
+        _loggingComposer = new SettingsComposer(LoggingHost, ViewModel);
+        _loggingComposer.Compose(ViewModel.LoggingSettings);
+    }
+
+    // ── Composed Telemetry card ───────────────────────────────────────────────
+    //
+    // Same host-only pattern as the Logging section, but a single composable card:
+    // the Latency opt-in is the one plain TwoWay toggle in the Telemetry group. Its
+    // neighbours (Application log, Microphone, Corpus, Storage folder) each carry a
+    // consent dialog, a nested expander, a choice, or a folder path, so they remain
+    // hand-authored in the XAML around this host. Composed before LoadAndSync so the
+    // composer's PropertyChanged subscription catches Load(); held in a field so the
+    // subscription lives as long as the (cached) page.
+    private SettingsComposer? _telemetryComposer;
+
+    private void ComposeTelemetrySection()
+    {
+        _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
+        _telemetryComposer.Compose(ViewModel.TelemetrySettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

@@ -47,12 +47,43 @@ public sealed partial class FolderPickerCard : UserControl
         set => SetValue(DefaultPathProperty, value);
     }
 
+    // Picker affordance set. Configure shows both Change + Open; OpenOnly hides
+    // the Change button so a folder the app owns reads as fixed (the path is
+    // still shown and openable, just not repointable). Default Configure keeps
+    // the existing call sites — which never set Mode — behaving as before.
+    public static readonly DependencyProperty ModeProperty =
+        DependencyProperty.Register(
+            nameof(Mode), typeof(FolderPickerMode), typeof(FolderPickerCard),
+            new PropertyMetadata(FolderPickerMode.Configure, OnModeChanged));
+
+    public FolderPickerMode Mode
+    {
+        get => (FolderPickerMode)GetValue(ModeProperty);
+        set => SetValue(ModeProperty, value);
+    }
+
     public event EventHandler? PathChanged;
 
     public FolderPickerCard()
     {
         InitializeComponent();
         RefreshDisplay();
+        ApplyMode();
+    }
+
+    private static void OnModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is FolderPickerCard card) card.ApplyMode();
+    }
+
+    // Collapse the Change button in OpenOnly so the grid's auto column folds
+    // away and only Open remains; Configure restores it. Driven both from the
+    // constructor and on Mode changes so a programmatic set after construction
+    // (the composer's Path case) takes effect.
+    private void ApplyMode()
+    {
+        PickButton.Visibility =
+            Mode == FolderPickerMode.OpenOnly ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private static void OnPathOrDefaultChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

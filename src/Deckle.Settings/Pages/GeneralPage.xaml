@@ -82,16 +82,13 @@
                                      Click="ResetAppearance_Click" />
                 </Grid>
 
-                <controls:SettingsCard x:Uid="GeneralAppThemeCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Theme}}">
-                    <ComboBox x:Name="ThemeCombo"
-                              MinWidth="160"
-                              SelectionChanged="ThemeCombo_SelectionChanged">
-                        <ComboBoxItem x:Uid="GeneralThemeSystem" Tag="System" />
-                        <ComboBoxItem x:Uid="GeneralThemeLight" Tag="Light" />
-                        <ComboBoxItem x:Uid="GeneralThemeDark" Tag="Dark" />
-                    </ComboBox>
-                </controls:SettingsCard>
+                <!-- Composed: the theme picker — the Appearance section's lone
+                     value-backed card. GeneralViewModel.AppearanceSettings declares
+                     it as a Choice descriptor (3 options) and the composer builds the
+                     ComboBox into this host, where the card stood. The section header
+                     and Reset link above stay hand-authored. -->
+                <StackPanel x:Name="AppearanceHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Behaviour ───────────────────────────────────────────── -->
                 <!--
@@ -139,10 +136,12 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
-                <controls:SettingsCard x:Uid="GeneralAutoPasteCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Paste}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.AutoPasteEnabled, Mode=TwoWay}" />
-                </controls:SettingsCard>
+                <!-- Composed: the flat auto-paste toggle. The overlay expander
+                     above stays hand-authored (structural grouping); only this
+                     single composable card is hosted for the composer to build,
+                     from GeneralViewModel.BehaviourSettings. -->
+                <StackPanel x:Name="BehaviourHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Startup ─────────────────────────────────────────────── -->
                 <Grid>
@@ -160,10 +159,13 @@
                                      Click="ResetStartup_Click" />
                 </Grid>
 
-                <controls:SettingsCard x:Uid="GeneralAutostartCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Launch}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.AutostartEnabled, Mode=TwoWay}" />
-                </controls:SettingsCard>
+                <!-- Composed: the "start with Windows" toggle — the Startup
+                     section's lone card. Its registry write and revert-on-refusal
+                     live in the VM setter (OnAutostartEnabledChanged), so the
+                     composer hosts it like any toggle: GeneralViewModel.StartupSettings
+                     declares it and the composer builds the card into this host. -->
+                <StackPanel x:Name="StartupHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Application data ────────────────────────────────────── -->
                 <TextBlock x:Uid="GeneralPageApplicationDataHeaderLabel"

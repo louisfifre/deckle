@@ -69,14 +69,18 @@
                 <!-- Transcription pre-processing — the DSP black box. Single
                      opt-in toggle ; the fine parameters live in the Playground.
                      The description carries the deferred-activation contract
-                     (enabled now, active after a few measured recordings). -->
-                <controls:SettingsCard x:Name="PreprocessingCard"
-                                       x:Uid="RecordingPagePreprocessingCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AudioRecording}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.PreprocessingEnabled, Mode=TwoWay}"
-                                  OnContent=""
-                                  OffContent="" />
-                </controls:SettingsCard>
+                     (enabled now, active after a few measured recordings).
+
+                     Composed region — the lone composable card on this page.
+                     RecordingPage.ComposePreprocessingSection() declares it as a
+                     SettingDescriptor (RecordingViewModel.Settings.cs) and the
+                     composer builds the SettingsCard into this host. It sits
+                     between two bespoke cards (the microphone ComboBox above, the
+                     mic-check button below), so the host holds just this one
+                     toggle — composed and hand-authored cards interleave freely
+                     in the same StackPanel. -->
+                <StackPanel x:Name="PreprocessingHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- Microphone level check — the indicator. Speak a few seconds;
                      Deckle reads the level, projects where the DSP would land it,
