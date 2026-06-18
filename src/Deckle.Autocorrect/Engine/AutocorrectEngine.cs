@@ -302,11 +302,14 @@ public sealed class AutocorrectEngine : IDisposable
             return;
         }
 
-        // Live path stays one word of left context (bigram): the trigram model
-        // is exercised by the offline eval until the sentence-context wiring lands.
+        // Live path: up to two words of left context, most recent last. The
+        // disambiguator is an n-gram with backoff — it uses the trigram row when
+        // both words are present, falling back to bigram then unigram on its own.
         var leftContext = commit.PreviousWord is null
             ? Array.Empty<string>()
-            : new[] { commit.PreviousWord };
+            : commit.PreviousPreviousWord is null
+                ? new[] { commit.PreviousWord }
+                : new[] { commit.PreviousPreviousWord, commit.PreviousWord };
         var decision = _policy.Evaluate(commit.Word, leftContext);
 
         // A reverted pair stays suppressed whatever the policy says — enforced

@@ -26,6 +26,11 @@ public sealed class TypedWordTracker
     // intervening reset — surfaced as WordCommit.PreviousWord. Null after a reset.
     private string? _previousWord;
 
+    // The token two before the live word (the one before _previousWord) — surfaced
+    // as WordCommit.PreviousPreviousWord, the second context word the trigram
+    // disambiguator needs. Null after a reset or one word into a sentence.
+    private string? _previousPreviousWord;
+
     // ── Edit-window state ──
     // Open from a commit until a keystroke kind other than Backspace/Text
     // intervenes (a reset of any flavor closes it too). While open, the first
@@ -34,6 +39,7 @@ public sealed class TypedWordTracker
     private bool _reopened;             // the live buffer currently holds a re-opened word
     private string? _lastCommittedWord; // the word the window can re-open
     private string? _wordBeforeLast;    // previousWord as it stood before _lastCommittedWord
+    private string? _word2BeforeLast;   // previousPreviousWord as it stood before _lastCommittedWord
     private string? _originalForEdit;   // compared against the re-commit to emit a WordEdit
 
     public Action<WordCommit>? WordCommitted;
@@ -194,9 +200,11 @@ public sealed class TypedWordTracker
         if (_editWindowOpen && !_reopened && _lastCommittedWord is not null)
         {
             // First backspace after a commit: eat the boundary, re-open the
-            // committed word as the live buffer, revert previousWord one step.
+            // committed word as the live buffer, revert the context one step so
+            // the re-commit sees the same two left words it first saw.
             _buffer.Append(_lastCommittedWord);
             _previousWord = _wordBeforeLast;
+            _previousPreviousWord = _word2BeforeLast;
             _originalForEdit = _lastCommittedWord;
             _reopened = true;
             return;
@@ -226,22 +234,28 @@ public sealed class TypedWordTracker
     {
         string word = _buffer.ToString();
         string? wordBeforeThis = _previousWord;
+        string? word2BeforeThis = _previousPreviousWord;
         bool wasReopened = _reopened;
         string? original = _originalForEdit;
 
-        // Chain: this word becomes the previous one for whatever comes next.
+        // Chain slides by one: this word becomes the previous, the previous slides
+        // to two-back; the old two-back drops off (the next word's context is
+        // [previous, this]).
+        _previousPreviousWord = _previousWord;
         _previousWord = word;
         _buffer.Clear();
 
-        // Open the edit window on this commit. Two-deep memory: the word before
-        // THIS one is what previousWord reverts to if the window re-opens.
+        // Open the edit window on this commit. Three-deep memory: the two words
+        // before THIS one are what the context reverts to if the window re-opens.
         _lastCommittedWord = word;
         _wordBeforeLast = wordBeforeThis;
+        _word2BeforeLast = word2BeforeThis;
         _originalForEdit = null;
         _editWindowOpen = true;
         _reopened = false;
 
-        WordCommitted?.Invoke(new WordCommit(word, boundary, wordBeforeThis, timestampMs));
+        WordCommitted?.Invoke(
+            new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs));
 
         if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
             WordEdited?.Invoke(new WordEdit(original, word, timestampMs));
@@ -253,6 +267,7 @@ public sealed class TypedWordTracker
         _reopened = false;
         _lastCommittedWord = null;
         _wordBeforeLast = null;
+        _word2BeforeLast = null;
         _originalForEdit = null;
     }
 
@@ -260,6 +275,7 @@ public sealed class TypedWordTracker
     {
         _buffer.Clear();
         _previousWord = null;
+        _previousPreviousWord = null;
         CloseEditWindow();
         TrackerReset?.Invoke(reason);
     }

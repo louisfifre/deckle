@@ -74,6 +74,37 @@ public class TypedWordTrackerTests
     }
 
     [Fact]
+    public void ThreeWordsChainTheTwoWordContext()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "de la mer ");
+
+        Assert.Equal(3, rec.Commits.Count);
+        Assert.Null(rec.Commits[1].PreviousPreviousWord);        // "la": only one word before
+        Assert.Equal("la", rec.Commits[2].PreviousWord);         // "mer"
+        Assert.Equal("de", rec.Commits[2].PreviousPreviousWord); // two back — the trigram context
+    }
+
+    [Fact]
+    public void ReopeningRestoresTheTwoWordContext()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "de la mer ");  // commits de, la, mer; edit window on "mer"
+        Backspace(t);           // re-open "mer" (eats the boundary)
+        Backspace(t, 3);        // erase "mer"
+        Type(t, "lac ");        // re-commit a different word in the same slot
+
+        var last = rec.Commits[^1];
+        Assert.Equal("lac", last.Word);
+        Assert.Equal("la", last.PreviousWord);                   // context restored…
+        Assert.Equal("de", last.PreviousPreviousWord);           // …two deep
+    }
+
+    [Fact]
     public void ElisionCommitsPrefixThenChainsTheNextWord()
     {
         var t = new TypedWordTracker();
