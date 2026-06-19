@@ -196,10 +196,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── 0001-anytype-headless-service-single-http-mcp-host.md  — [adr] Anytype runs as a Deckle-orchestrated headless service behind one HTTP MCP host…
 │   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   │   └── CLAUDE.md
-│   └── research/
-│       ├── 2026-06-12--notifications-catalogue.md
-│       ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
-│       └── research--system-autocorrect--2026-06-12.md
+│   ├── research/
+│   │   ├── 2026-06-12--notifications-catalogue.md
+│   │   ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
+│   │   └── research--system-autocorrect--2026-06-12.md
+│   └── inventaire-settings.md
 ├── scripts/
 │   ├── hooks/
 │   │   ├── pre-commit
@@ -242,6 +243,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   └── SpaceWriteLock.cs
+│   │   ├── Backend/
+│   │   │   ├── BackendHealthProbe.cs
+│   │   │   ├── BackendProcessSpec.cs
+│   │   │   ├── BackendScheduledTask.cs
+│   │   │   ├── BackendSupervisor.cs
+│   │   │   └── BackendTaskDocument.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
@@ -1011,6 +1018,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── McpServerTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
+│   │   ├── BackendTaskDocumentTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
