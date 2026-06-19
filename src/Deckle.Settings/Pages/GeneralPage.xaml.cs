@@ -144,8 +144,8 @@ public sealed partial class GeneralPage : Page
     private void ResetStartup_Click(object sender, RoutedEventArgs e)
     {
         // The autostart toggle's default is off; ResetAll() sets it off, whose
-        // setter calls AutostartService.Disable() — the registry write rides along,
-        // exactly as a manual toggle would, so no direct Disable() here anymore.
+        // setter calls StartupService.StopStartup() — the vehicle removal rides
+        // along, exactly as a manual toggle would, so no direct call here anymore.
         _startupComposer?.ResetAll();
         DeckleSettingsSource.Log.SectionReset();
         DeckleSettingsSource.Log.SectionResetDetail("Startup");
