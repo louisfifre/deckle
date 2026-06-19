@@ -859,6 +859,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MessageOnlyHost.cs
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
+│   │   ├── StartupService.cs
 │   │   └── TrayIconManager.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/

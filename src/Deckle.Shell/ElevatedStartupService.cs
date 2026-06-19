@@ -25,11 +25,13 @@ namespace Deckle.Shell;
 // *converts* the autostart vehicle rather than adding a second one (decided in
 // the framing session).
 //
-// NOTE — V1 semantic: "elevated startup implies startup". The General page's
-// autostart toggle reads only the HKCU\Run key, so while the elevated task is
-// the active vehicle that toggle will read OFF even though Deckle does start at
-// logon. Known seam, accepted for V1; a later pass can teach the autostart
-// probe to also consult the scheduled task.
+// "Elevated startup implies startup": enabling the task is also enabling
+// startup, and the General page's autostart toggle reflects that through
+// StartupService, which probes both vehicles. So this Disable() *converts* the
+// vehicle back to the Run key (the app still starts at logon), whereas
+// StartupService.StopStartup() removes the task outright via RemoveTask() (the
+// app stops starting at all) — the two callers want opposite things from a gone
+// task, which is why the raw removal is factored out below.
 //
 // Multi-install discipline mirrors AutostartService: the task name is the fixed
 // "Deckle", so IsEnabled compares the task's <Command> to this exe's path —
@@ -142,6 +144,22 @@ public static class ElevatedStartupService
 
     public static bool Disable()
     {
+        if (!RemoveTask()) return false;
+
+        // Restore the Run-key vehicle so the app still starts at logon: disabling
+        // *elevation* is not disabling *startup* (elevated startup implies
+        // startup). StartupService.StopStartup() skips this restore on purpose.
+        AutostartService.Enable();
+        return true;
+    }
+
+    // Deletes the elevated task without restoring any other vehicle — the raw
+    // removal both Disable() (which then restores the Run key) and
+    // StartupService.StopStartup() (which restores nothing) build on. Mutating a
+    // task needs elevation, so schtasks runs under the runas verb: one UAC
+    // prompt, a declined prompt surfacing as Win32Exception 1223 → logged false.
+    internal static bool RemoveTask()
+    {
         try
         {
             using var proc = new Process
@@ -164,10 +182,6 @@ public static class ElevatedStartupService
                     "schtasks", $"exit code {proc.ExitCode}");
                 return false;
             }
-
-            // Restore the Run-key vehicle so the app still starts at logon
-            // (V1 semantic: elevated startup implies startup).
-            AutostartService.Enable();
 
             DeckleShellSource.Log.ElevatedStartupDisabled();
             return true;
