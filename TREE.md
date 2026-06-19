@@ -242,6 +242,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   └── SpaceWriteLock.cs
+│   │   ├── Backend/
+│   │   │   ├── BackendHealthProbe.cs
+│   │   │   ├── BackendProcessSpec.cs
+│   │   │   ├── BackendScheduledTask.cs
+│   │   │   ├── BackendSupervisor.cs
+│   │   │   └── BackendTaskDocument.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
@@ -1010,6 +1016,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── McpServerTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
+│   │   ├── BackendTaskDocumentTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs

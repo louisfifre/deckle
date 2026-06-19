@@ -16,10 +16,12 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     private DeckleAnytypeSource() { }
 
-    // Module-local keyword bit (transverse bits 0..9 reserved in Keywords;
+    // Module-local keyword bits (transverse bits 0..9 reserved in Keywords;
     // 0x400+ belongs to the provider). Gesture/session activity that is not
-    // raw network traffic.
-    private const EventKeywords Gesture = (EventKeywords)0x400;
+    // raw network traffic; Lifecycle covers the headless backend's scheduled-task
+    // start/health supervision, a distinct observable family from the API calls.
+    private const EventKeywords Gesture   = (EventKeywords)0x400;
+    private const EventKeywords Lifecycle = (EventKeywords)0x800;
 
     // ── EventIds ─────────────────────────────────────────────────────────
     public const int EvtApiRequestStarted         = 1;
@@ -33,6 +35,15 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtApiRequestRetriedDetail   = 8;
     public const int EvtApiRequestFailedDetail    = 9;
     public const int EvtSpaceWriteContended       = 10;
+    // Backend lifecycle (ids 11-18).
+    public const int EvtBackendStarting               = 11;
+    public const int EvtBackendReady                  = 12;
+    public const int EvtBackendStartTimedOut          = 13;
+    public const int EvtBackendNotProvisioned         = 14;
+    public const int EvtBackendTaskRegistered         = 15;
+    public const int EvtBackendHealthProbed           = 16;
+    public const int EvtBackendTaskOperationFailed    = 17;
+    public const int EvtBackendTaskOperationFailedDetail = 18;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -135,5 +146,88 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void SpaceWriteContended(string operation, string target, double waited_ms)
     {
         if (IsEnabled()) WriteEvent(EvtSpaceWriteContended, operation, target, waited_ms);
+    }
+
+    // ── Backend lifecycle ─────────────────────────────────────────────────
+    //
+    // The headless backend is started on demand through its triggerless
+    // scheduled task and observed only through the health endpoint. Milestones
+    // (Info/Warning, no args) read as a narrative of the start attempt; the
+    // Verbose mirrors carry the greppable detail.
+
+    [Event(EvtBackendStarting,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Message = "Starting the Anytype backend")]
+    public void BackendStarting()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendStarting);
+    }
+
+    [Event(EvtBackendReady,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Message = "The Anytype backend is ready")]
+    public void BackendReady()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendReady);
+    }
+
+    // Warning: the start was requested but the backend never answered in time —
+    // a degradation a human would want to notice (the backend will be absent).
+    [Event(EvtBackendStartTimedOut,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Message = "The Anytype backend did not become ready")]
+    public void BackendStartTimedOut()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendStartTimedOut);
+    }
+
+    // Warning: the backend is down and no task is enrolled — provisioning has
+    // not run, so Deckle cannot start it. A state the user must act on.
+    [Event(EvtBackendNotProvisioned,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Message = "The Anytype backend is not provisioned")]
+    public void BackendNotProvisioned()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendNotProvisioned);
+    }
+
+    [Event(EvtBackendTaskRegistered,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend task registered | task={0}")]
+    public void BackendTaskRegistered(string task_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendTaskRegistered, task_name);
+    }
+
+    [Event(EvtBackendHealthProbed,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend health probed | healthy={0} | status={1} | ms={2:F1}")]
+    public void BackendHealthProbed(bool healthy, int status_code, double duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendHealthProbed, healthy, status_code, duration_ms);
+    }
+
+    [Event(EvtBackendTaskOperationFailed,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Message = "An Anytype backend task operation failed")]
+    public void BackendTaskOperationFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendTaskOperationFailed);
+    }
+
+    [Event(EvtBackendTaskOperationFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend task operation failed | operation={0} | error={1}")]
+    public void BackendTaskOperationFailedDetail(string operation, string error)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendTaskOperationFailedDetail, operation, error);
     }
 }
