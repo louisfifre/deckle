@@ -188,16 +188,14 @@ public sealed partial class LlmPage : Page
         // (Save IO, UI hydration) from bubbling to the dispatcher.
         try
         {
-            var dialog = new ContentDialog
-            {
-                Title = Loc.Get("Settings_ResetLlmDialog_Title"),
-                Content = Loc.Get("Settings_ResetLlmDialog_Content"),
-                PrimaryButtonText = Loc.Get("LlmPageResetAllLabel.Text"),
-                CloseButtonText = Loc.Get("Common_Cancel"),
-                DefaultButton = ContentDialogButton.Close,
-                XamlRoot = this.XamlRoot
-            };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            bool confirmed = await ConfirmationService.RequestAsync(
+                this.XamlRoot,
+                new ConfirmationRequest(
+                    Loc.Get("Settings_ResetLlmDialog_Title"),
+                    Loc.Get("Settings_ResetLlmDialog_Content"),
+                    Loc.Get("LlmPageResetAllLabel.Text"),
+                    IsDestructive: true));
+            if (!confirmed)
                 return;
 
             // Replace the live LlmSettings with a fresh defaults instance,

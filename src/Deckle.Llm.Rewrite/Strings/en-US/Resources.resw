@@ -1260,14 +1260,6 @@
     <value>Start Ollama or check the endpoint setting ({0}).</value>
   </data>
 
-  <!-- LlmShortcutSlotsSection Reset dialog -->
-  <data name="Settings_ResetShortcutsDialog_Title" xml:space="preserve">
-    <value>Reset shortcuts to (None)?</value>
-  </data>
-  <data name="Settings_ResetShortcutsDialog_Content" xml:space="preserve">
-    <value>Both rewrite shortcuts will be unbound. The hotkeys keep working — they'll just trigger a transcription without a rewrite until you assign a profile again.</value>
-  </data>
-
   <!-- LlmRulesSection -->
   <data name="Settings_AddRuleButton" xml:space="preserve">
     <value>Add rule</value>
@@ -1288,9 +1280,6 @@
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
     <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked — they're not deleted, they go blank until you reassign them.</value>
-  </data>
-  <data name="Settings_RemoveProfileDialog_CloseButton" xml:space="preserve">
-    <value>Keep</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>

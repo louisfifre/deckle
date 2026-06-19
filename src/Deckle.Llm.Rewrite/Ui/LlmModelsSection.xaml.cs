@@ -111,16 +111,14 @@ public sealed partial class LlmModelsSection : UserControl
             string modelName = model.Name;
             delBtn.Click += async (_, _) =>
             {
-                var dialog = new ContentDialog
-                {
-                    Title = Loc.Get("Settings_RemoveModelDialog_Title"),
-                    Content = Loc.Format("Settings_RemoveModelDialog_Content_Format", modelName),
-                    PrimaryButtonText = Loc.Get("Common_Remove"),
-                    CloseButtonText = Loc.Get("Common_Cancel"),
-                    DefaultButton = ContentDialogButton.Close,
-                    XamlRoot = this.XamlRoot
-                };
-                if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                bool confirmed = await ConfirmationService.RequestAsync(
+                    this.XamlRoot,
+                    new ConfirmationRequest(
+                        Loc.Get("Settings_RemoveModelDialog_Title"),
+                        Loc.Format("Settings_RemoveModelDialog_Content_Format", modelName),
+                        Loc.Get("Common_Remove"),
+                        IsDestructive: true));
+                if (confirmed)
                 {
                     try
                     {

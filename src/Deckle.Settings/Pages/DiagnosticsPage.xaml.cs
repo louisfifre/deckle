@@ -168,8 +168,22 @@ public sealed partial class DiagnosticsPage : Page
         finally { _suppressAutocorrectTextToggle = false; }
     }
 
-    private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
+    // Telemetry reset turns every opt-in off and clears the recorded consent —
+    // user-created state, so it goes through the shared destructive-confirm gate
+    // (Close is the default button). Logging's reset stays a direct action: it
+    // only restores log toggles to defaults, nothing the user authored is lost.
+    private async void ResetTelemetry_Click(object sender, RoutedEventArgs e)
     {
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetTelemetryDialog_Title"),
+                Loc.Get("Settings_ResetTelemetryDialog_Content"),
+                Loc.Get("Common_Reset"),
+                IsDestructive: true));
+        if (!confirmed)
+            return;
+
         ViewModel.ResetTelemetryDefaults();
     }
 
