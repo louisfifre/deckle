@@ -270,8 +270,8 @@ internal static partial class ScreenCaptureInterop
         {
             var vtbl = *(nint**)duplicationPtr;
             var acquire = (delegate* unmanaged<nint, uint, DXGI_OUTDUPL_FRAME_INFO*, nint*, int>)vtbl[8];
-            DXGI_OUTDUPL_FRAME_INFO info;
-            nint resourcePtr;
+            DXGI_OUTDUPL_FRAME_INFO info = default;
+            nint resourcePtr = 0;
             int hr = acquire(duplicationPtr, timeoutMs, &info, &resourcePtr);
             frameInfo = info;
             desktopResourcePtr = resourcePtr;
