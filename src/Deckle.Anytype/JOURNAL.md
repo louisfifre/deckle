@@ -7,6 +7,41 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-06-19 — Backend lifecycle built + anytype-cli measured (implementation session)
+
+Implemented point 1 of the 06-18/06-19 wizard design. Code on branch `feat/anytype-backend-lifecycle` (dormant: compiles, 7/7 unit tests, no consumer wired, no real process spec).
+
+Built: a triggerless on-demand scheduled task (`BackendScheduledTask` — no `<Triggers>`, `LeastPrivilege` + `InteractiveToken` + `ExecutionTimeLimit=PT0S` + `AllowStartOnDemand`), an HTTP `BackendHealthProbe`, a `BackendSupervisor` (probe → `schtasks /Run` → bounded readiness poll), a `BackendProcessSpec` seam to provisioning, lifecycle EventSource ids, `BackendTaskDocumentTests`. Mirrors `ElevatedStartupService` minus trigger, minus elevation; the `Escape`/XML builder kept module-local, not shared.
+
+Proved on the machine (stand-in `ping` task, since cleaned up) — the two 06-19 residuals:
+- `schtasks /Create` + `/Run` of a LeastPrivilege triggerless task run with **no UAC** from a non-elevated shell.
+- The spawned process is parented to the Task Scheduler service (svchost), not the launcher shell, and **outlives the caller**.
+
+anytype-cli measured (v0.3.6, released 2026-06-17):
+- Downloaded `anytype-cli-v0.3.6-windows-amd64.zip` into `%LOCALAPPDATA%\Programs\Deckle\anytype\`, sha256 `3aa8db0a02f9349164c1dacf5ede32e8a0b0cf966ced59cb37ff82e2605ab1be` verified. The release publishes **no checksum manifest** (no SHA256SUMS, install.sh does no verification) → pin the GitHub per-asset digest ourselves. CLI is MIT; it embeds anytype-heart (different, source-available license — verify before bundling).
+- **REST 31012 is account-gated.** Bare `anytype serve` opens only gRPC 31010 + gRPC-web 31011; the REST gateway does not bind. serve log: `No stored account key found, skipping auto-login`. A stored account (via `auth create` / `auth login`, then auto-login) is the precondition for 31012 — confirms the 06-18 "REST only after login" note and refutes the community "REST never in the CLI" report for v0.3.6.
+- **Correction to the 06-18 design:** `/docs/openapi.json` is the hosted Developer-Portal path, not a local route — no local health endpoint is documented. Readiness must be an authed `GET /v1/spaces` (Bearer + `Anytype-Version`). `BackendHealthProbe` currently probes the wrong path — to fix.
+- CLI auth = bot-account commands (`auth create <name>` prints the account key once; `auth apikey create` prints the bearer once), distinct from the Desktop/31009 4-digit challenge. The REST base URL must be vehicle-aware: 31009 (Desktop) vs 31012 (CLI), same request contract.
+
+Open (Louis): the final proof that an authed `GET /v1/spaces` answers on 31012 needs a real bot account — the apikey step Louis supervises — deferred to next session. Then: account key → `Deckle.Security` vault (to build), apikey, space join, fix the health probe, wire the supervisor, end-to-end.
+
+## 2026-06-19 — Provisioning wizard: lifecycle, vault, per-client config (grilling session)
+
+Resolved the three TBD points left open on 06-18. Architecture (ADR-0001) untouched. Client config facts verified against openai/codex Rust source + Claude Code docs.
+
+Decisions (Louis):
+- **Backend lifecycle = a triggerless, on-demand scheduled task** (`InteractiveToken` + `LeastPrivilege` + `ExecutionTimeLimit=PT0S`), started by Deckle's health-check via `schtasks /Run`. Survives Deckle (the task process is parented to the Task Scheduler service, not the caller), runs non-elevated, lives in the interactive session, and honours the autostart toggle by construction (no logon trigger → never starts unless Deckle asks). Reuses `ElevatedStartupService.BuildTaskXml` minus the trigger, minus the elevation. Service rejected: Credential Manager generic creds + DPAPI are bound to the interactive logon session (`CredRead` = "credential set of the logon session of the current token"; `CryptUnprotectData` needs matching logon creds) — a Session-0 service logon is a different session, so a service couldn't reliably read what the interactive wizard wrote.
+- **`Deckle.Security` storage = homegrown DPAPI CurrentUser sealed single-file vault** under `%LOCALAPPDATA%\Deckle`, behind an `ISecretVault` interface (the `HarvestStore` pattern). Not the Windows Credential Manager — it would fragment the curated inspectable surface and add a dependency, for the same DPAPI floor underneath. The `anytype-cli` account key stays in the Credential Manager (go-keyring owns it): a two-store boundary by subsystem ownership, not an inconsistency.
+- **Inspectable surface = a single predicate engine; the wizard is its resident face** (entry points: first-run + Settings). V1: the wizard *is* the surface — provisioning and key entry, relaunchable; the General page shows the supervisor's last-known state; the cross-service vault inspector is deferred.
+- **Per-client config = delegate to the client CLIs** (`claude mcp add` / `codex mcp add`) as the primary path; a typed file-write fallback only for a CLI-less client (none today). Idempotency by probe then `remove`+`add`. The per-client bearer is materialised as a **per-client user env var** (`DECKLE_MCP_TOKEN_<CLIENT>`), a plaintext projection of the vault; rotation/revocation = rewrite/delete the var. Consistent with DPAPI CurrentUser already assuming same-user trust.
+
+Verified facts (June 2026):
+- **Codex streamable-HTTP MCP is stable, not experimental** (Rust enum `McpServerTransportConfig::StreamableHttp`). `~/.codex/config.toml`, flat table `[mcp_servers.<name>]` with `url` + `bearer_token_env_var` (an env-var *name*, never the literal). `deny_unknown_fields` → a stale/unknown key fails parsing (an argument *for* delegating to the CLI). `codex mcp add <name> --url … --bearer-token-env-var …`.
+- **Claude Code**: `~/.claude.json` / project `.mcp.json`, `mcpServers.<name>` with `type:"http"` + `url` + `headers.Authorization`, `${VAR}` interpolation at runtime. `claude mcp add --transport http --header …`.
+- `install-anytype-mcp.ps1` (stdio publish + `current` junction + regex repoint) is obsolete under HTTP — to retire.
+
+Deferred / next: a security+robustness hardening pass after V1 works (the bearer's plaintext env-var exposure first); the cross-service vault-inspector surface in `Deckle.Security`. A lifecycle ADR is a candidate once the point (1) mechanism is implemented. Empirical residuals to prove at build: `schtasks /Run` of a LeastPrivilege user task without UAC, the spawned process outliving its caller, `codex mcp add` idempotency on an existing server, client version pinning.
+
 ## 2026-06-18 — Provisioning wizard (grilling session, branch E)
 
 Designing the wizard that installs the headless backend and wires the MCP clients. Architecture (ADR-0001) untouched. CLI/sync facts verified against anyproto/anytype-cli + any-sync source.
