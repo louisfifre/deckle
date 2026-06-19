@@ -46,6 +46,20 @@ public sealed record NumberArgs(
     double SmallChange,
     double LargeChange) : SettingArgs;
 
+// ── TextArgs ──────────────────────────────────────────────────────────────────
+//
+// Shape of a Text setting's TextBox. All optional, because a bare text field is
+// the common case: Placeholder is the greyed prompt shown while the field is
+// empty (PlaceholderText — a hint, never a value); Multiline switches the box to
+// AcceptsReturn with a bounded height and lays the card out vertically (like
+// Path), for a value that wraps — a prompt, a note; MaxLength caps the input the
+// box accepts, null for no cap. The value type (string) is fixed by the kind, so
+// these describe only the CONTROL, like a slider's bounds.
+public sealed record TextArgs(
+    string? Placeholder = null,
+    bool Multiline = false,
+    int? MaxLength = null) : SettingArgs;
+
 // ── FolderPickerMode ──────────────────────────────────────────────────────────
 //
 // Whether a folder-path setting lets the user repoint the folder (Configure) or
@@ -81,12 +95,17 @@ public sealed record ChoiceOption(object? Value, string LabelKey);
 
 // ── ChoiceArgs ──────────────────────────────────────────────────────────────────
 //
-// The options of a Choice setting, in display order. Rendered as a ComboBox today
-// (the doctrine's control for "more than a few" mutually-exclusive options); a
-// radio style is a future field added with the first clean radio site, not before.
-// The options belong in args, like a slider's bounds: they describe the control's
-// shape, while the value type is fixed by the kind's selectors.
-public sealed record ChoiceArgs(IReadOnlyList<ChoiceOption> Options) : SettingArgs;
+// The options of a Choice setting, in display order. Rendered as a ComboBox by
+// default (the doctrine's control for "more than a few" mutually-exclusive
+// options); when Radio is set the composer renders a RadioButtons group instead —
+// the doctrine's control for "a few", where laying every option flat and visible
+// beats hiding them behind a dropdown. The options belong in args, like a slider's
+// bounds: they describe the control's shape, while the value type is fixed by the
+// kind's selectors. Radio defaults false, so existing ComboBox call sites that
+// pass only the options stay unchanged.
+public sealed record ChoiceArgs(
+    IReadOnlyList<ChoiceOption> Options,
+    bool Radio = false) : SettingArgs;
 
 // ── GroupArgs ─────────────────────────────────────────────────────────────────
 //
@@ -101,3 +120,15 @@ public sealed record ChoiceArgs(IReadOnlyList<ChoiceOption> Options) : SettingAr
 // Children may not themselves be groups: folds never nest (settings-UX doctrine),
 // and the composer enforces it.
 public sealed record GroupArgs(IReadOnlyList<SettingDescriptor> Children) : SettingArgs;
+
+// ── SectionArgs ───────────────────────────────────────────────────────────────
+//
+// The child settings a Section groups, in display order — mirroring GroupArgs but
+// with no master selectors, because a section has no value of its own and gates
+// nothing. The children are ordinary leaf descriptors the composer renders as
+// SettingsCards inside the section's SettingsExpander; unlike a group they are NOT
+// masked by a master toggle (there is none), so each stands on its own VisibleWhen.
+//
+// Children may not themselves be groups or sections: folds never nest (settings-UX
+// doctrine), and the composer enforces it — the same guard BuildGroup applies.
+public sealed record SectionArgs(IReadOnlyList<SettingDescriptor> Children) : SettingArgs;

@@ -169,10 +169,83 @@ public sealed class SettingsComposer
     }
 
     // Dispatches a descriptor to its element: a Group becomes a SettingsExpander
-    // (master toggle + children), every leaf kind a SettingsCard. Both derive
-    // from Control, so the host panel holds them side by side.
+    // (master toggle + children), a Section the same expander minus the master
+    // toggle (header + chevron grouping only), every leaf kind a SettingsCard. All
+    // derive from Control, so the host panel holds them side by side. A leaf that
+    // carries an Advisory is wrapped so its contextual message hangs beneath the
+    // card; a Group or Section never carries one at its own level (the capability
+    // lives on leaves only — but a child leaf inside a fold can, see
+    // AddChildToExpander).
     private FrameworkElement BuildElement(SettingDescriptor s)
-        => s.Kind == SettingKind.Group ? BuildGroup(s) : BuildCard(s);
+    {
+        if (s.Kind == SettingKind.Group) return BuildGroup(s);
+        if (s.Kind == SettingKind.Section) return BuildSection(s);
+
+        SettingsCard card = BuildCard(s);
+        return s.Advisory is null ? card : WrapWithAdvisory(card, s);
+    }
+
+    // ── Inline advisory ──────────────────────────────────────────────────────
+    //
+    // Wraps a fully-wired card with a sibling InfoBar carrying the descriptor's
+    // contextual message — a single channel (no warning/error split: the wording
+    // carries the tone), rendered SHARED here rather than per-kind so every leaf
+    // gets it the same way. The card keeps every bit of its existing wiring (reset,
+    // reactive state, value sync) untouched; the advisory is a frère element added
+    // below it, never a replacement.
+    //
+    // The InfoBar opens with text when Advisory() returns non-null and closes when
+    // it returns null, re-evaluated on every refresh exactly like EnabledWhen/
+    // VisibleWhen — its refresher is appended to _refreshers like the card's own.
+    //
+    // VisibleWhen already collapses the CARD (the kind's refresher calls
+    // ApplyReactiveState on it), but a collapsed card inside a visible container
+    // would leave the InfoBar and an empty slot showing. So this refresher mirrors
+    // the card's resolved Visibility onto the whole container — when the setting is
+    // hidden, its advisory is hidden with it, holding to "mask, never grey".
+    private FrameworkElement WrapWithAdvisory(SettingsCard card, SettingDescriptor s)
+    {
+        // Severity.Warning is the single tone the channel renders; IsClosable=false
+        // because the message is a live state of the setting, not a notification the
+        // user dismisses; the title is left empty so the compact bar shows only the
+        // caller's one-line message.
+        var info = new InfoBar
+        {
+            Severity = InfoBarSeverity.Warning,
+            IsClosable = false,
+            IsOpen = false,
+        };
+
+        var container = new StackPanel
+        {
+            Orientation = Orientation.Vertical,
+            // A small gap so the bar reads as belonging to the card above it without
+            // crowding it — the same spacing the stacked settings sections use.
+            Spacing = 4,
+        };
+        container.Children.Add(card);
+        container.Children.Add(info);
+
+        _refreshers.Add(() =>
+        {
+            string? message = s.Advisory!();
+            if (message is null)
+            {
+                info.IsOpen = false;
+            }
+            else
+            {
+                info.Message = message;
+                info.IsOpen = true;
+            }
+
+            // Mirror the card's own resolved visibility onto the container so the
+            // advisory disappears with the card when VisibleWhen collapses it.
+            container.Visibility = card.Visibility;
+        });
+
+        return container;
+    }
 
     private SettingsCard BuildCard(SettingDescriptor s)
     {
@@ -200,6 +273,9 @@ public sealed class SettingsComposer
                 break;
             case SettingKind.Choice:
                 BuildChoice(card, s);
+                break;
+            case SettingKind.Text:
+                BuildText(card, s);
                 break;
             default:
                 throw new NotSupportedException(
@@ -328,7 +404,7 @@ public sealed class SettingsComposer
 
         foreach (SettingDescriptor child in args.Children)
         {
-            if (child.Kind == SettingKind.Group)
+            if (child.Kind is SettingKind.Group or SettingKind.Section)
                 throw new NotSupportedException(
                     "A Group's children must be leaf settings — folds never nest.");
             if (child.IsAdvanced && !_showAdvanced) continue;
@@ -337,13 +413,15 @@ public sealed class SettingsComposer
 
             // Compose the master into the child's own VisibleWhen so the child is
             // hidden while the master is off (and stays hidden when its own
-            // predicate also collapses it).
+            // predicate also collapses it). This master-gated copy is what the
+            // shared helper renders — the gating is composed in BEFORE handing off,
+            // so the helper stays agnostic of whether a master exists.
             Func<bool>? childVisible = child.VisibleWhen;
             SettingDescriptor gated = child with
             {
                 VisibleWhen = () => MasterOn() && (childVisible?.Invoke() ?? true),
             };
-            expander.Items.Add(BuildCard(gated));
+            AddChildToExpander(expander, gated);
         }
 
         // The group-header reset, beside the master toggle, when the fold has
@@ -416,6 +494,170 @@ public sealed class SettingsComposer
         });
 
         return expander;
+    }
+
+    // A header-and-chevron grouping with NO master toggle — "BuildGroup minus the
+    // master". The expander's header carries only the optional section-level reset,
+    // never a ToggleSwitch: the section has no value of its own and gates nothing,
+    // so its children stand on their OWN VisibleWhen with no master to compose in.
+    // Otherwise it mirrors BuildGroup exactly — header/description/icon resolved the
+    // same way, each child added through the shared AddChildToExpander helper, and
+    // the same whole-fold reset folded over any defaulted child.
+    private SettingsExpander BuildSection(SettingDescriptor s)
+    {
+        var args = (SectionArgs)s.Args!;
+
+        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey) };
+
+        string? description = ResolveDescription(s.LabelKey);
+        if (description is not null) expander.Description = description;
+
+        IconElement? icon = BuildIcon(s.Glyph);
+        if (icon is not null) expander.HeaderIcon = icon;
+
+        // Children that carry a resettable default — collected so the section-header
+        // reset can drive the whole fold back, exactly as BuildGroup does. There is
+        // no master to include here (the section has no value of its own), so the
+        // fold's dirtiness is purely the children's.
+        var defaultedChildren = new List<SettingDescriptor>();
+
+        foreach (SettingDescriptor child in args.Children)
+        {
+            if (child.Kind is SettingKind.Group or SettingKind.Section)
+                throw new NotSupportedException(
+                    "A Section's children must be leaf settings — folds never nest.");
+            if (child.IsAdvanced && !_showAdvanced) continue;
+
+            if (child.Default is not null) defaultedChildren.Add(child);
+
+            // No master to compose in — the child keeps its own VisibleWhen as-is,
+            // handed straight to the shared helper.
+            AddChildToExpander(expander, child);
+        }
+
+        // The section-header reset, in the expander's trailing-edge Content slot,
+        // when any child carries a default. Identical to BuildGroup's group reset
+        // minus the master term: the fold is dirty when any defaulted child differs
+        // from its default, and resetting drives each child back through its setter.
+        Action? updateSectionReset = null;
+        if (defaultedChildren.Count > 0)
+        {
+            Button reset = BuildResetButton();
+            // Reveal on the EXPANDER's hover and the BUTTON's focus, like BuildGroup.
+            WireReveal(expander, reset);
+
+            bool SectionDirty()
+            {
+                foreach (SettingDescriptor child in defaultedChildren)
+                    if (!DefaultEquals(child.GetValue(), child.Default!())) return true;
+                return false;
+            }
+
+            void ResetSection()
+            {
+                foreach (SettingDescriptor child in defaultedChildren)
+                    child.SetValue(child.Default!());
+            }
+
+            _dirtyChecks.Add(SectionDirty);
+            _resetActions.Add(ResetSection);
+            reset.Click += (_, _) => ResetSection();
+
+            // The reset alone in the trailing-edge slot — no master toggle beside
+            // it, the one difference from BuildGroup's [reset | master] header.
+            expander.Content = reset;
+
+            string tooltip = ResolveResetTooltip();
+            updateSectionReset = () =>
+            {
+                reset.IsEnabled = SectionDirty();
+                ToolTipService.SetToolTip(reset, tooltip);
+            };
+        }
+
+        // The section has no value to sync, but it still needs a refresher to drive
+        // the reset's IsEnabled off the live dirty-check and to apply its own
+        // reactive state (a section gated by VisibleWhen collapses the whole fold).
+        // Registered only when there is something to do — a section with no reset
+        // and no reactive state contributes no refresher, like a defaultless card.
+        if (updateSectionReset is not null || s.EnabledWhen is not null || s.VisibleWhen is not null)
+        {
+            _refreshers.Add(() =>
+            {
+                updateSectionReset?.Invoke();
+                ApplyReactiveState(expander, s);
+            });
+        }
+
+        return expander;
+    }
+
+    // ── Child of a fold ────────────────────────────────────────────────────────
+    //
+    // Adds a fold child to a SettingsExpander's Items, shared by BuildGroup and
+    // BuildSection so the two render children identically. The caller composes any
+    // master gating into the child's VisibleWhen BEFORE calling this — the helper is
+    // agnostic of whether a master exists.
+    //
+    // The advisory subtlety. SettingsExpander.Items accepts only SettingsCard
+    // children (NOT the StackPanel{card, InfoBar} that WrapWithAdvisory returns for a
+    // top-level card — see FolderPickerCard's note). So a child carrying an Advisory
+    // cannot use that wrapping path inside a fold. Instead the child's card goes in
+    // as usual, and the advisory is added as a SECOND Items entry: a borderless
+    // SettingsCard whose Content is the Warning InfoBar, with Background and
+    // BorderThickness cleared so it reads as a flat contextual note row inside the
+    // fold rather than a second framed card. The InfoBar is wired exactly like
+    // WrapWithAdvisory (message = Advisory(), IsOpen toggles on null), and the note
+    // row mirrors the advised card's resolved Visibility so it hides with the card
+    // when VisibleWhen collapses it ("mask, never grey"). This closes the gap where
+    // a Group child silently could not carry an advisory.
+    private void AddChildToExpander(SettingsExpander expander, SettingDescriptor child)
+    {
+        SettingsCard card = BuildCard(child);
+        expander.Items.Add(card);
+
+        if (child.Advisory is null) return;
+
+        // Severity.Warning is the single tone the channel renders; IsClosable=false
+        // because the message is a live state of the setting, not a notification the
+        // user dismisses; the title is left empty so the bar shows only the message.
+        var info = new InfoBar
+        {
+            Severity = InfoBarSeverity.Warning,
+            IsClosable = false,
+            IsOpen = false,
+        };
+
+        // A borderless, transparent host card: Items demands a SettingsCard, but
+        // clearing its frame makes this read as a flat note row hanging under the
+        // advised card, not a second card. No header — the InfoBar carries the whole
+        // message.
+        var noteRow = new SettingsCard
+        {
+            Content = info,
+            Background = null,
+            BorderThickness = new Thickness(0),
+        };
+        expander.Items.Add(noteRow);
+
+        _refreshers.Add(() =>
+        {
+            string? message = child.Advisory!();
+            if (message is null)
+            {
+                info.IsOpen = false;
+            }
+            else
+            {
+                info.Message = message;
+                info.IsOpen = true;
+            }
+
+            // Mirror the advised card's own resolved visibility onto the note row so
+            // the advisory disappears with the card when VisibleWhen collapses it
+            // (the card's kind-refresher has already applied that visibility above).
+            noteRow.Visibility = card.Visibility;
+        });
     }
 
     // Slider over a double, laid out like the RecordingPage "Voice level" rows:
@@ -586,22 +828,96 @@ public sealed class SettingsComposer
         });
     }
 
-    // Choice among a small fixed set, rendered as a ComboBox on the card's
-    // trailing edge — the control the settings-UX doctrine picks for "more than a
-    // few" mutually-exclusive options (a radio group, for "a few", is a future
-    // style added when a clean radio site needs it). Each ComboBoxItem's label is
-    // resolved from the module's .resw, and the current value is matched against
-    // the options by value-equality to pick the selection — so the VM keeps its
+    // Free-form text via a TextBox, bridged to the descriptor's string selectors.
+    // Two shapes from TextArgs: single-line sits on the card's trailing edge with
+    // a fixed MinWidth (like the Number box), so the row reads as "label … field";
+    // multiline switches AcceptsReturn on, bounds the height, and lays the field on
+    // its own row below the description (card.ContentAlignment = Vertical, the same
+    // layout BuildPath uses) so a wrapping value has room. Same sync discipline as
+    // the other kinds: assign .Text BEFORE subscribing to TextChanged so the seed
+    // does not fire it, guard the write-back during a model refresh, route through
+    // WrapWithReset for the inline reset, and re-apply reactive state in the
+    // refresher. Placeholder and MaxLength are applied when supplied.
+    private void BuildText(SettingsCard card, SettingDescriptor s)
+    {
+        // Required by Setting.Text (which defaults it when omitted), so the cast is
+        // safe; a wrong-kind args here is a manifest bug, hence the hard cast.
+        var args = (TextArgs)s.Args!;
+
+        var box = new TextBox
+        {
+            VerticalAlignment = VerticalAlignment.Center,
+            Text = AsString(s.GetValue()),
+        };
+
+        if (!string.IsNullOrEmpty(args.Placeholder)) box.PlaceholderText = args.Placeholder;
+        // TextBox.MaxLength is 0 = unlimited; only narrow it when a cap is given.
+        if (args.MaxLength is int max) box.MaxLength = max;
+
+        if (args.Multiline)
+        {
+            box.AcceptsReturn = true;
+            box.TextWrapping = TextWrapping.Wrap;
+            // A bounded scroller: tall enough for a few lines, capped so a long
+            // value scrolls inside the field rather than stretching the card.
+            box.MinHeight = 72;
+            box.MaxHeight = 160;
+            // Hosts on its own row below the description, like the Path picker, so
+            // a wrapping value is not crammed onto the trailing edge.
+            card.ContentAlignment = ContentAlignment.Vertical;
+        }
+        else
+        {
+            // MinWidth matches the Number box so a single-line field sits at a
+            // comparable width to the other trailing-edge controls beside it.
+            box.MinWidth = 200;
+        }
+
+        // Subscribe AFTER the initial Text assignment above so it does not fire.
+        box.TextChanged += (_, _) =>
+        {
+            if (_syncingFromModel) return;
+            s.SetValue(box.Text);
+        };
+
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, box, s);
+        card.Content = content;
+
+        _refreshers.Add(() =>
+        {
+            string value = AsString(s.GetValue());
+            if (box.Text != value) box.Text = value;
+            updateReset?.Invoke();
+            ApplyReactiveState(card, s);
+        });
+    }
+
+    // Choice among a small fixed set. The settings-UX doctrine picks the control
+    // by the count of options: a RadioButtons group for "a few" (every option laid
+    // flat and visible), a ComboBox for "more than a few" (the dropdown that keeps
+    // a long set compact). The descriptor's ChoiceArgs.Radio carries that call —
+    // set by Setting.Radio, clear by Setting.Choice — and this dispatches on it.
+    // Both renderings share the same value semantics: each item's label is resolved
+    // from the module's .resw, and the current value is matched against the options
+    // by value-equality (IndexOfValue) to pick the selection — so the VM keeps its
     // own value type (the theme's "Dark" string, an int index, an enum) and the
-    // composer never assumes an index. Same sync discipline as the other kinds:
-    // set SelectedIndex before subscribing so the seed does not fire
-    // SelectionChanged, and guard the write-back during a model refresh.
+    // composer never assumes an index.
     private void BuildChoice(SettingsCard card, SettingDescriptor s)
     {
-        // Required by Setting.Choice, so the cast is safe; a wrong-kind args here
-        // is a manifest bug, not a runtime input, hence the hard cast.
+        // Required by Setting.Choice/Radio, so the cast is safe; a wrong-kind args
+        // here is a manifest bug, not a runtime input, hence the hard cast.
         var args = (ChoiceArgs)s.Args!;
 
+        if (args.Radio) BuildRadio(card, s, args);
+        else BuildCombo(card, s, args);
+    }
+
+    // The ComboBox rendering — the trailing-edge dropdown for "more than a few"
+    // options. Same sync discipline as the other kinds: set SelectedIndex before
+    // subscribing so the seed does not fire SelectionChanged, and guard the
+    // write-back during a model refresh.
+    private void BuildCombo(SettingsCard card, SettingDescriptor s, ChoiceArgs args)
+    {
         // MinWidth matches the hand-authored ComboBoxes (GeneralPage theme/overlay)
         // so a composed picker sits at the same width as a bespoke one beside it.
         var combo = new ComboBox { MinWidth = 160 };
@@ -624,6 +940,40 @@ public sealed class SettingsComposer
         {
             int index = IndexOfValue(args, s.GetValue());
             if (combo.SelectedIndex != index) combo.SelectedIndex = index;
+            updateReset?.Invoke();
+            ApplyReactiveState(card, s);
+        });
+    }
+
+    // The RadioButtons rendering — the flat option group for "a few", every choice
+    // visible at once. Selection is driven by SelectedIndex exactly like the
+    // ComboBox (IndexOfValue → -1 clears the selection when no option matches the
+    // persisted value), so the sync discipline is identical: set SelectedIndex
+    // before subscribing so the seed does not fire SelectionChanged, guard the
+    // write-back during a model refresh, and route through WrapWithReset so a
+    // defaulted radio carries the same inline reset as every other kind.
+    private void BuildRadio(SettingsCard card, SettingDescriptor s, ChoiceArgs args)
+    {
+        var radio = new RadioButtons();
+        foreach (ChoiceOption option in args.Options)
+            radio.Items.Add(ResolveOptionLabel(option.LabelKey));
+        radio.SelectedIndex = IndexOfValue(args, s.GetValue());
+
+        // Subscribe AFTER the initial SelectedIndex assignment above so it does not fire.
+        radio.SelectionChanged += (_, _) =>
+        {
+            if (_syncingFromModel) return;
+            if (radio.SelectedIndex < 0) return;
+            s.SetValue(args.Options[radio.SelectedIndex].Value);
+        };
+
+        (FrameworkElement content, Action? updateReset) = WrapWithReset(card, radio, s);
+        card.Content = content;
+
+        _refreshers.Add(() =>
+        {
+            int index = IndexOfValue(args, s.GetValue());
+            if (radio.SelectedIndex != index) radio.SelectedIndex = index;
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });

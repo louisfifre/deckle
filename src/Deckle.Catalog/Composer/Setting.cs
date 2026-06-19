@@ -37,7 +37,8 @@ public static class Setting
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
         Func<bool>? defaultValue = null,
-        Func<XamlRoot, Task<bool>>? confirmOnEnable = null) => new()
+        Func<XamlRoot, Task<bool>>? confirmOnEnable = null,
+        Func<string?>? advisory = null) => new()
         {
             Kind = SettingKind.Toggle,
             LabelKey = labelKey,
@@ -49,6 +50,7 @@ public static class Setting
             VisibleWhen = visibleWhen,
             Default = defaultValue is null ? null : () => defaultValue(),
             ConfirmOnEnable = confirmOnEnable,
+            Advisory = advisory,
         };
 
     // Slider over a double. The range/step live in SliderArgs (the control's
@@ -63,7 +65,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<double>? defaultValue = null) => new()
+        Func<double>? defaultValue = null,
+        Func<string?>? advisory = null) => new()
         {
             Kind = SettingKind.Slider,
             LabelKey = labelKey,
@@ -75,6 +78,7 @@ public static class Setting
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
             Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
         };
 
     // NumberBox over a double. Like Slider, the range/increments live in
@@ -90,7 +94,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<double>? defaultValue = null) => new()
+        Func<double>? defaultValue = null,
+        Func<string?>? advisory = null) => new()
         {
             Kind = SettingKind.Number,
             LabelKey = labelKey,
@@ -102,6 +107,37 @@ public static class Setting
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
             Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
+        };
+
+    // Free-form text as a string. TextArgs shapes the TextBox (placeholder,
+    // multiline, max length) and is optional — a bare single-line field needs no
+    // arguments, so unlike Slider/Number it defaults to a plain TextArgs. Same
+    // boxed selectors and optional default as the other kinds; the default points
+    // at the POCO initializer so an empty/edited field can reset to it.
+    public static SettingDescriptor Text(
+        string labelKey,
+        Func<string> get,
+        Action<string> set,
+        TextArgs? args = null,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<string>? defaultValue = null,
+        Func<string?>? advisory = null) => new()
+        {
+            Kind = SettingKind.Text,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = args ?? new TextArgs(),
+            GetValue = () => get(),
+            SetValue = value => set((string)value!),
+            EnabledWhen = enabledWhen,
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
         };
 
     // Folder path as a string. PathArgs carries the picker mode and the
@@ -116,7 +152,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<string>? defaultValue = null) => new()
+        Func<string>? defaultValue = null,
+        Func<string?>? advisory = null) => new()
         {
             Kind = SettingKind.Path,
             LabelKey = labelKey,
@@ -128,6 +165,7 @@ public static class Setting
             EnabledWhen = enabledWhen,
             VisibleWhen = visibleWhen,
             Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
         };
 
     // Choice among a small fixed set, over any value type T (the VM property's
@@ -145,7 +183,49 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<T>? defaultValue = null)
+        Func<T>? defaultValue = null,
+        Func<string?>? advisory = null)
+        => Choice(labelKey, get, set, options, radio: false,
+            glyph, isAdvanced, enabledWhen, visibleWhen, defaultValue, advisory);
+
+    // Choice rendered as a flat RadioButtons group rather than a ComboBox — the
+    // doctrine's control for "a few" mutually-exclusive options, where showing
+    // every option at once reads clearer than a dropdown. Same value semantics as
+    // Choice<T> (the options carry the typed values, matched by equality), so a
+    // call site swaps Choice→Radio purely to change the rendering, nothing else.
+    // A separate factory rather than a flag on Choice so the manifest states the
+    // shape by name (Setting.Radio vs Setting.Choice), the way each kind already
+    // gets its own named front door.
+    public static SettingDescriptor Radio<T>(
+        string labelKey,
+        Func<T> get,
+        Action<T> set,
+        IReadOnlyList<(T Value, string LabelKey)> options,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<T>? defaultValue = null,
+        Func<string?>? advisory = null)
+        => Choice(labelKey, get, set, options, radio: true,
+            glyph, isAdvanced, enabledWhen, visibleWhen, defaultValue, advisory);
+
+    // Shared body of Choice/Radio — both are a SettingKind.Choice, differing only
+    // in the ChoiceArgs.Radio flag the composer dispatches the rendering on. Kept
+    // private so the two public factories stay the strongly-typed front door and
+    // the boxing of options/default happens once.
+    private static SettingDescriptor Choice<T>(
+        string labelKey,
+        Func<T> get,
+        Action<T> set,
+        IReadOnlyList<(T Value, string LabelKey)> options,
+        bool radio,
+        string? glyph,
+        bool isAdvanced,
+        Func<bool>? enabledWhen,
+        Func<bool>? visibleWhen,
+        Func<T>? defaultValue,
+        Func<string?>? advisory)
     {
         var boxed = new List<ChoiceOption>(options.Count);
         foreach ((T value, string optionKey) in options)
@@ -157,7 +237,7 @@ public static class Setting
             LabelKey = labelKey,
             Glyph = glyph,
             IsAdvanced = isAdvanced,
-            Args = new ChoiceArgs(boxed),
+            Args = new ChoiceArgs(boxed, radio),
             GetValue = () => get(),
             SetValue = value => set((T)value!),
             EnabledWhen = enabledWhen,
@@ -166,6 +246,7 @@ public static class Setting
             // what IndexOfValue/DefaultEquals match against the options, the same
             // currency as GetValue.
             Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
         };
     }
 
@@ -203,5 +284,41 @@ public static class Setting
             // present) with each child's Default; a master without a resettable
             // default still resets its children.
             Default = defaultValue is null ? null : () => defaultValue(),
+        };
+
+    // A header-and-chevron grouping with NO master toggle — "Group minus the
+    // master". The section has no value of its own (it activates nothing), so
+    // unlike Group it carries no get/set/defaultValue: the children declared with
+    // the same Setting.* factories carry their own values and defaults, and the
+    // composer renders each as a card inside the section's SettingsExpander.
+    //
+    // GetValue/SetValue must still satisfy the descriptor's `required` selectors,
+    // but a valueless node has nothing to read or write — so GetValue returns null
+    // and SetValue is a no-op. Nothing dispatches on them for a Section (BuildSection
+    // never touches them, and the section registers no per-row dirty-check off its
+    // own value, only the section-level reset folded over its children), so the
+    // no-ops are never exercised; they exist purely to honour the contract. Default
+    // is left null for the same reason — the section has no resettable value, only
+    // its children do, and the section-header reset is built from those.
+    //
+    // EnabledWhen/VisibleWhen here gate the SECTION itself (the whole fold appears
+    // or not in some context); children stand on their own VisibleWhen, with no
+    // master to compose in.
+    public static SettingDescriptor Section(
+        string labelKey,
+        IReadOnlyList<SettingDescriptor> children,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? visibleWhen = null) => new()
+        {
+            Kind = SettingKind.Section,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = new SectionArgs(children),
+            // Valueless node: read nothing, write nothing. See the note above.
+            GetValue = () => null,
+            SetValue = _ => { },
+            VisibleWhen = visibleWhen,
         };
 }
