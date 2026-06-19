@@ -58,6 +58,8 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtDuplicationRecreateAttemptFailedDetail = 32;
     public const int EvtSamplerMapFailedDetail          = 33;
     public const int EvtSamplerProcessFailedDetail      = 34;
+    public const int EvtFrameOwnershipRecoveryAbandoned = 35;
+    public const int EvtFrameOwnershipRecoveryAbandonedDetail = 36;
 
     // ── Capture session lifecycle ───────────────────────────────────────
 
@@ -241,6 +243,24 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public void ReleaseFrameNonZero(int hr)
     {
         if (IsEnabled()) WriteEvent(EvtReleaseFrameNonZero, hr);
+    }
+
+    [Event(EvtFrameOwnershipRecoveryAbandoned,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Screen capture could not recover frame ownership and is stopping")]
+    public void FrameOwnershipRecoveryAbandoned()
+    {
+        if (IsEnabled()) WriteEvent(EvtFrameOwnershipRecoveryAbandoned);
+    }
+
+    [Event(EvtFrameOwnershipRecoveryAbandonedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "frame ownership recovery abandoned | attempts={0} | max_attempts={1}")]
+    public void FrameOwnershipRecoveryAbandonedDetail(int attempts, int max_attempts)
+    {
+        if (IsEnabled()) WriteEvent(EvtFrameOwnershipRecoveryAbandonedDetail, attempts, max_attempts);
     }
 
     [Event(EvtSecureDesktopRecovering,

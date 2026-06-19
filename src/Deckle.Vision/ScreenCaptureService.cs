@@ -63,9 +63,15 @@ public sealed partial class ScreenCaptureService : IDisposable
 
     // Back-off when AcquireNextFrame returns an unexpected error
     // (anything that isn't S_OK / WAIT_TIMEOUT / ACCESS_LOST /
-    // ACCESS_DENIED / SESSION_DISCONNECTED). Keeps a transient
-    // driver hiccup from busy-looping.
+    // ACCESS_DENIED / SESSION_DISCONNECTED / INVALID_CALL). Keeps a
+    // transient driver hiccup from busy-looping.
     private const int ErrorBackoffMs = 500;
+
+    // Persistent INVALID_CALL means DXGI still thinks Deckle owns a frame
+    // despite the recovery path closing ownership and/or recreating the
+    // duplication. Bound the loop so Ambient stops instead of emitting a
+    // long-lived Verbose storm while never pushing colors.
+    private const int MaxInvalidCallRecoveryAttempts = 10;
 
     // Sleep between recreate attempts after the duplication has been
     // invalidated (ACCESS_LOST, ACCESS_DENIED, SESSION_DISCONNECTED).

@@ -11,6 +11,7 @@ public sealed partial class ScreenCaptureService
     {
         long lastDeliveredTicks = 0;
         long throttleTicks = Stopwatch.Frequency * ThrottleIntervalMs / 1000;
+        int invalidCallRecoveryAttempts = 0;
 
         // Heartbeat rollup accumulators — reset every HeartbeatIntervalMs
         // by EmitHeartbeatIfDue. Allocated lazily (capacity 320 covers a
@@ -64,42 +65,60 @@ public sealed partial class ScreenCaptureService
 
             if (hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_LOST)
             {
+                invalidCallRecoveryAttempts = 0;
                 // Desktop switch, mode change, DWM on/off, fullscreen
                 // exclusive swap. Drop the duplication, recreate next
                 // iteration.
                 DeckleVisionSource.Log.AccessLostRecovering();
-                if (_duplicationPtr != 0)
-                {
-                    long releasedHandle = (long)_duplicationPtr;
-                    int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
-                                       * 1000L / Stopwatch.Frequency);
-                    Marshal.Release(_duplicationPtr);
-                    _duplicationPtr = 0;
-                    DeckleResourceSource.Log.ResourceReleased(
-                        "duplication-output", releasedHandle, ageMs, "capture-loop");
-                }
+                ReleaseDuplicationForRecreate();
                 continue;
             }
 
             if (hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_DENIED ||
                 hr == ScreenCaptureInterop.DXGI_ERROR_SESSION_DISCONNECTED)
             {
+                invalidCallRecoveryAttempts = 0;
                 // Secure desktop (UAC, Win+L, password screensaver) or
                 // session disconnect (RDP, "switch user"). Both are
                 // transient — drop the duplication, the next recreate
                 // attempt will succeed when the user returns to the
                 // interactive desktop.
                 DeckleVisionSource.Log.SecureDesktopRecovering(hr);
-                if (_duplicationPtr != 0)
+                ReleaseDuplicationForRecreate();
+                continue;
+            }
+
+            if (hr == ScreenCaptureInterop.DXGI_ERROR_INVALID_CALL)
+            {
+                invalidCallRecoveryAttempts++;
+                // Microsoft documents INVALID_CALL from AcquireNextFrame as
+                // "the previous frame is still owned". In the field this can
+                // otherwise wedge Ambient forever: Acquire keeps returning
+                // INVALID_CALL, the sampler receives no frames, and the push
+                // loop drops every tick. First close the leaked ownership; if
+                // DXGI says there was no frame to release, the duplication is
+                // internally inconsistent, so recreate it.
+                DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
+                if (invalidCallRecoveryAttempts >= MaxInvalidCallRecoveryAttempts)
                 {
-                    long releasedHandle = (long)_duplicationPtr;
-                    int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
-                                       * 1000L / Stopwatch.Frequency);
-                    Marshal.Release(_duplicationPtr);
-                    _duplicationPtr = 0;
-                    DeckleResourceSource.Log.ResourceReleased(
-                        "duplication-output", releasedHandle, ageMs, "capture-loop");
+                    DeckleVisionSource.Log.FrameOwnershipRecoveryAbandoned();
+                    DeckleVisionSource.Log.FrameOwnershipRecoveryAbandonedDetail(
+                        invalidCallRecoveryAttempts, MaxInvalidCallRecoveryAttempts);
+                    break;
                 }
+
+                int releaseHr = ScreenCaptureInterop.ReleaseFrame(_duplicationPtr);
+                if (releaseHr == 0)
+                {
+                    continue;
+                }
+
+                if (releaseHr != ScreenCaptureInterop.DXGI_ERROR_INVALID_CALL)
+                {
+                    DeckleVisionSource.Log.ReleaseFrameNonZero(releaseHr);
+                }
+
+                ReleaseDuplicationForRecreate();
                 continue;
             }
 
@@ -116,11 +135,11 @@ public sealed partial class ScreenCaptureService
 
             if (hr != 0)
             {
+                invalidCallRecoveryAttempts = 0;
                 // Verbose : the generic backoff path. Used to catch
-                // INVALID_CALL transitions during HDR toggle, the
-                // 4-duplication NOT_CURRENTLY_AVAILABLE limit, and the
-                // UNSUPPORTED corner case (mode change to 8bpp / DWM
-                // off). All transient — sleep 500 ms and retry.
+                // the 4-duplication NOT_CURRENTLY_AVAILABLE limit and the
+                // UNSUPPORTED corner case (mode change to 8bpp / DWM off).
+                // All transient — sleep 500 ms and retry.
                 DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (desktopResourcePtr != 0) Marshal.Release(desktopResourcePtr);
                 try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); }
@@ -144,6 +163,7 @@ public sealed partial class ScreenCaptureService
             // still count as "acquired" because the bridge round-trip
             // happened). delivered=true marks the subset that ran the
             // sample path.
+            invalidCallRecoveryAttempts = 0;
             bool delivered = false;
             long sampleDurationUs = 0;
             try
@@ -329,6 +349,19 @@ public sealed partial class ScreenCaptureService
         dropped = 0;
         acquireDurationsUs.Clear();
         sampleDurationsUs.Clear();
+    }
+
+    private void ReleaseDuplicationForRecreate()
+    {
+        if (_duplicationPtr == 0) return;
+
+        long releasedHandle = (long)_duplicationPtr;
+        int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
+                           * 1000L / Stopwatch.Frequency);
+        Marshal.Release(_duplicationPtr);
+        _duplicationPtr = 0;
+        DeckleResourceSource.Log.ResourceReleased(
+            "duplication-output", releasedHandle, ageMs, "capture-loop");
     }
 
 }

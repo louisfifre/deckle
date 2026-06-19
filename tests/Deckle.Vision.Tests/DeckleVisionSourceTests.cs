@@ -48,4 +48,28 @@ public class DeckleVisionSourceTests
         Assert.Equal(900L, ev.Payload?[5]);
         Assert.Equal(2100L, ev.Payload?[6]);
     }
+
+    [Fact]
+    public void FrameOwnershipRecoveryAbandonedEmitsWarningAndDetail()
+    {
+        using var listener = new TestEventListener("Deckle-Vision");
+
+        DeckleVisionSource.Log.FrameOwnershipRecoveryAbandoned();
+        DeckleVisionSource.Log.FrameOwnershipRecoveryAbandonedDetail(10, 10);
+
+        Assert.Collection(
+            listener.Events,
+            milestone =>
+            {
+                Assert.Equal(DeckleVisionSource.EvtFrameOwnershipRecoveryAbandoned, milestone.EventId);
+                Assert.Equal(EventLevel.Warning, milestone.Level);
+            },
+            detail =>
+            {
+                Assert.Equal(DeckleVisionSource.EvtFrameOwnershipRecoveryAbandonedDetail, detail.EventId);
+                Assert.Equal(EventLevel.Verbose, detail.Level);
+                Assert.Equal(10, detail.Payload?[0]);
+                Assert.Equal(10, detail.Payload?[1]);
+            });
+    }
 }

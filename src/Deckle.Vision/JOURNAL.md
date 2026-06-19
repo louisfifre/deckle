@@ -7,6 +7,10 @@ type: module-journal
 
 Dated notes on the capture loop — the why behind a fix the code no longer shows. Most recent on top.
 
+## 2026-06-19 — `AcquireNextFrame` INVALID_CALL can wedge Ambient
+
+Found in `app.jsonl`: Ambient can stay running while Vision returns `DXGI_ERROR_INVALID_CALL` from `AcquireNextFrame` every ~500 ms. In that state Ambient heartbeats report `pushed=0` and all ticks dropped; no `ACCESS_LOST`, `ReleaseFrameNonZero`, sampler failure, or consumer exception is emitted first. Microsoft documents this HRESULT as "previous frame not released", so the loop now attempts `ReleaseFrame`, recreates the duplication if DXGI still reports inconsistent ownership, and stops capture after repeated consecutive failures.
+
 ## 2026-05-31 — The capture "freeze" on an HDR desktop toggle
 
 Reported symptom: ambient capture stops on its own mid-session. Reproduced — the trigger is the **desktop HDR toggle**, not a game or the secure desktop as first assumed. Diagnosed by reading `app.jsonl` directly.
