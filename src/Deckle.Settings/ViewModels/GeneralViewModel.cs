@@ -98,9 +98,12 @@ public partial class GeneralViewModel : ObservableObject
 
     // ── Startup ──────────────────────────────────────────────────────────────
 
-    // AutostartEnabled is not backed by AppSettings — the source of truth is
-    // HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Deckle. Load() reads
-    // the registry, OnAutostartEnabledChanged writes it. If the write fails,
+    // AutostartEnabled is not backed by AppSettings — the source of truth is the
+    // OS itself, across both logon vehicles (the HKCU\Run value and the elevated
+    // scheduled task). It means "Deckle starts at logon", whichever vehicle
+    // carries it, so it goes through StartupService rather than a single vehicle:
+    // Load() probes both, the setter starts the default vehicle or stops every
+    // vehicle. If the write fails (GPO/ACL, declined UAC on the elevated task),
     // we revert the UI state so the toggle stays consistent with reality.
     [ObservableProperty]
     public partial bool AutostartEnabled { get; set; }
@@ -108,15 +111,15 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnAutostartEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        bool ok = value ? AutostartService.Enable() : AutostartService.Disable();
+        bool ok = value ? StartupService.StartStartup() : StartupService.StopStartup();
         if (ok)
         {
             DeckleSettingsSource.Log.SettingChanged("Start with Windows", value.ToString());
             return;
         }
 
-        // Write refused (GPO, ACL, missing ProcessPath…) — revert the toggle
-        // so what the user sees matches what's actually in the registry.
+        // Write refused (GPO, ACL, missing ProcessPath, declined UAC…) — revert
+        // the toggle so what the user sees matches what actually starts at logon.
         _isSyncing = true;
         try { AutostartEnabled = !value; }
         finally { _isSyncing = false; }
@@ -192,9 +195,9 @@ public partial class GeneralViewModel : ObservableObject
         // Same normalization Load() applies, so the seeded position matches a picker
         // option even if the POCO default were ever a legacy corner value.
         OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
-        // Autostart is registry-backed, not an AppSettings POCO — its conceptual
-        // default lives on the service.
-        AutostartEnabled = AutostartService.DefaultEnabled;
+        // Autostart is OS-backed (registry + scheduled task), not an AppSettings
+        // POCO — its conceptual default lives on the startup facade.
+        AutostartEnabled = StartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
 
         // _isSyncing stays true — Load() will set it to false.
@@ -216,7 +219,7 @@ public partial class GeneralViewModel : ObservableObject
             // always matches a real option. Was done in the page's combo sync,
             // which the Group migration removed.
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
-            AutostartEnabled = AutostartService.IsEnabled();
+            AutostartEnabled = StartupService.StartsAtLogon();
             BackupDirectory = shell.Paths.BackupDirectory;
         }
         finally

@@ -94,22 +94,23 @@ public partial class GeneralViewModel
     ];
 
     // Startup section — "start with Windows". A plain TwoWay toggle, but its
-    // OnAutostartEnabledChanged writes HKCU and, when the write is refused
-    // (GPO/ACL), reverts the property under the sync guard. That revert composes:
-    // the composer drives the setter, and the reverted value rides back to the
-    // toggle on PropertyChanged — the same path Load() and the section Reset use.
-    // The textbook "side effect in the VM setter" card, migrated now that the
-    // theme picker proved that path carries the effect through unchanged.
+    // OnAutostartEnabledChanged drives StartupService across both logon vehicles
+    // and, when the write is refused (GPO/ACL, declined UAC), reverts the property
+    // under the sync guard. That revert composes: the composer drives the setter,
+    // and the reverted value rides back to the toggle on PropertyChanged — the
+    // same path Load() and the section Reset use. The textbook "side effect in the
+    // VM setter" card, migrated now that the theme picker proved that path carries
+    // the effect through unchanged.
     public IReadOnlyList<SettingDescriptor> StartupSettings =>
     [
         Setting.Toggle("GeneralAutostartCard",
             () => AutostartEnabled,
             value => AutostartEnabled = value,
             glyph: Glyphs.Launch,
-            // The registry is the source of truth; "not registered" is the default
-            // (AutostartService.DefaultEnabled, false). Resetting drives the toggle
-            // off, whose setter calls AutostartService.Disable() — the registry
-            // write rides the setter exactly like the theme/overlay side effects.
-            defaultValue: () => AutostartService.DefaultEnabled),
+            // The OS is the source of truth; "no vehicle registered" is the default
+            // (StartupService.DefaultEnabled, false). Resetting drives the toggle
+            // off, whose setter calls StartupService.StopStartup() — the vehicle
+            // removal rides the setter exactly like the theme/overlay side effects.
+            defaultValue: () => StartupService.DefaultEnabled),
     ];
 }
