@@ -232,234 +232,47 @@
                 <TextBlock x:Uid="WhisperPageOutputFiltersHeaderLabel"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsCard x:Name="SuppressNstCard"
-                                       x:Uid="WhisperSuppressNstCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <ToggleSwitch x:Name="SuppressNstToggle"
-                                      IsOn="{x:Bind ViewModel.SuppressNonSpeechTokens, Mode=TwoWay}" />
-                        <Button x:Name="SuppressNstReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="SuppressNstReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Name="SuppressBlankCard"
-                                       x:Uid="WhisperSuppressBlankCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <ToggleSwitch x:Name="SuppressBlankToggle"
-                                      IsOn="{x:Bind ViewModel.SuppressBlank, Mode=TwoWay}" />
-                        <Button x:Name="SuppressBlankReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="SuppressBlankReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
-
-                <controls:SettingsExpander x:Name="SuppressRegexCard"
-                                           x:Uid="WhisperSuppressRegexCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Pattern}}">
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard ContentAlignment="Vertical">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBox x:Name="SuppressRegexBox"
-                                         x:Uid="WhisperSuppressRegexBox"
-                                         MinWidth="400"
-                                         Text="{x:Bind ViewModel.SuppressRegex, Mode=TwoWay}" />
-                                <Button x:Name="SuppressRegexReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="SuppressRegexReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- Output filters — composed. The three cards (two toggles + the
+                     one-line regex field) are a FLAT run with no master toggle, so
+                     ComposeOutputFiltersSection() builds them as top-level composed
+                     cards into this host; the section header above stays
+                     hand-authored. Same host-only pattern as the VAD/Streaming folds,
+                     minus the group wrapper — the composer governs cards, not the
+                     section TextBlock. -->
+                <StackPanel x:Name="OutputFiltersHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Context and segmentation ────────────────────────────── -->
                 <TextBlock x:Uid="WhisperPageContextSegmentationHeaderLabel"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsCard x:Name="UseContextCard"
-                                       x:Uid="WhisperUseContextCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Context}}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <ToggleSwitch x:Name="UseContextToggle"
-                                      IsOn="{x:Bind ViewModel.UseContext, Mode=TwoWay}" />
-                        <Button x:Name="UseContextReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="UseContextReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
-
-                <controls:SettingsCard x:Name="MaxTokensCard"
-                                       x:Uid="WhisperMaxTokensCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tokens}}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <!-- SpinButtonPlacementMode=Hidden: no flyout pushing
-                             the layout; keyboard input + mouse wheel. -->
-                        <NumberBox x:Name="MaxTokensBox"
-                                   Minimum="-1"
-                                   Maximum="448"
-                                   SmallChange="1"
-                                   LargeChange="10"
-                                   SpinButtonPlacementMode="Hidden"
-                                   MinWidth="100"
-                                   Value="{x:Bind ViewModel.MaxTokens, Mode=TwoWay}" />
-                        <Button x:Name="MaxTokensReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="MaxTokensReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
+                <!-- Context — composed. The UseContext toggle and the MaxTokens
+                     NumberBox are a flat pair (no master toggle), composed into this
+                     host by ComposeContextSection(); the section header stays
+                     hand-authored, as with the output filters above. -->
+                <StackPanel x:Name="ContextHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Decoding ────────────────────────────────────────────── -->
-                <!--
-                    PowerToys / Win11 Settings pattern: group related sliders
-                    under a parent SettingsExpander, with content in
-                    ContentAlignment="Vertical" so the long description and
-                    full-width slider breathe. Header + icon fixed on the
-                    parent, children without icons (the parent glyph carries
-                    the group's visual identity).
-                -->
-                <controls:SettingsExpander x:Name="DecodingExpander"
-                                           x:Uid="WhisperDecodingExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}">
-                    <controls:SettingsExpander.Items>
-
-                        <controls:SettingsCard x:Name="TemperatureCard"
-                                               x:Uid="WhisperTemperatureCard"
-                                               ContentAlignment="Vertical">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="TemperatureSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="1"
-                                        StepFrequency="0.1"
-                                        TickFrequency="0.1"
-                                        Value="{x:Bind ViewModel.Temperature, Mode=TwoWay}"
-                                        ValueChanged="TemperatureSlider_ValueChanged" />
-                                <TextBlock x:Name="TemperatureValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="TemperatureReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="TemperatureReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="TemperatureIncrementCard"
-                                               x:Uid="WhisperTemperatureIncrementCard"
-                                               ContentAlignment="Vertical">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="TemperatureIncrementSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Minimum="0"
-                                        Maximum="1"
-                                        StepFrequency="0.1"
-                                        TickFrequency="0.1"
-                                        Value="{x:Bind ViewModel.TemperatureIncrement, Mode=TwoWay}"
-                                        ValueChanged="TemperatureIncrementSlider_ValueChanged" />
-                                <TextBlock x:Name="TemperatureIncrementValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="TemperatureIncrementReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="TemperatureIncrementReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
-
-                <!-- InfoBar stays outside the expander: a warning about
-                     disabled fallback must remain visible even when the
-                     Decoding group is collapsed. -->
-                <InfoBar x:Name="TemperatureIncrementWarning"
-                         x:Uid="WhisperTemperatureIncrementWarning"
-                         IsOpen="False"
-                         IsClosable="False"
-                         Severity="Warning" />
+                <!-- Decoding fold — composed. The hand-authored master-less
+                     SettingsExpander (and the standalone fallback-disabled InfoBar
+                     beside it) are gone: ComposeDecodingSection() builds the fold as
+                     a Section (header + chevron, no master toggle) into this host,
+                     with UseBeamSearch / BeamSize / Temperature / TemperatureIncrement
+                     as composed cards. The fallback warning rides along as the
+                     TemperatureIncrement card's Advisory — a flat note row inside the
+                     fold, not a separate InfoBar. -->
+                <StackPanel x:Name="DecodingHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Confidence thresholds ───────────────────────────────── -->
-                <controls:SettingsExpander x:Name="ConfidenceExpander"
-                                           x:Uid="WhisperConfidenceExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Diagnostics}}">
-                    <controls:SettingsExpander.Items>
-
-                        <controls:SettingsCard x:Name="EntropyCard"
-                                               x:Uid="WhisperEntropyCard"
-                                               ContentAlignment="Vertical">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="EntropySlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Maximum="3.5"
-                                        StepFrequency="0.1"
-                                        TickFrequency="0.5"
-                                        Value="{x:Bind ViewModel.EntropyThreshold, Mode=TwoWay}"
-                                        ValueChanged="EntropySlider_ValueChanged" />
-                                <TextBlock x:Name="EntropyValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="EntropyReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="EntropyReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="LogprobCard"
-                                               x:Uid="WhisperLogprobCard"
-                                               ContentAlignment="Vertical">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="LogprobSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        StepFrequency="0.05"
-                                        TickFrequency="0.1"
-                                        Value="{x:Bind ViewModel.LogprobThreshold, Mode=TwoWay}"
-                                        ValueChanged="LogprobSlider_ValueChanged" />
-                                <TextBlock x:Name="LogprobValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="LogprobReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="LogprobReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <controls:SettingsCard x:Name="NoSpeechCard"
-                                               x:Uid="WhisperNoSpeechCard"
-                                               ContentAlignment="Vertical">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Slider x:Name="NoSpeechSlider"
-                                        Style="{StaticResource SettingSliderStyle}"
-                                        Maximum="0.80"
-                                        StepFrequency="0.05"
-                                        TickFrequency="0.1"
-                                        Value="{x:Bind ViewModel.NoSpeechThreshold, Mode=TwoWay}"
-                                        ValueChanged="NoSpeechSlider_ValueChanged" />
-                                <TextBlock x:Name="NoSpeechValue"
-                                           Style="{StaticResource SliderValueTextStyle}" />
-                                <Button x:Name="NoSpeechReset"
-                                        Style="{StaticResource ResetButtonStyle}"
-                                        Click="NoSpeechReset_Click">
-                                    <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                </Button>
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- Confidence fold — composed. ComposeConfidenceSection() builds the
+                     three thresholds as a Section into this host; the slider bounds
+                     that the code-behind set imperatively (to dodge the XAML-trimming
+                     parser crash) now live in the manifest's SliderArgs, so that
+                     workaround is gone. -->
+                <StackPanel x:Name="ConfidenceHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Streaming pipeline (experimental) ───────────────────── -->
                 <TextBlock x:Uid="WhisperPageStreamingHeaderLabel"
