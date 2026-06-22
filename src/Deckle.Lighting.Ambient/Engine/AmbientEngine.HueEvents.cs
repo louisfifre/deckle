@@ -90,6 +90,18 @@ public sealed partial class AmbientEngine
                     FormatHueEventOn(ev.On),
                     FormatHueEventBrightness(ev.Brightness),
                     FormatHueEventXy(ev.Xy));
+                DeckleAmbientSource.Log.ExternalChangeDecisionDetail(
+                    v1Id,
+                    ev.ResourceType,
+                    ageMs,
+                    FormatHueEventOn(ev.On),
+                    FormatPushedOn(lastPushed),
+                    FormatHueEventBrightness(ev.Brightness),
+                    FormatPushedBrightness(lastPushed),
+                    FormatHueEventXy(ev.Xy),
+                    FormatPushedXy(lastPushed),
+                    FormatXyDelta(ev.Xy, lastPushed),
+                    FormatMismatch(ev, lastPushed));
             });
     }
 
@@ -120,4 +132,86 @@ public sealed partial class AmbientEngine
         => xy.HasValue
             ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{xy.Value.X:F4},{xy.Value.Y:F4}")
             : "null";
+
+    private static string FormatPushedOn(AmbientHuePushedState? pushed)
+        => pushed.HasValue ? (pushed.Value.State.On ? "true" : "false") : "none";
+
+    private static string FormatPushedBrightness(AmbientHuePushedState? pushed)
+        => pushed.HasValue
+            ? (pushed.Value.State.Brightness.HasValue
+                ? pushed.Value.State.Brightness.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "null")
+            : "none";
+
+    private static string FormatPushedXy(AmbientHuePushedState? pushed)
+        => pushed.HasValue
+            ? (pushed.Value.State.Xy.HasValue
+                ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{pushed.Value.State.Xy.Value.X:F4},{pushed.Value.State.Xy.Value.Y:F4}")
+                : "null")
+            : "none";
+
+    private static string FormatXyDelta((float X, float Y)? eventXy, AmbientHuePushedState? pushed)
+    {
+        if (!eventXy.HasValue || !pushed.HasValue || !pushed.Value.State.Xy.HasValue)
+        {
+            return "null";
+        }
+
+        var pushedXy = pushed.Value.State.Xy.Value;
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{Math.Abs(eventXy.Value.X - pushedXy.X):F4},{Math.Abs(eventXy.Value.Y - pushedXy.Y):F4}");
+    }
+
+    private static string FormatMismatch(HueResourceUpdate update, AmbientHuePushedState? pushed)
+    {
+        if (!pushed.HasValue)
+        {
+            return "no_push";
+        }
+
+        var fields = new List<string>(3);
+        var state = pushed.Value.State;
+
+        if (update.On.HasValue && update.On.Value != state.On)
+        {
+            fields.Add("on");
+        }
+
+        if (update.Brightness.HasValue)
+        {
+            if (!state.Brightness.HasValue)
+            {
+                fields.Add("bri_missing");
+            }
+            else
+            {
+                int delta = Math.Abs(update.Brightness.Value - state.Brightness.Value);
+                if (delta > 1)
+                {
+                    fields.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"bri:{delta}"));
+                }
+            }
+        }
+
+        if (update.Xy.HasValue)
+        {
+            if (!state.Xy.HasValue)
+            {
+                fields.Add("xy_missing");
+            }
+            else
+            {
+                var eventXy = update.Xy.Value;
+                var pushedXy = state.Xy.Value;
+                if (Math.Abs(eventXy.X - pushedXy.X) > 0.002f ||
+                    Math.Abs(eventXy.Y - pushedXy.Y) > 0.002f)
+                {
+                    fields.Add("xy");
+                }
+            }
+        }
+
+        return fields.Count == 0 ? "unknown" : string.Join(",", fields);
+    }
 }

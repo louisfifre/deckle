@@ -76,6 +76,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public const int EvtEventStreamSetupFailedDetail    = 46;
     public const int EvtSamplerRebuiltDetail            = 47;
     public const int EvtSamplerRebuildFailedDetail      = 48;
+    public const int EvtExternalChangeDecisionDetail    = 49;
 
     // ── AmbientEngine — lifecycle ───────────────────────────────────────
 
@@ -184,6 +185,39 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtExternalChangeStoppedDetail, v1_id, resource_type, age_ms, on, bri, xy);
+    }
+
+    [Event(EvtExternalChangeDecisionDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "external decision | v1_id={0} | resource_type={1} | age_ms={2} | event_on={3} | pushed_on={4} | event_bri={5} | pushed_bri={6} | event_xy={7} | pushed_xy={8} | delta_xy={9} | mismatch={10}")]
+    public void ExternalChangeDecisionDetail(
+        string v1_id,
+        string resource_type,
+        int age_ms,
+        string event_on,
+        string pushed_on,
+        string event_bri,
+        string pushed_bri,
+        string event_xy,
+        string pushed_xy,
+        string delta_xy,
+        string mismatch)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(
+            EvtExternalChangeDecisionDetail,
+            v1_id,
+            resource_type,
+            age_ms,
+            event_on,
+            pushed_on,
+            event_bri,
+            pushed_bri,
+            event_xy,
+            pushed_xy,
+            delta_xy,
+            mismatch);
     }
 
     [Event(EvtEchoIgnored,
