@@ -406,6 +406,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         _ = InitializeAutocorrectAsync();
         Milestone("autocorrect");
 
+        // Anytype headless backend — supervise-and-start through its scheduled
+        // task (see App.Anytype.cs). Fire-and-forget: the readiness poll runs
+        // off the boot path and the backend process outlives the app; the
+        // milestone marks the dispatch, not readiness.
+        _ = InitializeAnytypeBackendAsync();
+        Milestone("anytype_backend");
+
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
         // The ILogWindowSink is attached at that point via
         // AppDiagnosticsBootstrap, which replays the LogWindowSink

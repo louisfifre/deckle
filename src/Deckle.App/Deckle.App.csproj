@@ -74,6 +74,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
