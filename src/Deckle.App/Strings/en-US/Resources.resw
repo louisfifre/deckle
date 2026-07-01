@@ -572,6 +572,28 @@
     <value>installed</value>
   </data>
 
+  <!-- Setup wizard — summary page manual-recovery affordances. On a failed
+       download, each failed row offers a link to the asset and a local
+       import, so a blocked or filtered network doesn't dead-end the first run. -->
+  <data name="Setup_DownloadManually" xml:space="preserve">
+    <value>Download manually</value>
+  </data>
+  <data name="Setup_ImportFile" xml:space="preserve">
+    <value>Choose the file…</value>
+  </data>
+  <data name="Setup_ImportFolder" xml:space="preserve">
+    <value>Choose the folder…</value>
+  </data>
+  <data name="Setup_Importing" xml:space="preserve">
+    <value>Importing…</value>
+  </data>
+  <data name="Setup_ImportChecksumMismatch" xml:space="preserve">
+    <value>That file doesn't match the expected model — pick the one from the link above.</value>
+  </data>
+  <data name="Setup_ImportFailed_Format" xml:space="preserve">
+    <value>Import failed: {0}</value>
+  </data>
+
   <!-- ─── Settings shell ─────────────────────────────────────────────
        NavigationView host: TitleBar + four nav items (3 main pages +
        Logs in the footer). Window.Title XAML attribute is overridden
