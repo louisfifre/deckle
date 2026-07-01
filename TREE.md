@@ -1074,6 +1074,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs
+│   ├── Deckle.Catalog.Tests/
+│   │   ├── Deckle.Catalog.Tests.csproj
+│   │   └── SettingFactoryTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs

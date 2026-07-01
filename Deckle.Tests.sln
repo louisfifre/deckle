@@ -107,6 +107,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Speech", "src\Deckle
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Speech.Tests", "tests\Deckle.Speech.Tests\Deckle.Speech.Tests.csproj", "{E6CE1589-3271-4912-B690-B17B8113D6E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Catalog.Tests", "tests\Deckle.Catalog.Tests\Deckle.Catalog.Tests.csproj", "{6896BF67-2B7B-4856-AB41-29D76E28B1F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -717,6 +719,18 @@ Global
 		{E6CE1589-3271-4912-B690-B17B8113D6E7}.Release|x64.Build.0 = Release|x64
 		{E6CE1589-3271-4912-B690-B17B8113D6E7}.Release|x86.ActiveCfg = Release|x64
 		{E6CE1589-3271-4912-B690-B17B8113D6E7}.Release|x86.Build.0 = Release|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Debug|Any CPU.Build.0 = Debug|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Debug|x64.ActiveCfg = Debug|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Debug|x64.Build.0 = Debug|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Debug|x86.ActiveCfg = Debug|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Debug|x86.Build.0 = Debug|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Release|Any CPU.ActiveCfg = Release|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Release|Any CPU.Build.0 = Release|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Release|x64.ActiveCfg = Release|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Release|x64.Build.0 = Release|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Release|x86.ActiveCfg = Release|x64
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -772,5 +786,6 @@ Global
 		{768B5B49-BE18-4509-A272-9CCE1C287ADD} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C7704418-0059-4585-BB3D-BF7D4345DAB5} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{E6CE1589-3271-4912-B690-B17B8113D6E7} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{6896BF67-2B7B-4856-AB41-29D76E28B1F4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
