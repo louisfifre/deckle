@@ -4,9 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:settings="using:Deckle.Settings"
-    xmlns:vm="using:Deckle.Settings">
+    xmlns:ui="using:CommunityToolkit.WinUI">
 
     <!-- Same layout pattern as GeneralPage / WhisperPage: Grid wrapper +
          StackPanel MaxWidth=1000 + SettingsCardSpacing=4 + section
@@ -153,11 +151,14 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
-                <controls:SettingsCard x:Uid="GeneralStorageFolderCard"
-                                       ContentAlignment="Vertical">
-                    <settings:FolderPickerCard x:Name="TelemetryFolderPicker"
-                                               Path="{x:Bind ViewModel.TelemetryStorageDirectory, Mode=TwoWay}" />
-                </controls:SettingsCard>
+                <!-- Composed region — the telemetry storage-folder path. A Path
+                     descriptor in DiagnosticsViewModel.StorageFolderSettings, built
+                     by ComposeStorageFolderSection() into this host through the
+                     shared FolderPickerCard the composer's PathControlFactory
+                     resolves. Its own host (not TelemetryHost above) so it keeps
+                     this slot below the Corpus/Autocorrect expanders. -->
+                <StackPanel x:Name="StorageFolderHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Diagnostic files ──────────────────────────────────────
                      Always-on local logs (setup, errors), distinct from the

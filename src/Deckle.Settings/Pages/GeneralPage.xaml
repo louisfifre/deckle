@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:settings="using:Deckle.Settings"
     xmlns:vm="using:Deckle.Settings">
 
     <!-- Canonical Microsoft Learn pattern (SettingsExpander sample "Settings page
@@ -185,6 +184,8 @@
 
                 <controls:SettingsExpander x:Uid="GeneralBackupExpander"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Reset}}">
+                    <!-- Bespoke: Create/Restore are ACTIONS, not settings — the
+                         composer drives values, not command buttons. -->
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button x:Name="CreateBackupButton"
                                 x:Uid="GeneralBackupCreateButton"
@@ -195,12 +196,20 @@
                                 IsEnabled="{x:Bind ViewModel.HasBackup, Mode=OneWay}" />
                     </StackPanel>
                     <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Uid="GeneralBackupLocationCard"
-                                               ContentAlignment="Vertical">
-                            <settings:FolderPickerCard x:Name="BackupFolderPicker"
-                                                       Path="{x:Bind ViewModel.BackupDirectory, Mode=TwoWay}" />
-                        </controls:SettingsCard>
+                        <!-- Composed: the backup-location folder picker — a Path
+                             descriptor (GeneralViewModel.ApplicationDataSettings). The
+                             composer builds the FolderPickerCard into this host, where
+                             the hand-authored GeneralBackupLocationCard stood; its
+                             DefaultPath and per-card reset now ride the descriptor's
+                             PathArgs/Default instead of the code-behind. A StackPanel
+                             host (not a bare SettingsCard) because the composer needs a
+                             Panel; it holds the single composed card, rendering the same
+                             row inside the expander's Items. -->
+                        <StackPanel x:Name="BackupLocationHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
 
+                        <!-- Bespoke: the "latest backup" readout is a live status
+                             projection (file name + created at), not a settable value. -->
                         <controls:SettingsCard x:Uid="GeneralBackupInfoCard"
                                                ContentAlignment="Vertical">
                             <Grid ColumnSpacing="16" RowSpacing="4" Margin="0,4,0,0">

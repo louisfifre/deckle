@@ -24,6 +24,7 @@ public sealed partial class GeneralPage : Page
         ComposeAppearanceSection();
         ComposeBehaviourSection();
         ComposeStartupSection();
+        ComposeApplicationDataSection();
         LoadAndSync();
     }
 
@@ -88,6 +89,23 @@ public sealed partial class GeneralPage : Page
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
+    // ── Composed backup-location card ─────────────────────────────────────────
+    //
+    // Same host-only pattern for the one settable value under "Application data":
+    // the backup-location folder picker, a Path descriptor whose DefaultPath (the
+    // AppPaths fallback the code-behind used to push) now rides its PathArgs. The
+    // composer's per-card reset replaces the old code-behind SyncFolderPickerDefaults
+    // wiring; the picker reflects Load() through the composer's subscription. The
+    // "Application data" section has no hand-authored section-reset link, so there is
+    // no DirtyChanged gating here — the composed card carries its own inline reset.
+    private SettingsComposer? _applicationDataComposer;
+
+    private void ComposeApplicationDataSection()
+    {
+        _applicationDataComposer = new SettingsComposer(BackupLocationHost, ViewModel);
+        _applicationDataComposer.Compose(ViewModel.ApplicationDataSettings);
+    }
+
     // NavigationCacheMode.Required reuses the page instance — the constructor
     // and Loaded only fire once. Without this override, navigating away then
     // back would show stale values, and PushToSettings() (which writes ALL VM
@@ -106,15 +124,7 @@ public sealed partial class GeneralPage : Page
     private void LoadAndSync()
     {
         ViewModel.Load();
-        SyncFolderPickerDefaults();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
-    }
-
-    // ── Folder picker defaults ───────────────────────────────────────────────
-
-    private void SyncFolderPickerDefaults()
-    {
-        BackupFolderPicker.DefaultPath = AppPaths.SettingsBackupDirectory;
     }
 
     // ── Reset per section ───────────────────────────────────────────────────
@@ -204,9 +214,10 @@ public sealed partial class GeneralPage : Page
     // PowerToys-style: a single SettingsExpander, two header actions
     // (Back up / Restore), and a folder picker for the location. Restore
     // targets the latest snapshot — older ones live in the folder and are
-    // restorable by hand if ever needed. The folder picker is a
-    // FolderPickerCard bound to ViewModel.BackupDirectory; its DefaultPath
-    // is wired in SyncFolderPickerDefaults to AppPaths.SettingsBackupDirectory.
+    // restorable by hand if ever needed. The location folder picker is now the
+    // composed Path card (ComposeApplicationDataSection); its DefaultPath and
+    // per-card reset ride the descriptor's PathArgs/Default. The Create/Restore
+    // handlers below stay hand-authored — they are actions, not settings.
 
     private void CreateBackupButton_Click(object sender, RoutedEventArgs e)
     {
@@ -245,7 +256,6 @@ public sealed partial class GeneralPage : Page
         // pages (RecordingPage, DiagnosticsPage, WhisperPage) will refill
         // their own VMs on next OnNavigatedTo via NavigationCacheMode.
         ViewModel.Load();
-        SyncFolderPickerDefaults();
 
         // The Appearance composer re-selects the theme ComboBox off the Load()
         // PropertyChanged; we still apply the theme side-effect explicitly,

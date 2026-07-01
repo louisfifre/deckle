@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
+using Deckle.Core;
+using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Settings;
 
@@ -47,9 +49,8 @@ public partial class DiagnosticsViewModel
     // declared rather than wired in the page. Latency is a plain TwoWay switch.
     // Declared in on-screen order (Application log first by user request, then
     // Microphone, then Latency), so the composed host reproduces the former card
-    // order. The remaining telemetry rows stay hand-authored in the page — the
-    // Corpus expander, the Audio-corpus RadioButtons choice, the storage folder
-    // path — none expressible by a plain Toggle descriptor.
+    // order. The remaining hand-authored telemetry rows are the Corpus and
+    // Autocorrect expanders — nested layouts the composer doesn't build.
     //
     // No defaultValue on the consent toggles: a privacy opt-in has no "resettable
     // default" affordance per row (the section "Reset" clears them), so the composer
@@ -70,5 +71,32 @@ public partial class DiagnosticsViewModel
             () => TelemetryLatencyEnabled,
             value => TelemetryLatencyEnabled = value,
             glyph: Glyphs.Latency),
+    ];
+
+    // Storage folder — the shared JSONL root for every telemetry stream. A Path
+    // descriptor (FolderPickerMode.Configure: read-only readout with Change + Open)
+    // over the TelemetryStorageDirectory string the VM owns; its
+    // OnTelemetryStorageDirectoryChanged (PushTelemetryToSettings) rides the setter
+    // unchanged, exactly as the General backup-location Path does. DefaultPath is
+    // the deferred AppPaths lookup the code-behind used to push into the picker (the
+    // empty-value fallback = <UserDataRoot>\telemetry\), moved here into PathArgs so
+    // the manifest carries it. The reset default is the POCO initializer (empty →
+    // "empty means AppPaths"), the one source of truth.
+    //
+    // Its own manifest, composed into a dedicated host, because it keeps its former
+    // on-screen slot BELOW the Corpus/Autocorrect expanders — hosting it in the same
+    // panel as the toggles above would pull it up ahead of them. A one-entry list is
+    // the price of preserving that position; the Path card is otherwise wired exactly
+    // like any other composed row.
+    public IReadOnlyList<SettingDescriptor> StorageFolderSettings =>
+    [
+        Setting.Path("GeneralStorageFolderCard",
+            () => TelemetryStorageDirectory,
+            value => TelemetryStorageDirectory = value,
+            new PathArgs(
+                FolderPickerMode.Configure,
+                DefaultPath: () => AppPaths.TelemetryDirectory),
+            glyph: Glyphs.Folder,
+            defaultValue: () => new TelemetrySettings().StorageDirectory),
     ];
 }

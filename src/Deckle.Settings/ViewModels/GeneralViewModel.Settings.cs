@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
+using Deckle.Core;
 using Deckle.Shell;
 
 namespace Deckle.Settings;
@@ -100,6 +101,28 @@ public partial class GeneralViewModel
     // toggle on PropertyChanged — the same path Load() and the section Reset use.
     // The textbook "side effect in the VM setter" card, migrated now that the
     // theme picker proved that path carries the effect through unchanged.
+    // Application data section — the backup-location folder picker. A Path
+    // descriptor (FolderPickerMode.Configure: read-only readout with Change + Open)
+    // over the BackupDirectory string the VM already owns; its OnBackupDirectoryChanged
+    // (PushToSettings + RefreshBackups) rides the setter unchanged, exactly as the
+    // theme/overlay side effects do. DefaultPath is the deferred AppPaths lookup the
+    // code-behind used to push into the picker (the empty-value fallback, computed at
+    // compose time), moved here into PathArgs so the manifest carries it. The reset
+    // default is the POCO initializer (empty → "empty means AppPaths"), the one source
+    // of truth. The Create/Restore actions and the latest-backup readout stay hand-
+    // authored on the page (they are commands/readouts, not settable values).
+    public IReadOnlyList<SettingDescriptor> ApplicationDataSettings =>
+    [
+        Setting.Path("GeneralBackupLocationCard",
+            () => BackupDirectory,
+            value => BackupDirectory = value,
+            new PathArgs(
+                FolderPickerMode.Configure,
+                DefaultPath: () => AppPaths.SettingsBackupDirectory),
+            glyph: Glyphs.Folder,
+            defaultValue: () => new PathsSettings().BackupDirectory),
+    ];
+
     public IReadOnlyList<SettingDescriptor> StartupSettings =>
     [
         Setting.Toggle("GeneralAutostartCard",
