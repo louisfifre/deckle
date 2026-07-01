@@ -271,7 +271,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── JsonRpc/
-│   │   │   ├── JsonRpcEndpoint.cs
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
 │   │   │   ├── DialogueToolCatalog.cs
@@ -279,8 +278,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
 │   │   ├── Deckle.Anytype.Mcp.csproj
-│   │   ├── Program.cs
-│   │   └── StderrEventListener.cs
+│   │   ├── McpToolset.cs
+│   │   └── ToolProfile.cs
 │   ├── Deckle.App/
 │   │   ├── Assets/
 │   │   │   ├── Fonts/

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RootNamespace>Deckle.Anytype.Mcp</RootNamespace>
   </PropertyGroup>
 
@@ -9,5 +8,7 @@
          transitively through this one reference; Diagnostics rides along via
          Deckle.Anytype. -->
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
+    <!-- The HTTP transport authenticates each session against the vault. -->
+    <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
   </ItemGroup>
 </Project>

@@ -1,13 +1,14 @@
 using System.Text.Json.Nodes;
-using Deckle.Anytype.Mcp;
 
 namespace Deckle.Anytype.Mcp;
 
-// MCP dispatcher implementing the stdio lifecycle of revision 2025-11-25.
-// Single-threaded: messages are read and handled one at a time, which suits
-// fast synchronous tools whose underlying API client serialises calls
-// anyway. The endpoint owns wire framing; this class owns method dispatch,
-// the initialize handshake, and the two tools/call error channels.
+// MCP dispatcher implementing the method semantics of revision 2025-11-25.
+// Transport-agnostic: it takes a parsed JSON-RPC message and returns the
+// response object, leaving wire framing (stdio lines, HTTP bodies) to the
+// transport that owns the connection. One instance is session-scoped — the
+// initialize gate lives here — so each MCP session holds its own server over
+// its own gesture graph. Handling is per-message and synchronous-friendly:
+// the underlying API client serialises calls anyway.
 public sealed class McpServer
 {
     private const string ServerVersion = "0.1.0";
@@ -54,17 +55,14 @@ public sealed class McpServer
 
     private readonly Dictionary<string, ToolDescriptor> _tools;
     private readonly JsonArray _toolListing;
-    private readonly JsonRpcEndpoint _endpoint;
     private readonly Descriptor _descriptor;
 
     private bool _initialized;
 
     public McpServer(
         IReadOnlyList<ToolDescriptor> tools,
-        JsonRpcEndpoint endpoint,
         Descriptor? descriptor = null)
     {
-        _endpoint = endpoint;
         _descriptor = descriptor ?? ProjectManagementDescriptor;
         _tools = new Dictionary<string, ToolDescriptor>(StringComparer.Ordinal);
         _toolListing = new JsonArray();
@@ -82,25 +80,12 @@ public sealed class McpServer
         }
     }
 
-    public async Task RunAsync(CancellationToken ct = default)
-    {
-        while (true)
-        {
-            var read = await _endpoint.ReadMessageAsync(ct);
-            switch (read.Status)
-            {
-                case JsonRpcEndpoint.ReadStatus.Eof:
-                    return; // stdin closed → exit cleanly.
-                case JsonRpcEndpoint.ReadStatus.Handled:
-                    continue; // a framing error was already answered.
-                case JsonRpcEndpoint.ReadStatus.Message:
-                    await DispatchAsync(read.Message!, ct);
-                    continue;
-            }
-        }
-    }
-
-    private async Task DispatchAsync(JsonObject message, CancellationToken ct)
+    // Dispatches one parsed message to its method handler and returns the
+    // JSON-RPC response — a result or an error object — or null when the
+    // message warrants no reply (a notification, or a malformed no-id message
+    // whose sender cannot be answered). The transport writes the returned
+    // object; a null means write nothing.
+    public async Task<JsonObject?> HandleAsync(JsonObject message, CancellationToken ct = default)
     {
         // A message with no "id" member is a notification: it never receives
         // a response, whatever its method. (A present-but-null id is still a
@@ -112,40 +97,34 @@ public sealed class McpServer
 
         if (method is null)
         {
-            if (!isNotification)
-                _endpoint.WriteError(id, -32600, "Invalid Request");
-            return;
+            // A malformed message with no id cannot be answered — the request
+            // slot it would key on does not exist; stay silent.
+            return isNotification ? null : Error(id, -32600, "Invalid Request");
         }
 
         if (isNotification)
         {
             HandleNotification(method);
-            return;
+            return null;
         }
 
-        switch (method)
+        return method switch
         {
-            case "initialize":
-                HandleInitialize(id, message["params"] as JsonObject);
-                break;
-            case "ping":
-                // MUST respond promptly, even before initialize.
-                _endpoint.WriteResult(id, new JsonObject());
-                break;
-            case "tools/list":
-                if (RejectIfUninitialized(id)) break;
-                HandleToolsList(id);
-                break;
-            case "tools/call":
-                if (RejectIfUninitialized(id)) break;
-                await HandleToolsCallAsync(id, message["params"] as JsonObject, ct);
-                break;
-            default:
-                if (RejectIfUninitialized(id)) break;
-                _endpoint.WriteError(id, -32601, $"Method not found: {method}");
-                break;
-        }
+            "initialize" => Initialize(id, message["params"] as JsonObject),
+            // MUST respond promptly, even before initialize.
+            "ping" => Result(id, new JsonObject()),
+            "tools/list" => RejectIfUninitialized(id) ?? ToolsList(id),
+            "tools/call" => RejectIfUninitialized(id)
+                ?? await ToolsCallAsync(id, message["params"] as JsonObject, ct),
+            _ => RejectIfUninitialized(id) ?? Error(id, -32601, $"Method not found: {method}"),
+        };
     }
+
+    // Body-level protocol error the transport raises before dispatch — a
+    // -32700 on an unparseable body, a -32600 on a non-object one. Public so
+    // the HTTP transport builds the same shape this class emits internally.
+    public static JsonObject ProtocolError(JsonNode? id, int code, string message) =>
+        Error(id, code, message);
 
     // Notifications are silent by contract. We only act on initialized to
     // open the gate; everything else (cancelled, anything unknown) is ignored.
@@ -155,7 +134,7 @@ public sealed class McpServer
             _initialized = true;
     }
 
-    private void HandleInitialize(JsonNode? id, JsonObject? @params)
+    private JsonObject Initialize(JsonNode? id, JsonObject? @params)
     {
         string requested = AsString(@params?["protocolVersion"]) ?? string.Empty;
         string negotiated = SupportedProtocols.Contains(requested) ? requested : LatestProtocol;
@@ -181,32 +160,28 @@ public sealed class McpServer
             },
             ["instructions"] = _descriptor.Instructions,
         };
-        _endpoint.WriteResult(id, result);
+        return Result(id, result);
     }
 
-    private void HandleToolsList(JsonNode? id)
+    private JsonObject ToolsList(JsonNode? id)
     {
         // All tools fit one page; cursor (if any) is accepted and ignored,
         // and no nextCursor is emitted.
         var result = new JsonObject { ["tools"] = _toolListing.DeepClone() };
-        _endpoint.WriteResult(id, result);
+        return Result(id, result);
     }
 
-    private async Task HandleToolsCallAsync(JsonNode? id, JsonObject? @params, CancellationToken ct)
+    private async Task<JsonObject> ToolsCallAsync(JsonNode? id, JsonObject? @params, CancellationToken ct)
     {
         string? name = AsString(@params?["name"]);
         if (name is null)
-        {
-            _endpoint.WriteError(id, -32602, "Missing tool name");
-            return;
-        }
+            return Error(id, -32602, "Missing tool name");
 
         if (!_tools.TryGetValue(name, out var tool))
         {
             // An unknown tool name is a protocol-level error (-32602): the
             // model called something that does not exist.
-            _endpoint.WriteError(id, -32602, $"Unknown tool: {name}");
-            return;
+            return Error(id, -32602, $"Unknown tool: {name}");
         }
 
         var arguments = @params?["arguments"] as JsonObject;
@@ -217,7 +192,7 @@ public sealed class McpServer
         try
         {
             string text = await tool.Handler(arguments, ct);
-            _endpoint.WriteResult(id, ToolResult(text, isError: false));
+            return Result(id, ToolResult(text, isError: false));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -225,9 +200,30 @@ public sealed class McpServer
         }
         catch (Exception ex)
         {
-            _endpoint.WriteResult(id, ToolResult(ex.Message, isError: true));
+            return Result(id, ToolResult(ex.Message, isError: true));
         }
     }
+
+    // Response builders. An id node is owned by its inbound message, and a
+    // JsonNode cannot have two parents, so clone before parenting it onto the
+    // response — the wire-framing concern that moved in from the endpoint.
+    private static JsonObject Result(JsonNode? id, JsonNode result) => new()
+    {
+        ["jsonrpc"] = "2.0",
+        ["id"] = id?.DeepClone(),
+        ["result"] = result,
+    };
+
+    private static JsonObject Error(JsonNode? id, int code, string message) => new()
+    {
+        ["jsonrpc"] = "2.0",
+        ["id"] = id?.DeepClone(),
+        ["error"] = new JsonObject
+        {
+            ["code"] = code,
+            ["message"] = message,
+        },
+    };
 
     private static JsonObject ToolResult(string text, bool isError)
     {
@@ -249,12 +245,9 @@ public sealed class McpServer
     private static string? AsString(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<string>(out var s) ? s : null;
 
-    // Pre-initialize gate. Returns true (and answers) when the request must be
-    // refused; initialize and ping bypass this and are never passed here.
-    private bool RejectIfUninitialized(JsonNode? id)
-    {
-        if (_initialized) return false;
-        _endpoint.WriteError(id, -32600, "Server not initialized");
-        return true;
-    }
+    // Pre-initialize gate. Returns an error response when the request must be
+    // refused, or null to let the caller proceed; initialize and ping bypass
+    // this and are never passed here.
+    private JsonObject? RejectIfUninitialized(JsonNode? id) =>
+        _initialized ? null : Error(id, -32600, "Server not initialized");
 }
