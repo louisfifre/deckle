@@ -105,6 +105,7 @@ internal static class InstallFlow
         }
 
         Directory.CreateDirectory(installDir);
+        CleanInstallFolder(installDir);
         ZipFile.ExtractToDirectory(zipPath, installDir, overwriteFiles: true);
         TryDelete(zipPath);
         string uninstallerPath = CopySelfAsUninstaller(installDir);
@@ -171,6 +172,23 @@ internal static class InstallFlow
     // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, as the registry and
     // the recap compare it.
     private static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
+
+    // Empties the install folder before extraction, so files a newer version
+    // renamed or dropped never linger beside the fresh payload. Safe by
+    // construction: user data lives in the separate data folder. The one spared
+    // entry is this very exe when the installed stub is the process running the
+    // update — a process cannot delete its own image; that stub then simply stays
+    // in place as the registered uninstaller.
+    private static void CleanInstallFolder(string installDir)
+    {
+        string? self = Environment.ProcessPath;
+        foreach (string entry in Directory.EnumerateFileSystemEntries(installDir))
+        {
+            if (self is not null && PathsEqual(entry, self)) continue;
+            if (Directory.Exists(entry)) Directory.Delete(entry, recursive: true);
+            else File.Delete(entry);
+        }
+    }
 
     // The .sha256 sidecar is `<hex> *<filename>` (sha256sum -c format). Take the hex.
     private static string ParseSha256Sidecar(string content)
