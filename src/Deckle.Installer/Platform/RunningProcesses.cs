@@ -18,7 +18,9 @@ internal static class RunningProcesses
         if (!Directory.Exists(folder)) return [];
 
         var found = new List<string>();
-        foreach (string exe in Directory.EnumerateFiles(folder, "*.exe"))
+        // Recursive: the gate must cover everything the pre-extraction clean and
+        // the uninstall delete touch, sub-folder exes included.
+        foreach (string exe in Directory.EnumerateFiles(folder, "*.exe", SearchOption.AllDirectories))
         {
             string name = Path.GetFileNameWithoutExtension(exe);
             Process[] candidates = Process.GetProcessesByName(name);
