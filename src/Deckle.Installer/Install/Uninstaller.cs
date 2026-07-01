@@ -47,6 +47,23 @@ internal static class Uninstaller
             && Directory.Exists(dataDir)
             && ConsoleUi.Confirm("Also delete data and models?", defaultYes: false);
 
+        // A running Deckle keeps its image locked — the scheduled folder delete
+        // would leave binaries behind. Same gate as the install side; the running
+        // uninstaller itself is skipped by the detection.
+        while (true)
+        {
+            string[] running = RunningProcesses.FromFolder(installDir);
+            if (running.Length == 0) break;
+            string names = string.Join(", ", running);
+            if (!interactive)
+            {
+                ConsoleUi.Error($"Deckle is running ({names}) — close it and re-run the uninstaller.");
+                return Task.FromResult(1);
+            }
+            ConsoleUi.Warn($"Deckle is running ({names}) — close it, then press Enter to retry.");
+            ConsoleUi.WaitKey(ConsoleKey.Enter);
+        }
+
         // ── Unattended run ────────────────────────────────────────────────────────
         ConsoleUi.Phase("Removing");
         Shortcut.RemoveStartMenu("Deckle");

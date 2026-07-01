@@ -645,6 +645,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Io/
 │   │   │   └── Downloader.cs
 │   │   ├── Platform/
+│   │   │   ├── RunningProcesses.cs
 │   │   │   ├── Shortcut.cs
 │   │   │   ├── UninstallEntry.cs
 │   │   │   └── UserEnvironment.cs

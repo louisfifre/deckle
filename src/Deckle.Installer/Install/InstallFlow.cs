@@ -86,6 +86,24 @@ internal static class InstallFlow
             return 1;
         }
 
+        // Windows locks an exe's image while it runs: replacing binaries under a
+        // live Deckle would fault mid-extraction and leave a mixed install. Gate
+        // here — close-and-retry when someone can answer, a clean error otherwise.
+        while (true)
+        {
+            string[] running = RunningProcesses.FromFolder(installDir);
+            if (running.Length == 0) break;
+            string names = string.Join(", ", running);
+            if (!interactive)
+            {
+                ConsoleUi.Error($"Deckle is running ({names}) — close it and re-run the installer.");
+                TryDelete(zipPath);
+                return 1;
+            }
+            ConsoleUi.Warn($"Deckle is running ({names}) — close it, then press Enter to retry.");
+            ConsoleUi.WaitKey(ConsoleKey.Enter);
+        }
+
         Directory.CreateDirectory(installDir);
         ZipFile.ExtractToDirectory(zipPath, installDir, overwriteFiles: true);
         TryDelete(zipPath);
