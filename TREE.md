@@ -1031,6 +1031,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── McpServerTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
+│   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── BackendTaskDocumentTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs

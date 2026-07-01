@@ -44,6 +44,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendHealthProbed           = 16;
     public const int EvtBackendTaskOperationFailed    = 17;
     public const int EvtBackendTaskOperationFailedDetail = 18;
+    public const int EvtCredentialsResolved           = 19;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -229,5 +230,18 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void BackendTaskOperationFailedDetail(string operation, string error)
     {
         if (IsEnabled()) WriteEvent(EvtBackendTaskOperationFailedDetail, operation, error);
+    }
+
+    // Which provisioning world the credentials resolved to: "headless" (the
+    // vault holds the bot API key → the fixed 31012 listener) or "desktop"
+    // (legacy file bearer → the Desktop pairing). The first question to answer
+    // when a host talks to the wrong backend; carries no key material.
+    [Event(EvtCredentialsResolved,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "credentials resolved | profile={0}")]
+    public void CredentialsResolved(string profile)
+    {
+        if (IsEnabled()) WriteEvent(EvtCredentialsResolved, profile);
     }
 }
