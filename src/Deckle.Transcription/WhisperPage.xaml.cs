@@ -40,15 +40,12 @@ public sealed partial class WhisperPage : Page
     private string _startupModel = "";
     private bool _startupUseGpu;
 
-    // Defaults resolved from POCOs — single source of truth for Reset.
-    // ModelsDirectory's default lives on TranscriptionSettings since slice C2b
-    // (it migrated off PathsSettings into the Whisp module's POCO).
-    private static readonly TranscriptionSettings _transcriptionDefaults = new();
+    // Defaults resolved from the Engine POCO — single source of truth for the
+    // bespoke Model / Language / InitialPrompt resets below.
     private static readonly EngineSettings _engineDefaults = new();
-    // OutputFilterSettings / ContextSettings / DecodingSettings / ConfidenceSettings
-    // defaults no longer have a code-behind home: their cards are composed, and each
-    // composed card reads its default from the POCO initializer (new XxxSettings().Prop)
-    // inside the manifest — the single source the composer's reset drives to.
+    // ModelsDirectory's default no longer has a code-behind home either: its card is
+    // composed now, reading its default (new TranscriptionSettings().ModelsDirectory)
+    // from the manifest, like the OutputFilter / Context / Decoding / Confidence cards.
 
     public WhisperPage()
     {
@@ -78,6 +75,8 @@ public sealed partial class WhisperPage : Page
         // PropertyChanged subscription is already in place to catch Load()'s refresh
         // — the same Compose-before-Load ordering RecordingPage uses. The composers
         // are held in fields so their subscriptions live as long as the cached page.
+        ComposeUseGpuSection();
+        ComposeModelsDirectorySection();
         ComposeVadSection();
         ComposeStreamingSection();
         ComposeOutputFiltersSection();
@@ -91,32 +90,17 @@ public sealed partial class WhisperPage : Page
             try
             {
                 // Hover reveal for reset buttons — one-time setup.
-                // ModelCard is a SettingsExpander (with the Models directory
-                // as a child) so we hook PointerEntered/Exited directly,
-                // same as InitialPromptCard. WireHover only handles
-                // SettingsCard. The hover wiring on ModelCard reveals
-                // ModelReset only — ModelsDirectoryReset gets its own
-                // hover via the inner card's bubbled pointer events.
-                ModelCard.PointerEntered += (_, _) =>
-                {
-                    ModelReset.Opacity = 1;
-                    ModelsDirectoryReset.Opacity = 1;
-                };
-                ModelCard.PointerExited += (_, _) =>
-                {
-                    ModelReset.Opacity = 0;
-                    ModelsDirectoryReset.Opacity = 0;
-                };
-                WireHover(UseGpuCard, UseGpuReset);
+                // ModelCard is now a plain SettingsCard (the models directory it
+                // used to nest is composed into its own card below), so its reset
+                // reveals through the shared WireHover like Language's.
+                WireHover(ModelCard, ModelReset);
                 WireHover(LanguageCard, LanguageReset);
                 InitialPromptCard.PointerEntered += (_, _) => InitialPromptReset.Opacity = 1;
                 InitialPromptCard.PointerExited += (_, _) => InitialPromptReset.Opacity = 0;
-                // FolderPickerEditableCard.DefaultPath drives the TextBox
-                // PlaceholderText shown when ModelsDirectory is empty (the
-                // legacy "(auto)" placeholder is gone — users see the actual
-                // resolved path instead). Set once on first load; the value
-                // is stable for the lifetime of the process.
-                ModelsDirectoryPicker.DefaultPath = AppPaths.ModelsDirectory;
+                // GPU acceleration and the models directory are composed now — the
+                // composer wires each card's own per-card reset and hover reveal (and
+                // the Path card's AppPaths fallback rides in PathArgs.DefaultPath), so
+                // no WireHover or DefaultPath assignment for those cards here.
                 // The VAD fold (toggle + four Silero parameters) is composed now —
                 // the composer wires its own per-card reset reveal, so no WireHover
                 // for those cards here.
@@ -152,6 +136,29 @@ public sealed partial class WhisperPage : Page
     // here. Composed in the constructor (before the first Load() in OnNavigatedTo)
     // so the subscription catches Load()'s refresh; held in fields so it lives as
     // long as the cached page.
+
+    // GPU acceleration and the models directory are flat, restart-neutral leaves —
+    // a lone Toggle and a lone editable Path — each composed straight into its host,
+    // the same host-only pattern as the flat sections below (composed before the
+    // first Load() so the subscription catches its refresh, held in a field for the
+    // cached page's lifetime). The composer rebuilds each card's own per-card reset
+    // and hover reveal (the Path variant carries the AppPaths fallback in PathArgs),
+    // so no WireHover or reset handler is wired here. The UseGpu toggle drives the
+    // same VM.UseGpu the restart footer watches, so it still trips the footer.
+    private SettingsComposer? _useGpuComposer;
+    private SettingsComposer? _modelsDirectoryComposer;
+
+    private void ComposeUseGpuSection()
+    {
+        _useGpuComposer = new SettingsComposer(UseGpuHost, ViewModel);
+        _useGpuComposer.Compose(ViewModel.UseGpuSettingsManifest);
+    }
+
+    private void ComposeModelsDirectorySection()
+    {
+        _modelsDirectoryComposer = new SettingsComposer(ModelsDirectoryHost, ViewModel);
+        _modelsDirectoryComposer.Compose(ViewModel.ModelsDirectorySettingsManifest);
+    }
 
     private SettingsComposer? _vadComposer;
     private SettingsComposer? _streamingComposer;
@@ -401,17 +408,11 @@ public sealed partial class WhisperPage : Page
     // Set the VM property (or combo for Model/Language) → OnXChanged fires →
     // PushToSettings. For combos, SelectionChanged fires → handler sets VM.
 
-    private void ModelsDirectoryReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.ModelsDirectory = _transcriptionDefaults.ModelsDirectory;
-
     private void ModelReset_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.Model = _engineDefaults.Model;
         ModelSuggest.Text = _engineDefaults.Model;
     }
-
-    private void UseGpuReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.UseGpu = _engineDefaults.UseGpu;
 
     private void LanguageReset_Click(object sender, RoutedEventArgs e)
     {

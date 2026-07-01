@@ -3,8 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:settings="using:Deckle.Settings">
+    xmlns:ui="using:CommunityToolkit.WinUI">
 
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
@@ -151,30 +150,23 @@
                     </controls:SettingsExpander.Items>
                 </controls:SettingsExpander>
 
-                <controls:SettingsCard x:Name="UseGpuCard"
-                                       x:Uid="WhisperUseGpuCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Gpu}}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <ToggleSwitch x:Name="UseGpuToggle"
-                                      IsOn="{x:Bind ViewModel.UseGpu, Mode=TwoWay}" />
-                        <Button x:Name="UseGpuReset"
-                                Style="{StaticResource ResetButtonStyle}"
-                                Click="UseGpuReset_Click">
-                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                </controls:SettingsCard>
+                <!-- GPU acceleration — composed. The lone toggle (and its per-card
+                     reset) is built by ComposeUseGpuSection() into this host; the VM's
+                     UseGpu property is the same one the restart footer watches, so
+                     flipping the composed toggle still trips the footer. -->
+                <StackPanel x:Name="UseGpuHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Whisper model is a SettingsExpander : the AutoSuggestBox
-                     model selector lives in the header (so picking a model
-                     stays a one-click affair), and the storage location for
-                     downloaded weights is revealed as an inline child. The
-                     standalone "Storage" section is gone — there's only one
-                     path that ever mattered, and it belongs with the model
-                     it points to. -->
-                <controls:SettingsExpander x:Name="ModelCard"
-                                           x:Uid="WhisperModelCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Model}}">
+                <!-- Whisper model — bespoke. The AutoSuggestBox is a runtime-
+                     enumerated, restart-coupled selector (its items are scanned from
+                     disk, and picking a model trips the restart footer), so it stays
+                     hand-authored rather than composed as a flat descriptor. Its
+                     per-card reset is bespoke too, syncing the un-bound AutoSuggestBox
+                     alongside the VM. The models directory that used to nest inside
+                     this expander is now its own composed card below. -->
+                <controls:SettingsCard x:Name="ModelCard"
+                                       x:Uid="WhisperModelCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Model}}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <AutoSuggestBox x:Name="ModelSuggest"
                                         x:Uid="WhisperModelSuggest"
@@ -189,22 +181,15 @@
                             <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
                         </Button>
                     </StackPanel>
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Uid="WhisperModelsDirCard"
-                                               ContentAlignment="Vertical">
-                            <settings:FolderPickerEditableCard x:Name="ModelsDirectoryPicker"
-                                                               Path="{x:Bind ViewModel.ModelsDirectory, Mode=TwoWay}">
-                                <settings:FolderPickerEditableCard.RightContent>
-                                    <Button x:Name="ModelsDirectoryReset"
-                                            Style="{StaticResource ResetButtonStyle}"
-                                            Click="ModelsDirectoryReset_Click">
-                                        <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                                    </Button>
-                                </settings:FolderPickerEditableCard.RightContent>
-                            </settings:FolderPickerEditableCard>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                </controls:SettingsCard>
+
+                <!-- Models directory — composed. The editable folder path (with its
+                     own reset) is built by ComposeModelsDirectorySection() into this
+                     host, with FolderPickerMode.Editable and the AppPaths fallback
+                     carried in PathArgs. It reads as its own card under the model
+                     selector, where it used to nest as an inline expander child. -->
+                <StackPanel x:Name="ModelsDirectoryHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Speech filtering ────────────────────────────────────── -->
                 <TextBlock x:Uid="WhisperPageSpeechFilteringHeaderLabel"

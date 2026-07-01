@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
+using Deckle.Core;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
@@ -28,6 +29,46 @@ namespace Deckle.Transcription;
 // float LevelWindow fields.
 public partial class WhisperViewModel
 {
+    // GPU acceleration — the flat toggle under the "Model engine" header. It was
+    // hand-authored as a lone SettingsCard with its own reset; it composes as a
+    // single leaf Toggle into a host, exactly the shape it had. The default reads
+    // the EngineSettings POCO initializer (the single source SettingsService
+    // persists), so the composed per-card reset goes active exactly when the value
+    // leaves that default. The x:Uid is the same the hand-authored card carried, so
+    // the composer resolves the identical Header/Description from this module's
+    // .resw. UseGpu is restart-coupled, but the RESTART FOOTER stays bespoke: it
+    // watches VM.UseGpu directly, and the composer drives that same VM property, so
+    // a composed toggle still trips the footer.
+    public IReadOnlyList<SettingDescriptor> UseGpuSettingsManifest =>
+    [
+        Setting.Toggle("WhisperUseGpuCard",
+            () => UseGpu,
+            value => UseGpu = value,
+            glyph: Glyphs.Gpu,
+            defaultValue: () => new EngineSettings().UseGpu),
+    ];
+
+    // Models directory — the editable folder path that was hand-authored as a
+    // FolderPickerEditableCard nested in the Model expander, with a RightContent
+    // reset and a code-behind-set DefaultPath. It composes as a single Path leaf
+    // with FolderPickerMode.Editable: the composer's own Path reset replaces the
+    // hand-authored RightContent reset + its hover wiring, and PathArgs.DefaultPath
+    // carries the deferred AppPaths lookup the code-behind used to set imperatively
+    // (resolved once at compose time). The default value is the TranscriptionSettings
+    // POCO initializer ("" = fall back to AppPaths.ModelsDirectory), so the reset
+    // goes active exactly when the user has repointed the folder. The x:Uid reuses
+    // the hand-authored WhisperModelsDirCard, so the Header/Description resolve from
+    // this module's .resw unchanged.
+    public IReadOnlyList<SettingDescriptor> ModelsDirectorySettingsManifest =>
+    [
+        Setting.Path("WhisperModelsDirCard",
+            () => ModelsDirectory,
+            value => ModelsDirectory = value,
+            new PathArgs(FolderPickerMode.Editable, DefaultPath: () => AppPaths.ModelsDirectory),
+            glyph: Glyphs.Folder,
+            defaultValue: () => new TranscriptionSettings().ModelsDirectory),
+    ];
+
     // Voice activity detection — the Silero pre-trim fold. The master is the
     // VadEnabled toggle; the four detection parameters are its children, hidden by
     // the composer while the master is off (it composes the master into each
