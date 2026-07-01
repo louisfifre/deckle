@@ -40,8 +40,13 @@ internal static class InstallFlow
             return 1;
         }
 
+        // A previous install may have moved the data root: the variable, not the
+        // hardcoded default, is where the app actually reads — the recap must show
+        // that reality, and Enter must preserve it.
+        string? existingDataRoot = UserEnvironment.GetDataRoot();
+
         string installDir = Path.GetFullPath(cli.InstallDir ?? InstallPaths.DefaultInstallDir);
-        string dataDir = Path.GetFullPath(cli.DataDir ?? InstallPaths.DefaultDataDir);
+        string dataDir = Path.GetFullPath(cli.DataDir ?? existingDataRoot ?? InstallPaths.DefaultDataDir);
 
         // ── Recap + single-keystroke consent ──────────────────────────────────────
         // The recap re-prints after each folder edit, so what Enter commits to is
@@ -86,13 +91,27 @@ internal static class InstallFlow
         UninstallEntry.Write(installDir, version, uninstallerPath, DirectorySize(installDir));
         ConsoleUi.Ok("Start Menu · Installed apps");
 
-        // Only touch the environment when the user chose a non-default data folder;
-        // otherwise the app's own default stands and we leave no trace behind.
+        // The variable exists only while the data folder is off the default: set it
+        // on a non-default choice, clear it when the user comes back to the default
+        // (previously the stale variable silently overrode that choice), and leave
+        // no trace on a default-to-default run.
         if (!PathsEqual(dataDir, InstallPaths.DefaultDataDir))
         {
             UserEnvironment.SetDataRoot(dataDir);
             ConsoleUi.Ok($"DECKLE_DATA_ROOT = {dataDir}");
         }
+        else if (existingDataRoot is not null)
+        {
+            UserEnvironment.ClearDataRoot();
+            ConsoleUi.Ok("DECKLE_DATA_ROOT cleared — data folder back to the default");
+        }
+
+        // Moving the root does not move the files: the app will start fresh at the
+        // new location (and re-download models). Say so instead of letting the old
+        // folder look silently lost.
+        string previousRoot = Path.GetFullPath(existingDataRoot ?? InstallPaths.DefaultDataDir);
+        if (!PathsEqual(previousRoot, dataDir) && Directory.Exists(previousRoot))
+            ConsoleUi.Info($"data folder changed — existing files stay at {previousRoot} and are not moved");
 
         Process.Start(new ProcessStartInfo(appExe) { UseShellExecute = true, WorkingDirectory = installDir });
         Console.WriteLine();
