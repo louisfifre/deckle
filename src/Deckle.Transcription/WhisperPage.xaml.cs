@@ -199,7 +199,18 @@ public sealed partial class WhisperPage : Page
         _startupModel = ViewModel.Model;
         _startupUseGpu = ViewModel.UseGpu;
         _initializing = false;
+
+        // Speech isn't provisioned until the runtime + model are on disk. When
+        // they aren't, surface a call-to-action that reopens the setup wizard
+        // rather than leaving the tuning controls implying a working engine.
+        // The App answers the probe (this page can't see the Whisper module);
+        // unwired (tests, previews) reads as provisioned.
+        bool speechReady = SettingsHost.IsSpeechProvisioned?.Invoke() ?? true;
+        SetupInfoBar.IsOpen = !speechReady;
     }
+
+    private void OnSetupClick(object sender, RoutedEventArgs e) =>
+        SettingsHost.OpenSetupWizard?.Invoke();
 
     // ── VM PropertyChanged side effects ─────────────────────────────────────
     //

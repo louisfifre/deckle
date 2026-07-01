@@ -280,12 +280,12 @@ Write-Host @"
   Size   : $ZipBytes bytes ($ZipSize MB)
   SHA256 : $ZipSha256
 
-  Paste into src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs CurrentBundle (after
-  publishing — fill Url with the actual GitHub Release asset URL):
+  Paste into src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs CurrentBundle
+  (Url pre-filled for the louisfifre release; adjust the owner if the repo moves):
 
     public static NativeRuntimeBundle CurrentBundle { get; } = new(
         Version:     "$Version",
-        Url:         "https://github.com/<owner>/deckle/releases/download/native-v$Version/$ZipName",
+        Url:         "https://github.com/louisfifre/deckle/releases/download/native-v$Version/$ZipName",
         Sha256:      "$ZipSha256",
         SizeBytes:   ${ZipBytes}L,
         DisplayName: "Whisper.cpp + Vulkan runtime");

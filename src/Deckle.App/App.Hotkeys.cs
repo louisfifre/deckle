@@ -8,7 +8,18 @@ public partial class App
 {
     private void OnHotkey(int hotkeyId)
     {
-        if (_engine is null) return;
+        if (_engine is null)
+        {
+            // Speech isn't provisioned (native runtime + model absent), so the
+            // engine was never composed. Rather than do nothing, tell the user
+            // at the moment of intent and point them to where they set it up.
+            DeckleAppSource.Log.UserFeedbackEmitted(
+                0, // Info
+                "Dictation isn't set up yet",
+                "Open Settings › Dictation to download the speech engine and model.",
+                1); // Overlay
+            return;
+        }
 
         string hotkeyName = hotkeyId switch
         {

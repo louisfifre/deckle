@@ -304,40 +304,36 @@ public partial class App : Microsoft.UI.Xaml.Application
         dispatcher.Catalog.Register(AutocorrectNotifications.All);
         Milestone("notifications");
 
-        // First-run gate — the engine ctor below loads the model immediately
-        // and would throw DllNotFoundException without the native runtime
-        // (libwhisper + ggml backends). There's no graceful degradation:
-        // either the dependencies are in place, or we open the wizard, or
-        // the user quits. The wizard provisions the natives via auto-download
-        // (Deckle GitHub Release, NativeRuntime.CurrentBundle.Url) with a
-        // local Browse... fallback, plus the chosen speech model from
-        // HuggingFace.
-        if (!NativeRuntime.IsInstalled() ||
-            !SpeechModels.IsDefaultInstalled())
+        // Speech provisioning is decoupled from boot. Whisper is one module
+        // among several: when its native runtime + default model aren't yet on
+        // disk, the transcription engine is simply not composed and the rest of
+        // the app runs its other modules normally. Provisioning happens on
+        // demand from Settings › Dictation (SettingsHost.OpenSetupWizard, wired
+        // below) — never a hard gate that quits the app on a failed download.
+        //
+        // The engine ctor loads the model immediately and would throw
+        // DllNotFoundException without the native runtime, so its construction
+        // is guarded by this check; the event wiring further down carries the
+        // same guard.
+        bool speechReady = NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
+        if (speechReady)
         {
-            DeckleSetupSource.Log.WizardOpening();
-            DeckleSetupSource.Log.WizardOpeningDetail(NativeRuntime.IsInstalled(), SpeechModels.IsDefaultInstalled());
-            var setup = new Deckle.Setup.SetupWindow();
-            setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
-            setup.Activate();
-            bool success = await setup.Completion;
-            if (!success)
-            {
-                DeckleSetupSource.Log.WizardCancelled();
-                Environment.Exit(0);
-                return;
-            }
-            Milestone("wizard");
+            // Compose the engine with the Whisper backend — the App is the
+            // composition root that knows which IAsrBackend to instantiate.
+            // When a second backend ships (Voxtral), the choice surfaces in
+            // Settings and gates the construction here.
+            var host = new AppTranscriptionEngineHost();
+            var backend = new WhisperBackend(host);
+            _engine = new TranscriptionEngine(host, backend);
+            Milestone("engine");
         }
-
-        // Compose the engine with the Whisper backend — the App is the
-        // composition root that knows which IAsrBackend to instantiate.
-        // When a second backend ships (Voxtral), the choice surfaces in
-        // Settings and gates the construction here.
-        var host = new AppTranscriptionEngineHost();
-        var backend = new WhisperBackend(host);
-        _engine = new TranscriptionEngine(host, backend);
-        Milestone("engine");
+        else
+        {
+            // No native runtime and/or model yet — the dictation module stays
+            // dormant. Recorded as a boot milestone (with the two readiness
+            // flags) so a support trace shows exactly which half is missing.
+            Milestone($"engine_skipped native={NativeRuntime.IsInstalled()} model={SpeechModels.IsDefaultInstalled()}");
+        }
 
         // Read-aloud (TTS) engine with the placeholder Chatterbox backend —
         // same composition-root posture as the transcription engine above.
@@ -454,7 +450,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             Mode = args.Mode,
             DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
         };
-        Settings.SettingsHost.OpenSetupWizard  = () =>
+        Settings.SettingsHost.OpenSetupWizard  = async () =>
         {
             // Wizard XAML lives in the standalone Deckle.Setup module
             // (extracted out of Deckle.App/Shell/Setup/ for J3). Detached
@@ -462,7 +458,22 @@ public partial class App : Microsoft.UI.Xaml.Application
             var setup = new Deckle.Setup.SetupWindow();
             setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
             setup.Activate();
+
+            // Provisioning is decoupled from boot: the transcription engine is
+            // composed at startup only when the runtime + model are present. A
+            // first successful setup from a running session (or a model swap)
+            // therefore needs a restart to (re)compose the engine. Bounce the
+            // app back onto the Dictation page once the wizard reports success.
+            bool ok = await setup.Completion;
+            if (ok)
+                RestartApp("Deckle.Transcription.WhisperPage, Deckle.Transcription");
         };
+
+        // Readiness probe for the Dictation settings page's "set up" CTA. That
+        // page lives in Deckle.Transcription, which cannot see the Whisper child
+        // module, so the App — which composes both — answers here.
+        Settings.SettingsHost.IsSpeechProvisioned =
+            () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
 
         // Message-only Win32 host — invisible by construction (HWND_MESSAGE
         // parent). Hosts the tray callback, global hotkeys, and the shared
@@ -522,73 +533,80 @@ public partial class App : Microsoft.UI.Xaml.Application
         // called from background threads; LogWindow and HudWindow marshal
         // internally via DispatcherQueue, UpdateStatus only calls
         // Shell_NotifyIcon (thread-safe). Engine logs are emitted by
-        // module EventSource providers.
-        _engine.StatusChanged += status =>
+        // module EventSource providers. Guarded: when speech isn't provisioned
+        // the engine was never composed, so there is nothing to wire.
+        if (_engine is not null)
         {
-            _tray.UpdateStatus(status);
-            DeckleAppSource.Log.StatusChanged();
-            DeckleAppSource.Log.StatusChangedDetail(status);
-            // Beacon app icon in LogWindow + PlaygroundWindow: red =
-            // recording, grey = idle. Single source of truth driven
-            // from the engine status transition. StartsWith covers the
-            // "Recording…" ellipsis variant emitted by RaiseStatus to
-            // signal a transient state visually in the tray tooltip.
-            bool isRecording = status.StartsWith("Recording");
-            _lastRecordingState = isRecording;
-            // Both nullable now: LogWindow and PlaygroundWindow are lazy-
-            // created on first user open, so they're absent until then.
-            _logWindow?.SetRecordingState(isRecording);
-            _playgroundWindow?.SetRecordingState(isRecording);
-
-            // HUD: driven by status transition. Background thread → HudWindow
-            // marshals internally via DispatcherQueue. StartsWith on every
-            // branch so transient ellipsis variants ("Transcribing…",
-            // "Rewriting (cleanup)…") all route correctly.
-            if (status.StartsWith("Recording"))
-                _hudWindow.ShowRecording();
-            else if (status.StartsWith("Transcribing"))
-                _hudWindow.SwitchToTranscribing();
-            else if (status.StartsWith("Rewriting"))
-                _hudWindow.SwitchToRewriting();
-        };
-        _engine.TranscriptionFinished += outcome =>
-        {
-            switch (outcome)
+            _engine.StatusChanged += status =>
             {
-                case TranscriptionOutcome.Pasted:
-                    // UIA confirmed the focused element accepts text and the
-                    // Ctrl+V was sent. Brief success flash, then auto-hide.
-                    _hudWindow.ShowPasted();
-                    break;
-                case TranscriptionOutcome.ClipboardOnly:
-                    // Paste skipped (UIA unsure, foreground = Deckle, no focus,
-                    // SendInput partial…) — tell the user the text is on the
-                    // clipboard and keep the HUD up long enough to read.
-                    _hudWindow.ShowCopied();
-                    break;
-                default:
-                    _hudWindow.Hide();
-                    break;
-            }
-        };
-        // Synchronous rendezvous just before paste: hide the HUD and wait for
-        // SW_HIDE to be effective on the UI thread before the engine sends
-        // SendInput. Avoids the race where Hide() (triggered async after paste)
-        // redistributes activation while Ctrl+V is still in the target's input queue.
-        _engine.OnReadyToPaste = () => _hudWindow.HideSync();
+                _tray.UpdateStatus(status);
+                DeckleAppSource.Log.StatusChanged();
+                DeckleAppSource.Log.StatusChangedDetail(status);
+                // Beacon app icon in LogWindow + PlaygroundWindow: red =
+                // recording, grey = idle. Single source of truth driven
+                // from the engine status transition. StartsWith covers the
+                // "Recording…" ellipsis variant emitted by RaiseStatus to
+                // signal a transient state visually in the tray tooltip.
+                bool isRecording = status.StartsWith("Recording");
+                _lastRecordingState = isRecording;
+                // Both nullable now: LogWindow and PlaygroundWindow are lazy-
+                // created on first user open, so they're absent until then.
+                _logWindow?.SetRecordingState(isRecording);
+                _playgroundWindow?.SetRecordingState(isRecording);
 
-        // Mic RMS → HUD recording outline. Fires ~20 Hz from the recording
-        // audio thread; OnAudioLevel pushes into a CompositionPropertySet,
-        // thread-safe per Composition's contract — no dispatcher needed.
-        // Method group so it can be unsubscribed symmetrically later if
-        // needed; no-op when the outline isn't attached (any non-Recording
-        // state), so permanent subscription is fine.
-        _engine.AudioLevel += _hudWindow.OnAudioLevel;
+                // HUD: driven by status transition. Background thread → HudWindow
+                // marshals internally via DispatcherQueue. StartsWith on every
+                // branch so transient ellipsis variants ("Transcribing…",
+                // "Rewriting (cleanup)…") all route correctly.
+                if (status.StartsWith("Recording"))
+                    _hudWindow.ShowRecording();
+                else if (status.StartsWith("Transcribing"))
+                    _hudWindow.SwitchToTranscribing();
+                else if (status.StartsWith("Rewriting"))
+                    _hudWindow.SwitchToRewriting();
+            };
+            _engine.TranscriptionFinished += outcome =>
+            {
+                switch (outcome)
+                {
+                    case TranscriptionOutcome.Pasted:
+                        // UIA confirmed the focused element accepts text and the
+                        // Ctrl+V was sent. Brief success flash, then auto-hide.
+                        _hudWindow.ShowPasted();
+                        break;
+                    case TranscriptionOutcome.ClipboardOnly:
+                        // Paste skipped (UIA unsure, foreground = Deckle, no focus,
+                        // SendInput partial…) — tell the user the text is on the
+                        // clipboard and keep the HUD up long enough to read.
+                        _hudWindow.ShowCopied();
+                        break;
+                    default:
+                        _hudWindow.Hide();
+                        break;
+                }
+            };
+            // Synchronous rendezvous just before paste: hide the HUD and wait for
+            // SW_HIDE to be effective on the UI thread before the engine sends
+            // SendInput. Avoids the race where Hide() (triggered async after paste)
+            // redistributes activation while Ctrl+V is still in the target's input queue.
+            _engine.OnReadyToPaste = () => _hudWindow.HideSync();
 
-        // Initial status — model loads on-demand at first hotkey, not at startup.
-        _tray.UpdateStatus("Ready");
+            // Mic RMS → HUD recording outline. Fires ~20 Hz from the recording
+            // audio thread; OnAudioLevel pushes into a CompositionPropertySet,
+            // thread-safe per Composition's contract — no dispatcher needed.
+            // Method group so it can be unsubscribed symmetrically later if
+            // needed; no-op when the outline isn't attached (any non-Recording
+            // state), so permanent subscription is fine.
+            _engine.AudioLevel += _hudWindow.OnAudioLevel;
+        }
+
+        // Initial status — model loads on-demand at first hotkey, not at
+        // startup. With speech unprovisioned the engine is absent, so the
+        // tooltip says so rather than implying dictation is ready.
+        string initialStatus = _engine is not null ? "Ready" : "Dictation not set up";
+        _tray.UpdateStatus(initialStatus);
         DeckleAppSource.Log.StatusChanged();
-        DeckleAppSource.Log.StatusChangedDetail("Ready");
+        DeckleAppSource.Log.StatusChangedDetail(initialStatus);
 
         // Force Ambient master toggle OFF at boot; explicit user action via
         // Settings / tray re-enables the pipeline. Louis's explicit
