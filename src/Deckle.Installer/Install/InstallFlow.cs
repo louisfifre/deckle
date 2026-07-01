@@ -181,6 +181,11 @@ internal static class InstallFlow
     // in place as the registered uninstaller.
     private static void CleanInstallFolder(string installDir)
     {
+        // Only a folder that actually holds Deckle binaries gets cleaned: stale
+        // files only exist over a previous install, and the guard keeps a mistyped
+        // custom folder (Documents, a drive root) from being emptied.
+        if (!File.Exists(Path.Combine(installDir, "Deckle.exe"))) return;
+
         string? self = Environment.ProcessPath;
         foreach (string entry in Directory.EnumerateFileSystemEntries(installDir))
         {
