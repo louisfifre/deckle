@@ -247,6 +247,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
 │   │   │   ├── BackendHealthProbe.cs
+│   │   │   ├── BackendInstallation.cs
 │   │   │   ├── BackendProcessSpec.cs
 │   │   │   ├── BackendScheduledTask.cs
 │   │   │   ├── BackendSupervisor.cs
