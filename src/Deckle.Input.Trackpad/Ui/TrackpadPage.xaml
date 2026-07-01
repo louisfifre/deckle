@@ -12,9 +12,18 @@
          StackPanel max 1000 inside a Grid, Spacing=4 between cards, and
          section headers in BodyStrong with Margin 1,30,0,6.
 
-         The drag speed is the module's primary control, so it gets its
-         own always-visible card (greyed while the feature is off) rather
-         than hiding in a disclosure. -->
+         The persisted settings (three-finger drag master, drag speed,
+         raw-frame recording) are no longer hand-authored here: they are
+         declared as SettingDescriptors in TrackpadViewModel.Settings.cs
+         and the SettingsComposer builds their SettingsCards into the host
+         panels below. The Windows-integration acts stay hand-authored —
+         they are imperative commands with their own success reporting, not
+         settable values the composer can drive.
+
+         A flat composition, no master-child group: the drag-speed card is
+         no longer greyed while the feature is off — by decision the three
+         persisted settings compose as independent leaves, each with its
+         own inline reset off the POCO default. -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -23,18 +32,6 @@
             <Style.Setters>
                 <Setter Property="Margin" Value="1,30,0,6" />
             </Style.Setters>
-        </Style>
-
-        <!-- Slider value readout, sitting to the right of each slider so
-             the current value is always visible in its unit. Mirrors
-             AmbientPage's SliderValueTextStyle. -->
-        <Style x:Key="SliderValueTextStyle"
-               BasedOn="{StaticResource BodyTextBlockStyle}"
-               TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="MinWidth" Value="48" />
-            <Setter Property="TextAlignment" Value="Right" />
-            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         </Style>
     </Page.Resources>
 
@@ -60,27 +57,21 @@
                 <TextBlock x:Uid="TrackpadPage_Section_Drag"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsCard x:Uid="TrackpadPage_DragCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.Enabled, Mode=TwoWay}" />
-                </controls:SettingsCard>
+                <!-- Composed region — the master toggle + drag-speed slider,
+                     declared in TrackpadViewModel.Settings.cs and built here by
+                     ComposeSettings(). A flat list (no master-child greying); each
+                     card carries its own inline reset off its POCO default. -->
+                <StackPanel x:Name="DragHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- The primary control of the module — always visible,
-                     greyed while the drag is off. -->
-                <controls:SettingsCard x:Uid="TrackpadPage_SpeedCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Tuning}}"
-                                       IsEnabled="{x:Bind ViewModel.Enabled, Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Slider Width="220"
-                                Minimum="0.25"
-                                Maximum="3.0"
-                                StepFrequency="0.05"
-                                SnapsTo="StepValues"
-                                Value="{x:Bind ViewModel.DragSpeed, Mode=TwoWay}" />
-                        <TextBlock Style="{StaticResource SliderValueTextStyle}"
-                                   Text="{x:Bind ViewModel.DragSpeedLabel, Mode=OneWay}" />
-                    </StackPanel>
-                </controls:SettingsCard>
+                <!-- ── Diagnostics ──────────────────────────────────────────── -->
+                <TextBlock x:Uid="TrackpadPage_Section_Diagnostics"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <!-- Raw-frame recording — independent of the master, in its own
+                     composed section so it keeps its "Diagnostics" heading. -->
+                <StackPanel x:Name="DiagnosticsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Windows integration ──────────────────────────────────── -->
                 <TextBlock x:Uid="TrackpadPage_Section_Windows"
@@ -115,15 +106,6 @@
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
                     <ToggleSwitch x:Name="ElevatedToggle"
                                   Toggled="ElevatedToggle_Toggled" />
-                </controls:SettingsCard>
-
-                <!-- ── Diagnostics ──────────────────────────────────────────── -->
-                <TextBlock x:Uid="TrackpadPage_Section_Diagnostics"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <controls:SettingsCard x:Uid="TrackpadPage_RecordFramesCard"
-                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AudioRecording}}">
-                    <ToggleSwitch IsOn="{x:Bind ViewModel.RecordFrames, Mode=TwoWay}" />
                 </controls:SettingsCard>
 
             </StackPanel>

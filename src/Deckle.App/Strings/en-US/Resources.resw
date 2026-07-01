@@ -134,8 +134,17 @@
   <data name="Common_Reset" xml:space="preserve">
     <value>Reset</value>
   </data>
+  <!-- Tooltip on the composer's per-card / per-group reset wheel. Composer-owned
+       and module-agnostic: resolved from this root map by SettingsComposer, so
+       every composed page across every module shares this one string. -->
+  <data name="SettingsComposer_ResetToDefault" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
   <data name="Common_Remove" xml:space="preserve">
     <value>Remove</value>
+  </data>
+  <data name="Common_Replace" xml:space="preserve">
+    <value>Replace</value>
   </data>
   <data name="Common_Keep" xml:space="preserve">
     <value>Keep</value>
@@ -1295,6 +1304,14 @@
     <value>This will restore every transcription setting on this page to its default value.</value>
   </data>
 
+  <!-- DiagnosticsPage Telemetry reset dialog -->
+  <data name="Settings_ResetTelemetryDialog_Title" xml:space="preserve">
+    <value>Reset telemetry settings?</value>
+  </data>
+  <data name="Settings_ResetTelemetryDialog_Content" xml:space="preserve">
+    <value>Every telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+  </data>
+
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
   <data name="Settings_ResetLlmDialog_Title" xml:space="preserve">
     <value>Reset all rewriting settings?</value>
@@ -1304,14 +1321,6 @@
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
     <value>Start Ollama or check the endpoint setting ({0}).</value>
-  </data>
-
-  <!-- LlmShortcutSlotsSection Reset dialog -->
-  <data name="Settings_ResetShortcutsDialog_Title" xml:space="preserve">
-    <value>Reset shortcuts to (None)?</value>
-  </data>
-  <data name="Settings_ResetShortcutsDialog_Content" xml:space="preserve">
-    <value>Both rewrite shortcuts will be unbound. The hotkeys keep working — they'll just trigger a transcription without a rewrite until you assign a profile again.</value>
   </data>
 
   <!-- LlmRulesSection -->
@@ -1334,9 +1343,6 @@
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
     <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked — they're not deleted, they go blank until you reassign them.</value>
-  </data>
-  <data name="Settings_RemoveProfileDialog_CloseButton" xml:space="preserve">
-    <value>Keep</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>
@@ -1485,8 +1491,11 @@
   <data name="AmbientHue_ForgetDialog_PrimaryButton" xml:space="preserve">
     <value>Forget bridge</value>
   </data>
-  <data name="AmbientHue_ForgetDialog_CloseButton" xml:space="preserve">
-    <value>Cancel</value>
+  <data name="AmbientHue_RepairDialog_Title" xml:space="preserve">
+    <value>Replace the paired bridge?</value>
+  </data>
+  <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
+    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
   <!-- ── TrackpadPage code-behind (Loc.Get) ──────

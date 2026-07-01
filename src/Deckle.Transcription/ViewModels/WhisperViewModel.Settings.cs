@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
+using Deckle.Core;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
@@ -28,6 +29,46 @@ namespace Deckle.Transcription;
 // float LevelWindow fields.
 public partial class WhisperViewModel
 {
+    // GPU acceleration — the flat toggle under the "Model engine" header. It was
+    // hand-authored as a lone SettingsCard with its own reset; it composes as a
+    // single leaf Toggle into a host, exactly the shape it had. The default reads
+    // the EngineSettings POCO initializer (the single source SettingsService
+    // persists), so the composed per-card reset goes active exactly when the value
+    // leaves that default. The x:Uid is the same the hand-authored card carried, so
+    // the composer resolves the identical Header/Description from this module's
+    // .resw. UseGpu is restart-coupled, but the RESTART FOOTER stays bespoke: it
+    // watches VM.UseGpu directly, and the composer drives that same VM property, so
+    // a composed toggle still trips the footer.
+    public IReadOnlyList<SettingDescriptor> UseGpuSettingsManifest =>
+    [
+        Setting.Toggle("WhisperUseGpuCard",
+            () => UseGpu,
+            value => UseGpu = value,
+            glyph: Glyphs.Gpu,
+            defaultValue: () => new EngineSettings().UseGpu),
+    ];
+
+    // Models directory — the editable folder path that was hand-authored as a
+    // FolderPickerEditableCard nested in the Model expander, with a RightContent
+    // reset and a code-behind-set DefaultPath. It composes as a single Path leaf
+    // with FolderPickerMode.Editable: the composer's own Path reset replaces the
+    // hand-authored RightContent reset + its hover wiring, and PathArgs.DefaultPath
+    // carries the deferred AppPaths lookup the code-behind used to set imperatively
+    // (resolved once at compose time). The default value is the TranscriptionSettings
+    // POCO initializer ("" = fall back to AppPaths.ModelsDirectory), so the reset
+    // goes active exactly when the user has repointed the folder. The x:Uid reuses
+    // the hand-authored WhisperModelsDirCard, so the Header/Description resolve from
+    // this module's .resw unchanged.
+    public IReadOnlyList<SettingDescriptor> ModelsDirectorySettingsManifest =>
+    [
+        Setting.Path("WhisperModelsDirCard",
+            () => ModelsDirectory,
+            value => ModelsDirectory = value,
+            new PathArgs(FolderPickerMode.Editable, DefaultPath: () => AppPaths.ModelsDirectory),
+            glyph: Glyphs.Folder,
+            defaultValue: () => new TranscriptionSettings().ModelsDirectory),
+    ];
+
     // Voice activity detection — the Silero pre-trim fold. The master is the
     // VadEnabled toggle; the four detection parameters are its children, hidden by
     // the composer while the master is off (it composes the master into each
@@ -125,5 +166,139 @@ public partial class WhisperViewModel
             ],
             glyph: Glyphs.Tuning,
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
+    ];
+
+    // Output filters — the three flat cards under the "Output filters" section
+    // header. No master toggle and no group: this section was hand-authored as a
+    // run of independent SettingsCards under a section TextBlock, so it composes as
+    // a FLAT list of leaf descriptors into a host panel — the composer renders each
+    // as a top-level card, exactly the shape it had. The header/description keys are
+    // the same x:Uid the hand-authored cards carried (the composer resolves them
+    // from this module's .resw), so the existing copy is reused verbatim.
+    //
+    // SuppressRegex is a one-line free-text field; its placeholder reuses the
+    // WhisperSuppressRegexBox.PlaceholderText the hand-authored TextBox carried —
+    // resolved here through Loc.GetFromOptional against this module's .resw, since the
+    // composed TextBox has no x:Uid of its own to auto-resolve it. Defaults read the
+    // OutputFilterSettings POCO initializer, the single source SettingsService
+    // persists, so each card's reset goes active exactly when the value leaves it.
+    public IReadOnlyList<SettingDescriptor> OutputFilterSettingsManifest =>
+    [
+        Setting.Toggle("WhisperSuppressNstCard",
+            () => SuppressNonSpeechTokens,
+            value => SuppressNonSpeechTokens = value,
+            glyph: Glyphs.Filter,
+            defaultValue: () => new OutputFilterSettings().SuppressNonSpeechTokens),
+        Setting.Toggle("WhisperSuppressBlankCard",
+            () => SuppressBlank,
+            value => SuppressBlank = value,
+            glyph: Glyphs.Filter,
+            defaultValue: () => new OutputFilterSettings().SuppressBlank),
+        Setting.Text("WhisperSuppressRegexCard",
+            () => SuppressRegex,
+            value => SuppressRegex = value,
+            new TextArgs(Placeholder: Loc.GetFromOptional("Deckle.Transcription", "WhisperSuppressRegexBox/PlaceholderText")),
+            glyph: Glyphs.Pattern,
+            defaultValue: () => new OutputFilterSettings().SuppressRegex),
+    ];
+
+    // Context and segmentation — the two flat cards under the "Context and
+    // segmentation" section header. Same flat-list shape as the output filters:
+    // independent cards under a section TextBlock, composed as leaf descriptors into
+    // a host. UseContext is a Toggle; MaxTokens is a Number whose -1..448 range and
+    // 1/10 nudges are copied verbatim from the hand-authored NumberBox (the VM's
+    // OnMaxTokensChanged NaN-guard is the same guard the composer's BuildNumber
+    // applies, so a cleared field never persists). Defaults read the ContextSettings
+    // POCO initializer; the header/description keys match the hand-authored x:Uids.
+    public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
+    [
+        Setting.Toggle("WhisperUseContextCard",
+            () => UseContext,
+            value => UseContext = value,
+            glyph: Glyphs.Context,
+            defaultValue: () => new ContextSettings().UseContext),
+        Setting.Number("WhisperMaxTokensCard",
+            () => MaxTokens,
+            value => MaxTokens = value,
+            new NumberArgs(-1, 448, 1, 10),
+            glyph: Glyphs.Tokens,
+            defaultValue: () => new ContextSettings().MaxTokens),
+    ];
+
+    // Decoding — the master-less fold that was hand-authored as a SettingsExpander
+    // with no toggle (WhisperDecodingExpander), now a Section: a header+chevron
+    // grouping whose children are composed cards, with no master to gate them.
+    // UseBeamSearch and BeamSize were runtime-only until now — surfaced as VM
+    // properties above and exposed here; BeamSize is hidden by its VisibleWhen while
+    // beam search is off (mask, never grey), its 1..10 range a sensible default
+    // (the hand-authored UI never exposed it). Temperature/TemperatureIncrement keep
+    // the Slider kind and the verbatim 0..1 / 0.1-step bounds the hand-authored
+    // sliders carried. TemperatureIncrement carries the EXISTING fallback-disabled
+    // warning as an Advisory: the composer renders it as a flat note row under the
+    // card when the step is 0, reusing the WhisperTemperatureIncrementWarning copy
+    // (the former standalone InfoBar). All defaults read the DecodingSettings POCO
+    // initializer — the single source SettingsService persists. The section's
+    // header/description reuse the hand-authored WhisperDecodingExpander x:Uid.
+    public IReadOnlyList<SettingDescriptor> DecodingSettingsManifest =>
+    [
+        Setting.Section("WhisperDecodingExpander",
+            [
+                Setting.Toggle("WhisperUseBeamSearchCard",
+                    () => UseBeamSearch,
+                    value => UseBeamSearch = value,
+                    defaultValue: () => new DecodingSettings().UseBeamSearch),
+                Setting.Number("WhisperBeamSizeCard",
+                    () => BeamSize,
+                    value => BeamSize = value,
+                    new NumberArgs(1, 10, 1, 1),
+                    visibleWhen: () => UseBeamSearch,
+                    defaultValue: () => new DecodingSettings().BeamSize),
+                Setting.Slider("WhisperTemperatureCard",
+                    () => Temperature,
+                    value => Temperature = value,
+                    new SliderArgs(0, 1, 0.1),
+                    defaultValue: () => new DecodingSettings().Temperature),
+                Setting.Slider("WhisperTemperatureIncrementCard",
+                    () => TemperatureIncrement,
+                    value => TemperatureIncrement = value,
+                    new SliderArgs(0, 1, 0.1),
+                    defaultValue: () => new DecodingSettings().TemperatureIncrement,
+                    advisory: () => TemperatureIncrement == 0
+                        ? Loc.GetFromOptional("Deckle.Transcription", "WhisperTemperatureIncrementWarning/Message")
+                        : null),
+            ],
+            glyph: Glyphs.Tuning),
+    ];
+
+    // Confidence thresholds — the second master-less fold (WhisperConfidenceExpander),
+    // now a Section. The three thresholds keep the Slider kind; the Min/Max/step the
+    // code-behind set imperatively to dodge the WinUI XAML-trimming parser crash
+    // (Minimum > defaultValue in XAML) move INTO SliderArgs here, where a code-built
+    // control sets them without that parser ever seeing them — so the workaround
+    // retires. Bounds verbatim: Entropy 1.5..3.5 step 0.1; Logprob -1.5..-0.4 step
+    // 0.05; NoSpeech 0.05..0.80 step 0.05. Defaults read the ConfidenceSettings POCO
+    // initializer; the section's header/description reuse the WhisperConfidenceExpander
+    // x:Uid.
+    public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
+    [
+        Setting.Section("WhisperConfidenceExpander",
+            [
+                Setting.Slider("WhisperEntropyCard",
+                    () => EntropyThreshold,
+                    value => EntropyThreshold = value,
+                    new SliderArgs(1.5, 3.5, 0.1),
+                    defaultValue: () => new ConfidenceSettings().EntropyThreshold),
+                Setting.Slider("WhisperLogprobCard",
+                    () => LogprobThreshold,
+                    value => LogprobThreshold = value,
+                    new SliderArgs(-1.5, -0.4, 0.05),
+                    defaultValue: () => new ConfidenceSettings().LogprobThreshold),
+                Setting.Slider("WhisperNoSpeechCard",
+                    () => NoSpeechThreshold,
+                    value => NoSpeechThreshold = value,
+                    new SliderArgs(0.05, 0.80, 0.05),
+                    defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
+            ],
+            glyph: Glyphs.Diagnostics),
     ];
 }

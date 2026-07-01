@@ -967,6 +967,18 @@
   <data name="WhisperMaxTokensCard.Description" xml:space="preserve">
     <value>Limit how much text can be generated for each segment. Default: -1 (auto).</value>
   </data>
+  <data name="WhisperUseBeamSearchCard.Header" xml:space="preserve">
+    <value>Beam search</value>
+  </data>
+  <data name="WhisperUseBeamSearchCard.Description" xml:space="preserve">
+    <value>Explore several hypotheses in parallel and keep the best overall sequence. Higher quality than greedy decoding, at the cost of latency. Default: on.</value>
+  </data>
+  <data name="WhisperBeamSizeCard.Header" xml:space="preserve">
+    <value>Beam size</value>
+  </data>
+  <data name="WhisperBeamSizeCard.Description" xml:space="preserve">
+    <value>How many hypotheses beam search explores at once. Higher is slower but can recover more accurate phrasing. Default: 5.</value>
+  </data>
   <data name="WhisperTemperatureCard.Header" xml:space="preserve">
     <value>Temperature</value>
   </data>

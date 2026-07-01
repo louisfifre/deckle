@@ -313,6 +313,24 @@ public sealed partial class AmbientPage : Page
             return;
         }
 
+        // Re-pairing over a LIVE pairing is destructive: PairAsync overwrites the
+        // persisted ip/id/username, dropping the bridge we currently hold. So gate
+        // it behind the shared destructive-confirm — but ONLY when a bridge is
+        // already paired. The very first pairing has nothing to lose and stays
+        // friction-free. Wording lives under AmbientHue_RepairDialog_* (mirrored in
+        // Deckle.App); the service owns the Cancel verb.
+        if (HuePairingService.Instance.IsPaired)
+        {
+            bool confirmed = await ConfirmationService.RequestAsync(
+                this.XamlRoot,
+                new ConfirmationRequest(
+                    Loc.Get("AmbientHue_RepairDialog_Title"),
+                    Loc.Get("AmbientHue_RepairDialog_Content"),
+                    Loc.Get("Common_Replace"),
+                    IsDestructive: true));
+            if (!confirmed) return;
+        }
+
         try { _huePairCts?.Cancel(); } catch { /* best effort */ }
         _huePairCts?.Dispose();
         _huePairCts = new CancellationTokenSource();
@@ -416,23 +434,18 @@ public sealed partial class AmbientPage : Page
 
     private async void OnHueForgetClick(object sender, RoutedEventArgs e)
     {
-        // Modal confirmation before clearing the pairing — matches
-        // Microsoft's official guidance for destructive actions
-        // (confirm in a ContentDialog rather than rely on the button
-        // colour alone). Wording lives in Strings/en-US/Resources.resw
-        // under the AmbientHue_ForgetDialog_* keys.
-        var dialog = new ContentDialog
-        {
-            Title             = Loc.Get("AmbientHue_ForgetDialog_Title"),
-            Content           = Loc.Get("AmbientHue_ForgetDialog_Content"),
-            PrimaryButtonText = Loc.Get("AmbientHue_ForgetDialog_PrimaryButton"),
-            CloseButtonText   = Loc.Get("AmbientHue_ForgetDialog_CloseButton"),
-            DefaultButton     = ContentDialogButton.Close,
-            XamlRoot          = this.XamlRoot,
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary) return;
+        // Clearing the pairing goes through the shared destructive-confirm gate
+        // (Close is the default button; the verb must be reached on purpose).
+        // Wording lives in Strings/en-US/Resources.resw under the
+        // AmbientHue_ForgetDialog_* keys; the service owns the Cancel verb.
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("AmbientHue_ForgetDialog_Title"),
+                Loc.Get("AmbientHue_ForgetDialog_Content"),
+                Loc.Get("AmbientHue_ForgetDialog_PrimaryButton"),
+                IsDestructive: true));
+        if (!confirmed) return;
 
         HuePairingService.Instance.Forget();
         // SyncHueBridgeUi fires via BridgeChanged event ; we just clear

@@ -18,9 +18,11 @@ public sealed partial class LlmGeneralSection : UserControl
 
     public event EventHandler? EndpointChanged;
 
-    // Exposed as a DependencyProperty so LlmPage can bind the IsEnabled of
-    // dependent sections (endpoint, shortcut slots, rules, profiles, models)
-    // to this master toggle via x:Bind OneWay.
+    // Exposed as a DependencyProperty so LlmPage (and this control's own
+    // endpoint expander) can bind the Visibility of dependent sections
+    // (endpoint, shortcut slots, rules, profiles, models) to this master
+    // toggle via x:Bind OneWay through a bool→Visibility converter — masking,
+    // not greying, per the mask-not-grey doctrine.
     public static readonly DependencyProperty IsRewritingEnabledProperty =
         DependencyProperty.Register(
             nameof(IsRewritingEnabled),

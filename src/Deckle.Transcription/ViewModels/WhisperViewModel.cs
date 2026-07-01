@@ -134,10 +134,30 @@ public partial class WhisperViewModel : ObservableObject
     // ── Decoding ─────────────────────────────────────────────────────────────
 
     [ObservableProperty]
+    public partial bool UseBeamSearch { get; set; }
+
+    [ObservableProperty]
+    public partial double BeamSize { get; set; }
+
+    [ObservableProperty]
     public partial double Temperature { get; set; }
 
     [ObservableProperty]
     public partial double TemperatureIncrement { get; set; }
+
+    partial void OnUseBeamSearchChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Decoding.UseBeamSearch", value.ToString());
+        PushToSettings();
+    }
+
+    partial void OnBeamSizeChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleWhispSource.Log.SettingChanged("Decoding.BeamSize", ((int)value).ToString());
+        PushToSettings();
+    }
 
     partial void OnTemperatureChanged(double value)
     {
@@ -344,6 +364,8 @@ public partial class WhisperViewModel : ObservableObject
         VadMinSpeechDurationMs = 250;
         VadMinSilenceDurationMs = 100;
         VadSpeechPadMs = 30;
+        UseBeamSearch = true;
+        BeamSize = 5;
         Temperature = 0.0;
         TemperatureIncrement = 0.2;
         EntropyThreshold = 2.4;
@@ -387,6 +409,8 @@ public partial class WhisperViewModel : ObservableObject
             VadMinSpeechDurationMs = s.Streaming.SpeechTrim.MinSpeechDurationMs;
             VadMinSilenceDurationMs = s.Streaming.SpeechTrim.MinSilenceDurationMs;
             VadSpeechPadMs = s.Streaming.SpeechTrim.SpeechPadMs;
+            UseBeamSearch = s.Decoding.UseBeamSearch;
+            BeamSize = s.Decoding.BeamSize;
             Temperature = s.Decoding.Temperature;
             TemperatureIncrement = s.Decoding.TemperatureIncrement;
             EntropyThreshold = s.Confidence.EntropyThreshold;
@@ -430,6 +454,9 @@ public partial class WhisperViewModel : ObservableObject
 
         s.Decoding.Temperature = Temperature;
         s.Decoding.TemperatureIncrement = TemperatureIncrement;
+        s.Decoding.UseBeamSearch = UseBeamSearch;
+        if (!double.IsNaN(BeamSize))
+            s.Decoding.BeamSize = (int)BeamSize;
 
         s.Confidence.EntropyThreshold = EntropyThreshold;
         s.Confidence.LogprobThreshold = LogprobThreshold;

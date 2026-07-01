@@ -83,32 +83,29 @@ public sealed partial class LlmProfilesSection : UserControl
         // protects rule thresholds (which are real work to redefine) at the
         // cost of a temporarily blank ComboBox SelectedItem until the user
         // notices and picks a replacement.
-        var dialog = new ContentDialog
-        {
-            Title = Loc.Get("Settings_RemoveProfileDialog_Title"),
-            Content = Loc.Format("Settings_RemoveProfileDialog_Content_Format", vm.Name),
-            PrimaryButtonText = Loc.Get("Common_Remove"),
-            CloseButtonText = Loc.Get("Settings_RemoveProfileDialog_CloseButton"),
-            DefaultButton = ContentDialogButton.Close,
-            XamlRoot = this.XamlRoot
-        };
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_RemoveProfileDialog_Title"),
+                Loc.Format("Settings_RemoveProfileDialog_Content_Format", vm.Name),
+                Loc.Get("Common_Remove"),
+                IsDestructive: true));
+        if (!confirmed)
+            return;
 
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        var profiles = LlmSettingsService.Instance.Current.Profiles;
+        if (vm.ProfileIndex < profiles.Count)
         {
-            var profiles = LlmSettingsService.Instance.Current.Profiles;
-            if (vm.ProfileIndex < profiles.Count)
-            {
-                profiles.RemoveAt(vm.ProfileIndex);
-                // Surviving rules whose ids drifted (e.g. the deleted
-                // profile shared a name with another one — unlikely, but
-                // harmless to re-pair) get reconciled against the remaining
-                // Profiles list. Migrate never deletes a rule on its own.
-                LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
-                LlmSettingsService.Instance.Save();
-            }
-            Reload();
-            ProfilesChanged?.Invoke(this, EventArgs.Empty);
+            profiles.RemoveAt(vm.ProfileIndex);
+            // Surviving rules whose ids drifted (e.g. the deleted
+            // profile shared a name with another one — unlikely, but
+            // harmless to re-pair) get reconciled against the remaining
+            // Profiles list. Migrate never deletes a rule on its own.
+            LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
+            LlmSettingsService.Instance.Save();
         }
+        Reload();
+        ProfilesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     // ── TextChanged → push value immediately for live auto-save ────────────
@@ -224,17 +221,14 @@ public sealed partial class LlmProfilesSection : UserControl
     // reload Rules + ShortcutSlots.
     private async void ResetSection_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ContentDialog
-        {
-            Title = Loc.Get("Settings_ResetProfilesDialog_Title"),
-            Content = Loc.Get("Settings_ResetProfilesDialog_Content"),
-            PrimaryButtonText = Loc.Get("Common_Reset"),
-            CloseButtonText = Loc.Get("Common_Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-            XamlRoot = this.XamlRoot
-        };
-
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetProfilesDialog_Title"),
+                Loc.Get("Settings_ResetProfilesDialog_Content"),
+                Loc.Get("Common_Reset"),
+                IsDestructive: true));
+        if (!confirmed)
             return;
 
         var defaults = new LlmSettings();

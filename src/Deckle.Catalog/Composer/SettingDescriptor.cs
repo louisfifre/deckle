@@ -62,6 +62,16 @@ public sealed record SettingDescriptor
     public Func<bool>? EnabledWhen { get; init; }
     public Func<bool>? VisibleWhen { get; init; }
 
+    // Optional inline advisory, re-evaluated on every refresh exactly like
+    // EnabledWhen/VisibleWhen. The function inspects the current value and returns
+    // the contextual message to surface under the card — a caution ("temperature
+    // increment is 0", so the stepper does nothing) or a validation ("invalid URL",
+    // "name is empty") — or null when there is nothing to say. One channel, no
+    // warning/error split: the wording carries the tone (the composer renders it in
+    // a single InfoBar). Null for the vast majority of settings, which have no
+    // contextual message; a leaf opts in by supplying the selector.
+    public Func<string?>? Advisory { get; init; }
+
     // Optional gate run ONLY on the OFF→ON transition, before the enable is
     // allowed to persist — its Task<bool> resolving true lets the value flip on,
     // false leaves it off and writes nothing. Turning the setting back off never

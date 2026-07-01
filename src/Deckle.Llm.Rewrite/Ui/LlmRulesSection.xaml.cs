@@ -363,16 +363,14 @@ public sealed partial class LlmRulesSection : UserControl
     // by design (see MigrateProfileIds for why we never silently drop rules).
     private async void ResetSection_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ContentDialog
-        {
-            Title = Loc.Get("Settings_ResetRulesDialog_Title"),
-            Content = Loc.Get("Settings_ResetRulesDialog_Content"),
-            PrimaryButtonText = Loc.Get("Common_Reset"),
-            CloseButtonText   = Loc.Get("Common_Cancel"),
-            DefaultButton     = ContentDialogButton.Close,
-            XamlRoot          = this.XamlRoot
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetRulesDialog_Title"),
+                Loc.Get("Settings_ResetRulesDialog_Content"),
+                Loc.Get("Common_Reset"),
+                IsDestructive: true));
+        if (!confirmed)
             return;
 
         var defaults = new LlmSettings();

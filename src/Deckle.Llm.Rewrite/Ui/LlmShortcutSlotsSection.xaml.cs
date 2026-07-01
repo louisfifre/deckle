@@ -2,7 +2,6 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Llm;
-using Deckle.Catalog;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -105,20 +104,13 @@ public sealed partial class LlmShortcutSlotsSection : UserControl
     // Scope: Primary/Secondary rewrite slot bindings only. The Profiles list
     // itself stays untouched — resetting the shortcut picks should not wipe
     // user-authored profiles.
-    private async void ResetSection_Click(object sender, RoutedEventArgs e)
+    //
+    // No confirmation: this reset is REVERSIBLE — it only puts the two slots back
+    // to (None), destroying nothing the user can't re-pick in a click. By the
+    // doctrine (confirm destructive actions, not reversible ones — same as the
+    // General page's section resets), it runs straight through.
+    private void ResetSection_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ContentDialog
-        {
-            Title = Loc.Get("Settings_ResetShortcutsDialog_Title"),
-            Content = Loc.Get("Settings_ResetShortcutsDialog_Content"),
-            PrimaryButtonText = Loc.Get("Common_Reset"),
-            CloseButtonText = Loc.Get("Common_Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-            XamlRoot = this.XamlRoot
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
-            return;
-
         var defaults = new LlmSettings();
         var s = LlmSettingsService.Instance.Current;
         s.PrimaryRewriteProfileName   = defaults.PrimaryRewriteProfileName;

@@ -285,8 +285,15 @@
   <data name="AmbientHue_ForgetDialog_PrimaryButton" xml:space="preserve">
     <value>Forget bridge</value>
   </data>
-  <data name="AmbientHue_ForgetDialog_CloseButton" xml:space="preserve">
-    <value>Cancel</value>
+
+  <!-- Re-pair confirmation dialog. Only shown when a bridge is ALREADY
+       paired : a fresh pairing has nothing to lose and skips it. Microsoft
+       destructive pattern : confirm-then-act, Replace is the action verb. -->
+  <data name="AmbientHue_RepairDialog_Title" xml:space="preserve">
+    <value>Replace the paired bridge?</value>
+  </data>
+  <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
+    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
 </root>

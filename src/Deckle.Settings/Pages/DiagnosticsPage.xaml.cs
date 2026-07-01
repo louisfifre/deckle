@@ -18,7 +18,9 @@ namespace Deckle.Settings;
 // folder) that previously crowded GeneralPage's bottom half. Same
 // patterns as GeneralPage : NavigationCacheMode.Required, _initializing
 // guard around the initial sync pass, per-toggle consent flow with
-// _suppress* re-entry guards.
+// _suppress* re-entry guards. The Application log / Microphone / Latency
+// opt-ins and the storage-folder path are composed from the ViewModel's
+// manifests; the Corpus and Autocorrect expanders stay hand-authored.
 public sealed partial class DiagnosticsPage : Page
 {
     public DiagnosticsViewModel ViewModel { get; } = new();
@@ -39,6 +41,7 @@ public sealed partial class DiagnosticsPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeTelemetrySection();
+        ComposeStorageFolderSection();
         LoadAndSync();
     }
 
@@ -59,21 +62,40 @@ public sealed partial class DiagnosticsPage : Page
         _loggingComposer.Compose(ViewModel.LoggingSettings);
     }
 
-    // ── Composed Telemetry card ───────────────────────────────────────────────
+    // ── Composed Telemetry section ────────────────────────────────────────────
     //
-    // Same host-only pattern as the Logging section, but a single composable card:
-    // the Latency opt-in is the one plain TwoWay toggle in the Telemetry group. Its
-    // neighbours (Application log, Microphone, Corpus, Storage folder) each carry a
-    // consent dialog, a nested expander, a choice, or a folder path, so they remain
-    // hand-authored in the XAML around this host. Composed before LoadAndSync so the
-    // composer's PropertyChanged subscription catches Load(); held in a field so the
-    // subscription lives as long as the (cached) page.
+    // Same host-only pattern as the Logging section. Three composable rows: the
+    // Application log and Microphone consent opt-ins (their off→on dialog carried by
+    // a confirmOnEnable gate the composer runs) and the plain Latency toggle. Their
+    // remaining neighbours (the Corpus and Autocorrect expanders) are nested layouts
+    // the composer doesn't build, so they stay hand-authored in the XAML around this
+    // host; the storage-folder path composes into its own host below. Composed before
+    // LoadAndSync so the composer's PropertyChanged subscription catches Load(); held
+    // in a field so the subscription lives as long as the (cached) page.
     private SettingsComposer? _telemetryComposer;
 
     private void ComposeTelemetrySection()
     {
         _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
         _telemetryComposer.Compose(ViewModel.TelemetrySettings);
+    }
+
+    // ── Composed Storage-folder card ──────────────────────────────────────────
+    //
+    // The telemetry storage-folder path, a Path descriptor composed through the
+    // shared FolderPickerCard (resolved by the composer's PathControlFactory). Its
+    // own host — separate from the telemetry toggles above — because it keeps its
+    // former slot BELOW the Corpus/Autocorrect expanders. The picker's empty-value
+    // DefaultPath (<UserDataRoot>\telemetry\) now travels in the descriptor's
+    // PathArgs, so the old SyncFolderPickerDefault code-behind push is gone. Composed
+    // before LoadAndSync so its PropertyChanged subscription catches Load(); held in
+    // a field so the subscription lives as long as the (cached) page.
+    private SettingsComposer? _storageFolderComposer;
+
+    private void ComposeStorageFolderSection()
+    {
+        _storageFolderComposer = new SettingsComposer(StorageFolderHost, ViewModel);
+        _storageFolderComposer.Compose(ViewModel.StorageFolderSettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -86,22 +108,11 @@ public sealed partial class DiagnosticsPage : Page
     {
         _initializing = true;
         ViewModel.Load();
-        SyncFolderPickerDefault();
         DispatcherQueue.TryEnqueueObserved(
             operation: "init-flag-clear", caller: "diagnostics-page",
             callback: () => _initializing = false,
             rejectSource: "SETTINGS", rejectWhat: "init flag",
             priority: DispatcherQueuePriority.Low);
-    }
-
-    // FolderPickerCard.DefaultPath drives the read-only display when
-    // TelemetryStorageDirectory is empty + the Open button's target.
-    // Resolves to <UserDataRoot>\telemetry\ — what
-    // CorpusPaths.GetDefaultDirectoryPath returns, which equals
-    // AppPaths.TelemetryDirectory.
-    private void SyncFolderPickerDefault()
-    {
-        TelemetryFolderPicker.DefaultPath = AppPaths.TelemetryDirectory;
     }
 
     // ── Consent flows ───────────────────────────────────────────────────────
@@ -168,8 +179,22 @@ public sealed partial class DiagnosticsPage : Page
         finally { _suppressAutocorrectTextToggle = false; }
     }
 
-    private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
+    // Telemetry reset turns every opt-in off and clears the recorded consent —
+    // user-created state, so it goes through the shared destructive-confirm gate
+    // (Close is the default button). Logging's reset stays a direct action: it
+    // only restores log toggles to defaults, nothing the user authored is lost.
+    private async void ResetTelemetry_Click(object sender, RoutedEventArgs e)
     {
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetTelemetryDialog_Title"),
+                Loc.Get("Settings_ResetTelemetryDialog_Content"),
+                Loc.Get("Common_Reset"),
+                IsDestructive: true));
+        if (!confirmed)
+            return;
+
         ViewModel.ResetTelemetryDefaults();
     }
 

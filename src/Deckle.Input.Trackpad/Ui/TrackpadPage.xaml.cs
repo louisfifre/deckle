@@ -38,11 +38,38 @@ public sealed partial class TrackpadPage : Page
     // the revert would otherwise re-enter the handler.
     private bool _suppressElevatedToggle;
 
+    // Drive the two composed section hosts. Held in fields so their subscriptions
+    // to the ViewModel live as long as the (cached) page — the same host-only
+    // pattern GeneralPage/DiagnosticsPage use.
+    private SettingsComposer? _dragComposer;
+    private SettingsComposer? _diagnosticsComposer;
+
     public TrackpadPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        ComposeSettings();
         SyncImperativeControls();
+    }
+
+    // ── Composed persisted settings ──────────────────────────────────────────
+    //
+    // Host-only, like GeneralPage's sections: the page hands each section's host
+    // panel and its manifest (declared in TrackpadViewModel.Settings.cs) to a
+    // composer — the drag section (master toggle + drag-speed slider) and the
+    // diagnostics section (raw-frame recording), one composer each so the two
+    // section headers keep their on-screen order. The composers subscribe to the
+    // ViewModel, so the controls reflect Load() (and each card's inline reset)
+    // with no code-behind sync — the change handlers still live in the VM's
+    // partial setters (Push + Save), which the composers drive through the
+    // descriptor setters.
+    private void ComposeSettings()
+    {
+        _dragComposer = new SettingsComposer(DragHost, ViewModel);
+        _dragComposer.Compose(ViewModel.TrackpadDragSettingsManifest);
+
+        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
+        _diagnosticsComposer.Compose(ViewModel.TrackpadDiagnosticsSettingsManifest);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

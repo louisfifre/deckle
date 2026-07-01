@@ -421,7 +421,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── AutocorrectPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── AutocorrectAppRow.cs
-│   │   │   └── AutocorrectViewModel.cs
+│   │   │   ├── AutocorrectViewModel.cs
+│   │   │   └── AutocorrectViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsService.cs
@@ -625,7 +626,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TrackpadPage.xaml
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
-│   │   │   └── TrackpadViewModel.cs
+│   │   │   ├── TrackpadViewModel.cs
+│   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.Trackpad.csproj
@@ -717,6 +719,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
+│   │   │   ├── BoolToVisibilityConverter.cs
 │   │   │   ├── LlmGeneralSection.xaml
 │   │   │   ├── LlmGeneralSection.xaml.cs
 │   │   │   ├── LlmModelsSection.xaml

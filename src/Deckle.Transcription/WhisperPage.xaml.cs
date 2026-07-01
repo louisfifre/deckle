@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using CommunityToolkit.WinUI.Controls;
@@ -41,15 +40,12 @@ public sealed partial class WhisperPage : Page
     private string _startupModel = "";
     private bool _startupUseGpu;
 
-    // Defaults resolved from POCOs — single source of truth for Reset.
-    // ModelsDirectory's default lives on TranscriptionSettings since slice C2b
-    // (it migrated off PathsSettings into the Whisp module's POCO).
-    private static readonly TranscriptionSettings _transcriptionDefaults = new();
+    // Defaults resolved from the Engine POCO — single source of truth for the
+    // bespoke Model / Language / InitialPrompt resets below.
     private static readonly EngineSettings _engineDefaults = new();
-    private static readonly DecodingSettings _decodingDefaults = new();
-    private static readonly ConfidenceSettings _confidenceDefaults = new();
-    private static readonly OutputFilterSettings _outputDefaults = new();
-    private static readonly ContextSettings _contextDefaults = new();
+    // ModelsDirectory's default no longer has a code-behind home either: its card is
+    // composed now, reading its default (new TranscriptionSettings().ModelsDirectory)
+    // from the manifest, like the OutputFilter / Context / Decoding / Confidence cards.
 
     public WhisperPage()
     {
@@ -58,21 +54,6 @@ public sealed partial class WhisperPage : Page
         {
             InitializeComponent();
             DeckleWhispSource.Log.PageInitComplete();
-
-            // WinUI 3 release bug: cannot set Minimum > defaultValue in XAML
-            // without a parser crash under trimming. We set Minimum (and
-            // Maximum for LogprobSlider) in code-behind. The x:Bind TwoWay
-            // binding has already set Value from the VM constructor defaults
-            // during InitializeComponent — those defaults are chosen to be
-            // valid with Minimum=0 and default Maximum, so no clamping issue
-            // except for LogprobSlider (VM default -1.0 gets clamped to 0,
-            // then to -0.4 when Maximum is set; Load() corrects it).
-            EntropySlider.Minimum = 1.5;
-            LogprobSlider.Minimum = -1.5;
-            LogprobSlider.Maximum = -0.4;
-            NoSpeechSlider.Minimum = 0.05;
-
-            DeckleWhispSource.Log.PageBuggedSliderSet();
         }
         catch (Exception ex)
         {
@@ -94,8 +75,14 @@ public sealed partial class WhisperPage : Page
         // PropertyChanged subscription is already in place to catch Load()'s refresh
         // — the same Compose-before-Load ordering RecordingPage uses. The composers
         // are held in fields so their subscriptions live as long as the cached page.
+        ComposeUseGpuSection();
+        ComposeModelsDirectorySection();
         ComposeVadSection();
         ComposeStreamingSection();
+        ComposeOutputFiltersSection();
+        ComposeContextSection();
+        ComposeDecodingSection();
+        ComposeConfidenceSection();
 
         Loaded += (_, _) =>
         {
@@ -103,46 +90,25 @@ public sealed partial class WhisperPage : Page
             try
             {
                 // Hover reveal for reset buttons — one-time setup.
-                // ModelCard is a SettingsExpander (with the Models directory
-                // as a child) so we hook PointerEntered/Exited directly,
-                // same as InitialPromptCard. WireHover only handles
-                // SettingsCard. The hover wiring on ModelCard reveals
-                // ModelReset only — ModelsDirectoryReset gets its own
-                // hover via the inner card's bubbled pointer events.
-                ModelCard.PointerEntered += (_, _) =>
-                {
-                    ModelReset.Opacity = 1;
-                    ModelsDirectoryReset.Opacity = 1;
-                };
-                ModelCard.PointerExited += (_, _) =>
-                {
-                    ModelReset.Opacity = 0;
-                    ModelsDirectoryReset.Opacity = 0;
-                };
-                WireHover(UseGpuCard, UseGpuReset);
+                // ModelCard is now a plain SettingsCard (the models directory it
+                // used to nest is composed into its own card below), so its reset
+                // reveals through the shared WireHover like Language's.
+                WireHover(ModelCard, ModelReset);
                 WireHover(LanguageCard, LanguageReset);
                 InitialPromptCard.PointerEntered += (_, _) => InitialPromptReset.Opacity = 1;
                 InitialPromptCard.PointerExited += (_, _) => InitialPromptReset.Opacity = 0;
-                // FolderPickerEditableCard.DefaultPath drives the TextBox
-                // PlaceholderText shown when ModelsDirectory is empty (the
-                // legacy "(auto)" placeholder is gone — users see the actual
-                // resolved path instead). Set once on first load; the value
-                // is stable for the lifetime of the process.
-                ModelsDirectoryPicker.DefaultPath = AppPaths.ModelsDirectory;
+                // GPU acceleration and the models directory are composed now — the
+                // composer wires each card's own per-card reset and hover reveal (and
+                // the Path card's AppPaths fallback rides in PathArgs.DefaultPath), so
+                // no WireHover or DefaultPath assignment for those cards here.
                 // The VAD fold (toggle + four Silero parameters) is composed now —
                 // the composer wires its own per-card reset reveal, so no WireHover
                 // for those cards here.
-                WireHover(TemperatureCard, TemperatureReset);
-                WireHover(TemperatureIncrementCard, TemperatureIncrementReset);
-                WireHover(EntropyCard, EntropyReset);
-                WireHover(LogprobCard, LogprobReset);
-                WireHover(NoSpeechCard, NoSpeechReset);
-                WireHover(SuppressNstCard, SuppressNstReset);
-                WireHover(SuppressBlankCard, SuppressBlankReset);
-                WireHover(UseContextCard, UseContextReset);
-                WireHover(MaxTokensCard, MaxTokensReset);
-                SuppressRegexCard.PointerEntered += (_, _) => SuppressRegexReset.Opacity = 1;
-                SuppressRegexCard.PointerExited += (_, _) => SuppressRegexReset.Opacity = 0;
+                // Output filters (SuppressNst / SuppressBlank / SuppressRegex),
+                // Context (UseContext / MaxTokens), Decoding (beam search + temperature)
+                // and Confidence (the three thresholds) are composed now — the composer
+                // wires each card's own per-card reset and hover reveal, so no WireHover
+                // for those cards here.
 
                 // React to VM property changes for side effects (restart
                 // state, model folder re-scan).
@@ -171,6 +137,29 @@ public sealed partial class WhisperPage : Page
     // so the subscription catches Load()'s refresh; held in fields so it lives as
     // long as the cached page.
 
+    // GPU acceleration and the models directory are flat, restart-neutral leaves —
+    // a lone Toggle and a lone editable Path — each composed straight into its host,
+    // the same host-only pattern as the flat sections below (composed before the
+    // first Load() so the subscription catches its refresh, held in a field for the
+    // cached page's lifetime). The composer rebuilds each card's own per-card reset
+    // and hover reveal (the Path variant carries the AppPaths fallback in PathArgs),
+    // so no WireHover or reset handler is wired here. The UseGpu toggle drives the
+    // same VM.UseGpu the restart footer watches, so it still trips the footer.
+    private SettingsComposer? _useGpuComposer;
+    private SettingsComposer? _modelsDirectoryComposer;
+
+    private void ComposeUseGpuSection()
+    {
+        _useGpuComposer = new SettingsComposer(UseGpuHost, ViewModel);
+        _useGpuComposer.Compose(ViewModel.UseGpuSettingsManifest);
+    }
+
+    private void ComposeModelsDirectorySection()
+    {
+        _modelsDirectoryComposer = new SettingsComposer(ModelsDirectoryHost, ViewModel);
+        _modelsDirectoryComposer.Compose(ViewModel.ModelsDirectorySettingsManifest);
+    }
+
     private SettingsComposer? _vadComposer;
     private SettingsComposer? _streamingComposer;
 
@@ -184,6 +173,52 @@ public sealed partial class WhisperPage : Page
     {
         _streamingComposer = new SettingsComposer(StreamingHost, ViewModel);
         _streamingComposer.Compose(ViewModel.StreamingSettings);
+    }
+
+    // Output filters and Context are FLAT sections — a run of independent cards
+    // under a section header, no master toggle — so each composes its leaf
+    // manifest straight into its host panel. Same host-only pattern as VAD/Streaming
+    // (composed before the first Load() so the subscription catches its refresh,
+    // held in a field for the cached page's lifetime), minus the group wrapper. The
+    // hand-authored cards these replace had their own per-card reset and hover reveal;
+    // the composer rebuilds both, so no WireHover or reset handler is wired here.
+
+    private SettingsComposer? _outputFiltersComposer;
+    private SettingsComposer? _contextComposer;
+
+    private void ComposeOutputFiltersSection()
+    {
+        _outputFiltersComposer = new SettingsComposer(OutputFiltersHost, ViewModel);
+        _outputFiltersComposer.Compose(ViewModel.OutputFilterSettingsManifest);
+    }
+
+    private void ComposeContextSection()
+    {
+        _contextComposer = new SettingsComposer(ContextHost, ViewModel);
+        _contextComposer.Compose(ViewModel.ContextSettingsManifest);
+    }
+
+    // Decoding and Confidence are master-less Sections — a header+chevron fold with
+    // composed children, no master toggle. Same host-only pattern as the flat
+    // sections above (composed before the first Load() so the subscription catches
+    // its refresh, held in a field for the cached page's lifetime). The slider bounds
+    // that the constructor used to set imperatively now live in the Confidence
+    // manifest's SliderArgs, and the fallback warning rides on the TemperatureIncrement
+    // card's Advisory — so neither needs any code-behind here beyond the compose call.
+
+    private SettingsComposer? _decodingComposer;
+    private SettingsComposer? _confidenceComposer;
+
+    private void ComposeDecodingSection()
+    {
+        _decodingComposer = new SettingsComposer(DecodingHost, ViewModel);
+        _decodingComposer.Compose(ViewModel.DecodingSettingsManifest);
+    }
+
+    private void ComposeConfidenceSection()
+    {
+        _confidenceComposer = new SettingsComposer(ConfidenceHost, ViewModel);
+        _confidenceComposer.Compose(ViewModel.ConfidenceSettingsManifest);
     }
 
     // NavigationCacheMode.Required reuses the page instance. Loaded + hover
@@ -234,41 +269,6 @@ public sealed partial class WhisperPage : Page
                 break;
         }
     }
-
-    // ── Slider display text ─────────────────────────────────────────────────
-    //
-    // ValueChanged fires both from user interaction and from binding updates
-    // (during Load). The handlers only update the display TextBlock — all
-    // persistence flows through the VM via x:Bind TwoWay.
-
-    private static string Fmt(double v) =>
-        v.ToString("0.0", CultureInfo.InvariantCulture);
-
-    private static string FmtTwo(double v) =>
-        v.ToString("0.00", CultureInfo.InvariantCulture);
-
-    private void TemperatureSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        TemperatureValue.Text = Fmt(e.NewValue);
-
-    private void TemperatureIncrementSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        TemperatureIncrementValue.Text = Fmt(e.NewValue);
-        TemperatureIncrementWarning.IsOpen = e.NewValue == 0.0;
-    }
-
-    private void EntropySlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        EntropyValue.Text = Fmt(e.NewValue);
-
-    private void LogprobSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        LogprobValue.Text = FmtTwo(e.NewValue);
-
-    private void NoSpeechSlider_ValueChanged(object sender,
-        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e) =>
-        NoSpeechValue.Text = FmtTwo(e.NewValue);
 
     // ── Combo handlers (Model, Language) ────────────────────────────────────
     //
@@ -419,17 +419,11 @@ public sealed partial class WhisperPage : Page
     // Set the VM property (or combo for Model/Language) → OnXChanged fires →
     // PushToSettings. For combos, SelectionChanged fires → handler sets VM.
 
-    private void ModelsDirectoryReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.ModelsDirectory = _transcriptionDefaults.ModelsDirectory;
-
     private void ModelReset_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.Model = _engineDefaults.Model;
         ModelSuggest.Text = _engineDefaults.Model;
     }
-
-    private void UseGpuReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.UseGpu = _engineDefaults.UseGpu;
 
     private void LanguageReset_Click(object sender, RoutedEventArgs e)
     {
@@ -442,35 +436,11 @@ public sealed partial class WhisperPage : Page
     private void InitialPromptReset_Click(object sender, RoutedEventArgs e) =>
         ViewModel.InitialPrompt = _engineDefaults.InitialPrompt;
 
-    private void TemperatureReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.Temperature = _decodingDefaults.Temperature;
-
-    private void TemperatureIncrementReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.TemperatureIncrement = _decodingDefaults.TemperatureIncrement;
-
-    private void EntropyReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.EntropyThreshold = _confidenceDefaults.EntropyThreshold;
-
-    private void LogprobReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.LogprobThreshold = _confidenceDefaults.LogprobThreshold;
-
-    private void NoSpeechReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.NoSpeechThreshold = _confidenceDefaults.NoSpeechThreshold;
-
-    private void SuppressNstReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.SuppressNonSpeechTokens = _outputDefaults.SuppressNonSpeechTokens;
-
-    private void SuppressBlankReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.SuppressBlank = _outputDefaults.SuppressBlank;
-
-    private void SuppressRegexReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.SuppressRegex = _outputDefaults.SuppressRegex;
-
-    private void UseContextReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.UseContext = _contextDefaults.UseContext;
-
-    private void MaxTokensReset_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.MaxTokens = _contextDefaults.MaxTokens;
+    // The output-filter (SuppressNst / SuppressBlank / SuppressRegex), context
+    // (UseContext / MaxTokens), decoding (beam search + temperature) and confidence
+    // (the three thresholds) reset handlers are gone: those cards are composed, and
+    // the composer drives each reset to its POCO-sourced default through the normal
+    // VM setter — the same round-trip these hand-authored handlers performed.
 
     // ── Restart state — highlight + footer ─────────────────────────────────
     //
@@ -521,17 +491,14 @@ public sealed partial class WhisperPage : Page
 
     private async void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ContentDialog
-        {
-            Title = Loc.Get("Settings_ResetWhisperDialog_Title"),
-            Content = Loc.Get("Settings_ResetWhisperDialog_Content"),
-            PrimaryButtonText = Loc.Get("WhisperPageResetAllLabel.Text"),
-            CloseButtonText = Loc.Get("Common_Cancel"),
-            DefaultButton = ContentDialogButton.Close,
-            XamlRoot = this.XamlRoot
-        };
-
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetWhisperDialog_Title"),
+                Loc.Get("Settings_ResetWhisperDialog_Content"),
+                Loc.Get("WhisperPageResetAllLabel.Text"),
+                IsDestructive: true));
+        if (!confirmed)
             return;
 
         DeckleWhispSource.Log.PageResetAll();

@@ -4,6 +4,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:llm="using:Deckle.Llm.Rewrite">
 
+    <Page.Resources>
+        <llm:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    </Page.Resources>
+
     <Grid Background="Transparent"
           Tapped="OnBackgroundTapped">
     <ScrollViewer Padding="32,24,32,24"
@@ -47,14 +51,19 @@
                          Margin="0,0,0,8" />
 
                 <llm:LlmGeneralSection x:Name="GeneralSection" />
+
+                <!-- Mask-not-grey: the four dependent sections collapse out of
+                     layout when rewriting is off, driven by the General master
+                     toggle. The Enabled toggle itself (in GeneralSection) stays
+                     always visible. -->
                 <llm:LlmShortcutSlotsSection x:Name="ShortcutSlotsSection"
-                                             IsEnabled="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay}" />
+                                             Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmRulesSection x:Name="RulesSection"
-                                     IsEnabled="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay}" />
+                                     Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmProfilesSection x:Name="ProfilesSection"
-                                        IsEnabled="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay}" />
+                                        Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmModelsSection x:Name="ModelsSection"
-                                      IsEnabled="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay}" />
+                                      Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
 
             </StackPanel>
         </Grid>

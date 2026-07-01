@@ -636,12 +636,6 @@
   <data name="Settings_ResetAll.Content" xml:space="preserve">
     <value>Reset all</value>
   </data>
-  <!-- Tooltip on the composer's per-card / per-group reset wheel. Read by
-       SettingsComposer.ResolveResetTooltip from the owning module's PRI subtree
-       (bare key, no x:Uid segment), so every composed page shares this one string. -->
-  <data name="SettingsComposer_ResetToDefault" xml:space="preserve">
-    <value>Reset to default</value>
-  </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
        First page in the Settings nav. Page title, page subtitle, then
@@ -1405,6 +1399,14 @@
   </data>
   <data name="Settings_ResetWhisperDialog_Content" xml:space="preserve">
     <value>This will restore every transcription setting on this page to its default value.</value>
+  </data>
+
+  <!-- DiagnosticsPage Telemetry reset dialog -->
+  <data name="Settings_ResetTelemetryDialog_Title" xml:space="preserve">
+    <value>Reset telemetry settings?</value>
+  </data>
+  <data name="Settings_ResetTelemetryDialog_Content" xml:space="preserve">
+    <value>Every telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->

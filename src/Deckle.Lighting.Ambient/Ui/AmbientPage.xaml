@@ -90,6 +90,14 @@
                     </InfoBar.ActionButton>
                 </InfoBar>
 
+                <!-- Enabled + Mode (below) are deliberately left hand-
+                     authored for now rather than composed. AmbientViewModel
+                     lives in Deckle.Playground and does not own these
+                     properties, so composing them would mean relocating the
+                     VM into Deckle.Lighting.Ambient — a module-boundary
+                     refactor deferred to the Ambient rework. Until then the
+                     event-handler style (Toggled / SelectionChanged →
+                     AmbientSettings + Save) stays as-is. -->
                 <controls:SettingsCard x:Uid="AmbientEnabledCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}">
                     <ToggleSwitch x:Name="EnabledToggle"
