@@ -21,7 +21,7 @@ namespace Deckle.Settings;
 // and degrade silently to no-op when nothing is wired (so the lib
 // remains buildable / testable in isolation).
 //
-// All five hooks are intentionally `Action<...>` / `Func<...>` rather
+// All six hooks are intentionally `Action<...>` / `Func<...>` rather
 // than a single interface — keeps the surface minimal, no boxing, and
 // each hook can be wired independently if a future host implements only
 // part of the contract (e.g. a settings preview window without a full
@@ -55,4 +55,11 @@ public static class SettingsHost
     // Deckle.Settings doesn't take a back-reference to either Deckle.App
     // or Deckle.Setup just for the wizard entry point.
     public static Action? OpenSetupWizard;
+
+    // Reports whether the speech runtime + default model are provisioned, so
+    // the Dictation page can surface a "set up" call-to-action instead of its
+    // tuning controls when they aren't. Answered by the App, which owns the
+    // provisioning knowledge — Deckle.Transcription can't see the Whisper child
+    // module. Null-safe: callers treat "unwired" as provisioned.
+    public static Func<bool>? IsSpeechProvisioned;
 }

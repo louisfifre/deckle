@@ -833,6 +833,17 @@
   <data name="WhisperPage_Subtitle" xml:space="preserve">
     <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
   </data>
+  <!-- Dictation not-provisioned call-to-action. Shown when the speech runtime
+       or model is missing; the button reopens the first-run setup wizard. -->
+  <data name="WhisperSetupInfoBar.Title" xml:space="preserve">
+    <value>Dictation isn't set up yet</value>
+  </data>
+  <data name="WhisperSetupInfoBar.Message" xml:space="preserve">
+    <value>Download the speech engine and a model to start dictating.</value>
+  </data>
+  <data name="WhisperSetupButton.Content" xml:space="preserve">
+    <value>Set up</value>
+  </data>
   <data name="WhisperPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
     <value>Reset all transcription settings to defaults</value>
   </data>

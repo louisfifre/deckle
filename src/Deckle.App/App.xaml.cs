@@ -469,6 +469,12 @@ public partial class App : Microsoft.UI.Xaml.Application
                 RestartApp("Deckle.Transcription.WhisperPage, Deckle.Transcription");
         };
 
+        // Readiness probe for the Dictation settings page's "set up" CTA. That
+        // page lives in Deckle.Transcription, which cannot see the Whisper child
+        // module, so the App — which composes both — answers here.
+        Settings.SettingsHost.IsSpeechProvisioned =
+            () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
+
         // Message-only Win32 host — invisible by construction (HWND_MESSAGE
         // parent). Hosts the tray callback, global hotkeys, and the shared
         // cursor-movement signal created right after it. Built here, before the

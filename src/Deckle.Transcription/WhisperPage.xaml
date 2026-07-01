@@ -65,6 +65,17 @@
                             HorizontalAlignment="Stretch"
                             Spacing="{StaticResource SettingsCardSpacing}">
 
+                <InfoBar x:Name="SetupInfoBar"
+                         x:Uid="WhisperSetupInfoBar"
+                         IsClosable="False"
+                         IsOpen="False"
+                         Margin="0,0,0,8">
+                    <InfoBar.ActionButton>
+                        <Button x:Uid="WhisperSetupButton"
+                                Click="OnSetupClick" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
