@@ -8,10 +8,9 @@ module: benchmark/autoresearch
 # `autoresearch/` — iterative experiment loops
 
 This folder is for the reusable shape of autoresearch, not for a specific ASR
-candidate. The skill in `D:\skills\global\autoresearch\SKILL.md` names the
-contract: define a goal, define an exact metric command and extraction, bound
-the editable scope, establish a baseline, then run experiments that are
-committed, measured, kept or discarded.
+candidate. The `autoresearch` skill names the contract: define a goal, define an
+exact metric command and extraction, bound the editable scope, establish a
+baseline, then run experiments that are committed, measured, kept or discarded.
 
 Typical Deckle uses:
 

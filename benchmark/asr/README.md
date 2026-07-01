@@ -12,17 +12,15 @@ sources, transcription prompts, ASR judges, ASR metrics, and frozen speech
 studies. Generic benchmark plumbing lives one level up in [`../lib/`](../lib/),
 and generic result viewers live in [`../viewers/`](../viewers/).
 
-## Current focus
+## What lives here
 
-Whisper streaming (large-v3 via whisper.cpp) is the shipped transcription path
-and meets the daily need. The **Voxtral** and **Phi-4** alternatives explored
-here are **dropped** — none was clearly better than Whisper at an accessible
-cost (see [`JOURNAL.md`](JOURNAL.md), 2026-06-15).
-
-What stays live here is ASR-specific: `lib/` (corpus loader, transcription
-sources, ASR judges, ASR metrics), `prompts/`, and `build_corpus.py`. Shared
-viewers and infrastructure stay at `benchmark/`. The completed spikes are
-frozen under [`studies/`](studies/) for reference.
+Whisper (whisper.cpp) is Deckle's shipped transcription path; this workspace is
+where alternatives get measured against it. The live, ASR-specific harness —
+`lib/` (corpus loader, transcription sources, ASR judges, ASR metrics),
+`prompts/`, and `build_corpus.py` — stays here. Shared viewers and
+infrastructure live at `benchmark/`; completed or abandoned model spikes are
+frozen under [`studies/`](studies/), with their findings in
+[`JOURNAL.md`](JOURNAL.md).
 
 ## Layout
 
