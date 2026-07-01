@@ -270,6 +270,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
 │   ├── Deckle.Anytype.Mcp/
+│   │   ├── Http/
+│   │   │   ├── McpClients.cs
+│   │   │   ├── McpClientTokens.cs
+│   │   │   ├── McpHttpHost.cs
+│   │   │   └── McpSession.cs
 │   │   ├── JsonRpc/
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
@@ -278,6 +283,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
 │   │   ├── Deckle.Anytype.Mcp.csproj
+│   │   ├── DeckleAnytypeMcpSource.cs
 │   │   ├── McpToolset.cs
 │   │   └── ToolProfile.cs
 │   ├── Deckle.App/
@@ -1026,8 +1032,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
+│   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
+│   │   ├── McpClientTokensTests.cs
+│   │   ├── McpHttpHostTests.cs
 │   │   ├── McpServerTests.cs
+│   │   ├── McpToolsetTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── AnytypeCredentialsTests.cs
