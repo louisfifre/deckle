@@ -1,11 +1,11 @@
 ---
-description: UI resource catalog — localized strings (Loc / x:Uid) and Segoe Fluent glyphs, centralized for every WinUI module.
+description: Shared WinUI floor — the UI primitives every module depends on and that depend on none: localized strings, glyphs, the declarative settings model, the confirmation gate.
 type: agent-instructions
 ---
 
 # AGENTS.md — Deckle.Catalog
 
-The central home for two kinds of UI resource: **localized strings** (the `Loc` facade over the Windows App SDK `ResourceLoader`, used in code via `Loc.Get` / `Loc.Format` and in XAML via `x:Uid`; each module ships its own `Strings/<lang>/Resources.resw`, English-first) and **Segoe Fluent glyphs** (semantic keys mirrored in `Themes/Icons.xaml` for XAML and `Glyphs.cs` for code — change one, change both).
+The shared WinUI floor — the UI primitives every module depends on and that themselves depend on no module. Two are resources: **localized strings** (the `Loc` facade over the Windows App SDK `ResourceLoader`, used in code via `Loc.Get` / `Loc.Format` and in XAML via `x:Uid`; each module ships its own `Strings/<lang>/Resources.resw`, English-first) and **Segoe Fluent glyphs** (semantic keys mirrored in `Themes/Icons.xaml` for XAML and `Glyphs.cs` for code — change one, change both). The rest are cross-cutting UI mechanisms that share that floor-position: the **declarative settings model** (`SettingsComposer` + `SettingDescriptor`) and the **confirmation gate** (`ConfirmationService`).
 
 Naming: reuse a `Common_*` key before inventing a surface-specific one; technical identifiers (file names, endpoints, brand and model names, EventSource providers) stay hardcoded, never localized.
 

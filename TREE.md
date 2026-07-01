@@ -457,7 +457,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SettingsComposer.cs
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
-│   │   ├── AGENTS.md  — [agent-instructions] UI resource catalog — localized strings (Loc / x:Uid) and Segoe Fluent glyphs,…
+│   │   ├── AGENTS.md  — [agent-instructions] Shared WinUI floor — the UI primitives every module depends on and that depend…
 │   │   ├── CLAUDE.md
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
