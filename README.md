@@ -1,262 +1,173 @@
 # Deckle
 
-Deckle is a local-first Windows utility, and also a record of a threshold:
-LLMs made it possible for one person, coming from product and UX more than
-systems engineering, to reach into architecture, native platform work,
-observability, testing, and release discipline faster than would have been
-reasonable alone.
+**Deckle gathers the small tools of a Windows day into one local app.** Hold a
+key and talk — your words land as text. Skip your accents while typing — they
+come back. Let your lights follow the screen. One hotkey, one tray icon, and
+nothing leaving your machine.
 
-That power is liberating and uncomfortable. It can widen individual agency; it
-can also concentrate capability in the hands of whoever controls the tools and
-the material they are built from. Deckle is built inside that tension: local
-first, legible, no account, no telemetry leaving the machine.
+An unpackaged Windows 11 desktop app built on WinUI 3, .NET 10, and the Windows
+App SDK. It lives in the tray and starts with you.
 
-Built with WinUI 3, .NET 10, and Windows App SDK 1.8. Targets Windows 11.
-
-> Status — **personal project, early public release.** Tested on two
-> Windows 11 machines. Not packaged for the Microsoft Store. Build from source
-> with the instructions below.
+> **Status — personal project, early public release (v0.6.0).** Tested on two
+> Windows 11 machines. Windows 11 only, unpackaged (no Microsoft Store). No
+> account, no cloud dependency, no telemetry leaving the device.
 
 <!-- deckle-stats:start -->
 ## Development pulse
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 1,161 | 55 | 203,785 | 309,145 | 98,252 |
+| 2026-04-01 | 1,406 | 63 | 247,664 | 367,122 | 127,718 |
 
-<sub>Generated from Git history on 2026-06-13. Counts include tracked text files only for the current line total.</sub>
+<sub>Generated from Git history on 2026-07-01. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->
 
 ---
 
-## Subsystems
+## Why Deckle
+
+- **Local by default.** Speech recognition, autocorrect, screen capture — all
+  run on your own hardware. No API key, no subscription, no round-trip to a
+  server.
+- **Private by construction.** Nothing to sign into, nothing phoned home. The
+  little telemetry that exists is opt-in and stays in a local folder you can
+  open and delete.
+- **Native to Windows 11.** Fluent surfaces, system materials, a real tray
+  menu, honest per-user autostart — it aims to feel like something Microsoft
+  could have shipped.
+- **One roof, many tools.** Rather than five utilities each with its own tray
+  icon, Deckle gathers complementary helpers behind a single quiet process.
+
+---
+
+## What it does
 
 ### Voice transcription
 
-Press a hotkey, talk, release — the transcription lands in the clipboard,
-ready to paste anywhere.
+**Press a hotkey, talk, release — the text is on your clipboard, ready to
+paste.** The flagship, and the most polished.
 
-- **Hotkey-driven recording.** Three configurable global hotkeys (default:
-  the key just left of `1`) toggle audio capture from the system microphone.
-- **Local Whisper transcription.** Audio is decoded by `libwhisper`
-  ([whisper.cpp](https://github.com/ggerganov/whisper.cpp)) with the user's
-  chosen model (`ggml-base`, `ggml-large-v3`, etc.). Vulkan backend by
-  default; CPU fallback if no GPU is available.
-- **Clipboard write + optional auto-paste.** The raw transcription is written
-  to the clipboard. If the foreground window has a text-editable focus, a
-  `Ctrl+V` is injected. If not, the text sits on the clipboard for manual
-  paste.
-- **Optional LLM rewrite via Ollama.** A configurable profile can
-  post-process the raw transcription through a local Ollama instance. Off by
-  default.
+Transcription runs locally through Whisper ([whisper.cpp](https://github.com/ggerganov/whisper.cpp))
+with the model you choose — Vulkan-accelerated, with a CPU fallback when there
+is no GPU. Neural voice-activity detection trims the silence; an optional
+pre-processing pass sharpens the microphone for the recognizer. If the focused
+field accepts text, Deckle pastes for you; otherwise the transcription waits on
+the clipboard. A local rewrite pass through Ollama can clean up the raw text —
+off by default.
+
+### System-wide autocorrect
+
+**Type anywhere, and the accents you skipped come back — on your terms, app by
+app.** French-first today.
+
+Deckle watches the keyboard only in apps you have enrolled, and never in
+password fields, terminals, or code editors. Corrections stay conservative and
+reversible: a single Backspace takes any of them back. What it learns lives in a
+personal dictionary you can read, edit, and clear at will.
 
 ### Ambient lighting
 
-Captures the screen in real-time via DXGI Output Duplication and drives
-Philips Hue lights to match the dominant colors, with per-zone mapping and
-HDR support.
+**Deckle reads your screen in real time and drives your Philips Hue lights to
+match.** The newest subsystem, still taking shape.
 
-- **DXGI capture backend.** No yellow capture border. Minimal latency,
-  GPU-side frame copy.
-- **Color science pipeline.** Gamut clipping, linear-light averaging, OKLCh
-  saturation boost. Accurate color reproduction on any display profile.
-- **Multi-zone support.** Map screen regions to individual Hue lights. Auto-
-  discovery of the Hue Entertainment group.
-- **Hue REST control.** Local bridge calls through the Hue API — no
-  third-party NuGet, no cloud relay.
+Frames are captured GPU-side through DXGI Output Duplication — no yellow border,
+minimal latency, nothing written to disk. A color pipeline (linear-light
+averaging, gamut clipping, OKLCh saturation) keeps hues honest across display
+profiles, HDR included. Map screen regions to individual lights; calls go
+straight to your local Hue bridge, with no cloud relay.
 
-### Shared infrastructure
+### Desktop touches
 
-- **HUD overlay.** A small topmost window shows recording state, elapsed
-  time, and microphone level while the hotkey is held.
-- **System tray.** Quit, open settings, toggle ambient lighting, open the
-  live log window — all from the tray.
-- **Settings.** NavigationView-based settings UI with per-module pages,
-  auto-save, and consent dialogs for telemetry.
+Small refinements that smooth the day:
 
----
+- **Three-finger drag** on a precision trackpad — three fingers hold the button
+  and drag, lifting drops after a short grace delay.
+- **Taskbar cover** — an opaque band that masks the taskbar when you want the
+  screen edge clean.
 
-## What it does *not* do
+### A local task space for your AI assistants
 
-- It does not upload audio or screen captures anywhere.
-- It does not auto-update. Builds are manual.
-- It does not run on Windows 10. Targets Windows 11.
-- It does not work on macOS or Linux. The stack is Win32 / WinUI 3 /
-  Windows App SDK.
+Deckle can run a small local MCP server that exposes an Anytype project space to
+assistants like Claude or Codex — the same plumbing that helps drive Deckle's
+own development. Developer-oriented, off the main path.
 
 ---
 
-## Building from source
+## On the workbench
 
-### Prerequisites
+Honest about what is not ready yet: **read-aloud** (text-to-speech) is
+scaffolded but dormant, a **richer rewrite** mode is in exploration, and finer
+**mouse-wheel** control is early groundwork. More assistance modules will follow
+the same local-first line.
 
-The fastest path from a fresh Windows 11 machine is the bootstrap script:
+---
+
+## Get Deckle
+
+1. Download the **Deckle-Setup** installer from the
+   [latest release](https://github.com/louisfifre/deckle/releases).
+2. Run it. Install is per-user — no admin prompt. Deckle lands in your profile
+   and starts in the tray.
+3. On first launch, a short wizard fetches the speech runtime and the models it
+   needs.
+
+To run it at every login: **Settings → General → Launch at startup**. It writes
+a per-user `HKCU\...\Run` entry — no service, nothing machine-wide.
+
+### Build from source
+
+For contributors and the curious. Bootstrap a fresh Windows 11 machine, then
+build and run:
 
 ```powershell
-scripts/lib/bootstrap-dev-env.ps1           # Tier 1 (managed build)
-scripts/lib/bootstrap-dev-env.ps1 -Full     # Tier 1 + native recompile + Ollama
+scripts/lib/bootstrap-dev-env.ps1              # .NET 10, VS 2026, tooling
+scripts/lib/build-run.ps1 -Configuration Release
 ```
 
-It probes what is already installed, installs the missing pieces via winget
-and Scoop, and sets the required environment variables. Runtime assets
-are handled by the app's first-run wizard when native DLLs or models are
-missing. Run with `-DryRun` first to see the plan without installing
-anything. The same flow is reachable via the interactive menu at
-`scripts/deckle.ps1` (Setup → Bootstrap dev environment).
-
-#### Tier 1 — build & run Deckle (sufficient for C# / XAML work)
-
-- **Windows 11.**
-- **.NET 10 SDK** (pinned by `global.json` with `rollForward: latestFeature`).
-- **Visual Studio 2026 Community** with the *WinUI application development*
-  workload — installs the Windows SDK, the WinUI 3 templates, and the C++
-  toolchain needed for native module work. The build itself runs through
-  `dotnet build`; for repeated local or agent builds, prefer
-  `/nr:false /p:UseSharedCompilation=false` so MSBuild/Roslyn build servers
-  do not remain in the background.
-
-#### Tier 2 — recompile whisper.cpp native DLLs (rare, maintainer-only)
-
-- **Scoop** (`scoop.sh`).
-- **MinGW** (`scoop install mingw`) — GCC 15.2, C++ toolchain.
-- **CMake** and **Ninja** (`scoop install cmake ninja`).
-- **Vulkan SDK** (`scoop install vulkan`) — headers for the `ggml-vulkan`
-  backend.
-- A local clone of [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
-  outside this repo. `scripts/lib/publish-native-runtime.ps1` packages the
-  built DLLs into the runtime bundle.
-
-#### Optional
-
-- **Ollama** for LLM rewrite (`winget install --id Ollama.Ollama -e`). Off
-  by default.
-- **GitHub CLI** for auth and PR workflows
-  (`winget install --id GitHub.cli -e`).
-
-### Fresh clone — first run
-
-1. Run `scripts/lib/bootstrap-dev-env.ps1` (installs prerequisites).
-2. Open a **new terminal** (environment variables set by the bootstrap are
-   only visible in new sessions).
-3. Build & run via `scripts/deckle.ps1` (interactive menu), or directly:
-   ```powershell
-   scripts/lib/build-run.ps1 -Configuration Release
-   ```
-4. On first launch, complete the setup wizard if native DLLs or Whisper
-   models are missing.
-5. Alternatively, open the solution in Visual Studio 2026 and press F5.
-
-### Scripts
-
-The single interactive entry point is `scripts/deckle.ps1` — F5 in
-VSCodium points there. Worker scripts live under `scripts/lib/` and
-stay callable on their own CLI:
-
-| Script | Purpose |
-|--------|---------|
-| `scripts/deckle.ps1` | Interactive menu: build, clean, stats, bootstrap. |
-| `scripts/lib/build-run.ps1` | Build via VS MSBuild + launch. Resolves MSBuild automatically. |
-| `scripts/lib/clean.ps1` | Remove `bin/` + `obj/` under every `src/<module>/`. |
-| `scripts/lib/stats.ps1` | Per-module file inventory, LOC stats, long-file watch list, dynamic type summary. |
-| `scripts/lib/setup-assets.ps1` | Direct dev helper to provision `%LOCALAPPDATA%\Deckle\` with native DLLs and Whisper models; the app wizard is the normal path. |
-| `scripts/lib/bootstrap-dev-env.ps1` | Probe + install dev dependencies (winget, Scoop, VS, .NET SDK); runtime assets are opt-in. |
-| `scripts/lib/publish-native-runtime.ps1` | Maintainer-only: zip + publish a `native-vX.Y.Z` GitHub release. |
-
-See [`scripts/README.md`](scripts/README.md) for the full menu structure
-and per-script switches.
+The interactive menu at `scripts/deckle.ps1` wraps every dev workflow. The full
+detail — worker scripts, switches, native-runtime sourcing — lives in
+[`scripts/README.md`](scripts/README.md).
 
 ---
 
-## Run at startup
+## Privacy & security
 
-In the app, go to **Settings → General → Launch at startup** and toggle it
-on. Two related options:
+- Audio and screen captures never leave the machine; ambient frames stay in GPU
+  memory and are never written to disk.
+- A global hotkey is registered while the app runs. The clipboard write and
+  auto-paste happen only after a UI Automation check that the target actually
+  accepts text.
+- Autocorrect never observes password fields, and acts only in apps you enroll.
+- Telemetry is strictly opt-in, gated by an explicit consent dialog, and stored
+  locally.
 
-- **Start minimized** — the app lives in the system tray.
-- **Warm up on launch** — runs a short dummy transcription so the first
-  real hotkey press skips the cold-start cost.
-
-Under the hood this writes a user-scope entry under
-`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Deckle`. No UAC, no
-service, nothing machine-wide.
-
----
-
-## Repository layout
-
-```
-<repo-root>/
-├── src/
-│   ├── Deckle.App/                   WinUI 3 host — entry point, windows, tray
-│   ├── Deckle.Core/                  Foundations (AppPaths, JsonSettingsStore, Win32 interop)
-│   ├── Deckle.Diagnostics/           EventSource observability hub + sinks
-│   ├── Deckle.Diagnostics.Logging/   Live log window settings + ambient capture gate
-│   ├── Deckle.Diagnostics.Telemetry/ JSONL listeners + opt-in consent gates
-│   ├── Deckle.Catalog/               ResourceLoader facade + Segoe Fluent glyphs (x:Uid)
-│   ├── Deckle.Audio/                 Microphone capture (WASAPI, RMS, calibration)
-│   ├── Deckle.Chrono/                Timer primitive (no UI)
-│   ├── Deckle.Composition/           Direct2D + Composition primitives (ColorSpace, easing)
-│   ├── Deckle.Vision/                Screen capture (DXGI Output Duplication)
-│   ├── Deckle.Lighting/              LED driver abstraction (ILightOutput, Hue Entertainment)
-│   ├── Deckle.Lighting.Ambient/      Ambient lighting consumer (Vision + Lighting → Hue)
-│   ├── Deckle.Hud/                   HUD subsystem (HudWindow, overlay stack)
-│   ├── Deckle.Shell/                 System shell (tray, hotkeys, autostart, message-only host)
-│   ├── Deckle.Settings/              Settings UI shell + per-module persistence
-│   ├── Deckle.Llm/                   Ollama HTTP client (model administration, health-check)
-│   ├── Deckle.Llm.Rewrite/           Rewrite engine + LlmPage Settings UI
-│   ├── Deckle.Transcription/         Backend-agnostic transcription orchestrator
-│   ├── Deckle.Transcription.Whisper/ IAsrBackend implementation via whisper.cpp
-│   └── Deckle.Setup/                 First-run wizard (natives + models)
-├── scripts/                    Build, publish, setup, launcher (deckle.ps1 + lib/)
-├── docs/                       ADRs, reference sheets, research notes
-├── benchmark/                  Benchmark workspaces (ASR suite, autoresearch loops)
-└── LICENSE, README.md, SECURITY.md, NOTICE.md
-```
-
-Native DLLs and Whisper models do **not** live in the repository. They are
-provisioned at dev time by `scripts/lib/setup-assets.ps1` into
-`%LOCALAPPDATA%\Deckle\` and at user time by the first-run wizard.
-
----
-
-## Security & privacy
-
-- A **global hotkey** (`RegisterHotKey`, not a low-level keyboard hook) is
-  active while the app runs.
-- The clipboard is written and a `Ctrl+V` is injected via `SendInput` after
-  a UI Automation check (refuses if the focused element is not text-editable).
-- Screen capture via **DXGI Output Duplication** runs only while ambient
-  lighting is active. Frames are processed in GPU memory and never written
-  to disk.
-- An **autostart entry** (HKCU Run key) is written when the user enables it.
-  User-scope only.
-- Telemetry is **strictly opt-in** — explicit consent dialogs gate each
-  channel. All artifacts stay local.
-
-For the full security posture, see [SECURITY.md](SECURITY.md). For the audit
-that preceded the public release, see
+Full posture in [SECURITY.md](SECURITY.md); the audit that preceded the public
+release is in
 [`docs/security-review--pre-publication--0.1.md`](docs/security-review--pre-publication--0.1.md).
+
+---
+
+## Built solo, with leverage
+
+Deckle is also a record of a threshold: modern LLMs let one person — coming from
+product and UX more than systems engineering — reach into architecture, native
+platform work, observability, and release discipline faster than would have been
+reasonable alone. That is liberating and a little uncomfortable, and Deckle is
+built inside that tension: local, legible, no account, nothing leaving the
+machine.
 
 ---
 
 ## Acknowledgements
 
-- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) by Georgi Gerganov
-  and contributors — speech recognition engine.
-- [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) and
-  [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) by Microsoft.
-- [Windows Community Toolkit](https://github.com/CommunityToolkit/Windows)
-  for `SettingsCard` and friends.
-- [Win2D](https://github.com/microsoft/Win2D) for the HUD's procedural
-  graphics.
-- [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) by LunarG for GPU
-  inference.
-- [Philips Hue](https://developers.meethue.com/) Entertainment API for
-  ambient light streaming.
-
-See [NOTICE.md](NOTICE.md) for full third-party attributions.
-
----
+Built on [whisper.cpp](https://github.com/ggerganov/whisper.cpp),
+[WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and the
+[Windows App SDK](https://github.com/microsoft/WindowsAppSDK), the
+[Windows Community Toolkit](https://github.com/CommunityToolkit/Windows),
+[Win2D](https://github.com/microsoft/Win2D), the
+[Vulkan SDK](https://www.lunarg.com/vulkan-sdk/), and the
+[Philips Hue](https://developers.meethue.com/) Entertainment API. Full
+attributions in [NOTICE.md](NOTICE.md).
 
 ## License
 
