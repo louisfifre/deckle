@@ -618,7 +618,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TrackpadPage.xaml
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
-│   │   │   └── TrackpadViewModel.cs
+│   │   │   ├── TrackpadViewModel.cs
+│   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.Trackpad.csproj

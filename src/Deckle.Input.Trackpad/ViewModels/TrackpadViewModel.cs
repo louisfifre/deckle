@@ -1,4 +1,3 @@
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Deckle.Input.Trackpad;
@@ -10,10 +9,11 @@ namespace Deckle.Input.Trackpad;
 // Push() + Save(), and the _isSyncing flag suppresses the write-back while
 // Load() seeds the properties so re-hydration never re-saves.
 //
-// Each slider value is mirrored by a formatted *Label string for the
-// readout next to the slider — raw doubles must never reach a TextBlock
-// (a snapped slider value can carry float noise like 1.3666670…).
-// Push() rounds before persisting for the same reason.
+// The drag-speed readout is no longer a *Label string on this VM: the
+// SettingsComposer renders the slider's value itself (rounded per its
+// StepFrequency) with the "×" unit, so the former DragSpeedLabel is gone.
+// Push() still rounds before persisting so a snapped slider value's float
+// noise (1.3666670…) never reaches the store.
 //
 // The Windows-integration acts (neutralize / repair / start elevated) are
 // NOT modelled here : they are imperative commands with their own success
@@ -35,9 +35,6 @@ public partial class TrackpadViewModel : ObservableObject
     [ObservableProperty]
     public partial double DragSpeed { get; set; }
 
-    public string DragSpeedLabel =>
-        DragSpeed.ToString("0.00", CultureInfo.CurrentCulture) + "×";
-
     // ── Diagnostics ─────────────────────────────────────────────────────────
 
     // Writes every raw contact frame to a JSONL file under the telemetry
@@ -53,7 +50,6 @@ public partial class TrackpadViewModel : ObservableObject
 
     partial void OnDragSpeedChanged(double value)
     {
-        OnPropertyChanged(nameof(DragSpeedLabel));
         if (_isSyncing) return;
         Push();
     }
