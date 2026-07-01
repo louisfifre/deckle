@@ -9,6 +9,140 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.6.0](https://github.com/louisfifre/deckle/compare/v0.5.0...v0.6.0) — 2026-07-01
+
+### Added
+
+- **diagnostics:** Add autocorrect activity log toggle
+- **benchmark:** Add local ONNX TTS audition harness
+- **benchmark:** Chatterbox FR-reference accent probe
+- **benchmark:** Reorder audition page, drop English ref, add run history
+- **benchmark:** Chatterbox temperature sweep (exaggeration is inert on ML)
+- **benchmark:** Working Orpheus FR on DirectML GPU
+- **autocorrect:** Per-app enrollment decisions and passive suggestion
+- **autocorrect:** Reactive enrollment toast
+- **hud:** Reveal chrono digits through the shared conic material
+- **catalog:** Add the Autocorrect glyph
+- **autocorrect:** Settings page for per-app enrollment
+- **settings:** Surface the Autocorrect page in navigation
+- **core:** Add waveOut render bindings
+- **audio:** Add speaker render output via waveOut
+- **speech:** Add the dormant read-aloud module and placeholder backend
+- **app:** Construct the dormant speech engine at boot
+- **hud:** Conic clone target + swipe animator rewrite (WIP checkpoint)
+- **shell:** Coalesce per-frame recompute during interactive window resize
+- **hud:** Reveal chrono digits through a placed, auto-scaled conic clone
+- **playground:** Segmentation curve tuning page
+- **transcription:** Default the segmenter to the tuned values
+- **hud:** Keep chrono digits inked in Tertiary, layer comet reveal on top
+- **input:** Share the keyboard/mouse Raw Input host and read the wheel
+- **input:** Capture mouse-wheel events to JSONL (Palier 0)
+- **scripts:** Add launch-only app workflow
+- **whisper:** Filter known subtitle-credit hallucinations post-decode
+- **scripts:** Add Anytype MCP install off the build tree
+- **hud:** Give the chrono digit reveal its own OKLCh palette and cone defaults
+- **hud:** Pin the chrono digit reveal and disable the swipe wave
+- **diagnostics:** Trace each coalesced resize frame for latency diagnosis
+- **playground:** Uniform hover-revealed section reset across the tuning pages
+- **observability:** Time page navigation and page-ready latency
+- **observability:** Time lazy window first-open construction
+- **observability:** Time the autocorrect lexicon build and mark readiness
+- **observability:** Time the Silero VAD session construction
+- **transcription:** Overlap the Whisper warm-up with capture
+- **scripts:** Split the menu launch entry into Release and Debug
+- **scripts:** Add a version bump-and-tag menu command
+- **scripts:** Rework the dev menu as a 2D navigable grid
+- **anytype:** Management layer ÔÇö lifecycle verbs and reversible delete
+- **diagnostics:** Add windowing activity log toggle
+- **scripts:** Summarize workflow outcomes
+- **scripts:** Configure Anytype MCP management
+- **anytype-mcp:** Rename objects via optional name on update
+- **autocorrect:** Correct real typos to the nearest French word
+- **input:** Relay a drain-request thread message on the keyboard host
+- **autocorrect:** Correct real-word ambiguities from sentence context
+- **autocorrect:** Trace the contextual reranker decision path
+- **autocorrect:** Restore dropped elision apostrophes
+- **autocorrect:** Reach bigger typos with a two-tier corrector
+- **autocorrect:** Feed the disambiguator two words of context (trigram)
+- **catalog:** Resolve module-scoped .resw strings at runtime
+- **settings:** Declarative settings composer with per-page migrations
+- **settings:** Group descriptor with master toggle and gated children
+- **autocorrect:** Instrument per-word decisions and the typed-sentence corpus
+- **settings:** Group children hide instead of grey when master off
+- **settings:** Migrate Recording voice-level group with inverted master
+- **autocorrect:** Record the revert gesture in the decision dataset
+- **settings:** Per-card and section reset from single-source defaults
+- **settings:** Wire Recording reset to composer defaults
+- **settings:** Add Number kind and migrate Whisper VAD and streaming groups
+- **settings:** Confirm-on-enable gate for consent toggles
+- **settings:** Reusable confirmation service for destructive commands
+- **autocorrect:** Derive the verb-morphology artifact and its loader
+- **autocorrect:** Add the grammar stage with subjectÔÇôverb agreement
+- **shell:** Unify both logon vehicles behind a StartupService facade
+- **anytype:** Backend lifecycle mechanism ÔÇö triggerless on-demand task + supervisor
+- **app:** Launch without the speech setup gate
+- **setup:** Recover a failed first-run download with a link and local import
+- **transcription:** Surface a set-up call-to-action when speech is unprovisioned
+
+### Changed
+
+- **autocorrect:** Remove the CLI, relocate its code into modules
+- **autocorrect:** Move offline train and eval into the Lab module
+- **autocorrect:** Move the per-app decision write into the settings service
+- **bench:** Freeze the ASR/TTS spikes under studies/ and fix their run paths
+- **composition:** Extract shareable rotation helpers from StartRotation
+- **onnx:** Add an allocation-free Run overload writing into caller buffers
+- **vad:** Reuse the input tensors and output buffers across windows
+- **hud:** Cache the window DPI instead of querying it per mouse move
+- **app:** Load the autocorrect lexicon off the UI thread
+- **audio:** Use Exp/Log over Pow/Log10 in the compressor
+- **audio:** Derive the buffer dBFS from the sub-window sums
+- **scripts:** Rework the menu into a looping two-level router
+- **taskbar-cover:** Drive suppression by event, drop the 5 s poll
+- **observability:** Collapse the sinks behind a single dispatch listener
+- **transcription:** Single-source the default hangover curve
+- **autocorrect:** Lift the module out of Input to Deckle.Autocorrect
+- **benchmark:** Split shared and ASR workspaces
+- **settings:** Relocate tunable controls from Playground
+- **catalog:** Host the settings composer and confirmation service
+
+### Fixed
+
+- **transcription:** Widen streaming ramp bounds and refine step
+- **autocorrect:** Recognise Chromium/Electron editable surfaces
+- **benchmark:** Correct Orpheus SNAC decode (sliding centre window)
+- **taskbar-cover:** Harden suppression and z-order against false reveals
+- **playground:** Defer TunableRow setup to Loaded
+- **playground:** Polish the segmentation curve editor and save bar
+- **playground:** Round the TunableRow value box to its step
+- **playground:** Round the curve boxes and tighten the save-bar spacer
+- **playground:** Load segmenter settings on view-model construction
+- **playground:** Stop the slider clamp from overwriting the loaded value
+- **playground:** Stop the tuning rows crashing on a fractional step
+- **autocorrect:** Place lexicons flat beside the exe so the engine arms
+- **taskbar-cover:** Create the band topmost so it covers under foreground lock
+- **scripts:** Ignore untracked files in the version-bump guard
+- **transcription:** Raise capture-thread priority to stop audio drops under load
+- **transcription:** Align hangover ramp defaults
+- **observability:** Stop the LogWindow view selector from gating the disk journal
+- **scripts:** Prevent lingering dotnet build servers
+- **scripts:** Report cleanup outcomes
+- **autocorrect:** Bound the correction-revert window in time
+- **scripts:** Wait for Deckle shutdown before builds
+- **scripts:** Restore terminal menu selection
+- **autocorrect:** Rewrite the slot the reranker actually judged
+- **scripts:** Harden menu pickers against redirected I/O
+- **playground:** Fold wheel capture into home
+- **input:** Capture wheel messages from hook
+- **scripts:** Keep launcher prompts on clean lines
+- **settings:** Make the autostart toggle honest across logon vehicles
+- **vision:** Bound frame ownership recovery
+- **vision:** Initialize capture interop outputs
+- **ambient:** Log external stop decision context
+- **setup:** Point the native runtime bundle at the louisfifre release
+- **scripts:** Point the native runtime source at the louisfifre release
+- **scripts:** Parenthesise the version-bump arithmetic
+
 ## [0.5.0](https://github.com/louisfifre/deckle/compare/v0.4.4...v0.5.0) — 2026-06-14
 
 ### Added
@@ -22,7 +156,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Compose the trackpad module
 - **trackpad:** Settings page and navigation entry
 - **trackpad:** Freeze calibrated values, retire the tuning expander
-- **anytype:** Core library over the live PM space — client, frozen schema, gestures
+- **anytype:** Core library over the live PM space ÔÇö client, frozen schema, gestures
 - **mcp:** Stdio JSON-RPC host exposing the 13 PM tools
 - **transcription:** Paragraph break on silence-cut utterances
 - **notifications:** Notification catalogue, dispatcher, and interactive toast channel
@@ -49,7 +183,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Persist the setup narrative and critical errors locally
 - **settings:** Link to the local diagnostics folder
 - **setup:** Offer the diagnostics folder on a failed first run
-- **anytype:** Replace_section — heading-located body edit, verified
+- **anytype:** Replace_section ÔÇö heading-located body edit, verified
 - **anytype:** Add dialogue chat tools
 - **autocorrect:** N-gram left-context disambiguation and precision-first eval
 - **autocorrect:** CamemBERT MLM reranker probe (offline)
@@ -123,7 +257,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Detach and flush taskbar cover settings at shutdown
 - **taskbar-cover:** Hold the provider to the Verbose/Info separation
 - **input:** Guard the parser-failure detail behind its braces
-- **anytype:** Invert the rapport↔task link, derive the project through tasks
+- **anytype:** Invert the rapportÔåötask link, derive the project through tasks
 - **app:** Always surface the streaming transcript in the log
 - **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
 - **app:** Register always-on local sinks before settings migration
