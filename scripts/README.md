@@ -134,21 +134,12 @@ The Whisper models are pulled from HuggingFace; the Silero VAD model is
 pulled from GitHub (snakers4/silero-vad, pinned to the v6.2 tag).
 Both happen regardless of native runtime sourcing mode.
 
-## Post-build HUD topmost mitigation
+## Post-build auto-relaunch
 
-`lib/build-run.ps1` passes `--post-build` to the launched
-`Deckle.exe` by default. The app finishes its boot, waits ~800ms,
-then re-launches itself once via `cmd /c start`, then exits. The
-second instance inherits a clean foreground state and the HUD's
-`WS_EX_TOPMOST` flag applies correctly on the first recording.
-Disable with `-NoAutoRestart` if you need a stable PID (attached
-debugger, log capture). See `App.RestartViaShellExecute()` and the
-`--post-build` parsing in `App.OnLaunched`.
-
-This is a workaround for the visible symptom only — the underlying
-topmost-loss behaviour (HUD loses topmost when another window grabs
-foreground, especially other WinUI 3 apps) is a separate investigation
-gated on the EventSource logging refactor.
+`lib/build-run.ps1` passes `--post-build` by default: the freshly launched app
+relaunches itself once so the HUD reliably claims topmost on the first
+recording. Disable with `-NoAutoRestart` when you need a stable PID (attached
+debugger, log capture).
 
 ## What is *not* here
 
