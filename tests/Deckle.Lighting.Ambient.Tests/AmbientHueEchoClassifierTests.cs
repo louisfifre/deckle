@@ -94,6 +94,53 @@ public class AmbientHueEchoClassifierTests
     }
 
     [Fact]
+    public void XyOnlyMismatchIsTreatedAsEcho()
+    {
+        var pushedAt = DateTimeOffset.Parse("2026-06-28T00:02:21Z");
+        var pushed = new AmbientHuePushedState(
+            pushedAt,
+            new HueProjectedState(
+                On: true,
+                Brightness: 87,
+                Xy: (0.2771f, 0.2381f)));
+
+        var update = new HueResourceUpdate(
+            V2ResourceId: "v2-light-5",
+            ResourceType: "light",
+            CreationTime: pushedAt.AddMilliseconds(13),
+            On: null,
+            Brightness: null,
+            Xy: (0.2832f, 0.2471f));
+
+        var decision = AmbientHueEchoClassifier.Classify(
+            update,
+            pushed,
+            pushedAt.AddMilliseconds(13));
+
+        Assert.Equal(AmbientHueEventDecisionKind.Echo, decision.Kind);
+    }
+
+    [Fact]
+    public void StatePayloadWithoutLastPushIsIgnored()
+    {
+        var eventAt = DateTimeOffset.Parse("2026-06-23T11:50:55Z");
+        var update = new HueResourceUpdate(
+            V2ResourceId: "v2-light-4",
+            ResourceType: "light",
+            CreationTime: eventAt,
+            On: false,
+            Brightness: null,
+            Xy: null);
+
+        var decision = AmbientHueEchoClassifier.Classify(
+            update,
+            lastPushed: null,
+            nowUtc: eventAt);
+
+        Assert.Equal(AmbientHueEventDecisionKind.Ignore, decision.Kind);
+    }
+
+    [Fact]
     public void OffEventIsEchoOnlyWhenLastPushedStateWasOff()
     {
         var pushedAt = DateTimeOffset.Parse("2026-05-28T10:00:00Z");
