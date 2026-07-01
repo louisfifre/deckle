@@ -449,11 +449,23 @@ public partial class App : Microsoft.UI.Xaml.Application
         // The Path-kind picker control is module-owned (FolderPickerCard needs the
         // Settings window + ETW source), so the floor composer builds it through
         // this factory — same lib-exposes-delegate / App-owns-contract pattern.
-        Catalog.SettingsComposer.PathControlFactory = args => new Settings.FolderPickerCard
-        {
-            Mode = args.Mode,
-            DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
-        };
+        // Dispatch on Mode: Editable wants the typeable variant (a TextBox the user
+        // can paste a transplanted path into), every other mode the read-only card.
+        // Both implement IPathControl and take Mode + DefaultPath the same way, so
+        // the only difference is which type is newed up. DefaultPath is resolved
+        // once here (the deferred AppPaths lookup), never captured earlier — the
+        // fallback shown when the value is empty must be computed at compose time.
+        Catalog.SettingsComposer.PathControlFactory = args =>
+            args.Mode == Catalog.FolderPickerMode.Editable
+                ? new Settings.FolderPickerEditableCard
+                {
+                    DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
+                }
+                : new Settings.FolderPickerCard
+                {
+                    Mode = args.Mode,
+                    DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
+                };
         Settings.SettingsHost.OpenSetupWizard  = () =>
         {
             // Wizard XAML lives in the standalone Deckle.Setup module

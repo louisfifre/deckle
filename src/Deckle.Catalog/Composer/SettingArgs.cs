@@ -62,13 +62,19 @@ public sealed record TextArgs(
 
 // ── FolderPickerMode ──────────────────────────────────────────────────────────
 //
-// Whether a folder-path setting lets the user repoint the folder (Configure) or
-// only reveal it in Explorer (OpenOnly). OpenOnly fits a path the app owns and
-// the user shouldn't move — the row still shows where data lands and offers a way
-// in, but hides the "Change" affordance so the location reads as fixed.
+// Whether a folder-path setting lets the user repoint the folder (Configure), let
+// the user TYPE a path as well as pick one (Editable), or only reveal it in
+// Explorer (OpenOnly). Configure shows a read-only path with Change + Open;
+// Editable swaps the read-only readout for a typeable TextBox (still with Change +
+// Open) — the faster route when the user is transplanting a folder from another
+// machine (a pre-populated models directory, say) rather than browsing to it.
+// OpenOnly fits a path the app owns and the user shouldn't move — the row still
+// shows where data lands and offers a way in, but hides the "Change" affordance so
+// the location reads as fixed.
 public enum FolderPickerMode
 {
     Configure,
+    Editable,
     OpenOnly,
 }
 

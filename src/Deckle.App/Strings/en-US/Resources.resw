@@ -134,6 +134,12 @@
   <data name="Common_Reset" xml:space="preserve">
     <value>Reset</value>
   </data>
+  <!-- Tooltip on the composer's per-card / per-group reset wheel. Composer-owned
+       and module-agnostic: resolved from this root map by SettingsComposer, so
+       every composed page across every module shares this one string. -->
+  <data name="SettingsComposer_ResetToDefault" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
   <data name="Common_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>

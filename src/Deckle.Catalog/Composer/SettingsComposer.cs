@@ -818,12 +818,78 @@ public sealed class SettingsComposer
             s.SetValue(picker.Path);
         };
 
-        card.Content = picker.View;
+        // Per-card reset when the descriptor carries a Default — the same reset
+        // machinery every other kind uses (BuildResetButton + WireReveal + the
+        // _dirtyChecks/_resetActions surface + active-when-dirty + tooltip), but
+        // laid out by hand instead of through WrapWithReset. WrapWithReset assumes a
+        // trailing-edge value control and puts the reset to its LEFT; the Path card
+        // hosts its picker VERTICALLY (card.ContentAlignment = Vertical, so the
+        // picker sits on its own row below the description). So the reset goes at the
+        // TRAILING edge of that row instead — a [picker* | reset] grid mirroring how
+        // the hand-authored Whisper ModelsDirectory hangs its reset off the picker's
+        // RightContent slot (WhisperPage.xaml). The picker stretches (star column),
+        // the reset takes its natural width on the right, revealed on the card's
+        // hover/focus like every other reset.
+        Action? updateReset = null;
+        FrameworkElement content;
+        if (s.Default is not null)
+        {
+            Button reset = BuildResetButton();
+
+            // Reveal on the CARD's hover and the BUTTON's keyboard focus, matching
+            // WrapWithReset — either keeps it shown so leaving one while the other
+            // holds does not hide it early.
+            WireReveal(card, reset);
+
+            // active-when-dirty: the path differing from its Default (typically ""
+            // → the empty-means-AppPaths fallback) is what enables the reset,
+            // evaluated live through the refresher below. Registered into the shared
+            // reset surface so a page-level "Reset all" folds this row in too.
+            bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
+            _dirtyChecks.Add(Dirty);
+            _resetActions.Add(() => s.SetValue(s.Default!()));
+
+            // Reset drives the value back to the descriptor's Default through the
+            // normal setter; the model's PropertyChanged then re-syncs picker.Path
+            // via the refresher, so no manual picker update is needed here.
+            reset.Click += (_, _) => s.SetValue(s.Default!());
+
+            // A two-column grid rather than a StackPanel so the picker keeps the full
+            // width it had as the card's sole content (star column) and the reset
+            // hugs the trailing edge — a horizontal StackPanel would instead shrink
+            // the picker to its content width.
+            var grid = new Grid { ColumnSpacing = 4 };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(picker.View, 0);
+            Grid.SetColumn(reset, 1);
+            grid.Children.Add(picker.View);
+            grid.Children.Add(reset);
+            content = grid;
+
+            // The tooltip string is constant, but resolved once here (not per
+            // refresh) so the dirty-driven refresher only flips IsEnabled.
+            string tooltip = ResolveResetTooltip();
+            updateReset = () =>
+            {
+                reset.IsEnabled = Dirty();
+                ToolTipService.SetToolTip(reset, tooltip);
+            };
+        }
+        else
+        {
+            // No Default → no reset chrome, the picker is the card's whole content,
+            // exactly as before.
+            content = picker.View;
+        }
+
+        card.Content = content;
 
         _refreshers.Add(() =>
         {
             string value = AsString(s.GetValue());
             if (picker.Path != value) picker.Path = value;
+            updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
     }
@@ -1081,12 +1147,12 @@ public sealed class SettingsComposer
         button.LostFocus += (_, _) => { focused = false; Update(); };
     }
 
-    // The reset tooltip from the OWNING MODULE's .resw (module-aware like the header
-    // resolution, falling back to the root map when no module is supplied).
+    // The reset tooltip is composer-OWNED and identical for every module, so it
+    // resolves from the host app's ROOT map — not the module .resw. (Headers are
+    // module strings and resolve per-module; this one is not.) One source for the
+    // single string every composed reset shares, whatever module the card lives in.
     private string ResolveResetTooltip()
-        => _module is null
-            ? Loc.Get("SettingsComposer_ResetToDefault")
-            : Loc.GetFrom(_module, "SettingsComposer_ResetToDefault");
+        => Loc.Get("SettingsComposer_ResetToDefault");
 
     // Reactive enabled/visible: re-evaluated on every refresh. Null predicates
     // leave the framework defaults (enabled, visible) untouched.

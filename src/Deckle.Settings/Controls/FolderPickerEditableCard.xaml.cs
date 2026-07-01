@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Deckle.Catalog;
 
 namespace Deckle.Settings;
 
@@ -22,8 +23,17 @@ namespace Deckle.Settings;
 // Designed to live inside a SettingsCard at the consumer site — same
 // architectural pattern as FolderPickerCard, see its file header for the
 // reason.
-public sealed partial class FolderPickerEditableCard : UserControl
+//
+// Implements IPathControl so the floor composer can host this variant for a
+// Path setting whose Mode is Editable, exactly as it hosts FolderPickerCard for
+// Configure/OpenOnly. Path + PathChanged already carry the contract's value and
+// change signal; View below completes it, mirroring FolderPickerCard.
+public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
 {
+    // IPathControl: the floor composer hosts this control as a SettingsCard's
+    // content for a Path setting; Path and PathChanged below complete the contract.
+    public FrameworkElement View => this;
+
     public static readonly DependencyProperty PathProperty =
         DependencyProperty.Register(
             nameof(Path), typeof(string), typeof(FolderPickerEditableCard),
