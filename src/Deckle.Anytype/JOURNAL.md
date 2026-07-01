@@ -7,6 +7,16 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-07-02 — Backend wired at boot; vault-first credentials proven
+
+The lifecycle built on 06-19 went live: the real task is registered, the supervisor runs from `App.OnLaunched`, and the bearer moved to the vault. Chain proven on the machine through the real module code (scratch runner, never the app).
+
+- **Both 06-19 empirical residuals closed on the real task.** `schtasks /Create` + `/Run` of the LeastPrivilege triggerless "Deckle Anytype Backend" task raise no UAC from a non-elevated process, and the spawned `serve` survives its caller (parented to the Task Scheduler service) — REST still answers after the launcher dies.
+- **No console window.** The task-launched `anytype.exe serve` runs with `MainWindowHandle 0` — the feared InteractiveToken console flash does not materialize; nothing to hide or wrap.
+- **Credentials resolution is vault-first (frozen in code).** A vault `anytype-api-key` pins the fixed 31012 headless listener; the file `api_key`/`api_url` pair stays as the legacy Desktop fallback until the space cutover retires it. Non-secret coordinates (`api_version`, `space_id`) stay in the module file.
+- **API key names are not unique.** A second `apikey create deckle-mcp` succeeds alongside the first; `revoke` targets the key id, not the name. The dead 07-01 key was revoked; the only live key is the vault's.
+- **Guard until `space join`: do not republish the stdio MCP host.** A rebuilt host would resolve headless and talk to a backend whose bot is not yet a member of Dev. The published `current` junction host keeps speaking to the Desktop.
+
 ## 2026-07-01 — Bot account provisioned; REST auth proven end-to-end (supervised session)
 
 The 06-19 residual closed: a real bot account now exists, and an authed `GET /v1/spaces` answers 200 on 31012. Measured against anytype-cli v0.3.6.
