@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Security</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- AppPaths: the single source of truth for the on-disk vault location. -->
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <!-- DPAPI (ProtectedData) — at-rest sealing of the vault file. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+</Project>

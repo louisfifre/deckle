@@ -792,6 +792,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DecklePlaygroundSource.cs
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
+│   ├── Deckle.Security/
+│   │   ├── Deckle.Security.csproj
+│   │   ├── ISecretVault.cs
+│   │   ├── SecretVault.cs
+│   │   └── SecretVaultException.cs
 │   ├── Deckle.Settings/
 │   │   ├── Controls/
 │   │   │   ├── FolderPickerCard.xaml
@@ -1116,6 +1121,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   └── NotificationDispatcherTests.cs
+│   ├── Deckle.Security.Tests/
+│   │   ├── Deckle.Security.Tests.csproj
+│   │   └── SecretVaultTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   └── Deckle.Shell.TaskbarCover.Tests.csproj

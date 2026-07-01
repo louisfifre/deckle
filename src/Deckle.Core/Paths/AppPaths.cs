@@ -10,6 +10,7 @@ namespace Deckle.Core;
 // under <UserDataRoot>:
 //
 //   • settings.json — single config file, sits at the root
+//   • secrets.dat   — Deckle.Security vault, DPAPI-sealed single file
 //   • backups/      — settings backup snapshots
 //   • telemetry/    — JSONL files (app, latency, microphone), raw-capture
 //                     subfolders, and per-profile corpus
@@ -45,6 +46,7 @@ public static class AppPaths
 
     public static string UserDataRoot                 { get; }
     public static string SettingsFilePath             { get; }
+    public static string SecretsFilePath              { get; }
     public static string SettingsBackupDirectory      { get; }
     public static string TelemetryDirectory           { get; }
     public static string TrackpadTelemetryDirectory   { get; }
@@ -81,6 +83,7 @@ public static class AppPaths
     {
         UserDataRoot                 = ResolveUserDataRoot();
         SettingsFilePath             = Path.Combine(UserDataRoot, "settings.json");
+        SecretsFilePath              = Path.Combine(UserDataRoot, "secrets.dat");
         SettingsBackupDirectory      = Path.Combine(UserDataRoot, "backups");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
         TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
