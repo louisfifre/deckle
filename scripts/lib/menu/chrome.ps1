@@ -56,6 +56,8 @@ function New-MenuRule {
 }
 
 function Get-MenuBanner {
+    # The figlet is duplicated in src/Deckle.Installer/Ui/ConsoleUi.cs (BannerArt) —
+    # PowerShell and C# cannot share a source; keep the two in sync.
     @(
         '  ____   _____   ____  _  __  _      _____'
         ' |  _ \ | ____| / ___|| |/ / | |    | ____|'
