@@ -118,7 +118,7 @@ $MingwDlls = @(
 
 # Hosting source for the published native runtime bundle. Must match
 # NativeRuntime.CurrentBundle.Url on the C# side.
-$DeckleRepoSlug = 'PelopeeNoire/deckle'
+$DeckleRepoSlug = 'louisfifre/deckle'
 
 # Idempotent copy — skip if destination already exists with same size,
 # unless -Force was passed. Cheaper than a hash check and good enough
