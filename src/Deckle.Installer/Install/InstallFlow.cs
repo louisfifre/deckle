@@ -40,23 +40,30 @@ internal static class InstallFlow
             return 1;
         }
 
+        // A previous install is recognised from its Installed-apps registration —
+        // the run then reads as an update and starts from the folders that install
+        // actually uses, not from pristine defaults.
+        UninstallEntry.ExistingInstall? existing = UninstallEntry.Read();
+        string version = BareVersion(release.Tag);
+
         // A previous install may have moved the data root: the variable, not the
         // hardcoded default, is where the app actually reads — the recap must show
         // that reality, and Enter must preserve it.
         string? existingDataRoot = UserEnvironment.GetDataRoot();
 
-        string installDir = Path.GetFullPath(cli.InstallDir ?? InstallPaths.DefaultInstallDir);
+        string installDir = Path.GetFullPath(cli.InstallDir ?? existing?.InstallDir ?? InstallPaths.DefaultInstallDir);
         string dataDir = Path.GetFullPath(cli.DataDir ?? existingDataRoot ?? InstallPaths.DefaultDataDir);
 
         // ── Recap + single-keystroke consent ──────────────────────────────────────
         // The recap re-prints after each folder edit, so what Enter commits to is
         // always the block on screen.
         bool interactive = !cli.AssumeYes && !Console.IsInputRedirected;
+        string enterVerb = existing is null ? "installs" : existing.Version == version ? "reinstalls" : "updates";
         while (true)
         {
-            Recap(release, installDir, dataDir);
+            Recap(release, existing, installDir, dataDir);
             if (!interactive) break;
-            ConsoleUi.Hint("Enter installs · C changes the folders · Ctrl+C cancels");
+            ConsoleUi.Hint($"Enter {enterVerb} · C changes the folders · Ctrl+C cancels");
             if (ConsoleUi.WaitKey(ConsoleKey.Enter, ConsoleKey.C) == ConsoleKey.Enter) break;
             Console.WriteLine();
             installDir = Path.GetFullPath(ConsoleUi.PromptPath("App folder", installDir));
@@ -65,7 +72,7 @@ internal static class InstallFlow
         }
 
         // ── Unattended run ────────────────────────────────────────────────────────
-        ConsoleUi.Phase("Installing");
+        ConsoleUi.Phase(existing is null ? "Installing" : "Updating");
         string tempDir = Path.Combine(Path.GetTempPath(), "Deckle-Installer");
         Directory.CreateDirectory(tempDir);
         string zipPath = Path.Combine(tempDir, $"Deckle-{release.Tag}.zip");
@@ -87,7 +94,6 @@ internal static class InstallFlow
 
         string appExe = Path.Combine(installDir, "Deckle.exe");
         Shortcut.CreateStartMenu(appExe, "Deckle", "Deckle");
-        string version = release.Tag.StartsWith('v') ? release.Tag[1..] : release.Tag;
         UninstallEntry.Write(installDir, version, uninstallerPath, DirectorySize(installDir));
         ConsoleUi.Ok("Start Menu · Installed apps");
 
@@ -115,25 +121,38 @@ internal static class InstallFlow
 
         Process.Start(new ProcessStartInfo(appExe) { UseShellExecute = true, WorkingDirectory = installDir });
         Console.WriteLine();
-        ConsoleUi.Success("Deckle is installed and running.");
-        ConsoleUi.Info("First launch downloads the speech runtime and a model — follow the setup window.");
+        ConsoleUi.Success(existing is null ? "Deckle is installed and running." : "Deckle is up to date and running.");
+        // The provisioning note only concerns a first install — an update keeps the
+        // data folder, so the app comes back already provisioned.
+        if (existing is null)
+            ConsoleUi.Info("First launch downloads the speech runtime and a model — follow the setup window.");
         return 0;
     }
 
-    // The consent screen: what will install, how heavy the download is, where the
-    // two folders land, and why the data folder is the one worth moving.
-    private static void Recap(ReleaseResolver.ResolvedRelease release, string installDir, string dataDir)
+    // The consent screen: what will happen (install, update or reinstall), how
+    // heavy the download is, where the two folders land, and why the data folder
+    // is the one worth moving.
+    private static void Recap(ReleaseResolver.ResolvedRelease release, UninstallEntry.ExistingInstall? existing, string installDir, string dataDir)
     {
         string terms = release.ZipSize > 0
             ? $"{Mb(release.ZipSize):0} MB download, no admin"
             : "no admin";
-        ConsoleUi.Headline($"Deckle {release.Tag} — ready to install ({terms})");
+        string headline = existing is null
+            ? $"Deckle {release.Tag} — ready to install ({terms})"
+            : existing.Version == BareVersion(release.Tag)
+                ? $"Deckle {release.Tag} — ready to reinstall ({terms})"
+                : $"Deckle v{existing.Version} → {release.Tag} — ready to update ({terms})";
+        ConsoleUi.Headline(headline);
         Console.WriteLine();
         ConsoleUi.Row("App", installDir);
         ConsoleUi.Row("Data", dataDir);
         ConsoleUi.RowNote("speech models live here and can reach ~3 GB");
         Console.WriteLine();
     }
+
+    // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, as the registry and
+    // the recap compare it.
+    private static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
 
     // The .sha256 sidecar is `<hex> *<filename>` (sha256sum -c format). Take the hex.
     private static string ParseSha256Sidecar(string content)

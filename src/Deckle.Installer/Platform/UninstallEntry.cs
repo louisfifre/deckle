@@ -10,11 +10,24 @@ namespace Deckle.Installer;
 // re-invoked with --uninstall, so the same exe is both installer and uninstaller.
 //
 // Windows reads this key to list the app, show its version, and run its removal;
-// NoModify/NoRepair hide the buttons we don't implement.
+// NoModify/NoRepair hide the buttons we don't implement. The installer reads the
+// same key back to recognise an existing copy and run as an update.
 internal static class UninstallEntry
 {
     private const string KeyPath =
         @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Deckle";
+
+    // What a previous run registered — null when Deckle was never installed (or
+    // was uninstalled, which deletes the key).
+    public sealed record ExistingInstall(string InstallDir, string Version);
+
+    public static ExistingInstall? Read()
+    {
+        using RegistryKey? key = Registry.CurrentUser.OpenSubKey(KeyPath);
+        if (key?.GetValue("InstallLocation") is not string dir || string.IsNullOrWhiteSpace(dir)) return null;
+        if (key.GetValue("DisplayVersion") is not string version || string.IsNullOrWhiteSpace(version)) return null;
+        return new ExistingInstall(dir, version);
+    }
 
     public static void Write(string installDir, string version, string uninstallerPath, long estimatedSizeBytes)
     {
