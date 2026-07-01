@@ -8,7 +8,9 @@
 # It does NOT push. Pushing — and cutting the public GitHub Release from the
 # tag (publish-app.ps1 -Publish) — stays a deliberate, separate act. Run this
 # on `main` right after a merge, when the tree is clean and the milestone is
-# real.
+# real. The launcher's "Publish app release" action composes the whole ritual —
+# cut → changelog bake → push → publish — behind a single consent; this script
+# stays the atomic cut it needs.
 
 [CmdletBinding()]
 param(

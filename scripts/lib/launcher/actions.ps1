@@ -27,6 +27,29 @@ function Invoke-StopBuildServers {
     & (Join-Path $LibDir 'stop-build-servers.ps1')
 }
 
+# The patch/minor/major picker with next-version previews, shared by the
+# standalone bump and the publish flow. Returns @{ Seg; Target } or $null on Esc.
+function Select-VersionBump {
+    param(
+        [Parameter(Mandatory)][string]$Current,
+        [string]$Header = 'Pick the increment:'
+    )
+    $n = $Current.Split('.') | ForEach-Object { [int]$_ }
+    $patch = "$($n[0]).$($n[1]).$($n[2] + 1)"
+    $minor = "$($n[0]).$($n[1] + 1).0"
+    $major = "$($n[0] + 1).0.0"
+    $items = @(
+        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Patch', "$Current -> $patch", 'a fix or small step'); Value = [pscustomobject]@{ Seg = 'patch'; Target = $patch } }
+        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Minor', "$Current -> $minor", 'a real cycle');        Value = [pscustomobject]@{ Seg = 'minor'; Target = $minor } }
+        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Major', "$Current -> $major", 'an overhaul');          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
+    )
+    try {
+        return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen
+    } catch {
+        return $null
+    }
+}
+
 function Invoke-UpdateVersion {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
@@ -35,18 +58,8 @@ function Invoke-UpdateVersion {
         Write-Host "No MAJOR.MINOR.PATCH <Version> found in that worktree." -ForegroundColor Red
         return
     }
-    $n = $cur.Split('.') | ForEach-Object { [int]$_ }
-    $patch = "$($n[0]).$($n[1]).$($n[2] + 1)"
-    $minor = "$($n[0]).$($n[1] + 1).0"
-    $major = "$($n[0] + 1).0.0"
-    $items = @(
-        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Patch', "$cur -> $patch", 'a fix or small step'); Value = [pscustomobject]@{ Seg = 'patch'; Target = $patch } }
-        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Minor', "$cur -> $minor", 'a real cycle');        Value = [pscustomobject]@{ Seg = 'minor'; Target = $minor } }
-        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Major', "$cur -> $major", 'an overhaul');          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
-    )
-    try {
-        $choice = Select-Action -Header 'Update version - pick the increment:' -Items $items -Default 0 -ClearScreen
-    } catch {
+    $choice = Select-VersionBump -Current $cur -Header 'Update version - pick the increment:'
+    if ($null -eq $choice) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
@@ -60,20 +73,64 @@ function Invoke-UpdateVersion {
     & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $choice.Seg
 }
 
+# The whole release ritual behind one consent: bump (asked here, skipped when the
+# current <Version> already has its tag — a cut made via Update version, or a
+# previous run that failed past the cut), changelog bake, push of main and the
+# tag, then the public GitHub Release. Each step stays a single-purpose script;
+# this action only composes them, and every git step is idempotent so a re-run
+# resumes where the last one stopped.
 function Invoke-PublishRelease {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    $ver = Get-CsprojVersion -Worktree $wt
-    if (-not $ver) {
-        Write-Host "Could not read <Version> from that worktree." -ForegroundColor Red
+    $cur = Get-CsprojVersion -Worktree $wt
+    if (-not $cur -or $cur -notmatch '^\d+\.\d+\.\d+$') {
+        Write-Host "No MAJOR.MINOR.PATCH <Version> found in that worktree." -ForegroundColor Red
         return
     }
-    Write-Host "This publishes a PUBLIC GitHub Release v$ver (creates tag v$ver, uploads the installer exe + app ZIP + sha256)." -ForegroundColor Yellow
-    if (-not (Read-YesNo -Question "Publish Deckle v$ver to GitHub now?" -Default $false)) {
+
+    $alreadyCut = [bool](& git -C $wt tag --list "v$cur")
+    $bump = $null
+    $target = $cur
+    if ($alreadyCut) {
+        Write-Host "v$cur is already cut (tag exists) - this run publishes it." -ForegroundColor DarkGray
+    } else {
+        $choice = Select-VersionBump -Current $cur -Header 'Publish release - pick the increment:'
+        if ($null -eq $choice) {
+            Write-Host "Cancelled." -ForegroundColor DarkGray
+            return
+        }
+        $bump = $choice.Seg
+        $target = $choice.Target
+        Write-Host ""
+    }
+
+    Write-Host "This cuts v$target if needed, bakes the changelog, pushes main + tag, and publishes a PUBLIC GitHub Release (installer exe + app ZIP + sha256)." -ForegroundColor Yellow
+    if (-not (Read-YesNo -Question "Publish Deckle v$target to GitHub now?" -Default $true)) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
+
     Begin-DeckleAction
+    if (-not $alreadyCut) {
+        & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $bump
+    }
+
+    # Bake the changelog section — idempotent: regeneration is wholesale, and the
+    # commit only happens when the file actually changed.
+    & (Join-Path $LibDir 'changelog.ps1') -Target $wt
+    & git -C $wt add -- CHANGELOG.md
+    & git -C $wt diff --cached --quiet -- CHANGELOG.md
+    if ($LASTEXITCODE -ne 0) {
+        & git -C $wt commit -m "docs(changelog): bake the v$target section"
+        if ($LASTEXITCODE -ne 0) { throw "changelog bake commit failed (code $LASTEXITCODE)" }
+    }
+
+    # Push main and the tag — both no-ops when already on origin.
+    & git -C $wt push
+    if ($LASTEXITCODE -ne 0) { throw "git push failed (code $LASTEXITCODE)" }
+    & git -C $wt push origin "v$target"
+    if ($LASTEXITCODE -ne 0) { throw "git push origin v$target failed (code $LASTEXITCODE)" }
+
     & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
 }
 
