@@ -7,6 +7,16 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-07-01 — Bot account provisioned; REST auth proven end-to-end (supervised session)
+
+The 06-19 residual closed: a real bot account now exists, and an authed `GET /v1/spaces` answers 200 on 31012. Measured against anytype-cli v0.3.6.
+
+- **Bot account `Deckle` created** (`auth create "Deckle"`), Account Id `ABG37cUsbuNeymEqTYWdNFLCufdJBdgphyxSiaNWL6gC7hE6`. The account key printed once; the CLI stored it in the OS keychain via go-keyring. `cmdkey /list` does not surface it by name — but auto-login (below) reads it back, so it is stored.
+- **`auth create` requires a running `serve`.** Order is counter-intuitive: `serve` first (gRPC only, no REST), then `auth create` talks to the live server, creates the account, and logs it in — which binds REST 31012 **hot**, no restart. Confirmed by a 401 on `/v1/spaces` immediately after.
+- **Cold restart auto-logs-in.** A fresh `serve` finds the stored key and logs in on its own (log: "Found stored account key" → "Successfully logged in using stored account key"), rebinding REST unaided. So the backend scheduled task needs no auth gesture at start — a bare `serve` restores REST + auth. This is the lifecycle precondition, now proven.
+- **Correction to the 06-19 note: `/docs/openapi.json` IS a local route** — 200 on 31012, unauthenticated. The 06-19 "not a local route" was written with no account, so REST never bound and the path was never testable. Since REST binds only after login, a 200 there proves both "REST up" and "account logged in" without a bearer. `BackendHealthProbe`'s current path is **valid, not to fix**.
+- **API key `deckle-mcp` minted** (`auth apikey create`), bearer proven via `GET /v1/spaces` → 200 (one space, the bot's empty default). Repeatable command (`apikey list`/`revoke` exist). The bearer was **not** persisted — proof only; re-mint when a consumer (MCP host / wizard) exists to call `ISecretVault.Set`. Next: `space join` (owner invite from Desktop), then wire the supervisor.
+
 ## 2026-06-19 — Backend lifecycle built + anytype-cli measured (implementation session)
 
 Implemented point 1 of the 06-18/06-19 wizard design. Code on branch `feat/anytype-backend-lifecycle` (dormant: compiles, 7/7 unit tests, no consumer wired, no real process spec).
