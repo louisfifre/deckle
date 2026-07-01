@@ -163,20 +163,6 @@ function Invoke-NativeRuntime {
     & (Join-Path $LibDir 'publish-native-runtime.ps1') @nativeArgs
 }
 
-function Invoke-AnytypeMcp {
-    Clear-DeckleMenuScreen
-    Write-Host "Publishes the Anytype MCP to %LOCALAPPDATA%\Deckle\mcp\anytype\ (versioned + 'current' junction) and points .claude.json at current\ - AI clients stop locking the build output." -ForegroundColor DarkGray
-    Write-Host "Safe to re-run to cut a new version: open sessions keep theirs, new spawns get the fresh one." -ForegroundColor DarkGray
-    if (-not (Read-YesNo -Question 'Install / update the Anytype MCP now?' -Default $false)) {
-        Write-Host "Cancelled." -ForegroundColor DarkGray
-        return
-    }
-    Write-Host "Supervised management tools (complete / archive / delete) are destructive verbs, served only to this consumer. Off by default." -ForegroundColor DarkGray
-    $mgmtState = if (Read-YesNo -Question 'Mount the supervised management tools in .claude.json?' -Default $false) { 'on' } else { 'off' }
-    Begin-DeckleAction
-    & (Join-Path $LibDir 'install-anytype-mcp.ps1') -Management $mgmtState
-}
-
 function Invoke-BootstrapDev {
     Clear-DeckleMenuScreen
     $dryRun = Read-YesNo -Question 'Dry-run first (probe + plan, no install)?' -Default $true
