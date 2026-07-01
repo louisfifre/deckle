@@ -177,22 +177,20 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // External-change detection state — populated at StartAsync from
     // the bridge's CLIP v2 resource list. Used by OnResourceUpdate to
     // translate event-side v2 UUIDs (what the EventStream carries)
-    // back to v1 ids (what the engine's push path takes), then decide
-    // whether the event is our own echo or a true external change.
-    // When external is confirmed, the engine stops itself cleanly and
-    // raises StoppedByExternalChange for the UI to surface.
+    // back to v1 ids (what the engine's push path takes), then attribute
+    // the event to either our own pending push or a bridge-side change
+    // Ambient should not fight.
     private IReadOnlyDictionary<string, string>? _v2LightMap;          // v2_uuid → v1_light_id
     private IReadOnlyDictionary<string, string>? _v2GroupedLightMap;   // v2_uuid → v1_group_id
     private string? _managedGroupId;                                   // v1_group_id we are syncing
 
     // Last successful self-push, per v1 id ("group:<id>" or "light:<id>"
-    // namespaced). Stores the Hue state we intended, not just the clock,
-    // because the bridge can echo our own REST PUTs after the old 300 ms
-    // timing window. A late event that still matches the pushed state is
-    // an echo ; a different state is a real external command and stops
-    // the pipeline.
-    private readonly Dictionary<string, AmbientHuePushedState> _lastHuePushes = new();
-    private readonly object _hueEchoLock = new();
+    // namespaced). Stores the Hue state we intended, not just the clock.
+    // EventStream carries state changes without caller provenance, so this
+    // is an attribution baseline: pending self-push echoes are ignored ;
+    // stable bridge changes that diverge from it stop the pipeline.
+    private readonly Dictionary<string, AmbientHueAttributionState> _hueAttributionStates = new();
+    private readonly object _hueAttributionLock = new();
 
     // Deferred-cleanup task spun by Stop() so the UI thread that
     // triggered the stop returns immediately while the DXGI duplication

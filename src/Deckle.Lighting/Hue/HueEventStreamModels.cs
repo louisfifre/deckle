@@ -4,11 +4,10 @@ namespace Deckle.Lighting;
 
 // Public record yielded by HueBridgeClient.StreamEventsAsync. One
 // instance per resource that the bridge reports as changed. The
-// caller (typically AmbientEngine) decides whether the change is
-// truly external (a Hue app / Home Assistant / physical button
-// press) or merely the bridge echoing back our own REST PUT, by
-// comparing the event payload to its own last-pushed state for the
-// matching v1 id.
+// caller (typically AmbientEngine) attributes the change to either a
+// bridge-side actor (Hue app / Home Assistant / physical button press)
+// or the bridge echoing back our own REST PUT, by comparing the event
+// payload to its own pending push state for the matching v1 id.
 //
 // Fields are nullable because the EventStream sends partial updates
 // — only the properties that actually changed are included. A

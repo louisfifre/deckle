@@ -687,7 +687,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
-│   │   │   ├── AmbientHueEchoClassifier.cs
+│   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientModePresets.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HuePairingService.cs
@@ -1106,7 +1106,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
-│   │   ├── AmbientHueEchoClassifierTests.cs
+│   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   └── DeckleAmbientSourceTests.cs
 │   ├── Deckle.Notifications.Tests/

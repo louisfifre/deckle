@@ -236,7 +236,7 @@ public sealed partial class AmbientEngine
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
             _multiSmoothed.Clear();
-            ClearLastHuePushes();
+            ClearHueAttributionStates();
             _stopReason = "user";
             lock (_emittedLock) _emittedColors.Clear();
 
@@ -337,7 +337,7 @@ public sealed partial class AmbientEngine
         _v2LightMap = null;
         _v2GroupedLightMap = null;
         _managedGroupId = null;
-        ClearLastHuePushes();
+        ClearHueAttributionStates();
     }
 
     /// <summary>

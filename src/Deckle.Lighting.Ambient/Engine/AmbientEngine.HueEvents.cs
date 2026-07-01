@@ -1,5 +1,5 @@
-// AmbientEngine — Hue EventStream handling (external-change vs. echo
-// classification, self-push bookkeeping, event-field formatting).
+// AmbientEngine — Hue EventStream handling (bridge-change attribution,
+// self-push bookkeeping, event-field formatting).
 using System.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Lighting;
@@ -9,11 +9,10 @@ namespace Deckle.Lighting.Ambient;
 
 public sealed partial class AmbientEngine
 {
-    // Called on the EventStream task (HttpClient SSE reader). Decides
-    // whether the bridge-side event reflects our own push (echo) or a
-    // genuine external command, and if external, stops the engine rather
-    // than fighting the user's Hue command. Never blocks — only field
-    // reads and a stop request.
+    // Called on the EventStream task (HttpClient SSE reader). Attributes
+    // a bridge-side event to either our own pending push (echo) or a stable
+    // bridge-side change Ambient should not fight. Never blocks — only
+    // field reads and a stop request.
     private void OnResourceUpdate(HueResourceUpdate ev)
     {
         // Translate the v2 UUID to the v1 id the engine pushes against.
@@ -47,17 +46,17 @@ public sealed partial class AmbientEngine
             return;
         }
 
-        AmbientHuePushedState? lastPushed = null;
-        lock (_hueEchoLock)
+        AmbientHueAttributionState? attributionState = null;
+        lock (_hueAttributionLock)
         {
-            if (_lastHuePushes.TryGetValue(scopedKey, out var pushed))
+            if (_hueAttributionStates.TryGetValue(scopedKey, out var state))
             {
-                lastPushed = pushed;
+                attributionState = state;
             }
         }
 
-        var decision = AmbientHueEchoClassifier.Classify(ev, lastPushed, DateTimeOffset.UtcNow);
-        if (decision.Kind == AmbientHueEventDecisionKind.Ignore)
+        var decision = AmbientHueChangeAttributor.Classify(ev, attributionState, DateTimeOffset.UtcNow);
+        if (decision.Kind == AmbientHueChangeDecisionKind.Ignore)
         {
             return;
         }
@@ -66,7 +65,7 @@ public sealed partial class AmbientEngine
             ? (int)Math.Round(decision.AgeMs.Value)
             : -1;
 
-        if (decision.Kind == AmbientHueEventDecisionKind.Echo)
+        if (decision.Kind == AmbientHueChangeDecisionKind.Echo)
         {
             DeckleAmbientSource.Log.EchoIgnored(v1Id, ev.ResourceType, ageMs);
             return;
@@ -95,30 +94,30 @@ public sealed partial class AmbientEngine
                     ev.ResourceType,
                     ageMs,
                     FormatHueEventOn(ev.On),
-                    FormatPushedOn(lastPushed),
+                    FormatPushedOn(attributionState),
                     FormatHueEventBrightness(ev.Brightness),
-                    FormatPushedBrightness(lastPushed),
+                    FormatPushedBrightness(attributionState),
                     FormatHueEventXy(ev.Xy),
-                    FormatPushedXy(lastPushed),
-                    FormatXyDelta(ev.Xy, lastPushed),
-                    FormatMismatch(ev, lastPushed));
+                    FormatPushedXy(attributionState),
+                    FormatXyDelta(ev.Xy, attributionState),
+                    decision.Basis);
             });
     }
 
     private void RecordHuePush(string scopedKey, LightColor color, DateTimeOffset pushedAt)
     {
-        var pushed = new AmbientHuePushedState(pushedAt, HueStateProjection.FromLightColor(color));
-        lock (_hueEchoLock)
+        var pushed = new AmbientHueAttributionState(pushedAt, HueStateProjection.FromLightColor(color));
+        lock (_hueAttributionLock)
         {
-            _lastHuePushes[scopedKey] = pushed;
+            _hueAttributionStates[scopedKey] = pushed;
         }
     }
 
-    private void ClearLastHuePushes()
+    private void ClearHueAttributionStates()
     {
-        lock (_hueEchoLock)
+        lock (_hueAttributionLock)
         {
-            _lastHuePushes.Clear();
+            _hueAttributionStates.Clear();
         }
     }
 
@@ -133,85 +132,33 @@ public sealed partial class AmbientEngine
             ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{xy.Value.X:F4},{xy.Value.Y:F4}")
             : "null";
 
-    private static string FormatPushedOn(AmbientHuePushedState? pushed)
-        => pushed.HasValue ? (pushed.Value.State.On ? "true" : "false") : "none";
+    private static string FormatPushedOn(AmbientHueAttributionState? pushed)
+        => pushed.HasValue ? (pushed.Value.DesiredState.On ? "true" : "false") : "none";
 
-    private static string FormatPushedBrightness(AmbientHuePushedState? pushed)
+    private static string FormatPushedBrightness(AmbientHueAttributionState? pushed)
         => pushed.HasValue
-            ? (pushed.Value.State.Brightness.HasValue
-                ? pushed.Value.State.Brightness.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            ? (pushed.Value.DesiredState.Brightness.HasValue
+                ? pushed.Value.DesiredState.Brightness.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
                 : "null")
             : "none";
 
-    private static string FormatPushedXy(AmbientHuePushedState? pushed)
+    private static string FormatPushedXy(AmbientHueAttributionState? pushed)
         => pushed.HasValue
-            ? (pushed.Value.State.Xy.HasValue
-                ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{pushed.Value.State.Xy.Value.X:F4},{pushed.Value.State.Xy.Value.Y:F4}")
+            ? (pushed.Value.DesiredState.Xy.HasValue
+                ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{pushed.Value.DesiredState.Xy.Value.X:F4},{pushed.Value.DesiredState.Xy.Value.Y:F4}")
                 : "null")
             : "none";
 
-    private static string FormatXyDelta((float X, float Y)? eventXy, AmbientHuePushedState? pushed)
+    private static string FormatXyDelta((float X, float Y)? eventXy, AmbientHueAttributionState? pushed)
     {
-        if (!eventXy.HasValue || !pushed.HasValue || !pushed.Value.State.Xy.HasValue)
+        if (!eventXy.HasValue || !pushed.HasValue || !pushed.Value.DesiredState.Xy.HasValue)
         {
             return "null";
         }
 
-        var pushedXy = pushed.Value.State.Xy.Value;
+        var pushedXy = pushed.Value.DesiredState.Xy.Value;
         return string.Create(
             System.Globalization.CultureInfo.InvariantCulture,
             $"{Math.Abs(eventXy.Value.X - pushedXy.X):F4},{Math.Abs(eventXy.Value.Y - pushedXy.Y):F4}");
-    }
-
-    private static string FormatMismatch(HueResourceUpdate update, AmbientHuePushedState? pushed)
-    {
-        if (!pushed.HasValue)
-        {
-            return "no_push";
-        }
-
-        var fields = new List<string>(3);
-        var state = pushed.Value.State;
-
-        if (update.On.HasValue && update.On.Value != state.On)
-        {
-            fields.Add("on");
-        }
-
-        if (update.Brightness.HasValue)
-        {
-            if (!state.Brightness.HasValue)
-            {
-                fields.Add("bri_missing");
-            }
-            else
-            {
-                int delta = Math.Abs(update.Brightness.Value - state.Brightness.Value);
-                if (delta > 1)
-                {
-                    fields.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"bri:{delta}"));
-                }
-            }
-        }
-
-        if (update.Xy.HasValue)
-        {
-            if (!state.Xy.HasValue)
-            {
-                fields.Add("xy_missing");
-            }
-            else
-            {
-                var eventXy = update.Xy.Value;
-                var pushedXy = state.Xy.Value;
-                if (Math.Abs(eventXy.X - pushedXy.X) > 0.002f ||
-                    Math.Abs(eventXy.Y - pushedXy.Y) > 0.002f)
-                {
-                    fields.Add("xy");
-                }
-            }
-        }
-
-        return fields.Count == 0 ? "unknown" : string.Join(",", fields);
     }
 }

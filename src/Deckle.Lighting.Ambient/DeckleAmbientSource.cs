@@ -190,7 +190,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     [Event(EvtExternalChangeDecisionDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "external decision | v1_id={0} | resource_type={1} | age_ms={2} | event_on={3} | pushed_on={4} | event_bri={5} | pushed_bri={6} | event_xy={7} | pushed_xy={8} | delta_xy={9} | mismatch={10}")]
+           Message = "external decision | v1_id={0} | resource_type={1} | age_ms={2} | event_on={3} | pushed_on={4} | event_bri={5} | pushed_bri={6} | event_xy={7} | pushed_xy={8} | delta_xy={9} | basis={10}")]
     public void ExternalChangeDecisionDetail(
         string v1_id,
         string resource_type,

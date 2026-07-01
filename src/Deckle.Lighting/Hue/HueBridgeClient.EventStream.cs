@@ -6,15 +6,16 @@ public sealed partial class HueBridgeClient
 {
     /// <summary>
     /// Long-running consumer of the bridge's v2 EventStream (SSE). Yields
-    /// resource updates as they happen so callers can detect external
-    /// state changes (Hue app, Home Assistant, physical Dimmer Switch).
+    /// resource updates as they happen so callers can attribute bridge-side
+    /// state changes (Hue app, Home Assistant, physical Dimmer Switch, or
+    /// bridge echoes of our own calls).
     /// The method reconnects with a 2 s backoff on any
     /// network/parsing error ; only cancellation stops the loop.
     /// </summary>
     /// <remarks>
     /// The bridge echoes our own REST PUTs back as events. Discrimination
-    /// is the caller's responsibility (compare event timestamp with the
-    /// last self-push for the same resource).
+    /// is the caller's responsibility (compare the event with its own
+    /// pending push state for the same resource).
     /// </remarks>
     public async Task StreamEventsAsync(
         Action<HueResourceUpdate> onUpdate,
