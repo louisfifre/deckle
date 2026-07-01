@@ -11,7 +11,9 @@ function Show-Submenu {
         @{ Blank = $true }
     ) + @($Rows)
 
-    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -ClearScreen
+    # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
+    # never holds the entry selection.
+    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen
     if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
 }

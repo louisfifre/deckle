@@ -43,7 +43,7 @@ try {
         $v = Select-Grid `
             -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
             -Footer 'the worktree is asked after you pick; the menu exits after an action runs' `
-            -Rows $mainRows -StartSel 1 -StartCol 0 -EscapeAction Ignore -ClearScreen
+            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
 
