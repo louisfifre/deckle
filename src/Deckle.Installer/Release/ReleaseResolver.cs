@@ -29,7 +29,9 @@ internal static class ReleaseResolver
 
     private static readonly HttpClient s_http = CreateClient();
 
-    public sealed record ResolvedRelease(string Tag, string ZipUrl, string Sha256Url);
+    // ZipSize is 0 when the asset came from the URL-convention fallback — the
+    // consent recap then simply omits the download size instead of inventing one.
+    public sealed record ResolvedRelease(string Tag, string ZipUrl, string Sha256Url, long ZipSize);
 
     public static async Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct)
     {
@@ -44,17 +46,18 @@ internal static class ReleaseResolver
         if (latest?.TagName is not { } tag)
             throw new InvalidOperationException("No published release found on GitHub.");
 
-        string? zip = FindAsset(latest, name => name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
-        string? sha = FindAsset(latest, name => name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase));
+        GitHubAsset? zipAsset = FindAsset(latest, name => name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+        GitHubAsset? shaAsset = FindAsset(latest, name => name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase));
 
-        zip ??= $"https://github.com/{Repo}/releases/download/{tag}/Deckle-{tag}.zip";
-        sha ??= zip + ".sha256";
+        string zip = zipAsset?.BrowserDownloadUrl
+            ?? $"https://github.com/{Repo}/releases/download/{tag}/Deckle-{tag}.zip";
+        string sha = shaAsset?.BrowserDownloadUrl ?? zip + ".sha256";
 
-        return new ResolvedRelease(tag, zip, sha);
+        return new ResolvedRelease(tag, zip, sha, zipAsset?.Size ?? 0);
     }
 
-    private static string? FindAsset(GitHubRelease release, Func<string, bool> match) =>
-        release.Assets?.FirstOrDefault(a => a.Name is not null && match(a.Name))?.BrowserDownloadUrl;
+    private static GitHubAsset? FindAsset(GitHubRelease release, Func<string, bool> match) =>
+        release.Assets?.FirstOrDefault(a => a.Name is not null && match(a.Name));
 
     private static HttpClient CreateClient()
     {
@@ -81,6 +84,7 @@ internal sealed class GitHubAsset
 {
     public string? Name { get; set; }
     public string? BrowserDownloadUrl { get; set; }
+    public long Size { get; set; } // bytes — feeds the consent recap's download size
 }
 
 // Source-generated (de)serialization — the AOT-safe path. Reflection-based

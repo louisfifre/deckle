@@ -1,47 +1,58 @@
 using System.Diagnostics;
 
-using Deckle.Installer;
-
 namespace Deckle.Installer;
 
 // ── Uninstaller ───────────────────────────────────────────────────────────────
 //
 // Reached when the installed copy is re-invoked with --uninstall (the
 // UninstallString registered in Installed apps). It runs from inside the install
-// folder, so the install location is simply this exe's directory.
+// folder, so the install location is simply this exe's directory. Same grammar as
+// the install: a recap of what goes, every question up front, then an unattended
+// run.
 //
 // Removal order: deregister first (shortcut, Installed-apps key), optionally drop
 // the data folder, then schedule the binaries — including this running exe — for
 // deletion. A process can't delete its own image, so a detached cmd waits for exit
-// and removes the folder. Models are preserved unless the user explicitly opts in:
-// re-downloading 3 GB is not something to do silently.
+// and removes the folder; the "Press Enter to close" hold therefore happens here,
+// BEFORE scheduling, so the delayed delete never races a user still reading the
+// console. Models are preserved unless the user explicitly opts in: re-downloading
+// 3 GB is not something to do silently.
 internal static class Uninstaller
 {
     public static Task<int> RunAsync(CliArgs cli, CancellationToken ct)
     {
-        ConsoleUi.Banner("Deckle Uninstaller", "Removes Deckle from this PC.");
+        ConsoleUi.Banner("Uninstaller");
 
         string installDir = Path.GetDirectoryName(Environment.ProcessPath
             ?? throw new InvalidOperationException("cannot resolve the uninstaller's own path."))!;
-
-        if (!cli.AssumeYes && !ConsoleUi.Confirm("Remove Deckle?", defaultYes: true))
-        {
-            ConsoleUi.Info("Cancelled.");
-            return Task.FromResult(0);
-        }
-
-        // ── Deregister ────────────────────────────────────────────────────────────
-        Shortcut.RemoveStartMenu("Deckle");
-        ConsoleUi.Ok("Start Menu shortcut removed");
-        UninstallEntry.Remove();
-        ConsoleUi.Ok("removed from Installed apps");
-
-        // ── Data / models (opt-in, preserved by default) ─────────────────────────
         string? dataRoot = UserEnvironment.GetDataRoot();
         string dataDir = dataRoot ?? InstallPaths.DefaultDataDir;
-        bool removeData = !cli.AssumeYes
+
+        // ── Recap + questions, all up front ───────────────────────────────────────
+        ConsoleUi.Headline("Deckle — ready to remove");
+        Console.WriteLine();
+        ConsoleUi.Row("App", installDir);
+        ConsoleUi.Row("Data", dataDir);
+        ConsoleUi.RowNote("models and settings — kept unless you opt in below");
+        Console.WriteLine();
+
+        bool interactive = !cli.AssumeYes && !Console.IsInputRedirected;
+        if (interactive && !ConsoleUi.Confirm("Remove Deckle?", defaultYes: true))
+        {
+            ConsoleUi.Info("Cancelled.");
+            ConsoleUi.HoldOpen();
+            return Task.FromResult(0);
+        }
+        bool removeData = interactive
             && Directory.Exists(dataDir)
-            && ConsoleUi.Confirm($"Also delete data and models at {dataDir}?", defaultYes: false);
+            && ConsoleUi.Confirm("Also delete data and models?", defaultYes: false);
+
+        // ── Unattended run ────────────────────────────────────────────────────────
+        ConsoleUi.Phase("Removing");
+        Shortcut.RemoveStartMenu("Deckle");
+        UninstallEntry.Remove();
+        ConsoleUi.Ok("Start Menu · Installed apps");
+
         if (removeData)
         {
             TryDeleteTree(dataDir);
@@ -53,9 +64,10 @@ internal static class Uninstaller
             ConsoleUi.Ok("DECKLE_DATA_ROOT cleared");
         }
 
-        // ── Binaries (self-deleting) ──────────────────────────────────────────────
+        Console.WriteLine();
+        ConsoleUi.Success("Deckle removed.");
+        if (interactive) ConsoleUi.HoldOpen(); // must precede the self-delete schedule
         ScheduleFolderDeletion(installDir);
-        ConsoleUi.Ok("Deckle removed");
         return Task.FromResult(0);
     }
 

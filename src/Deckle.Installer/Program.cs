@@ -27,12 +27,10 @@ catch (Exception ex)
 }
 
 // Keep the window up when double-clicked (interactive run), so the user reads the
-// outcome instead of a console that flashes and vanishes.
-if (!cli.AssumeYes)
-{
-    Console.WriteLine();
-    ConsoleUi.Info("Press Enter to close…");
-    Console.ReadLine();
-}
+// outcome instead of a console that flashes and vanishes. A clean uninstall holds
+// inside Uninstaller instead — its self-delete must be scheduled only after the
+// user lets go of the console, so this exe exits (and unlocks its image) right away.
+if (!cli.AssumeYes && !(cli.Uninstall && code == 0))
+    ConsoleUi.HoldOpen();
 
 return code;

@@ -1,83 +1,90 @@
 using System.Diagnostics;
 using System.IO.Compression;
-
-using Deckle.Installer;
+using System.Net.Http;
 
 namespace Deckle.Installer;
 
 // ── InstallFlow ───────────────────────────────────────────────────────────────
 //
-// The seven-step install, run top to bottom. The steps tick off as real work
-// completes — no phantom bar; the only progress bar is the download's, driven by
-// actual bytes. The download is the heavy step and shows it.
+// Recap → one keystroke → unattended run. Everything is resolved before anything
+// is asked (system check, latest release, folder defaults), so the consent screen
+// states exactly what will happen — version, download size, both folders. Enter
+// is the whole fast path; C reopens the folders; after consent the machine runs
+// without questions. The only progress bar is the download's, driven by actual
+// bytes, and ticks appear as real work completes — no phantom progress.
 //
 // What this does NOT do: provision the whisper.cpp native runtime or the speech
 // models. Those are the app's first-run wizard's job (auto-download, per user).
 // The installer's contract is narrow: place the app, integrate it, launch it.
 internal static class InstallFlow
 {
-    private const int TotalSteps = 7;
-
     public static async Task<int> RunAsync(CliArgs cli, CancellationToken ct)
     {
-        ConsoleUi.Banner("Deckle Installer", "Installs Deckle on this PC — no admin required.");
+        ConsoleUi.Banner("Installer");
 
-        // ── 1. System check + folder choices ─────────────────────────────────────
-        ConsoleUi.Step(1, TotalSteps, "Setup");
+        // ── Resolve everything before asking anything ─────────────────────────────
         if (!Environment.Is64BitOperatingSystem)
         {
             ConsoleUi.Error("Deckle requires 64-bit Windows.");
             return 1;
         }
-        ConsoleUi.Ok($"Windows {Environment.OSVersion.Version} (x64)");
 
-        string installDir = Resolve(cli.InstallDir, cli.AssumeYes, "Install folder (app binaries)", InstallPaths.DefaultInstallDir);
-        string dataDir = Resolve(cli.DataDir, cli.AssumeYes, "Data folder (models, settings)", InstallPaths.DefaultDataDir);
-        ConsoleUi.Info($"binaries → {installDir}");
-        ConsoleUi.Info($"data     → {dataDir}");
+        ReleaseResolver.ResolvedRelease release;
+        try
+        {
+            release = await ReleaseResolver.ResolveLatestAsync(ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            ConsoleUi.Error($"Could not reach GitHub to find the latest release — check your connection. ({ex.Message})");
+            return 1;
+        }
 
-        // ── 2. Resolve latest release ────────────────────────────────────────────
-        ConsoleUi.Step(2, TotalSteps, "Resolving latest release");
-        ReleaseResolver.ResolvedRelease release = await ReleaseResolver.ResolveLatestAsync(ct);
-        ConsoleUi.Ok($"Deckle {release.Tag}");
+        string installDir = Path.GetFullPath(cli.InstallDir ?? InstallPaths.DefaultInstallDir);
+        string dataDir = Path.GetFullPath(cli.DataDir ?? InstallPaths.DefaultDataDir);
 
-        // ── 3. Download (the heavy step) ──────────────────────────────────────────
-        ConsoleUi.Step(3, TotalSteps, "Downloading");
+        // ── Recap + single-keystroke consent ──────────────────────────────────────
+        // The recap re-prints after each folder edit, so what Enter commits to is
+        // always the block on screen.
+        bool interactive = !cli.AssumeYes && !Console.IsInputRedirected;
+        while (true)
+        {
+            Recap(release, installDir, dataDir);
+            if (!interactive) break;
+            ConsoleUi.Hint("Enter installs · C changes the folders · Ctrl+C cancels");
+            if (ConsoleUi.WaitKey(ConsoleKey.Enter, ConsoleKey.C) == ConsoleKey.Enter) break;
+            Console.WriteLine();
+            installDir = Path.GetFullPath(ConsoleUi.PromptPath("App folder", installDir));
+            dataDir = Path.GetFullPath(ConsoleUi.PromptPath("Data folder", dataDir));
+            Console.WriteLine();
+        }
+
+        // ── Unattended run ────────────────────────────────────────────────────────
+        ConsoleUi.Phase("Installing");
         string tempDir = Path.Combine(Path.GetTempPath(), "Deckle-Installer");
         Directory.CreateDirectory(tempDir);
         string zipPath = Path.Combine(tempDir, $"Deckle-{release.Tag}.zip");
 
         string expectedSha = ParseSha256Sidecar(await Downloader.GetStringAsync(release.Sha256Url, ct));
         string actualSha = await Downloader.DownloadAsync(release.ZipUrl, zipPath, showProgress: true, ct);
-
-        // ── 4. Verify ─────────────────────────────────────────────────────────────
-        ConsoleUi.Step(4, TotalSteps, "Verifying");
         if (!string.Equals(actualSha, expectedSha, StringComparison.OrdinalIgnoreCase))
         {
             ConsoleUi.Error($"Checksum mismatch — expected {expectedSha}, got {actualSha}.");
             TryDelete(zipPath);
             return 1;
         }
-        ConsoleUi.Ok("SHA-256 verified");
 
-        // ── 5. Install files ──────────────────────────────────────────────────────
-        ConsoleUi.Step(5, TotalSteps, "Installing");
         Directory.CreateDirectory(installDir);
         ZipFile.ExtractToDirectory(zipPath, installDir, overwriteFiles: true);
         TryDelete(zipPath);
-
         string uninstallerPath = CopySelfAsUninstaller(installDir);
-        ConsoleUi.Ok($"files installed ({Mb(DirectorySize(installDir)):0} MB)");
+        ConsoleUi.Ok($"verified (SHA-256) and unpacked — {Mb(DirectorySize(installDir)):0} MB");
 
-        // ── 6. System integration ─────────────────────────────────────────────────
-        ConsoleUi.Step(6, TotalSteps, "Integrating");
         string appExe = Path.Combine(installDir, "Deckle.exe");
         Shortcut.CreateStartMenu(appExe, "Deckle", "Deckle");
-        ConsoleUi.Ok("Start Menu shortcut");
-
         string version = release.Tag.StartsWith('v') ? release.Tag[1..] : release.Tag;
         UninstallEntry.Write(installDir, version, uninstallerPath, DirectorySize(installDir));
-        ConsoleUi.Ok("registered in Installed apps");
+        ConsoleUi.Ok("Start Menu · Installed apps");
 
         // Only touch the environment when the user chose a non-default data folder;
         // otherwise the app's own default stands and we leave no trace behind.
@@ -87,20 +94,26 @@ internal static class InstallFlow
             ConsoleUi.Ok($"DECKLE_DATA_ROOT = {dataDir}");
         }
 
-        // ── 7. Launch ─────────────────────────────────────────────────────────────
-        ConsoleUi.Step(7, TotalSteps, "Launching");
         Process.Start(new ProcessStartInfo(appExe) { UseShellExecute = true, WorkingDirectory = installDir });
-        ConsoleUi.Ok("Deckle started");
+        Console.WriteLine();
+        ConsoleUi.Success("Deckle is installed and running.");
         ConsoleUi.Info("First launch downloads the speech runtime and a model — follow the setup window.");
         return 0;
     }
 
-    // Prompts for a folder unless a CLI override or --yes short-circuits it.
-    private static string Resolve(string? overrideValue, bool assumeYes, string label, string fallback)
+    // The consent screen: what will install, how heavy the download is, where the
+    // two folders land, and why the data folder is the one worth moving.
+    private static void Recap(ReleaseResolver.ResolvedRelease release, string installDir, string dataDir)
     {
-        if (!string.IsNullOrWhiteSpace(overrideValue)) return Path.GetFullPath(overrideValue);
-        if (assumeYes) return fallback;
-        return Path.GetFullPath(ConsoleUi.Prompt(label, fallback));
+        string terms = release.ZipSize > 0
+            ? $"{Mb(release.ZipSize):0} MB download, no admin"
+            : "no admin";
+        ConsoleUi.Headline($"Deckle {release.Tag} — ready to install ({terms})");
+        Console.WriteLine();
+        ConsoleUi.Row("App", installDir);
+        ConsoleUi.Row("Data", dataDir);
+        ConsoleUi.RowNote("speech models live here and can reach ~3 GB");
+        Console.WriteLine();
     }
 
     // The .sha256 sidecar is `<hex> *<filename>` (sha256sum -c format). Take the hex.
