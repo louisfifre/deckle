@@ -99,10 +99,14 @@ Ok "current: v$current"
 
 # ── Compute the next version ─────────────────────────────────────────────────
 $p = $current.Split('.') | ForEach-Object { [int]$_ }
+# Parenthesise each addition: PowerShell's comma operator binds TIGHTER than
+# `+`, so `@($p[0], $p[1] + 1, 0)` would parse as `@(($p[0],$p[1]) + (1,0))` —
+# array concatenation yielding a spurious 4th segment (0.5.0 → 0.5.1.0), never
+# an increment. The parens force the arithmetic before the array is built.
 switch ($Bump) {
-    'major' { $p = @($p[0] + 1, 0, 0) }
-    'minor' { $p = @($p[0], $p[1] + 1, 0) }
-    'patch' { $p = @($p[0], $p[1], $p[2] + 1) }
+    'major' { $p = @(($p[0] + 1), 0, 0) }
+    'minor' { $p = @($p[0], ($p[1] + 1), 0) }
+    'patch' { $p = @($p[0], $p[1], ($p[2] + 1)) }
 }
 $next = $p -join '.'
 $tag  = "v$next"
