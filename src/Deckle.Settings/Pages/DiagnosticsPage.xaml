@@ -34,9 +34,29 @@
                         HorizontalAlignment="Stretch"
                         Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock x:Uid="DiagnosticsPageTitleLabel"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           Margin="0,0,0,8" />
+                <!-- Page title + whole-page "Reset all" (active-when-dirty; confirms
+                     because it clears recorded consents), mirroring WhisperPage. -->
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="DiagnosticsPageTitleLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource TitleTextBlockStyle}"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="ResetAllButton"
+                            x:Uid="DiagnosticsPage_ResetAll"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Click="ResetAllDiagnostics_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
+                            <TextBlock x:Uid="DiagnosticsPageResetAllLabel" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
 
                 <TextBlock x:Uid="DiagnosticsPageSubtitleLabel"
                            Style="{StaticResource BodyTextBlockStyle}"

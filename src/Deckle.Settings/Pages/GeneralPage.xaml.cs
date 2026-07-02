@@ -25,6 +25,13 @@ public sealed partial class GeneralPage : Page
         ComposeBehaviourSection();
         ComposeStartupSection();
         ComposeApplicationDataSection();
+
+        // The page-level "Reset all" gate spans all four section composers; re-gate it
+        // whenever any goes dirty (each section link keeps its own gating too).
+        foreach (var composer in new[]
+                 { _appearanceComposer, _behaviourComposer, _startupComposer, _applicationDataComposer })
+            composer!.DirtyChanged += (_, _) => GateResetAll();
+
         LoadAndSync();
     }
 
@@ -125,6 +132,37 @@ public sealed partial class GeneralPage : Page
     {
         ViewModel.Load();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
+        // Settle the page-reset gate off the freshly-loaded values — Load() may raise
+        // no PropertyChanged on a clean profile, so no composer DirtyChanged would fire.
+        GateResetAll();
+    }
+
+    // ── Whole-page "Reset all" ────────────────────────────────────────────────
+    //
+    // Drives every section's composer back to its defaults at once — the same
+    // ResetAll() each section link fires, folded into one gesture on the title row.
+    // Active-when-dirty (the Playground model): enabled only while some composed value
+    // differs from its default, re-gated off every composer's DirtyChanged and once
+    // after Load(). No confirmation — these are reversible preference defaults
+    // (appearance, behaviour, startup, backup location), nothing user-authored is
+    // lost, matching RecordingPage's section reset.
+    private void GateResetAll()
+    {
+        ResetAllButton.IsEnabled =
+            (_appearanceComposer?.IsDirty() ?? false) ||
+            (_behaviourComposer?.IsDirty() ?? false) ||
+            (_startupComposer?.IsDirty() ?? false) ||
+            (_applicationDataComposer?.IsDirty() ?? false);
+    }
+
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        _appearanceComposer?.ResetAll();
+        _behaviourComposer?.ResetAll();
+        _startupComposer?.ResetAll();
+        _applicationDataComposer?.ResetAll();
+        DeckleSettingsSource.Log.SectionReset();
+        DeckleSettingsSource.Log.SectionResetDetail("General (all)");
     }
 
     // ── Reset per section ───────────────────────────────────────────────────

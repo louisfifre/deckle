@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Dispatching;
@@ -41,6 +42,15 @@ public sealed partial class DiagnosticsPage : Page
         ComposeTelemetrySection();
         ComposeCorpusSection();
         ComposeStorageFolderSection();
+
+        // The page-level "Reset all" gate spans every composed section plus the
+        // hand-authored Autocorrect toggles; re-gate on any composer's DirtyChanged
+        // and on the Autocorrect properties (which no composer tracks).
+        foreach (var composer in new[]
+                 { _loggingComposer, _telemetryComposer, _corpusComposer, _storageFolderComposer })
+            composer!.DirtyChanged += (_, _) => GateResetAll();
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
         LoadAndSync();
     }
 
@@ -125,6 +135,9 @@ public sealed partial class DiagnosticsPage : Page
     {
         _initializing = true;
         ViewModel.Load();
+        // Settle the page-reset gate off the freshly-loaded values — Load() may raise
+        // no PropertyChanged on a clean profile, so no DirtyChanged would fire.
+        GateResetAll();
         DispatcherQueue.TryEnqueueObserved(
             operation: "init-flag-clear", caller: "diagnostics-page",
             callback: () => _initializing = false,
@@ -195,6 +208,52 @@ public sealed partial class DiagnosticsPage : Page
     private void ResetLogging_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.ResetLoggingDefaults();
+    }
+
+    // ── Whole-page "Reset all" ────────────────────────────────────────────────
+    //
+    // Active-when-dirty gate: enabled while any composed section is dirty OR an
+    // Autocorrect opt-in is on (the two hand-authored toggles no composer tracks).
+    // Re-evaluated off the composers' DirtyChanged, the VM's PropertyChanged for the
+    // Autocorrect rows, and once after Load().
+    private void GateResetAll()
+    {
+        ResetAllButton.IsEnabled =
+            (_loggingComposer?.IsDirty() ?? false) ||
+            (_telemetryComposer?.IsDirty() ?? false) ||
+            (_corpusComposer?.IsDirty() ?? false) ||
+            (_storageFolderComposer?.IsDirty() ?? false) ||
+            ViewModel.AutocorrectDecisions ||
+            ViewModel.AutocorrectText;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // The Autocorrect opt-ins are hand-authored — no composer tracks their
+        // dirtiness — so the page-reset gate follows them here.
+        if (e.PropertyName is nameof(DiagnosticsViewModel.AutocorrectDecisions)
+                           or nameof(DiagnosticsViewModel.AutocorrectText))
+            GateResetAll();
+    }
+
+    // Whole-page reset. Clears recorded consents (telemetry opt-ins, corpus,
+    // autocorrect) and the storage override, so it goes through the destructive-
+    // confirm gate (Close is the default button). ResetTelemetryDefaults already
+    // covers the corpus and autocorrect rows; ResetLoggingDefaults the emission
+    // filters. The composers re-sync off the resulting PropertyChanged.
+    private async void ResetAllDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_ResetDiagnosticsDialog_Title"),
+                Loc.Get("Settings_ResetDiagnosticsDialog_Content"),
+                Loc.Get("Common_Reset"),
+                IsDestructive: true));
+        if (!confirmed) return;
+
+        ViewModel.ResetLoggingDefaults();
+        ViewModel.ResetTelemetryDefaults();
     }
 
     // Opens the always-on local diagnostics folder (setup + error logs) in
