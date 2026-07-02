@@ -151,7 +151,7 @@ public sealed partial class TranscriptionEngine
             // (no counter-narrative was ever emitted). HUD state + polling
             // heartbeat already cover live feedback during the wait.
             var swLlm = System.Diagnostics.Stopwatch.StartNew();
-            var llmResult = _llm.Rewrite(fullText, llmSettings.OllamaEndpoint, profile);
+            var llmResult = _rewrite.Rewrite(fullText, llmSettings.OllamaEndpoint, profile);
             swLlm.Stop();
             // Wall-clock total (caller-side) is the authoritative number for
             // user-perceived latency — includes HTTP transit + JSON parse on

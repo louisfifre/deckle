@@ -6,7 +6,7 @@
   <ItemGroup>
     <!-- No WinUI / Settings dependencies — this module is the bare-bones
          Ollama HTTP wrapper (model administration + health-check). The
-         rewrite-specific layer (LlmService, LlmSettings, prompt
+         rewrite-specific layer (RewriteService, LlmSettings, prompt
          templates, ProfileViewModel, the LlmPage Settings UI) lives in
          Deckle.Llm.Rewrite. Future Ollama consumers (AskOllama, …)
          depend on this module without dragging the rewrite UI in. -->

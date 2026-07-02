@@ -130,7 +130,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     private static void EmitUserFeedback(int severity, string title, string body, int role = FB_REPLACEMENT)
         => DeckleWhispSource.Log.UserFeedbackEmitted(severity, title, body, role);
 
-    private readonly LlmService _llm;
+    private readonly IRewriteService _rewrite;
 
     // ASR backend — every call into whisper.cpp (or any future inference
     // engine) goes through this interface. The orchestrator never touches
@@ -291,13 +291,16 @@ public sealed partial class TranscriptionEngine : IDisposable
     // owned by Deckle.Vad. Resolved lazily per streaming take.
     private readonly VadService _vadService;
 
-    public TranscriptionEngine(ITranscriptionEngineHost host, IAsrBackend backend)
+    public TranscriptionEngine(
+        ITranscriptionEngineHost host,
+        IAsrBackend backend,
+        IRewriteService? rewrite = null)
     {
         _host = host;
         _backend = backend;
         _vadService = new VadService(_host.ResolveModelsDirectory);
 
-        _llm = new LlmService();
+        _rewrite = rewrite ?? new RewriteService();
 
         // MicrophoneCapture emits through DeckleAudioSource (wave 2).
         // TranscriptionEngine emits through DeckleWhispSource (wave 5). No

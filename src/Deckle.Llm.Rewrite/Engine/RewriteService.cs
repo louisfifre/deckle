@@ -7,7 +7,7 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Llm.Rewrite;
 
-// ─── LLM rewrite service via Ollama (RAW mode) ───────────────────────────────
+// ─── Rewrite service via Ollama (RAW mode) ───────────────────────────────────
 //
 // Calls /api/generate with raw=true and a client-side pre-formatted prompt.
 // Completely bypasses Ollama's TEMPLATE system because models imported from
@@ -38,7 +38,12 @@ public readonly record struct RewriteResult(
     int          PromptTokens,
     int          EvalTokens);
 
-public class LlmService
+public interface IRewriteService
+{
+    RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile);
+}
+
+public class RewriteService : IRewriteService
 {
     // Default HttpClient.Timeout is 100 s — too short for large rewrites
     // (long transcriptions, big context, CPU-only Ollama). We disable the

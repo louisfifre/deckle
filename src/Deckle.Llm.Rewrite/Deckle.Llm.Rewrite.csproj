@@ -3,7 +3,7 @@
     <RootNamespace>Deckle.Llm.Rewrite</RootNamespace>
     <!-- WinUI XAML compilation : ships LlmPage + 5 sections,
          LlmOllamaContext + ProfileViewModel (moved from Deckle.Settings
-         in slice C1), the LlmService rewrite engine, and the LlmSettings
+         in slice C1), the RewriteService rewrite engine, and the LlmSettings
          POCO + LlmSettingsService — all in the same assembly. -->
     <UseWinUI>true</UseWinUI>
     <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->

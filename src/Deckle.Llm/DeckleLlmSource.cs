@@ -3,7 +3,7 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Llm;
 
-// LLM module provider. Covers transcript rewriting through Ollama (LlmService),
+// LLM module provider. Covers transcript rewriting through Ollama (RewriteService),
 // the Settings → LLM surface (LlmPage), communication with Ollama's /api/tags,
 // /api/show, /api/blobs, /api/create (OllamaService), and orchestrated GGUF
 // import (GgufImportDialog). Module settings persistence (LlmSettingsService)

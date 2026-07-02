@@ -10,7 +10,7 @@ namespace Deckle.Llm;
 // Wraps Ollama REST endpoints for viewing and managing installed models: list,
 // show, delete, health-check.
 //
-// Separate from LlmService (which only does /api/chat for rewriting).
+// Separate from RewriteService (which only does /api/chat for rewriting).
 //
 // Model creation (`ollama create`, GGUF import) is not wrapped: it happens from
 // the user's shell through the native Ollama CLI, then the Models section

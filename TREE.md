@@ -728,8 +728,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Engine/
-│   │   │   ├── LlmService.cs
-│   │   │   └── PromptTemplates.cs
+│   │   │   ├── PromptTemplates.cs
+│   │   │   └── RewriteService.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
