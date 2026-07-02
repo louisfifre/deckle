@@ -201,6 +201,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── research/
 │   │   ├── 2026-06-12--notifications-catalogue.md
 │   │   ├── 2026-06-15--mouse-wheel-to-virtual-touchpad-spec.md
+│   │   ├── research--correcteur-evaluation--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — comment mesurer un correcteur…
 │   │   └── research--system-autocorrect--2026-06-12.md
 │   └── inventaire-settings.md
 ├── scripts/
