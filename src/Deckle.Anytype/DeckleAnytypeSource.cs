@@ -23,6 +23,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     private const EventKeywords Gesture   = (EventKeywords)0x400;
     private const EventKeywords Lifecycle = (EventKeywords)0x800;
 
+    // Retired ids, never to be reused: 15 (BackendTaskRegistered), 17-18
+    // (BackendTaskOperationFailed/Detail) — the scheduled-task hosting they
+    // observed was replaced by in-process supervision (2026-07-02).
+
     // ── EventIds ─────────────────────────────────────────────────────────
     public const int EvtApiRequestStarted         = 1;
     public const int EvtApiRequestCompleted       = 2;
@@ -35,15 +39,18 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtApiRequestRetriedDetail   = 8;
     public const int EvtApiRequestFailedDetail    = 9;
     public const int EvtSpaceWriteContended       = 10;
-    // Backend lifecycle (ids 11-18).
+    // Backend lifecycle (ids 11-24; 15/17/18 retired, see above).
     public const int EvtBackendStarting               = 11;
     public const int EvtBackendReady                  = 12;
     public const int EvtBackendStartTimedOut          = 13;
     public const int EvtBackendNotProvisioned         = 14;
-    public const int EvtBackendTaskRegistered         = 15;
     public const int EvtBackendHealthProbed           = 16;
-    public const int EvtBackendTaskOperationFailed    = 17;
-    public const int EvtBackendTaskOperationFailedDetail = 18;
+    public const int EvtCredentialsResolved           = 19;
+    public const int EvtBackendProcessAttached        = 20;
+    public const int EvtBackendStopped                = 21;
+    public const int EvtBackendStoppedDetail          = 22;
+    public const int EvtBackendSpawnFailed            = 23;
+    public const int EvtBackendSpawnFailedDetail      = 24;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -150,10 +157,11 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     // ── Backend lifecycle ─────────────────────────────────────────────────
     //
-    // The headless backend is started on demand through its triggerless
-    // scheduled task and observed only through the health endpoint. Milestones
-    // (Info/Warning, no args) read as a narrative of the start attempt; the
-    // Verbose mirrors carry the greppable detail.
+    // The headless backend is spawned windowless and supervised in-process:
+    // readiness through the health endpoint, death through the process handle,
+    // restarts on a capped backoff. Milestones (Info/Warning, no args) read as
+    // a narrative of the lifecycle; the Verbose mirrors carry the greppable
+    // detail.
 
     [Event(EvtBackendStarting,
            Level = EventLevel.Informational,
@@ -184,8 +192,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtBackendStartTimedOut);
     }
 
-    // Warning: the backend is down and no task is enrolled — provisioning has
-    // not run, so Deckle cannot start it. A state the user must act on.
+    // Warning: the backend binary is not on disk — provisioning has not run,
+    // so Deckle cannot start it. A state the user must act on.
     [Event(EvtBackendNotProvisioned,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
@@ -193,15 +201,6 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void BackendNotProvisioned()
     {
         if (IsEnabled()) WriteEvent(EvtBackendNotProvisioned);
-    }
-
-    [Event(EvtBackendTaskRegistered,
-           Level = EventLevel.Verbose,
-           Keywords = Lifecycle,
-           Message = "backend task registered | task={0}")]
-    public void BackendTaskRegistered(string task_name)
-    {
-        if (IsEnabled()) WriteEvent(EvtBackendTaskRegistered, task_name);
     }
 
     [Event(EvtBackendHealthProbed,
@@ -213,21 +212,69 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtBackendHealthProbed, healthy, status_code, duration_ms);
     }
 
-    [Event(EvtBackendTaskOperationFailed,
-           Level = EventLevel.Error,
-           Keywords = Lifecycle,
-           Message = "An Anytype backend task operation failed")]
-    public void BackendTaskOperationFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtBackendTaskOperationFailed);
-    }
-
-    [Event(EvtBackendTaskOperationFailedDetail,
+    // Which serve instance the supervisor is watching, and how it got it:
+    // "spawned" (started by us, windowless) or "adopted" (found already
+    // running at boot). The pid is the join key against Task Manager and the
+    // stopped detail below.
+    [Event(EvtBackendProcessAttached,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "backend task operation failed | operation={0} | error={1}")]
-    public void BackendTaskOperationFailedDetail(string operation, string error)
+           Message = "backend process attached | pid={0} | mode={1}")]
+    public void BackendProcessAttached(int pid, string mode)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendTaskOperationFailedDetail, operation, error);
+        if (IsEnabled()) WriteEvent(EvtBackendProcessAttached, pid, mode);
+    }
+
+    // Warning: the serve died under supervision — the restart ladder engages,
+    // but a human following the flow should see the interruption.
+    [Event(EvtBackendStopped,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Message = "The Anytype backend stopped")]
+    public void BackendStopped()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendStopped);
+    }
+
+    // exit_code -1 means the code could not be read (adopted handle without
+    // query rights); uptime answers the crash-loop-or-one-off question.
+    [Event(EvtBackendStoppedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend stopped | pid={0} | exit_code={1} | uptime_s={2:F0}")]
+    public void BackendStoppedDetail(int pid, int exit_code, double uptime_s)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendStoppedDetail, pid, exit_code, uptime_s);
+    }
+
+    [Event(EvtBackendSpawnFailed,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Message = "The Anytype backend could not be started")]
+    public void BackendSpawnFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendSpawnFailed);
+    }
+
+    [Event(EvtBackendSpawnFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend spawn failed | error={0}")]
+    public void BackendSpawnFailedDetail(string error)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendSpawnFailedDetail, error);
+    }
+
+    // Which provisioning world the credentials resolved to: "headless" (the
+    // vault holds the bot API key → the fixed 31012 listener) or "desktop"
+    // (legacy file bearer → the Desktop pairing). The first question to answer
+    // when a host talks to the wrong backend; carries no key material.
+    [Event(EvtCredentialsResolved,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "credentials resolved | profile={0}")]
+    public void CredentialsResolved(string profile)
+    {
+        if (IsEnabled()) WriteEvent(EvtCredentialsResolved, profile);
     }
 }

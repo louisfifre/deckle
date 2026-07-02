@@ -31,7 +31,7 @@ $mainRows = @(
     @{ Prefix = 'Build (no run)'; Cells = @( @{ Label = 'Release'; Value = 'norun:Release' },  @{ Label = 'Debug'; Value = 'norun:Debug' } ) }
     @{ Blank  = $true }
     @{ Title  = 'Project' }
-    @{ Cells  = @( @{ Label = 'Update version'; Value = 'update-version' }, @{ Label = 'Anytype MCP'; Value = 'mcp' } ) }
+    @{ Cells  = @( @{ Label = 'Update version'; Value = 'update-version' } ) }
     @{ Blank  = $true }
     @{ Title  = 'More' }
     @{ Cells  = @( @{ Label = 'Release…'; Value = 'release-menu'; Role = 'folder' }, @{ Label = 'Maintenance…'; Value = 'maintenance-menu'; Role = 'folder' }, @{ Label = 'Setup…'; Value = 'setup-menu'; Role = 'folder' }, @{ Label = 'Quit'; Value = 'quit' } ) }
@@ -52,7 +52,6 @@ try {
         } else {
             switch ($v) {
                 'update-version'   { Invoke-UpdateVersion }
-                'mcp'              { Invoke-AnytypeMcp }
                 'release-menu'     { Show-ReleaseMenu }
                 'maintenance-menu' { Show-MaintenanceMenu }
                 'setup-menu'       { Show-SetupMenu }

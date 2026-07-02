@@ -7,6 +7,23 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-07-02 — MCP host HTTP en vif ; hébergement remplacé par une supervision in-process
+
+- **Porte HTTP prouvée bout-en-bout.** Host résident sur `127.0.0.1:33255/mcp`, identité par bearer (`mcp-token-claude`/`-codex` scellés au vault, miroités en env vars `DECKLE_MCP_TOKEN_*`). `initialize`/`tools/list`/`tools/call` réels pour les deux clients, surfaces exactes du stdio (claude 16 outils `delete`/pas de dialogues, codex 18 l'inverse), `401` sans bearer, `403` en session croisée. `list_projects` → `isError:false` une fois le bot membre de Dev.
+- **`space join` fait.** Invite Desktop approuvée ; l'espace Deckle est `Active` côté bot.
+- **`anytype service` disqualifié sur Windows.** Lecture du source (kardianos/service v1.2.4) : `UserService:true` est ignoré sur Windows, `service install` crée un vrai service SCM **LocalSystem/Session 0** — le keyring/DPAPI de l'utilisateur y est invisible, l'auto-login échoue. La tâche planifiée du 06-19 tenait pour cette raison.
+- **Hébergement par tâche planifiée retiré au profit d'une supervision in-process.** Deckle spawne le serve en `CreateNoWindow` (console sans fenêtre du tout — plus de vecteur 0xC000013A), l'adopte au boot par chemin de binaire exact, attend son handle et le relance sur une échelle bornée (2/5/15/60 s, reset après 5 min stables). `Dispose` arrête la garde, jamais l'enfant → le serve survit aux rebuilds. Prouvé par kill : relance ~2 s, nouveau pid, sans fenêtre. `BackendScheduledTask`/`BackendTaskDocument` supprimés, tâche machine désinscrite.
+
+## 2026-07-02 — Backend wired at boot; vault-first credentials proven
+
+The lifecycle built on 06-19 went live: the real task is registered, the supervisor runs from `App.OnLaunched`, and the bearer moved to the vault. Chain proven on the machine through the real module code (scratch runner, never the app).
+
+- **Both 06-19 empirical residuals closed on the real task.** `schtasks /Create` + `/Run` of the LeastPrivilege triggerless "Deckle Anytype Backend" task raise no UAC from a non-elevated process, and the spawned `serve` survives its caller (parented to the Task Scheduler service) — REST still answers after the launcher dies.
+- **La console InteractiveToken était le tueur** (corrigé le même jour, voir entrée en tête). `MainWindowHandle 0` trompait : le binaire console garde une console *attachée mais fenêtrée*, dont la fermeture émet `CTRL_CLOSE_EVENT` → `STATUS_CONTROL_C_EXIT` (0xC000013A). Cinq morts du serve en session, toutes sous ce régime.
+- **Credentials resolution is vault-first (frozen in code).** A vault `anytype-api-key` pins the fixed 31012 headless listener; the file `api_key`/`api_url` pair stays as the legacy Desktop fallback until the space cutover retires it. Non-secret coordinates (`api_version`, `space_id`) stay in the module file.
+- **API key names are not unique.** A second `apikey create deckle-mcp` succeeds alongside the first; `revoke` targets the key id, not the name. The dead 07-01 key was revoked; the only live key is the vault's.
+- **Guard until `space join`: do not republish the stdio MCP host.** A rebuilt host would resolve headless and talk to a backend whose bot is not yet a member of Dev. The published `current` junction host keeps speaking to the Desktop.
+
 ## 2026-07-01 — Bot account provisioned; REST auth proven end-to-end (supervised session)
 
 The 06-19 residual closed: a real bot account now exists, and an authed `GET /v1/spaces` answers 200 on 31012. Measured against anytype-cli v0.3.6.
