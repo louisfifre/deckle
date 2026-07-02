@@ -5,14 +5,12 @@ namespace Deckle.Installer;
 
 // ── Shortcut ──────────────────────────────────────────────────────────────────
 //
-// Writes a Start Menu .lnk pointing at the installed Deckle.exe. A .lnk is
+// Writes the per-user Start Menu .lnk pointing at the installed Deckle.exe. A .lnk is
 // intrinsically a COM artefact (IShellLink + IPersistFile), so there's no pure
 // Win32 shortcut. The AOT-safe way to consume that COM is source-generated interop
 // ([GeneratedComInterface]) rather than the classic ComImport/coclass activation,
 // which NativeAOT doesn't support: we CoCreateInstance the ShellLink ourselves and
 // wrap the raw pointer with StrategyBasedComWrappers.
-//
-// No Desktop shortcut — that's the deliberate modern-Windows stance.
 internal static partial class Shortcut
 {
     public static void CreateStartMenu(string targetExe, string shortcutName, string? description)
@@ -20,7 +18,17 @@ internal static partial class Shortcut
         string programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
         Directory.CreateDirectory(programs);
         string lnkPath = Path.Combine(programs, shortcutName + ".lnk");
+        Create(targetExe, lnkPath, description);
+    }
 
+    public static void RemoveStartMenu(string shortcutName)
+    {
+        string programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+        Remove(Path.Combine(programs, shortcutName + ".lnk"));
+    }
+
+    private static void Create(string targetExe, string lnkPath, string? description)
+    {
         // ShellLink is ThreadingModel=Both, so the console's default MTA is fine.
         // S_FALSE (already initialised) is not an error.
         _ = CoInitializeEx(nint.Zero, COINIT_MULTITHREADED);
@@ -49,10 +57,8 @@ internal static partial class Shortcut
         }
     }
 
-    public static void RemoveStartMenu(string shortcutName)
+    private static void Remove(string lnkPath)
     {
-        string programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
-        string lnkPath = Path.Combine(programs, shortcutName + ".lnk");
         if (File.Exists(lnkPath)) File.Delete(lnkPath);
     }
 

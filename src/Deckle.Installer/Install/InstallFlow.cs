@@ -59,12 +59,21 @@ internal static class InstallFlow
         // always the block on screen.
         bool interactive = !cli.AssumeYes && !Console.IsInputRedirected;
         string enterVerb = existing is null ? "installs" : existing.Version == version ? "reinstalls" : "updates";
+        bool createStartMenuShortcut = true;
         while (true)
         {
-            Recap(release, existing, installDir, dataDir);
+            Recap(release, existing, installDir, dataDir, createStartMenuShortcut);
             if (!interactive) break;
-            ConsoleUi.Hint($"Enter {enterVerb} · C changes the folders · Ctrl+C cancels");
-            if (ConsoleUi.WaitKey(ConsoleKey.Enter, ConsoleKey.C) == ConsoleKey.Enter) break;
+            ConsoleUi.Hint($"Enter {enterVerb} · C folders · S shortcut · Ctrl+C cancels");
+            ConsoleKey key = ConsoleUi.WaitKey(ConsoleKey.Enter, ConsoleKey.C, ConsoleKey.S);
+            if (key == ConsoleKey.Enter) break;
+            if (key == ConsoleKey.S)
+            {
+                createStartMenuShortcut = !createStartMenuShortcut;
+                Console.WriteLine();
+                continue;
+            }
+
             Console.WriteLine();
             installDir = Path.GetFullPath(ConsoleUi.PromptPath("App folder", installDir));
             dataDir = Path.GetFullPath(ConsoleUi.PromptPath("Data folder", dataDir));
@@ -112,9 +121,17 @@ internal static class InstallFlow
         ConsoleUi.Ok($"verified (SHA-256) and unpacked — {Mb(DirectorySize(installDir)):0} MB");
 
         string appExe = Path.Combine(installDir, "Deckle.exe");
-        Shortcut.CreateStartMenu(appExe, "Deckle", "Deckle");
+        if (createStartMenuShortcut)
+        {
+            Shortcut.CreateStartMenu(appExe, "Deckle", "Deckle");
+        }
+        else
+        {
+            Shortcut.RemoveStartMenu("Deckle");
+        }
+
         UninstallEntry.Write(installDir, version, uninstallerPath, DirectorySize(installDir));
-        ConsoleUi.Ok("Start Menu · Installed apps");
+        ConsoleUi.Ok(createStartMenuShortcut ? "Start Menu · Installed apps" : "Installed apps · no Start Menu shortcut");
 
         // The variable exists only while the data folder is off the default: set it
         // on a non-default choice, clear it when the user comes back to the default
@@ -151,7 +168,12 @@ internal static class InstallFlow
     // The consent screen: what will happen (install, update or reinstall), how
     // heavy the download is, where the two folders land, and why the data folder
     // is the one worth moving.
-    private static void Recap(ReleaseResolver.ResolvedRelease release, UninstallEntry.ExistingInstall? existing, string installDir, string dataDir)
+    private static void Recap(
+        ReleaseResolver.ResolvedRelease release,
+        UninstallEntry.ExistingInstall? existing,
+        string installDir,
+        string dataDir,
+        bool createStartMenuShortcut)
     {
         string terms = release.ZipSize > 0
             ? $"{Mb(release.ZipSize):0} MB download, no admin"
@@ -166,6 +188,7 @@ internal static class InstallFlow
         ConsoleUi.Row("App", installDir);
         ConsoleUi.Row("Data", dataDir);
         ConsoleUi.RowNote("speech models live here and can reach ~3 GB");
+        ConsoleUi.Row("Shortcut", createStartMenuShortcut ? "Start Menu" : "none");
         Console.WriteLine();
     }
 
