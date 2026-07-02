@@ -268,6 +268,9 @@ public sealed class SettingsComposer
             case SettingKind.Number:
                 BuildNumber(card, s);
                 break;
+            case SettingKind.Magnitude:
+                BuildMagnitude(card, s);
+                break;
             case SettingKind.Path:
                 BuildPath(card, s);
                 break;
@@ -383,11 +386,48 @@ public sealed class SettingsComposer
 
         var master = new ToggleSwitch { IsOn = AsBool(s.GetValue()) };
         // Subscribe AFTER the initial assignment above so it does not fire Toggled.
-        master.Toggled += (_, _) =>
+        // The master honours ConfirmOnEnable exactly like a leaf Toggle (BuildToggle):
+        // a consent fold holds its OFF→ON write behind the gate so the feature never
+        // transiently flips on, and reverts the switch on refusal guarded so the revert
+        // does not re-enter this handler. Turning the fold back off is always free.
+        if (s.ConfirmOnEnable is null)
         {
-            if (_syncingFromModel) return;
-            s.SetValue(master.IsOn);
-        };
+            master.Toggled += (_, _) =>
+            {
+                if (_syncingFromModel) return;
+                s.SetValue(master.IsOn);
+            };
+        }
+        else
+        {
+            bool confirmInFlight = false;
+            master.Toggled += async (_, _) =>
+            {
+                if (_syncingFromModel) return;
+                if (!master.IsOn) { s.SetValue(false); return; }
+                if (confirmInFlight) return;
+
+                confirmInFlight = true;
+                try
+                {
+                    bool ok = await s.ConfirmOnEnable!(_host.XamlRoot);
+                    if (ok)
+                    {
+                        s.SetValue(true);
+                    }
+                    else
+                    {
+                        _syncingFromModel = true;
+                        try { master.IsOn = false; }
+                        finally { _syncingFromModel = false; }
+                    }
+                }
+                finally
+                {
+                    confirmInFlight = false;
+                }
+            };
+        }
 
         // The master's current state, read live so child gating tracks it on
         // every RefreshAll (a master toggle raises PropertyChanged, which refreshes
@@ -788,6 +828,148 @@ public sealed class SettingsComposer
         });
     }
 
+    // Slider fused with an editable NumberBox over a double — the "magnitude"
+    // control: sweep the slider for a fast approximation, or type the NumberBox for
+    // an exact figure, both driving one value. The two are kept in lockstep (a
+    // slider move writes the box, a box edit moves the thumb) through an internal
+    // `coordinating` guard, distinct from _syncingFromModel (which guards the
+    // model→UI direction). Unlike BuildSlider the caller gives no StepFrequency: the
+    // grain is derived as a "nice" 1-2-5 number from the range (NiceStep), so a
+    // magnitude declares only its bounds and unit. The box holds the exact value;
+    // the slider thumb approximates it to the nearest detent, which is the point of
+    // the pairing — gesture for reach, field for precision. A future wide-range
+    // (order-of-magnitude) variant would map the slider logarithmically; no current
+    // setting spans that far, so the track stays linear until one does.
+    private void BuildMagnitude(SettingsCard card, SettingDescriptor s)
+    {
+        // Required by Setting.Magnitude, so the cast is safe; a wrong-kind args here
+        // is a manifest bug, not a runtime input, hence the hard cast.
+        var args = (MagnitudeArgs)s.Args!;
+
+        double step = NiceStep(args.Minimum, args.Maximum);
+        int decimals = DecimalsFor(step);
+
+        var slider = new Slider
+        {
+            Minimum = args.Minimum,
+            Maximum = args.Maximum,
+            StepFrequency = step,
+            Width = 180,
+            // The thumb tooltip duplicates the editable field beside it, so off.
+            IsThumbToolTipEnabled = false,
+            VerticalAlignment = VerticalAlignment.Center,
+            Value = AsDouble(s.GetValue()),
+        };
+
+        var box = new NumberBox
+        {
+            Minimum = args.Minimum,
+            Maximum = args.Maximum,
+            SmallChange = step,
+            LargeChange = step * 5,
+            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Hidden,
+            MinWidth = 96,
+            VerticalAlignment = VerticalAlignment.Center,
+            // Fixed precision (fraction digits tracking the nice step) and no
+            // grouping separators, so the readout matches the slider's grain and a
+            // four-digit figure reads "1200", not "1,200".
+            NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+            {
+                IntegerDigits = 1,
+                FractionDigits = decimals,
+                IsGrouped = false,
+            },
+            Value = AsDouble(s.GetValue()),
+        };
+
+        // Internal lockstep guard: a programmatic Value set on either control fires
+        // its ValueChanged, which would write the other and bounce back. This flag
+        // makes the second write a no-op, so one user gesture updates both once. It
+        // is separate from _syncingFromModel: that guards model→UI (the refresher),
+        // this guards slider↔box regardless of direction.
+        bool coordinating = false;
+
+        // Subscribe AFTER the initial Value assignments above so they do not fire.
+        slider.ValueChanged += (_, e) =>
+        {
+            if (coordinating) return;
+            coordinating = true;
+            try { if (box.Value != e.NewValue) box.Value = e.NewValue; }
+            finally { coordinating = false; }
+            if (_syncingFromModel) return;
+            s.SetValue(e.NewValue);
+        };
+
+        box.ValueChanged += (_, _) =>
+        {
+            if (coordinating) return;
+            // A cleared field surfaces as NaN; swallow it so it never persists or
+            // moves the thumb, the same guard BuildNumber applies.
+            if (double.IsNaN(box.Value)) return;
+            coordinating = true;
+            try { if (slider.Value != box.Value) slider.Value = box.Value; }
+            finally { coordinating = false; }
+            if (_syncingFromModel) return;
+            s.SetValue(box.Value);
+        };
+
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        content.Children.Add(slider);
+        content.Children.Add(box);
+
+        if (!string.IsNullOrEmpty(args.Unit))
+        {
+            content.Children.Add(new TextBlock
+            {
+                Text = args.Unit,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = SecondaryBrush(),
+            });
+        }
+
+        (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s);
+        card.Content = cardContent;
+
+        _refreshers.Add(() =>
+        {
+            double value = AsDouble(s.GetValue());
+            // Drive both controls from the model under the lockstep guard so neither
+            // ValueChanged bounces into the other or back to the setter.
+            coordinating = true;
+            try
+            {
+                if (slider.Value != value) slider.Value = value;
+                if (box.Value != value && !double.IsNaN(value)) box.Value = value;
+            }
+            finally { coordinating = false; }
+            updateReset?.Invoke();
+            ApplyReactiveState(card, s);
+        });
+    }
+
+    // The "nice" 1-2-5 step for a magnitude slider, derived from its range so a
+    // magnitude declares only bounds. Aims for ~40 detents across the span, then
+    // rounds that raw step UP to the nearest 1, 2 or 5 times a power of ten — the
+    // classic axis-tick niceness — so the grain reads as a round number (0.05, 1,
+    // 50) rather than an arbitrary fraction. The editable field still takes any
+    // exact value; this only sets how coarsely the thumb detents.
+    private static double NiceStep(double minimum, double maximum)
+    {
+        double span = Math.Abs(maximum - minimum);
+        if (span <= 0) return 1;
+
+        double raw = span / 40.0;
+        double magnitude = Math.Pow(10, Math.Floor(Math.Log10(raw)));
+        double normalized = raw / magnitude; // in [1, 10)
+        double nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+        return nice * magnitude;
+    }
+
     // Folder path via the curated FolderPickerCard. The card owns the picker and
     // Explorer affordances; the composer only bridges its Path to the descriptor
     // selectors. Same guard rationale as the other kinds: set Path before
@@ -1032,6 +1214,12 @@ public sealed class SettingsComposer
             if (radio.SelectedIndex < 0) return;
             s.SetValue(args.Options[radio.SelectedIndex].Value);
         };
+
+        // A RadioButtons group reads best stacked below the header, the Win11 pattern
+        // (and the layout the hand-authored corpus-content card used), rather than
+        // crammed onto the trailing edge like a single control — so the card hosts
+        // vertically, as Path and multiline Text do.
+        card.ContentAlignment = ContentAlignment.Vertical;
 
         (FrameworkElement content, Action? updateReset) = WrapWithReset(card, radio, s);
         card.Content = content;

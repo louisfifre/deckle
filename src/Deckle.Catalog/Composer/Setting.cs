@@ -110,6 +110,36 @@ public static class Setting
             Advisory = advisory,
         };
 
+    // A Slider fused with an editable NumberBox over a double — sweep to
+    // approximate, type to be exact. MagnitudeArgs carries only the bounds and
+    // unit; the composer derives the slider's "nice" 1-2-5 grain from the range, so
+    // unlike Slider there is no StepFrequency to pass. Same boxed selectors and
+    // optional default (for the per-card reset) as the other numeric kinds.
+    public static SettingDescriptor Magnitude(
+        string labelKey,
+        Func<double> get,
+        Action<double> set,
+        MagnitudeArgs args,
+        string? glyph = null,
+        bool isAdvanced = false,
+        Func<bool>? enabledWhen = null,
+        Func<bool>? visibleWhen = null,
+        Func<double>? defaultValue = null,
+        Func<string?>? advisory = null) => new()
+        {
+            Kind = SettingKind.Magnitude,
+            LabelKey = labelKey,
+            Glyph = glyph,
+            IsAdvanced = isAdvanced,
+            Args = args,
+            GetValue = () => get(),
+            SetValue = value => set((double)value!),
+            EnabledWhen = enabledWhen,
+            VisibleWhen = visibleWhen,
+            Default = defaultValue is null ? null : () => defaultValue(),
+            Advisory = advisory,
+        };
+
     // Free-form text as a string. TextArgs shapes the TextBox (placeholder,
     // multiline, max length) and is optional — a bare single-line field needs no
     // arguments, so unlike Slider/Number it defaults to a plain TextArgs. Same
@@ -269,7 +299,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<bool>? defaultValue = null) => new()
+        Func<bool>? defaultValue = null,
+        Func<XamlRoot, Task<bool>>? confirmOnEnable = null) => new()
         {
             Kind = SettingKind.Group,
             LabelKey = labelKey,
@@ -284,6 +315,11 @@ public static class Setting
             // present) with each child's Default; a master without a resettable
             // default still resets its children.
             Default = defaultValue is null ? null : () => defaultValue(),
+            // Like a leaf Toggle, the master may gate its OFF→ON flip behind an async
+            // consent dialog — the composer holds the enable until it resolves true, so
+            // a consent fold (the Diagnostics corpus opt-in) never transiently switches
+            // its feature on. Null leaves the master's write synchronous.
+            ConfirmOnEnable = confirmOnEnable,
         };
 
     // A header-and-chevron grouping with NO master toggle — "Group minus the
