@@ -5,17 +5,18 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The text-corpus accumulator — the substrate of the « what I typed » dataset.
-// These pin the two things the corpus must get right: faithful reconstruction of
-// both sides (so a keyboard substitution like ';' for an apostrophe survives to
-// be mined) and the purity rule (a sentence interrupted before its end is dropped,
-// never half-recorded).
+// These pin the things the corpus must get right: faithful reconstruction of both
+// sides (so a keyboard substitution like ';' for an apostrophe survives to be
+// mined), the purity rule (a sentence interrupted before its end is dropped, never
+// half-recorded), and the ordered per-slot history (each transition tagged by the
+// stage that made it — commit / sentence / user).
 [Trait("Category", "unit")]
 public class SentenceCorpusTests
 {
-    private static (SentenceCorpus corpus, List<(string Typed, string Final)> done) New()
+    private static (SentenceCorpus corpus, List<SentenceCorpus.SentenceRecord> done) New()
     {
-        var done = new List<(string, string)>();
-        var corpus = new SentenceCorpus { Completed = (t, f) => done.Add((t, f)) };
+        var done = new List<SentenceCorpus.SentenceRecord>();
+        var corpus = new SentenceCorpus { Completed = done.Add };
         return (corpus, done);
     }
 
@@ -94,6 +95,72 @@ public class SentenceCorpusTests
 
         Assert.Equal("etant la.", done[0].Typed);
         Assert.Equal("étant là.", done[0].Final);
+    }
+
+    // ── Ordered per-slot history ──────────────────────────────────────────────
+
+    [Fact]
+    public void NoHistoryWhenNothingChanged()
+    {
+        var (c, done) = New();
+        c.Word("bonjour", "bonjour", ' ');
+        c.Word("monde", "monde", '.');
+
+        Assert.Equal("", done[0].History);
+    }
+
+    [Fact]
+    public void RecordsTheCommitStageTransition()
+    {
+        // A commit-stage repair is the slot's first transition, tagged commit.
+        var (c, done) = New();
+        c.Word("marche", "marché", ' ');
+        c.Word("ecole", "école", '.');
+
+        Assert.Equal("#0=marche»commit:marché|#1=ecole»commit:école", done[0].History);
+    }
+
+    [Fact]
+    public void RecordsASentenceStageRewriteFromBehind()
+    {
+        // « la » committed literal, then the sentence stage rewrites it to « là »
+        // while the sentence is still open — a Sentence transition on its slot.
+        var (c, done) = New();
+        c.Word("la", "la", ' ');
+        c.SentenceEdit("la", "là");       // deferred rewrite, sentence still open
+        c.Word("bas", "bas", '.');
+
+        Assert.Equal("la bas.", done[0].Typed);
+        Assert.Equal("là bas.", done[0].Final);
+        Assert.Equal("#0=la»sentence:là", done[0].History);
+    }
+
+    [Fact]
+    public void DropsASentenceRewriteThatLandsAfterFlush()
+    {
+        // A verdict for the last word arriving after the sentence flushed finds no
+        // open slot — a post-close edit, invisible by design.
+        var (c, done) = New();
+        c.Word("la", "la", '.');          // flushes immediately
+        c.SentenceEdit("la", "là");       // too late — nothing to attach to
+
+        Assert.Single(done);
+        Assert.Equal("la.", done[0].Final);
+        Assert.Equal("", done[0].History);
+    }
+
+    [Fact]
+    public void ManualReEditIsTaggedUserWithTheRetypeCommitCarriedOver()
+    {
+        // « etant » left literal, retyped as « etant » which the gate then fixes to
+        // « étant »: the ordered path is user (the retype) then commit (its repair).
+        var (c, done) = New();
+        c.Word("etant", "etant", ' ');
+        c.Word("etant", "étant", ' ');    // re-commit: user retyped, gate repaired
+        c.Edit("etant", "étant");
+        c.Word("la", "là", '.');
+
+        Assert.Equal("#0=etant»user:etant»commit:étant|#1=la»commit:là", done[0].History);
     }
 
     [Fact]

@@ -239,20 +239,23 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     //
     // One sentence the user typed on an enrolled surface, as two parallel strings:
     // `typed` verbatim (keyboard substitutions and all — the telling ';' for an
-    // apostrophe survives) and `final` after the corrector. Feeds the per-user
-    // error-pattern corpus; routed to the dedicated, opt-in autocorrect.text.jsonl
-    // sink (gated by AutocorrectText, off by default) and excluded from app.jsonl.
-    // The heaviest text capture in the module — a verbatim record of typed input —
-    // so its consent toggle stands on its own.
+    // apostrophe survives) and `final` after the corrector — plus `history`, the
+    // ordered path of every slot that changed (first-typed then each stage's
+    // transition, "#i=typed»commit:…»user:…"), so a commit repair, a sentence-stage
+    // rewrite and a manual re-edit are told apart. Feeds the per-user error-pattern
+    // corpus; routed to the dedicated, opt-in autocorrect.text.jsonl sink (gated by
+    // AutocorrectText, off by default) and excluded from app.jsonl. The heaviest
+    // text capture in the module — a verbatim record of typed input — so its consent
+    // toggle stands on its own.
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "text | {0} | {1}")]
-    public void AutocorrectTextRecorded(string process, string typed, string final)
+    public void AutocorrectTextRecorded(string process, string typed, string final, string history)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectText, process, typed, final);
+        WriteEvent(EvtAutocorrectText, process, typed, final, history);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

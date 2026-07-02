@@ -225,14 +225,17 @@ public sealed class AutocorrectEngine : IDisposable
         _coordinator?.Invalidate(reason);
     }
 
-    // A correction the contextual stage applied behind the caret. It only
-    // counts and logs like any correction.
+    // A correction the contextual stage applied behind the caret. It counts and
+    // logs like any correction, and records a Sentence transition on the corpus
+    // slot if the sentence is still open (a rewrite after flush is invisible).
     private void OnCoordinatorApplied(CorrectionDecision decision)
     {
         _rollupCorrections++;
         DeckleAutocorrectSource.Log.CorrectionApplied();
         DeckleAutocorrectSource.Log.CorrectionDetail(
             decision.Reason.ToString(), decision.Original.Length, decision.Replacement.Length, 0);
+        if (_textTelemetry?.Invoke() == true)
+            _corpus?.SentenceEdit(decision.Original, decision.Replacement);
         CorrectionApplied?.Invoke(decision);
     }
 
@@ -377,9 +380,10 @@ public sealed class AutocorrectEngine : IDisposable
     // Emits one completed corpus sentence on the dedicated dataset, tagged with the
     // current process. Runs on the input thread (the accumulator is synchronous), so
     // _surface is the live surface that produced the sentence.
-    private void EmitText(string typed, string final)
+    private void EmitText(SentenceCorpus.SentenceRecord rec)
     {
-        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(_surface.ProcessName, typed, final);
+        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
+            _surface.ProcessName, rec.Typed, rec.Final, rec.History);
     }
 
     private static void EmitDecision(long id, string word, IReadOnlyList<string> leftContext, CorrectionTrace trace)
