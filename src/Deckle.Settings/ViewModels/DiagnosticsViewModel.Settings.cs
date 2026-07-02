@@ -99,4 +99,40 @@ public partial class DiagnosticsViewModel
             glyph: Glyphs.Folder,
             defaultValue: () => new TelemetrySettings().StorageDirectory),
     ];
+
+    // The audio-corpus consent fold — a Group replacing the hand-authored expander.
+    // Its master (TelemetryCorpusEnabled) reveals two dependent rows; the master and
+    // the RecordAudioCorpus child each carry their OFF→ON consent dialog through
+    // confirmOnEnable, so the composer holds the enable behind the dialog (no transient
+    // flip — an improvement over the former TwoWay-bound toggles that flipped then
+    // reverted). The content radio is a child gated on RecordAudioCorpus via VisibleWhen,
+    // so the whole chain master → record → content MASKS rather than greys — retiring the
+    // IsEnabled bindings the expander used ("mask, never grey"). No defaultValue anywhere:
+    // a privacy opt-in carries no per-row reset; the Telemetry section "Reset" clears the
+    // fold. Composed into its own host so it keeps its former slot below the telemetry
+    // toggles and above the storage-folder card.
+    public IReadOnlyList<SettingDescriptor> CorpusSettings =>
+    [
+        Setting.Group("GeneralCorpusExpander",
+            () => TelemetryCorpusEnabled,
+            value => TelemetryCorpusEnabled = value,
+            glyph: Glyphs.AudioRecording,
+            confirmOnEnable: root => CorpusConsentDialog.ShowAsync(root),
+            children:
+            [
+                Setting.Toggle("GeneralAudioCorpusCard",
+                    () => RecordAudioCorpus,
+                    value => RecordAudioCorpus = value,
+                    confirmOnEnable: root => AudioCorpusConsentDialog.ShowAsync(root)),
+                Setting.Radio("GeneralAudioCorpusContentCard",
+                    () => AudioCorpusContentIndex,
+                    value => AudioCorpusContentIndex = value,
+                    options:
+                    [
+                        (0, "GeneralAudioCorpusContentMatch"),
+                        (1, "GeneralAudioCorpusContentRaw"),
+                    ],
+                    visibleWhen: () => RecordAudioCorpus),
+            ]),
+    ];
 }

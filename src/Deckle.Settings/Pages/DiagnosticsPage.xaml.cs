@@ -30,8 +30,6 @@ public sealed partial class DiagnosticsPage : Page
     // Re-entry guards for the consent flows : the Toggled handler reverts
     // the switch when the user cancels the dialog, and that revert would
     // retrigger Toggled in turn.
-    private bool _suppressCorpusToggle;
-    private bool _suppressAudioCorpusToggle;
     private bool _suppressAutocorrectDecisionsToggle;
     private bool _suppressAutocorrectTextToggle;
 
@@ -41,6 +39,7 @@ public sealed partial class DiagnosticsPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeTelemetrySection();
+        ComposeCorpusSection();
         ComposeStorageFolderSection();
         LoadAndSync();
     }
@@ -78,6 +77,24 @@ public sealed partial class DiagnosticsPage : Page
     {
         _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
         _telemetryComposer.Compose(ViewModel.TelemetrySettings);
+    }
+
+    // ── Composed Corpus fold ──────────────────────────────────────────────────
+    //
+    // The audio-corpus consent fold, now a composed Setting.Group (declared in
+    // DiagnosticsViewModel.CorpusSettings) rather than the former hand-authored
+    // SettingsExpander. The composer builds the master toggle + its two dependent rows
+    // and runs their off→on consent dialogs through the descriptors' confirmOnEnable
+    // gate — so the CorpusLoggingToggle_Toggled / AudioCorpusToggle_Toggled handlers and
+    // their re-entry guards are gone. Composed before LoadAndSync so the PropertyChanged
+    // subscription catches Load() (and the Telemetry "Reset"); held in a field so the
+    // subscription lives as long as the (cached) page.
+    private SettingsComposer? _corpusComposer;
+
+    private void ComposeCorpusSection()
+    {
+        _corpusComposer = new SettingsComposer(CorpusHost, ViewModel);
+        _corpusComposer.Compose(ViewModel.CorpusSettings);
     }
 
     // ── Composed Storage-folder card ──────────────────────────────────────────
@@ -122,36 +139,13 @@ public sealed partial class DiagnosticsPage : Page
     // revert). On → Off : no confirmation — the user can turn it back on
     // later if needed.
     //
-    // Application log and Microphone telemetry once lived here too; they now run
-    // the same flow through the composer's confirmOnEnable gate (their descriptors
-    // in DiagnosticsViewModel.TelemetrySettings), so only the Corpus pair — nested
-    // under a bespoke expander the composer doesn't build — stays hand-authored.
-
-    private async void CorpusLoggingToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_initializing || _suppressCorpusToggle) return;
-        if (!CorpusLoggingToggle.IsOn) return;
-
-        bool confirmed = await CorpusConsentDialog.ShowAsync(this.XamlRoot);
-        if (confirmed) return;
-
-        _suppressCorpusToggle = true;
-        try { CorpusLoggingToggle.IsOn = false; }
-        finally { _suppressCorpusToggle = false; }
-    }
-
-    private async void AudioCorpusToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_initializing || _suppressAudioCorpusToggle) return;
-        if (!AudioCorpusToggle.IsOn) return;
-
-        bool confirmed = await AudioCorpusConsentDialog.ShowAsync(this.XamlRoot);
-        if (confirmed) return;
-
-        _suppressAudioCorpusToggle = true;
-        try { AudioCorpusToggle.IsOn = false; }
-        finally { _suppressAudioCorpusToggle = false; }
-    }
+    // Application log, Microphone and the whole Corpus fold once lived here too; they
+    // now run the same flow through the composer's confirmOnEnable gate (their
+    // descriptors in DiagnosticsViewModel.TelemetrySettings / CorpusSettings), so only
+    // the Autocorrect pair stays hand-authored — a header toggle plus an INDEPENDENT
+    // nested toggle (recording verbatim text does not depend on recording decisions),
+    // which is neither a dependency Group (it would wrongly mask the text opt-in) nor a
+    // flat Section (it would drop the primary opt-in from the header).
 
     private async void AutocorrectDecisionsToggle_Toggled(object sender, RoutedEventArgs e)
     {

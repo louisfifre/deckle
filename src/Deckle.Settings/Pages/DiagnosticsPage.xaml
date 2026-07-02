@@ -106,30 +106,14 @@
                 <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <controls:SettingsExpander x:Uid="GeneralCorpusExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.AudioRecording}}">
-                    <ToggleSwitch x:Name="CorpusLoggingToggle"
-                                  IsOn="{x:Bind ViewModel.TelemetryCorpusEnabled, Mode=TwoWay}"
-                                  Toggled="CorpusLoggingToggle_Toggled" />
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Name="AudioCorpusCard"
-                                               x:Uid="GeneralAudioCorpusCard"
-                                               IsEnabled="{x:Bind ViewModel.TelemetryCorpusEnabled, Mode=OneWay}">
-                            <ToggleSwitch x:Name="AudioCorpusToggle"
-                                          IsOn="{x:Bind ViewModel.RecordAudioCorpus, Mode=TwoWay}"
-                                          Toggled="AudioCorpusToggle_Toggled" />
-                        </controls:SettingsCard>
-                        <controls:SettingsCard x:Name="AudioCorpusContentCard"
-                                               x:Uid="GeneralAudioCorpusContentCard"
-                                               ContentAlignment="Vertical"
-                                               IsEnabled="{x:Bind ViewModel.RecordAudioCorpus, Mode=OneWay}">
-                            <RadioButtons SelectedIndex="{x:Bind ViewModel.AudioCorpusContentIndex, Mode=TwoWay}">
-                                <RadioButton x:Uid="GeneralAudioCorpusContentMatch" />
-                                <RadioButton x:Uid="GeneralAudioCorpusContentRaw" />
-                            </RadioButtons>
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- Composed region — the audio-corpus consent fold. Formerly a
+                     hand-authored SettingsExpander; now a Setting.Group declared in
+                     DiagnosticsViewModel.CorpusSettings, built into this host by
+                     ComposeCorpusSection(). The master's and child's consent dialogs
+                     ride confirmOnEnable, and the master → record → content chain masks
+                     (never greys) — retiring the IsEnabled bindings the expander used. -->
+                <StackPanel x:Name="CorpusHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- Decisions is the primary (lighter) opt-in on the header; the
                      verbatim typed corpus is nested below as the heavier opt-in,
