@@ -42,8 +42,4 @@ public sealed record TypoOptions
     // two the valid neighbourhood is crowded, so the winner must clearly dominate.
     public double Edits2DominanceRatio { get; init; } = 12.0;
 
-    // Bilingual guard: a non-word that is itself frequent English is left alone
-    // rather than frenchified. Inert while the live engine runs French-only
-    // (english lexicon null), but correct for the bilingual path.
-    public double EnglishGuardMinPerMillion { get; init; } = 5.0;
 }

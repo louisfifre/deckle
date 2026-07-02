@@ -26,11 +26,6 @@ public sealed record RestorerOptions
     // everything the index holds; raise it to prune corpus noise.
     public double MinCandidateFrequencyPerMillion { get; init; } = 0.0;
 
-    // The English guard is a frequency bar, not a membership test: the EN
-    // lexicon (web counts) is polluted with bare-stripped French ("francais",
-    // "ecole"), so only a form actually frequent in English blocks correction.
-    public double EnglishGuardMinPerMillion { get; init; } = 5.0;
-
     // Eval-only mode: lets the pair model overturn a *valid* French form
     // (a→à, du→dû — the real-word class). Off in the live engine by doctrine;
     // the offline eval measures what it would buy and what it would break.

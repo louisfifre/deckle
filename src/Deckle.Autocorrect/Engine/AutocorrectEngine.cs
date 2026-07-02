@@ -21,11 +21,6 @@ public sealed class AutocorrectEngine : IDisposable
 {
     private const double RollupPeriodMs = 30_000;
 
-    // Learning eligibility: a word already living in the base lexicons needs no
-    // adoption; an English form above this frequency is "known English", not a
-    // personal word. Calibration constant, not a setting.
-    private const double EnglishKnownPerMillion = 0.5;
-
     private readonly IKeyboardInputHost _host;
     private readonly KeyDecoder _decoder;
     private readonly TypedWordTracker _tracker;
@@ -34,8 +29,8 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly ITextInjector _injector;
     private readonly PersonalDictionary? _dictionary;
     private readonly Func<AutocorrectSettings> _settings;
-    private readonly FrequencyLexicon? _french;
-    private readonly FrequencyLexicon? _english;
+    private readonly IFrequencyLexicon? _french;
+    private readonly IFrequencyLexicon? _english;
 
     // Opt-in per-word decision telemetry. When this returns true, each evaluated
     // word on an enrolled surface emits a structured trace (candidates, scores,
@@ -108,8 +103,8 @@ public sealed class AutocorrectEngine : IDisposable
         ITextInjector injector,
         Func<AutocorrectSettings> settings,
         PersonalDictionary? dictionary = null,
-        FrequencyLexicon? french = null,
-        FrequencyLexicon? english = null,
+        IFrequencyLexicon? french = null,
+        IFrequencyLexicon? english = null,
         ISentenceReranker? reranker = null,
         IAmbiguityProbe? probe = null,
         Func<bool>? decisionTelemetry = null,
@@ -448,7 +443,7 @@ public sealed class AutocorrectEngine : IDisposable
 
         string lower = word.ToLowerInvariant();
         if (_french?.Contains(lower) == true) return;
-        if (_english?.FrequencyOf(lower) >= EnglishKnownPerMillion) return;
+        if (_english?.Contains(lower) == true) return;
 
         _dictionary.RecordCommit(lower);
         _rollupLearning++;

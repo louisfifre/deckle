@@ -24,14 +24,14 @@ namespace Deckle.Autocorrect;
 // deliberately out of scope here rather than miscorrected.
 public sealed class ConservativeTypoCorrector : ICorrectionPolicy
 {
-    private readonly FrequencyLexicon _french;
-    private readonly FrequencyLexicon? _english;
+    private readonly IFrequencyLexicon _french;
+    private readonly IFrequencyLexicon? _english;
     private readonly IPersonalLexicon? _personal;
     private readonly TypoOptions _options;
 
     public ConservativeTypoCorrector(
-        FrequencyLexicon french,
-        FrequencyLexicon? english = null,
+        IFrequencyLexicon french,
+        IFrequencyLexicon? english = null,
         IPersonalLexicon? personal = null,
         TypoOptions? options = null)
     {
@@ -75,10 +75,10 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
         if (_french.Contains(lower))
             return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
 
-        // Never frenchify a word that is itself frequent English.
-        if (_english is not null
-            && _english.FrequencyOf(lower) >= _options.EnglishGuardMinPerMillion)
-            return Abstain(st, CorrectionTrace.Reasons.FrequentEnglish);
+        // Never frenchify a word that belongs to the restricted global-English
+        // seed. The seed is curated upstream; membership is the guard.
+        if (_english?.Contains(lower) == true)
+            return Abstain(st, CorrectionTrace.Reasons.ValidEnglish);
 
         // The user's own adopted words shield themselves.
         if (_personal?.IsAdopted(lower) == true)

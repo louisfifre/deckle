@@ -17,8 +17,8 @@ namespace Deckle.Autocorrect;
 // one reason it exists.
 public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
 {
-    private readonly FrequencyLexicon _french;
-    private readonly FrequencyLexicon? _english;
+    private readonly IFrequencyLexicon _french;
+    private readonly IFrequencyLexicon? _english;
     private readonly AccentIndex _index;
     private readonly RestorerOptions _options;
     private readonly IPairDisambiguator? _context;
@@ -26,8 +26,8 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
     private readonly Func<string, IReadOnlyList<AccentVariant>>? _personalVariants;
 
     public DiacriticsRestorer(
-        FrequencyLexicon french,
-        FrequencyLexicon? english,
+        IFrequencyLexicon french,
+        IFrequencyLexicon? english,
         AccentIndex index,
         RestorerOptions? options = null,
         IPairDisambiguator? context = null,
@@ -92,12 +92,11 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         if (literalValid && !(_options.CorrectValidFormsWithContext && _context is not null))
             return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
 
-        // 8. Bilingual guard: no language detection in v1, so a form frequent
-        //    in English must never be frenchified (frequency bar, not
-        //    membership — the EN web counts contain bare-stripped French).
-        if (_english is not null
-            && _english.FrequencyOf(lower) >= _options.EnglishGuardMinPerMillion)
-            return Abstain(st, CorrectionTrace.Reasons.FrequentEnglish);
+        // 8. Global-English guard: the loaded artifact is already the restricted
+        //    seed, so membership is the protection contract. Nothing is corrected
+        //    toward English; a seed literal is only left untouched.
+        if (_english?.Contains(lower) == true)
+            return Abstain(st, CorrectionTrace.Reasons.ValidEnglish);
 
         // 9. The user's own adopted words shield themselves from correction.
         if (_personal?.IsAdopted(lower) == true)

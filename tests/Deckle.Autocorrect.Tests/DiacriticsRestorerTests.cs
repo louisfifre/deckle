@@ -19,10 +19,10 @@ public class DiacriticsRestorerTests
     private const string FrenchTsv =
         "français\t400\nécole\t200\nélève\t30\nélevé\t25\n" +
         "côte\t60\ncote\t50\nà\t9000\na\t10000\n" +
-        "aujourd'hui\t80\ndéjà\t150\nmarché\t90\nmarche\t85\n" +
+        "aujourd'hui\t80\ndéjà\t150\nmarché\t90\nmarche\t85\ncafé\t120\n" +
         "étant\t100\nêtant\t1\n";
 
-    private const string EnglishTsv = "the\t60000\nbut\t9000\nmode\t500\n";
+    private const string EnglishTsv = "the\t60000\nbut\t9000\nmode\t500\ncafe\t0.1\n";
 
     private static FrequencyLexicon French() => FrequencyLexicon.LoadTsv(new StringReader(FrenchTsv));
     private static FrequencyLexicon English() => FrequencyLexicon.LoadTsv(new StringReader(EnglishTsv));
@@ -31,11 +31,14 @@ public class DiacriticsRestorerTests
         IPairDisambiguator? context = null,
         IPersonalLexicon? personal = null,
         Func<string, IReadOnlyList<AccentVariant>>? personalVariants = null,
-        RestorerOptions? options = null)
+        RestorerOptions? options = null,
+        bool includeEnglish = true)
     {
         var french = French();
         var index = AccentIndex.Build(french);
-        return new DiacriticsRestorer(french, English(), index, options, context, personal, personalVariants);
+        return new DiacriticsRestorer(
+            french, includeEnglish ? English() : null, index,
+            options, context, personal, personalVariants);
     }
 
     // ── Single-candidate lexical gate ──────────────────────────────────────
@@ -111,10 +114,36 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
-    public void EnglishWordIsNeverFrenchified()
+    public void ValidEnglishWordIsNeverFrenchified()
     {
-        // No language detection in v1 — the bilingual guard protects "the".
-        Assert.Null(Restorer().Evaluate("the", []));
+        // No language detection in v1 — the bilingual guard protects a seed
+        // English literal even when an accented French candidate exists. Its
+        // frequency is deliberately low: membership is the contract.
+        Assert.Null(Restorer().Evaluate("cafe", []));
+    }
+
+    [Fact]
+    public void EnglishShapedTokenIsRestoredWhenTheGlobalEnglishSeedIsAbsent()
+    {
+        var d = Restorer(includeEnglish: false).Evaluate("cafe", []);
+
+        Assert.NotNull(d);
+        Assert.Equal("café", d!.Replacement);
+        Assert.Equal(CorrectionReason.LexicalGate, d.Reason);
+    }
+
+    [Fact]
+    public void PrimaryLexiconCanComeFromTheFrequencyInterface()
+    {
+        var primary = new StubFrequencyLexicon(new()
+        {
+            ["cote"] = 50,
+        });
+        var indexSource = FrequencyLexicon.LoadTsv(new StringReader("côte\t60\n"));
+        var restorer = new DiacriticsRestorer(
+            primary, english: null, AccentIndex.Build(indexSource));
+
+        Assert.Null(restorer.Evaluate("cote", []));
     }
 
     [Fact]
@@ -272,5 +301,13 @@ public class DiacriticsRestorerTests
             _suppressed.Contains((original.ToLowerInvariant(), replacement.ToLowerInvariant()));
 
         public IReadOnlyCollection<string> AdoptedWords => _adopted;
+    }
+
+    private sealed class StubFrequencyLexicon(Dictionary<string, double> entries) : IFrequencyLexicon
+    {
+        public bool Contains(string lowerForm) => entries.ContainsKey(lowerForm);
+
+        public double FrequencyOf(string lowerForm) =>
+            entries.TryGetValue(lowerForm, out double frequency) ? frequency : 0.0;
     }
 }

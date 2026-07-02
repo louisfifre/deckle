@@ -41,8 +41,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
     public AutocorrectEngineHarness(
         ICorrectionPolicy? policy = null,
         PersonalDictionary? dictionary = null,
-        FrequencyLexicon? french = null,
-        FrequencyLexicon? english = null,
+        IFrequencyLexicon? french = null,
+        IFrequencyLexicon? english = null,
         Func<bool>? decisionTelemetry = null)
     {
         Policy = policy ?? NeverCorrects;

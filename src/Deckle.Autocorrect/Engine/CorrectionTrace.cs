@@ -171,9 +171,9 @@ public sealed class CorrectionTrace
         public const string ProperNounGuard   = "proper_noun_guard";
 
         // Literal-protection guards.
-        public const string ValidFrench    = "valid_french";
-        public const string FrequentEnglish = "frequent_english";
-        public const string UserAdopted    = "user_adopted";
+        public const string ValidFrench  = "valid_french";
+        public const string ValidEnglish = "valid_english";
+        public const string UserAdopted  = "user_adopted";
 
         // Diacritics outcomes.
         public const string NoCandidates       = "no_candidates";

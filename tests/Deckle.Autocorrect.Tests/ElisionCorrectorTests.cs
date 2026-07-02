@@ -18,14 +18,18 @@ public class ElisionCorrectorTests
     // not (dune, quelle, tas, ces, sur, bonjour).
     private const string FrenchTsv =
         "est\t1000\nai\t800\nil\t900\nun\t900\nen\t900\non\t900\narrache\t40\n" +
-        "homme\t300\neau\t200\néglise\t60\na\t2000\n" +
+        "homme\t300\neau\t200\néglise\t60\na\t2000\nira\t120\n" +
         "dune\t20\nquelle\t150\ntas\t60\nces\t400\nsur\t500\nbonjour\t300\n";
 
+    private const string EnglishTsv = "jira\t0.1\n";
+
     private static ElisionCorrector Corrector(
-        string? frenchTsv = null, IPersonalLexicon? personal = null)
+        string? frenchTsv = null,
+        FrequencyLexicon? english = null,
+        IPersonalLexicon? personal = null)
     {
         var french = FrequencyLexicon.LoadTsv(new StringReader(frenchTsv ?? FrenchTsv));
-        return new ElisionCorrector(french, personal);
+        return new ElisionCorrector(french, english, personal);
     }
 
     // ── Splits that earned it ───────────────────────────────────────────────
@@ -73,6 +77,29 @@ public class ElisionCorrectorTests
     public void ValidFrenchWordIsNeverSplit(string word)
     {
         Assert.Null(Corrector().Evaluate(word, []));
+    }
+
+    [Fact]
+    public void ValidEnglishSeedWordIsNeverSplit()
+    {
+        // "jira" matches the French elision shape j'ira, but the restricted
+        // English tier protects it as a literal.
+        var english = FrequencyLexicon.LoadTsv(new StringReader(EnglishTsv));
+
+        Assert.Null(Corrector(english: english).Evaluate("jira", []));
+    }
+
+    [Fact]
+    public void PrimaryLexiconCanComeFromTheFrequencyInterface()
+    {
+        var primary = new StubFrequencyLexicon(new()
+        {
+            ["est"] = 1000,
+        });
+        var d = new ElisionCorrector(primary).Evaluate("cest", []);
+
+        Assert.NotNull(d);
+        Assert.Equal("c'est", d!.Replacement);
     }
 
     [Fact]
@@ -145,5 +172,13 @@ public class ElisionCorrectorTests
         public bool IsSuppressed(string original, string replacement) => false;
 
         public IReadOnlyCollection<string> AdoptedWords => _adopted;
+    }
+
+    private sealed class StubFrequencyLexicon(Dictionary<string, double> entries) : IFrequencyLexicon
+    {
+        public bool Contains(string lowerForm) => entries.ContainsKey(lowerForm);
+
+        public double FrequencyOf(string lowerForm) =>
+            entries.TryGetValue(lowerForm, out double frequency) ? frequency : 0.0;
     }
 }

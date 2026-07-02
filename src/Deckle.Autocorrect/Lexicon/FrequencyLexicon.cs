@@ -15,7 +15,7 @@ namespace Deckle.Autocorrect;
 // their lowercased literal, so the store must agree on case and composition.
 // A form appearing twice in the source keeps the SUM of its frequencies —
 // merging variant rows of the same surface form is additive, never last-wins.
-public sealed class FrequencyLexicon
+public sealed class FrequencyLexicon : IFrequencyLexicon
 {
     private readonly Dictionary<string, double> _map;
 

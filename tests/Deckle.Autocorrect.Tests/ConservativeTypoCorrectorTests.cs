@@ -21,7 +21,7 @@ public class ConservativeTypoCorrectorTests
     private const string FrenchTsv =
         "bonjour\t300\nballet\t100\nbillet\t100\nobscur\t2\nchat\t90\nmonde\t100\n";
 
-    private const string EnglishTsv = "the\t60000\nmode\t500\n";
+    private const string EnglishTsv = "the\t60000\nmode\t0.1\n";
 
     private static ConservativeTypoCorrector Corrector(
         string? frenchTsv = null,
@@ -138,12 +138,38 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
-    public void FrequentEnglishWordIsNotFrenchified()
+    public void EnglishShapedTokenIsCorrectedWithoutTheGlobalEnglishSeed()
     {
-        // "mode" is a frequent English word (and one insertion from "monde");
-        // the bilingual guard leaves it alone.
+        // Without the restricted English seed loaded, "mode" is just a non-word
+        // one insertion away from "monde"; the ordinary typo bar can fire.
+        var d = Corrector().Evaluate("mode", []);
+
+        Assert.NotNull(d);
+        Assert.Equal("monde", d!.Replacement);
+        Assert.Equal(CorrectionReason.TypoCorrection, d.Reason);
+    }
+
+    [Fact]
+    public void ValidEnglishWordIsNotFrenchified()
+    {
+        // "mode" is in the restricted English seed (and one insertion from
+        // "monde"); the bilingual guard leaves it alone by membership.
         var english = FrequencyLexicon.LoadTsv(new StringReader(EnglishTsv));
         Assert.Null(Corrector(english: english).Evaluate("mode", []));
+    }
+
+    [Fact]
+    public void PrimaryLexiconCanComeFromTheFrequencyInterface()
+    {
+        var french = new StubFrequencyLexicon(new()
+        {
+            ["bonjour"] = 300,
+        });
+
+        var d = new ConservativeTypoCorrector(french).Evaluate("bonjuor", []);
+
+        Assert.NotNull(d);
+        Assert.Equal("bonjour", d!.Replacement);
     }
 
     [Fact]
@@ -225,5 +251,13 @@ public class ConservativeTypoCorrectorTests
             _suppressed.Contains((original.ToLowerInvariant(), replacement.ToLowerInvariant()));
 
         public IReadOnlyCollection<string> AdoptedWords => _adopted;
+    }
+
+    private sealed class StubFrequencyLexicon(Dictionary<string, double> entries) : IFrequencyLexicon
+    {
+        public bool Contains(string lowerForm) => entries.ContainsKey(lowerForm);
+
+        public double FrequencyOf(string lowerForm) =>
+            entries.TryGetValue(lowerForm, out double frequency) ? frequency : 0.0;
     }
 }

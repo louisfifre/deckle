@@ -24,12 +24,17 @@ public sealed class ElisionCorrector : ICorrectionPolicy
     private static readonly string[] Proclitics =
         { "qu", "c", "d", "j", "l", "m", "n", "s", "t" };
 
-    private readonly FrequencyLexicon _french;
+    private readonly IFrequencyLexicon _french;
+    private readonly IFrequencyLexicon? _english;
     private readonly IPersonalLexicon? _personal;
 
-    public ElisionCorrector(FrequencyLexicon french, IPersonalLexicon? personal = null)
+    public ElisionCorrector(
+        IFrequencyLexicon french,
+        IFrequencyLexicon? english = null,
+        IPersonalLexicon? personal = null)
     {
         _french = french;
+        _english = english;
         _personal = personal;
     }
 
@@ -64,6 +69,8 @@ public sealed class ElisionCorrector : ICorrectionPolicy
         // "dune", "quelle", "tas", "ces" are real and must pass through untouched.
         if (_french.Contains(lower))
             return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
+        if (_english?.Contains(lower) == true)
+            return Abstain(st, CorrectionTrace.Reasons.ValidEnglish);
         if (_personal?.IsAdopted(lower) == true)
             return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 

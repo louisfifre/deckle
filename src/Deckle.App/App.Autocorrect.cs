@@ -52,9 +52,9 @@ public partial class App
             if (_keyboardMouseHost is null) return;
 
             string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
-            string frenchPath = Path.Combine(dataDir, "lexicon-fr.tsv.gz");
-            string pairPath = Path.Combine(dataDir, "pair-bigrams-fr.tsv.gz");
-            string verbsPath = Path.Combine(dataDir, "verbs-fr.tsv.gz");
+            string frenchPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.FrenchFileName);
+            string pairPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName);
+            string verbsPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName);
 
             // The French lexicon is the gate; without it there is nothing to do,
             // so leave autocorrect unbuilt rather than start a no-op engine.
@@ -68,9 +68,10 @@ public partial class App
             // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
             // shape).
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, index, context, reranker, verbs) = await Task.Run(() =>
+            var (french, english, index, context, reranker, verbs) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
+                var en = AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir);
                 var idx = AccentIndex.Build(fr);
                 var ctx = File.Exists(pairPath)
                     ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
@@ -85,7 +86,7 @@ public partial class App
                 string modelDir = Path.Combine(AppPaths.ModelsDirectory, "camembert-base");
                 ISentenceReranker? rr = CamembertReranker.TryLoad(
                     modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
-                return (fr, idx, ctx, rr, vb);
+                return (fr, en, idx, ctx, rr, vb);
             }).ConfigureAwait(true);
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
@@ -96,11 +97,12 @@ public partial class App
                 AppPaths.GetModuleDirectory("autocorrect"), "personal-dictionary.json");
             _autocorrectDictionary = new PersonalDictionary(dictPath);
 
-            // French-first: no English guard. The bigram model resolves the
-            // ambiguous residue; the reranker stays an offline tool.
+            // The global-English tier is deliberately restricted: only the
+            // globish seed artifact activates it. The historical full English
+            // list is never loaded into the live protected-literal chain.
             var diacritics = new DiacriticsRestorer(
                 french: french,
-                english: null,
+                english: english,
                 index: index,
                 options: new RestorerOptions(),
                 context: context,
@@ -112,7 +114,7 @@ public partial class App
             // by construction; the composite makes the precedence explicit.
             var typo = new ConservativeTypoCorrector(
                 french: french,
-                english: null,
+                english: english,
                 personal: _autocorrectDictionary,
                 options: new TypoOptions());
 
@@ -120,7 +122,7 @@ public partial class App
             // apostrophe in a glued proclitic ("cest" → "c'est", "jai" → "j'ai").
             // It must precede the typo corrector, which would otherwise rewrite
             // "cest" to "est" by a plain edit before the apostrophe is considered.
-            var elision = new ElisionCorrector(french, _autocorrectDictionary);
+            var elision = new ElisionCorrector(french, english, _autocorrectDictionary);
 
             // Stage three: subject–verb agreement on a valid-but-misconjugated
             // word the stages above leave alone ("tu mange" → "tu manges").
@@ -145,7 +147,7 @@ public partial class App
                 settings: () => AutocorrectSettingsService.Instance.Current,
                 dictionary: _autocorrectDictionary,
                 french: french,
-                english: null,
+                english: english,
                 // The post-sentence contextual stage: the reranker (null when its
                 // model is absent) and the diacritics gate reused as the slot probe.
                 reranker: reranker,

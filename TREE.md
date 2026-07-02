@@ -411,7 +411,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentFolding.cs
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
+│   │   │   ├── AutocorrectLexiconArtifacts.cs
 │   │   │   ├── FrequencyLexicon.cs
+│   │   │   ├── IFrequencyLexicon.cs
 │   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -1071,6 +1073,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineLearningTests.cs
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
+│   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs

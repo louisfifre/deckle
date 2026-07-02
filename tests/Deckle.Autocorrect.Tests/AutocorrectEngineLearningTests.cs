@@ -26,8 +26,8 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     private AutocorrectEngineHarness Harness(
         PersonalDictionary dictionary,
         ICorrectionPolicy? policy = null,
-        FrequencyLexicon? french = null,
-        FrequencyLexicon? english = null)
+        IFrequencyLexicon? french = null,
+        IFrequencyLexicon? english = null)
     {
         var h = new AutocorrectEngineHarness(policy, dictionary, french, english);
         h.Prober.Surface = AutocorrectEngineHarness.Editable();
@@ -105,15 +105,30 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     }
 
     [Fact]
-    public void AKnownEnglishWordIsNotLearned()
+    public void AValidEnglishSeedWordIsNotLearned()
     {
         using var dict = NewDictionary();
-        var english = FrequencyLexicon.LoadTsv(new StringReader("hello\t300\n")); // far above the 0.5 ppm bar
+        var english = FrequencyLexicon.LoadTsv(new StringReader("hello\t0.1\n"));
         using var h = Harness(dict, english: english);
 
         h.Type("hello ");
 
-        Assert.Empty(dict.SnapshotWords()); // committed, then rejected as a known English form
+        Assert.Empty(dict.SnapshotWords()); // committed, then rejected as a protected English seed form
+    }
+
+    [Fact]
+    public void EngineLearningReadsThePrimaryLexiconThroughTheFrequencyInterface()
+    {
+        using var dict = NewDictionary();
+        var primary = new StubFrequencyLexicon(new()
+        {
+            ["bonjour"] = 100,
+        });
+        using var h = Harness(dict, french: primary);
+
+        h.Type("bonjour ");
+
+        Assert.Empty(dict.SnapshotWords());
     }
 
     [Fact]
@@ -201,5 +216,13 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         // honors it. No correction applied, nothing injected.
         Assert.Empty(h.Applied);
         Assert.Empty(h.Injector.Calls);
+    }
+
+    private sealed class StubFrequencyLexicon(Dictionary<string, double> entries) : IFrequencyLexicon
+    {
+        public bool Contains(string lowerForm) => entries.ContainsKey(lowerForm);
+
+        public double FrequencyOf(string lowerForm) =>
+            entries.TryGetValue(lowerForm, out double frequency) ? frequency : 0.0;
     }
 }
