@@ -107,9 +107,25 @@ An application where autocorrect is active because the user accepted the enrollm
 The notification raised the first time the system *could* correct something in a non-enrolled app — never on mere app launch, so apps where no prose is ever typed never see it. It does not block, steal focus, or rewrite anything; corrections stay withheld until the user opts in, and ignoring the prompt is a valid answer. Candidate refinement, noted not committed: applying the withheld corrections retroactively when consent arrives late.
 _Avoid_ : popup, dialog (it is a passive notification, not a modal).
 
-**Correction revert** :
-The single gesture that takes a correction back: the Backspace that deletes the space sitting right after a corrected word also restores the original word — whether it comes immediately after the correction fired, or later, after moving the caret back to that spot. Backspaces beyond that one delete normally, into the text before. Ctrl+Z is never intercepted — it belongs to the apps. Kept deliberately simple by decision; open questions: whether a space is re-added after restoring, and what removing letters *inside* a corrected word should do.
-_Avoid_ : undo (Ctrl+Z semantics).
+**Correction undo** :
+The explicit act that takes a correction back, carried by the correction inlay — never by the keyboard. Backspace is always a plain Backspace: backing into a corrected word means editing it, not disputing the correction. Replaces the retired implicit-Backspace revert, whose misfires (a deleted comma read as an undo) broke the trust the corrector exists to earn. An undo is also the negative learning signal — it writes the suppression that keeps a correction from coming back on its own; the exact learning semantics are open.
+_Avoid_ : revert (the retired implicit-Backspace model), Ctrl+Z (never intercepted — it belongs to the apps).
+
+**Correction inlay** :
+The small non-focusable surface that sits above the active text field and reveals on pointer proximity (the Hue-window reveal pattern), carrying the last applied correction and its undo/redo. The only place a correction is taken back, and the only visibility corrections get — the typing flow itself stays free of visual effects by decision. Contents and depth (one correction or a short history) are open.
+_Avoid_ : popup, toast, notification (it never steals focus or announces itself).
+
+**Commit stage** :
+The instantaneous correction layer, acting at word commit with left context only — conservative, bounded, imperceptible. What it cannot decide it leaves alone, and it never touches anything behind the last committed word.
+_Avoid_ : first pass (scope is the point, not order).
+
+**Protected literal** :
+A form the commit stage must never touch because it is valid in a recognized lexicon — French, the restricted English vocabulary, or the personal vocabulary. The English lexicon is deliberately *restricted* — technical globish, brand and product names, grown from the user's own usage (dictation transcriptions are a prime source) — never a full English dictionary, which would shield too many mangled French words. Protection is one-way: a valid English form is never corrected, but nothing is corrected *toward* English and English spelling is not repaired. Whether an English-shaped token was in fact a mangled French word is the sentence stage's call, made from the whole sentence.
+_Avoid_ : whitelist (protection gates correction, not observation), English lexicon as spelling authority.
+
+**Sentence stage** :
+The deferred correction layer that re-reads the sentence being typed with its full context and may revise words already committed — inside the current sentence only; a sentence once left is final. Owns the decisions only context can make: code-switching, ambiguous pairs, escalation of the hardest faults. Its revisions surface in the correction inlay like any correction.
+_Avoid_ : reranker (one possible engine of this layer, not the layer), second pass.
 
 **Personal dictionary** :
 The user-visible surface of everything autocorrect has learned — adopted words and suppressed corrections. Inspectable and editable by principle: a consultable list, per-word removal, full purge. Suppression is an explicit entry (a blocklist), never the mere erasure of a counter — a removed word must not come back on its own. Candidate bridge to the ASR personal lexicon (shared learning, not yet committed).
@@ -137,15 +153,19 @@ _Avoid_ : utterance (the input unit), window (the 30 s encoder input).
 
 ## Text operations — correction vs rewrite
 
-Two families of automated text change, told apart by the nature of the change — not by the surface it acts on (voice dictation or typed keyboard, which are orthogonal) nor by the engine behind it. The family decides the risk, and therefore whether the change is allowed to act silently.
+Two families of automated text change, told apart by the nature of the change — not by the surface it acts on (voice dictation or typed keyboard, which are orthogonal) nor by the engine behind it. The family decides the risk, and therefore whether the change is allowed to act silently. The perimeter of the *applied edit* is what classifies: a generative model may act as judge among bounded candidates and the change remains a Correction; the moment the applied output is free regeneration, it is a Rewrite — silence is never allowed, whatever computed it.
 
 **Correction** :
-A bounded, in-place edit drawn from a closed set of possible changes — restoring a missing diacritic, dropping a hesitation, fixing punctuation or casing. It repairs what was typed or said and cannot introduce content that was not there, so it carries no meaning-drift risk: it may apply itself silently and is taken back by the single Backspace gesture (see *Correction revert*). Today: machine-wide diacritics restoration.
+A bounded, in-place edit drawn from a closed set of possible changes — restoring a missing diacritic, dropping a hesitation, fixing punctuation or casing. It repairs what was typed or said and cannot introduce content that was not there, so it carries no meaning-drift risk: it may apply itself silently and is taken back through the correction inlay (see *Correction undo*). Today: machine-wide diacritics restoration.
 _Avoid_ : rewrite (which regenerates text — correction only repairs a span), autocorrect (the product/module name, not the operation itself).
 
 **Rewrite** :
 A generative regeneration of a span — a sentence or a paragraph — into new text: removing disfluencies and recomposing, restructuring into paragraphs, regrouping by theme. Because it rewrites the wording, it can drift from the original meaning, so it is offered after the fact (suggested or confirmed) rather than applied silently — until trust is earned. The same operation is meant to serve both finalized dictation and typed text.
 _Avoid_ : correction (a bounded repair, not new text), reformulation (Rewrite is the Deckle term).
+
+**Rewrite service** :
+The single service every rewrite goes through, whoever asks — transcription finalization, the paragraph rewrite, the sentence stage's escalations. One profile store, one home for the prompts; the inference engine sits behind its seam and can change without the clients knowing (decided target: in-process ONNX; Ollama until that migration). Also the natural place to serialize local heavy compute — its consumers share one GPU.
+_Avoid_ : LlmService (an implementation name), Ollama (the current engine, not the service).
 
 ## Anytype — runtime, host, attribution
 

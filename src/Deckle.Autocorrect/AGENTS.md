@@ -15,7 +15,7 @@ Top-level domain module — machine-wide text autocorrect: French diacritics res
 
 ## Engine doctrine
 
-Conservative by construction: the literal always wins by default — a form valid in French or English is never touched, ambiguity requires a margin (never a bare argmax), and blacklisted token classes (digits, single characters, identifier-cased and already-accented words) are never corrected. Every applied correction is revertable by a single Backspace, and a revert writes an explicit suppression so it never comes back on its own.
+Conservative by construction: the literal always wins by default — a form valid in French, in the restricted English lexicon or in the personal vocabulary is never touched, ambiguity requires a margin (never a bare argmax), and blacklisted token classes (digits, single characters, identifier-cased and already-accented words) are never corrected. Correction runs in two stages (commit stage, sentence stage — normative in `CONTEXT.md`); silence is reserved for bounded edits, whatever engine computed them. A correction is taken back through the correction inlay, never by intercepting Backspace, and an undo writes an explicit suppression so it never comes back on its own.
 
 ## Data
 
