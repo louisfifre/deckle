@@ -94,16 +94,43 @@ public class SentenceRerankCoordinatorTests
     }
 
     [Fact]
-    public void GateCorrectedWordIsNeverAnAmbiguousSlot()
+    public void CommitStageDiacriticsCorrectionCanBeTakenBackToTheTypedOriginal()
     {
-        // gateLeftLiteral=false means the synchronous gate already acted: the
-        // reranker must not reconsider it, even if its form folds ambiguously.
+        var lane = new TestRerankLane
+        {
+            Reranker = req =>
+            {
+                Assert.Contains(req.Candidates, c => c.Form == "la");
+                Assert.Contains(req.Candidates, c => c.Form == "là");
+                return "la"; // full context says the commit-stage accent was wrong
+            }
+        };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("c'est", ' ', true);
+        coord.OnWordCommitted("la", "là", ' ', sentenceMayEvaluate: true); // typed original joins candidates
+        coord.OnWordCommitted("mer", ' ', true);
+        coord.OnWordCommitted("est", ' ', true);
+        coord.OnWordCommitted("belle", ' ', true);
+
+        Assert.Single(inj.Calls);
+        Assert.Equal("là mer est belle ", inj.Calls[0].Current);
+        Assert.Equal("la mer est belle ", inj.Calls[0].Target);
+    }
+
+    [Fact]
+    public void NonRerankableCommitCorrectionIsNeverAnAmbiguousSlot()
+    {
+        // sentenceMayEvaluate=false means the commit-stage edit is outside the
+        // sentence reranker's rights (typo, elision, grammar). It must not
+        // reconsider it even if the typed form folds ambiguously.
         var lane = new TestRerankLane { Reranker = _ => "là" };
         var inj = new RecordingInjector();
         var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
 
         coord.OnWordCommitted("c'est", ' ', true);
-        coord.OnWordCommitted("la", ' ', gateLeftLiteral: false); // not a literal the gate left
+        coord.OnWordCommitted("la", "là", ' ', sentenceMayEvaluate: false);
         coord.OnWordCommitted("mer", ' ', true);
         coord.OnWordCommitted("est", ' ', true);
         coord.OnWordCommitted("belle", ' ', true);
@@ -368,10 +395,21 @@ public class SentenceRerankCoordinatorTests
         private readonly Dictionary<string, AccentVariant[]> _map;
         public FakeProbe(Dictionary<string, AccentVariant[]> map) => _map = map;
 
-        public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
-            _map.TryGetValue(word.ToLowerInvariant(), out var v)
-                ? v
-                : System.Array.Empty<AccentVariant>();
+        public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) => Candidates(word, false);
+
+        public IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral) =>
+            Candidates(word, includeTypedLiteral);
+
+        private IReadOnlyList<AccentVariant> Candidates(string word, bool includeTypedLiteral)
+        {
+            string lower = word.ToLowerInvariant();
+            var v = _map.TryGetValue(lower, out var mapped)
+                ? new List<AccentVariant>(mapped)
+                : new List<AccentVariant>();
+            if (includeTypedLiteral && v.TrueForAll(c => c.Form != lower))
+                v.Add(new AccentVariant(lower, 0.0));
+            return v.Count >= 2 ? v : System.Array.Empty<AccentVariant>();
+        }
     }
 
     // A lane that runs the (fake) reranker synchronously, or — in Manual mode —

@@ -2,14 +2,16 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Xml.Linq;
 using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect.Lab;
 
 // Regenerates the derived lexicons from the raw sources. French from
-// Lexique 3.83 (form + film/book frequencies), English from Norvig's
-// count_1w (the guard). Both land as `form<TAB>freq` gzip TSVs, ordinally
-// sorted so the artifact is byte-deterministic across runs and machines.
+// Lexique 3.83 (form + film/book frequencies), legacy English from
+// Norvig's count_1w, and the restricted globish seed from FranceTerme
+// English equivalents. They land as gzip TSVs, ordinally sorted so the
+// artifacts are byte-deterministic across runs and machines.
 public static class LexiconBuilder
 {
     // Frequency stamped on a Morphalou-only form (one Lexique does not carry).
@@ -22,9 +24,17 @@ public static class LexiconBuilder
     // on a single candidate regardless of frequency).
     private const double MorphalouEpsilonPerMillion = 0.001;
 
+    private static readonly HashSet<string> GlobishStopWords = new(StringComparer.Ordinal)
+    {
+        "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+        "in", "into", "is", "it", "its", "of", "on", "or", "the", "to",
+        "with",
+    };
+
     // Builds the lexicons. The caller supplies the resolved directories — rawDir
     // holds the fetched sources (Lexique383.tsv, count_1w.txt, optionally
-    // Morphalou3.1_CSV.csv), outDir is where the gzip TSV artifacts are written.
+    // Morphalou3.1_CSV.csv and FranceTerme.xml), outDir is where the gzip
+    // TSV artifacts are written.
     // withMorphalou folds in the inflected-form coverage when its source is
     // present. Returns 0 on success.
     public static int Run(string rawDir, string outDir, bool withMorphalou = false)
@@ -33,6 +43,7 @@ public static class LexiconBuilder
 
         string frenchOut = DataSet.FrenchPath(outDir);
         string englishOut = DataSet.EnglishPath(outDir);
+        string globishOut = Path.Combine(outDir, AutocorrectLexiconArtifacts.GlobalEnglishSeedFileName);
         string verbsOut = DataSet.VerbsPath(outDir);
 
         Console.WriteLine($"Raw  : {rawDir}");
@@ -52,7 +63,11 @@ public static class LexiconBuilder
         BuildFrench(Path.Combine(rawDir, "Lexique383.tsv"), morphalouSource, frenchOut, verbsOut);
         BuildEnglish(Path.Combine(rawDir, "count_1w.txt"), englishOut);
 
-        SelfCheck(frenchOut, englishOut, verbsOut);
+        var french = FrequencyLexicon.LoadTsvGz(frenchOut);
+        BuildGlobalEnglishSeed(Path.Combine(rawDir, "FranceTerme.xml"), globishOut, french);
+
+        SelfCheck(frenchOut, englishOut, verbsOut, globishOut);
+
         return 0;
     }
 
@@ -250,6 +265,186 @@ public static class LexiconBuilder
         }
     }
 
+    // ── Restricted English seed: FranceTerme foreign equivalents ───────────
+    //
+    // FranceTerme is an official terminology base. The French heads are NOT the
+    // seed; only English foreign equivalents are considered. The live guard is
+    // per-token, so multi-word equivalents are reduced to conservative ASCII
+    // content tokens, then filtered against French exact/accent-fold forms and
+    // one-edit French neighbours. This is deliberately narrower than a general
+    // English frequency list: it protects technical globish without turning the
+    // historical full English lexicon back on.
+    private static void BuildGlobalEnglishSeed(
+        string sourcePath, string outPath, FrequencyLexicon french)
+    {
+        if (!File.Exists(sourcePath))
+        {
+            if (File.Exists(outPath))
+                File.Delete(outPath);
+            Console.WriteLine("Globish: FranceTerme.xml absent — restricted English seed not built.");
+            return;
+        }
+
+
+        var (frenchForms, frenchDeletionKeys) = BuildFrenchCollisionIndex(french);
+        var counts = new Dictionary<string, double>(StringComparer.Ordinal);
+        long equivalentValues = 0;
+        long skippedShape = 0;
+        long skippedFrenchCollision = 0;
+
+        var doc = XDocument.Load(sourcePath, LoadOptions.None);
+        foreach (XElement equivalent in doc.Descendants("Equivalent"))
+        {
+            if (!string.Equals(
+                    (string?)equivalent.Attribute("langue"),
+                    "en",
+                    StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            foreach (XElement prop in equivalent.Elements("Equi_prop"))
+            {
+                equivalentValues++;
+                var seenInEquivalent = new HashSet<string>(StringComparer.Ordinal);
+                foreach (string chunk in GlobishChunks(prop.Value))
+                {
+                    if (!TryNormalizeGlobishToken(chunk, out string token))
+                    {
+                        skippedShape++;
+                        continue;
+                    }
+                    if (!seenInEquivalent.Add(token))
+                        continue;
+                    if (IsFrenchCollision(token, frenchForms, frenchDeletionKeys))
+                    {
+                        skippedFrenchCollision++;
+                        continue;
+                    }
+
+                    counts[token] = counts.TryGetValue(token, out double prior) ? prior + 1.0 : 1.0;
+                }
+            }
+        }
+
+        WriteLexicon(outPath, counts);
+        Console.WriteLine($"Globish: kept {counts.Count:N0} FranceTerme English tokens "
+                        + $"from {equivalentValues:N0} English equivalents "
+                        + $"({skippedFrenchCollision:N0} French collisions, "
+                        + $"{skippedShape:N0} shape/stopword rejects).");
+    }
+
+    private static (HashSet<string> Forms, HashSet<string> DeletionKeys) BuildFrenchCollisionIndex(
+        FrequencyLexicon french)
+    {
+        var forms = new HashSet<string>(StringComparer.Ordinal);
+        var deletionKeys = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var (form, _) in french.Entries)
+        {
+            AddFrenchCollisionForm(AccentFolding.Fold(form), forms, deletionKeys);
+        }
+
+        return (forms, deletionKeys);
+    }
+
+    private static void AddFrenchCollisionForm(
+        string form, HashSet<string> forms, HashSet<string> deletionKeys)
+    {
+        foreach (string chunk in GlobishChunks(form))
+        {
+            if (!TryNormalizeGlobishToken(chunk, out string token))
+                continue;
+            if (forms.Add(token))
+                AddDeletionKeys(token, deletionKeys);
+        }
+    }
+
+    private static bool IsFrenchCollision(
+        string token, HashSet<string> frenchForms, HashSet<string> frenchDeletionKeys)
+    {
+        if (frenchForms.Contains(token) || frenchDeletionKeys.Contains(token))
+            return true;
+
+        if (token.Length <= 3)
+            return false;
+
+        for (int i = 0; i < token.Length; i++)
+        {
+            string deleted = DeleteAt(token, i);
+            if (frenchForms.Contains(deleted) || frenchDeletionKeys.Contains(deleted))
+                return true;
+        }
+        return false;
+    }
+
+    private static void AddDeletionKeys(string token, HashSet<string> deletionKeys)
+    {
+        if (token.Length <= 3)
+            return;
+        for (int i = 0; i < token.Length; i++)
+            deletionKeys.Add(DeleteAt(token, i));
+    }
+
+    private static string DeleteAt(string value, int index) =>
+        value.Remove(index, 1);
+
+    private static IEnumerable<string> GlobishChunks(string text)
+    {
+        var chunk = new StringBuilder();
+        foreach (char raw in text.Normalize(NormalizationForm.FormKC).ToLowerInvariant())
+        {
+            char c = NormalizeGlobishChar(raw);
+            if (c is >= 'a' and <= 'z' || c == '-')
+            {
+                chunk.Append(c);
+                continue;
+            }
+
+            if (chunk.Length > 0)
+            {
+                yield return chunk.ToString();
+                chunk.Clear();
+            }
+        }
+
+        if (chunk.Length > 0)
+            yield return chunk.ToString();
+    }
+
+    private static char NormalizeGlobishChar(char c) => c switch
+    {
+        '\u2010' or '\u2011' or '\u2012' or '\u2013' or '\u2014' or '\u2212' => '-',
+        _ => c,
+    };
+
+    private static bool TryNormalizeGlobishToken(string chunk, out string token)
+    {
+        token = chunk.Trim('-');
+        return IsGlobishTokenShape(token) && !GlobishStopWords.Contains(token);
+    }
+
+    private static bool IsGlobishTokenShape(string token)
+    {
+        if (token.Length < 3)
+            return false;
+
+        bool previousHyphen = false;
+        foreach (char c in token)
+        {
+            if (c == '-')
+            {
+                if (previousHyphen)
+                    return false;
+                previousHyphen = true;
+                continue;
+            }
+            if (c is < 'a' or > 'z')
+                return false;
+            previousHyphen = false;
+        }
+
+        return token[0] != '-' && token[^1] != '-';
+    }
+
     // ── English: Norvig count_1w ───────────────────────────────────────────
     //
     // `word<TAB>count`. ppm = count / total * 1e6 on the same per-million scale
@@ -308,7 +503,7 @@ public static class LexiconBuilder
             writer.Write($"{form}\t{map[form].ToString("0.####", CultureInfo.InvariantCulture)}\n");
     }
 
-    private static void SelfCheck(string frenchOut, string englishOut, string verbsOut)
+    private static void SelfCheck(string frenchOut, string englishOut, string verbsOut, string globishOut)
     {
         Console.WriteLine();
         Console.WriteLine("Self-check (reload via FrequencyLexicon.LoadTsvGz):");
@@ -326,7 +521,20 @@ public static class LexiconBuilder
         Console.WriteLine($"  English count           {en.Count,12:N0}");
         Console.WriteLine($"    freq(the)             {en.FrequencyOf("the"),12:N4}");
 
+        if (File.Exists(globishOut))
+        {
+            var globish = FrequencyLexicon.LoadTsvGz(globishOut);
+            Console.WriteLine($"  Globish count           {globish.Count,12:N0}");
+            Console.WriteLine($"    freq(greenwashing)    {globish.FrequencyOf("greenwashing"),12:N4}");
+            Console.WriteLine($"    freq(the)             {globish.FrequencyOf("the"),12:N4}");
+        }
+        else
+        {
+            Console.WriteLine("  Globish count                    absent");
+        }
+
         var vb = VerbMorphology.LoadTsvGz(verbsOut);
+
         Console.WriteLine($"  Verb    forms           {vb.Count,12:N0}");
         // manges → manger ind:pre:2s; the 1s slot of the same lemma is "mange".
         Console.WriteLine($"    manges is verb        {vb.IsVerb("manges"),12}");
@@ -338,6 +546,8 @@ public static class LexiconBuilder
         Console.WriteLine("File sizes:");
         Console.WriteLine($"  {Path.GetFileName(frenchOut),-24}{new FileInfo(frenchOut).Length,12:N0} bytes");
         Console.WriteLine($"  {Path.GetFileName(englishOut),-24}{new FileInfo(englishOut).Length,12:N0} bytes");
+        if (File.Exists(globishOut))
+            Console.WriteLine($"  {Path.GetFileName(globishOut),-24}{new FileInfo(globishOut).Length,12:N0} bytes");
         Console.WriteLine($"  {Path.GetFileName(verbsOut),-24}{new FileInfo(verbsOut).Length,12:N0} bytes");
     }
 

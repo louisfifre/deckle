@@ -5,10 +5,10 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The learning signals around the decision: a word the engine LEAVES ALONE
-// feeds adoption, a CORRECTED word must not reinforce its own typo, and the
-// content guards (length, digits, apostrophe, known lexicon forms) keep junk
-// out. The personal dictionary runs for real on a temp file with a frozen
-// clock, so reinforcement weights are exact and decay is out of the picture.
+// feeds adoption evidence, a CORRECTED word must not reinforce its own typo,
+// and the content guards (length, digits, apostrophe, known lexicon forms) keep
+// junk out. The personal dictionary runs for real on a temp file with a frozen
+// clock, so clean occurrence counts are exact.
 [Trait("Category", "integration")]
 public sealed class AutocorrectEngineLearningTests : IDisposable
 {
@@ -132,24 +132,24 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     }
 
     [Fact]
-    public void TypingBareThenFixingAccentsByHandIsLearnedAsAManualFix()
+    public void TypingBareThenFixingAccentsByHandOnlyCountsTheRetypedWordOnce()
     {
         using var dict = NewDictionary();
         using var h = Harness(dict); // NeverCorrects
 
-        h.Type("widget "); // a neutral word: an ordinary commit, no accent fix — the baseline
+        h.Type("widget "); // a neutral word: an ordinary commit, no edit — the baseline
 
         h.Type("cafe ");  // commit the bare form, opening the edit window
         h.Backspace();    // re-open "cafe" as the live buffer
         h.Backspace();    // drop the 'e'  → "caf"
         h.Type("é ");     // retype the accented form → commit "café" as an edit of "cafe"
 
-        // Same frozen clock, so weight == effective weight: the manual-fix path
-        // adds strictly more than an ordinary commit on its own. Measure the
-        // baseline in-test rather than pinning the absolute magnitude.
+        // The re-edit removes the bare occurrence from the clean count. The
+        // accented word is a fresh clean commit, not a special adoption boost.
         double baseline = Assert.Single(dict.SnapshotWords(), w => w.Word == "widget").EffectiveWeight;
         var entry = Assert.Single(dict.SnapshotWords(), w => w.Word == "café");
-        Assert.True(entry.EffectiveWeight > baseline);
+        Assert.Equal(baseline, entry.EffectiveWeight, precision: 3);
+        Assert.DoesNotContain(dict.SnapshotWords(), w => w.Word == "cafe" && w.EffectiveWeight > 0);
     }
 
     [Fact]
@@ -183,9 +183,9 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
         h.Backspace();   // "" — still re-opened (the boundary was eaten on the first Backspace)
         h.Type("dog ");  // recommit a DIFFERENT word: an edit, but not an accent fix
 
-        // Fold("cat") != Fold("dog"), so the manual-accent-fix boost must NOT
-        // apply: "dog" carries the ordinary commit weight alone, equal to the
-        // baseline — not the heavier weight of a real accent fix.
+        // Fold("cat") != Fold("dog"), so the edit is just an edit, not accent
+        // evidence. "dog" carries the ordinary commit count alone, equal to the
+        // baseline.
         double baseline = Assert.Single(dict.SnapshotWords(), w => w.Word == "widget").EffectiveWeight;
         var dog = Assert.Single(dict.SnapshotWords(), w => w.Word == "dog");
         Assert.Equal(baseline, dog.EffectiveWeight, precision: 3);

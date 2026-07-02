@@ -49,6 +49,17 @@ public sealed class AutocorrectLexiconArtifactsTests : IDisposable
         Assert.False(seed.Contains("the"));
     }
 
+    [Fact]
+    public void PackagedGlobalEnglishSeedIsRestricted()
+    {
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+
+        var seed = AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir);
+
+        Assert.NotNull(seed);
+        Assert.True(seed!.Contains("greenwashing"));
+        Assert.False(seed.Contains("the"));
+    }
     private void WriteGzipTsv(string fileName, string content)
     {
         string path = Path.Combine(_dir, fileName);

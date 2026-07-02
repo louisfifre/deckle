@@ -325,12 +325,13 @@ public sealed class AutocorrectEngine : IDisposable
             if (_textTelemetry?.Invoke() == true)
                 _corpus?.Word(commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary);
 
-            // Feed the contextual stage the on-screen form (post-gate). A null
-            // decision means the gate left a literal — the only case a real-word
-            // ambiguity survives for the reranker.
+            // Feed the contextual stage both the typed literal and the on-screen
+            // form. It may weigh literals the commit stage left alone, and may
+            // take back diacritics corrections from full sentence context; typo,
+            // elision and grammar edits stay outside its rights.
             _coordinator?.OnWordCommitted(
-                decision?.Replacement ?? commit.Word, commit.Boundary,
-                gateLeftLiteral: decision is null, wordId);
+                commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary,
+                sentenceMayEvaluate: SentenceStageMayEvaluate(decision), wordId);
         }
         else
         {
@@ -411,9 +412,13 @@ public sealed class AutocorrectEngine : IDisposable
         // whatever the retype was (a hand-fix, a rewording, an undo of a correction).
         _rollupReEdited++;
 
-        // « typed bare, went back, fixed the accents by hand » — the strongest
-        // organic signal that the accented form is the wanted one.
+        // The word was reopened after commit: that occurrence is no longer
+        // clean enough for personal-vocabulary adoption.
         string o = edit.Original, r = edit.Replacement;
+        _dictionary?.RecordReEdit(o);
+
+        // « typed bare, went back, fixed the accents by hand » — useful pair
+        // evidence, but not a clean verbatim adoption occurrence.
         if (!string.Equals(o, r, StringComparison.Ordinal)
             && AccentFolding.Fold(o) == AccentFolding.Fold(r)
             && AccentFolding.HasDiacritics(r)
@@ -445,10 +450,17 @@ public sealed class AutocorrectEngine : IDisposable
         if (_french?.Contains(lower) == true) return;
         if (_english?.Contains(lower) == true) return;
 
-        _dictionary.RecordCommit(lower);
+        _dictionary.RecordCommit(word);
         _rollupLearning++;
         DeckleAutocorrectSource.Log.LearningSignal("commit");
     }
+
+    private static bool SentenceStageMayEvaluate(CorrectionDecision? decision) =>
+        decision is null
+        || decision.Reason is CorrectionReason.LexicalGate
+            or CorrectionReason.ContextPair
+            or CorrectionReason.FrequencyDominance
+            or CorrectionReason.PersonalWord;
 
     // Corrections run here only when the app's decision is explicitly on.
     private static bool IsEnabledFor(AutocorrectSettings settings, string processName)

@@ -372,9 +372,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SpeakerOutput.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
+│   │   │   ├── lexicon-en-globish.tsv.gz
 │   │   │   ├── lexicon-en.tsv.gz
 │   │   │   ├── lexicon-fr.tsv.gz
-│   │   │   └── pair-bigrams-fr.tsv.gz
+│   │   │   ├── pair-bigrams-fr.tsv.gz
+│   │   │   └── verbs-fr.tsv.gz
 │   │   ├── Engine/
 │   │   │   ├── AutocorrectEngine.cs
 │   │   │   ├── BackgroundRerankLane.cs

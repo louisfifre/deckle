@@ -161,6 +161,136 @@ public class RestorationEvaluatorTests
         Assert.Equal(1L, report.Restored);
     }
 
+    [Fact]
+    public void RerankedEvaluationCanTakeBackCommitStageDiacriticsToTypedOriginal()
+    {
+        var policy = new SingleDecisionPolicy("la", "là", CorrectionReason.LexicalGate);
+        var probe = new FixedProbe(
+            "la",
+            new[]
+            {
+                new AccentVariant("là", 10.0),
+            },
+            new[]
+            {
+                new AccentVariant("la", 0.0),
+                new AccentVariant("là", 10.0),
+            });
+        var reranker = new ChoosingReranker("la");
+
+        var report = RestorationEvaluator.EvaluateReranked(
+            new StringReader("la."), policy, probe, reranker);
+
+        Assert.Equal(1L, report.TotalTokens);
+        Assert.Equal(1L, report.Untouched);
+        Assert.Equal(0L, report.FalseCorrections);
+        Assert.Equal(1, reranker.Calls);
+        Assert.Contains(reranker.LastCandidates, candidate => candidate.Form == "la");
+    }
+
+    [Fact]
+    public void RerankedDryRunDoesNotReopenNonSentenceCorrections()
+    {
+        var policy = new SingleDecisionPolicy("la", "là", CorrectionReason.TypoCorrection);
+        var probe = new FixedProbe(
+            "la",
+            new[]
+            {
+                new AccentVariant("la", 0.0),
+                new AccentVariant("là", 10.0),
+            },
+            new[]
+            {
+                new AccentVariant("la", 0.0),
+                new AccentVariant("là", 10.0),
+            });
+        var reranker = new ChoosingReranker("la");
+
+        var outcome = Assert.Single(RestorationEvaluator.RestoreLine("la", policy, probe, reranker));
+
+        Assert.Equal("la", outcome.Typed);
+        Assert.Equal("là", outcome.Output);
+        Assert.Equal(CorrectionReason.TypoCorrection, outcome.Reason);
+        Assert.False(outcome.WasAmbiguous);
+        Assert.Equal(0, reranker.Calls);
+    }
+
+    private sealed class SingleDecisionPolicy : ICorrectionPolicy
+    {
+        private readonly string _word;
+        private readonly string _replacement;
+        private readonly CorrectionReason _reason;
+
+        public SingleDecisionPolicy(string word, string replacement, CorrectionReason reason)
+        {
+            _word = word;
+            _replacement = replacement;
+            _reason = reason;
+        }
+
+        public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null) =>
+            string.Equals(word, _word, StringComparison.Ordinal)
+                ? new CorrectionDecision(word, _replacement, _reason)
+                : null;
+    }
+
+    private sealed class FixedProbe : IAmbiguityProbe
+    {
+        private readonly string _word;
+        private readonly IReadOnlyList<AccentVariant> _ambiguousCandidates;
+        private readonly IReadOnlyList<AccentVariant> _sentenceCandidates;
+
+        public FixedProbe(
+            string word,
+            IReadOnlyList<AccentVariant> ambiguousCandidates,
+            IReadOnlyList<AccentVariant> sentenceCandidates)
+        {
+            _word = word;
+            _ambiguousCandidates = ambiguousCandidates;
+            _sentenceCandidates = sentenceCandidates;
+        }
+
+        public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
+            string.Equals(word, _word, StringComparison.Ordinal)
+                ? _ambiguousCandidates
+                : Array.Empty<AccentVariant>();
+
+        public IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral)
+        {
+            if (!string.Equals(word, _word, StringComparison.Ordinal))
+                return Array.Empty<AccentVariant>();
+
+            return includeTypedLiteral ? _sentenceCandidates : _ambiguousCandidates;
+        }
+    }
+
+    private sealed class ChoosingReranker : ISentenceReranker
+    {
+        private readonly string _chosen;
+
+        public ChoosingReranker(string chosen) => _chosen = chosen;
+
+        public int Calls { get; private set; }
+
+        public IReadOnlyList<AccentVariant> LastCandidates { get; private set; } =
+            Array.Empty<AccentVariant>();
+
+        public RerankOutcome Rerank(
+            IReadOnlyList<string> sentence,
+            int slotIndex,
+            IReadOnlyList<AccentVariant> candidates)
+        {
+            Calls++;
+            LastCandidates = candidates;
+            return new RerankOutcome(
+                _chosen,
+                Array.Empty<RerankCandidateScore>(),
+                Margin: 1.0,
+                Threshold: 0.0,
+                AbstainReason: null);
+        }
+    }
+
     // Fires only when there is no left context — to prove the prev resets at a
     // sentence boundary.
     private sealed class OnlyAtSentenceStartPolicy : ICorrectionPolicy

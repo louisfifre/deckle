@@ -142,12 +142,11 @@ public static class RestorationEvaluator
                     CorrectionDecision? decision = policy.Evaluate(typed, LeftContext(prev2, prev1));
                     string output = decision?.Replacement ?? typed;
 
-                    // Only slots the gate left as the literal (output == typed)
-                    // and whose fold is ambiguous are the reranker's to reconsider.
+                    // The live sentence stage may reopen diacritics/personal decisions
+                    // by adding the exact typed literal to the closed candidate set.
+                    // It never reopens typo, elision or grammar commits.
                     IReadOnlyList<AccentVariant> candidates =
-                        string.Equals(output, typed, StringComparison.Ordinal)
-                            ? probe.AmbiguousCandidates(typed)
-                            : Array.Empty<AccentVariant>();
+                        SentenceStageCandidates(probe, typed, output, decision);
 
                     words.Add(new WordEval(token, typed, output, decision, candidates));
                     report.TotalTokens++;
@@ -230,9 +229,7 @@ public static class RestorationEvaluator
                 string output = decision?.Replacement ?? typed;
 
                 IReadOnlyList<AccentVariant> candidates =
-                    string.Equals(output, typed, StringComparison.Ordinal)
-                        ? probe.AmbiguousCandidates(typed)
-                        : Array.Empty<AccentVariant>();
+                    SentenceStageCandidates(probe, typed, output, decision);
 
                 words.Add(new WordEval(typed, typed, output, decision, candidates));
             }
@@ -373,6 +370,27 @@ public static class RestorationEvaluator
                 return true;
         return false;
     }
+
+    // Mirrors AutocorrectEngine.SentenceStageMayEvaluate: the sentence model can
+    // arbitrate accent/personal choices, including by returning to the typed
+    // literal, but it has no right to undo typo, elision or grammar corrections.
+    private static IReadOnlyList<AccentVariant> SentenceStageCandidates(
+        IAmbiguityProbe probe, string typed, string output, CorrectionDecision? decision)
+    {
+        if (!SentenceStageMayEvaluate(decision))
+            return Array.Empty<AccentVariant>();
+
+        return string.Equals(output, typed, StringComparison.Ordinal)
+            ? probe.AmbiguousCandidates(typed)
+            : probe.SentenceCandidates(typed, includeTypedLiteral: true);
+    }
+
+    private static bool SentenceStageMayEvaluate(CorrectionDecision? decision) =>
+        decision is null
+        || decision.Reason is CorrectionReason.LexicalGate
+            or CorrectionReason.ContextPair
+            or CorrectionReason.FrequencyDominance
+            or CorrectionReason.PersonalWord;
 
     // The left context handed to the policy, most recent last: empty at sentence
     // start, one word once there is a previous, two from the third word on.

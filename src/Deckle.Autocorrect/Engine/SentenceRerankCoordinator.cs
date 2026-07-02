@@ -11,7 +11,8 @@ public readonly record struct RerankRequest(
 
 // The reranker's verdict for one slot: the full outcome (chosen form plus the
 // per-candidate scores and margin for the decision telemetry), tagged with the
-// buffer index and epoch it was computed against.
+// buffer index and epoch it was computed against. The candidate set includes the
+// typed original when the slot came from a commit-stage diacritics correction.
 public readonly record struct RerankResult(int SlotIndex, int Epoch, RerankOutcome Outcome);
 
 // The threading boundary between the input-thread coordinator and the heavy ONNX
@@ -115,11 +116,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     // ── Input-thread feed ────────────────────────────────────────────────────
 
-    // A word committed (after the synchronous gate ran). finalForm is what is on
-    // screen; gateLeftLiteral is true when the gate corrected nothing — the only
-    // case a real-word ambiguity survives for the reranker. wordId is the engine's
-    // per-word id, carried so a deferred verdict joins its synchronous decision line.
-    public void OnWordCommitted(string finalForm, char boundary, bool gateLeftLiteral, long wordId = 0)
+    public void OnWordCommitted(string finalForm, char boundary, bool gateLeftLiteral, long wordId = 0) =>
+        OnWordCommitted(finalForm, finalForm, boundary, sentenceMayEvaluate: gateLeftLiteral, wordId);
+
+    // A word committed. typedForm is the user's actual literal; finalForm is what
+    // is on screen after the commit stage. sentenceMayEvaluate is true when the
+    // commit stage either stood aside or made a diacritics correction the sentence
+    // stage is allowed to revise from full context; false for typo, elision and
+    // grammar corrections, whose edits are outside the reranker's candidate set.
+    // wordId is the engine's per-word id, carried so a deferred verdict joins its
+    // synchronous decision line.
+    public void OnWordCommitted(
+        string typedForm, string finalForm, char boundary, bool sentenceMayEvaluate, long wordId = 0)
     {
         if (_disposed) return;
 
@@ -138,9 +146,11 @@ public sealed class SentenceRerankCoordinator : IDisposable
             WordId = wordId,
         };
 
-        if (gateLeftLiteral)
+        if (sentenceMayEvaluate)
         {
-            var candidates = _probe.AmbiguousCandidates(finalForm);
+            var candidates = string.Equals(typedForm, finalForm, StringComparison.Ordinal)
+                ? _probe.AmbiguousCandidates(finalForm)
+                : _probe.SentenceCandidates(typedForm, includeTypedLiteral: true);
             if (candidates.Count >= 2)
             {
                 entry.IsAmbiguous = true;

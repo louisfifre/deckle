@@ -100,8 +100,20 @@ data files, not to Deckle's code.
 - Source : https://norvig.com/ngrams/ — Peter Norvig, derived from the
   Google Web Trillion Word Corpus (Thorsten Brants, Alex Franz, LDC).
 - License : free to use per the source page.
-- Used as : English word counts behind the bilingual guard, reduced to
-  the derived `lexicon-en.tsv.gz`.
+- Used as : legacy full English word counts, reduced to the derived
+  `lexicon-en.tsv.gz`. This file is retained as a derived lab artifact; the
+  live protected-English guard does not load it.
+
+### FranceTerme
+
+- Source : https://www.data.gouv.fr/datasets/base-franceterme-termes-scientifiques-et-techniques-1
+  via the official XML resource `FranceTerme.xml`.
+- License : Licence Ouverte / Open Licence (Etalab), attribution required.
+- Used as : source of English foreign equivalents (`Equivalent langue="en"`),
+  reduced to the restricted protected-English seed
+  `lexicon-en-globish.tsv.gz`. The derived artifact keeps conservative ASCII
+  content tokens only and filters French exact/accent-fold/one-edit collisions.
+- Source snapshot used for this artifact : downloaded 2026-07-02.
 
 ### Wikipédia in French
 

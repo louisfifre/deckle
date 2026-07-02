@@ -11,6 +11,12 @@ public interface IAmbiguityProbe
 {
     // The closed candidate set for a word when its fold holds >=2 surface forms
     // (after the frequency floor and user suppressions); empty when there is
-    // nothing to disambiguate.
+    // nothing to disambiguate. Used for a commit the gate left literal.
     IReadOnlyList<AccentVariant> AmbiguousCandidates(string word);
+
+    // The candidate set the sentence stage may weigh for a word. When
+    // includeTypedLiteral is true, the exact typed literal joins the set even if
+    // it is not a French lexicon form, so the sentence stage can take back a
+    // commit-stage diacritics correction from full context.
+    IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral);
 }

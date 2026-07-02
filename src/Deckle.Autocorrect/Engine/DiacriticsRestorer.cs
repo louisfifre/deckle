@@ -89,8 +89,14 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         //    In the eval-only context mode the literal instead joins the
         //    candidates as first-rank, and only the pair model may overturn it.
         bool literalValid = _french.Contains(lower);
-        if (literalValid && !(_options.CorrectValidFormsWithContext && _context is not null))
+        // Calibrated valid-form exception: "voila" is a rare passé simple verb,
+        // but in fast prose it overwhelmingly means the discourse particle
+        // "voilà". Let the ordinary dominance gate arbitrate this one fold.
+        bool allowDominantValidLiteral = lower == "voila";
+        if (literalValid && !allowDominantValidLiteral
+            && !(_options.CorrectValidFormsWithContext && _context is not null))
             return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
+
 
         // 8. Global-English guard: the loaded artifact is already the restricted
         //    seed, so membership is the protection contract. Nothing is corrected
@@ -149,7 +155,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         }
 
         // Only the pair model may overturn a valid form — dominance never does.
-        if (literalValid)
+        if (literalValid && !allowDominantValidLiteral)
             return Abstain(st, CorrectionTrace.Reasons.ContextKeptLiteral);
 
         // 14. No context verdict — fall back to frequency dominance. Correct only
@@ -196,26 +202,36 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
     // answers "is this an ambiguous slot, and which forms?". The blacklist guards
     // (digits, internal upper, elision, already-accented) still matter: an
     // already-accented or non-word token is never an ambiguous slot.
-    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word)
+    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
+        SentenceCandidates(word, includeTypedLiteral: false);
+
+    public IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral)
     {
         if (word.Length == 0)
             return Array.Empty<AccentVariant>();
         foreach (char c in word)
-            if (char.IsDigit(c) || (!char.IsLetter(c) && c is not '\'' and not '’' and not '-'))
+            if (char.IsDigit(c) || (!char.IsLetter(c) && c is not '\'' and not '\u2019' and not '-'))
                 return Array.Empty<AccentVariant>();
-        if (WordShape.HasInternalUpper(word) || word[^1] is '\'' or '’' || AccentFolding.HasDiacritics(word))
+        if (WordShape.HasInternalUpper(word) || word[^1] is '\'' or '\u2019' || AccentFolding.HasDiacritics(word))
             return Array.Empty<AccentVariant>();
 
         string lower = word.ToLowerInvariant();
 
-        // The gate blacklists sub-MinWordLength tokens outright; the reranker may
-        // still resolve a one-char ambiguity (a/à) — but only when the bare form
-        // is itself a valid word, so "leave it" is a real candidate and we never
-        // force an accent onto a stray letter (a code identifier, a list bullet).
-        if (word.Length < _options.MinWordLength && !_french.Contains(lower))
+        // The gate blacklists sub-MinWordLength tokens outright. The reranker may
+        // still resolve a one-char ambiguity (a/a-accent) when the bare form is a
+        // real candidate, but it must never force an accent onto a stray letter.
+        bool literalValid = _french.Contains(lower);
+        if (word.Length < _options.MinWordLength && !literalValid && !includeTypedLiteral)
             return Array.Empty<AccentVariant>();
 
-        var merged = BuildCandidates(lower, _french.Contains(lower), out _);
+        var merged = BuildCandidates(lower, literalValid, out _);
+        if (includeTypedLiteral && !merged.Exists(v => string.Equals(v.Form, lower, StringComparison.Ordinal)))
+        {
+            double frequency = literalValid ? _french.FrequencyOf(lower) : 0.0;
+            merged.Add(new AccentVariant(lower, frequency));
+            merged.Sort(static (a, b) => b.FrequencyPerMillion.CompareTo(a.FrequencyPerMillion));
+        }
+
         return merged.Count >= 2 ? merged : Array.Empty<AccentVariant>();
     }
 

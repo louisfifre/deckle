@@ -20,7 +20,7 @@ public class DiacriticsRestorerTests
         "français\t400\nécole\t200\nélève\t30\nélevé\t25\n" +
         "côte\t60\ncote\t50\nà\t9000\na\t10000\n" +
         "aujourd'hui\t80\ndéjà\t150\nmarché\t90\nmarche\t85\ncafé\t120\n" +
-        "étant\t100\nêtant\t1\n";
+        "étant\t100\nêtant\t1\nvoila\t35\nvoilà\t700\n";
 
     private const string EnglishTsv = "the\t60000\nbut\t9000\nmode\t500\ncafe\t0.1\n";
 
@@ -146,6 +146,15 @@ public class DiacriticsRestorerTests
         Assert.Null(restorer.Evaluate("cote", []));
     }
 
+    [Fact]
+    public void DominantVoilaParticleOverridesRareVerbLiteral()
+    {
+        var d = Restorer().Evaluate("voila", []);
+
+        Assert.NotNull(d);
+        Assert.Equal("voilà", d!.Replacement);
+        Assert.Equal(CorrectionReason.FrequencyDominance, d.Reason);
+    }
     [Fact]
     public void AmbiguousPairWithoutDominanceIsLeftAlone()
     {
