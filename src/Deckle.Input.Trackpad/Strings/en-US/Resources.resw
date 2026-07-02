@@ -192,4 +192,7 @@
   <data name="TrackpadPage_RecordFramesCard.Description" xml:space="preserve">
     <value>Writes every contact frame to a JSONL file in telemetry\trackpad. Works whether or not three-finger drag is on.</value>
   </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Trackpad</value>
+  </data>
 </root>

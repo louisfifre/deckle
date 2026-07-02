@@ -1363,5 +1363,8 @@
   <data name="HudOverlay_WindowTitle" xml:space="preserve">
     <value>Deckle Overlay</value>
   </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Rewriting</value>
+  </data>
 
 </root>

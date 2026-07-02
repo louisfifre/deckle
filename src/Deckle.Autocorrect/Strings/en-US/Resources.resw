@@ -99,4 +99,7 @@
   <data name="AutocorrectPage_ForgetButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Forget this app</value>
   </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Autocorrect</value>
+  </data>
 </root>

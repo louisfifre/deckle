@@ -602,21 +602,10 @@
   <data name="SettingsNavRecording.Content" xml:space="preserve">
     <value>Recording</value>
   </data>
-  <data name="SettingsNavTranscription.Content" xml:space="preserve">
-    <value>Transcription</value>
-  </data>
-  <data name="SettingsNavRewriting.Content" xml:space="preserve">
-    <value>Rewriting</value>
-  </data>
-  <data name="SettingsNavAutocorrect.Content" xml:space="preserve">
-    <value>Autocorrect</value>
-  </data>
-  <data name="SettingsNavAmbient.Content" xml:space="preserve">
-    <value>Ambient Light</value>
-  </data>
-  <data name="SettingsNavTrackpad.Content" xml:space="preserve">
-    <value>Trackpad</value>
-  </data>
+  <!-- The module pages' nav labels (Transcription, Rewriting, Autocorrect,
+       Ambient Light, Trackpad) moved to each owning module's own .resw as
+       SettingsModuleNavLabel — the shell builds those items from
+       SettingsModuleRegistry and resolves their label from the module PRI. -->
   <data name="SettingsNavDiagnostics.Content" xml:space="preserve">
     <value>Diagnostics</value>
   </data>

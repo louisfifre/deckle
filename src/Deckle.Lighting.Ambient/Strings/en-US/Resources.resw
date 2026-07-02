@@ -295,5 +295,8 @@
   <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Ambient Light</value>
+  </data>
 
 </root>

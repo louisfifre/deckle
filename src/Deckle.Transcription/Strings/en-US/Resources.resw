@@ -1472,5 +1472,8 @@
   <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
     <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
   </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Transcription</value>
+  </data>
 
 </root>

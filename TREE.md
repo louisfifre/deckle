@@ -825,6 +825,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AutocorrectTextConsentDialog.cs
 │   │   │   ├── CorpusConsentDialog.cs
 │   │   │   └── MicrophoneTelemetryConsentDialog.cs
+│   │   ├── Modules/
+│   │   │   ├── SettingsModuleDescriptor.cs
+│   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
 │   │   │   ├── DiagnosticsPage.xaml
 │   │   │   ├── DiagnosticsPage.xaml.cs
