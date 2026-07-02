@@ -32,20 +32,6 @@
             <Setter Property="TextAlignment" Value="Right" />
             <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         </Style>
-
-        <!-- Per-setting reset button. Opacity 0 by default, lifted to 1
-             on PointerEntered of the parent SettingsCard (code-behind
-             WireHover helper). -->
-        <Style x:Key="ResetButtonStyle"
-               BasedOn="{StaticResource SubtleButtonStyle}"
-               TargetType="Button">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="ToolTipService.ToolTip" Value="Reset to default" />
-        </Style>
     </Page.Resources>
 
     <ScrollViewer Padding="32,24,32,24"
