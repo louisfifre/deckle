@@ -50,8 +50,12 @@ internal static class InstallFlow
         // hardcoded default, is where the app actually reads — the recap must show
         // that reality, and Enter must preserve it.
         string? existingDataRoot = UserEnvironment.GetDataRoot();
+        string? existingInstallDir = existing is null ? null : Path.GetFullPath(existing.InstallDir);
 
-        string installDir = Path.GetFullPath(cli.InstallDir ?? existing?.InstallDir ?? InstallPaths.DefaultInstallDir);
+        string? installDirNote = null;
+        string installDir = cli.InstallDir is { } requestedInstallDir
+            ? Path.GetFullPath(requestedInstallDir)
+            : ResolveInitialInstallDir(existingInstallDir, out installDirNote);
         string dataDir = Path.GetFullPath(cli.DataDir ?? existingDataRoot ?? InstallPaths.DefaultDataDir);
 
         // ── Recap + single-keystroke consent ──────────────────────────────────────
@@ -62,7 +66,7 @@ internal static class InstallFlow
         bool createStartMenuShortcut = true;
         while (true)
         {
-            Recap(release, existing, installDir, dataDir, createStartMenuShortcut);
+            Recap(release, existing, installDir, installDirNote, dataDir, createStartMenuShortcut);
             if (!interactive) break;
             ConsoleUi.Hint($"Enter {enterVerb} · C folders · S shortcut · Ctrl+C cancels");
             ConsoleKey key = ConsoleUi.WaitKey(ConsoleKey.Enter, ConsoleKey.C, ConsoleKey.S);
@@ -76,6 +80,7 @@ internal static class InstallFlow
 
             Console.WriteLine();
             installDir = Path.GetFullPath(ConsoleUi.PromptPath("App folder", installDir));
+            installDirNote = null;
             dataDir = Path.GetFullPath(ConsoleUi.PromptPath("Data folder", dataDir));
             Console.WriteLine();
         }
@@ -100,7 +105,7 @@ internal static class InstallFlow
         // here — close-and-retry when someone can answer, a clean error otherwise.
         while (true)
         {
-            string[] running = RunningProcesses.FromFolder(installDir);
+            string[] running = RunningDeckleProcesses(installDir, existingInstallDir);
             if (running.Length == 0) break;
             string names = string.Join(", ", running);
             if (!interactive)
@@ -154,6 +159,8 @@ internal static class InstallFlow
         string previousRoot = Path.GetFullPath(existingDataRoot ?? InstallPaths.DefaultDataDir);
         if (!PathsEqual(previousRoot, dataDir) && Directory.Exists(previousRoot))
             ConsoleUi.Info($"data folder changed — existing files stay at {previousRoot} and are not moved");
+        if (existingInstallDir is not null && !PathsEqual(existingInstallDir, installDir) && Directory.Exists(existingInstallDir))
+            ConsoleUi.Info($"app folder changed — existing files stay at {existingInstallDir} and are not moved");
 
         Process.Start(new ProcessStartInfo(appExe) { UseShellExecute = true, WorkingDirectory = installDir });
         Console.WriteLine();
@@ -172,6 +179,7 @@ internal static class InstallFlow
         ReleaseResolver.ResolvedRelease release,
         UninstallEntry.ExistingInstall? existing,
         string installDir,
+        string? installDirNote,
         string dataDir,
         bool createStartMenuShortcut)
     {
@@ -186,6 +194,7 @@ internal static class InstallFlow
         ConsoleUi.Headline(headline);
         Console.WriteLine();
         ConsoleUi.Row("App", installDir);
+        if (!string.IsNullOrWhiteSpace(installDirNote)) ConsoleUi.RowNote(installDirNote);
         ConsoleUi.Row("Data", dataDir);
         ConsoleUi.RowNote("speech models live here and can reach ~3 GB");
         ConsoleUi.Row("Shortcut", createStartMenuShortcut ? "Start Menu" : "none");
@@ -195,6 +204,20 @@ internal static class InstallFlow
     // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, as the registry and
     // the recap compare it.
     private static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
+
+    private static string ResolveInitialInstallDir(string? existingInstallDir, out string? note)
+    {
+        note = null;
+        if (existingInstallDir is null) return Path.GetFullPath(InstallPaths.DefaultInstallDir);
+
+        if (!Directory.Exists(existingInstallDir))
+        {
+            note = "previous app folder was not found; using the default";
+            return Path.GetFullPath(InstallPaths.DefaultInstallDir);
+        }
+
+        return existingInstallDir;
+    }
 
     // Empties the install folder before extraction, so files a newer version
     // renamed or dropped never linger beside the fresh payload. Safe by
@@ -240,6 +263,25 @@ internal static class InstallFlow
     private static bool PathsEqual(string a, string b) =>
         string.Equals(Path.GetFullPath(a).TrimEnd('\\'), Path.GetFullPath(b).TrimEnd('\\'),
             StringComparison.OrdinalIgnoreCase);
+
+    private static string[] RunningDeckleProcesses(string installDir, string? existingInstallDir)
+    {
+        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string folder in InstallFoldersToCheck(installDir, existingInstallDir))
+        {
+            foreach (string name in RunningProcesses.FromFolder(folder))
+                names.Add(name);
+        }
+
+        return names.ToArray();
+    }
+
+    private static IEnumerable<string> InstallFoldersToCheck(string installDir, string? existingInstallDir)
+    {
+        yield return installDir;
+        if (existingInstallDir is not null && !PathsEqual(existingInstallDir, installDir))
+            yield return existingInstallDir;
+    }
 
     private static long DirectorySize(string dir) =>
         new DirectoryInfo(dir).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);

@@ -230,7 +230,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── cut-version.ps1
 │   │   ├── deckle-process.ps1
 │   │   ├── fetch-autocorrect-data.ps1
-│   │   ├── install-anytype-mcp.ps1
 │   │   ├── install-hooks.ps1
 │   │   ├── launch-app.ps1
 │   │   ├── publish-app.ps1
@@ -250,10 +249,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
 │   │   │   ├── BackendHealthProbe.cs
+│   │   │   ├── BackendInstallation.cs
+│   │   │   ├── BackendProcess.cs
 │   │   │   ├── BackendProcessSpec.cs
-│   │   │   ├── BackendScheduledTask.cs
-│   │   │   ├── BackendSupervisor.cs
-│   │   │   └── BackendTaskDocument.cs
+│   │   │   └── BackendSupervisor.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
@@ -272,8 +271,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
 │   ├── Deckle.Anytype.Mcp/
+│   │   ├── Http/
+│   │   │   ├── McpClients.cs
+│   │   │   ├── McpClientTokens.cs
+│   │   │   ├── McpHttpHost.cs
+│   │   │   └── McpSession.cs
 │   │   ├── JsonRpc/
-│   │   │   ├── JsonRpcEndpoint.cs
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
 │   │   │   ├── DialogueToolCatalog.cs
@@ -281,8 +284,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
 │   │   ├── Deckle.Anytype.Mcp.csproj
-│   │   ├── Program.cs
-│   │   └── StderrEventListener.cs
+│   │   ├── DeckleAnytypeMcpSource.cs
+│   │   ├── McpToolset.cs
+│   │   └── ToolProfile.cs
 │   ├── Deckle.App/
 │   │   ├── Assets/
 │   │   │   ├── Fonts/
@@ -313,6 +317,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── Resources.resw
 │   │   ├── AGENTS.md  — [agent-instructions] WinUI 3 host composing the Deckle.* modules — the composition boundary, the OnL…
 │   │   ├── App.Ambient.cs
+│   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
@@ -1028,11 +1033,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
+│   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
+│   │   ├── McpClientTokensTests.cs
+│   │   ├── McpHttpHostTests.cs
 │   │   ├── McpServerTests.cs
+│   │   ├── McpToolsetTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
-│   │   ├── BackendTaskDocumentTests.cs
+│   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── BackendSupervisorTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
@@ -1054,13 +1064,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
+│   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
 │   │   ├── AutocorrectEngineHarness.cs
 │   │   ├── AutocorrectEngineLearningTests.cs
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
-│   │   ├── AutocorrectEngineRevertTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
