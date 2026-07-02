@@ -48,7 +48,7 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    events (routed, no tier;
 //                                                    see ADR-0006)
 //   autocorrect.decisions.jsonl                    ← Autocorrect{Decision,
-//                                                    Rerank,Revert}Recorded events
+//                                                    Rerank}Recorded events
 //   autocorrect.text.jsonl                         ← AutocorrectTextRecorded
 //                                                    events (typed corpus)
 //
@@ -112,7 +112,6 @@ public static class TelemetryListenerBootstrap
                 && e.EventName != "CorpusRewriteRecorded"
                 && e.EventName != "AutocorrectDecisionRecorded"
                 && e.EventName != "AutocorrectRerankRecorded"
-                && e.EventName != "AutocorrectRevertRecorded"
                 && e.EventName != "AutocorrectTextRecorded"
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
@@ -152,17 +151,16 @@ public static class TelemetryListenerBootstrap
         // Per-word autocorrect decision dataset: every corrected or left-literal
         // word on an enrolled surface with its candidates, scores, margins and the
         // guard that decided it — the diagnostic surface for tuning the corrector.
-        // The synchronous decision, its deferred reranker verdict and the later
-        // revert gesture all land here, joined by id. Carries typed words by design
-        // (see DeckleAutocorrectSource), so it is gated on the dedicated opt-in
-        // consent toggle. PayloadOnly, append-only like the other datasets — the
-        // words are the record, never rotated.
+        // The synchronous decision and its deferred reranker verdict land here,
+        // joined by id. Carries typed words by design (see DeckleAutocorrectSource),
+        // so it is gated on the dedicated opt-in consent toggle. PayloadOnly,
+        // append-only like the other datasets — the words are the record, never
+        // rotated.
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "autocorrect.decisions.jsonl"),
             kindLabel: "autocorrect_decision",
             predicate: e => (e.EventName == "AutocorrectDecisionRecorded"
-                          || e.EventName == "AutocorrectRerankRecorded"
-                          || e.EventName == "AutocorrectRevertRecorded")
+                          || e.EventName == "AutocorrectRerankRecorded")
                          && ReadGate("AutocorrectDecisions")));
 
         // Typed-sentence corpus: each sentence typed at the keyboard on an enrolled

@@ -7,8 +7,9 @@ namespace Deckle.Autocorrect;
 // bigger faults, tried only when nothing sits one edit away. The far tier is held
 // to a higher word-length, frequency and dominance bar — a correction reaching
 // further must clear stronger evidence. Aggression is the product (Louis: "taper
-// à l'arrache et que ça réécrive"); the safety net is the one-Backspace revert,
-// which suppresses the pair for good, so a wrong far correction is learned away.
+// à l'arrache et que ça réécrive"); the safety net is the correction inlay's
+// undo, which writes a permanent suppression — until the inlay ships a wrong
+// correction can only be re-edited by hand, so these bars stand on their own.
 // Defaults are an engineer's operating point, tuned by feel, not measured optima.
 public sealed record TypoOptions
 {

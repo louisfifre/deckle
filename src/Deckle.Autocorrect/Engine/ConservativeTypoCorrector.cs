@@ -9,10 +9,11 @@ namespace Deckle.Autocorrect;
 // edit away when it is common and clearly dominates any rival; only when nothing
 // sits one edit away does the far tier reach two edits, for bigger faults, held to
 // a stricter length/frequency/dominance bar. Ambiguity, rarity, an identifier
-// shape or a mid-utterance proper noun still leave the literal alone — and every
-// correction is one Backspace away from reverting, which suppresses the pair for
-// good (the engine owns that gesture, so this policy only proposes). That revert
-// is what lets the far tier be aggressive without being reckless.
+// shape or a mid-utterance proper noun still leave the literal alone. A wrong
+// correction is taken back through the correction inlay, whose undo writes a
+// permanent suppression (the engine enforces it; this policy only proposes) —
+// until the inlay ships, the only recourse is manual re-editing, so the bars
+// above carry the safety on their own.
 //
 // Candidates come from Norvig's generate-and-test against the French lexicon: a
 // deletion (an extra key), a transposition (two keys swapped), a keyboard-adjacent

@@ -142,7 +142,13 @@ public sealed class JsonSettingsStore<T> where T : class, new()
             // exception type so the broken file is easy to locate.
             _logWarning?.Invoke(
                 $"parse failed, fallback to defaults | path={_path} | error={ex.GetType().Name}: {ex.Message}");
-            return new T();
+            // Same treatment as the missing-file defaults above: a post-load hook
+            // that stamps fresh state (e.g. a schema version) must see every fresh
+            // instance, or a later save would persist pre-migration-looking data
+            // and the next launch would wrongly re-migrate it.
+            var fallback = new T();
+            _postLoadMigration?.Invoke(fallback);
+            return fallback;
         }
     }
 

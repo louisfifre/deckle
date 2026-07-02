@@ -35,6 +35,16 @@ public static class WordBoundaries
     public static bool IsElisionPrefix(string token) =>
         ElisionPrefixes.Contains(Fold(token));
 
+    // What the screen shows between a committed word and the next. An elision
+    // commit's boundary apostrophe is already attached to the word itself
+    // (« l' ») — it was never displayed as a separate char, so it renders
+    // empty; every other boundary renders verbatim. Every consumer rebuilding
+    // on-screen text from (form, boundary) pairs goes through this one rule,
+    // or the rebuilt text drifts one char off the screen per elision — the
+    // doubled-apostrophe / eaten-letter injection corruption (JOURNAL 2026-07-02).
+    public static string DisplaySeparator(char boundary) =>
+        IsApostrophe(boundary) ? string.Empty : boundary.ToString();
+
     public static IEnumerable<string> Tokenize(string text)
     {
         var sb = new StringBuilder();

@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Autocorrect;
 
 // Autocorrect module provider. Covers the engine lifecycle, surface
-// transitions, applied/reverted corrections and learning signals.
+// transitions, applied corrections and learning signals.
 //
 // The default events carry counts, lengths and reasons only — no typed text on
 // the always-on path. A few opt-in, consent-gated events deliberately carry words
@@ -17,12 +17,13 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     private DeckleAutocorrectSource() { }
 
+    // Ids 6 (CorrectionReverted) and 20 (AutocorrectRevertRecorded) are retired
+    // with the implicit-Backspace revert — never reuse them, old logs carry them.
     public const int EvtEngineStarted      = 1;
     public const int EvtEngineStopped      = 2;
     public const int EvtSurfaceChanged     = 3;
     public const int EvtCorrectionApplied  = 4;
     public const int EvtCorrectionDetail   = 5;
-    public const int EvtCorrectionReverted = 6;
     public const int EvtInjectionFailed    = 7;
     public const int EvtLearningSignal     = 8;
     public const int EvtActivityRollup     = 9;
@@ -36,7 +37,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtAutocorrectDecision = 17;
     public const int EvtAutocorrectRerank   = 18;
     public const int EvtAutocorrectText     = 19;
-    public const int EvtAutocorrectRevert   = 20;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -125,15 +125,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void CorrectionDetail(string reason, int original_len, int replacement_len, int backspaces)
     {
         if (IsEnabled()) WriteEvent(EvtCorrectionDetail, reason, original_len, replacement_len, backspaces);
-    }
-
-    [Event(EvtCorrectionReverted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Correction reverted")]
-    public void CorrectionReverted()
-    {
-        if (IsEnabled()) WriteEvent(EvtCorrectionReverted);
     }
 
     [Event(EvtInjectionFailed,
@@ -244,53 +235,27 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         WriteEvent(EvtAutocorrectRerank, id, word, outcome, chosen, scores, margin);
     }
 
-    // The revert gesture as a per-word record, joined to the correction it undoes
-    // by `id` — the same monotonic word id AutocorrectDecisionRecorded carried, so
-    // the revert line sits beside the decision that fired. Carries the pair (the
-    // literal restored, the correction undone) and the boundary the Backspace
-    // consumed: its kind buckets the known misfire — a `punctuation` boundary is
-    // the user deleting a misplaced comma/period right after a correction, misread
-    // as an undo, where a `whitespace` boundary is the plausible genuine "I didn't
-    // want that". delta_ms is the gap from the correction commit to the revert;
-    // outcome is restored (the literal landed) or desynced (the rewrite did not).
-    // Text by design like its sibling decision events — routed to the same opt-in
-    // autocorrect.decisions dataset, off by default, and excluded from app.jsonl.
-    [Event(EvtAutocorrectRevert,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "revert | {1} ← {2} | {4} | {6}")]
-    public void AutocorrectRevertRecorded(
-        long   id,
-        string original,
-        string replacement,
-        string boundary,
-        string boundaryKind,
-        long   delta_ms,
-        string outcome)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectRevert,
-            id, original, replacement, boundary, boundaryKind, delta_ms, outcome);
-    }
-
     // ── Typed-sentence corpus ─────────────────────────────────────────────
     //
     // One sentence the user typed on an enrolled surface, as two parallel strings:
     // `typed` verbatim (keyboard substitutions and all — the telling ';' for an
-    // apostrophe survives) and `final` after the corrector. Feeds the per-user
-    // error-pattern corpus; routed to the dedicated, opt-in autocorrect.text.jsonl
-    // sink (gated by AutocorrectText, off by default) and excluded from app.jsonl.
-    // The heaviest text capture in the module — a verbatim record of typed input —
-    // so its consent toggle stands on its own.
+    // apostrophe survives) and `final` after the corrector — plus `history`, the
+    // ordered path of every slot that changed (first-typed then each stage's
+    // transition, "#i=typed»commit:…»user:…"), so a commit repair, a sentence-stage
+    // rewrite and a manual re-edit are told apart. Feeds the per-user error-pattern
+    // corpus; routed to the dedicated, opt-in autocorrect.text.jsonl sink (gated by
+    // AutocorrectText, off by default) and excluded from app.jsonl. The heaviest
+    // text capture in the module — a verbatim record of typed input — so its consent
+    // toggle stands on its own.
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "text | {0} | {1}")]
-    public void AutocorrectTextRecorded(string process, string typed, string final)
+    public void AutocorrectTextRecorded(string process, string typed, string final, string history)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectText, process, typed, final);
+        WriteEvent(EvtAutocorrectText, process, typed, final, history);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────
@@ -309,10 +274,10 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtActivityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "autocorrect activity | commits={0} | corrections={1} | reverts={2} | learning_signals={3} | gated_surfaces={4}")]
-    public void ActivityRollup(int commits, int corrections, int reverts, int learning_signals, int gated_surfaces)
+           Message = "autocorrect activity | commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
+    public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {
-        if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, reverts, learning_signals, gated_surfaces);
+        if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, re_edited, learning_signals, gated_surfaces);
     }
 
     // ── Enrollment ───────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ public sealed class LoggingSettings
     // stream is dropped from the live LogWindow and app.jsonl — the per-focus
     // SurfaceChanged probe, the learning signals and the 30 s activity rollup.
     // What remains is only the edits: an applied correction's Verbose detail
-    // (reason and lengths, never the word) plus its milestone, and any revert or
+    // (reason and lengths, never the word) plus its milestone, and any
     // injection failure. No heartbeat — it is meaningless for a keystroke-driven
     // subsystem. Unlike the ambient and streaming gates there is no capture
     // window: the engine runs continuously, so the filter applies whenever the

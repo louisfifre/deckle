@@ -122,6 +122,87 @@ public class TypedWordTrackerTests
         Assert.Equal("l'", rec.Commits[1].PreviousWord);
     }
 
+    // Régression injection (JOURNAL 2026-07-02). L'apostrophe d'élision vit
+    // DANS le mot (« j' ») et ne s'affiche jamais comme frontière séparée. La
+    // 1re backspace après un commit d'élision a déjà rongé cette apostrophe à
+    // l'écran ; le buffer réouvert la laisse tomber aussi pour rester collé à
+    // l'écran. Retaper l'apostrophe re-valide « j' » à l'identique — aucun
+    // WordEdit, car rien n'a changé.
+    [Fact]
+    public void ElisionReopenDropsTheTrailingApostropheAndRecommitsWithoutEdit()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "j");
+        Type(t, "'");                      // commit « j' » sur son apostrophe attachée
+        Assert.Equal('\'', rec.Commits[0].Boundary);
+
+        Backspace(t);                      // rouvre « j' » MINUS l'apostrophe → « j »
+        Assert.Equal("j", t.CurrentWord);
+
+        Type(t, "'");                      // re-valide « j' » à l'identique
+        Assert.Equal(2, rec.Commits.Count);
+        Assert.Equal("j'", rec.Commits[1].Word);
+        Assert.Empty(rec.Edits);           // rien n'a changé → aucun WordEdit
+    }
+
+    // Réouverture d'élision puis correction : « j' » → « je ». Le buffer rouvre
+    // « j », l'utilisateur tape « e » puis une frontière ; le re-commit « je »
+    // récolte un WordEdit contre la forme validée d'origine « j' ».
+    [Fact]
+    public void ElisionReopenThenRetypeHarvestsTheWordEdit()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "j");
+        Type(t, "'");        // commit « j' »
+        Backspace(t);        // rouvre → « j »
+        Type(t, "e");        // « je »
+        Type(t, " ");        // re-commit sur frontière
+
+        Assert.Equal(2, rec.Commits.Count);
+        Assert.Equal("je", rec.Commits[1].Word);
+        var edit = Assert.Single(rec.Edits);
+        Assert.Equal("j'", edit.Original);
+        Assert.Equal("je", edit.Replacement);
+    }
+
+    // Le pendant de la régression : un commit NORMAL (mot + espace) rouvre le
+    // mot ENTIER à la 1re backspace — la frontière espace s'affichait bien à
+    // l'écran, donc rien n'est rogné. La correction élision ne doit pas avoir
+    // déplacé ce comportement.
+    [Fact]
+    public void NormalCommitReopensTheFullWordOnFirstBackspace()
+    {
+        var t = new TypedWordTracker();
+
+        Type(t, "mot ");     // frontière espace, affichée
+        Backspace(t);        // rouvre « mot » en entier
+
+        Assert.Equal("mot", t.CurrentWord);
+    }
+
+    // Après une réouverture d'élision, effacer au-delà du début connu reste un
+    // hard reset — comme pour un mot normal.
+    [Fact]
+    public void ElisionReopenBackspacingPastTheStartResets()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "j");
+        Type(t, "'");        // commit « j' »
+        Backspace(t);        // rouvre → « j »
+        Backspace(t);        // efface « j » → buffer vide réouvert
+        Assert.Equal(string.Empty, t.CurrentWord);
+        Assert.Empty(rec.Resets);
+
+        Backspace(t);        // une de plus → au-delà du début connu
+        Assert.Equal(new[] { ResetReason.Navigation }, rec.Resets.ToArray());
+    }
+
     [Fact]
     public void NonElisionApostropheStaysInOneToken()
     {

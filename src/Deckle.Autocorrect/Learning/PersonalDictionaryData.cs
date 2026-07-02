@@ -5,6 +5,13 @@ namespace Deckle.Autocorrect;
 // Words and suppression members are stored lowercase; accents are preserved.
 public sealed class PersonalDictionaryData
 {
+    // Bumped when a whole generation of persisted learning must be discarded
+    // (see PersonalDictionary's migration). The property defaults to 0 — NOT to
+    // the current version — so a file from before the stamp deserializes as 0
+    // and gets migrated; fresh files are stamped by the store's post-load hook.
+    public const int CurrentSchemaVersion = 1;
+
+    public int SchemaVersion { get; set; }
     public List<WordEntry> Words { get; set; } = new();
     public List<SuppressionEntry> Suppressions { get; set; } = new();
 }
@@ -19,8 +26,8 @@ public sealed class WordEntry
     public DateTimeOffset LastSeenUtc { get; set; }
 }
 
-// A correction the user reverted: (Original → Replacement) must never fire on
-// its own again (CLAUDE.md). Explicit, persisted, removable by the user.
+// A suppressed correction: (Original → Replacement) must never fire on its
+// own again (CLAUDE.md). Explicit, persisted, removable by the user.
 public sealed class SuppressionEntry
 {
     public string Original { get; set; } = string.Empty;

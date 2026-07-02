@@ -43,6 +43,18 @@ public class WordBoundariesTests
     public void IsElisionPrefixMatchesTheClosedSet(string token, bool expected) =>
         Assert.Equal(expected, WordBoundaries.IsElisionPrefix(token));
 
+    // La règle unique de reconstruction de l'écran à partir des paires (mot,
+    // frontière). Les deux glyphes d'apostrophe rendent vide (l'élision est déjà
+    // collée au mot) ; toute autre frontière se rend telle quelle.
+    [Theory]
+    [InlineData('\'', "")]  // U+0027
+    [InlineData('’', "")]   // U+2019
+    [InlineData(' ', " ")]
+    [InlineData('.', ".")]
+    [InlineData(',', ",")]
+    public void DisplaySeparatorCollapsesApostrophesAndKeepsTheRest(char boundary, string expected) =>
+        Assert.Equal(expected, WordBoundaries.DisplaySeparator(boundary));
+
     [Fact]
     public void SimpleSentenceSplitsOnSpacesAndPunctuation()
     {

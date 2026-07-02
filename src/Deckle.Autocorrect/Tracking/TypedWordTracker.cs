@@ -13,9 +13,13 @@ namespace Deckle.Autocorrect;
 // also lets the tracker watch the user fix it. After a commit the screen holds
 // « word » + boundary; the first Backspace eats the boundary and RE-OPENS the
 // committed word as the live buffer, with previousWord reverted one step (a
-// two-deep memory) so the re-commit lands in the same slot. Further backspaces
-// shorten it; backspacing past its start means the caret left what we model —
-// a hard reset. Re-committing a different word emits WordEdit(original, new).
+// two-deep memory) so the re-commit lands in the same slot. The one exception
+// is the elision commit (« j' »), whose boundary apostrophe lives INSIDE the
+// word and was never displayed separately: there the same Backspace already
+// bit the word's last char off the screen, so the re-opened buffer drops it
+// too. Further backspaces shorten it; backspacing past its start means the
+// caret left what we model — a hard reset. Re-committing a different word
+// emits WordEdit(original, new).
 public sealed class TypedWordTracker
 {
     internal const int BufferCap = 64;
@@ -38,6 +42,7 @@ public sealed class TypedWordTracker
     private bool _editWindowOpen;
     private bool _reopened;             // the live buffer currently holds a re-opened word
     private string? _lastCommittedWord; // the word the window can re-open
+    private bool _lastBoundaryAttached; // the commit's boundary lives inside the word (elision apostrophe)
     private string? _wordBeforeLast;    // previousWord as it stood before _lastCommittedWord
     private string? _word2BeforeLast;   // previousPreviousWord as it stood before _lastCommittedWord
     private string? _originalForEdit;   // compared against the re-commit to emit a WordEdit
@@ -99,27 +104,14 @@ public sealed class TypedWordTracker
     /// <summary>
     /// Aligns the tracker with a correction the engine just injected: the word
     /// on screen is now <paramref name="replacement"/>. The edit window and the
-    /// previousWord chain must follow the screen, not the keystrokes, or the
-    /// revert gesture would reopen the wrong text.
+    /// previousWord chain must follow the screen, not the keystrokes, or backing
+    /// into the word would reopen the wrong text.
     /// </summary>
     public void ReplaceLastCommitted(string replacement)
     {
         if (!_editWindowOpen || _reopened || _lastCommittedWord is null) return;
         _lastCommittedWord = replacement;
         _previousWord = replacement;
-    }
-
-    /// <summary>
-    /// Aligns the re-opened live buffer with text the engine just injected
-    /// (correction revert): the screen now holds <paramref name="text"/> where
-    /// the tracker had re-opened the corrected word.
-    /// </summary>
-    public void ReplaceReopenedBuffer(string text)
-    {
-        if (!_reopened) return;
-        _buffer.Clear();
-        _buffer.Append(text);
-        _originalForEdit = null; // the revert is not a user edit to harvest
     }
 
     private void ProcessChar(char c, double timestampMs)
@@ -201,8 +193,11 @@ public sealed class TypedWordTracker
         {
             // First backspace after a commit: eat the boundary, re-open the
             // committed word as the live buffer, revert the context one step so
-            // the re-commit sees the same two left words it first saw.
-            _buffer.Append(_lastCommittedWord);
+            // the re-commit sees the same two left words it first saw. After an
+            // elision commit there IS no separate boundary on screen — this
+            // backspace already deleted the word's own trailing apostrophe, so
+            // the re-opened buffer drops it too, staying glued to the screen.
+            _buffer.Append(_lastBoundaryAttached ? _lastCommittedWord[..^1] : _lastCommittedWord);
             _previousWord = _wordBeforeLast;
             _previousPreviousWord = _word2BeforeLast;
             _originalForEdit = _lastCommittedWord;
@@ -248,6 +243,7 @@ public sealed class TypedWordTracker
         // Open the edit window on this commit. Three-deep memory: the two words
         // before THIS one are what the context reverts to if the window re-opens.
         _lastCommittedWord = word;
+        _lastBoundaryAttached = WordBoundaries.DisplaySeparator(boundary).Length == 0;
         _wordBeforeLast = wordBeforeThis;
         _word2BeforeLast = word2BeforeThis;
         _originalForEdit = null;

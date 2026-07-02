@@ -188,23 +188,18 @@ public sealed class AutocorrectEngineLearningTests : IDisposable
     }
 
     [Fact]
-    public void ARevertedPairStaysSuppressedOnTheNextType()
+    public void ASuppressedPairIsWithheldWhateverThePolicyWants()
     {
         using var dict = NewDictionary();
+        dict.RecordSuppression("ca", "ça"); // as the correction inlay's undo would write it
         using var h = Harness(dict, ScriptedPolicy.Maps("ca", "ça"));
 
-        h.Type("ca "); // the correction lands and arms the revert
-        h.Backspace(); // revert → records the suppression ("ca","ça")
+        h.Type("ca "); // the policy WANTS to correct; the suppression must withhold it
 
-        Assert.True(dict.IsSuppressed("ca", "ça")); // precondition: the gesture registered
-        int callsAfterRevert = h.Injector.Calls.Count;
-        h.Applied.Clear();
-
-        h.Type("ca "); // same pair — the suppression must withhold the correction
-
-        // The policy still WANTS to correct, but the suppression overrides it:
-        // a reverted pair stays literal whatever the policy says (CONTEXT.md).
+        // A suppressed pair stays literal whatever the policy says — enforced in
+        // the engine (CONTEXT.md), so even a policy without dictionary access
+        // honors it. No correction applied, nothing injected.
         Assert.Empty(h.Applied);
-        Assert.Equal(callsAfterRevert, h.Injector.Calls.Count); // no new injection
+        Assert.Empty(h.Injector.Calls);
     }
 }

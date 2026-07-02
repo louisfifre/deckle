@@ -4,8 +4,13 @@ using Deckle.Input;
 namespace Deckle.Autocorrect;
 
 // The conductor: raw key events → decode → track → decide → inject, with the
-// revert gesture and the learning signals around it. Every handler runs on the
-// KeyboardInputHost input thread; Start/Stop are the only cross-thread entries.
+// learning signals around it. Every handler runs on the KeyboardInputHost
+// input thread; Start/Stop are the only cross-thread entries.
+//
+// A correction is taken back only through the correction inlay (CONTEXT.md
+// § Correction undo) — Backspace is always a plain Backspace. The earlier
+// implicit-Backspace revert was retired after its misfires (a deleted comma
+// read as an undo) wrote false suppressions (JOURNAL 2026-07-02).
 //
 // Gate order is doctrine (CLAUDE.md): injected events are filtered first (our
 // own repairs must never feed the tracker), the password gate cuts BEFORE
@@ -15,13 +20,6 @@ namespace Deckle.Autocorrect;
 public sealed class AutocorrectEngine : IDisposable
 {
     private const double RollupPeriodMs = 30_000;
-
-    // The revert gesture is honoured only when the Backspace lands within this
-    // window of the correction. A later Backspace — the user moved on, then came
-    // back to delete the sentence — is a plain edit, not an undo, and must never
-    // be read as a revert: that would restore the typo AND write a false
-    // « reverted » learning signal against a correction the user kept.
-    private const double RevertWindowMs = 2_000;
 
     // Learning eligibility: a word already living in the base lexicons needs no
     // adoption; an English form above this frequency is "known English", not a
@@ -60,12 +58,6 @@ public sealed class AutocorrectEngine : IDisposable
 
     private volatile FocusedSurface _surface = FocusedSurface.Unknown;
 
-    // Armed after a correction lands, stamped with the commit time; the very next
-    // physical keystroke either triggers the revert (a Backspace within
-    // RevertWindowMs) or disarms it. The « come back later » variant of the revert
-    // needs caret-position knowledge v1 does not have.
-    private (string Original, string Replacement, double ArmedAtMs, long WordId, char Boundary)? _revertArmed;
-
     // Apps already offered for enrollment this run — a would-be correction on an
     // undecided surface prompts once, then stays silent until the user answers.
     private readonly HashSet<string> _suggested = new(StringComparer.OrdinalIgnoreCase);
@@ -78,7 +70,10 @@ public sealed class AutocorrectEngine : IDisposable
     private double _rollupStartMs = -1;
     private int _rollupCommits;
     private int _rollupCorrections;
-    private int _rollupReverts;
+    // Words the user reopened and retyped after they committed — the personal
+    // Words-Modified-Ratio numerator (WMR = re_edited / commits), the fate signal
+    // that a committed word (corrected or not) did not stand.
+    private int _rollupReEdited;
     private int _rollupLearning;
     private int _rollupGated;
 
@@ -88,15 +83,12 @@ public sealed class AutocorrectEngine : IDisposable
     /// <summary>Raised on the input thread after a correction burst landed.</summary>
     public event Action<CorrectionDecision>? CorrectionApplied;
 
-    /// <summary>Raised on the input thread after a revert restored the literal (original, replacement).</summary>
-    public event Action<string, string>? CorrectionReverted;
-
     /// <summary>
     /// Raised on the input thread when an injection burst did not land
-    /// (original, replacement, isRevert) — UIPI-blocked elevated target,
-    /// partial send. The screen may hold anything between the two forms.
+    /// (original, replacement) — UIPI-blocked elevated target, partial send.
+    /// The screen may hold anything between the two forms.
     /// </summary>
-    public event Action<string, string, bool>? InjectionFailed;
+    public event Action<string, string>? InjectionFailed;
 
     /// <summary>
     /// Raised on the input thread when a correction would have applied on an
@@ -217,81 +209,11 @@ public sealed class AutocorrectEngine : IDisposable
         // model. Resets proper arrive via OnTrackerReset.
         _coordinator?.NotePhysicalKey(k, _tracker.CurrentWord);
 
-        if (_revertArmed is { } armed)
-        {
-            _revertArmed = null;
-            // Only an immediate Backspace is an undo. Past the window it is a
-            // plain delete — disarm and let it flow to the tracker untouched.
-            if (k.Kind == KeystrokeKind.Backspace
-                && k.TimestampMs - armed.ArmedAtMs <= RevertWindowMs)
-            {
-                HandleRevert(armed, k);
-                return;
-            }
-        }
-
         _tracker.OnKeystroke(k);
-    }
-
-    // CONTEXT.md correction revert: the Backspace that deletes the boundary
-    // sitting right after a corrected word also restores the original word.
-    private void HandleRevert(
-        (string Original, string Replacement, double ArmedAtMs, long WordId, char Boundary) armed,
-        Keystroke backspace)
-    {
-        _tracker.OnKeystroke(backspace); // tracker re-opens the replacement
-
-        string outcome;
-        if (_injector.Replace(armed.Replacement, armed.Original))
-        {
-            _tracker.ReplaceReopenedBuffer(armed.Original);
-            _dictionary?.RecordRevert(
-                armed.Original.ToLowerInvariant(), armed.Replacement.ToLowerInvariant());
-            _rollupReverts++;
-            DeckleAutocorrectSource.Log.CorrectionReverted();
-            CorrectionReverted?.Invoke(armed.Original, armed.Replacement);
-            outcome = CorrectionTrace.RevertOutcomes.Restored;
-        }
-        else
-        {
-            // The boundary is already gone (physical Backspace) and the word
-            // still shows corrected: leave a trace, the tracker re-opened the
-            // ORIGINAL and now disagrees with the screen.
-            var plan = InjectionPlan.Compute(armed.Replacement, armed.Original);
-            DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
-            InjectionFailed?.Invoke(armed.Original, armed.Replacement, true);
-            outcome = CorrectionTrace.RevertOutcomes.Desynced;
-        }
-
-        EmitRevert(armed, backspace, outcome);
-    }
-
-    // The per-word revert record on the opt-in decision dataset, joined to the
-    // correction by WordId — the diagnostic surface for the known misfire (a
-    // punctuation-boundary delete misread as an undo). The consumed boundary is
-    // commit.Boundary, the char ApplyCorrection left trailing after the replacement;
-    // its kind buckets the gesture. Emitted only when the toggle is on, so the words
-    // cross solely on explicit opt-in — the count-only CorrectionReverted above
-    // always fires regardless.
-    private void EmitRevert(
-        (string Original, string Replacement, double ArmedAtMs, long WordId, char Boundary) armed,
-        Keystroke backspace,
-        string outcome)
-    {
-        if (_decisionTelemetry?.Invoke() != true) return;
-        DeckleAutocorrectSource.Log.AutocorrectRevertRecorded(
-            armed.WordId,
-            armed.Original,
-            armed.Replacement,
-            CorrectionTrace.RenderBoundary(armed.Boundary),
-            CorrectionTrace.ClassifyBoundary(armed.Boundary),
-            (long)(backspace.TimestampMs - armed.ArmedAtMs),
-            outcome);
     }
 
     private void OnPointerInteraction()
     {
-        _revertArmed = null;
         _tracker.NotifyPointerInteraction();
     }
 
@@ -307,21 +229,22 @@ public sealed class AutocorrectEngine : IDisposable
         _coordinator?.Invalidate(reason);
     }
 
-    // A correction the contextual stage applied behind the caret. It is NOT
-    // revertable by the one-Backspace gesture (the slot is no longer adjacent), so
-    // it never arms _revertArmed; it only counts and logs like any correction.
+    // A correction the contextual stage applied behind the caret. It counts and
+    // logs like any correction, and records a Sentence transition on the corpus
+    // slot if the sentence is still open (a rewrite after flush is invisible).
     private void OnCoordinatorApplied(CorrectionDecision decision)
     {
         _rollupCorrections++;
         DeckleAutocorrectSource.Log.CorrectionApplied();
         DeckleAutocorrectSource.Log.CorrectionDetail(
             decision.Reason.ToString(), decision.Original.Length, decision.Replacement.Length, 0);
+        if (_textTelemetry?.Invoke() == true)
+            _corpus?.SentenceEdit(decision.Original, decision.Replacement);
         CorrectionApplied?.Invoke(decision);
     }
 
     private void OnFocusChanged()
     {
-        _revertArmed = null;
         var surface = _prober.Probe();
         _surface = surface;
         _tracker.NotifyFocusChanged();
@@ -378,13 +301,13 @@ public sealed class AutocorrectEngine : IDisposable
             : null;
         var decision = _policy.Evaluate(commit.Word, leftContext, trace);
 
-        // A reverted pair stays suppressed whatever the policy says — enforced
-        // here so even a policy without dictionary access honors the gesture.
+        // A suppressed pair never fires again whatever the policy says — enforced
+        // here so even a policy without dictionary access honors the suppression.
         if (decision is not null
             && _dictionary?.IsSuppressed(decision.Original, decision.Replacement) == true)
         {
             decision = null;
-            trace?.MarkSuppressed(); // a stage fired, a learned revert vetoed it
+            trace?.MarkSuppressed(); // a stage fired, a learned suppression vetoed it
         }
 
         if (enabledHere)
@@ -397,7 +320,7 @@ public sealed class AutocorrectEngine : IDisposable
             if (decision is null)
                 RecordCommitLearning(commit.Word);
             else
-                ApplyCorrection(commit, decision, wordId);
+                ApplyCorrection(commit, decision);
 
             if (trace is not null)
                 EmitDecision(wordId, commit.Word, leftContext, trace);
@@ -427,9 +350,12 @@ public sealed class AutocorrectEngine : IDisposable
         MaybeRollup(commit.TimestampMs);
     }
 
-    private void ApplyCorrection(WordCommit commit, CorrectionDecision decision, long wordId)
+    private void ApplyCorrection(WordCommit commit, CorrectionDecision decision)
     {
-        string boundary = commit.Boundary.ToString();
+        // The boundary as the screen shows it: an elision commit carries its
+        // apostrophe inside the word, so rendering the boundary again would
+        // overstate the screen by one char and desync the injection.
+        string boundary = WordBoundaries.DisplaySeparator(commit.Boundary);
         string current = decision.Original + boundary;
         string target = decision.Replacement + boundary;
         var plan = InjectionPlan.Compute(current, target);
@@ -437,7 +363,6 @@ public sealed class AutocorrectEngine : IDisposable
         if (_injector.Replace(current, target))
         {
             _tracker.ReplaceLastCommitted(decision.Replacement);
-            _revertArmed = (decision.Original, decision.Replacement, commit.TimestampMs, wordId, commit.Boundary);
             _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
             DeckleAutocorrectSource.Log.CorrectionDetail(
@@ -448,7 +373,7 @@ public sealed class AutocorrectEngine : IDisposable
         else
         {
             DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
-            InjectionFailed?.Invoke(decision.Original, decision.Replacement, false);
+            InjectionFailed?.Invoke(decision.Original, decision.Replacement);
         }
     }
 
@@ -459,9 +384,10 @@ public sealed class AutocorrectEngine : IDisposable
     // Emits one completed corpus sentence on the dedicated dataset, tagged with the
     // current process. Runs on the input thread (the accumulator is synchronous), so
     // _surface is the live surface that produced the sentence.
-    private void EmitText(string typed, string final)
+    private void EmitText(SentenceCorpus.SentenceRecord rec)
     {
-        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(_surface.ProcessName, typed, final);
+        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
+            _surface.ProcessName, rec.Typed, rec.Final, rec.History);
     }
 
     private static void EmitDecision(long id, string word, IReadOnlyList<string> leftContext, CorrectionTrace trace)
@@ -485,6 +411,10 @@ public sealed class AutocorrectEngine : IDisposable
         if (!settings.Enabled || !IsEnabledFor(settings, surface.ProcessName)
             || !surface.IsTextEditable || surface.IsPassword)
             return;
+
+        // A committed word the user reopened and retyped — the WMR signal, counted
+        // whatever the retype was (a hand-fix, a rewording, an undo of a correction).
+        _rollupReEdited++;
 
         // « typed bare, went back, fixed the accents by hand » — the strongest
         // organic signal that the accented form is the wanted one.
@@ -549,12 +479,12 @@ public sealed class AutocorrectEngine : IDisposable
         if (nowMs - _rollupStartMs < RollupPeriodMs) return;
 
         DeckleAutocorrectSource.Log.ActivityRollup(
-            _rollupCommits, _rollupCorrections, _rollupReverts, _rollupLearning, _rollupGated);
+            _rollupCommits, _rollupCorrections, _rollupReEdited, _rollupLearning, _rollupGated);
 
         _rollupStartMs = nowMs;
         _rollupCommits = 0;
         _rollupCorrections = 0;
-        _rollupReverts = 0;
+        _rollupReEdited = 0;
         _rollupLearning = 0;
         _rollupGated = 0;
     }

@@ -24,8 +24,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
 
     // Observable engine outputs, recorded in order.
     public readonly List<CorrectionDecision> Applied = new();
-    public readonly List<(string Original, string Replacement)> Reverted = new();
-    public readonly List<(string Original, string Replacement, bool IsRevert)> InjectionFailures = new();
+    public readonly List<(string Original, string Replacement)> InjectionFailures = new();
     public readonly List<(FocusedSurface Surface, bool Enrolled)> SurfaceChanges = new();
     public readonly List<string> EnrollmentSuggestions = new();
 
@@ -66,8 +65,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
 
         Engine.SurfaceChanged += (s, e) => SurfaceChanges.Add((s, e));
         Engine.CorrectionApplied += d => Applied.Add(d);
-        Engine.CorrectionReverted += (o, r) => Reverted.Add((o, r));
-        Engine.InjectionFailed += (o, r, rev) => InjectionFailures.Add((o, r, rev));
+        Engine.InjectionFailed += (o, r) => InjectionFailures.Add((o, r));
         Engine.EnrollmentSuggested += p => EnrollmentSuggestions.Add(p);
     }
 

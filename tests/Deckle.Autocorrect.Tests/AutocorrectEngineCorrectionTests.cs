@@ -78,7 +78,25 @@ public sealed class AutocorrectEngineCorrectionTests
         h.Type("ca ");
 
         var fail = Assert.Single(h.InjectionFailures);
-        Assert.Equal(("ca", "ça", false), fail); // false: a forward correction, not a revert
+        Assert.Equal(("ca", "ça"), fail);
         Assert.Empty(h.Applied);
+    }
+
+    // Regression (JOURNAL 2026-07-02): a correction firing on an elision commit
+    // must not double the apostrophe. The elision apostrophe lives INSIDE the
+    // committed form (« j' ») and never showed as a separate boundary char, so
+    // the diff carries no trailing boundary — before the fix the boundary was
+    // appended anyway, sending « j'' » → « J'' » with an eaten letter.
+    [Fact]
+    public void AnElisionCorrectionDoesNotDoubleTheApostrophe()
+    {
+        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("j'", "J'"));
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Start();
+
+        h.Type("j'"); // the apostrophe closes the elision and commits « j' »
+
+        var call = Assert.Single(h.Injector.Calls);
+        Assert.Equal(("j'", "J'"), call); // no trailing boundary, no doubled apostrophe
     }
 }
