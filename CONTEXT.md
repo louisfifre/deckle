@@ -172,7 +172,7 @@ _Avoid_ : LlmService (an implementation name), Ollama (the current engine, not t
 Vocabulary of the Anytype/MCP integration. Three layers are constantly conflated — the data runtime, the protocol adapter, and the Deckle process that hosts it — and "bot" versus "token" carries the authorship question.
 
 **Anytype backend** :
-The headless `anytype-cli` runtime (embedding `heart`) that holds the data and serves the local REST API on `127.0.0.1:31012`. Run as a Deckle-supervised Windows service; Deckle orchestrates its lifecycle and access but never owns or reimplements it.
+The headless `anytype-cli` runtime (embedding `heart`) that holds the data and serves the local REST API on `127.0.0.1:31012`. Spawned and supervised by Deckle's resident core, then adopted on later boots by exact binary path; Deckle orchestrates its lifecycle and access but never owns or reimplements it.
 _Avoid_ : Anytype Desktop (the GUI, no longer a runtime dependency), MCP server (a different layer).
 
 **MCP host** :
