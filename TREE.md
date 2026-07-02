@@ -745,6 +745,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmShortcutSlotsSection.xaml
 │   │   │   ├── LlmShortcutSlotsSection.xaml.cs
 │   │   │   └── ProfileViewModel.cs
+│   │   ├── ViewModels/
+│   │   │   ├── LlmGeneralViewModel.cs
+│   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
