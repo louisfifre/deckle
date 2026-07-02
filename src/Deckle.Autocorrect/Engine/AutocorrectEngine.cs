@@ -70,6 +70,10 @@ public sealed class AutocorrectEngine : IDisposable
     private double _rollupStartMs = -1;
     private int _rollupCommits;
     private int _rollupCorrections;
+    // Words the user reopened and retyped after they committed — the personal
+    // Words-Modified-Ratio numerator (WMR = re_edited / commits), the fate signal
+    // that a committed word (corrected or not) did not stand.
+    private int _rollupReEdited;
     private int _rollupLearning;
     private int _rollupGated;
 
@@ -408,6 +412,10 @@ public sealed class AutocorrectEngine : IDisposable
             || !surface.IsTextEditable || surface.IsPassword)
             return;
 
+        // A committed word the user reopened and retyped — the WMR signal, counted
+        // whatever the retype was (a hand-fix, a rewording, an undo of a correction).
+        _rollupReEdited++;
+
         // « typed bare, went back, fixed the accents by hand » — the strongest
         // organic signal that the accented form is the wanted one.
         string o = edit.Original, r = edit.Replacement;
@@ -471,11 +479,12 @@ public sealed class AutocorrectEngine : IDisposable
         if (nowMs - _rollupStartMs < RollupPeriodMs) return;
 
         DeckleAutocorrectSource.Log.ActivityRollup(
-            _rollupCommits, _rollupCorrections, _rollupLearning, _rollupGated);
+            _rollupCommits, _rollupCorrections, _rollupReEdited, _rollupLearning, _rollupGated);
 
         _rollupStartMs = nowMs;
         _rollupCommits = 0;
         _rollupCorrections = 0;
+        _rollupReEdited = 0;
         _rollupLearning = 0;
         _rollupGated = 0;
     }

@@ -274,10 +274,10 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtActivityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "autocorrect activity | commits={0} | corrections={1} | learning_signals={2} | gated_surfaces={3}")]
-    public void ActivityRollup(int commits, int corrections, int learning_signals, int gated_surfaces)
+           Message = "autocorrect activity | commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
+    public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {
-        if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, learning_signals, gated_surfaces);
+        if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, re_edited, learning_signals, gated_surfaces);
     }
 
     // ── Enrollment ───────────────────────────────────────────────────────
