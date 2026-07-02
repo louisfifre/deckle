@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Deckle.Autocorrect;
 using Xunit;
 
@@ -59,16 +60,18 @@ public sealed class PersonalDictionaryTests : IDisposable
     {
         using var dict = New();
 
-        // Revert ⇒ adopté tout de suite, au-dessus du seuil.
-        dict.RecordRevert("café", "cafe");
+        // Trois commits au même instant ⇒ poids 3.0, au-dessus du seuil.
+        dict.RecordCommit("café");
+        dict.RecordCommit("café");
+        dict.RecordCommit("café");
         Assert.True(dict.IsAdopted("café"));
 
-        // Poids effectif au revert : horloge non avancée (days ≤ 0 ⇒ pas de
-        // décroissance), donc c'est le boost shippé, non figé ici.
+        // Poids effectif de départ : horloge non avancée (days ≤ 0 ⇒ pas de
+        // décroissance), donc c'est le poids accumulé, non figé en dur ici.
         var w0 = dict.SnapshotWords().Single(w => w.Word == "café").EffectiveWeight;
 
         // Après une demi-vie (14 jours), le poids effectif est divisé par deux —
-        // l'invariant tient quel que soit le boost.
+        // l'invariant de décroissance tient quel que soit le poids de départ.
         _now = _now.AddDays(14);
         Assert.False(dict.IsAdopted("café"));
 
@@ -78,47 +81,31 @@ public sealed class PersonalDictionaryTests : IDisposable
     }
 
     [Fact]
-    public void RevertAdoptionSurvivesTheClockAdvancing()
+    public void SuppressForeverDoesNotAdoptTheLiteral()
     {
         using var dict = New();
 
-        dict.RecordRevert("café", "cafe");
-
-        // Le boost (3.5) dépasse le seuil (3.0) : l'adoption tient encore le
-        // lendemain — un boost ÉGAL au seuil la perdrait à la première lecture
-        // décayée, des millisecondes plus tard.
-        _now = _now.AddDays(1);
-        Assert.True(dict.IsAdopted("café"));
-
-        // 7 jours au total : 3.5 × 2^(-7/14) ≈ 2.47, sous le seuil.
-        _now = _now.AddDays(6);
-        Assert.False(dict.IsAdopted("café"));
-    }
-
-    [Fact]
-    public void RevertSuppressesForeverAndAdoptsTheLiteral()
-    {
-        using var dict = New();
-
-        dict.RecordRevert("foo", "bar");
+        dict.RecordSuppression("foo", "bar");
 
         // La paire est supprimée — la correction ne se redéclenche jamais seule.
         Assert.True(dict.IsSuppressed("foo", "bar"));
-        // Et le littéral est adopté immédiatement (« mon mot »).
-        Assert.True(dict.IsAdopted("foo"));
+        // Mais la suppression n'adopte RIEN : le littéral n'entre pas au
+        // vocabulaire de son seul fait (aucun boost ne l'accompagne).
+        Assert.False(dict.IsAdopted("foo"));
+        Assert.Empty(dict.SnapshotWords());
 
-        // La suppression survit même quand le poids du mot décroît dans le néant.
+        // La suppression est permanente : elle survit à un temps arbitraire.
         _now = _now.AddDays(365);
         Assert.True(dict.IsSuppressed("foo", "bar"));
     }
 
     [Fact]
-    public void RevertIsIdempotentOnTheSuppressionPair()
+    public void SuppressIsIdempotentOnThePair()
     {
         using var dict = New();
 
-        dict.RecordRevert("foo", "bar");
-        dict.RecordRevert("foo", "bar");
+        dict.RecordSuppression("foo", "bar");
+        dict.RecordSuppression("foo", "bar");
 
         Assert.Single(dict.SnapshotSuppressions());
     }
@@ -141,7 +128,7 @@ public sealed class PersonalDictionaryTests : IDisposable
     {
         using var dict = New();
 
-        dict.RecordRevert("Foo", "Bar");
+        dict.RecordSuppression("Foo", "Bar");
 
         Assert.True(dict.IsSuppressed("foo", "bar"));
         Assert.True(dict.IsSuppressed("FOO", "BAR"));
@@ -193,17 +180,16 @@ public sealed class PersonalDictionaryTests : IDisposable
         using var dict = New();
 
         dict.RecordCommit("mot");
-        dict.RecordRevert("orig", "repl");
+        dict.RecordSuppression("orig", "repl");
 
         Assert.True(dict.RemoveWord("mot"));
         Assert.False(dict.RemoveWord("mot"));        // déjà parti
         Assert.True(dict.RemoveSuppression("orig", "repl"));
         Assert.False(dict.RemoveSuppression("orig", "repl"));
 
-        // RemoveWord("mot") n'enlève que "mot" ; "orig", adopté par le revert,
-        // reste un mot. RemoveSuppression n'efface que la paire, pas le littéral.
+        // Les deux stores sont indépendants : RemoveWord n'a touché que "mot",
+        // RemoveSuppression n'a touché que la paire.
         Assert.DoesNotContain(dict.SnapshotWords(), w => w.Word == "mot");
-        Assert.Contains(dict.SnapshotWords(), w => w.Word == "orig");
         Assert.Empty(dict.SnapshotSuppressions());
     }
 
@@ -213,7 +199,7 @@ public sealed class PersonalDictionaryTests : IDisposable
         using var dict = New();
 
         dict.RecordCommit("a");
-        dict.RecordRevert("b", "c");
+        dict.RecordSuppression("b", "c");
 
         dict.Purge();
 
@@ -230,7 +216,7 @@ public sealed class PersonalDictionaryTests : IDisposable
             dict.RecordCommit("café");
             dict.RecordCommit("café");
             dict.RecordCommit("café");
-            dict.RecordRevert("foo", "bar");
+            dict.RecordSuppression("foo", "bar");
             dict.Flush();
         }
 
@@ -238,7 +224,9 @@ public sealed class PersonalDictionaryTests : IDisposable
         using var reopened = New();
         Assert.True(reopened.IsAdopted("café"));
         Assert.True(reopened.IsSuppressed("foo", "bar"));
-        Assert.True(reopened.IsAdopted("foo"));
+        // La suppression a bien traversé le disque sans emporter d'adoption :
+        // "foo" n'est pas un mot pour autant.
+        Assert.False(reopened.IsAdopted("foo"));
     }
 
     [Fact]
@@ -256,4 +244,89 @@ public sealed class PersonalDictionaryTests : IDisposable
         using var reopened = New();
         Assert.True(reopened.IsAdopted("durable"));
     }
+
+    // ── Migration : la purge des stores empoisonnés ─────────────────────────────
+
+    [Fact]
+    public void LegacyPreStampFileIsPurgedAndStampedOnLoad()
+    {
+        // Fixture legacy : mots et suppressions, AUCUNE clé schemaVersion — c'est
+        // l'absence de la clé qui EST le contrat de la génération pré-tampon, donc
+        // le seul JSON écrit à la main ici. Le mot pèse 3.0 : il serait adopté
+        // s'il survivait, ce qui rend la purge observable.
+        System.IO.File.WriteAllText(_path, """
+            {
+              "words": [
+                { "word": "café", "weight": 3.0, "lastSeenUtc": "2026-06-12T00:00:00+00:00" }
+              ],
+              "suppressions": [
+                { "original": "cable", "replacement": "câble", "createdUtc": "2026-06-12T00:00:00+00:00" }
+              ]
+            }
+            """);
+
+        using var dict = New();
+
+        // La version chargée (0) est antérieure au tampon ⇒ les deux stores sont
+        // vidés d'un bloc à la première lecture.
+        Assert.Empty(dict.SnapshotWords());
+        Assert.Empty(dict.SnapshotSuppressions());
+
+        // Et le fichier réécrit porte désormais la version courante — la migration
+        // ne se rejouera pas au prochain démarrage. On relit le disque à travers
+        // le même POCO plutôt que d'asserter une chaîne brute.
+        dict.Flush();
+        var onDisk = JsonSerializer.Deserialize<PersonalDictionaryData>(
+            System.IO.File.ReadAllText(_path),
+            CamelCase);
+        Assert.NotNull(onDisk);
+        Assert.Equal(PersonalDictionaryData.CurrentSchemaVersion, onDisk!.SchemaVersion);
+    }
+
+    [Fact]
+    public void CurrentVersionFileIsNotRePurged()
+    {
+        // Fixture déjà tamponnée à la version courante, avec un mot appris. Écrite
+        // via le POCO pour coller exactement à la sérialisation du store.
+        var stamped = new PersonalDictionaryData { SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion };
+        stamped.Words.Add(new WordEntry { Word = "café", Weight = 3.0, LastSeenUtc = _now });
+        System.IO.File.WriteAllText(_path, JsonSerializer.Serialize(stamped, CamelCase));
+
+        using var dict = New();
+
+        // Version chargée == version courante ⇒ pas de purge : le mot survit.
+        Assert.True(dict.IsAdopted("café"));
+        Assert.Contains(dict.SnapshotWords(), w => w.Word == "café");
+    }
+
+    [Fact]
+    public void CorruptFileFallsBackStampedSoLaterLearningSurvives()
+    {
+        // Fichier illisible : le store tombe proprement sur des défauts. Le hook
+        // post-load tamponne CE fallback (le correctif JsonSettingsStore), sinon
+        // il ressemblerait à un fichier pré-tampon et serait re-purgé au lancement
+        // suivant.
+        System.IO.File.WriteAllText(_path, "{ this is not valid json ");
+
+        using (var dict = New())
+        {
+            dict.RecordCommit("café");
+            dict.RecordCommit("café");
+            dict.RecordCommit("café");
+            dict.Flush();
+        }
+
+        // Troisième construction sur le fichier réécrit après le fallback : si le
+        // fallback avait gardé la version 0, cette lecture le re-migrerait et
+        // effacerait le mot. Il survit ⇒ le fallback était bien tamponné.
+        using var third = New();
+        Assert.True(third.IsAdopted("café"));
+    }
+
+    // camelCase — la même politique de nommage que le store, pour lire/écrire les
+    // fixtures de migration au format exact du fichier sur disque.
+    private static readonly JsonSerializerOptions CamelCase = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 }

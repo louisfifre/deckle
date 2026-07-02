@@ -128,14 +128,14 @@ public class CorrectionTraceTests
         Assert.Equal(CorrectionTrace.Outcomes.Corrected, trace.Outcome);
     }
 
-    // ── A learned-revert veto reads as suppressed, not corrected ──────────────
+    // ── A learned-suppression veto reads as suppressed, not corrected ─────────
 
     [Fact]
     public void MarkSuppressedOverridesAFiredOutcome()
     {
         var trace = new CorrectionTrace();
         Diacritics().Evaluate("francais", [], trace); // a stage fires…
-        trace.MarkSuppressed();                        // …then a learned revert vetoes it
+        trace.MarkSuppressed();                        // …then a learned suppression vetoes it
 
         Assert.Equal(CorrectionTrace.Outcomes.Suppressed, trace.Outcome);
     }

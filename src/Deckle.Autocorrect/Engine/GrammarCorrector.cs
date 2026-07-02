@@ -21,8 +21,8 @@ namespace Deckle.Autocorrect;
 //     the literal is right);
 //   • the agreeing form must be UNIQUE — if synthesis is empty or ambiguous, the
 //     literal stands.
-// As with every stage, the engine reverts a misfire with one Backspace and
-// learns the suppression, so this proposes and never persists.
+// As with every stage, a misfire is taken back through the correction inlay,
+// whose undo writes the suppression — this proposes and never persists.
 public sealed class GrammarCorrector : ICorrectionPolicy
 {
     private readonly VerbMorphology _verbs;

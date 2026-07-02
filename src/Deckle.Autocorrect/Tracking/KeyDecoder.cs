@@ -88,8 +88,7 @@ public sealed class KeyDecoder
         // Chords the application owns — we cannot predict their text effect,
         // and that includes the editing keys: Ctrl+Backspace deletes a whole
         // word on screen, so it must NOT decode as a plain Backspace (which
-        // models one character — and, revert armed, would trigger an injection
-        // under a physically held Ctrl). Win + anything is always a shortcut.
+        // models one character). Win + anything is always a shortcut.
         // Ctrl is a shortcut UNLESS it is the Ctrl+Alt (AltGr) chord, which on
         // many layouts is a legitimate character composition and must be
         // decoded. Alt without Ctrl is a menu/accelerator chord, also a

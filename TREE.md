@@ -1052,13 +1052,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
+│   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
 │   │   ├── AutocorrectEngineHarness.cs
 │   │   ├── AutocorrectEngineLearningTests.cs
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
-│   │   ├── AutocorrectEngineRevertTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs

@@ -4,9 +4,9 @@ using Deckle.Core;
 namespace Deckle.Autocorrect;
 
 // The persisted learning surface: which words the user has made "theirs" and
-// which corrections they reverted. Reinforcement decays so a word typed once
+// which corrections stand suppressed. Reinforcement decays so a word typed once
 // and never again fades back out (the AOSP non-reinforcement oblivion); a
-// revert both suppresses the correction forever and adopts the literal at once.
+// suppression is permanent until the user removes it.
 //
 // Persistence is the shared JsonSettingsStore (debounced, atomic, mutex). This
 // class owns the POCO-graph thread-safety the store delegates to the caller:
@@ -23,14 +23,9 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
     internal const int   MaxWords          = 5000;
 
     // Signal boosts: commit is weak repeated evidence; a hand-fixed accent is
-    // stronger ("the user went back for it"); a revert is instant adoption
-    // ("my word") — one revert clears the threshold on its own. The revert
-    // boost sits ABOVE the threshold: equal to it, the very next decayed read
-    // would already fall short; 3.5 keeps a fresh revert adopted for ~3 days
-    // without reinforcement.
+    // stronger ("the user went back for it").
     private const double CommitBoost      = 1.0;
     private const double ManualAccentBoost = 1.5;
-    private const double RevertBoost      = 3.5;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -48,7 +43,24 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
         _store = new JsonSettingsStore<PersonalDictionaryData>(
             path:        filePath,
             mutexName:   "Deckle-Autocorrect-PersonalDictionary",
-            jsonOptions: JsonOptions);
+            jsonOptions: JsonOptions,
+            postLoadMigration: MigrateSchema);
+    }
+
+    // Schema 1 (2026-07): the injection corruption had poisoned both stores —
+    // words adopted off injection artifacts (« j''ai »), suppressions of
+    // legitimate corrections written by the retired implicit-Backspace revert
+    // misfiring on punctuation deletes. Anything persisted before the stamp is
+    // discarded wholesale on first load; the mechanism survives, the content
+    // restarts clean (JOURNAL 2026-07-02).
+    private static bool MigrateSchema(PersonalDictionaryData data)
+    {
+        if (data.SchemaVersion >= PersonalDictionaryData.CurrentSchemaVersion)
+            return false;
+        data.Words.Clear();
+        data.Suppressions.Clear();
+        data.SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion;
+        return true;
     }
 
     private PersonalDictionaryData Data => _store.Current;
@@ -103,19 +115,19 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
     public void RecordManualAccentFix(string typed, string fixedForm)
         => Reinforce(fixedForm, ManualAccentBoost);
 
-    // The user undid a correction: suppress that pair forever (idempotent) and
-    // adopt the literal immediately (one strong boost clears the threshold).
-    public void RecordRevert(string original, string replacement)
+    // An explicit suppression: (original → replacement) must never fire on its
+    // own again (module doctrine). Idempotent, and deliberately dumb — no
+    // adoption boost rides along; what an undo teaches beyond the suppression
+    // is the correction inlay's open question. Nothing arms this implicitly.
+    public void RecordSuppression(string original, string replacement)
     {
         string o = Normalize(original);
         string r = Normalize(replacement);
-        var now = _clock();
         lock (_lock)
         {
-            if (!Data.Suppressions.Any(s => s.Original == o && s.Replacement == r))
-                Data.Suppressions.Add(new SuppressionEntry { Original = o, Replacement = r, CreatedUtc = now });
-            ReinforceLocked(o, RevertBoost, now);
-            PruneLocked(now);
+            if (Data.Suppressions.Any(s => s.Original == o && s.Replacement == r))
+                return;
+            Data.Suppressions.Add(new SuppressionEntry { Original = o, Replacement = r, CreatedUtc = _clock() });
         }
         _store.Save();
     }

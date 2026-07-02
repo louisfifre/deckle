@@ -86,10 +86,10 @@ public sealed class SentenceCorpus
         Completed?.Invoke(typed.ToString(), final.ToString());
     }
 
-    // The elision apostrophe is already part of the word (« l' »); collapse its
-    // separator so the rejoin does not double it. Every other boundary is verbatim.
+    // The elision apostrophe is already part of the word (« l' »); WordBoundaries
+    // owns the one rule that collapses it so the rejoin does not double it.
     private static string Separator(char boundary) =>
-        boundary == '\'' ? "" : boundary.ToString();
+        WordBoundaries.DisplaySeparator(boundary);
 
     private static bool IsSentenceEnd(char boundary) =>
         boundary is '.' or '!' or '?';

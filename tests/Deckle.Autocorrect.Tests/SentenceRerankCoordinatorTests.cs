@@ -38,6 +38,30 @@ public class SentenceRerankCoordinatorTests
         Assert.Equal("là mer est belle ", inj.Calls[0].Target);
     }
 
+    // The regression the whole gesture exists for (JOURNAL 2026-07-02). An
+    // elision commit (« l' », boundary '\'') carries its apostrophe INSIDE the
+    // form; rendering the boundary again would overstate the on-screen tail by
+    // one char per elision — one extra backspace (an eaten letter) and a doubled
+    // apostrophe on reinjection. The rewrite strings must equal the exact screen.
+    [Fact]
+    public void SlotRewriteAcrossAnElisionTailMatchesTheScreen()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("c'est", ' ', gateLeftLiteral: true);
+        coord.OnWordCommitted("la", ' ', gateLeftLiteral: true);      // ambiguous slot
+        coord.OnWordCommitted("l'", '\'', gateLeftLiteral: true);     // elision in the tail
+        coord.OnWordCommitted("eau", ' ', gateLeftLiteral: true);     // right-context 2
+        coord.OnWordCommitted("froide", ' ', gateLeftLiteral: true);  // right-context 3 → fires
+
+        Assert.Single(inj.Calls);
+        // « l' » collapses its separator: no space, no doubled apostrophe.
+        Assert.Equal("la l'eau froide ", inj.Calls[0].Current);
+        Assert.Equal("là l'eau froide ", inj.Calls[0].Target);
+    }
+
     [Fact]
     public void AbstainLeavesTheSlotUntouched()
     {
@@ -191,6 +215,71 @@ public class SentenceRerankCoordinatorTests
         Assert.Single(inj.Calls); // still applied
     }
 
+    // A non-word char on an EMPTY live buffer (a quotation apostrophe, a double
+    // space, a bracket) is on screen but commits nothing — the tracker swallows
+    // it as noise. The model can no longer mirror the screen and must drop,
+    // rather than let a later slot rewrite rebuild a tail one char short of the
+    // screen and eat a letter on reinjection.
+    [Fact]
+    public void NoiseCharOnAnEmptyBufferDropsThePendingSlot()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("la", ' ', gateLeftLiteral: true); // ambiguous slot
+        // A quotation apostrophe typed on an empty live buffer: « la 'belle… ».
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, "'", 0), preBuffer: "");
+        coord.OnWordCommitted("belle", ' ', true);
+        coord.OnWordCommitted("histoire", ' ', true);
+        coord.OnWordCommitted("non", ' ', true);
+
+        Assert.Empty(lane.Submitted); // the slot died with the model
+        Assert.Empty(inj.Calls);      // nothing rewrites against a screen we lost
+    }
+
+    [Fact]
+    public void NoiseCharUnderAnInFlightVerdictDropsIt()
+    {
+        var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("c'est", ' ', true);
+        coord.OnWordCommitted("la", ' ', true);
+        coord.OnWordCommitted("mer", ' ', true);
+        coord.OnWordCommitted("est", ' ', true);
+        coord.OnWordCommitted("belle", ' ', true);
+        Assert.Single(lane.Submitted);
+
+        // An extra space typed during the inference: on screen, unmodeled.
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "");
+        lane.DeliverLast();
+
+        Assert.Empty(inj.Calls);
+    }
+
+    [Fact]
+    public void ABoundaryEndingAWordDoesNotDropTheModel()
+    {
+        // Each committing boundary reaches NotePhysicalKey with the word still in
+        // the live buffer — the normal flow must never be mistaken for noise.
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "la");
+        coord.OnWordCommitted("la", ' ', true);
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "mer");
+        coord.OnWordCommitted("mer", ' ', true);
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "est");
+        coord.OnWordCommitted("est", ' ', true);
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "belle");
+        coord.OnWordCommitted("belle", ' ', true);
+
+        Assert.Single(inj.Calls);
+    }
+
     // ── Capitalization ──────────────────────────────────────────────────────
 
     [Fact]
@@ -233,6 +322,25 @@ public class SentenceRerankCoordinatorTests
         coord.OnWordCommitted("fin", '.', true);      // '.' vouches the next word
         coord.OnWordCommitted("bonjour", ' ', true);  // first word of the new sentence
         coord.OnWordCommitted("tout", ' ', true);     // a beat later → capital applied
+
+        Assert.Single(inj.Calls);
+        Assert.Equal("bonjour tout ", inj.Calls[0].Current);
+        Assert.Equal("Bonjour tout ", inj.Calls[0].Target);
+    }
+
+    [Fact]
+    public void SentenceInitialVouchSurvivesANoiseDrop()
+    {
+        // Punctuation noise does not move the sentence boundary: a second space
+        // after the period drops the model but the next word keeps its capital.
+        var lane = new TestRerankLane();
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, new FakeProbe(new()), inj, () => "");
+
+        coord.OnWordCommitted("fin", '.', true); // '.' vouches the next word
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "");
+        coord.OnWordCommitted("bonjour", ' ', true);
+        coord.OnWordCommitted("tout", ' ', true); // a beat later → capital applied
 
         Assert.Single(inj.Calls);
         Assert.Equal("bonjour tout ", inj.Calls[0].Current);

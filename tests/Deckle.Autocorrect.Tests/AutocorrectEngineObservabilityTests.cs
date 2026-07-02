@@ -5,10 +5,10 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The provider contract. Two things matter: the right events fire on a
-// correction and a revert, and — the module hard rule — the typed words NEVER
-// cross the provider. Every payload carries counts, lengths and reasons only.
-// Assertions are presence-based and scan ALL captured events, so they hold even
-// if another engine test emits concurrently.
+// correction, and — the module hard rule — the typed words NEVER cross the
+// provider. Every payload carries counts, lengths and reasons only. Assertions
+// are presence-based and scan ALL captured events, so they hold even if another
+// engine test emits concurrently.
 [Trait("Category", "observability")]
 public sealed class AutocorrectEngineObservabilityTests
 {
@@ -44,68 +44,6 @@ public sealed class AutocorrectEngineObservabilityTests
             && PayloadValue(e, "original_len") is 2
             && PayloadValue(e, "replacement_len") is 2);
         AssertNoTypedWordLeaked(events, "ca", "ça");
-    }
-
-    [Fact]
-    public void ARevertEmitsRevertedWithoutLeakingTheWords()
-    {
-        using var listener = new TestEventListener("Deckle-Autocorrect");
-        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
-        h.Prober.Surface = AutocorrectEngineHarness.Editable();
-        h.Start();
-
-        h.Type("ca ");
-        h.Backspace();
-
-        var events = listener.Events;
-        Assert.Contains(events, e => e.EventId == DeckleAutocorrectSource.EvtCorrectionReverted);
-        AssertNoTypedWordLeaked(events, "ca", "ça");
-    }
-
-    // With the opt-in decision dataset on, the revert leaves a structured record
-    // that joins the correction it undoes by word id — the diagnostic the task
-    // exists for. A punctuation boundary ("ca," then Backspace) is the known
-    // misfire: deleting a misplaced comma, misread as an undo.
-    [Fact]
-    public void ARevertJoinsTheCorrectionItUndoesOnTheDecisionDataset()
-    {
-        using var listener = new TestEventListener("Deckle-Autocorrect");
-        using var h = new AutocorrectEngineHarness(
-            ScriptedPolicy.Maps("ca", "ça"), decisionTelemetry: () => true);
-        h.Prober.Surface = AutocorrectEngineHarness.Editable();
-        h.Start();
-
-        h.Type("ca,");   // the comma commits and corrects; the boundary is punctuation
-        h.Backspace();   // deleting the comma is read as a revert
-
-        var decision = Assert.Single(listener.Events,
-            e => e.EventId == DeckleAutocorrectSource.EvtAutocorrectDecision);
-        var revert = Assert.Single(listener.Events,
-            e => e.EventId == DeckleAutocorrectSource.EvtAutocorrectRevert);
-
-        Assert.Equal(PayloadValue(decision, "id"), PayloadValue(revert, "id"));
-        Assert.Equal("ca", PayloadValue(revert, "original"));
-        Assert.Equal("ça", PayloadValue(revert, "replacement"));
-        Assert.Equal("punctuation", PayloadValue(revert, "boundaryKind"));
-        Assert.Equal("restored", PayloadValue(revert, "outcome"));
-    }
-
-    // The opt-in gate holds for the revert too: with the dataset off (the default
-    // harness), the gesture emits only the count-only CorrectionReverted, never the
-    // word-carrying record.
-    [Fact]
-    public void ARevertEmitsNoStructuredRecordWhenTheDatasetIsOff()
-    {
-        using var listener = new TestEventListener("Deckle-Autocorrect");
-        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
-        h.Prober.Surface = AutocorrectEngineHarness.Editable();
-        h.Start();
-
-        h.Type("ca,");
-        h.Backspace();
-
-        Assert.Contains(listener.Events, e => e.EventId == DeckleAutocorrectSource.EvtCorrectionReverted);
-        Assert.DoesNotContain(listener.Events, e => e.EventId == DeckleAutocorrectSource.EvtAutocorrectRevert);
     }
 
     // The hard rule, asserted directly: no string payload on any captured event

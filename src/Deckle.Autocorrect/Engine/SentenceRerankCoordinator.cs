@@ -45,8 +45,7 @@ public interface IRerankLane : IDisposable
 // outlived its sentence; the tail is always rebuilt from the live buffer, so words
 // committed during the ~100 ms inference are absorbed, not corrupted; a failed
 // (UIPI-blocked) send invalidates the whole model rather than rewrite against a
-// half-edited tail. A reranked slot sits behind the caret, so it does NOT arm the
-// one-Backspace revert.
+// half-edited tail.
 //
 // Sentence-initial capitalization rides the same buffer and reinjection path,
 // deterministically (no ONNX): the first word of a vouched sentence — one that
@@ -162,7 +161,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
         // A capitalization scheduled on a PRIOR commit applies now — one word
         // behind, so it shares the transparent "a beat late" feel and never
-        // fights the same-commit revert arming of the gate.
+        // fights the gate's own same-commit injection.
         if (_pendingCapSlot >= 0 && _pendingCapSlot < _buffer.Count)
         {
             ApplyCapitalizationOnly(_pendingCapSlot);
@@ -200,7 +199,36 @@ public sealed class SentenceRerankCoordinator : IDisposable
     {
         if (_disposed) return;
         if (k.Kind == KeystrokeKind.Backspace && preBuffer.Length == 0)
+        {
             Invalidate(ResetReason.Navigation);
+            return;
+        }
+
+        // A non-word char landing on an EMPTY live buffer (a quotation
+        // apostrophe, a double space, an opening bracket) is swallowed by the
+        // tracker as noise: it commits nothing, yet it IS on screen. The model
+        // can no longer mirror the screen — drop it rather than let a later
+        // slot rewrite rebuild a tail one char short of the screen (the
+        // eaten-letter corruption class). The sentence-initial vouch survives:
+        // punctuation noise does not move the sentence boundary.
+        if (k.Kind != KeystrokeKind.Text) return;
+        bool empty = preBuffer.Length == 0;
+        foreach (char c in k.Text)
+        {
+            if (WordBoundaries.IsWordChar(c))
+            {
+                empty = false;
+                continue;
+            }
+            if (empty)
+            {
+                bool vouch = _nextWordIsSentenceInitial;
+                Invalidate(ResetReason.Navigation);
+                _nextWordIsSentenceInitial = vouch;
+                return;
+            }
+            empty = true; // the boundary commits (or joins) the word the tracker holds
+        }
     }
 
     // Drop the sentence model: the caret left the span we model (or a backspace is
@@ -365,8 +393,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
         var targetTail = new StringBuilder();
         for (int i = slotIndex; i < _buffer.Count; i++)
         {
-            currentTail.Append(_buffer[i].Form).Append(_buffer[i].Boundary);
-            targetTail.Append(i == slotIndex ? newForm : _buffer[i].Form).Append(_buffer[i].Boundary);
+            // The separator as the screen shows it: an elision commit carries its
+            // apostrophe inside the form, so rendering the boundary again would
+            // overstate the screen by one char per elision — one extra backspace
+            // (the eaten letter) and a doubled apostrophe on reinjection.
+            string separator = WordBoundaries.DisplaySeparator(_buffer[i].Boundary);
+            currentTail.Append(_buffer[i].Form).Append(separator);
+            targetTail.Append(i == slotIndex ? newForm : _buffer[i].Form).Append(separator);
         }
 
         string partial = _currentPartial() ?? string.Empty;
