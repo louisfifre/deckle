@@ -19,11 +19,11 @@ namespace Deckle.App;
 // default (AutocorrectSettings); corrections land only on enrolled processes
 // (Notepad out of the box) and never on a password surface.
 //
-// The CamemBERT reranker is the live post-sentence contextual stage (real-word
-// ambiguities — la/là, a/à, ou/où — plus sentence-initial capitals). Its ~440 MB
-// ONNX model is optional: loaded off-thread beside the lexicons, and absent it the
-// engine simply runs gate + typo. The model lives under the user data root
-// (models\camembert-base\), fetched by setup-assets, never shipped in the build.
+// The live post-sentence stage resolves real-word ambiguities — la/là, a/à,
+// ou/où — plus sentence-initial capitals. It starts with deterministic French
+// rules and delegates to CamemBERT when its optional ~440 MB ONNX model is
+// present. The model lives under the user data root (models\camembert-base\),
+// fetched by setup-assets, never shipped in the build.
 public partial class App
 {
     // Contextual reranker calibration — mirrors the offline EvaluateReranked
@@ -137,6 +137,8 @@ public partial class App
                 policies.Add(grammar);
             var policy = new CompositeCorrectionPolicy(policies.ToArray());
 
+            var sentenceReranker = new FrenchSentenceReranker(reranker);
+
             _autocorrectEngine = new AutocorrectEngine(
                 host: _keyboardMouseHost,
                 decoder: new KeyDecoder(),
@@ -148,9 +150,10 @@ public partial class App
                 dictionary: _autocorrectDictionary,
                 french: french,
                 english: english,
-                // The post-sentence contextual stage: the reranker (null when its
-                // model is absent) and the diacritics gate reused as the slot probe.
-                reranker: reranker,
+                // The post-sentence stage: deterministic French sentence rules,
+                // delegating to CamemBERT when its optional model is present; the
+                // diacritics gate is reused as the slot probe.
+                reranker: sentenceReranker,
                 probe: diacritics,
                 // Opt-in per-word decision telemetry, read live so a Settings flip
                 // takes effect without a rebuild. Off by default.

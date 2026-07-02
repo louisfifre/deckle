@@ -45,9 +45,10 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly Func<bool>? _textTelemetry;
     private readonly SentenceCorpus? _corpus;
 
-    // The post-sentence contextual stage. Null when no reranker model is present
-    // — the engine then runs exactly as before, gate + typo only. The lane owns
-    // the background inference thread; the coordinator owns the sentence model.
+    // The post-sentence contextual stage. Null only when no sentence reranker is
+    // wired; the reranker may be deterministic rules alone or rules delegating to
+    // an ONNX model. The lane owns the background inference thread; the
+    // coordinator owns the sentence model.
     private readonly SentenceRerankCoordinator? _coordinator;
     private readonly IRerankLane? _lane;
 

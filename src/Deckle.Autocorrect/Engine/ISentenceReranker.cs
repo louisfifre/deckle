@@ -40,6 +40,7 @@ public readonly record struct RerankOutcome(
     {
         public const string MultiToken  = "multi_token";  // a candidate is not a single leading piece
         public const string BelowMargin = "below_margin"; // top did not clear the confidence margin
+        public const string NoRule      = "no_rule";      // no deterministic rule or model handled the slot
         public const string Error       = "error";        // inference threw — abstained, lane survives
     }
 }

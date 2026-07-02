@@ -388,6 +388,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
 │   │   │   ├── ElisionCorrector.cs
+│   │   │   ├── FrenchSentenceReranker.cs
 │   │   │   ├── GrammarCorrector.cs
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
@@ -1085,6 +1086,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── ElisionCorrectorTests.cs
+│   │   ├── FrenchSentenceRerankerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
 │   │   ├── GrammarCorrectorTests.cs
 │   │   ├── HarvestDataTests.cs
