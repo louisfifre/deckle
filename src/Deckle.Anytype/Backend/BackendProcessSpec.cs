@@ -2,18 +2,16 @@ namespace Deckle.Anytype;
 
 // ── BackendProcessSpec ───────────────────────────────────────────────────────
 //
-// Describes the headless anytype-cli process the scheduled task launches: the
+// Describes the headless anytype-cli process the supervisor spawns: the
 // fully-qualified executable path and the command line it is started with (the
 // `serve`-class invocation that brings the REST listener up on 127.0.0.1:31012).
 //
-// This is the seam between the lifecycle mechanism (this module) and the
-// provisioning step (later): provisioning downloads the pinned binary into
-// %LOCALAPPDATA%\Programs\Deckle and fills this record, then hands it to
-// BackendScheduledTask.EnsureRegistered. The supervisor that runs the task on
-// demand needs no spec — it only probes health and triggers an already-enrolled
-// task.
+// This is the seam between the lifecycle mechanism (BackendSupervisor /
+// BackendProcess) and the provisioning step: provisioning downloads the pinned
+// binary into %LOCALAPPDATA%\Programs\Deckle and BackendInstallation fills this
+// record from that layout.
 //
-// Arguments is a single pre-composed command-line string, written verbatim into
-// the task's <Arguments> element; quoting of any embedded path is the caller's
-// responsibility, as it is with ProcessStartInfo.Arguments.
+// Arguments is a single pre-composed command-line string, handed verbatim to
+// ProcessStartInfo.Arguments; quoting of any embedded path is the caller's
+// responsibility.
 public sealed record BackendProcessSpec(string ExecutablePath, string Arguments);

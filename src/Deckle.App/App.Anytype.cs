@@ -4,13 +4,18 @@ using Deckle.Security;
 
 namespace Deckle.App;
 
-// Anytype backend composition. Deckle supervises the headless backend without
-// owning it: at boot, make sure the (triggerless) scheduled task is enrolled,
-// then probe-and-start through the supervisor. The backend process outlives
-// Deckle by construction — parented to the Task Scheduler service, stopped only
-// by an explicit act, never by an app rebuild.
+// Anytype backend composition. Deckle spawns the headless backend windowless
+// and supervises it for as long as the app lives: watch the process handle,
+// restart on death with a capped backoff. The serve still outlives Deckle — a
+// child process is not tied to its parent's lifetime, and quitting only stops
+// the watching, never the serve — so app rebuilds keep their warm backend and
+// the next boot re-adopts it.
 public partial class App
 {
+    // The lifecycle owner of the serve process: spawn/adopt at boot, restart on
+    // death. Owned here so quitting stops the supervision (not the serve).
+    private Deckle.Anytype.BackendSupervisor? _backendSupervisor;
+
     // The REST client backing the MCP host and, through it, the tool calls that
     // reach the local Anytype API. Owned here so shutdown disposes it after the
     // host that uses it.
@@ -35,27 +40,19 @@ public partial class App
             return;
         }
 
-        var task = new BackendScheduledTask();
-
-        // Enrolling the task is a provisioning gesture — the wizard's,
-        // eventually. Until the wizard exists, boot enrolls it when absent so
-        // the chain lives on any machine that has the binary; IsRegistered
-        // guards the common path down to a single schtasks query.
-        if (!task.IsRegistered())
-            task.EnsureRegistered(BackendInstallation.ServeSpec());
-
         // Outcomes are observed, not acted on: the supervisor logs its own
-        // milestones (starting / ready / timed out), and the surfaces that will
-        // show last-known state (wizard, General page) read those. No retry
-        // loop here — a failed start is a state the user must see, not a
-        // condition to poll against.
+        // milestones (starting / ready / stopped / timed out), and the surfaces
+        // that will show last-known state (wizard, General page) read those.
+        // Mid-session recovery is the supervisor's own restart ladder, driven
+        // by the process-exit signal — no polling here.
         // ConfigureAwait(false) is load-bearing here: OnLaunched dispatched this
         // method on the UI thread, and everything past this await — DPAPI vault
         // reads, the WM_SETTINGCHANGE broadcast in MaterializeEnvironmentVariables,
         // the listener bind — is blocking work that touches no UI state. Without
         // it the whole composition tail would resume on the DispatcherQueue.
-        using var health = new BackendHealthProbe();
-        await new BackendSupervisor(task, health).EnsureRunningAsync().ConfigureAwait(false);
+        _backendSupervisor = new BackendSupervisor(
+            BackendInstallation.ServeSpec(), new BackendHealthProbe());
+        await _backendSupervisor.EnsureRunningAsync().ConfigureAwait(false);
 
         // The host comes up whatever the supervisor concluded: a backend that
         // failed to start surfaces as isError tool results the client can read,
@@ -106,12 +103,14 @@ public partial class App
 
     // Bound the host teardown the same way QuitApp bounds the ambient engine: a
     // five-second cap on the async dispose so a wedged listener cannot hang the
-    // whole quit. The client is disposed after the host that borrows it. Both
-    // steps swallow so shutdown, which runs best-effort under QuitApp's
+    // whole quit. The client is disposed after the host that borrows it, and
+    // the supervisor last — disposing it stops the watching, never the serve.
+    // Every step swallows so shutdown, which runs best-effort under QuitApp's
     // try/catch-per-step, never throws from here.
     private void ShutdownAnytypeMcp()
     {
         try { _mcpHost?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)); } catch { }
         try { _anytypeApi?.Dispose(); } catch { }
+        try { _backendSupervisor?.Dispose(); } catch { }
     }
 }

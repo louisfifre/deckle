@@ -247,10 +247,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Backend/
 │   │   │   ├── BackendHealthProbe.cs
 │   │   │   ├── BackendInstallation.cs
+│   │   │   ├── BackendProcess.cs
 │   │   │   ├── BackendProcessSpec.cs
-│   │   │   ├── BackendScheduledTask.cs
-│   │   │   ├── BackendSupervisor.cs
-│   │   │   └── BackendTaskDocument.cs
+│   │   │   └── BackendSupervisor.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
@@ -1040,7 +1039,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── AnytypeCredentialsTests.cs
-│   │   ├── BackendTaskDocumentTests.cs
+│   │   ├── BackendSupervisorTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
