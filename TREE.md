@@ -448,6 +448,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Replay/
+│   │   │   ├── CorpusReader.cs
+│   │   │   ├── SentenceAlignment.cs
 │   │   │   └── SentenceReplay.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
@@ -1109,6 +1111,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
+│   │   ├── CorpusReaderTests.cs
 │   │   ├── CorrectionBenchmarkSummaryTests.cs
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
@@ -1127,6 +1130,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
+│   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
