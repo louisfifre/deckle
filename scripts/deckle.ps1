@@ -31,7 +31,7 @@ $mainRows = @(
     @{ Prefix = 'Build (no run)'; Cells = @( @{ Label = 'Release'; Value = 'norun:Release' },  @{ Label = 'Debug'; Value = 'norun:Debug' } ) }
     @{ Blank  = $true }
     @{ Title  = 'Project' }
-    @{ Cells  = @( @{ Label = 'Update version'; Value = 'update-version' } ) }
+    @{ Cells  = @( @{ Label = 'Record version'; Value = 'record-version' } ) }
     @{ Blank  = $true }
     @{ Title  = 'More' }
     @{ Cells  = @( @{ Label = 'Release…'; Value = 'release-menu'; Role = 'folder' }, @{ Label = 'Maintenance…'; Value = 'maintenance-menu'; Role = 'folder' }, @{ Label = 'Setup…'; Value = 'setup-menu'; Role = 'folder' }, @{ Label = 'Quit'; Value = 'quit' } ) }
@@ -51,7 +51,7 @@ try {
             Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
         } else {
             switch ($v) {
-                'update-version'   { Invoke-UpdateVersion }
+                'record-version'   { Invoke-RecordVersion }
                 'release-menu'     { Show-ReleaseMenu }
                 'maintenance-menu' { Show-MaintenanceMenu }
                 'setup-menu'       { Show-SetupMenu }

@@ -234,6 +234,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── launch-app.ps1
 │   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
+│   │   ├── record-version.ps1
 │   │   ├── setup-assets.ps1
 │   │   ├── stats.ps1
 │   │   ├── stop-build-servers.ps1
