@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-03 (later) — Judge runtime stays ONNX; the DirectML block was a wrong export, not a wrong backend
+
+Refines the DirectML note below. DirectML does run blocked int4 — Microsoft ships Phi-3 as int4 AWQ block-128 on the DML EP. The block was reusing the int4 *CPU* export: a CPU int4 graph and a DML int4 graph differ (MatMulNBits weight layout, accuracy level), so ORT cannot assign the nodes to the DmlExecutionProvider and silently falls back to CPU — a partition miss, not a graph-capture failure. The unblock is a model-builder `-e dml` export from a 0.13.x builder, matched to the pinned 0.13.0 runtime. The 0.14 `DllNotFoundException` is a NuGet packaging break (DirectML 0.14.1 depends on a Managed 1.23.x that does not exist), not a model fault.
+
+Maintainer direction, firm: the judge stays on ONNX Runtime GenAI — closer to Windows, small and efficient — so the LLamaSharp/Vulkan/GGUF path is set aside, though it was verified viable for logprob scoring on the 7900 XT. The judge should offer a size × provider matrix — 0.6B on CPU and 1.7B on GPU as defaults, any size on either provider — so all sizes stay available. Luth stays the French candidate: Luth-0.6B/1.7B are Qwen3 fine-tunes (Apache-2.0, same conversion path), reported above their Qwen bases on French benchmarks; GGUF quants public, no ONNX export yet.
+
+Open symptom: a calibration run went about 20 minutes with no visible output before being stopped — plausibly the test platform buffering the gesture's stderr to the end rather than a hang. The next session is a deliberate grill over the whole judge system: why an export runs under one provider and not the other, and why the runtime question kept looping.
+
 ## 2026-07-03 — The sentence judge needs a GPU-built export to run on DirectML
 
 The Qwen3-4B CPU int4 judge over the 404-sentence typed corpus took about 23 minutes at roughly 6 of 16 cores — CPU int4 is an offline-only path, live-unviable at seconds per sentence. The scorer now selects its execution provider in code (`Config.ClearProviders` + `AppendProvider`, as PhiBench does), so one export could in principle be driven onto the GPU without a re-export, and the replay streams per-slot progress to stderr. But DirectML, while it loads (no `DllNotFoundException`), cannot run the CPU int4 exports: session init fails because the int4 `kld-block-128` MatMul nodes do not partition to the `DmlExecutionProvider`, and graph capture then demands all nodes on DML. The GPU path needs a model-builder `-e dml` export, not the CPU int4 one. `onnxruntime-genai` DirectML is pinned to 0.13.0 — 0.14 wants ORT API 24 but bundles ORT 1.23, a mismatch that throws `DllNotFoundException` on init (PhiBench's finding).
