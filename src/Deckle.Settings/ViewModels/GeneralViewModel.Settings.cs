@@ -12,9 +12,9 @@ namespace Deckle.Settings;
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
 // own properties — and SettingsComposer turns the list into SettingsCards.
 //
-// The Appearance, Behaviour and Startup sections are composed from here — theme
-// picker, overlay group (master + fade/animations/position), auto-paste, and the
-// registry-backed autostart toggle. Each descriptor also carries its reset default,
+// The Appearance and Startup sections are composed from here — the theme picker and
+// the registry-backed autostart toggle (the Behaviour section's overlay + auto-paste
+// moved to the Dictation page in the settings reorg). Each descriptor carries its reset default,
 // read from the matching AppSettings POCO initializer so the literal defaults live
 // in one place. GeneralPage's remaining controls stay hand-authored: the read-only
 // shortcut readouts and the command/diagnostic cards under Application data. The
@@ -41,57 +41,6 @@ public partial class GeneralViewModel
             // The default is the POCO initializer, the one source of truth — the VM
             // no longer carries its own copy. ("System".)
             defaultValue: () => new AppearanceSettings().Theme),
-    ];
-
-    // Behaviour section — the overlay group, then the flat auto-paste toggle. The
-    // overlay is the first Group descriptor: a master toggle (OverlayEnabled) that
-    // reveals three children — fade-on-proximity and animations toggles, and the
-    // position Choice — each HIDDEN by the composer while the master is off. The
-    // hand-authored SettingsExpander greyed them (IsEnabled); the composer masks
-    // them instead, the Microsoft-first dependency gating. The position Choice
-    // matches the canonical "TopCenter"/"BottomCenter" values the VM normalizes on
-    // Load (legacy corner values folded to a centre), so a persisted value always
-    // selects a real option. Every change handler (OnOverlay*Changed →
-    // PushToSettings) is unchanged; the composer only drives the UI.
-    public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
-    [
-        Setting.Group("GeneralOverlayExpander",
-            () => OverlayEnabled,
-            value => OverlayEnabled = value,
-            [
-                Setting.Toggle("GeneralOverlayFadeCard",
-                    () => OverlayFadeOnProximity,
-                    value => OverlayFadeOnProximity = value,
-                    defaultValue: () => new OverlaySettings().FadeOnProximity),
-                Setting.Toggle("GeneralOverlayAnimationsCard",
-                    () => OverlayAnimations,
-                    value => OverlayAnimations = value,
-                    defaultValue: () => new OverlaySettings().Animations),
-                Setting.Choice<string>("GeneralOverlayPositionCard",
-                    () => OverlayPosition,
-                    value => OverlayPosition = value,
-                    [
-                        ("TopCenter", "GeneralOverlayPositionTop"),
-                        ("BottomCenter", "GeneralOverlayPositionBottom"),
-                    ],
-                    // The descriptor value is the NORMALIZED position string the
-                    // picker exposes; the POCO default may be a legacy corner value,
-                    // so fold it through the same Top→TopCenter / else→BottomCenter
-                    // rule Load() applies, or the reset would target a non-option.
-                    defaultValue: () =>
-                        (new OverlaySettings().Position ?? "").StartsWith("Top")
-                            ? "TopCenter"
-                            : "BottomCenter"),
-            ],
-            glyph: Glyphs.Overlay,
-            // The master's default is the overlay POCO's Enabled initializer (true).
-            defaultValue: () => new OverlaySettings().Enabled),
-
-        Setting.Toggle("GeneralAutoPasteCard",
-            () => AutoPasteEnabled,
-            value => AutoPasteEnabled = value,
-            glyph: Glyphs.Paste,
-            defaultValue: () => new PasteSettings().AutoPasteEnabled),
     ];
 
     // Startup section — "start with Windows". A plain TwoWay toggle, but its

@@ -29,6 +29,52 @@ namespace Deckle.Transcription;
 // float LevelWindow fields.
 public partial class WhisperViewModel
 {
+    // Dictation experience — the overlay HUD group then the flat auto-paste toggle,
+    // relocated from GeneralPage. The overlay is a Group (master OverlayEnabled +
+    // fade/animations/position children, each masked while the master is off); the
+    // position Choice matches the normalized "TopCenter"/"BottomCenter" the VM seeds.
+    // Defaults read the shell POCO initializers (OverlaySettings / PasteSettings), the
+    // single source the shell's SettingsService persists. The x:Uids reuse the same
+    // keys the General cards carried — already present in this module's .resw.
+    public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
+    [
+        Setting.Group("GeneralOverlayExpander",
+            () => OverlayEnabled,
+            value => OverlayEnabled = value,
+            [
+                Setting.Toggle("GeneralOverlayFadeCard",
+                    () => OverlayFadeOnProximity,
+                    value => OverlayFadeOnProximity = value,
+                    defaultValue: () => new OverlaySettings().FadeOnProximity),
+                Setting.Toggle("GeneralOverlayAnimationsCard",
+                    () => OverlayAnimations,
+                    value => OverlayAnimations = value,
+                    defaultValue: () => new OverlaySettings().Animations),
+                Setting.Choice<string>("GeneralOverlayPositionCard",
+                    () => OverlayPosition,
+                    value => OverlayPosition = value,
+                    [
+                        ("TopCenter", "GeneralOverlayPositionTop"),
+                        ("BottomCenter", "GeneralOverlayPositionBottom"),
+                    ],
+                    // Fold a possible legacy corner default through the same
+                    // Top→TopCenter / else→BottomCenter rule the VM applies on Load,
+                    // so the reset targets a real picker option.
+                    defaultValue: () =>
+                        (new OverlaySettings().Position ?? "").StartsWith("Top")
+                            ? "TopCenter"
+                            : "BottomCenter"),
+            ],
+            glyph: Glyphs.Overlay,
+            defaultValue: () => new OverlaySettings().Enabled),
+
+        Setting.Toggle("GeneralAutoPasteCard",
+            () => AutoPasteEnabled,
+            value => AutoPasteEnabled = value,
+            glyph: Glyphs.Paste,
+            defaultValue: () => new PasteSettings().AutoPasteEnabled),
+    ];
+
     // GPU acceleration — the flat toggle under the "Model engine" header. It was
     // hand-authored as a lone SettingsCard with its own reset; it composes as a
     // single leaf Toggle into a host, exactly the shape it had. The default reads

@@ -110,39 +110,6 @@
                 <StackPanel x:Name="AppearanceHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- ── Behaviour ───────────────────────────────────────────── -->
-                <!--
-                    Auto-paste + overlay HUD : the app's user-facing behaviours
-                    around transcription. Used to live on the Recording page in
-                    slice S3 ; moved here in pass2 because they describe what
-                    Deckle does for the user, not how the capture pipeline works.
-                -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Uid="GeneralPageBehaviourHeaderLabel"
-                               Grid.Column="0"
-                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-                    <HyperlinkButton x:Name="BehaviourResetLink"
-                                     x:Uid="Settings_SectionResetLink"
-                                     Grid.Column="1"
-                                     VerticalAlignment="Bottom"
-                                     Margin="0,0,0,2"
-                                     Click="ResetBehaviour_Click" />
-                </Grid>
-
-                <!-- Composed: the overlay group (a Group descriptor — master
-                     toggle + fade/animations/position children) followed by the
-                     flat auto-paste toggle, both built from
-                     GeneralViewModel.BehaviourSettings into this host. The overlay
-                     SettingsExpander that stood here is now produced by the
-                     composer; the position ComboBox's value-matching replaces the
-                     old Tag-based combo sync in the code-behind. -->
-                <StackPanel x:Name="BehaviourHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
-
                 <!-- ── Startup ─────────────────────────────────────────────── -->
                 <Grid>
                     <Grid.ColumnDefinitions>

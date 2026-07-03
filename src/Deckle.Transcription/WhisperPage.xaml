@@ -100,6 +100,29 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
+                <!-- ── Overlay and pasting ──────────────────────────────────────
+                     The dictation experience — the on-screen HUD and auto-paste,
+                     relocated from General. Composed from WhisperViewModel.BehaviourSettings
+                     into the host below; its own section "Reset" gates active-when-dirty. -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="WhisperPageBehaviourHeaderLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                    <HyperlinkButton x:Name="BehaviourResetLink"
+                                     x:Uid="Settings_SectionResetLink"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,0,2"
+                                     Click="ResetBehaviour_Click" />
+                </Grid>
+
+                <StackPanel x:Name="BehaviourHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
                     Order : Language → Initial prompt → GPU acceleration →

@@ -676,6 +676,9 @@
   <data name="GeneralVoiceLevelCurveCard.Description" xml:space="preserve">
     <value>Shape of the response between floor and ceiling. 1.0 = linear (recommended). Higher = compress quiet, expand loud. Lower = the opposite.</value>
   </data>
+  <data name="WhisperPageBehaviourHeaderLabel.Text" xml:space="preserve">
+    <value>Overlay and pasting</value>
+  </data>
   <data name="GeneralOverlayExpander.Header" xml:space="preserve">
     <value>Show the overlay while recording</value>
   </data>
