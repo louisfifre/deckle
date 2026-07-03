@@ -5,7 +5,8 @@ namespace Deckle.Anytype;
 
 // Anytype module provider. Covers the HTTP transport to the local Anytype REST
 // API (AnytypeApiClient) and the project-management gestures layered on top
-// (SessionGestures, TaskGestures, ProjectGestures, QueryGestures). HTTP
+// (SessionGestures, TaskGestures, ProjectGestures, QueryGestures,
+// DocumentGestures). HTTP
 // request lifecycle uses the transverse Network keyword so an OS-level outage
 // (DeckleNetworkSource) correlates with API failures across modules; gesture
 // and session events carry a module-local keyword.

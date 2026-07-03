@@ -20,7 +20,7 @@ public static class ToolCatalog
 {
     public static IReadOnlyList<ToolDescriptor> Build(
         SessionGestures session, TaskGestures tasks,
-        ProjectGestures projects, QueryGestures query)
+        ProjectGestures projects, QueryGestures query, DocumentGestures documents)
     {
         return new ToolDescriptor[]
         {
@@ -162,6 +162,27 @@ public static class ToolCatalog
                     required: [Prop("content", "string", "Idea text.")]),
                 async (args, ct) =>
                     await query.CreateIdeaAsync(Str(args, "content"), ct)),
+
+            new(
+                "create_document",
+                "Create a stable reference document in the Anytype Dev space. Use documents for durable reference material: architecture, instructions, nomenclature, specifications, research, tips. Body edits after creation go through replace_section; property edits go through update.",
+                Schema(
+                    required:
+                    [
+                        Prop("name", "string", "Document title."),
+                        Prop("type", "string", "Document type, key or display name: astuce, nomenclature, reference, specification, instructions, rapport (Recherche), architecture."),
+                    ],
+                    optional:
+                    [
+                        Prop("body", "string", "Initial markdown body."),
+                        Prop("version", "string", "Document version, when the document is versioned."),
+                        Prop("system", "boolean", "Set Document système when this is a system/reference document Deckle should treat as doctrine."),
+                    ]),
+                async (args, ct) =>
+                    await documents.CreateAsync(
+                        Str(args, "name"), Str(args, "type"),
+                        StrOpt(args, "body"), StrOpt(args, "version"),
+                        BoolOpt(args, "system") ?? false, ct)),
 
             new(
                 "update",

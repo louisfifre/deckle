@@ -36,6 +36,7 @@ public class McpToolsetTests
         // The PM surface is present…
         Assert.Contains("session_start", names);
         Assert.Contains("create_task", names);
+        Assert.Contains("create_document", names);
         // …the management catalog is mounted additively…
         Assert.Contains("delete", names);
         // …and no dialogue tool leaked into the PM profile.

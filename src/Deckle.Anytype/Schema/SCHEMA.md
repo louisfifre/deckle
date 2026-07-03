@@ -97,8 +97,8 @@ départ reste dans l'ID à vie, même après renommage. D'où :
 
 ## La surface MCP
 
-**Base — 15 outils**, servis à tout consommateur, sur les classes de gestes lecture,
-création, écriture propriétés/corps, liens, journal et **cycle de vie**. Le cycle de vie
+**Base — 16 outils**, servis à tout consommateur, sur les classes de gestes lecture,
+création, écriture propriétés/corps, liens, journal, document et **cycle de vie**. Le cycle de vie
 tient en deux verbes précis : `complete` (case `done` d'une tâche, pose/retire) et
 `archive` (case `Archivé` transversale, archive/restaure — refusée sur un rapport, qui
 reste cherchable). Garde-fous tenus : **aucune création d'option**, corps protégé.
