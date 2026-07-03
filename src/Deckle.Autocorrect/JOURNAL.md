@@ -5,6 +5,12 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-04 — The stack is split across two runtime worlds; direction is DirectML with GenAI alongside
+
+Grounded in the current code (on main): the four inference stages do not share a runtime. Reranker (CamemBERT, commit + contextual) runs on plain ONNX Runtime — an `InferenceSession` encoder, CPU-bound and single-threaded (`BackgroundRerankLane`). The sentence judge runs on onnxruntime-genai (CPU int4 today, DirectML targeted). Rewrite runs on Ollama (llama.cpp / ggml). ASR runs on whisper.cpp (native ggml), not ONNX. So two stages live in the ONNX world and two in the ggml/Vulkan world — the latter being the 7900 XT's strong GPU path. The "run everything under the same system" wish is therefore a real substrate fork (ONNX/DirectML vs ggml/Vulkan), left open, not a settled convergence.
+
+Maintainer direction, firm: build the DirectML path for the judge now; onnxruntime-genai is used alongside — for the autoregressive judge/rewrite — not as the substrate for everything.
+
 ## 2026-07-03 (later) — Judge runtime stays ONNX; the DirectML block was a wrong export, not a wrong backend
 
 Refines the DirectML note below. DirectML does run blocked int4 — Microsoft ships Phi-3 as int4 AWQ block-128 on the DML EP. The block was reusing the int4 *CPU* export: a CPU int4 graph and a DML int4 graph differ (MatMulNBits weight layout, accuracy level), so ORT cannot assign the nodes to the DmlExecutionProvider and silently falls back to CPU — a partition miss, not a graph-capture failure. The unblock is a model-builder `-e dml` export from a 0.13.x builder, matched to the pinned 0.13.0 runtime. The 0.14 `DllNotFoundException` is a NuGet packaging break (DirectML 0.14.1 depends on a Managed 1.23.x that does not exist), not a model fault.
