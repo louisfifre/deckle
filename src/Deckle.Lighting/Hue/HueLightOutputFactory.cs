@@ -12,8 +12,17 @@ public static class HueLightOutputFactory
         HueBridgeClient client,
         string groupId,
         CancellationToken ct = default)
+        => await CreatePreferredAsync(new HueBridgeOutputFactoryBridge(client), groupId, ct)
+            .ConfigureAwait(false);
+
+    internal static async Task<ILightOutput> CreatePreferredAsync(
+        IHueOutputFactoryBridge bridge,
+        string groupId,
+        CancellationToken ct)
     {
-        var bridge = new HueBridgeOutputFactoryBridge(client);
+        ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
+        ct.ThrowIfCancellationRequested();
+
         var area = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
         if (area is not null && !string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
         {
@@ -22,6 +31,18 @@ public static class HueLightOutputFactory
 
         return bridge.CreateRestOutput(groupId);
     }
+
+    public static Task<ILightOutput> ConnectPreparedPreferredAsync(
+        HueBridgeClient client,
+        ILightOutput output,
+        string groupId,
+        CancellationToken ct = default)
+        => ConnectPreparedPreferredAsync(
+            new HueBridgeOutputFactoryBridge(client),
+            output,
+            groupId,
+            output is HueEntertainmentLightOutput,
+            ct);
 
     internal static async Task<ILightOutput> CreateConnectedPreferredAsync(
         IHueOutputFactoryBridge bridge,
@@ -61,6 +82,38 @@ public static class HueLightOutputFactory
         var rest = bridge.CreateRestOutput(groupId);
         await rest.ConnectAsync(ct).ConfigureAwait(false);
         return rest;
+    }
+
+    internal static async Task<ILightOutput> ConnectPreparedPreferredAsync(
+        IHueOutputFactoryBridge bridge,
+        ILightOutput output,
+        string groupId,
+        bool allowRestFallback,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        ArgumentException.ThrowIfNullOrWhiteSpace(groupId);
+        ct.ThrowIfCancellationRequested();
+
+        try
+        {
+            await output.ConnectAsync(ct).ConfigureAwait(false);
+            return output;
+        }
+        catch (OperationCanceledException)
+        {
+            await DisposeOutputBestEffortAsync(output).ConfigureAwait(false);
+            throw;
+        }
+        catch (Exception ex) when (allowRestFallback)
+        {
+            await DisposeOutputBestEffortAsync(output).ConfigureAwait(false);
+            LogEntertainmentFallback("connect_failed", ex);
+
+            var rest = bridge.CreateRestOutput(groupId);
+            await rest.ConnectAsync(ct).ConfigureAwait(false);
+            return rest;
+        }
     }
 
     private static async Task<HueEntertainmentArea?> TryResolveEntertainmentAreaAsync(

@@ -103,8 +103,15 @@ public sealed partial class AmbientEngine
             _bridgeClient = HuePairingService.Instance.Bridge
                 ?? throw new InvalidOperationException(
                     "HuePairingService restored no bridge from settings — paired state in settings.json is inconsistent.");
+
+            // Build the preferred Hue output now, but do not connect yet.
+            // For Entertainment v2, ConnectAsync sends CLIP v2
+            // `action=start` and hands the area to the bridge. Doing that
+            // before capture is ready leaves a visible gap where Hue can
+            // show its own activation state before Deckle sends the first
+            // screen-derived frame.
             _output = await HueLightOutputFactory
-                .CreateConnectedPreferredAsync(_bridgeClient, ambient.HueLastGroupId, ct)
+                .CreatePreferredAsync(_bridgeClient, ambient.HueLastGroupId, ct)
                 .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
@@ -139,6 +146,9 @@ public sealed partial class AmbientEngine
             _capture.FormatChanged += OnCaptureFormatChanged;
             ThrowIfStartAbortRequested();
 
+            _output = await HueLightOutputFactory
+                .ConnectPreparedPreferredAsync(_bridgeClient, _output, ambient.HueLastGroupId, ct)
+                .ConfigureAwait(false);
             ThrowIfStartAbortRequested();
 
             // Resolve pipeline shape after Connect (ListLightsAsync

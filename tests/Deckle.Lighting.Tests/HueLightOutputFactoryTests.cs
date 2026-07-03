@@ -7,6 +7,20 @@ namespace Deckle.Lighting.Tests;
 public sealed class HueLightOutputFactoryTests
 {
     [Fact]
+    public async Task CreatePreferredAsyncReturnsUnconnectedEntertainmentWhenAvailable()
+    {
+        var entertainment = new FakeOutput();
+        var rest = new FakeOutput();
+        var bridge = FakeBridge.WithEntertainment(entertainment, rest);
+
+        var output = await HueLightOutputFactory.CreatePreferredAsync(bridge, "7", CancellationToken.None);
+
+        Assert.Same(entertainment, output);
+        Assert.False(entertainment.IsConnected);
+        Assert.False(rest.IsConnected);
+    }
+
+    [Fact]
     public async Task CreateConnectedPreferredAsyncUsesConnectedEntertainmentWhenAvailable()
     {
         var entertainment = new FakeOutput();
@@ -60,6 +74,44 @@ public sealed class HueLightOutputFactoryTests
         Assert.Same(rest, output);
         Assert.False(entertainment.IsConnected);
         Assert.True(rest.IsConnected);
+    }
+
+    [Fact]
+    public async Task ConnectPreparedPreferredAsyncFallsBackToRestWhenEntertainmentConnectFails()
+    {
+        var entertainment = new FakeOutput { ConnectException = new InvalidOperationException("dtls failed") };
+        var rest = new FakeOutput();
+        var bridge = FakeBridge.WithEntertainment(entertainment, rest);
+
+        var output = await HueLightOutputFactory.ConnectPreparedPreferredAsync(
+            bridge,
+            entertainment,
+            "7",
+            allowRestFallback: true,
+            CancellationToken.None);
+
+        Assert.Same(rest, output);
+        Assert.True(rest.IsConnected);
+        Assert.True(entertainment.Disposed);
+    }
+
+    [Fact]
+    public async Task ConnectPreparedPreferredAsyncDoesNotFallBackOnCancellation()
+    {
+        var entertainment = new FakeOutput { ConnectException = new OperationCanceledException() };
+        var rest = new FakeOutput();
+        var bridge = FakeBridge.WithEntertainment(entertainment, rest);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => HueLightOutputFactory.ConnectPreparedPreferredAsync(
+                bridge,
+                entertainment,
+                "7",
+                allowRestFallback: true,
+                CancellationToken.None));
+
+        Assert.False(rest.IsConnected);
+        Assert.True(entertainment.Disposed);
     }
 
     private sealed class FakeBridge : IHueOutputFactoryBridge

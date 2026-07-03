@@ -8,6 +8,7 @@ namespace Deckle.Lighting;
 internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
 {
     private static readonly TimeSpan StopStreamingTimeout = TimeSpan.FromSeconds(3);
+    private static readonly LightColor RestPrePrimeColor = new(1, 1, 1);
 
     private readonly IHueEntertainmentBridgeClient _client;
     private readonly HueEntertainmentArea _area;
@@ -50,16 +51,67 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
         if (!_client.IsPaired)
             throw new InvalidOperationException("HueBridgeClient is not paired.");
 
+        ct.ThrowIfCancellationRequested();
+
+        bool streamingStarted = false;
         try
         {
+            await PrePrimeLightsAsync(ct).ConfigureAwait(false);
+
+            DeckleLightingSource.Log.EntertainmentStreamingStarting();
+            DeckleLightingSource.Log.EntertainmentStreamingStartingDetail(
+                _area.Id, _area.Name, _area.Channels.Count);
+
             await _client.SetEntertainmentStreamingAsync(_area.Id, active: true, ct).ConfigureAwait(false);
+            streamingStarted = true;
+
+            DeckleLightingSource.Log.EntertainmentTransportConnecting();
             await _transport.ConnectAsync(ct).ConfigureAwait(false);
+            DeckleLightingSource.Log.EntertainmentTransportConnected();
+
             _connected = true;
+
+            Send(BuildAllChannelColors(LightColor.Black));
+            DeckleLightingSource.Log.EntertainmentStreamPrimed(_area.Id, _area.Channels.Count);
         }
         catch
         {
-            await StopStreamingBestEffortAsync().ConfigureAwait(false);
+            _connected = false;
+            _transport.Dispose();
+            if (streamingStarted)
+                await StopStreamingBestEffortAsync().ConfigureAwait(false);
             throw;
+        }
+    }
+
+    private async Task PrePrimeLightsAsync(CancellationToken ct)
+    {
+        var lightIds = BuildDistinctLightIds();
+        if (lightIds.Length == 0) return;
+
+        DeckleLightingSource.Log.EntertainmentPrePrimeStarting();
+        DeckleLightingSource.Log.EntertainmentPrePrimeDetail(_area.Id, lightIds.Length);
+
+        try
+        {
+            var tasks = new Task[lightIds.Length];
+            for (int i = 0; i < lightIds.Length; i++)
+            {
+                // REST black maps to on:false. Keeping bulbs barely on
+                // avoids Hue's own power-on scene during action=start.
+                tasks[i] = _client.SetLightColorAsync(lightIds[i], RestPrePrimeColor, ct);
+            }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DeckleLightingSource.Log.EntertainmentPrePrimeFailed();
+            DeckleLightingSource.Log.EntertainmentPrePrimeFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -67,11 +119,7 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
     {
         EnsureConnected();
 
-        var colors = new HueEntertainmentChannelColor[_area.Channels.Count];
-        for (int i = 0; i < _area.Channels.Count; i++)
-            colors[i] = new HueEntertainmentChannelColor(_area.Channels[i].ChannelId, color);
-
-        Send(colors);
+        Send(BuildAllChannelColors(color));
         return Task.CompletedTask;
     }
 
@@ -138,6 +186,25 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
             _transport.Send(frame);
     }
 
+    private HueEntertainmentChannelColor[] BuildAllChannelColors(LightColor color)
+    {
+        var colors = new HueEntertainmentChannelColor[_area.Channels.Count];
+        for (int i = 0; i < _area.Channels.Count; i++)
+            colors[i] = new HueEntertainmentChannelColor(_area.Channels[i].ChannelId, color);
+        return colors;
+    }
+
+    private string[] BuildDistinctLightIds()
+    {
+        var lightIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var channel in _area.Channels)
+        {
+            if (!string.IsNullOrWhiteSpace(channel.LightId))
+                lightIds.Add(channel.LightId);
+        }
+        return lightIds.ToArray();
+    }
+
     private async Task StopStreamingBestEffortAsync()
     {
         try
@@ -179,6 +246,7 @@ internal interface IHueEntertainmentBridgeClient
 {
     bool IsPaired { get; }
     Task SetEntertainmentStreamingAsync(string entertainmentConfigurationId, bool active, CancellationToken ct = default);
+    Task SetLightColorAsync(string lightId, LightColor color, CancellationToken ct = default);
     Task IdentifyLightAsync(string lightId, CancellationToken ct = default);
     Task StopIdentifyAsync(string lightId, CancellationToken ct = default);
 }
