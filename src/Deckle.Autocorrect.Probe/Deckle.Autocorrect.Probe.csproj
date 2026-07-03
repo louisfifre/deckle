@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Deckle.Autocorrect.Probe</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Benchmark metric logic is internal; tests reach it through this seam. -->
+    <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <ProjectReference Include="..\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+  </ItemGroup>
+</Project>

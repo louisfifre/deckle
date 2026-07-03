@@ -393,6 +393,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
+│   │   │   ├── ISentenceScorer.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
 │   │   │   ├── SentenceCorpus.cs
@@ -462,6 +463,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CamembertSentenceReranker.cs
 │   │   ├── Deckle.Autocorrect.Mlm.csproj
 │   │   └── MlmProbe.cs
+│   ├── Deckle.Autocorrect.Onnx/
+│   │   ├── CandidateCompletionPlan.cs
+│   │   ├── Deckle.Autocorrect.Onnx.csproj
+│   │   └── OnnxSentenceScorer.cs
+│   ├── Deckle.Autocorrect.Probe/
+│   │   ├── CorrectionBenchmarkCase.cs
+│   │   ├── CorrectionBenchmarkCommand.cs
+│   │   ├── CorrectionBenchmarkCorpus.cs
+│   │   ├── CorrectionBenchmarkResult.cs
+│   │   ├── CorrectionBenchmarkSummary.cs
+│   │   ├── Deckle.Autocorrect.Probe.csproj
+│   │   ├── ModelPathResolver.cs
+│   │   ├── ProbeArguments.cs
+│   │   ├── Program.cs
+│   │   └── SingleProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── IPathControl.cs
@@ -1068,6 +1084,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
+│   │   ├── AssemblyInfo.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
@@ -1080,8 +1097,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
+│   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
+│   │   ├── CorrectionBenchmarkSummaryTests.cs
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
@@ -1094,6 +1113,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MorphalouReaderTests.cs
+│   │   ├── OnnxSentenceScorerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── RestorationEvaluatorTests.cs

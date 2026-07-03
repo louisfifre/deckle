@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Autocorrect.Onnx</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pure scoring geometry is internal; tests reach it through this seam. -->
+    <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The autocorrect sentence scorer contract and closed-candidate outcome. -->
+    <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <!-- ONNX Runtime GenAI CPU package for the first forced-decoding scorer POC.
+         DirectML stays a later runtime choice after the C# logits path is proven. -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" />
+  </ItemGroup>
+</Project>
