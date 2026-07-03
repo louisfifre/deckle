@@ -466,7 +466,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Autocorrect.Onnx/
 │   │   ├── CandidateCompletionPlan.cs
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
-│   │   └── OnnxSentenceScorer.cs
+│   │   ├── OnnxSentenceScorer.cs
+│   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Autocorrect.Probe/
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs
@@ -1120,6 +1121,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── OnnxSentenceScorerTests.cs
+│   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
