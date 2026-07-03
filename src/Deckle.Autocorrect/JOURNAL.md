@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-03 — Qwen 4B baseline, Luth benchmark before runtime change
+
+Chose Qwen3-4B ONNX Runtime GenAI CPU int4 as the immediate closed-candidate judge baseline. Luth stays a candidate because its French-specialized 0.6B/1.7B models are public and benchmarked above their Qwen bases on French tasks, but the verified ready artifacts are Hugging Face `safetensors` and GGUF quantizations, not an ONNX Runtime GenAI export. Next step is an offline Luth benchmark on the same closed-candidate traps before either converting Luth to ONNX GenAI or adding a GGUF/llama.cpp runtime.
+
 ## 2026-07-03 — ONNX GenAI scorer kept outside the engine
 
 Chose a separate `Deckle.Autocorrect.Onnx` module for the first ONNX Runtime GenAI sentence scorer. The scorer compares closed full-sentence candidates by forced token log-probabilities and returns margin plus abstention reason; live sentence-stage integration and DirectML remain outside this first proof.
