@@ -602,21 +602,10 @@
   <data name="SettingsNavRecording.Content" xml:space="preserve">
     <value>Recording</value>
   </data>
-  <data name="SettingsNavTranscription.Content" xml:space="preserve">
-    <value>Transcription</value>
-  </data>
-  <data name="SettingsNavRewriting.Content" xml:space="preserve">
-    <value>Rewriting</value>
-  </data>
-  <data name="SettingsNavAutocorrect.Content" xml:space="preserve">
-    <value>Autocorrect</value>
-  </data>
-  <data name="SettingsNavAmbient.Content" xml:space="preserve">
-    <value>Ambient Light</value>
-  </data>
-  <data name="SettingsNavTrackpad.Content" xml:space="preserve">
-    <value>Trackpad</value>
-  </data>
+  <!-- The module pages' nav labels (Transcription, Rewriting, Autocorrect,
+       Ambient Light, Trackpad) moved to each owning module's own .resw as
+       SettingsModuleNavLabel — the shell builds those items from
+       SettingsModuleRegistry and resolves their label from the module PRI. -->
   <data name="SettingsNavDiagnostics.Content" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
@@ -635,6 +624,29 @@
   </data>
   <data name="Settings_ResetAll.Content" xml:space="preserve">
     <value>Reset all</value>
+  </data>
+
+  <!-- Whole-page "Reset all" buttons on GeneralPage and DiagnosticsPage (title
+       row, trailing edge). Same affordance as WhisperPage / LlmPage; both are
+       active-when-dirty. General's has no dialog (reversible preferences);
+       Diagnostics' confirms because it clears recorded consents. -->
+  <data name="GeneralPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset this page to defaults</value>
+  </data>
+  <data name="GeneralPageResetAllLabel.Text" xml:space="preserve">
+    <value>Reset all</value>
+  </data>
+  <data name="DiagnosticsPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset this page to defaults</value>
+  </data>
+  <data name="DiagnosticsPageResetAllLabel.Text" xml:space="preserve">
+    <value>Reset all</value>
+  </data>
+  <data name="Settings_ResetDiagnosticsDialog_Title" xml:space="preserve">
+    <value>Reset all settings?</value>
+  </data>
+  <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
+    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
   </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────

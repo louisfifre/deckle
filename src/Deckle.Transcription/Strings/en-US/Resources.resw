@@ -548,26 +548,6 @@
     <value>installed</value>
   </data>
 
-  <!-- ─── Settings shell ─────────────────────────────────────────────
-       NavigationView host: TitleBar + four nav items (3 main pages +
-       Logs in the footer). Window.Title XAML attribute is overridden
-       in code-behind, only the TitleBar control title is loc'd. -->
-  <data name="SettingsTitleBar.Title" xml:space="preserve">
-    <value>Deckle Settings</value>
-  </data>
-  <data name="SettingsNavGeneral.Content" xml:space="preserve">
-    <value>General</value>
-  </data>
-  <data name="SettingsNavTranscription.Content" xml:space="preserve">
-    <value>Transcription</value>
-  </data>
-  <data name="SettingsNavRewriting.Content" xml:space="preserve">
-    <value>Rewriting</value>
-  </data>
-  <data name="SettingsNavLogs.Content" xml:space="preserve">
-    <value>Logs</value>
-  </data>
-
   <!-- ─── Settings — common section actions ──────────────────────────
        Per-section "Reset" hyperlink and its tooltip. Reused on every
        Settings section header (Appearance, Startup, Recording, etc.). -->
@@ -1471,6 +1451,9 @@
   </data>
   <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
     <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
+  </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Transcription</value>
   </data>
 
 </root>

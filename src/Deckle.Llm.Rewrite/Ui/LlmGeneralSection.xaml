@@ -1,14 +1,7 @@
 <UserControl
     x:Class="Deckle.Llm.Rewrite.LlmGeneralSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:llm="using:Deckle.Llm.Rewrite">
-
-    <UserControl.Resources>
-        <llm:BoolToVisibilityConverter x:Key="BoolToVisibility" />
-    </UserControl.Resources>
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
         <Grid>
@@ -26,26 +19,13 @@
                              Click="ResetSection_Click" />
         </Grid>
 
-        <controls:SettingsCard x:Uid="LlmEnableCard"
-                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
-            <ToggleSwitch x:Name="EnabledToggle"
-                          Toggled="EnabledToggle_Toggled" />
-        </controls:SettingsCard>
-
-        <!-- Mask-not-grey: the endpoint hides with the rest of the page when
-             rewriting is off (Louis's decision), rather than greying or staying
-             an always-visible prerequisite. -->
-        <controls:SettingsExpander x:Uid="LlmEndpointExpander"
-                                   HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Endpoint}}"
-                                   Visibility="{x:Bind IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-            <controls:SettingsExpander.Items>
-                <controls:SettingsCard ContentAlignment="Vertical">
-                    <TextBox x:Name="EndpointBox"
-                             MinWidth="400"
-                             PlaceholderText="http://localhost:11434/api/chat"
-                             TextChanged="EndpointBox_TextChanged" />
-                </controls:SettingsCard>
-            </controls:SettingsExpander.Items>
-        </controls:SettingsExpander>
+        <!-- Composed region — the "Enable rewriting" master toggle and the
+             "Ollama endpoint" URL, declared in LlmGeneralViewModel.Settings.cs
+             and built into this host by ComposeSettings(). The endpoint carries
+             VisibleWhen(() => Enabled), so it collapses with the rest of the page
+             when rewriting is off (mask-not-grey). Each card carries its own
+             inline reset off the POCO default. -->
+        <StackPanel x:Name="ComposedHost"
+                    Spacing="{StaticResource SettingsCardSpacing}" />
     </StackPanel>
 </UserControl>

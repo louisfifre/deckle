@@ -139,6 +139,14 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtNavTiming                         = 70;
     public const int EvtPageReady                         = 71;
 
+    // ── Settings module nav registry ──
+    // A module contributing / withdrawing its settings page in the shell's
+    // NavigationView (SettingsModuleRegistry). Plumbing detail with an id and a
+    // tag ⇒ Verbose; a resolution failure of the tag surfaces on its own through
+    // the NavFailedTypeNotFound milestone when the item is selected.
+    public const int EvtSettingsModuleRegistered          = 72;
+    public const int EvtSettingsModuleUnregistered        = 73;
+
     // ── Bootstrap ───────────────────────────────────────────────────────
 
     [Event(EvtMigrationDispatched,
@@ -818,5 +826,25 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
+    }
+
+    // ── Settings module nav registry ────────────────────────────────────
+
+    [Event(EvtSettingsModuleRegistered,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "settings module registered | id={0} | tag={1}")]
+    public void SettingsModuleRegistered(string id, string tag)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsModuleRegistered, id, tag);
+    }
+
+    [Event(EvtSettingsModuleUnregistered,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "settings module unregistered | id={0}")]
+    public void SettingsModuleUnregistered(string id)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsModuleUnregistered, id);
     }
 }

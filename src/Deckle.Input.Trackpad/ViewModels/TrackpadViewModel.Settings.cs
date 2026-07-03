@@ -40,10 +40,10 @@ public partial class TrackpadViewModel
             glyph: Glyphs.Trackpad,
             defaultValue: () => new TrackpadSettings().Enabled),
 
-        Setting.Slider("TrackpadPage_SpeedCard",
+        Setting.Magnitude("TrackpadPage_SpeedCard",
             () => DragSpeed,
             value => DragSpeed = value,
-            new SliderArgs(0.25, 3.0, 0.05, Unit: "×"),
+            new MagnitudeArgs(0.25, 3.0, Unit: "×"),
             glyph: Glyphs.Tuning,
             defaultValue: () => new TrackpadSettings().DragSpeed),
     ];

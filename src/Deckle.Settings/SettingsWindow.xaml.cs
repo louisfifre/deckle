@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -37,6 +38,11 @@ public sealed partial class SettingsWindow : Window
     // Callback injected by App to open the shared LogWindow from the
     // NavigationView "Logs" footer item. Left null = item has no effect.
     public Action? OnShowLogsRequested { get; set; }
+
+    // The module nav items this window inserted from SettingsModuleRegistry,
+    // tracked so a live registry change (a module installed / removed while the
+    // window is open) can remove the old band before rebuilding it.
+    private readonly List<NavigationViewItem> _moduleNavItems = new();
 
     public SettingsWindow()
     {
@@ -91,6 +97,14 @@ public sealed partial class SettingsWindow : Window
         Nav.PaneOpened += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
         Nav.PaneClosed += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
 
+        // Materialise the module-owned pages from the registry into the nav
+        // (between Recording and Diagnostics) before the initial selection, so
+        // the first item is present and selectable. Rebuild on registry change so
+        // an install / uninstall while the window is open reflects live.
+        BuildModuleNavItems();
+        SettingsModuleRegistry.Changed += OnModulesChanged;
+        this.Closed += (_, _) => SettingsModuleRegistry.Changed -= OnModulesChanged;
+
         // Initial selection → triggers SelectionChanged → navigates to
         // GeneralPage. One navigation path, no double-navigation.
         Nav.SelectedItem = Nav.MenuItems[0];
@@ -132,6 +146,51 @@ public sealed partial class SettingsWindow : Window
         DeckleThemeSource.Log.ThemeChanged(
             "settings", _lastTheme.ToString(), to.ToString(), source);
         _lastTheme = to;
+    }
+
+    // ── Module nav band ──────────────────────────────────────────────────────
+    //
+    // Builds one NavigationViewItem per registered module and inserts them between
+    // the Recording anchor and the Diagnostics anchor, in the registry's Order.
+    // Idempotent: any items a previous call inserted are removed first, so a live
+    // registry change rebuilds the band rather than duplicating it. Labels resolve
+    // from the OWNING module's PRI subtree (Loc.GetFrom) — the module ships its own
+    // nav wording — and the glyph is a Glyphs.* character built straight into a
+    // FontIcon, the same code-side path the composer uses.
+    private void BuildModuleNavItems()
+    {
+        foreach (NavigationViewItem old in _moduleNavItems)
+            Nav.MenuItems.Remove(old);
+        _moduleNavItems.Clear();
+
+        // Insert before Diagnostics; if that anchor is somehow absent, append to
+        // the end of the primary menu rather than throwing.
+        int insertAt = Nav.MenuItems.IndexOf(DiagnosticsNavItem);
+        if (insertAt < 0) insertAt = Nav.MenuItems.Count;
+
+        foreach (SettingsModuleDescriptor module in SettingsModuleRegistry.Modules)
+        {
+            var item = new NavigationViewItem
+            {
+                Content = Loc.GetFrom(module.OwningAssembly, module.LabelKey),
+                Tag = module.PageTag,
+                Icon = new FontIcon { Glyph = module.Glyph },
+            };
+            Nav.MenuItems.Insert(insertAt, item);
+            _moduleNavItems.Add(item);
+            insertAt++;
+        }
+    }
+
+    // Registry changed (a module installed / removed) — rebuild the band. Register
+    // / Unregister may be called from any thread, so marshal onto the UI thread
+    // before touching the NavigationView.
+    private void OnModulesChanged()
+    {
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "ui-update", caller: "settings-window-modules",
+            callback: BuildModuleNavItems,
+            rejectSource: "SETTINGS", rejectWhat: "module nav rebuild");
     }
 
     public void ShowAndActivate(string? pageTag = null)
