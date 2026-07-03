@@ -12,6 +12,7 @@ public class ProjectGesturesTests
 {
     const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string EpicId    = "bafyreiepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static ProjectGestures NewGestures(FakeAnytypeServer server)
     {
@@ -30,7 +31,7 @@ public class ProjectGesturesTests
 
         // No epic, so the only POST is the object creation — LastBodyFor("POST")
         // is the creation body (with an epic, the trailing POST is the list-add).
-        await NewGestures(server).CreateAsync("Mon projet");
+        await NewGestures(server).CreateAsync("Mon projet", ct: Ct);
 
         // The API ignores the default template unless template_id is named; the
         // creation POST must carry the project type's frozen template id.
@@ -56,7 +57,7 @@ public class ProjectGesturesTests
             ["object"] = new JsonObject { ["id"] = EpicId, ["name"] = "Deckle" },
         });
 
-        string digest = await NewGestures(server).CreateAsync("Mon projet", epic: EpicId);
+        string digest = await NewGestures(server).CreateAsync("Mon projet", epic: EpicId, ct: Ct);
 
         // The gesture completes and reports the membership.
         Assert.Contains("Ajouté à l'epic Deckle", digest);

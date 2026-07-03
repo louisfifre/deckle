@@ -17,6 +17,7 @@ namespace Deckle.Anytype.Tests;
 public class LiveTagResolverTests
 {
     const string TagPropId = "bafyreiTagPropaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static LiveTagResolver NewResolver(FakeAnytypeServer server) =>
         new(new AnytypeApiClient(server.Credentials));
@@ -66,7 +67,7 @@ public class LiveTagResolverTests
         server.OnListPropertyTags(TagPropId, TagsPage(("urgent", "Urgent")));
 
         // Caller passes the DISPLAY NAME; it must resolve to the existing wire key.
-        string key = await NewResolver(server).ResolveAsync(DevSpace.Props.Tag, "Urgent");
+        string key = await NewResolver(server).ResolveAsync(DevSpace.Props.Tag, "Urgent", Ct);
 
         Assert.Equal("urgent", key);
     }
@@ -81,7 +82,7 @@ public class LiveTagResolverTests
         server.OnListPropertyTags(TagPropId, TagsPage(("urgent", "Urgent")));
 
         ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => NewResolver(server).ResolveAsync(DevSpace.Props.Tag, "inconnu"));
+            () => NewResolver(server).ResolveAsync(DevSpace.Props.Tag, "inconnu", Ct));
 
         Assert.Contains("inconnu", ex.Message);
         Assert.Contains("urgent", ex.Message);

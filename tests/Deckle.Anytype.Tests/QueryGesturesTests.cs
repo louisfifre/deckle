@@ -16,6 +16,7 @@ namespace Deckle.Anytype.Tests;
 public class QueryGesturesTests
 {
     const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static QueryGestures NewGestures(FakeAnytypeServer server)
     {
@@ -76,7 +77,7 @@ public class QueryGesturesTests
         var props = new JsonObject { ["tag"] = "urgent" };
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).UpdateAsync(TaskId, null, props));
+            () => NewGestures(server).UpdateAsync(TaskId, null, props, Ct));
 
         Assert.Contains("tag", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
@@ -94,7 +95,7 @@ public class QueryGesturesTests
         // must resolve without touching the live options endpoint.
 
         var props = new JsonObject { ["etat"] = "En cours" };
-        await NewGestures(server).UpdateAsync(TaskId, null, props);
+        await NewGestures(server).UpdateAsync(TaskId, null, props, Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         var entries = Assert.IsType<JsonArray>(patched["properties"]);
@@ -115,7 +116,7 @@ public class QueryGesturesTests
         var props = new JsonObject { ["etat"] = "pas-un-etat" };
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => NewGestures(server).UpdateAsync(TaskId, null, props));
+            () => NewGestures(server).UpdateAsync(TaskId, null, props, Ct));
 
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
@@ -131,7 +132,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, TaskObject());
         server.OnPatchObject(TaskId, TaskObject());
 
-        await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", null);
+        await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", null, Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         Assert.Equal("Nouveau titre", patched["name"]!.GetValue<string>());
@@ -148,7 +149,7 @@ public class QueryGesturesTests
         server.OnPatchObject(TaskId, TaskObject());
 
         var props = new JsonObject { ["etat"] = "En cours" };
-        await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", props);
+        await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", props, Ct);
 
         // Exactly one PATCH carried both the root name and the property entries.
         Assert.Equal(1, server.Requests.Count(r => r.Method == "PATCH"));
@@ -167,7 +168,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, TaskObject());
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => NewGestures(server).UpdateAsync(TaskId, "   ", null));
+            () => NewGestures(server).UpdateAsync(TaskId, "   ", null, Ct));
 
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
@@ -181,7 +182,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, TaskObject());
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => NewGestures(server).UpdateAsync(TaskId, null, null));
+            () => NewGestures(server).UpdateAsync(TaskId, null, null, Ct));
 
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
@@ -195,7 +196,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, RapportObject());
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).UpdateAsync(TaskId, "Un autre titre", null));
+            () => NewGestures(server).UpdateAsync(TaskId, "Un autre titre", null, Ct));
 
         Assert.Contains("replace_section", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
@@ -210,7 +211,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, TaskObject());
         server.OnPatchObject(TaskId, TaskObject());
 
-        await NewGestures(server).ArchiveAsync(TaskId);
+        await NewGestures(server).ArchiveAsync(TaskId, ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
@@ -225,7 +226,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, TaskObject());
         server.OnPatchObject(TaskId, TaskObject());
 
-        await NewGestures(server).ArchiveAsync(TaskId, value: false);
+        await NewGestures(server).ArchiveAsync(TaskId, value: false, ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
@@ -241,7 +242,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, RapportObject());
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).ArchiveAsync(TaskId));
+            () => NewGestures(server).ArchiveAsync(TaskId, ct: Ct));
 
         Assert.Contains("Archivé", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
@@ -262,7 +263,7 @@ public class QueryGesturesTests
             "# Tâche   \n\n## État   \nEn cours sur module\\_X.   \n\n## Notes   \nrien   "));
 
         string digest = await NewGestures(server)
-            .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.");
+            .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.", Ct);
 
         // The PATCH carried the spliced document: the target body replaced, the
         // « Notes » section copied byte-for-byte.
@@ -283,7 +284,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, BodyObject("## Présent\ncorps"));
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).ReplaceSectionAsync(TaskId, "Absent", "x"));
+            () => NewGestures(server).ReplaceSectionAsync(TaskId, "Absent", "x", Ct));
 
         // Strict, and helpful: the message names the present headings to retry with.
         Assert.Contains("introuvable", ex.Message);
@@ -298,7 +299,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, BodyObject("## Doublon\na\n## Doublon\nb"));
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).ReplaceSectionAsync(TaskId, "Doublon", "x"));
+            () => NewGestures(server).ReplaceSectionAsync(TaskId, "Doublon", "x", Ct));
 
         Assert.Contains("ambig", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
@@ -314,7 +315,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, BodyObject("## État\nancien"));
         server.OnPatchObject(TaskId, BodyObject("## État\nancien"));
 
-        string digest = await NewGestures(server).ReplaceSectionAsync(TaskId, "État", "nouveau");
+        string digest = await NewGestures(server).ReplaceSectionAsync(TaskId, "État", "nouveau", Ct);
 
         Assert.Contains("vérification en échec", digest);
     }
@@ -328,7 +329,7 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, BodyObject("## Groupe\n### enfant\nx\n## Fin\nz"));
         server.OnPatchObject(TaskId, BodyObject("## Groupe   \nrésumé   \n## Fin   \nz   "));
 
-        string digest = await NewGestures(server).ReplaceSectionAsync(TaskId, "Groupe", "résumé");
+        string digest = await NewGestures(server).ReplaceSectionAsync(TaskId, "Groupe", "résumé", Ct);
 
         Assert.Contains("vérifié", digest);
     }

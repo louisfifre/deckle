@@ -98,15 +98,16 @@ public class McpHttpHostTests
         $$$"""{"jsonrpc":"2.0","id":{{{id}}},"method":"initialize","params":{"protocolVersion":"{{{version}}}"}}""";
 
     const string ToolsListBody = """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static async Task<JsonObject> BodyJson(HttpResponseMessage response) =>
-        (JsonObject)JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
+        (JsonObject)JsonNode.Parse(await response.Content.ReadAsStringAsync(Ct))!;
 
     // Open a session for one bearer and return its id from the response header, so a
     // follow-up can route on it. Used by every session-scoped test.
     static async Task<string> OpenSession(Harness h, string bearer)
     {
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, bearer, InitializeBody()));
+        using var response = await h.Client.SendAsync(Post(h.BaseUrl, bearer, InitializeBody()), Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return response.Headers.GetValues("Mcp-Session-Id").Single();
     }
@@ -124,7 +125,7 @@ public class McpHttpHostTests
     {
         await using var h = Harness.Start();
 
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, bearer: null, InitializeBody()));
+        using var response = await h.Client.SendAsync(Post(h.BaseUrl, bearer: null, InitializeBody()), Ct);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Contains(response.Headers.WwwAuthenticate, v => v.Scheme == "Bearer");
@@ -135,7 +136,7 @@ public class McpHttpHostTests
     {
         await using var h = Harness.Start();
 
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, "not-a-real-token", InitializeBody()));
+        using var response = await h.Client.SendAsync(Post(h.BaseUrl, "not-a-real-token", InitializeBody()), Ct);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -149,12 +150,12 @@ public class McpHttpHostTests
 
         // A present, cross-site Origin is the DNS-rebinding case the spec guards.
         using var foreign = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody(), origin: "http://evil.example"));
+            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody(), origin: "http://evil.example"), Ct);
         Assert.Equal(HttpStatusCode.Forbidden, foreign.StatusCode);
 
         // A non-browser client sends no Origin at all — that must pass through.
         using var absent = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody()));
+            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody()), Ct);
         Assert.Equal(HttpStatusCode.OK, absent.StatusCode);
     }
 
@@ -166,7 +167,7 @@ public class McpHttpHostTests
         await using var h = Harness.Start();
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody(version: "2025-06-18")));
+            Post(h.BaseUrl, h.ClaudeBearer, InitializeBody(version: "2025-06-18")), Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(response.Headers.Contains("Mcp-Session-Id"));
@@ -185,7 +186,7 @@ public class McpHttpHostTests
         string session = await OpenSession(h, h.ClaudeBearer);
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: session));
+            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: session), Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         // claude is the supervised profile: the destructive delete tool is mounted.
@@ -199,7 +200,7 @@ public class McpHttpHostTests
         string session = await OpenSession(h, h.CodexBearer);
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.CodexBearer, ToolsListBody, sessionId: session));
+            Post(h.BaseUrl, h.CodexBearer, ToolsListBody, sessionId: session), Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var names = ToolNames(await BodyJson(response));
@@ -215,7 +216,7 @@ public class McpHttpHostTests
     {
         await using var h = Harness.Start();
 
-        using var response = await h.Client.SendAsync(Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody));
+        using var response = await h.Client.SendAsync(Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody), Ct);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -226,7 +227,7 @@ public class McpHttpHostTests
         await using var h = Harness.Start();
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: "deadbeef"));
+            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: "deadbeef"), Ct);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -239,7 +240,7 @@ public class McpHttpHostTests
         string claudeSession = await OpenSession(h, h.ClaudeBearer);
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.CodexBearer, ToolsListBody, sessionId: claudeSession));
+            Post(h.BaseUrl, h.CodexBearer, ToolsListBody, sessionId: claudeSession), Ct);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -255,10 +256,10 @@ public class McpHttpHostTests
         using var response = await h.Client.SendAsync(Post(
             h.BaseUrl, h.ClaudeBearer,
             """{"jsonrpc":"2.0","method":"notifications/initialized"}""",
-            sessionId: session));
+            sessionId: session), Ct);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.Equal(string.Empty, await response.Content.ReadAsStringAsync());
+        Assert.Equal(string.Empty, await response.Content.ReadAsStringAsync(Ct));
     }
 
     [Fact]
@@ -269,7 +270,7 @@ public class McpHttpHostTests
         // A batch (JSON array) is a JSON-RPC-level refusal: the request was delivered,
         // so the transport answers 200 and the failure is in the payload (-32600).
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, """[{"jsonrpc":"2.0","id":1,"method":"ping"}]"""));
+            Post(h.BaseUrl, h.ClaudeBearer, """[{"jsonrpc":"2.0","id":1,"method":"ping"}]"""), Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonObject error = (JsonObject)(await BodyJson(response))["error"]!;
@@ -282,7 +283,7 @@ public class McpHttpHostTests
         await using var h = Harness.Start();
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, "}{ not json"));
+            Post(h.BaseUrl, h.ClaudeBearer, "}{ not json"), Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonObject error = (JsonObject)(await BodyJson(response))["error"]!;
@@ -297,7 +298,7 @@ public class McpHttpHostTests
         await using var h = Harness.Start();
 
         using var response = await h.Client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, h.BaseUrl));
+            new HttpRequestMessage(HttpMethod.Get, h.BaseUrl), Ct);
 
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
     }
@@ -309,7 +310,7 @@ public class McpHttpHostTests
         // A path that is not the MCP endpoint: the listener answers 404 before anything else.
         string wrongPath = h.BaseUrl.Replace(McpHttpHost.EndpointPath, "/nope");
 
-        using var response = await h.Client.SendAsync(Post(wrongPath, h.ClaudeBearer, InitializeBody()));
+        using var response = await h.Client.SendAsync(Post(wrongPath, h.ClaudeBearer, InitializeBody()), Ct);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -325,12 +326,12 @@ public class McpHttpHostTests
         var delete = new HttpRequestMessage(HttpMethod.Delete, h.BaseUrl);
         delete.Headers.TryAddWithoutValidation("Authorization", $"Bearer {h.ClaudeBearer}");
         delete.Headers.TryAddWithoutValidation("Mcp-Session-Id", session);
-        using var deleteResponse = await h.Client.SendAsync(delete);
+        using var deleteResponse = await h.Client.SendAsync(delete, Ct);
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
         // The id is now forgotten: a follow-up on it is a 404, the server having torn it down.
         using var followUp = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: session));
+            Post(h.BaseUrl, h.ClaudeBearer, ToolsListBody, sessionId: session), Ct);
         Assert.Equal(HttpStatusCode.NotFound, followUp.StatusCode);
     }
 }

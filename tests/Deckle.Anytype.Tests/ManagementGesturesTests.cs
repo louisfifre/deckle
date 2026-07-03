@@ -12,6 +12,7 @@ namespace Deckle.Anytype.Tests;
 public class ManagementGesturesTests
 {
     const string ObjId = "bafyreiObjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static ManagementGestures NewGestures(FakeAnytypeServer server)
     {
@@ -37,7 +38,7 @@ public class ManagementGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ObjId, Obj());
 
-        string digest = await NewGestures(server).DeleteAsync(ObjId);
+        string digest = await NewGestures(server).DeleteAsync(ObjId, ct: Ct);
 
         // The preview spells out the id (the confirmation handle) and the recall.
         Assert.Contains(ObjId, digest);
@@ -53,7 +54,7 @@ public class ManagementGesturesTests
         server.OnGetObject(ObjId, Obj());
         server.OnDeleteObject(ObjId, new JsonObject()); // empty body is tolerated
 
-        string digest = await NewGestures(server).DeleteAsync(ObjId, confirm: true);
+        string digest = await NewGestures(server).DeleteAsync(ObjId, confirm: true, ct: Ct);
 
         Assert.Contains(server.Requests,
             r => r.Method == "DELETE" && r.Path.EndsWith($"/objects/{ObjId}"));

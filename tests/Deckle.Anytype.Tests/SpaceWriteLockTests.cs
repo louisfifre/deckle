@@ -14,6 +14,7 @@ namespace Deckle.Anytype.Tests;
 public class SpaceWriteLockTests : IDisposable
 {
     private readonly string _dir;
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     public SpaceWriteLockTests()
     {
@@ -31,18 +32,18 @@ public class SpaceWriteLockTests : IDisposable
     {
         var sut = new SpaceWriteLock(_dir);
 
-        IDisposable first = await sut.AcquireAsync("update", "obj-1");
+        IDisposable first = await sut.AcquireAsync("update", "obj-1", Ct);
 
-        Task<IDisposable> second = sut.AcquireAsync("update", "obj-1");
+        Task<IDisposable> second = sut.AcquireAsync("update", "obj-1", Ct);
 
         // The second acquisition must not complete while the first is held.
-        await Task.Delay(150);
+        await Task.Delay(150, Ct);
         Assert.False(second.IsCompleted);
 
         first.Dispose();
 
         // Once released, it is granted within a couple of backoff cycles.
-        IDisposable granted = await second.WaitAsync(TimeSpan.FromSeconds(5));
+        IDisposable granted = await second.WaitAsync(TimeSpan.FromSeconds(5), Ct);
         Assert.NotNull(granted);
         granted.Dispose();
     }
@@ -52,9 +53,9 @@ public class SpaceWriteLockTests : IDisposable
     {
         var sut = new SpaceWriteLock(_dir);
 
-        (await sut.AcquireAsync("update", "obj-1")).Dispose();
+        (await sut.AcquireAsync("update", "obj-1", Ct)).Dispose();
 
-        IDisposable again = await sut.AcquireAsync("update", "obj-1");
+        IDisposable again = await sut.AcquireAsync("update", "obj-1", Ct);
         Assert.NotNull(again);
         again.Dispose();
     }

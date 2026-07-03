@@ -18,6 +18,7 @@ public class TaskGesturesTests
     // A plausible Anytype object id: >40 chars and "bafy"-prefixed so the resolver
     // treats it as an id directly instead of searching.
     const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static TaskGestures NewGestures(FakeAnytypeServer server)
     {
@@ -48,7 +49,7 @@ public class TaskGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnPostObject(TaskObject(""));
 
-        await NewGestures(server).CreateAsync(ProjectId, "Ma tâche", type: "production");
+        await NewGestures(server).CreateAsync(ProjectId, "Ma tâche", type: "production", ct: Ct);
 
         // The API ignores the default template unless template_id is named; the
         // creation POST must carry the task type's frozen template id.
@@ -66,7 +67,7 @@ public class TaskGesturesTests
         server.OnGetObject(TaskId, TaskObject(body));
         server.OnPatchObject(TaskId, TaskObject(body)); // PATCH echoes an object
 
-        await NewGestures(server).SubtaskAsync(TaskId, "nouvelle étape");
+        await NewGestures(server).SubtaskAsync(TaskId, "nouvelle étape", ct: Ct);
 
         // The PATCH rewrites the whole markdown: original body preserved verbatim,
         // a new "- [ ] label" line tacked on at the end.
@@ -85,7 +86,7 @@ public class TaskGesturesTests
 
         // Label "brief" matches "Rédiger le BRIEF" by case-insensitive contains
         // (the differing-case portion is ASCII, so the fold is unambiguous).
-        await NewGestures(server).SubtaskAsync(TaskId, "brief");
+        await NewGestures(server).SubtaskAsync(TaskId, "brief", ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
@@ -101,7 +102,7 @@ public class TaskGesturesTests
         server.OnGetObject(TaskId, TaskObject(body));
         server.OnPatchObject(TaskId, TaskObject(body));
 
-        await NewGestures(server).SubtaskAsync(TaskId, "terminé", done: true);
+        await NewGestures(server).SubtaskAsync(TaskId, "terminé", done: true, ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
@@ -117,7 +118,7 @@ public class TaskGesturesTests
         server.OnGetObject(TaskId, TaskObject(body));
         server.OnPatchObject(TaskId, TaskObject(body));
 
-        await NewGestures(server).SubtaskAsync(TaskId, "une étape", done: true);
+        await NewGestures(server).SubtaskAsync(TaskId, "une étape", done: true, ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         string next = patched["markdown"]!.GetValue<string>();
@@ -133,7 +134,7 @@ public class TaskGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnPatchObject(TaskId, TaskObject(""));
 
-        await NewGestures(server).CompleteAsync(TaskId);
+        await NewGestures(server).CompleteAsync(TaskId, ct: Ct);
 
         // The PATCH carries properties:[{key:"done", checkbox:true}].
         JsonObject patched = server.LastBodyFor("PATCH");
@@ -151,7 +152,7 @@ public class TaskGesturesTests
         server.OnPatchObject(TaskId, TaskObject(""));
 
         // The décochage path: value:false clears the done checkbox.
-        await NewGestures(server).CompleteAsync(TaskId, value: false);
+        await NewGestures(server).CompleteAsync(TaskId, value: false, ct: Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         JsonObject doneProp = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());

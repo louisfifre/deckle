@@ -10,6 +10,8 @@ namespace Deckle.Anytype.Tests;
 // real child process and are covered by the live proof runner, not here.
 public sealed class BackendSupervisorTests
 {
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task EnsureRunning_reports_not_provisioned_when_the_binary_is_absent()
     {
@@ -18,7 +20,7 @@ public sealed class BackendSupervisorTests
             "serve");
         using var supervisor = new BackendSupervisor(spec, new BackendHealthProbe("http://127.0.0.1:1"));
 
-        Assert.Equal(BackendStartOutcome.NotProvisioned, await supervisor.EnsureRunningAsync());
+        Assert.Equal(BackendStartOutcome.NotProvisioned, await supervisor.EnsureRunningAsync(Ct));
     }
 
     [Fact]
@@ -36,18 +38,18 @@ public sealed class BackendSupervisorTests
             var context = await listener.GetContextAsync();
             context.Response.StatusCode = 200;
             context.Response.Close();
-        });
+        }, Ct);
 
         string fakeExe = Path.Combine(Path.GetTempPath(), $"deckle-fake-{Guid.NewGuid():N}.exe");
-        await File.WriteAllBytesAsync(fakeExe, []);
+        await File.WriteAllBytesAsync(fakeExe, [], Ct);
         try
         {
             using var supervisor = new BackendSupervisor(
                 new BackendProcessSpec(fakeExe, "serve"),
                 new BackendHealthProbe($"http://127.0.0.1:{port}"));
 
-            Assert.Equal(BackendStartOutcome.AlreadyRunning, await supervisor.EnsureRunningAsync());
-            await serving;
+            Assert.Equal(BackendStartOutcome.AlreadyRunning, await supervisor.EnsureRunningAsync(Ct));
+            await serving.WaitAsync(Ct);
         }
         finally
         {

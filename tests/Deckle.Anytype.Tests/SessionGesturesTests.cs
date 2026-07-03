@@ -18,6 +18,7 @@ public class SessionGesturesTests
     const string OtherTaskId = "bafyreiTask2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     const string ProjectId   = "bafyreiProjccccccccccccccccccccccccccccccccccccccccccc";
     const string NewReport   = "bafyreiNewdddddddddddddddddddddddddddddddddddddddddddddd";
+    static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static SessionGestures NewGestures(FakeAnytypeServer server)
     {
@@ -87,7 +88,7 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         WireStartRoutes(server);
 
-        await NewGestures(server).StartAsync(TaskId);
+        await NewGestures(server).StartAsync(TaskId, Ct);
 
         // The created rapport's payload carries date_du_journal = today and the
         // anchor task in « Tâche(s) liée(s) ».
@@ -121,8 +122,8 @@ public class SessionGesturesTests
         server.OnPatchObject(NewReport, ReportObject(NewReport, "# Journal", TaskId, OtherTaskId));
 
         var gestures = NewGestures(server);
-        await gestures.StartAsync(TaskId);
-        await gestures.TouchTaskAsync(OtherTaskId);
+        await gestures.StartAsync(TaskId, Ct);
+        await gestures.TouchTaskAsync(OtherTaskId, Ct);
 
         // The report PATCH writes « Tâche(s) liée(s) » = anchor task + the touched
         // task, in order — the pre-existing link is preserved.
@@ -145,8 +146,8 @@ public class SessionGesturesTests
         server.OnPatchObject(NewReport, ReportObject(NewReport, existingBody, TaskId));
 
         var gestures = NewGestures(server);
-        await gestures.StartAsync(TaskId);
-        await gestures.LogAsync("écrit les tests");
+        await gestures.StartAsync(TaskId, Ct);
+        await gestures.LogAsync("écrit les tests", ct: Ct);
 
         // Read-modify-write: the report PATCH body is the previous body plus the
         // new "- line" entry appended.
