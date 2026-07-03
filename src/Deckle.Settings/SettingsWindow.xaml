@@ -43,13 +43,9 @@
                         <FontIcon Glyph="{StaticResource Icon.Home}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="SettingsNavRecording"
-                                    Tag="Deckle.Settings.RecordingPage">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{StaticResource Icon.Microphone}" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <!-- Module pages inserted here from SettingsModuleRegistry. -->
+                <!-- Module pages inserted here from SettingsModuleRegistry, in
+                     (tier, order) order — Recording first, then the other modules,
+                     before the Diagnostics anchor. -->
                 <NavigationViewItem x:Uid="SettingsNavDiagnostics"
                                     x:Name="DiagnosticsNavItem"
                                     Tag="Deckle.Settings.DiagnosticsPage">

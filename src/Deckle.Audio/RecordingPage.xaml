@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Deckle.Settings.RecordingPage"
+    x:Class="Deckle.Audio.RecordingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Settings">
+    xmlns:vm="using:Deckle.Audio">
 
     <!-- Same canvas pattern as GeneralPage / DiagnosticsPage / WhisperPage:
          Grid wrapper + StackPanel MaxWidth=1000 + SettingsCardSpacing=4 +
@@ -133,6 +133,18 @@
                      LevelWindowAutoCalibration; the sliders push live into
                      AudioLevelMapper via the VM setters' SettingsHost.ApplyLevelWindow. -->
                 <StackPanel x:Name="VoiceLevelHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- Diagnostics — the microphone-telemetry opt-in, relocated here from
+                     the shared Diagnostics page because it observes this module's
+                     capture pipeline. A privacy opt-in, so this section carries NO
+                     section-reset link (it is never reset from here).
+                     RecordingPage.ComposeTelemetrySection() declares the toggle as a
+                     SettingDescriptor (RecordingViewModel.Settings.cs) and the composer
+                     builds the SettingsCard into this host. -->
+                <TextBlock x:Uid="RecordingPageTelemetryHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>

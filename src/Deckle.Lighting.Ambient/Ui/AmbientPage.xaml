@@ -220,6 +220,15 @@
                                        IsClickEnabled="True"
                                        ActionIcon="{ui:FontIcon Glyph={StaticResource Icon.OpenExternal}}"
                                        Click="OpenPlaygroundCard_Click" />
+
+                <!-- ── Diagnostics ────────────────────────────────────────── -->
+                <TextBlock x:Uid="AmbientPageDiagnosticsHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <controls:SettingsCard x:Uid="AmbientLogActivityCard">
+                    <ToggleSwitch x:Name="LogActivityToggle"
+                                  Toggled="LogActivityToggle_Toggled" />
+                </controls:SettingsCard>
             </StackPanel>
         </Grid>
     </ScrollViewer>

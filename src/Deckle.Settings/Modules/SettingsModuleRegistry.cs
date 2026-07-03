@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Deckle.Catalog;
 
 namespace Deckle.Settings;
 
@@ -27,11 +28,11 @@ public static class SettingsModuleRegistry
     private static readonly object _gate = new();
     private static readonly List<SettingsModuleDescriptor> _modules = new();
 
-    // The registered modules in nav order (ascending Order), as a snapshot copy —
-    // safe to iterate even if a registration fires mid-enumeration.
+    // The registered modules in nav order (by tier, then Order within the tier), as
+    // a snapshot copy — safe to iterate even if a registration fires mid-enumeration.
     public static IReadOnlyList<SettingsModuleDescriptor> Modules
     {
-        get { lock (_gate) return _modules.OrderBy(m => m.Order).ToList(); }
+        get { lock (_gate) return _modules.OrderBy(m => m.Tier).ThenBy(m => m.Order).ToList(); }
     }
 
     // Raised after any mutation, so an open SettingsWindow can rebuild its module

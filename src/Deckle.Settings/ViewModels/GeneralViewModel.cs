@@ -3,15 +3,15 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Shell;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
 // ViewModel for GeneralPage — bridges shell-level AppSettings sections
-// (Hotkeys, Appearance, Behaviour, Startup, Backup) to the XAML via x:Bind.
-// Recording was extracted in slice S3 to RecordingViewModel ; Telemetry
-// in slice S2 to DiagnosticsViewModel. Behaviour (auto-paste + overlay)
-// was rapatriated here in pass2 — these are user-facing behaviors of the
-// app as a whole, not Recording-page-specific settings.
+// (Appearance, Startup, Backup) to the XAML via x:Bind. Recording was
+// extracted in slice S3 to RecordingViewModel ; Telemetry in slice S2 to
+// DiagnosticsViewModel ; the Behaviour section (auto-paste + overlay) moved
+// to the Dictation page in the settings reorg.
 //
 // Pattern: Load() pulls from the POCO, property changes push back via
 // PushToSettings(). The _isSyncing flag prevents re-saving during Load().
@@ -29,71 +29,9 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnThemeChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Theme", value);
+        DeckleSettingsUxSource.Log.SettingChanged("Theme", value);
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(value);
-    }
-
-    // ── Behaviour ────────────────────────────────────────────────────────────
-    //
-    // Auto-paste : whether the transcript text is pasted into the focused
-    // window after copy. Overlay : the on-screen HUD shown during recording
-    // (master toggle + fade-on-proximity, animations, position). Both used
-    // to live on the Recording page in slice S3 — moved here in pass2
-    // because they describe the app's overall behaviour, not the capture
-    // pipeline itself.
-    //
-    // Persistence stays in shell.Paste / shell.Overlay (settings.json).
-    // The Recording page no longer reads or writes these.
-
-    [ObservableProperty]
-    public partial bool AutoPasteEnabled { get; set; }
-
-    [ObservableProperty]
-    public partial bool OverlayEnabled { get; set; }
-
-    [ObservableProperty]
-    public partial bool OverlayFadeOnProximity { get; set; }
-
-    [ObservableProperty]
-    public partial bool OverlayAnimations { get; set; }
-
-    [ObservableProperty]
-    public partial string OverlayPosition { get; set; }
-
-    partial void OnAutoPasteEnabledChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Auto-paste", value.ToString());
-        PushToSettings();
-    }
-
-    partial void OnOverlayEnabledChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay enabled", value.ToString());
-        PushToSettings();
-    }
-
-    partial void OnOverlayFadeOnProximityChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay fade", value.ToString());
-        PushToSettings();
-    }
-
-    partial void OnOverlayAnimationsChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay animations", value.ToString());
-        PushToSettings();
-    }
-
-    partial void OnOverlayPositionChanged(string value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay position", value);
-        PushToSettings();
     }
 
     // ── Startup ──────────────────────────────────────────────────────────────
@@ -114,7 +52,7 @@ public partial class GeneralViewModel : ObservableObject
         bool ok = value ? StartupService.StartStartup() : StartupService.StopStartup();
         if (ok)
         {
-            DeckleSettingsSource.Log.SettingChanged("Start with Windows", value.ToString());
+            DeckleSettingsUxSource.Log.SettingChanged("Start with Windows", value.ToString());
             return;
         }
 
@@ -154,7 +92,7 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnBackupDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Paths.BackupDirectory", $"\"{value}\"");
+        DeckleSettingsUxSource.Log.SettingChanged("Paths.BackupDirectory", $"\"{value}\"");
         PushToSettings();
         RefreshBackups();
     }
@@ -183,18 +121,9 @@ public partial class GeneralViewModel : ObservableObject
         // per-card reset follow. Load() overwrites these with persisted values; this
         // only covers the gap before the first Load.
         var appearance = new AppearanceSettings();
-        var paste = new PasteSettings();
-        var overlay = new OverlaySettings();
         var paths = new PathsSettings();
 
         Theme = appearance.Theme;
-        AutoPasteEnabled = paste.AutoPasteEnabled;
-        OverlayEnabled = overlay.Enabled;
-        OverlayFadeOnProximity = overlay.FadeOnProximity;
-        OverlayAnimations = overlay.Animations;
-        // Same normalization Load() applies, so the seeded position matches a picker
-        // option even if the POCO default were ever a legacy corner value.
-        OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
         // Autostart is OS-backed (registry + scheduled task), not an AppSettings
         // POCO — its conceptual default lives on the startup facade.
         AutostartEnabled = StartupService.DefaultEnabled;
@@ -210,15 +139,6 @@ public partial class GeneralViewModel : ObservableObject
         {
             var shell = SettingsService.Instance.Current;
             Theme = shell.Appearance.Theme;
-            AutoPasteEnabled = shell.Paste.AutoPasteEnabled;
-            OverlayEnabled = shell.Overlay.Enabled;
-            OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
-            OverlayAnimations = shell.Overlay.Animations;
-            // Normalize legacy corner values (TopLeft/BottomRight…) to the two
-            // centre positions the picker now exposes, so the composed Choice
-            // always matches a real option. Was done in the page's combo sync,
-            // which the Group migration removed.
-            OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
             AutostartEnabled = StartupService.StartsAtLogon();
             BackupDirectory = shell.Paths.BackupDirectory;
         }
@@ -236,11 +156,6 @@ public partial class GeneralViewModel : ObservableObject
     {
         var shell = SettingsService.Instance.Current;
         shell.Appearance.Theme = Theme;
-        shell.Paste.AutoPasteEnabled = AutoPasteEnabled;
-        shell.Overlay.Enabled = OverlayEnabled;
-        shell.Overlay.FadeOnProximity = OverlayFadeOnProximity;
-        shell.Overlay.Animations = OverlayAnimations;
-        shell.Overlay.Position = OverlayPosition;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         SettingsService.Instance.Save();
     }

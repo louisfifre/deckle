@@ -13,6 +13,7 @@ using Deckle.Catalog;
 using Deckle.Settings;
 using Deckle.Transcription;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Transcription;
 
@@ -75,6 +76,7 @@ public sealed partial class WhisperPage : Page
         // PropertyChanged subscription is already in place to catch Load()'s refresh
         // — the same Compose-before-Load ordering RecordingPage uses. The composers
         // are held in fields so their subscriptions live as long as the cached page.
+        ComposeBehaviourSection();
         ComposeUseGpuSection();
         ComposeModelsDirectorySection();
         ComposeVadSection();
@@ -83,6 +85,7 @@ public sealed partial class WhisperPage : Page
         ComposeContextSection();
         ComposeDecodingSection();
         ComposeConfidenceSection();
+        ComposeDiagnosticsSection();
 
         Loaded += (_, _) =>
         {
@@ -136,6 +139,20 @@ public sealed partial class WhisperPage : Page
     // here. Composed in the constructor (before the first Load() in OnNavigatedTo)
     // so the subscription catches Load()'s refresh; held in fields so it lives as
     // long as the cached page.
+
+    // The dictation-experience section (overlay HUD + auto-paste), relocated from
+    // GeneralPage. Its values persist in the shell's Overlay/Paste settings (the VM
+    // pushes them there); the section "Reset" link gates active-when-dirty off the
+    // composer, like GeneralPage's sections. Composed first, before the folds below.
+    private SettingsComposer? _behaviourComposer;
+
+    private void ComposeBehaviourSection()
+    {
+        _behaviourComposer = new SettingsComposer(BehaviourHost, ViewModel);
+        _behaviourComposer.DirtyChanged += (_, _) =>
+            BehaviourResetLink.IsEnabled = _behaviourComposer.IsDirty();
+        _behaviourComposer.Compose(ViewModel.BehaviourSettings);
+    }
 
     // GPU acceleration and the models directory are flat, restart-neutral leaves —
     // a lone Toggle and a lone editable Path — each composed straight into its host,
@@ -219,6 +236,19 @@ public sealed partial class WhisperPage : Page
     {
         _confidenceComposer = new SettingsComposer(ConfidenceHost, ViewModel);
         _confidenceComposer.Compose(ViewModel.ConfidenceSettingsManifest);
+    }
+
+    // Diagnostics — the dictation-scoped observability opt-ins (streaming-transcription
+    // log filter, latency telemetry, audio-corpus consent fold) composed into their
+    // host. Same host-only pattern as the flat sections above; no section-reset link
+    // (these opt-ins carry no resettable default — a privacy opt-in has no per-row
+    // reset), so the composer's DirtyChanged is left unwired here.
+    private SettingsComposer? _diagnosticsComposer;
+
+    private void ComposeDiagnosticsSection()
+    {
+        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
+        _diagnosticsComposer.Compose(ViewModel.DiagnosticsSettings);
     }
 
     // NavigationCacheMode.Required reuses the page instance. Loaded + hover
@@ -418,6 +448,13 @@ public sealed partial class WhisperPage : Page
     //
     // Set the VM property (or combo for Model/Language) → OnXChanged fires →
     // PushToSettings. For combos, SelectionChanged fires → handler sets VM.
+
+    private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
+    {
+        _behaviourComposer?.ResetAll();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Dictation experience");
+    }
 
     private void ModelReset_Click(object sender, RoutedEventArgs e)
     {

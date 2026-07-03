@@ -13,13 +13,13 @@ public partial class App
     // ThemeRequestSourceProbe labelling.
     private static bool _firstThemeApplyDone;
 
+    // Boot-time and engine-side (auto-calibration) entry point for pushing the
+    // level window into AudioLevelMapper. The Recording settings sliders no longer
+    // go through here — they call AudioLevelMapper.Apply directly now that the page
+    // lives in Deckle.Audio, so the former SettingsHost.ApplyLevelWindow shell hop
+    // is gone.
     public static void ApplyLevelWindow(Audio.LevelWindowSettings cfg)
-    {
-        if (cfg is null) return;
-        Audio.AudioLevelMapper.MinDbfs           = cfg.MinDbfs;
-        Audio.AudioLevelMapper.MaxDbfs           = cfg.MaxDbfs;
-        Audio.AudioLevelMapper.DbfsCurveExponent = cfg.DbfsCurveExponent;
-    }
+        => Audio.AudioLevelMapper.Apply(cfg);
 
     public static void ApplyTheme(string themeName)
     {

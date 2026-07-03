@@ -28,6 +28,12 @@
     <!-- Icons catalog + shared styles (SubtleButtonStyle) for the page. -->
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- The page's Diagnostics section reads/writes the observability opt-ins
+         that live in these two stores: the log-activity toggle (LoggingSettings)
+         and the two telemetry opt-ins (TelemetrySettings). Neither store
+         references a module, so these refs add no cycle. -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
   </ItemGroup>
 
   <ItemGroup>

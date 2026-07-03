@@ -67,8 +67,9 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtRestoredFromBackup                = 21;
     public const int EvtRestoreFailed                     = 22;
 
-    // ── Folder picker errors ──
-    public const int EvtFolderPickerFailed                = 23;
+    // ── Folder picker errors — MOVED to Deckle-SettingsUx ──
+    // FolderPickerFailed (23) and its detail (60) moved to DeckleSettingsUxSource,
+    // the shared settings-UX provider. IDs burned here, never reused.
 
     // ── General page (setup wizard) ──
     public const int EvtSetupWizardHookNotWired           = 24;
@@ -90,11 +91,10 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtItemInvoked                       = 38;
     public const int EvtOpenLogsFromFooter                = 39;
 
-    // ── ViewModels (generic) ──
-    public const int EvtSettingChanged                    = 40;
-    // 41 — EvtSettingChangedDetail removed: SettingChanged is itself Verbose now,
-    // so the separate detail mirror was redundant. ID burned, never reused.
-    public const int EvtSectionReset                      = 42;
+    // ── ViewModels (generic) — MOVED to Deckle-SettingsUx ──
+    // SettingChanged (40), SectionReset (42) and SectionResetDetail (69) moved to
+    // the shared DeckleSettingsUxSource so a relocated module page emits them
+    // without a back-reference to the shell; 41 was already burned. Never reused.
 
     // ── Settings persistence (transitoire) ──
     public const int EvtSettingsLoaded                    = 43;
@@ -121,7 +121,7 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtRestoreSkippedSnapshotMissingDetail = 57;
     public const int EvtRestoredFromBackupDetail          = 58;
     public const int EvtRestoreFailedDetail               = 59;
-    public const int EvtFolderPickerFailedDetail          = 60;
+    // 60 — EvtFolderPickerFailedDetail moved to Deckle-SettingsUx. Burned, never reused.
     public const int EvtSetupWindowOpenFailedDetail       = 61;
     public const int EvtWarmupRestartFailedDetail         = 62;
     public const int EvtNavImpossibleNoTagDetail          = 63;
@@ -130,7 +130,7 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtNavFailedFrameRejectedDetail      = 66;
     public const int EvtNavCompletedDetail                = 67;
     public const int EvtNavFailedThrewDetail              = 68;
-    public const int EvtSectionResetDetail                = 69;
+    // 69 — EvtSectionResetDetail moved to Deckle-SettingsUx. Burned, never reused.
 
     // ── Page navigation timing (structured-verbose, ms) ──
     // Paired with the existing NavStarted milestone: NavTiming carries the
@@ -481,26 +481,6 @@ public sealed class DeckleSettingsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRestoreFailedDetail, ex_type, message);
     }
 
-    // ── Folder picker (FolderPickerCard + FolderPickerEditableCard) ─────
-
-    [Event(EvtFolderPickerFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The folder picker failed")]
-    public void FolderPickerFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtFolderPickerFailed);
-    }
-
-    [Event(EvtFolderPickerFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "folder picker failed | error={0} | message={1}")]
-    public void FolderPickerFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtFolderPickerFailedDetail, ex_type, message);
-    }
-
     // ── General page (setup wizard) ─────────────────────────────────────
 
     // Pure status sentence, no params; cleaned and recapitalized in place.
@@ -748,46 +728,6 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public void OpenLogsFromFooter()
     {
         if (IsEnabled()) WriteEvent(EvtOpenLogsFromFooter);
-    }
-
-    // ── ViewModels (parameterized) ──────────────────────────────────────
-    //
-    // Property setters in ViewModels follow a homogeneous "a setting changed"
-    // pattern. One parameterized SettingChanged(setting, value) Verbose event
-    // carries them all — the setting name and value as structured fields —
-    // rather than forty typed events (AppearanceThemeChanged,
-    // OverlayEnabledChanged, …) with no semantic gain. Per-setting changes are
-    // diagnostic detail, hence Verbose. SectionReset is a deliberate, rare
-    // action and keeps an Info milestone with a Verbose mirror.
-
-    [Event(EvtSettingChanged,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setting changed | setting={0} | value={1}")]
-    public void SettingChanged(string setting, string value)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSettingChanged, setting, value);
-    }
-
-    [Event(EvtSectionReset,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A settings section was reset to defaults")]
-    public void SectionReset()
-    {
-        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSectionReset);
-    }
-
-    [Event(EvtSectionResetDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "section reset | section={0}")]
-    public void SectionResetDetail(string section)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSectionResetDetail, section);
     }
 
     // ── Settings persistence (transitoire) ──────────────────────────────

@@ -112,48 +112,21 @@
                                      Click="ResetTelemetry_Click" />
                 </Grid>
 
-                <!-- Composed region — the telemetry opt-ins that ARE plain toggles.
-                     Application log and Microphone each carry an off→on consent
-                     dialog and Latency carries none, but all three are now declared
-                     in DiagnosticsViewModel.TelemetrySettings (the two consent rows
-                     via a confirmOnEnable gate the composer runs before persisting
-                     the enable). ComposeTelemetrySection() hands them to the composer,
-                     which builds the SettingsCards into this host in the former
-                     on-screen order (Application log, Microphone, Latency). The
-                     Corpus expander and the storage-folder card below stay
-                     hand-authored — a nested layout and a folder path the composer
-                     can't express. -->
+                <!-- Composed region — the Application log telemetry opt-in. It carries
+                     an off→on consent dialog, declared in DiagnosticsViewModel.TelemetrySettings
+                     via a confirmOnEnable gate the composer runs before persisting the
+                     enable. ComposeTelemetrySection() hands it to the composer, which
+                     builds the SettingsCard into this host. The Latency toggle and the
+                     Corpus fold moved to the Dictation page (they observe the dictation
+                     pipeline); the storage-folder card below stays hand-authored — a
+                     folder path the composer can't express. -->
                 <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- Composed region — the audio-corpus consent fold. Formerly a
-                     hand-authored SettingsExpander; now a Setting.Group declared in
-                     DiagnosticsViewModel.CorpusSettings, built into this host by
-                     ComposeCorpusSection(). The master's and child's consent dialogs
-                     ride confirmOnEnable, and the master → record → content chain masks
-                     (never greys) — retiring the IsEnabled bindings the expander used. -->
-                <StackPanel x:Name="CorpusHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
-
-                <!-- Decisions is the primary (lighter) opt-in on the header; the
-                     verbatim typed corpus is nested below as the heavier opt-in,
-                     its own switch and consent. The two are independent — nesting
-                     is progressive disclosure, not a dependency. Mirrors the
-                     audio-corpus expander above. -->
-                <controls:SettingsExpander x:Uid="DiagnosticsAutocorrectDecisionsExpander"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
-                    <ToggleSwitch x:Name="AutocorrectDecisionsToggle"
-                                  IsOn="{x:Bind ViewModel.AutocorrectDecisions, Mode=TwoWay}"
-                                  Toggled="AutocorrectDecisionsToggle_Toggled" />
-                    <controls:SettingsExpander.Items>
-                        <controls:SettingsCard x:Name="AutocorrectTextCard"
-                                               x:Uid="DiagnosticsAutocorrectTextCard">
-                            <ToggleSwitch x:Name="AutocorrectTextToggle"
-                                          IsOn="{x:Bind ViewModel.AutocorrectText, Mode=TwoWay}"
-                                          Toggled="AutocorrectTextToggle_Toggled" />
-                        </controls:SettingsCard>
-                    </controls:SettingsExpander.Items>
-                </controls:SettingsExpander>
+                <!-- The Autocorrect decisions/text opt-ins moved to the Autocorrect
+                     module's own page (Deckle.Autocorrect), beside the engine they
+                     observe; they consume their consent dialogs through the Catalog
+                     TelemetryConsent registry the shell still wires below. -->
 
                 <!-- Composed region — the telemetry storage-folder path. A Path
                      descriptor in DiagnosticsViewModel.StorageFolderSettings, built

@@ -99,6 +99,34 @@
   <data name="AutocorrectPage_ForgetButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Forget this app</value>
   </data>
+
+  <!-- Diagnostics — the module's observability opt-ins, relocated from the
+       shared Diagnostics page. Log activity is a runtime emission filter (no
+       consent); decisions and text are consent-gated disk-persistence opt-ins.
+       Keys are flat SettingsCards composed by the SettingsComposer, so they bind
+       .Header / .Description. -->
+  <data name="AutocorrectPageDiagnosticsHeader.Text" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="AutocorrectLogActivityCard.Header" xml:space="preserve">
+    <value>Log autocorrect activity</value>
+  </data>
+  <data name="AutocorrectLogActivityCard.Description" xml:space="preserve">
+    <value>Record the autocorrect engine's per-focus probe, learning signals and activity rollup to the log window and app.jsonl. Off by default; applied corrections and injection failures always show regardless.</value>
+  </data>
+  <data name="AutocorrectDecisionsCard.Header" xml:space="preserve">
+    <value>Autocorrect decisions</value>
+  </data>
+  <data name="AutocorrectDecisionsCard.Description" xml:space="preserve">
+    <value>Record every corrected or left-alone word on an enrolled app to autocorrect.decisions.jsonl — its candidates, scores, margins and the rule that decided it. The deep view for tuning the corrector. Includes the words you type.</value>
+  </data>
+  <data name="AutocorrectTextCard.Header" xml:space="preserve">
+    <value>Keep the text I type</value>
+  </data>
+  <data name="AutocorrectTextCard.Description" xml:space="preserve">
+    <value>Also record each sentence you type at the keyboard on an enrolled app to autocorrect.text.jsonl — verbatim, paired with the corrected form — to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Paste and dictation are never recorded.</value>
+  </data>
+
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Autocorrect</value>
   </data>

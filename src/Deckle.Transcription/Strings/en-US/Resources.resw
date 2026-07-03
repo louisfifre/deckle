@@ -676,6 +676,9 @@
   <data name="GeneralVoiceLevelCurveCard.Description" xml:space="preserve">
     <value>Shape of the response between floor and ceiling. 1.0 = linear (recommended). Higher = compress quiet, expand loud. Lower = the opposite.</value>
   </data>
+  <data name="WhisperPageBehaviourHeaderLabel.Text" xml:space="preserve">
+    <value>Overlay and pasting</value>
+  </data>
   <data name="GeneralOverlayExpander.Header" xml:space="preserve">
     <value>Show the overlay while recording</value>
   </data>
@@ -1451,6 +1454,36 @@
   </data>
   <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
     <value>Spans of speech shorter than this (in milliseconds) are dropped as noise blips rather than transcribed. Default: 250 ms.</value>
+  </data>
+
+  <!-- ─── WhisperPage — Diagnostics ───────────────────────────────────
+       Dictation-scoped observability opt-ins relocated from the shared
+       Diagnostics page: the streaming-transcription log filter, latency
+       telemetry, and the audio-corpus consent fold. The latency, corpus
+       and audio-corpus card copy is shared with the Diagnostics PRI (already
+       carried above under the Overlay/telemetry keys); only the section
+       header, the streaming-log card, and the audio-corpus content radio
+       are added here. -->
+  <data name="WhisperPageDiagnosticsHeader.Text" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="LoggingStreamingCard.Header" xml:space="preserve">
+    <value>Log streaming transcription activity</value>
+  </data>
+  <data name="LoggingStreamingCard.Description" xml:space="preserve">
+    <value>Per-second heartbeat and per-utterance Verbose lines from the streaming transcription pipeline. The milestones (started, drained) always pass.</value>
+  </data>
+  <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
+    <value>Recorded audio</value>
+  </data>
+  <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
+    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard — the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
+  </data>
+  <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
+    <value>Match the transcription</value>
+  </data>
+  <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
+    <value>Always raw</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Transcription</value>

@@ -1,16 +1,14 @@
 using Microsoft.UI.Xaml;
-using Deckle.Audio;
 
 namespace Deckle.Settings;
 
 // ── SettingsHost ──────────────────────────────────────────────────────────
 //
 // App-side hooks the Settings UI pages and ViewModels need to drive
-// concerns that only the App owns: theme broadcast across windows, the
-// canonical AudioLevelMapper statics in Deckle.Audio (touched by the
-// level-window slider), process restart, the lazy SettingsWindow
-// instance accessor used by dialogs to anchor their XamlRoot, and
-// re-opening the first-run setup wizard on demand.
+// concerns that only the App owns: theme broadcast across windows,
+// process restart, the lazy SettingsWindow instance accessor used by
+// dialogs to anchor their XamlRoot, and re-opening the first-run setup
+// wizard on demand.
 //
 // Why a static delegate registry rather than a project reference back
 // to the App assembly? Because that would close the dependency cycle
@@ -21,7 +19,7 @@ namespace Deckle.Settings;
 // and degrade silently to no-op when nothing is wired (so the lib
 // remains buildable / testable in isolation).
 //
-// All six hooks are intentionally `Action<...>` / `Func<...>` rather
+// All five hooks are intentionally `Action<...>` / `Func<...>` rather
 // than a single interface — keeps the surface minimal, no boxing, and
 // each hook can be wired independently if a future host implements only
 // part of the contract (e.g. a settings preview window without a full
@@ -32,11 +30,6 @@ public static class SettingsHost
     // every long-lived window the host tracks. Wired by App in
     // OnLaunched; no-op until then.
     public static Action<string>? ApplyTheme;
-
-    // Push the new level-window curve into Audio.AudioLevelMapper
-    // so the HUD reflects it live (the mapper is consulted from the
-    // capture loop on every audio frame). Wired by App in OnLaunched.
-    public static Action<LevelWindowSettings>? ApplyLevelWindow;
 
     // Restart the process, optionally returning to a Settings page
     // tag (e.g. "Deckle.Transcription.WhisperPage, Deckle.Transcription" — assembly-

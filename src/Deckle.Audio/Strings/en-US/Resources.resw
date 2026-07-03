@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema  Version 2.0
+
+    The primary goals of this format are to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+
+    There are any number of "resheader" rows that contain simple
+    name/value pairs.
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
+    mimetype set.
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
+    extensible. For a given mimetype the value must be set accordingly:
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
+    read any of the formats listed below.
+
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Nav label — module-owned. The Settings shell reads this bare key straight
+       into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+
+  <!-- Shared section-reset link. Copied here (each WinUI assembly resolves x:Uid
+       against its own PRI subtree); the same key also lives in the Settings shell
+       for the pages that stayed there. -->
+  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset this section to defaults</value>
+  </data>
+
+  <!-- RecordingPage — page chrome (x:Uid) -->
+  <data name="RecordingPageTitleLabel.Text" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
+    <value>Microphone selection, signal pre-processing, and voice level window calibration.</value>
+  </data>
+  <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
+    <value>Defaults</value>
+  </data>
+
+  <!-- Microphone device card (x:Uid) -->
+  <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
+    <value>Audio input device used for recording. Default: system default.</value>
+  </data>
+
+  <!-- Composed pre-processing card (composer label key) -->
+  <data name="RecordingPagePreprocessingCard.Header" xml:space="preserve">
+    <value>Microphone pre-processing</value>
+  </data>
+  <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
+    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. Off by default. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
+  </data>
+
+  <!-- Microphone level check (x:Uid) -->
+  <data name="RecordingPageMicCheckCard.Header" xml:space="preserve">
+    <value>Microphone level check</value>
+  </data>
+  <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
+    <value>Speak for a few seconds. Deckle reads your level, shows where pre-processing would bring it (around -20 dBFS, the range transcription handles best), and tells you whether turning it on is worth it. You decide.</value>
+  </data>
+  <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
+    <value>Measure</value>
+  </data>
+  <data name="RecordingPageMicCheckListening.Title" xml:space="preserve">
+    <value>Listening — speak now…</value>
+  </data>
+  <data name="RecordingPageMicAdviceRecommended.Title" xml:space="preserve">
+    <value>Your microphone is quiet — turning pre-processing on is recommended.</value>
+  </data>
+  <data name="RecordingPageMicAdviceMarginal.Title" xml:space="preserve">
+    <value>Borderline — pre-processing would help a little.</value>
+  </data>
+  <data name="RecordingPageMicAdviceNotNeeded.Title" xml:space="preserve">
+    <value>Your microphone is already at a good level — pre-processing isn't needed.</value>
+  </data>
+  <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
+    <value>Couldn't read the microphone. Check the device above and try again.</value>
+  </data>
+
+  <!-- Composed voice-level group + sliders (composer label keys) -->
+  <data name="GeneralVoiceLevelExpander.Header" xml:space="preserve">
+    <value>Set the level window manually</value>
+  </data>
+  <data name="GeneralVoiceLevelExpander.Description" xml:space="preserve">
+    <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Leave this off to let auto-calibration set the range from your measured percentiles; turn it on to set the floor, ceiling, and curve yourself.</value>
+  </data>
+  <data name="GeneralVoiceLevelAutoLabel.Text" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="GeneralVoiceLevelFloorCard.Header" xml:space="preserve">
+    <value>Floor</value>
+  </data>
+  <data name="GeneralVoiceLevelFloorCard.Description" xml:space="preserve">
+    <value>Below this level, the HUD reads silence. Set just under the percentile of your normal pauses (typical: -55 dBFS).</value>
+  </data>
+  <data name="GeneralVoiceLevelCeilingCard.Header" xml:space="preserve">
+    <value>Ceiling</value>
+  </data>
+  <data name="GeneralVoiceLevelCeilingCard.Description" xml:space="preserve">
+    <value>At or above this level, the HUD saturates. Set just below your loudest peaks (typical: -32 dBFS).</value>
+  </data>
+  <data name="GeneralVoiceLevelCurveCard.Header" xml:space="preserve">
+    <value>Curve</value>
+  </data>
+  <data name="GeneralVoiceLevelCurveCard.Description" xml:space="preserve">
+    <value>Shape of the response between floor and ceiling. 1.0 = linear (recommended). Higher = compress quiet, expand loud. Lower = the opposite.</value>
+  </data>
+
+  <!-- Audio input device combo (Loc.Get / Loc.Format from code-behind) -->
+  <data name="Settings_AudioInput_SystemDefault" xml:space="preserve">
+    <value>System default</value>
+  </data>
+  <data name="Settings_AudioInput_Device_Format" xml:space="preserve">
+    <value>Device {0}</value>
+  </data>
+
+  <!-- Diagnostics section — microphone-telemetry opt-in (section header + composed card) -->
+  <data name="RecordingPageTelemetryHeader.Text" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="RecordingMicrophoneTelemetryCard.Header" xml:space="preserve">
+    <value>Log microphone level</value>
+  </data>
+  <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
+    <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Off by default; kept on this device. Useful when calibrating the level window.</value>
+  </data>
+</root>

@@ -29,6 +29,52 @@ namespace Deckle.Transcription;
 // float LevelWindow fields.
 public partial class WhisperViewModel
 {
+    // Dictation experience — the overlay HUD group then the flat auto-paste toggle,
+    // relocated from GeneralPage. The overlay is a Group (master OverlayEnabled +
+    // fade/animations/position children, each masked while the master is off); the
+    // position Choice matches the normalized "TopCenter"/"BottomCenter" the VM seeds.
+    // Defaults read the shell POCO initializers (OverlaySettings / PasteSettings), the
+    // single source the shell's SettingsService persists. The x:Uids reuse the same
+    // keys the General cards carried — already present in this module's .resw.
+    public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
+    [
+        Setting.Group("GeneralOverlayExpander",
+            () => OverlayEnabled,
+            value => OverlayEnabled = value,
+            [
+                Setting.Toggle("GeneralOverlayFadeCard",
+                    () => OverlayFadeOnProximity,
+                    value => OverlayFadeOnProximity = value,
+                    defaultValue: () => new OverlaySettings().FadeOnProximity),
+                Setting.Toggle("GeneralOverlayAnimationsCard",
+                    () => OverlayAnimations,
+                    value => OverlayAnimations = value,
+                    defaultValue: () => new OverlaySettings().Animations),
+                Setting.Choice<string>("GeneralOverlayPositionCard",
+                    () => OverlayPosition,
+                    value => OverlayPosition = value,
+                    [
+                        ("TopCenter", "GeneralOverlayPositionTop"),
+                        ("BottomCenter", "GeneralOverlayPositionBottom"),
+                    ],
+                    // Fold a possible legacy corner default through the same
+                    // Top→TopCenter / else→BottomCenter rule the VM applies on Load,
+                    // so the reset targets a real picker option.
+                    defaultValue: () =>
+                        (new OverlaySettings().Position ?? "").StartsWith("Top")
+                            ? "TopCenter"
+                            : "BottomCenter"),
+            ],
+            glyph: Glyphs.Overlay,
+            defaultValue: () => new OverlaySettings().Enabled),
+
+        Setting.Toggle("GeneralAutoPasteCard",
+            () => AutoPasteEnabled,
+            value => AutoPasteEnabled = value,
+            glyph: Glyphs.Paste,
+            defaultValue: () => new PasteSettings().AutoPasteEnabled),
+    ];
+
     // GPU acceleration — the flat toggle under the "Model engine" header. It was
     // hand-authored as a lone SettingsCard with its own reset; it composes as a
     // single leaf Toggle into a host, exactly the shape it had. The default reads
@@ -300,5 +346,54 @@ public partial class WhisperViewModel
                     defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
             ],
             glyph: Glyphs.Diagnostics),
+    ];
+
+    // Diagnostics — the dictation-scoped observability opt-ins relocated from the
+    // shared Diagnostics page, in on-screen order: the streaming-transcription log
+    // filter, the latency telemetry toggle, then the audio-corpus consent fold.
+    //
+    // Neither the log toggle nor the latency toggle carries a defaultValue: a
+    // privacy/observability opt-in has no per-row "resettable default" affordance,
+    // so the composer renders no per-card reset wheel — the same posture the
+    // Diagnostics page's cards had.
+    //
+    // The corpus fold is the Setting.Group copied from DiagnosticsViewModel.CorpusSettings,
+    // but its consent dialogs now ride the Catalog registry (TelemetryConsent.RequestCorpus
+    // on the master, .RequestAudioCorpus on the audio child) rather than the shell's
+    // ContentDialog types — so this module gates its enables behind consent without
+    // referencing the shell. The master → record → content chain masks (never greys)
+    // via the child radio's VisibleWhen on RecordAudioCorpus. No defaultValue anywhere:
+    // a privacy opt-in carries no per-row reset.
+    public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
+    [
+        Setting.Toggle("LoggingStreamingCard",
+            () => LogStreamingTranscriptionActivity,
+            value => LogStreamingTranscriptionActivity = value,
+            glyph: Glyphs.Speech),
+        Setting.Toggle("GeneralLatencyCard",
+            () => TelemetryLatencyEnabled,
+            value => TelemetryLatencyEnabled = value,
+            glyph: Glyphs.Latency),
+        Setting.Group("GeneralCorpusExpander",
+            () => TelemetryCorpusEnabled,
+            value => TelemetryCorpusEnabled = value,
+            glyph: Glyphs.AudioRecording,
+            confirmOnEnable: TelemetryConsent.RequestCorpus,
+            children:
+            [
+                Setting.Toggle("GeneralAudioCorpusCard",
+                    () => RecordAudioCorpus,
+                    value => RecordAudioCorpus = value,
+                    confirmOnEnable: TelemetryConsent.RequestAudioCorpus),
+                Setting.Radio("GeneralAudioCorpusContentCard",
+                    () => AudioCorpusContentIndex,
+                    value => AudioCorpusContentIndex = value,
+                    options:
+                    [
+                        (0, "GeneralAudioCorpusContentMatch"),
+                        (1, "GeneralAudioCorpusContentRaw"),
+                    ],
+                    visibleWhen: () => RecordAudioCorpus),
+            ]),
     ];
 }

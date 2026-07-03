@@ -4,6 +4,7 @@ using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -105,8 +106,8 @@ public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed();
-            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderPickerFailed();
+            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -126,8 +127,8 @@ public sealed partial class FolderPickerEditableCard : UserControl, IPathControl
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed();
-            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderPickerFailed();
+            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 }

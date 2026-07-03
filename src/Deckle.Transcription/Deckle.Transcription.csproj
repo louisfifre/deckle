@@ -46,6 +46,8 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <!-- For the streaming-transcription log opt-in relocated onto WhisperPage. -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <!-- VAD module. One-way dependency: the orchestrator calls the VAD, never the
          reverse. -->
     <ProjectReference Include="..\Deckle.Vad\Deckle.Vad.csproj" />

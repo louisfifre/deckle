@@ -24,37 +24,26 @@ public partial class DiagnosticsViewModel
     // persistence are unchanged, the composer only drives the UI.
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
     [
-        Setting.Toggle("LoggingAmbientCard",
-            () => LogAmbientCaptureActivity,
-            value => LogAmbientCaptureActivity = value,
-            glyph: Glyphs.Lightbulb),
-        Setting.Toggle("LoggingStreamingCard",
-            () => LogStreamingTranscriptionActivity,
-            value => LogStreamingTranscriptionActivity = value,
-            glyph: Glyphs.Speech),
-        Setting.Toggle("LoggingAutocorrectCard",
-            () => LogAutocorrectActivity,
-            value => LogAutocorrectActivity = value,
-            glyph: Glyphs.Language),
         Setting.Toggle("LoggingWindowingCard",
             () => LogWindowingActivity,
             value => LogWindowingActivity = value,
             glyph: Glyphs.Window),
     ];
 
-    // Telemetry opt-ins (the "Telemetry" section). Three composable toggles now:
-    // the two consent opt-ins (Application log, Microphone) carry a confirmOnEnable
-    // gate so the composer holds their OFF→ON write behind the consent dialog —
-    // exactly the off→on-shows-a-dialog flow the hand-authored cards ran, now
-    // declared rather than wired in the page. Latency is a plain TwoWay switch.
-    // Declared in on-screen order (Application log first by user request, then
-    // Microphone, then Latency), so the composed host reproduces the former card
-    // order. The remaining hand-authored telemetry rows are the Corpus and
-    // Autocorrect expanders — nested layouts the composer doesn't build.
+    // Telemetry opt-ins (the "Telemetry" section). One composable toggle now:
+    // Application log carries a confirmOnEnable gate so the composer holds its
+    // OFF→ON write behind the consent dialog — exactly the off→on-shows-a-dialog
+    // flow the hand-authored card ran, now declared rather than wired in the page.
+    // The Microphone opt-in moved to the Recording module's own page (it observes
+    // that module's capture pipeline); the Latency toggle and the Corpus fold moved
+    // to the Dictation (Whisper) page (they observe the dictation pipeline); and the
+    // Autocorrect capture opt-ins moved to the Autocorrect module's own page. No
+    // hand-authored telemetry row remains here — Application log is the page's one
+    // composable telemetry toggle.
     //
-    // No defaultValue on the consent toggles: a privacy opt-in has no "resettable
-    // default" affordance per row (the section "Reset" clears them), so the composer
-    // renders no per-card reset wheel for them — which is correct.
+    // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
+    // default" affordance per row (the section "Reset" clears it), so the composer
+    // renders no per-card reset wheel for it — which is correct.
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
         Setting.Toggle("GeneralAppLogCard",
@@ -62,15 +51,6 @@ public partial class DiagnosticsViewModel
             value => ApplicationLogToDisk = value,
             glyph: Glyphs.AppLog,
             confirmOnEnable: root => ApplicationLogConsentDialog.ShowAsync(root)),
-        Setting.Toggle("GeneralLogMicrophoneCard",
-            () => MicrophoneTelemetry,
-            value => MicrophoneTelemetry = value,
-            glyph: Glyphs.Microphone,
-            confirmOnEnable: root => MicrophoneTelemetryConsentDialog.ShowAsync(root)),
-        Setting.Toggle("GeneralLatencyCard",
-            () => TelemetryLatencyEnabled,
-            value => TelemetryLatencyEnabled = value,
-            glyph: Glyphs.Latency),
     ];
 
     // Storage folder — the shared JSONL root for every telemetry stream. A Path
@@ -98,41 +78,5 @@ public partial class DiagnosticsViewModel
                 DefaultPath: () => AppPaths.TelemetryDirectory),
             glyph: Glyphs.Folder,
             defaultValue: () => new TelemetrySettings().StorageDirectory),
-    ];
-
-    // The audio-corpus consent fold — a Group replacing the hand-authored expander.
-    // Its master (TelemetryCorpusEnabled) reveals two dependent rows; the master and
-    // the RecordAudioCorpus child each carry their OFF→ON consent dialog through
-    // confirmOnEnable, so the composer holds the enable behind the dialog (no transient
-    // flip — an improvement over the former TwoWay-bound toggles that flipped then
-    // reverted). The content radio is a child gated on RecordAudioCorpus via VisibleWhen,
-    // so the whole chain master → record → content MASKS rather than greys — retiring the
-    // IsEnabled bindings the expander used ("mask, never grey"). No defaultValue anywhere:
-    // a privacy opt-in carries no per-row reset; the Telemetry section "Reset" clears the
-    // fold. Composed into its own host so it keeps its former slot below the telemetry
-    // toggles and above the storage-folder card.
-    public IReadOnlyList<SettingDescriptor> CorpusSettings =>
-    [
-        Setting.Group("GeneralCorpusExpander",
-            () => TelemetryCorpusEnabled,
-            value => TelemetryCorpusEnabled = value,
-            glyph: Glyphs.AudioRecording,
-            confirmOnEnable: root => CorpusConsentDialog.ShowAsync(root),
-            children:
-            [
-                Setting.Toggle("GeneralAudioCorpusCard",
-                    () => RecordAudioCorpus,
-                    value => RecordAudioCorpus = value,
-                    confirmOnEnable: root => AudioCorpusConsentDialog.ShowAsync(root)),
-                Setting.Radio("GeneralAudioCorpusContentCard",
-                    () => AudioCorpusContentIndex,
-                    value => AudioCorpusContentIndex = value,
-                    options:
-                    [
-                        (0, "GeneralAudioCorpusContentMatch"),
-                        (1, "GeneralAudioCorpusContentRaw"),
-                    ],
-                    visibleWhen: () => RecordAudioCorpus),
-            ]),
     ];
 }

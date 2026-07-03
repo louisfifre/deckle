@@ -100,6 +100,29 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12" />
 
+                <!-- ── Overlay and pasting ──────────────────────────────────────
+                     The dictation experience — the on-screen HUD and auto-paste,
+                     relocated from General. Composed from WhisperViewModel.BehaviourSettings
+                     into the host below; its own section "Reset" gates active-when-dirty. -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="WhisperPageBehaviourHeaderLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                    <HyperlinkButton x:Name="BehaviourResetLink"
+                                     x:Uid="Settings_SectionResetLink"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,0,2"
+                                     Click="ResetBehaviour_Click" />
+                </Grid>
+
+                <StackPanel x:Name="BehaviourHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
                     Order : Language → Initial prompt → GPU acceleration →
@@ -286,6 +309,19 @@
                      ComposeStreamingSection() builds it into this host; the section
                      header + body above stay hand-authored. -->
                 <StackPanel x:Name="StreamingHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- ── Diagnostics ─────────────────────────────────────────────
+                     The dictation-scoped observability opt-ins relocated from the
+                     shared Diagnostics page: the streaming-transcription log filter,
+                     the latency telemetry toggle, and the audio-corpus consent fold.
+                     Composed from WhisperViewModel.DiagnosticsSettings into the host
+                     below. No section "Reset" link — these observability opt-ins carry
+                     no resettable default (a privacy opt-in has no per-row reset). -->
+                <TextBlock x:Uid="WhisperPageDiagnosticsHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <StackPanel x:Name="DiagnosticsHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
             </StackPanel>

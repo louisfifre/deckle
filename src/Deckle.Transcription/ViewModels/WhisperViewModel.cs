@@ -1,4 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Telemetry;
+using Deckle.Settings;
 
 namespace Deckle.Transcription;
 
@@ -348,6 +351,182 @@ public partial class WhisperViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Dictation experience (overlay HUD + auto-paste) ──────────────────────
+    //
+    // Relocated from GeneralPage in the settings reorg: the on-screen HUD shown
+    // during dictation (master toggle + fade-on-proximity, animations, position)
+    // and whether the transcript is pasted into the focused window after copy.
+    // These describe how dictation surfaces itself and delivers its output, so
+    // they live on the Dictation page beside the engine that produces them.
+    //
+    // Persistence stays in the shell's Overlay / Paste sections (settings.json),
+    // read at runtime by the HUD (Deckle.Hud) and the hotkey paste path
+    // (App.Hotkeys) — this VM only surfaces them. Pushed through a dedicated
+    // PushBehaviourToSettings so the shell save stays separate from the module's
+    // TranscriptionSettings save.
+
+    [ObservableProperty]
+    public partial bool AutoPasteEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool OverlayEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool OverlayFadeOnProximity { get; set; }
+
+    [ObservableProperty]
+    public partial bool OverlayAnimations { get; set; }
+
+    [ObservableProperty]
+    public partial string OverlayPosition { get; set; }
+
+    partial void OnAutoPasteEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Auto-paste", value.ToString());
+        PushBehaviourToSettings();
+    }
+
+    partial void OnOverlayEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Overlay enabled", value.ToString());
+        PushBehaviourToSettings();
+    }
+
+    partial void OnOverlayFadeOnProximityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Overlay fade", value.ToString());
+        PushBehaviourToSettings();
+    }
+
+    partial void OnOverlayAnimationsChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Overlay animations", value.ToString());
+        PushBehaviourToSettings();
+    }
+
+    partial void OnOverlayPositionChanged(string value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Overlay position", value);
+        PushBehaviourToSettings();
+    }
+
+    // Writes the overlay/paste values back to the shell's Overlay/Paste sections —
+    // kept separate from PushToSettings (which persists this module's own
+    // TranscriptionSettings) because these live in the shell's settings.json.
+    private void PushBehaviourToSettings()
+    {
+        var shell = SettingsService.Instance.Current;
+        shell.Paste.AutoPasteEnabled = AutoPasteEnabled;
+        shell.Overlay.Enabled = OverlayEnabled;
+        shell.Overlay.FadeOnProximity = OverlayFadeOnProximity;
+        shell.Overlay.Animations = OverlayAnimations;
+        shell.Overlay.Position = OverlayPosition;
+        SettingsService.Instance.Save();
+    }
+
+    // ── Observability (dictation logging + telemetry opt-ins) ────────────────
+    //
+    // The dictation-scoped diagnostics opt-ins relocated from the shared
+    // Diagnostics page: the streaming-transcription Verbose log toggle (a Logging
+    // filter) and the four telemetry opt-ins (latency + the audio-corpus fold).
+    // They observe the dictation pipeline, so they live beside the engine that
+    // produces them.
+    //
+    // Persistence stays central: the log toggle in LoggingSettings (via
+    // LoggingSettingsService) and the four telemetry fields in TelemetrySettings
+    // (via TelemetrySettingsService) — the same POCOs the App's log/telemetry gates
+    // read directly. This VM only surfaces them. Pushed through two dedicated methods
+    // (PushDiagnosticsLoggingToSettings / PushTelemetryToSettings) so a single toggle
+    // touches only its own store, exactly as DiagnosticsViewModel split them.
+
+    [ObservableProperty]
+    public partial bool LogStreamingTranscriptionActivity { get; set; }
+
+    [ObservableProperty]
+    public partial bool TelemetryLatencyEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool TelemetryCorpusEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool RecordAudioCorpus { get; set; }
+
+    // Audio-corpus content selector — int index mirroring the RadioButtons order
+    // (0 = match the transcription, 1 = always raw), mapped to
+    // TelemetrySettings.AudioCorpusContent in Load / Push. Same idiom as
+    // DiagnosticsViewModel: RadioButtons emits -1 transiently while it realises its
+    // items, so the handler and the push both guard against a negative index.
+    [ObservableProperty]
+    public partial int AudioCorpusContentIndex { get; set; }
+
+    partial void OnLogStreamingTranscriptionActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
+        PushDiagnosticsLoggingToSettings();
+    }
+
+    partial void OnTelemetryLatencyEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnTelemetryCorpusEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnRecordAudioCorpusChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnAudioCorpusContentIndexChanged(int value)
+    {
+        // RadioButtons emits -1 transiently while it realises its items —
+        // ignore it so we never cast a bogus index onto the enum.
+        if (_isSyncing || value < 0) return;
+        DeckleWhispSource.Log.SettingChanged(
+            "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
+        PushTelemetryToSettings();
+    }
+
+    // Writes the streaming-transcription log opt-in back to LoggingSettings — kept
+    // separate from the telemetry push because the two share neither schema nor
+    // lifecycle (same reason DiagnosticsViewModel splits PushLogging / PushTelemetry).
+    private void PushDiagnosticsLoggingToSettings()
+    {
+        var l = LoggingSettingsService.Instance.Current;
+        l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
+        LoggingSettingsService.Instance.Save();
+    }
+
+    // Writes the four dictation telemetry opt-ins back to TelemetrySettings. The
+    // index↔enum guard mirrors DiagnosticsViewModel: a transient negative index
+    // resolves to MatchTranscription rather than casting a bogus value onto the enum.
+    private void PushTelemetryToSettings()
+    {
+        var t = TelemetrySettingsService.Instance.Current;
+        t.LatencyEnabled = TelemetryLatencyEnabled;
+        t.CorpusEnabled = TelemetryCorpusEnabled;
+        t.RecordAudioCorpus = RecordAudioCorpus;
+        t.AudioCorpusContent = AudioCorpusContentIndex < 0
+            ? AudioCorpusContent.MatchTranscription
+            : (AudioCorpusContent)AudioCorpusContentIndex;
+        TelemetrySettingsService.Instance.Save();
+    }
+
     // ── Constructor ──────────────────────────────────────────────────────────
 
     public WhisperViewModel()
@@ -384,6 +563,23 @@ public partial class WhisperViewModel : ObservableObject
         SegHangoverRampEndMs = 120_000;
         SegMarginMs = 150;
         SegMinUtteranceMs = 250;
+
+        // Dictation-experience seeds from the shell POCO initializers (the single
+        // source the shell's SettingsService persists), overwritten by Load().
+        var overlay = new OverlaySettings();
+        AutoPasteEnabled = new PasteSettings().AutoPasteEnabled;
+        OverlayEnabled = overlay.Enabled;
+        OverlayFadeOnProximity = overlay.FadeOnProximity;
+        OverlayAnimations = overlay.Animations;
+        OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+
+        // Observability opt-ins seed closed — the log filter and the telemetry
+        // streams both start OFF until the user opts in. Overwritten by Load().
+        LogStreamingTranscriptionActivity = false;
+        TelemetryLatencyEnabled = false;
+        TelemetryCorpusEnabled = false;
+        RecordAudioCorpus = false;
+        AudioCorpusContentIndex = 0;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -429,6 +625,26 @@ public partial class WhisperViewModel : ObservableObject
             SegHangoverRampEndMs = s.Streaming.Segmenter.HangoverRampEndMs;
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
             SegMinUtteranceMs = s.Streaming.Segmenter.MinUtteranceMs;
+
+            // Dictation experience — read from the shell's Overlay/Paste sections
+            // (persisted separately from this module's TranscriptionSettings).
+            var shell = SettingsService.Instance.Current;
+            AutoPasteEnabled = shell.Paste.AutoPasteEnabled;
+            OverlayEnabled = shell.Overlay.Enabled;
+            OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
+            OverlayAnimations = shell.Overlay.Animations;
+            OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+
+            // Observability — the log filter from LoggingSettings, the four telemetry
+            // opt-ins from TelemetrySettings (the same central POCOs the App's gates
+            // read). Read here so the composed cards reflect the persisted state.
+            LogStreamingTranscriptionActivity =
+                LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity;
+            var t = TelemetrySettingsService.Instance.Current;
+            TelemetryLatencyEnabled = t.LatencyEnabled;
+            TelemetryCorpusEnabled = t.CorpusEnabled;
+            RecordAudioCorpus = t.RecordAudioCorpus;
+            AudioCorpusContentIndex = (int)t.AudioCorpusContent;
         }
         finally
         {

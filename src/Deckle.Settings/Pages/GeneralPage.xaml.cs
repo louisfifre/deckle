@@ -9,6 +9,7 @@ using Deckle.Catalog;
 using Deckle.Settings;
 using Deckle.Core;
 using Deckle.Shell;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -22,14 +23,13 @@ public sealed partial class GeneralPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
 
         ComposeAppearanceSection();
-        ComposeBehaviourSection();
         ComposeStartupSection();
         ComposeApplicationDataSection();
 
-        // The page-level "Reset all" gate spans all four section composers; re-gate it
+        // The page-level "Reset all" gate spans all three section composers; re-gate it
         // whenever any goes dirty (each section link keeps its own gating too).
         foreach (var composer in new[]
-                 { _appearanceComposer, _behaviourComposer, _startupComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
@@ -56,28 +56,6 @@ public sealed partial class GeneralPage : Page
         _appearanceComposer.DirtyChanged += (_, _) =>
             AppearanceResetLink.IsEnabled = _appearanceComposer.IsDirty();
         _appearanceComposer.Compose(ViewModel.AppearanceSettings);
-    }
-
-    // ── Composed Behaviour section ────────────────────────────────────────────
-    //
-    // The page only hosts: it hands the host panel and the ViewModel's settings
-    // manifest (declared beside the VM in GeneralViewModel.Settings.cs) to the
-    // composer, which builds the cards. The manifest now carries the overlay
-    // Group (master toggle + fade/animations/position children) ahead of the flat
-    // auto-paste toggle, so the whole section is composed — the hand-authored
-    // overlay SettingsExpander is gone. The composer subscribes to the ViewModel
-    // so the controls reflect Load() and the section "Reset" without any binding
-    // here. Composed before LoadAndSync so the subscription catches Load()'s
-    // PropertyChanged. Held in a field so the subscription lives as long as the
-    // (cached) page.
-    private SettingsComposer? _behaviourComposer;
-
-    private void ComposeBehaviourSection()
-    {
-        _behaviourComposer = new SettingsComposer(BehaviourHost, ViewModel);
-        _behaviourComposer.DirtyChanged += (_, _) =>
-            BehaviourResetLink.IsEnabled = _behaviourComposer.IsDirty();
-        _behaviourComposer.Compose(ViewModel.BehaviourSettings);
     }
 
     // ── Composed Startup section ──────────────────────────────────────────────
@@ -124,7 +102,7 @@ public sealed partial class GeneralPage : Page
     }
 
     // Refills the VM from settings and refreshes the page's few hand-authored
-    // readouts. The composed sections (Appearance, Behaviour, Startup) need no
+    // readouts. The composed sections (Appearance, Startup) need no
     // sync pass: each composer subscribes to the VM, so Load()'s PropertyChanged
     // re-syncs their controls. The old _initializing guard (and its deferred
     // DispatcherQueue release) is gone with the last hand-wired combo handler.
@@ -150,7 +128,6 @@ public sealed partial class GeneralPage : Page
     {
         ResetAllButton.IsEnabled =
             (_appearanceComposer?.IsDirty() ?? false) ||
-            (_behaviourComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
             (_applicationDataComposer?.IsDirty() ?? false);
     }
@@ -158,11 +135,10 @@ public sealed partial class GeneralPage : Page
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _appearanceComposer?.ResetAll();
-        _behaviourComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("General (all)");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("General (all)");
     }
 
     // ── Reset per section ───────────────────────────────────────────────────
@@ -178,15 +154,8 @@ public sealed partial class GeneralPage : Page
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {
         _appearanceComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Appearance");
-    }
-
-    private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
-    {
-        _behaviourComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Behaviour");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Appearance");
     }
 
     private void ResetStartup_Click(object sender, RoutedEventArgs e)
@@ -195,8 +164,8 @@ public sealed partial class GeneralPage : Page
         // setter calls StartupService.StopStartup() — the vehicle removal rides
         // along, exactly as a manual toggle would, so no direct call here anymore.
         _startupComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Startup");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
     }
 
     // Opens the UserDataRoot in File Explorer — entry point for users who
@@ -216,8 +185,8 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed();
-            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderPickerFailed();
+            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 

@@ -5,10 +5,10 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Core;
 using Deckle.Catalog;
-using Deckle.Settings;
+using Deckle.Diagnostics;
 using Deckle.Shell;
 
-namespace Deckle.Settings;
+namespace Deckle.Audio;
 
 // ── RecordingPage ───────────────────────────────────────────────────────────
 //
@@ -31,6 +31,7 @@ public sealed partial class RecordingPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposePreprocessingSection();
         ComposeVoiceLevelSection();
+        ComposeTelemetrySection();
         LoadAndSync();
     }
 
@@ -72,6 +73,21 @@ public sealed partial class RecordingPage : Page
         _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
         // Same aggregate gating as the pre-processing region — see ComposePreprocessingSection.
         _voiceLevelComposer.DirtyChanged += OnComposedDirtyChanged;
+    }
+
+    // ── Composed telemetry section ────────────────────────────────────────────
+    //
+    // Same host-only pattern as the two sections above. Deliberately NOT wired into
+    // the section-reset link: this is a privacy opt-in, so it has no per-card reset
+    // and its section carries no "Reset" link — hence no DirtyChanged subscription
+    // and no GateResetLink participation. Held in a field so the composer's
+    // subscription to the ViewModel lives as long as the (cached) page.
+    private SettingsComposer? _telemetryComposer;
+
+    private void ComposeTelemetrySection()
+    {
+        _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
+        _telemetryComposer.Compose(ViewModel.TelemetrySettings);
     }
 
     private void OnComposedDirtyChanged(object? sender, EventArgs e) => GateResetLink();
@@ -178,7 +194,7 @@ public sealed partial class RecordingPage : Page
         }
         finally { _initializing = false; }
 
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Recording");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
     }
 }

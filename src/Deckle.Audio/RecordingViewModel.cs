@@ -1,10 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Deckle.Audio;
+using Deckle.Diagnostics;
+using Deckle.Diagnostics.Telemetry;
 using System.Globalization;
 using System.Threading.Tasks;
 
-namespace Deckle.Settings;
+namespace Deckle.Audio;
 
 // ViewModel for RecordingPage — bridges CaptureSettings (audio device,
 // level window) to the XAML via x:Bind. Migrated from GeneralViewModel
@@ -30,7 +31,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnAudioInputDeviceIdChanged(int value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
+        DeckleSettingsUxSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
     }
 
@@ -42,7 +43,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnPreprocessingEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
         // On = active. The DSP self-adjusts on every recording (a no-op when
         // the mic is already at target); the mic level check advises whether
         // turning it on is worth it. No deferral, no auto-decision.
@@ -139,32 +140,50 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMinDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
+        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
     }
 
     partial void OnLevelWindowMaxDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
+        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
     }
 
     partial void OnLevelWindowExponentChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
         PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
+        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
     }
 
     partial void OnLevelWindowAutoCalibrationChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
         PushToSettings();
+    }
+
+    // ── Telemetry (microphone RMS distribution opt-in) ──────────────────────
+    //
+    // A privacy opt-in relocated here from the shared Diagnostics page — it
+    // belongs to the capture pipeline it observes. It persists in its OWN store
+    // (TelemetrySettingsService, telemetry.json), not CaptureSettings, so it
+    // rides a dedicated PushTelemetryToSettings() rather than PushToSettings().
+    // The enable is gated by a consent dialog in the manifest (confirmOnEnable).
+
+    [ObservableProperty]
+    public partial bool MicrophoneTelemetry { get; set; }
+
+    partial void OnMicrophoneTelemetryChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
+        PushTelemetryToSettings();
     }
 
     // ── Sync with CaptureSettingsService ────────────────────────────────────
@@ -186,6 +205,7 @@ public partial class RecordingViewModel : ObservableObject
         LevelWindowExponent = levelWindow.DbfsCurveExponent;
         LevelWindowAutoCalibration = levelWindow.AutoCalibrationEnabled;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
+        MicrophoneTelemetry = false;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -203,6 +223,8 @@ public partial class RecordingViewModel : ObservableObject
             LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
             LevelWindowAutoCalibration = capture.LevelWindow.AutoCalibrationEnabled;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
+
+            MicrophoneTelemetry = TelemetrySettingsService.Instance.Current.MicrophoneTelemetry;
         }
         finally
         {
@@ -222,6 +244,15 @@ public partial class RecordingViewModel : ObservableObject
         capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();
+    }
+
+    // Microphone telemetry persists in TelemetrySettingsService's own store,
+    // separate from CaptureSettings — hence its own push rather than folding
+    // into PushToSettings(). One opt-in, one store, one save.
+    private void PushTelemetryToSettings()
+    {
+        TelemetrySettingsService.Instance.Current.MicrophoneTelemetry = MicrophoneTelemetry;
+        TelemetrySettingsService.Instance.Save();
     }
 
     // ResetRecordingDefaults is gone: the composed values (pre-processing toggle,

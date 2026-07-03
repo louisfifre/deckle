@@ -33,4 +33,33 @@ public partial class AutocorrectViewModel
             glyph: Glyphs.Autocorrect,
             defaultValue: () => new AutocorrectSettings().Enabled),
     ];
+
+    // The module's own Diagnostics section — three flat, independent leaf
+    // toggles, composed into the page's DiagnosticsHost. Relocated from the
+    // shared Diagnostics page: the log-activity filter (no consent — nothing
+    // leaves the device) and the two telemetry opt-ins, each gating its OFF→ON
+    // flip behind a consent dialog via the Catalog registry method group the
+    // composer runs. No defaultValue on any: like the other privacy opt-ins,
+    // a per-row "resettable default" affordance is wrong here.
+    //
+    // Text is NOT gated by Decisions — on the origin page the nesting was
+    // progressive disclosure, not a dependency — so they stay two independent
+    // leaves, never a masking Group.
+    public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
+    [
+        Setting.Toggle("AutocorrectLogActivityCard",
+            () => LogAutocorrectActivity,
+            value => LogAutocorrectActivity = value,
+            glyph: Glyphs.Language),
+        Setting.Toggle("AutocorrectDecisionsCard",
+            () => AutocorrectDecisions,
+            value => AutocorrectDecisions = value,
+            glyph: Glyphs.Language,
+            confirmOnEnable: TelemetryConsent.RequestAutocorrectDecisions),
+        Setting.Toggle("AutocorrectTextCard",
+            () => AutocorrectText,
+            value => AutocorrectText = value,
+            glyph: Glyphs.Language,
+            confirmOnEnable: TelemetryConsent.RequestAutocorrectText),
+    ];
 }

@@ -1,8 +1,7 @@
 using System.Collections.Generic;
-using Deckle.Audio;
 using Deckle.Catalog;
 
-namespace Deckle.Settings;
+namespace Deckle.Audio;
 
 // ── RecordingViewModel — settings manifest ────────────────────────────────────
 //
@@ -76,5 +75,21 @@ public partial class RecordingViewModel
             ],
             glyph: Glyphs.VoiceLevel,
             defaultValue: () => !new LevelWindowSettings().AutoCalibrationEnabled),
+    ];
+
+    // Microphone telemetry — the per-recording RMS-distribution opt-in, relocated
+    // here from the shared Diagnostics page because it observes THIS module's capture
+    // pipeline. One toggle, gated by the shell's consent dialog through the Catalog
+    // registry (TelemetryConsent.RequestMicrophone, a method group the App wires at
+    // boot) — so the module gates its enable behind consent without referencing the
+    // shell. No defaultValue: a privacy opt-in carries no per-card reset affordance,
+    // and this section hosts no section-reset link either.
+    public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
+    [
+        Setting.Toggle("RecordingMicrophoneTelemetryCard",
+            () => MicrophoneTelemetry,
+            value => MicrophoneTelemetry = value,
+            glyph: Glyphs.Microphone,
+            confirmOnEnable: TelemetryConsent.RequestMicrophone),
     ];
 }
