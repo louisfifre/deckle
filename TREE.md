@@ -1102,6 +1102,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
+│   │   ├── BuildDataGestureTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs

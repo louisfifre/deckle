@@ -15,7 +15,9 @@
 #   2. Norvig count_1w.txt — English unigram counts. Used to detect words
 #      that are English (leave untouched) vs French (candidates for
 #      re-accenting).
-#   3. Wikipedia FR plaintext — a real-prose corpus for evaluating the
+#   3. FranceTerme.xml — the official French terminology export. Its English
+#      equivalents seed the restricted global-English protected lexicon.
+#   4. Wikipedia FR plaintext — a real-prose corpus for evaluating the
 #      autocorrect end to end. Split disjointly by article into a train
 #      set and a held-out eval set.
 #
@@ -213,6 +215,27 @@ Info "shape ok: $norvigShapeOk (sample: $($norvigSample[0]))"
 Info "rows: $norvigRows"
 
 # =============================================================================
+# 2b. FranceTerme (French official terminology — English equivalents)
+# =============================================================================
+# The restricted globish seed is built from the <Equivalent langue="en"> entries
+# of the official FranceTerme export. The canonical XML lives on the
+# culture.gouv.fr public export — the remote resource the data.gouv.fr dataset
+# points to — served over http as text/xml, ~9 MB, no auth. Licence Ouverte /
+# Etalab (see NOTICE.md).
+Step 'FranceTerme.xml (French terminology — English equivalents)'
+$franceTermeDst = Join-Path $RawDir 'FranceTerme.xml'
+$franceTermeUrl = 'http://www.franceterme.culture.gouv.fr/public/FranceTerme.xml'
+# The export is ~8.9 MB; 4 MB is a safe "looks complete" floor.
+Download $franceTermeUrl $franceTermeDst 4MB | Out-Null
+
+# Verify shape: the payload must be an XML document (the builder reads its
+# <Equivalent langue="en"> entries).
+$franceTermeHead = (Get-Content $franceTermeDst -First 1)
+if ($franceTermeHead -notmatch '<\?xml') {
+    Warn "FranceTerme.xml does not begin with an XML declaration — got: $franceTermeHead"
+}
+
+# =============================================================================
 # 3. Wikipedia FR plaintext corpus (train + eval, disjoint by article)
 # =============================================================================
 Step 'Wikipedia FR plaintext corpus (train + eval)'
@@ -354,14 +377,14 @@ if (-not $Force -and $trainOk -and $evalOk) {
 # =============================================================================
 $swTotal.Stop()
 Step 'done'
-foreach ($f in @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')) {
+foreach ($f in @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')) {
     $p = Join-Path $RawDir $f
     if (Test-Path $p) { Write-Host ("         {0,-20} {1,8} MB" -f $f, (Get-SizeMB $p)) }
     else              { Warn "MISSING $f" }
 }
 Write-Host "`n         wall time: $([math]::Round($swTotal.Elapsed.TotalMinutes, 1)) min" -ForegroundColor Gray
 
-$missingFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'wiki-fr-train.txt', 'wiki-fr-eval.txt') |
+$missingFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt') |
     Where-Object { -not (Test-Path (Join-Path $RawDir $_)) }
 $summaryResult = if ($missingFiles.Count -gt 0) { 'Partial' } else { 'Success' }
 $summarySentence = if ($missingFiles.Count -gt 0) {
