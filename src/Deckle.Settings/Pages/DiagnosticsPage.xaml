@@ -112,27 +112,15 @@
                                      Click="ResetTelemetry_Click" />
                 </Grid>
 
-                <!-- Composed region — the telemetry opt-ins that ARE plain toggles.
-                     Application log and Microphone each carry an off→on consent
-                     dialog and Latency carries none, but all three are now declared
-                     in DiagnosticsViewModel.TelemetrySettings (the two consent rows
-                     via a confirmOnEnable gate the composer runs before persisting
-                     the enable). ComposeTelemetrySection() hands them to the composer,
-                     which builds the SettingsCards into this host in the former
-                     on-screen order (Application log, Microphone, Latency). The
-                     Corpus expander and the storage-folder card below stay
-                     hand-authored — a nested layout and a folder path the composer
-                     can't express. -->
+                <!-- Composed region — the Application log telemetry opt-in. It carries
+                     an off→on consent dialog, declared in DiagnosticsViewModel.TelemetrySettings
+                     via a confirmOnEnable gate the composer runs before persisting the
+                     enable. ComposeTelemetrySection() hands it to the composer, which
+                     builds the SettingsCard into this host. The Latency toggle and the
+                     Corpus fold moved to the Dictation page (they observe the dictation
+                     pipeline); the storage-folder card below stays hand-authored — a
+                     folder path the composer can't express. -->
                 <StackPanel x:Name="TelemetryHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
-
-                <!-- Composed region — the audio-corpus consent fold. Formerly a
-                     hand-authored SettingsExpander; now a Setting.Group declared in
-                     DiagnosticsViewModel.CorpusSettings, built into this host by
-                     ComposeCorpusSection(). The master's and child's consent dialogs
-                     ride confirmOnEnable, and the master → record → content chain masks
-                     (never greys) — retiring the IsEnabled bindings the expander used. -->
-                <StackPanel x:Name="CorpusHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- Decisions is the primary (lighter) opt-in on the header; the

@@ -347,4 +347,53 @@ public partial class WhisperViewModel
             ],
             glyph: Glyphs.Diagnostics),
     ];
+
+    // Diagnostics — the dictation-scoped observability opt-ins relocated from the
+    // shared Diagnostics page, in on-screen order: the streaming-transcription log
+    // filter, the latency telemetry toggle, then the audio-corpus consent fold.
+    //
+    // Neither the log toggle nor the latency toggle carries a defaultValue: a
+    // privacy/observability opt-in has no per-row "resettable default" affordance,
+    // so the composer renders no per-card reset wheel — the same posture the
+    // Diagnostics page's cards had.
+    //
+    // The corpus fold is the Setting.Group copied from DiagnosticsViewModel.CorpusSettings,
+    // but its consent dialogs now ride the Catalog registry (TelemetryConsent.RequestCorpus
+    // on the master, .RequestAudioCorpus on the audio child) rather than the shell's
+    // ContentDialog types — so this module gates its enables behind consent without
+    // referencing the shell. The master → record → content chain masks (never greys)
+    // via the child radio's VisibleWhen on RecordAudioCorpus. No defaultValue anywhere:
+    // a privacy opt-in carries no per-row reset.
+    public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
+    [
+        Setting.Toggle("LoggingStreamingCard",
+            () => LogStreamingTranscriptionActivity,
+            value => LogStreamingTranscriptionActivity = value,
+            glyph: Glyphs.Speech),
+        Setting.Toggle("GeneralLatencyCard",
+            () => TelemetryLatencyEnabled,
+            value => TelemetryLatencyEnabled = value,
+            glyph: Glyphs.Latency),
+        Setting.Group("GeneralCorpusExpander",
+            () => TelemetryCorpusEnabled,
+            value => TelemetryCorpusEnabled = value,
+            glyph: Glyphs.AudioRecording,
+            confirmOnEnable: TelemetryConsent.RequestCorpus,
+            children:
+            [
+                Setting.Toggle("GeneralAudioCorpusCard",
+                    () => RecordAudioCorpus,
+                    value => RecordAudioCorpus = value,
+                    confirmOnEnable: TelemetryConsent.RequestAudioCorpus),
+                Setting.Radio("GeneralAudioCorpusContentCard",
+                    () => AudioCorpusContentIndex,
+                    value => AudioCorpusContentIndex = value,
+                    options:
+                    [
+                        (0, "GeneralAudioCorpusContentMatch"),
+                        (1, "GeneralAudioCorpusContentRaw"),
+                    ],
+                    visibleWhen: () => RecordAudioCorpus),
+            ]),
+    ];
 }

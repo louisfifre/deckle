@@ -25,14 +25,6 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     // ── Logging — runtime emission filters ──────────────────────────────────
 
-    // Streaming transcription Verbose toggle: when off, the 1 Hz heartbeat and
-    // the per-utterance details from the Whisp provider are dropped during a
-    // streaming take. Milestones (StreamingPipelineStarted, StreamingDrained)
-    // always pass. Sister to LogAmbientCaptureActivity; same closed-by-default
-    // posture.
-    [ObservableProperty]
-    public partial bool LogStreamingTranscriptionActivity { get; set; }
-
     // Autocorrect Verbose toggle: when off (default), only the edits surface —
     // an applied correction's Verbose detail (reason and lengths, never the
     // word) plus its milestone. The per-focus SurfaceChanged firehose, the
@@ -59,29 +51,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool ApplicationLogToDisk { get; set; }
 
-    // Latency telemetry — per-step timings of each transcription written
-    // to latency.jsonl. Timings only, no transcript text — lighter privacy
-    // posture than Application log or Corpus.
-    [ObservableProperty]
-    public partial bool TelemetryLatencyEnabled { get; set; }
-
-    // Corpus master — text corpus (transcription + rewrite) per profile.
-    // Audio corpus is nested under it (gated by IsEnabled in XAML so it
-    // can't reach the on state while the master is off).
-    [ObservableProperty]
-    public partial bool TelemetryCorpusEnabled { get; set; }
-
-    [ObservableProperty]
-    public partial bool RecordAudioCorpus { get; set; }
-
-    // Audio corpus content selector — which version of each take is saved
-    // when RecordAudioCorpus is on. Stored as an int index mirroring the
-    // RadioButtons order (0 = match the transcription, 1 = always raw) so
-    // RadioButtons.SelectedIndex binds TwoWay without a converter. Mapped
-    // to TelemetrySettings.AudioCorpusContent in Load / Push.
-    [ObservableProperty]
-    public partial int AudioCorpusContentIndex { get; set; }
-
     // Autocorrect decisions — the per-word decision dataset
     // (autocorrect.decisions.jsonl): every corrected or left-literal word on an
     // enrolled surface with its candidates, scores, margins and the guard that
@@ -106,13 +75,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial string TelemetryStorageDirectory { get; set; }
 
-    partial void OnLogStreamingTranscriptionActivityChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
-        PushLoggingToSettings();
-    }
-
     partial void OnLogAutocorrectActivityChanged(bool value)
     {
         if (_isSyncing) return;
@@ -131,37 +93,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("Telemetry.ApplicationLogToDisk", value.ToString());
-        PushTelemetryToSettings();
-    }
-
-    partial void OnTelemetryLatencyEnabledChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
-        PushTelemetryToSettings();
-    }
-
-    partial void OnTelemetryCorpusEnabledChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
-        PushTelemetryToSettings();
-    }
-
-    partial void OnRecordAudioCorpusChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
-        PushTelemetryToSettings();
-    }
-
-    partial void OnAudioCorpusContentIndexChanged(int value)
-    {
-        // RadioButtons emits -1 transiently while it realises its items —
-        // ignore it so we never cast a bogus index onto the enum.
-        if (_isSyncing || value < 0) return;
-        DeckleSettingsUxSource.Log.SettingChanged(
-            "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
         PushTelemetryToSettings();
     }
 
@@ -202,14 +133,9 @@ public partial class DiagnosticsViewModel : ObservableObject
         // but for a different reason : disk-persistence streams stay
         // off until the user explicitly opts in to where their data
         // lands.
-        LogStreamingTranscriptionActivity = false;
         LogAutocorrectActivity = false;
         LogWindowingActivity = false;
         ApplicationLogToDisk = false;
-        TelemetryLatencyEnabled = false;
-        TelemetryCorpusEnabled = false;
-        RecordAudioCorpus = false;
-        AudioCorpusContentIndex = 0;
         AutocorrectDecisions = false;
         AutocorrectText = false;
         TelemetryStorageDirectory = "";
@@ -223,16 +149,11 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             var l = LoggingSettingsService.Instance.Current;
-            LogStreamingTranscriptionActivity = l.LogStreamingTranscriptionActivity;
             LogAutocorrectActivity = l.LogAutocorrectActivity;
             LogWindowingActivity = l.LogWindowingActivity;
 
             var t = TelemetrySettingsService.Instance.Current;
             ApplicationLogToDisk = t.ApplicationLogToDisk;
-            TelemetryLatencyEnabled = t.LatencyEnabled;
-            TelemetryCorpusEnabled = t.CorpusEnabled;
-            RecordAudioCorpus = t.RecordAudioCorpus;
-            AudioCorpusContentIndex = (int)t.AudioCorpusContent;
             AutocorrectDecisions = t.AutocorrectDecisions;
             AutocorrectText = t.AutocorrectText;
             TelemetryStorageDirectory = t.StorageDirectory;
@@ -246,7 +167,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushLoggingToSettings()
     {
         var l = LoggingSettingsService.Instance.Current;
-        l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
         l.LogAutocorrectActivity = LogAutocorrectActivity;
         l.LogWindowingActivity = LogWindowingActivity;
         LoggingSettingsService.Instance.Save();
@@ -256,12 +176,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         var t = TelemetrySettingsService.Instance.Current;
         t.ApplicationLogToDisk = ApplicationLogToDisk;
-        t.LatencyEnabled = TelemetryLatencyEnabled;
-        t.CorpusEnabled = TelemetryCorpusEnabled;
-        t.RecordAudioCorpus = RecordAudioCorpus;
-        t.AudioCorpusContent = AudioCorpusContentIndex < 0
-            ? AudioCorpusContent.MatchTranscription
-            : (AudioCorpusContent)AudioCorpusContentIndex;
         t.AutocorrectDecisions = AutocorrectDecisions;
         t.AutocorrectText = AutocorrectText;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
@@ -275,7 +189,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            LogStreamingTranscriptionActivity = false;
             LogAutocorrectActivity = false;
             LogWindowingActivity = false;
         }
@@ -291,10 +204,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             ApplicationLogToDisk = false;
-            TelemetryLatencyEnabled = false;
-            TelemetryCorpusEnabled = false;
-            RecordAudioCorpus = false;
-            AudioCorpusContentIndex = 0;
             AutocorrectDecisions = false;
             AutocorrectText = false;
             TelemetryStorageDirectory = "";

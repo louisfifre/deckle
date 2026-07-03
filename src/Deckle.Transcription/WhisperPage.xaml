@@ -311,6 +311,19 @@
                 <StackPanel x:Name="StreamingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- ── Diagnostics ─────────────────────────────────────────────
+                     The dictation-scoped observability opt-ins relocated from the
+                     shared Diagnostics page: the streaming-transcription log filter,
+                     the latency telemetry toggle, and the audio-corpus consent fold.
+                     Composed from WhisperViewModel.DiagnosticsSettings into the host
+                     below. No section "Reset" link — the corpus fold's consents are
+                     privacy state, cleared from the Diagnostics page's own reset. -->
+                <TextBlock x:Uid="WhisperPageDiagnosticsHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <StackPanel x:Name="DiagnosticsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
             </StackPanel>
             </Grid>
         </ScrollViewer>

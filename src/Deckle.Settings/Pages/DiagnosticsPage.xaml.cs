@@ -15,14 +15,15 @@ namespace Deckle.Settings;
 
 // ── DiagnosticsPage ─────────────────────────────────────────────────────────
 //
-// Extracted from GeneralPage in slice S2. Hosts the telemetry opt-ins
-// (Application log, Microphone, Latency, Corpus + Audio corpus, Storage
-// folder) that previously crowded GeneralPage's bottom half. Same
-// patterns as GeneralPage : NavigationCacheMode.Required, _initializing
-// guard around the initial sync pass, per-toggle consent flow with
-// _suppress* re-entry guards. The Application log / Microphone / Latency
-// opt-ins and the storage-folder path are composed from the ViewModel's
-// manifests; the Corpus and Autocorrect expanders stay hand-authored.
+// Extracted from GeneralPage in slice S2. Hosts the cross-cutting telemetry
+// opt-ins (Application log, Autocorrect capture, Storage folder) that don't
+// belong to a single module. The dictation-scoped opt-ins — Latency and the
+// Corpus + Audio-corpus fold — moved to the Dictation (Whisper) page (they
+// observe the dictation pipeline). Same patterns as GeneralPage :
+// NavigationCacheMode.Required, _initializing guard around the initial sync
+// pass, per-toggle consent flow with _suppress* re-entry guards. The
+// Application log opt-in and the storage-folder path are composed from the
+// ViewModel's manifests; the Autocorrect expander stays hand-authored.
 public sealed partial class DiagnosticsPage : Page
 {
     public DiagnosticsViewModel ViewModel { get; } = new();
@@ -41,14 +42,13 @@ public sealed partial class DiagnosticsPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeTelemetrySection();
-        ComposeCorpusSection();
         ComposeStorageFolderSection();
 
         // The page-level "Reset all" gate spans every composed section plus the
         // hand-authored Autocorrect toggles; re-gate on any composer's DirtyChanged
         // and on the Autocorrect properties (which no composer tracks).
         foreach (var composer in new[]
-                 { _loggingComposer, _telemetryComposer, _corpusComposer, _storageFolderComposer })
+                 { _loggingComposer, _telemetryComposer, _storageFolderComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
@@ -88,24 +88,6 @@ public sealed partial class DiagnosticsPage : Page
     {
         _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
         _telemetryComposer.Compose(ViewModel.TelemetrySettings);
-    }
-
-    // ── Composed Corpus fold ──────────────────────────────────────────────────
-    //
-    // The audio-corpus consent fold, now a composed Setting.Group (declared in
-    // DiagnosticsViewModel.CorpusSettings) rather than the former hand-authored
-    // SettingsExpander. The composer builds the master toggle + its two dependent rows
-    // and runs their off→on consent dialogs through the descriptors' confirmOnEnable
-    // gate — so the CorpusLoggingToggle_Toggled / AudioCorpusToggle_Toggled handlers and
-    // their re-entry guards are gone. Composed before LoadAndSync so the PropertyChanged
-    // subscription catches Load() (and the Telemetry "Reset"); held in a field so the
-    // subscription lives as long as the (cached) page.
-    private SettingsComposer? _corpusComposer;
-
-    private void ComposeCorpusSection()
-    {
-        _corpusComposer = new SettingsComposer(CorpusHost, ViewModel);
-        _corpusComposer.Compose(ViewModel.CorpusSettings);
     }
 
     // ── Composed Storage-folder card ──────────────────────────────────────────
@@ -153,10 +135,11 @@ public sealed partial class DiagnosticsPage : Page
     // revert). On → Off : no confirmation — the user can turn it back on
     // later if needed.
     //
-    // Application log, Microphone and the whole Corpus fold once lived here too; they
-    // now run the same flow through the composer's confirmOnEnable gate (their
-    // descriptors in DiagnosticsViewModel.TelemetrySettings / CorpusSettings), so only
-    // the Autocorrect pair stays hand-authored — a header toggle plus an INDEPENDENT
+    // Application log once ran its dialog here too; it now runs the same flow through
+    // the composer's confirmOnEnable gate (its descriptor in
+    // DiagnosticsViewModel.TelemetrySettings). The Corpus fold ran here as well before
+    // it moved to the Dictation page, where its consents ride the Catalog registry. So
+    // only the Autocorrect pair stays hand-authored — a header toggle plus an INDEPENDENT
     // nested toggle (recording verbatim text does not depend on recording decisions),
     // which is neither a dependency Group (it would wrongly mask the text opt-in) nor a
     // flat Section (it would drop the primary opt-in from the header).
@@ -222,7 +205,6 @@ public sealed partial class DiagnosticsPage : Page
         ResetAllButton.IsEnabled =
             (_loggingComposer?.IsDirty() ?? false) ||
             (_telemetryComposer?.IsDirty() ?? false) ||
-            (_corpusComposer?.IsDirty() ?? false) ||
             (_storageFolderComposer?.IsDirty() ?? false) ||
             ViewModel.AutocorrectDecisions ||
             ViewModel.AutocorrectText;

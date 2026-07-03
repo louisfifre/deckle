@@ -85,6 +85,7 @@ public sealed partial class WhisperPage : Page
         ComposeContextSection();
         ComposeDecodingSection();
         ComposeConfidenceSection();
+        ComposeDiagnosticsSection();
 
         Loaded += (_, _) =>
         {
@@ -235,6 +236,19 @@ public sealed partial class WhisperPage : Page
     {
         _confidenceComposer = new SettingsComposer(ConfidenceHost, ViewModel);
         _confidenceComposer.Compose(ViewModel.ConfidenceSettingsManifest);
+    }
+
+    // Diagnostics — the dictation-scoped observability opt-ins (streaming-transcription
+    // log filter, latency telemetry, audio-corpus consent fold) composed into their
+    // host. Same host-only pattern as the flat sections above; no section-reset link
+    // (the corpus consents are privacy state cleared from the Diagnostics page's own
+    // reset), so the composer's DirtyChanged is left unwired here.
+    private SettingsComposer? _diagnosticsComposer;
+
+    private void ComposeDiagnosticsSection()
+    {
+        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
+        _diagnosticsComposer.Compose(ViewModel.DiagnosticsSettings);
     }
 
     // NavigationCacheMode.Required reuses the page instance. Loaded + hover

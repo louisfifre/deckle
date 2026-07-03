@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Telemetry;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
@@ -427,6 +429,104 @@ public partial class WhisperViewModel : ObservableObject
         SettingsService.Instance.Save();
     }
 
+    // ── Observability (dictation logging + telemetry opt-ins) ────────────────
+    //
+    // The dictation-scoped diagnostics opt-ins relocated from the shared
+    // Diagnostics page: the streaming-transcription Verbose log toggle (a Logging
+    // filter) and the four telemetry opt-ins (latency + the audio-corpus fold).
+    // They observe the dictation pipeline, so they live beside the engine that
+    // produces them.
+    //
+    // Persistence stays central: the log toggle in LoggingSettings (via
+    // LoggingSettingsService) and the four telemetry fields in TelemetrySettings
+    // (via TelemetrySettingsService) — the same POCOs the App's log/telemetry gates
+    // read directly. This VM only surfaces them. Pushed through two dedicated methods
+    // (PushDiagnosticsLoggingToSettings / PushTelemetryToSettings) so a single toggle
+    // touches only its own store, exactly as DiagnosticsViewModel split them.
+
+    [ObservableProperty]
+    public partial bool LogStreamingTranscriptionActivity { get; set; }
+
+    [ObservableProperty]
+    public partial bool TelemetryLatencyEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool TelemetryCorpusEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool RecordAudioCorpus { get; set; }
+
+    // Audio-corpus content selector — int index mirroring the RadioButtons order
+    // (0 = match the transcription, 1 = always raw), mapped to
+    // TelemetrySettings.AudioCorpusContent in Load / Push. Same idiom as
+    // DiagnosticsViewModel: RadioButtons emits -1 transiently while it realises its
+    // items, so the handler and the push both guard against a negative index.
+    [ObservableProperty]
+    public partial int AudioCorpusContentIndex { get; set; }
+
+    partial void OnLogStreamingTranscriptionActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
+        PushDiagnosticsLoggingToSettings();
+    }
+
+    partial void OnTelemetryLatencyEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnTelemetryCorpusEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnRecordAudioCorpusChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleWhispSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
+        PushTelemetryToSettings();
+    }
+
+    partial void OnAudioCorpusContentIndexChanged(int value)
+    {
+        // RadioButtons emits -1 transiently while it realises its items —
+        // ignore it so we never cast a bogus index onto the enum.
+        if (_isSyncing || value < 0) return;
+        DeckleWhispSource.Log.SettingChanged(
+            "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
+        PushTelemetryToSettings();
+    }
+
+    // Writes the streaming-transcription log opt-in back to LoggingSettings — kept
+    // separate from the telemetry push because the two share neither schema nor
+    // lifecycle (same reason DiagnosticsViewModel splits PushLogging / PushTelemetry).
+    private void PushDiagnosticsLoggingToSettings()
+    {
+        var l = LoggingSettingsService.Instance.Current;
+        l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
+        LoggingSettingsService.Instance.Save();
+    }
+
+    // Writes the four dictation telemetry opt-ins back to TelemetrySettings. The
+    // index↔enum guard mirrors DiagnosticsViewModel: a transient negative index
+    // resolves to MatchTranscription rather than casting a bogus value onto the enum.
+    private void PushTelemetryToSettings()
+    {
+        var t = TelemetrySettingsService.Instance.Current;
+        t.LatencyEnabled = TelemetryLatencyEnabled;
+        t.CorpusEnabled = TelemetryCorpusEnabled;
+        t.RecordAudioCorpus = RecordAudioCorpus;
+        t.AudioCorpusContent = AudioCorpusContentIndex < 0
+            ? AudioCorpusContent.MatchTranscription
+            : (AudioCorpusContent)AudioCorpusContentIndex;
+        TelemetrySettingsService.Instance.Save();
+    }
+
     // ── Constructor ──────────────────────────────────────────────────────────
 
     public WhisperViewModel()
@@ -472,6 +572,14 @@ public partial class WhisperViewModel : ObservableObject
         OverlayFadeOnProximity = overlay.FadeOnProximity;
         OverlayAnimations = overlay.Animations;
         OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+
+        // Observability opt-ins seed closed — the log filter and the telemetry
+        // streams both start OFF until the user opts in. Overwritten by Load().
+        LogStreamingTranscriptionActivity = false;
+        TelemetryLatencyEnabled = false;
+        TelemetryCorpusEnabled = false;
+        RecordAudioCorpus = false;
+        AudioCorpusContentIndex = 0;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -526,6 +634,17 @@ public partial class WhisperViewModel : ObservableObject
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
             OverlayAnimations = shell.Overlay.Animations;
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+
+            // Observability — the log filter from LoggingSettings, the four telemetry
+            // opt-ins from TelemetrySettings (the same central POCOs the App's gates
+            // read). Read here so the composed cards reflect the persisted state.
+            LogStreamingTranscriptionActivity =
+                LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity;
+            var t = TelemetrySettingsService.Instance.Current;
+            TelemetryLatencyEnabled = t.LatencyEnabled;
+            TelemetryCorpusEnabled = t.CorpusEnabled;
+            RecordAudioCorpus = t.RecordAudioCorpus;
+            AudioCorpusContentIndex = (int)t.AudioCorpusContent;
         }
         finally
         {
