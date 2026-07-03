@@ -135,6 +135,18 @@
                 <StackPanel x:Name="VoiceLevelHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- Diagnostics — the microphone-telemetry opt-in, relocated here from
+                     the shared Diagnostics page because it observes this module's
+                     capture pipeline. A privacy opt-in, so this section carries NO
+                     section-reset link (it is never reset from here).
+                     RecordingPage.ComposeTelemetrySection() declares the toggle as a
+                     SettingDescriptor (RecordingViewModel.Settings.cs) and the composer
+                     builds the SettingsCard into this host. -->
+                <TextBlock x:Uid="RecordingPageTelemetryHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                <StackPanel x:Name="TelemetryHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

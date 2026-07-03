@@ -221,4 +221,15 @@
   <data name="Settings_AudioInput_Device_Format" xml:space="preserve">
     <value>Device {0}</value>
   </data>
+
+  <!-- Diagnostics section — microphone-telemetry opt-in (section header + composed card) -->
+  <data name="RecordingPageTelemetryHeader.Text" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="RecordingMicrophoneTelemetryCard.Header" xml:space="preserve">
+    <value>Log microphone level</value>
+  </data>
+  <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
+    <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Off by default; kept on this device. Useful when calibrating the level window.</value>
+  </data>
 </root>

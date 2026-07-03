@@ -59,12 +59,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool ApplicationLogToDisk { get; set; }
 
-    // Microphone telemetry — when on, every Recording Stop logs an extra
-    // line summarising the per-recording RMS distribution AND writes a
-    // structured row to <telemetry>/microphone.jsonl. Calibration tool.
-    [ObservableProperty]
-    public partial bool MicrophoneTelemetry { get; set; }
-
     // Latency telemetry — per-step timings of each transcription written
     // to latency.jsonl. Timings only, no transcript text — lighter privacy
     // posture than Application log or Corpus.
@@ -140,13 +134,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         PushTelemetryToSettings();
     }
 
-    partial void OnMicrophoneTelemetryChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
-        PushTelemetryToSettings();
-    }
-
     partial void OnTelemetryLatencyEnabledChanged(bool value)
     {
         if (_isSyncing) return;
@@ -219,7 +206,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         LogAutocorrectActivity = false;
         LogWindowingActivity = false;
         ApplicationLogToDisk = false;
-        MicrophoneTelemetry = false;
         TelemetryLatencyEnabled = false;
         TelemetryCorpusEnabled = false;
         RecordAudioCorpus = false;
@@ -243,7 +229,6 @@ public partial class DiagnosticsViewModel : ObservableObject
 
             var t = TelemetrySettingsService.Instance.Current;
             ApplicationLogToDisk = t.ApplicationLogToDisk;
-            MicrophoneTelemetry = t.MicrophoneTelemetry;
             TelemetryLatencyEnabled = t.LatencyEnabled;
             TelemetryCorpusEnabled = t.CorpusEnabled;
             RecordAudioCorpus = t.RecordAudioCorpus;
@@ -271,7 +256,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         var t = TelemetrySettingsService.Instance.Current;
         t.ApplicationLogToDisk = ApplicationLogToDisk;
-        t.MicrophoneTelemetry = MicrophoneTelemetry;
         t.LatencyEnabled = TelemetryLatencyEnabled;
         t.CorpusEnabled = TelemetryCorpusEnabled;
         t.RecordAudioCorpus = RecordAudioCorpus;
@@ -307,7 +291,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             ApplicationLogToDisk = false;
-            MicrophoneTelemetry = false;
             TelemetryLatencyEnabled = false;
             TelemetryCorpusEnabled = false;
             RecordAudioCorpus = false;

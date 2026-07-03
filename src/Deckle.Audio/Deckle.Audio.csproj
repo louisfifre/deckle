@@ -38,6 +38,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Telemetry POCOs: the microphone-telemetry opt-in reads/writes
+         TelemetrySettings via TelemetrySettingsService. No cycle — Diagnostics.Telemetry
+         does not reference Audio. -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <!-- Catalog: RecordingPage composes via SettingsComposer and reads Glyphs;
          RecordingSettingsModule builds a SettingsModuleDescriptor (in Catalog). -->
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />

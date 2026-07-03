@@ -38,19 +38,20 @@ public partial class DiagnosticsViewModel
             glyph: Glyphs.Window),
     ];
 
-    // Telemetry opt-ins (the "Telemetry" section). Three composable toggles now:
-    // the two consent opt-ins (Application log, Microphone) carry a confirmOnEnable
-    // gate so the composer holds their OFF→ON write behind the consent dialog —
-    // exactly the off→on-shows-a-dialog flow the hand-authored cards ran, now
-    // declared rather than wired in the page. Latency is a plain TwoWay switch.
-    // Declared in on-screen order (Application log first by user request, then
-    // Microphone, then Latency), so the composed host reproduces the former card
-    // order. The remaining hand-authored telemetry rows are the Corpus and
-    // Autocorrect expanders — nested layouts the composer doesn't build.
+    // Telemetry opt-ins (the "Telemetry" section). Two composable toggles now:
+    // Application log carries a confirmOnEnable gate so the composer holds its
+    // OFF→ON write behind the consent dialog — exactly the off→on-shows-a-dialog
+    // flow the hand-authored card ran, now declared rather than wired in the page.
+    // Latency is a plain TwoWay switch. Declared in on-screen order (Application log
+    // first by user request, then Latency), so the composed host reproduces the
+    // former card order. The Microphone opt-in moved to the Recording module's own
+    // page (it observes that module's capture pipeline). The remaining hand-authored
+    // telemetry rows are the Corpus and Autocorrect expanders — nested layouts the
+    // composer doesn't build.
     //
-    // No defaultValue on the consent toggles: a privacy opt-in has no "resettable
-    // default" affordance per row (the section "Reset" clears them), so the composer
-    // renders no per-card reset wheel for them — which is correct.
+    // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
+    // default" affordance per row (the section "Reset" clears it), so the composer
+    // renders no per-card reset wheel for it — which is correct.
     public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
         Setting.Toggle("GeneralAppLogCard",
@@ -58,11 +59,6 @@ public partial class DiagnosticsViewModel
             value => ApplicationLogToDisk = value,
             glyph: Glyphs.AppLog,
             confirmOnEnable: root => ApplicationLogConsentDialog.ShowAsync(root)),
-        Setting.Toggle("GeneralLogMicrophoneCard",
-            () => MicrophoneTelemetry,
-            value => MicrophoneTelemetry = value,
-            glyph: Glyphs.Microphone,
-            confirmOnEnable: root => MicrophoneTelemetryConsentDialog.ShowAsync(root)),
         Setting.Toggle("GeneralLatencyCard",
             () => TelemetryLatencyEnabled,
             value => TelemetryLatencyEnabled = value,
