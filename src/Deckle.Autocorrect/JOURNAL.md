@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-03 — Closed-candidate Qwen bench rejects silent use
+
+Benchmarked 30 closed French correction cases against staged Qwen3 ONNX Runtime GenAI CPU int4 models with the forced-logprob judge. At margin `0.25`, 0.6B and 1.7B each made one high-margin false literal change, 4B made one high-margin false literal change, and 8B made two high-margin false changes; no tested Qwen size is safe for silent sentence correction without another guard. Timings for 30 cases were about 68 s, 171 s, 360 s, and 647 s.
+
 ## 2026-07-03 — Qwen 4B baseline, Luth benchmark before runtime change
 
 Chose Qwen3-4B ONNX Runtime GenAI CPU int4 as the immediate closed-candidate judge baseline. Luth stays a candidate because its French-specialized 0.6B/1.7B models are public and benchmarked above their Qwen bases on French tasks, but the verified ready artifacts are Hugging Face `safetensors` and GGUF quantizations, not an ONNX Runtime GenAI export. Next step is an offline Luth benchmark on the same closed-candidate traps before either converting Luth to ONNX GenAI or adding a GGUF/llama.cpp runtime.

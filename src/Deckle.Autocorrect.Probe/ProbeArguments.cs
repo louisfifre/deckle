@@ -1,0 +1,135 @@
+using System.Globalization;
+
+namespace Deckle.Autocorrect.Probe;
+
+internal enum ProbeMode
+{
+    Single,
+    Benchmark,
+}
+
+internal sealed class ProbeArguments
+{
+    public ProbeMode Mode { get; private init; }
+    public required IReadOnlyList<ModelSpec> Models { get; init; }
+    public double Margin { get; private init; }
+    public required IReadOnlyList<double> Thresholds { get; init; }
+    public required IReadOnlyList<string> Candidates { get; init; }
+    public bool ShowCases { get; private init; }
+
+    public static ProbeArguments? Parse(string[] args)
+    {
+        ProbeMode mode = ProbeMode.Single;
+        double margin = 0.0;
+        var models = new List<ModelSpec>();
+        var thresholds = new List<double>();
+        var candidates = new List<string>();
+        bool showCases = false;
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            string arg = args[i];
+            if (arg is "--help" or "-h" or "/?")
+                return null;
+
+            if (arg is "--benchmark")
+            {
+                mode = ProbeMode.Benchmark;
+                continue;
+            }
+
+            if (arg is "--show-cases")
+            {
+                showCases = true;
+                continue;
+            }
+
+            if (arg is "--model" or "-m")
+            {
+                if (++i >= args.Length || string.IsNullOrWhiteSpace(args[i]))
+                    return null;
+
+                models.Add(ModelSpec.Parse(args[i]));
+                continue;
+            }
+
+            if (arg is "--margin")
+            {
+                if (++i >= args.Length ||
+                    !double.TryParse(args[i], CultureInfo.InvariantCulture, out margin))
+                    return null;
+
+                continue;
+            }
+
+            if (arg is "--threshold" or "-t")
+            {
+                if (++i >= args.Length ||
+                    !double.TryParse(args[i], CultureInfo.InvariantCulture, out double threshold))
+                    return null;
+
+                thresholds.Add(Math.Max(0.0, threshold));
+                continue;
+            }
+
+            if (arg is "--candidate" or "-c")
+            {
+                if (++i >= args.Length || string.IsNullOrWhiteSpace(args[i]))
+                    return null;
+
+                candidates.Add(args[i]);
+                continue;
+            }
+
+            return null;
+        }
+
+        if (mode == ProbeMode.Single)
+        {
+            if (candidates.Count < 2)
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = models.Count > 0
+                    ? new[] { models[^1] }
+                    : new[] { ModelPathResolver.DefaultSingleModel() },
+                Margin = margin,
+                Thresholds = Array.Empty<double>(),
+                Candidates = candidates,
+                ShowCases = showCases,
+            };
+        }
+
+        if (candidates.Count > 0)
+            return null;
+
+        return new ProbeArguments
+        {
+            Mode = mode,
+            Models = models.Count > 0 ? models : ModelPathResolver.DefaultBenchmarkModels(),
+            Margin = 0.0,
+            Thresholds = thresholds.Count > 0
+                ? thresholds.Distinct().Order().ToArray()
+                : new[] { 0.0, 0.10, 0.25, 0.50, 0.75 },
+            Candidates = Array.Empty<string>(),
+            ShowCases = showCases,
+        };
+    }
+}
+
+internal static class ProbeUsage
+{
+    public static void Print()
+    {
+        Console.Error.WriteLine("Usage:");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --model <dir> [--margin <n>] --candidate <text> --candidate <text> [...]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --benchmark [--model <label=dir>] [--threshold <n>] [--show-cases]");
+        Console.Error.WriteLine();
+        Console.Error.WriteLine(
+            "If --model is omitted in single mode, the default is %LOCALAPPDATA%\\Deckle\\models\\qwen3-0.6b-onnx\\onnxruntime\\cpu_and_mobile\\cpu-int4-kld-block-128.");
+        Console.Error.WriteLine(
+            "If --model is omitted in benchmark mode, staged qwen3-*-onnx models under %LOCALAPPDATA%\\Deckle\\models are used.");
+    }
+}

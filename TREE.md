@@ -468,8 +468,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
 │   │   └── OnnxSentenceScorer.cs
 │   ├── Deckle.Autocorrect.Probe/
+│   │   ├── CorrectionBenchmarkCase.cs
+│   │   ├── CorrectionBenchmarkCommand.cs
+│   │   ├── CorrectionBenchmarkCorpus.cs
+│   │   ├── CorrectionBenchmarkResult.cs
+│   │   ├── CorrectionBenchmarkSummary.cs
 │   │   ├── Deckle.Autocorrect.Probe.csproj
-│   │   └── Program.cs
+│   │   ├── ModelPathResolver.cs
+│   │   ├── ProbeArguments.cs
+│   │   ├── Program.cs
+│   │   └── SingleProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── IPathControl.cs
@@ -1092,6 +1100,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
+│   │   ├── CorrectionBenchmarkSummaryTests.cs
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
