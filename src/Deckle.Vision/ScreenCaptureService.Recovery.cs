@@ -116,7 +116,9 @@ public sealed partial class ScreenCaptureService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+                if (attempt == 1)
+                    DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+
                 DeckleVisionSource.Log.DuplicationRecreateAttemptFailedDetail(
                     attempt, ex.GetType().Name, ex.Message);
                 try { Task.Delay(RecreateBackoffMs, ct).Wait(ct); }
