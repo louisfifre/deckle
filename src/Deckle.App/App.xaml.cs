@@ -468,6 +468,12 @@ public partial class App : Microsoft.UI.Xaml.Application
                     Mode = args.Mode,
                     DefaultPath = args.DefaultPath?.Invoke() ?? string.Empty,
                 };
+        // Fill the Catalog.TelemetryConsent registry with the shell's consent
+        // dialogs so module settings pages can gate their telemetry opt-ins behind
+        // the right consent — same lib-exposes-slots / App-owns-wiring pattern as
+        // the PathControlFactory above. Must run before any module settings page is
+        // created (its manifest reads the registry through confirmOnEnable).
+        Settings.TelemetryConsentWiring.Wire();
         Settings.SettingsHost.OpenSetupWizard  = async () =>
         {
             // Wizard XAML lives in the standalone Deckle.Setup module

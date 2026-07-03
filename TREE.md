@@ -510,7 +510,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
 │   │   ├── Loc.cs
-│   │   └── SettingsModuleDescriptor.cs
+│   │   ├── SettingsModuleDescriptor.cs
+│   │   └── TelemetryConsent.cs
 │   ├── Deckle.Chrono/
 │   │   ├── ChronoFormatter.cs
 │   │   ├── ChronoTimer.cs
@@ -896,7 +897,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleSettingsSource.cs
 │   │   ├── SettingsHost.cs
 │   │   ├── SettingsWindow.xaml
-│   │   └── SettingsWindow.xaml.cs
+│   │   ├── SettingsWindow.xaml.cs
+│   │   └── TelemetryConsentWiring.cs
 │   ├── Deckle.Setup/
 │   │   ├── Strings/
 │   │   │   └── en-US/
