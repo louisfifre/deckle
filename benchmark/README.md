@@ -7,8 +7,7 @@ module: benchmark
 
 # `benchmark/` — Deckle benchmark workspaces
 
-Top-level container for experimental harnesses that are useful to keep near
-Deckle but are not product code.
+Top-level container for experimental harnesses that are useful to keep near Deckle but are not product code.
 
 ## Layout
 
@@ -19,8 +18,4 @@ Deckle but are not product code.
 | [`lib/`](lib/) | Cross-benchmark infrastructure only: path resolution, env loading, event logs, resource monitoring. |
 | [`viewers/`](viewers/) | Generic benchmark result viewers. |
 
-Keep reusable code inside the workspace that owns the concept. ASR-specific
-judges, prompts, sources, metrics and corpus loaders stay under `asr/`. Shared
-plumbing that could serve another benchmark stays under `lib/` or `viewers/`. Do not park a
-Voxtral bench in `autoresearch/` unless the point of that folder is the
-autoresearch loop itself rather than ASR evaluation.
+Keep reusable code inside the workspace that owns the concept. ASR-specific judges, prompts, sources, metrics and corpus loaders stay under `asr/`. Shared plumbing that could serve another benchmark stays under `lib/` or `viewers/`. Do not park a Voxtral bench in `autoresearch/` unless the point of that folder is the autoresearch loop itself rather than ASR evaluation.

@@ -7,23 +7,11 @@ module: scripts
 
 # `scripts/` — Deckle dev workflows
 
-All scripts target PowerShell 7+. The single entry point lives at
-[`deckle.ps1`](deckle.ps1); the worker scripts it dispatches to live
-under [`lib/`](lib/) and stay usable on their own CLI for automation.
+All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`](deckle.ps1); the worker scripts it dispatches to live under [`lib/`](lib/) and stay usable on their own CLI for automation.
 
 ## Entry point — `deckle.ps1`
 
-`deckle.ps1` is what F5 runs in VSCodium (see
-[`.vscode/launch.json`](../.vscode/launch.json)) and what you call from
-a terminal for daily work. It opens an arrow-key menu grouping every
-dev action by purpose. The launcher uses a full-screen terminal flow:
-while you navigate, it runs in the terminal's alternate screen buffer, so
-`More`, worktree selection, and version selection replace the current screen
-instead of appending below. When a concrete action starts, the normal terminal
-is restored first so build and publish logs remain visible. The release,
-maintenance, and setup submenus keep the same grid style:
-their first selectable cell is always `< Back`, so a mistaken submenu entry is
-one Enter away from returning.
+`deckle.ps1` is what F5 runs in VSCodium (see [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from a terminal for daily work. It opens an arrow-key menu grouping every dev action by purpose. The launcher uses a full-screen terminal flow: while you navigate, it runs in the terminal's alternate screen buffer, so `More`, worktree selection, and version selection replace the current screen instead of appending below. When a concrete action starts, the normal terminal is restored first so build and publish logs remain visible. The release, maintenance, and setup submenus keep the same grid style: their first selectable cell is always `< Back`, so a mistaken submenu entry is one Enter away from returning.
 
 | Section | Action | Per-worktree? | Delegates to |
 |---|---|:---:|---|
@@ -43,25 +31,13 @@ one Enter away from returning.
 |  | Set up runtime assets | no | `lib/setup-assets.ps1` |
 |  | Install git hooks | no | `lib/install-hooks.ps1` |
 
-Per-worktree actions prompt for a worktree right after the action is
-picked (auto-resolved when only the main repo exists). Global actions
-go straight to a short parameter prompt where needed. Once a concrete action
-has been launched, the menu exits instead of returning to the launcher. Use
-`Quit` or Ctrl+C to leave without running an action.
+Per-worktree actions prompt for a worktree right after the action is picked (auto-resolved when only the main repo exists). Global actions go straight to a short parameter prompt where needed. Once a concrete action has been launched, the menu exits instead of returning to the launcher. Use `Quit` or Ctrl+C to leave without running an action.
 
 ## Worker scripts — `lib/`
 
-Each worker is callable directly from a terminal or a `launch.json`
-profile — `deckle.ps1` is purely additive.
+Each worker is callable directly from a terminal or a `launch.json` profile — `deckle.ps1` is purely additive.
 
-`lib/` keeps the public script entry points at the top level so existing
-direct calls do not break. Internal implementation is split by role:
-`lib/menu/` owns the reusable terminal UI engine, while `lib/launcher/`
-owns the `deckle.ps1` menu context, actions, and submenu definitions.
-Concrete worker scripts end with the same human-readable action summary:
-a short sentence, a `Workflow`, a `Result` (`Success`, `Failed`, `Partial`,
-or `Skipped`), then the fields that matter for that workflow. The detailed
-step logs stay above it for diagnosis.
+`lib/` keeps the public script entry points at the top level so existing direct calls do not break. Internal implementation is split by role: `lib/menu/` owns the reusable terminal UI engine, while `lib/launcher/` owns the `deckle.ps1` menu context, actions, and submenu definitions. Concrete worker scripts end with the same human-readable action summary: a short sentence, a `Workflow`, a `Result` (`Success`, `Failed`, `Partial`, or `Skipped`), then the fields that matter for that workflow. The detailed step logs stay above it for diagnosis.
 
 | File | Purpose | Common switches |
 |---|---|---|
@@ -105,54 +81,22 @@ pwsh scripts/lib/changelog.ps1
 
 ## Native runtime — three sourcing modes
 
-The app's first launch opens the in-app setup wizard when native DLLs or
-models are missing. The F5 menu also exposes `Set up runtime assets` as a
-developer shortcut over `lib/setup-assets.ps1`, which provisions the 8
-native DLLs (5 whisper.cpp
-Vulkan + 3 MinGW C++ runtime) through one of three paths:
+The app's first launch opens the in-app setup wizard when native DLLs or models are missing. The F5 menu also exposes `Set up runtime assets` as a developer shortcut over `lib/setup-assets.ps1`, which provisions the 8 native DLLs (5 whisper.cpp Vulkan + 3 MinGW C++ runtime) through one of three paths:
 
-1. **`-FromRelease <X.Y.Z>` (default for non-rebuilders).** Fetches
-   `deckle-native-<X.Y.Z>.zip` from the Deckle GitHub Release and
-   extracts the catalog DLLs in place. No local whisper.cpp clone
-   needed. Same source as the first-run wizard's auto-download path.
+1. **`-FromRelease <X.Y.Z>` (default for non-rebuilders).** Fetches `deckle-native-<X.Y.Z>.zip` from the Deckle GitHub Release and extracts the catalog DLLs in place. No local whisper.cpp clone needed. Same source as the first-run wizard's auto-download path.
 
-2. **`-WhisperRepo <path>` (for whisper.cpp rebuilders).** Copies DLLs
-   from a local whisper.cpp build tree (`<path>\build\bin\` plus the
-   MinGW runtime from Scoop). Use when iterating on whisper.cpp source
-   — recompile, point the script at your tree, the bundle on
-   `<UserDataRoot>` refreshes without going through GitHub. Falls back
-   to `$env:DECKLE_WHISPER_REPO` and then to a sibling
-   `<repo>\..\whisper.cpp` clone.
+2. **`-WhisperRepo <path>` (for whisper.cpp rebuilders).** Copies DLLs from a local whisper.cpp build tree (`<path>\build\bin\` plus the MinGW runtime from Scoop). Use when iterating on whisper.cpp source — recompile, point the script at your tree, the bundle on `<UserDataRoot>` refreshes without going through GitHub. Falls back to `$env:DECKLE_WHISPER_REPO` and then to a sibling `<repo>\..\whisper.cpp` clone.
 
-3. **Skip.** When neither path resolves to a valid build tree, the
-   native step is skipped with a warning. Useful when only models need
-   refreshing on a machine without a build tree.
+3. **Skip.** When neither path resolves to a valid build tree, the native step is skipped with a warning. Useful when only models need refreshing on a machine without a build tree.
 
-The Whisper models are pulled from HuggingFace; the Silero VAD model is
-pulled from GitHub (snakers4/silero-vad, pinned to the v6.2 tag).
-Both happen regardless of native runtime sourcing mode.
+The Whisper models are pulled from HuggingFace; the Silero VAD model is pulled from GitHub (snakers4/silero-vad, pinned to the v6.2 tag). Both happen regardless of native runtime sourcing mode.
 
 ## Post-build auto-relaunch
 
-`lib/build-run.ps1` passes `--post-build` by default: the freshly launched app
-relaunches itself once so the HUD reliably claims topmost on the first
-recording. Disable with `-NoAutoRestart` when you need a stable PID (attached
-debugger, log capture).
+`lib/build-run.ps1` passes `--post-build` by default: the freshly launched app relaunches itself once so the HUD reliably claims topmost on the first recording. Disable with `-NoAutoRestart` when you need a stable PID (attached debugger, log capture).
 
 ## What is *not* here
 
-- **MSIX / packaged installer.** No MSIX or Store package — Deckle ships
-  *unpackaged*. The GitHub Release (a pre-release while on 0.x), cut by
-  `lib/publish-app.ps1 -Publish`, carries two assets: the headline
-  `Deckle-Setup-vX.Y.Z-win-x64.exe` — the installer stub the end user downloads
-  and runs — and the self-contained app payload it fetches (`Deckle-vX.Y.Z.zip`
-  + `.sha256`). The `Deckle.Installer` stub resolves the latest release via the
-  GitHub API, downloads the payload, sha256-verifies it, and installs per-user
-  (GitHub auto-attaches the source-code archives too). Building from source via
-  `lib/build-run.ps1` (or the launcher) stays the dev path.
-- **CI / GitHub Actions.** None for now — personal project. Both publish
-  flows — the app ZIP and the native runtime — are cut manually by the
-  maintainer.
-- **Source mirror of whisper.cpp.** The repo no longer carries a
-  `whisper.cpp/` clone. Rebuilders clone it themselves alongside the
-  Deckle repo, build it locally, and point `-WhisperRepo` at it.
+- **MSIX / packaged installer.** No MSIX or Store package — Deckle ships *unpackaged*. The GitHub Release (a pre-release while on 0.x), cut by `lib/publish-app.ps1 -Publish`, carries two assets: the headline `Deckle-Setup-vX.Y.Z-win-x64.exe` — the installer stub the end user downloads and runs — and the self-contained app payload it fetches (`Deckle-vX.Y.Z.zip` + `.sha256`). The `Deckle.Installer` stub resolves the latest release via the GitHub API, downloads the payload, sha256-verifies it, and installs per-user (GitHub auto-attaches the source-code archives too). Building from source via `lib/build-run.ps1` (or the launcher) stays the dev path.
+- **CI / GitHub Actions.** None for now — personal project. Both publish flows — the app ZIP and the native runtime — are cut manually by the maintainer.
+- **Source mirror of whisper.cpp.** The repo no longer carries a `whisper.cpp/` clone. Rebuilders clone it themselves alongside the Deckle repo, build it locally, and point `-WhisperRepo` at it.

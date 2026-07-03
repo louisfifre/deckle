@@ -7,25 +7,16 @@ module: benchmark/autoresearch
 
 # `autoresearch/` — iterative experiment loops
 
-This folder is for the reusable shape of autoresearch, not for a specific ASR
-candidate. The `autoresearch` skill names the contract: define a goal, define an
-exact metric command and extraction, bound the editable scope, establish a
-baseline, then run experiments that are committed, measured, kept or discarded.
+This folder is for the reusable shape of autoresearch, not for a specific ASR candidate. The `autoresearch` skill names the contract: define a goal, define an exact metric command and extraction, bound the editable scope, establish a baseline, then run experiments that are committed, measured, kept or discarded.
 
 Typical Deckle uses:
 
-- rewrite-prompt tuning: generate a rewrite, score it against criteria, adjust
-  the prompt, rerun;
-- skill tuning: edit a skill, run a fixture task, judge the artifact, keep or
-  discard;
-- diagram/image generation: generate an artifact, inspect it with a visual or
-  multimodal judge, iterate against explicit criteria;
+- rewrite-prompt tuning: generate a rewrite, score it against criteria, adjust the prompt, rerun;
+- skill tuning: edit a skill, run a fixture task, judge the artifact, keep or discard;
+- diagram/image generation: generate an artifact, inspect it with a visual or multimodal judge, iterate against explicit criteria;
 - performance work: edit code, run a benchmark, compare the metric.
 
-Put domain-specific inputs in subfolders named by the thing being optimized
-(`rewrite-prompts/`, `diagram-skills/`, `site-performance/`, ...). Keep ASR
-model studies under [`../asr/studies/`](../asr/studies/) unless the primary
-artifact is the autoresearch loop itself.
+Put domain-specific inputs in subfolders named by the thing being optimized (`rewrite-prompts/`, `diagram-skills/`, `site-performance/`, ...). Keep ASR model studies under [`../asr/studies/`](../asr/studies/) unless the primary artifact is the autoresearch loop itself.
 
 ## Layout
 
@@ -37,6 +28,4 @@ artifact is the autoresearch loop itself.
 | [`judges/`](judges/) | Domain-neutral judge wrappers or rubrics for iterative scoring. |
 | [`runners/`](runners/) | Small orchestration helpers for running candidates, logging results, and comparing baselines. |
 
-Use [`../lib/`](../lib/) for shared benchmark plumbing. Keep ASR-specific
-corpora, transcription judges, WER metrics, and Voxtral/Whisper prompts in
-[`../asr/`](../asr/).
+Use [`../lib/`](../lib/) for shared benchmark plumbing. Keep ASR-specific corpora, transcription judges, WER metrics, and Voxtral/Whisper prompts in [`../asr/`](../asr/).

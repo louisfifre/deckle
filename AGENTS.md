@@ -35,6 +35,4 @@ Everything specialized is discoverable, not pre-chewed here — orient, never re
 
 ## For Codex
 
-Codex's role on Deckle is senior implementation: receive Claude's plans or handoffs, verify them against the project, challenge weak assumptions, then implement and validate. Before meaningful work, read this file and follow its pointers — module `AGENTS.md` files, ADRs, `CONTEXT.md`, journals, and the `deckle-*` skills in `.claude/skills/`.
-
 Use `D:\worktrees\deckle` as the worktree container when a dedicated worktree is needed.

@@ -108,22 +108,9 @@ Founding architecture for the Anytype/MCP/Deckle integration, decided with Louis
 
 ## 2026-06-16 — Management + lifecycle layer; schema resync
 
-- Lifecycle split into two verbs, not one generic command. A naming pass found a
-  single "set a lifecycle checkbox" tool (done + archived behind one param) carries
-  an inherent collision with the « état » select for a small model — any lifecycle
-  name slides toward "Terminé". Degrouped into `complete` (task `done`, set/clear)
-  and `archive` (transversal `archive`, archive/restore; refused on rapport, which
-  has no such checkbox). `task_done` removed — folded into `complete`. Base: 15 tools.
-- `delete` → restorable bin, supervised + two-step, pinned by id. Lives in a separate
-  `ManagementToolCatalog`, mounted only behind a launch flag (`--management` arg or
-  `DECKLE_ANYTYPE_MANAGEMENT` env); a default consumer is served no destructive tool.
-  Stateless two-step: first call previews the target (name/type/id), a second call
-  with that id and `confirm:true` commits. No server token (reserved for the deferred
-  batch). Added `DeleteObjectAsync` (DELETE /objects/{id}).
-- Schema resync (DevSpace): `tag` unmapped from every type table (auto-transversal
-  residue, unused); `Charge estimée/réelle` mapped onto Task; `État` removed from Idée.
-  Consequence: `update` now refuses `tag`, and `LiveTagResolver` (free-vocabulary live
-  resolution) is no longer reached by any mapped property — kept as dormant infra.
+- Lifecycle split into two verbs, not one generic command. A naming pass found a single "set a lifecycle checkbox" tool (done + archived behind one param) carries an inherent collision with the « état » select for a small model — any lifecycle name slides toward "Terminé". Degrouped into `complete` (task `done`, set/clear) and `archive` (transversal `archive`, archive/restore; refused on rapport, which has no such checkbox). `task_done` removed — folded into `complete`. Base: 15 tools.
+- `delete` → restorable bin, supervised + two-step, pinned by id. Lives in a separate `ManagementToolCatalog`, mounted only behind a launch flag (`--management` arg or `DECKLE_ANYTYPE_MANAGEMENT` env); a default consumer is served no destructive tool. Stateless two-step: first call previews the target (name/type/id), a second call with that id and `confirm:true` commits. No server token (reserved for the deferred batch). Added `DeleteObjectAsync` (DELETE /objects/{id}).
+- Schema resync (DevSpace): `tag` unmapped from every type table (auto-transversal residue, unused); `Charge estimée/réelle` mapped onto Task; `État` removed from Idée. Consequence: `update` now refuses `tag`, and `LiveTagResolver` (free-vocabulary live resolution) is no longer reached by any mapped property — kept as dormant infra.
 
 ## 2026-06-15 — MCP host consumed via a `current` junction, off the build tree
 

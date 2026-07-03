@@ -7,6 +7,4 @@ module: benchmark/autoresearch/prompts
 
 # `prompts/`
 
-Store prompt templates that drive generic rewrite or judging loops. Prompts that
-mention Whisper, Voxtral, audio transcription, ASR regimes, or ASR references
-belong under `benchmark/asr/prompts/`.
+Store prompt templates that drive generic rewrite or judging loops. Prompts that mention Whisper, Voxtral, audio transcription, ASR regimes, or ASR references belong under `benchmark/asr/prompts/`.
