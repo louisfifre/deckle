@@ -9,6 +9,7 @@ using Deckle.Catalog;
 using Deckle.Settings;
 using Deckle.Core;
 using Deckle.Shell;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -274,8 +275,8 @@ public sealed partial class DiagnosticsPage : Page
         }
         catch (System.Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed();
-            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderPickerFailed();
+            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 }

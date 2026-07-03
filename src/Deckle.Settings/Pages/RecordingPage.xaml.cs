@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Core;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Settings;
 using Deckle.Shell;
 
@@ -178,7 +179,7 @@ public sealed partial class RecordingPage : Page
         }
         finally { _initializing = false; }
 
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Recording");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Recording");
     }
 }

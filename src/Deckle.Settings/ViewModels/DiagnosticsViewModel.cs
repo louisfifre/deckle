@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 
@@ -137,63 +138,63 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnLogAmbientCaptureActivityChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
         PushLoggingToSettings();
     }
 
     partial void OnLogStreamingTranscriptionActivityChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
         PushLoggingToSettings();
     }
 
     partial void OnLogAutocorrectActivityChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Logging.LogAutocorrectActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAutocorrectActivity", value.ToString());
         PushLoggingToSettings();
     }
 
     partial void OnLogWindowingActivityChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Logging.LogWindowingActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogWindowingActivity", value.ToString());
         PushLoggingToSettings();
     }
 
     partial void OnApplicationLogToDiskChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.ApplicationLogToDisk", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.ApplicationLogToDisk", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnMicrophoneTelemetryChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryLatencyEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryCorpusEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnRecordAudioCorpusChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
         PushTelemetryToSettings();
     }
 
@@ -202,7 +203,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         // RadioButtons emits -1 transiently while it realises its items —
         // ignore it so we never cast a bogus index onto the enum.
         if (_isSyncing || value < 0) return;
-        DeckleSettingsSource.Log.SettingChanged(
+        DeckleSettingsUxSource.Log.SettingChanged(
             "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
         PushTelemetryToSettings();
     }
@@ -210,21 +211,21 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnAutocorrectDecisionsChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.AutocorrectDecisions", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.AutocorrectDecisions", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnAutocorrectTextChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.AutocorrectText", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.AutocorrectText", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Telemetry.StorageDirectory", $"\"{value}\"");
+        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.StorageDirectory", $"\"{value}\"");
         PushTelemetryToSettings();
     }
 
@@ -330,8 +331,8 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Logging");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Logging");
     }
 
     public void ResetTelemetryDefaults()
@@ -351,7 +352,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
         finally { _isSyncing = false; }
         PushTelemetryToSettings();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Telemetry");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Telemetry");
     }
 }

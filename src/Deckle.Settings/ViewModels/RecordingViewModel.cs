@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Deckle.Audio;
+using Deckle.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
 
@@ -30,7 +31,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnAudioInputDeviceIdChanged(int value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
+        DeckleSettingsUxSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
     }
 
@@ -42,7 +43,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnPreprocessingEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
         // On = active. The DSP self-adjusts on every recording (a no-op when
         // the mic is already at target); the mic level check advises whether
         // turning it on is worth it. No deferral, no auto-decision.
@@ -139,7 +140,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMinDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -147,7 +148,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowMaxDbfsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -155,7 +156,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowExponentChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
         PushToSettings();
         SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
     }
@@ -163,7 +164,7 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnLevelWindowAutoCalibrationChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
         PushToSettings();
     }
 

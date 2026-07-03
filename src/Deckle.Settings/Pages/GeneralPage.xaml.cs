@@ -9,6 +9,7 @@ using Deckle.Catalog;
 using Deckle.Settings;
 using Deckle.Core;
 using Deckle.Shell;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -161,8 +162,8 @@ public sealed partial class GeneralPage : Page
         _behaviourComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("General (all)");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("General (all)");
     }
 
     // ── Reset per section ───────────────────────────────────────────────────
@@ -178,15 +179,15 @@ public sealed partial class GeneralPage : Page
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {
         _appearanceComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Appearance");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Appearance");
     }
 
     private void ResetBehaviour_Click(object sender, RoutedEventArgs e)
     {
         _behaviourComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Behaviour");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Behaviour");
     }
 
     private void ResetStartup_Click(object sender, RoutedEventArgs e)
@@ -195,8 +196,8 @@ public sealed partial class GeneralPage : Page
         // setter calls StartupService.StopStartup() — the vehicle removal rides
         // along, exactly as a manual toggle would, so no direct call here anymore.
         _startupComposer?.ResetAll();
-        DeckleSettingsSource.Log.SectionReset();
-        DeckleSettingsSource.Log.SectionResetDetail("Startup");
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
     }
 
     // Opens the UserDataRoot in File Explorer — entry point for users who
@@ -216,8 +217,8 @@ public sealed partial class GeneralPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.FolderPickerFailed();
-            DeckleSettingsSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleSettingsUxSource.Log.FolderPickerFailed();
+            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
     }
 

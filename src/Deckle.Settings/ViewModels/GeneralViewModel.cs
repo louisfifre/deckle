@@ -3,6 +3,7 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Shell;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -29,7 +30,7 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnThemeChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Theme", value);
+        DeckleSettingsUxSource.Log.SettingChanged("Theme", value);
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(value);
     }
@@ -64,35 +65,35 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnAutoPasteEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Auto-paste", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Auto-paste", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay enabled", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Overlay enabled", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayFadeOnProximityChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay fade", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Overlay fade", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayAnimationsChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay animations", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Overlay animations", value.ToString());
         PushToSettings();
     }
 
     partial void OnOverlayPositionChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Overlay position", value);
+        DeckleSettingsUxSource.Log.SettingChanged("Overlay position", value);
         PushToSettings();
     }
 
@@ -114,7 +115,7 @@ public partial class GeneralViewModel : ObservableObject
         bool ok = value ? StartupService.StartStartup() : StartupService.StopStartup();
         if (ok)
         {
-            DeckleSettingsSource.Log.SettingChanged("Start with Windows", value.ToString());
+            DeckleSettingsUxSource.Log.SettingChanged("Start with Windows", value.ToString());
             return;
         }
 
@@ -154,7 +155,7 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnBackupDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsSource.Log.SettingChanged("Paths.BackupDirectory", $"\"{value}\"");
+        DeckleSettingsUxSource.Log.SettingChanged("Paths.BackupDirectory", $"\"{value}\"");
         PushToSettings();
         RefreshBackups();
     }

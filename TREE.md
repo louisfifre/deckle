@@ -554,6 +554,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleEventSource.cs
 │   │   ├── DeckleNetworkSource.cs
 │   │   ├── DeckleResourceSource.cs
+│   │   ├── DeckleSettingsUxSource.cs
 │   │   ├── DeckleThemeSource.cs
 │   │   ├── DeckleThreadingSource.cs
 │   │   ├── DeckleWindowingSource.cs
