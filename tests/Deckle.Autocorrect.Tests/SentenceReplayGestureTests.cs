@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using Deckle.Autocorrect;
@@ -50,19 +51,48 @@ public sealed class SentenceReplayGestureTests
         var french = FrequencyLexicon.LoadTsvGz(frenchPath);
         var probe = new DiacriticsRestorer(french, english: null, AccentIndex.Build(french));
 
+        // The execution provider is overridable so the same gesture runs the judge on
+        // the GPU (DirectML, the default) or falls back to the CPU EP for a comparison,
+        // without a recompile.
+        string ep = Environment.GetEnvironmentVariable("DECKLE_ONNX_JUDGE_EP") is { Length: > 0 } value
+            ? value
+            : "dml";
+        Console.Error.WriteLine($"[replay] loading judge — ep={ep}, dir={judgeDir}");
+
         // margin 0 → the judge returns its raw argmax and gap for every slot, so
         // the sweep, not the model, sets the operating margin.
-        using OnnxSlotReranker? judge = OnnxSlotReranker.TryLoad(judgeDir, margin: 0.0);
+        using OnnxSlotReranker? judge = OnnxSlotReranker.TryLoad(judgeDir, margin: 0.0, executionProvider: ep);
         Assert.NotNull(judge);
+        Console.Error.WriteLine("[replay] judge loaded — replaying corpus, nothing is applied");
 
-        ReplayReport report = ReplayRunner.Run(corpusPath!, probe, judge!);
+        ReplayReport report = ReplayRunner.Run(corpusPath!, probe, judge!, onProgress: OnReplayProgress);
 
         string reportPath = Path.Combine(Path.GetDirectoryName(corpusPath!)!, "autocorrect.replay-calibration.md");
         File.WriteAllText(reportPath, report.Markdown);
 
+        Console.Error.WriteLine(
+            $"[replay] done — {report.Summary.AmbiguousSlots} slots over {report.Summary.Sentences} sentences → {reportPath}");
         _out.WriteLine($"{report.Summary.AmbiguousSlots} ambiguous slots judged over {report.Summary.Sentences} sentences.");
         _out.WriteLine($"Calibration report → {reportPath}");
 
         Assert.NotEmpty(report.Slots);
+    }
+
+    // Streams the replay's progress to stderr as it runs — a long offline pass is
+    // otherwise blind until the single test method returns. One line per judged slot
+    // (typed → final, the judge's verdict and margin) plus a heartbeat every 25
+    // sentences so liveness shows even across stretches with no ambiguous slot.
+    private static void OnReplayProgress(ReplayProgress p)
+    {
+        foreach (SlotReplayResult s in p.SentenceSlots)
+        {
+            string verdict = s.JudgeChosen is null
+                ? $"abstain({s.AbstainReason})"
+                : $"chose '{s.JudgeChosen}' m={s.Margin:0.00}";
+            Console.Error.WriteLine($"  [{p.SentenceIndex}] {s.TypedForm}→{s.FinalForm} {verdict}");
+        }
+
+        if (p.SentenceIndex % 25 == 0)
+            Console.Error.WriteLine($"· {p.SentenceIndex} sentences, {p.TotalSlotsJudged} slots judged");
     }
 }

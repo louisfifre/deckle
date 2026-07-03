@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Deckle.Autocorrect;
 
@@ -20,7 +21,8 @@ public static class ReplayRunner
         IEnumerable<SentenceCorpus.SentenceRecord> corpus,
         IAmbiguityProbe probe,
         ISentenceReranker reranker,
-        IReadOnlyList<double>? thresholds = null)
+        IReadOnlyList<double>? thresholds = null,
+        Action<ReplayProgress>? onProgress = null)
     {
         var slots = new List<SlotReplayResult>();
         int sentences = 0;
@@ -30,7 +32,10 @@ public static class ReplayRunner
             if (typed.Count == 0)
                 continue;
             sentences++;
-            slots.AddRange(SentenceReplay.ReplaySentence(typed, final, probe, reranker));
+            IReadOnlyList<SlotReplayResult> sentenceSlots =
+                SentenceReplay.ReplaySentence(typed, final, probe, reranker);
+            slots.AddRange(sentenceSlots);
+            onProgress?.Invoke(new ReplayProgress(sentences, slots.Count, sentenceSlots));
         }
 
         ReplaySummary summary = SentenceReplay.Summarize(slots, sentences);
@@ -43,9 +48,18 @@ public static class ReplayRunner
         string corpusPath,
         IAmbiguityProbe probe,
         ISentenceReranker reranker,
-        IReadOnlyList<double>? thresholds = null) =>
-        Run(CorpusReader.Read(corpusPath), probe, reranker, thresholds);
+        IReadOnlyList<double>? thresholds = null,
+        Action<ReplayProgress>? onProgress = null) =>
+        Run(CorpusReader.Read(corpusPath), probe, reranker, thresholds, onProgress);
 }
+
+// A live tick emitted once per replayed sentence: how many sentences and ambiguous
+// slots have been judged so far, and the slots this sentence produced — enough for a
+// caller to stream progress over a long offline pass that is otherwise blind.
+public readonly record struct ReplayProgress(
+    int SentenceIndex,
+    int TotalSlotsJudged,
+    IReadOnlyList<SlotReplayResult> SentenceSlots);
 
 // The replay's whole output: the corpus-level counts, every judged slot (the raw
 // material), the margin curve, and its rendered markdown for the maintainer.
