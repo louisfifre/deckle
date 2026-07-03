@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Deckle.Settings.RecordingPage"
+    x:Class="Deckle.Audio.RecordingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Settings">
+    xmlns:vm="using:Deckle.Audio">
 
     <!-- Same canvas pattern as GeneralPage / DiagnosticsPage / WhisperPage:
          Grid wrapper + StackPanel MaxWidth=1000 + SettingsCardSpacing=4 +

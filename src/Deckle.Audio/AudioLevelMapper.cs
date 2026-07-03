@@ -88,4 +88,16 @@ public static class AudioLevelMapper
         if (p <= 0f) return t;
         return MathF.Pow(t, p);
     }
+
+    // Push a level-window calibration into the mapper statics. The window's three
+    // fields are the mapper's only inputs. Called live by the Recording settings
+    // sliders (same assembly, no shell hop), by the App at boot, and by engine-side
+    // auto-calibration. Null-safe so an unset window is a no-op.
+    public static void Apply(LevelWindowSettings window)
+    {
+        if (window is null) return;
+        MinDbfs           = window.MinDbfs;
+        MaxDbfs           = window.MaxDbfs;
+        DbfsCurveExponent = window.DbfsCurveExponent;
+    }
 }

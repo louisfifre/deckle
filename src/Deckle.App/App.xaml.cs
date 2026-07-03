@@ -446,7 +446,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Pattern aligned on HudChrono.MaxRecordingDurationSecondsProvider
         // above: lib exposes static delegates, App owns the contract.
         Settings.SettingsHost.ApplyTheme       = ApplyTheme;
-        Settings.SettingsHost.ApplyLevelWindow = ApplyLevelWindow;
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
         // The Path-kind picker control is module-owned (FolderPickerCard needs the
@@ -500,9 +499,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // ONLY the Order here, so the shell builds their NavigationView items from
         // the registry instead of hardcoding them in SettingsWindow.xaml. This is
         // the seam the module installer needs: a module appears / disappears here
-        // without editing the shell. The shell's own General / Recording /
-        // Diagnostics stay static anchors; Logs stays a footer command. Order leaves
-        // gaps so a later module can land between two existing ones.
+        // without editing the shell. The shell's own General and Diagnostics stay
+        // static anchors; Logs stays a footer command. Order leaves gaps so a later
+        // module can land between two existing ones. Recording (order 50) sits first
+        // in the band — right after General — where its former static anchor was.
+        Settings.SettingsModuleRegistry.Register(Audio.RecordingSettingsModule.Describe(order: 50));
         Settings.SettingsModuleRegistry.Register(Transcription.WhisperSettingsModule.Describe(order: 100));
         Settings.SettingsModuleRegistry.Register(Llm.Rewrite.LlmSettingsModule.Describe(order: 200));
         Settings.SettingsModuleRegistry.Register(Autocorrect.AutocorrectSettingsModule.Describe(order: 300));

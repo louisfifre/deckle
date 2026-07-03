@@ -352,6 +352,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
 │   │   │   └── TranscriptionPreprocessor.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
 │   │   ├── Telemetry/
 │   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
@@ -369,6 +372,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── RecordingPage.xaml
+│   │   ├── RecordingPage.xaml.cs
+│   │   ├── RecordingSettingsModule.cs
+│   │   ├── RecordingViewModel.cs
+│   │   ├── RecordingViewModel.Settings.cs
 │   │   └── SpeakerOutput.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
@@ -868,9 +876,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiagnosticsPage.xaml
 │   │   │   ├── DiagnosticsPage.xaml.cs
 │   │   │   ├── GeneralPage.xaml
-│   │   │   ├── GeneralPage.xaml.cs
-│   │   │   ├── RecordingPage.xaml
-│   │   │   └── RecordingPage.xaml.cs
+│   │   │   └── GeneralPage.xaml.cs
 │   │   ├── Persistence/
 │   │   │   ├── AppSettings.cs
 │   │   │   ├── SettingsBackupService.cs
@@ -883,9 +889,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DiagnosticsViewModel.cs
 │   │   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   │   ├── GeneralViewModel.cs
-│   │   │   ├── GeneralViewModel.Settings.cs
-│   │   │   ├── RecordingViewModel.cs
-│   │   │   └── RecordingViewModel.Settings.cs
+│   │   │   └── GeneralViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj

@@ -1,8 +1,7 @@
 using System.Collections.Generic;
-using Deckle.Audio;
 using Deckle.Catalog;
 
-namespace Deckle.Settings;
+namespace Deckle.Audio;
 
 // ── RecordingViewModel — settings manifest ────────────────────────────────────
 //

@@ -6,10 +6,9 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
-using Deckle.Settings;
 using Deckle.Shell;
 
-namespace Deckle.Settings;
+namespace Deckle.Audio;
 
 // ── RecordingPage ───────────────────────────────────────────────────────────
 //

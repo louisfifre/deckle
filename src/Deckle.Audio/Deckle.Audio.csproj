@@ -1,6 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Audio</RootNamespace>
+    <!-- WinUI XAML compilation: Deckle.Audio now ships RecordingPage.xaml +
+         RecordingViewModel (moved from Deckle.Settings in the Move H relocation).
+         The capture pipeline the page configures — MicrophoneCapture,
+         CaptureSettings, AudioLevelMapper — already lives here, so the module owns
+         both the audio domain and its settings page. -->
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in RecordingPage resolve
+         against the Deckle.Audio/Resources subtree (Strings/en-US/Resources.resw).
+         Same pattern as Deckle.Transcription / Deckle.Settings. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output. Convention
          documented in ../Deckle.Diagnostics/CLAUDE.md. -->
@@ -14,7 +26,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Versions aligned on Deckle.csproj: single WinAppSDK runtime per process. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <!-- MVVM Toolkit — [ObservableProperty] / [RelayCommand] in RecordingViewModel. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- SettingsCard / SettingsExpander — RecordingPage canonical layout. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Catalog: RecordingPage composes via SettingsComposer and reads Glyphs;
+         RecordingSettingsModule builds a SettingsModuleDescriptor (in Catalog). -->
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- Shell: RecordingPage uses the instrumented DispatcherQueue.TryEnqueueObserved
+         wrapper. One-way (Shell does not reference Audio), so no cycle. -->
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
 </Project>

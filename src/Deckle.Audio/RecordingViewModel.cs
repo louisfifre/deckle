@@ -1,11 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Deckle.Audio;
 using Deckle.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
 
-namespace Deckle.Settings;
+namespace Deckle.Audio;
 
 // ViewModel for RecordingPage — bridges CaptureSettings (audio device,
 // level window) to the XAML via x:Bind. Migrated from GeneralViewModel
@@ -142,7 +141,7 @@ public partial class RecordingViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
+        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
     }
 
     partial void OnLevelWindowMaxDbfsChanged(double value)
@@ -150,7 +149,7 @@ public partial class RecordingViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
         PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
+        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
     }
 
     partial void OnLevelWindowExponentChanged(double value)
@@ -158,7 +157,7 @@ public partial class RecordingViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
         PushToSettings();
-        SettingsHost.ApplyLevelWindow?.Invoke(CaptureSettingsService.Instance.Current.LevelWindow);
+        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
     }
 
     partial void OnLevelWindowAutoCalibrationChanged(bool value)
