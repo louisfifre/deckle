@@ -18,29 +18,50 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
         "You are Deckle's local French autocorrect judge. You choose only among closed candidates.";
 
     private readonly OgaHandle _ogaHandle;
+    private readonly Config _config;
     private readonly Model _model;
     private readonly Tokenizer _tokenizer;
     private readonly double _margin;
     private readonly int _vocabSize;
     private readonly int? _bosTokenId;
     private readonly string? _chatTemplate;
+    private readonly string _executionProvider;
 
-    public OnnxSentenceScorer(string modelDir, double margin)
+    // The execution provider the judge model was loaded onto ("dml" for the GPU,
+    // "cpu" for the built-in CPU EP) — surfaced so a run can report where it ran.
+    public string ExecutionProvider => _executionProvider;
+
+    public OnnxSentenceScorer(string modelDir, double margin, string executionProvider = "dml")
     {
         _margin = double.IsFinite(margin) && margin > 0.0 ? margin : 0.0;
         _vocabSize = TryReadVocabSize(modelDir) ?? 0;
         _chatTemplate = TryReadChatTemplate(modelDir);
+        _executionProvider = string.IsNullOrWhiteSpace(executionProvider)
+            ? "cpu"
+            : executionProvider.Trim();
 
         OgaHandle? ogaHandle = null;
+        Config? config = null;
         Model? model = null;
         Tokenizer? tokenizer = null;
         try
         {
             ogaHandle = new OgaHandle();
-            model = new Model(modelDir);
+
+            // The provider is chosen in code, not read from the export's
+            // genai_config.json, so one CPU int4 export can be driven onto the GPU
+            // (DirectML) without a re-export: clear the config's providers and append
+            // the chosen one. "cpu" leaves the list empty → the built-in CPU EP.
+            config = new Config(modelDir);
+            config.ClearProviders();
+            if (!string.Equals(_executionProvider, "cpu", StringComparison.OrdinalIgnoreCase))
+                config.AppendProvider(_executionProvider);
+
+            model = new Model(config);
             tokenizer = new Tokenizer(model);
 
             _ogaHandle = ogaHandle;
+            _config = config;
             _model = model;
             _tokenizer = tokenizer;
             _bosTokenId = TryGetBosTokenId(_tokenizer);
@@ -49,19 +70,20 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
         {
             tokenizer?.Dispose();
             model?.Dispose();
+            config?.Dispose();
             ogaHandle?.Dispose();
             throw;
         }
     }
 
-    public static ISentenceScorer? TryLoad(string modelDir, double margin)
+    public static ISentenceScorer? TryLoad(string modelDir, double margin, string executionProvider = "dml")
     {
         try
         {
             if (!Directory.Exists(modelDir))
                 return null;
 
-            return new OnnxSentenceScorer(modelDir, margin);
+            return new OnnxSentenceScorer(modelDir, margin, executionProvider);
         }
         catch
         {
@@ -373,6 +395,7 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
     {
         _tokenizer.Dispose();
         _model.Dispose();
+        _config.Dispose();
         _ogaHandle.Dispose();
     }
 

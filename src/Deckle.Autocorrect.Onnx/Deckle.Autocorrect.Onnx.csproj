@@ -11,8 +11,9 @@
   <ItemGroup>
     <!-- The autocorrect sentence scorer contract and closed-candidate outcome. -->
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
-    <!-- ONNX Runtime GenAI CPU package for the first forced-decoding scorer POC.
-         DirectML stays a later runtime choice after the C# logits path is proven. -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI" />
+    <!-- ONNX Runtime GenAI (DirectML variant) — runs the forced-decoding sentence
+         judge on the GPU, with the CPU EP as a selectable fallback. Version and the
+         0.13-vs-0.14 rationale are pinned in Directory.Packages.props. -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" />
   </ItemGroup>
 </Project>

@@ -9,9 +9,10 @@ namespace Deckle.Autocorrect.Onnx;
 // CORRECTION, not a rewrite: the verdict is always one of the caller's candidate
 // forms or an abstention, never invented text.
 //
-// The judge is a full-sentence forced-decoding scorer — seconds per slot on CPU
-// int4 — so this reranker is meant for an observing role (shadow telemetry, an
-// offline replay over the collected corpus), not a synchronous hot-path stage.
+// The judge is a full-sentence forced-decoding scorer whose speed follows the
+// execution provider it loads onto (seconds per slot on CPU int4, faster on the GPU
+// via DirectML). It is meant for an observing role — shadow telemetry, an offline
+// replay over the collected corpus — not a synchronous hot-path stage.
 public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
 {
     private readonly ISentenceScorer _scorer;
@@ -27,9 +28,9 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
 
     // Stages the ONNX judge from a model directory; null when the model is absent
     // or fails to load, so a caller can fall back to another reranker or none.
-    public static OnnxSlotReranker? TryLoad(string modelDir, double margin)
+    public static OnnxSlotReranker? TryLoad(string modelDir, double margin, string executionProvider = "dml")
     {
-        ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(modelDir, margin);
+        ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(modelDir, margin, executionProvider);
         return scorer is null ? null : new OnnxSlotReranker(scorer);
     }
 

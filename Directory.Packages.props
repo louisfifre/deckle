@@ -41,10 +41,14 @@
          holds. The native onnxruntime.dll resolves at the App's win-x64 build. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
 
-    <!-- ONNX Runtime GenAI CPU package for Deckle.Autocorrect.Onnx's first
-         closed-candidate sentence scorer prototype. DirectML remains a separate
-         runtime choice once the forced-logprob path is proven. -->
-    <PackageVersion Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.1" />
+    <!-- ONNX Runtime GenAI for Deckle.Autocorrect.Onnx's closed-candidate sentence
+         judge. The .DirectML variant runs the forced-decoding judge on the GPU (D3D12)
+         — the only onnxruntime-genai GPU path on this AMD RDNA3 machine — while still
+         exposing the CPU EP as a selectable fallback. Pinned to 0.13.0, NOT 0.14.x:
+         genai 0.14 wants ORT API 24 but bundles ORT 1.23, a mismatch that throws
+         DllNotFoundException on init (see benchmark/asr/studies/PhiBench). 0.13.0 is
+         self-consistent and is the version proven in-repo by PhiBench. -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.13.0" />
 
     <!-- Managed SentencePiece/BPE tokenizers (no native lib, no Python) — used by
          the autocorrect CLI's CamemBERT MLM reranker probe to segment text. -->
