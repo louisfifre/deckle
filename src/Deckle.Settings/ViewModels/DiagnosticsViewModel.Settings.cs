@@ -36,9 +36,10 @@ public partial class DiagnosticsViewModel
     // flow the hand-authored card ran, now declared rather than wired in the page.
     // The Microphone opt-in moved to the Recording module's own page (it observes
     // that module's capture pipeline); the Latency toggle and the Corpus fold moved
-    // to the Dictation (Whisper) page (they observe the dictation pipeline). The
-    // remaining hand-authored telemetry rows are the Autocorrect expander — a nested
-    // layout the composer doesn't build.
+    // to the Dictation (Whisper) page (they observe the dictation pipeline); and the
+    // Autocorrect capture opt-ins moved to the Autocorrect module's own page. No
+    // hand-authored telemetry row remains here — Application log is the page's one
+    // composable telemetry toggle.
     //
     // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
     // default" affordance per row (the section "Reset" clears it), so the composer

@@ -316,8 +316,8 @@
                      shared Diagnostics page: the streaming-transcription log filter,
                      the latency telemetry toggle, and the audio-corpus consent fold.
                      Composed from WhisperViewModel.DiagnosticsSettings into the host
-                     below. No section "Reset" link — the corpus fold's consents are
-                     privacy state, cleared from the Diagnostics page's own reset. -->
+                     below. No section "Reset" link — these observability opt-ins carry
+                     no resettable default (a privacy opt-in has no per-row reset). -->
                 <TextBlock x:Uid="WhisperPageDiagnosticsHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 

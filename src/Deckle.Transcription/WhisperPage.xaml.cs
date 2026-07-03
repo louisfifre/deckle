@@ -241,7 +241,7 @@ public sealed partial class WhisperPage : Page
     // Diagnostics — the dictation-scoped observability opt-ins (streaming-transcription
     // log filter, latency telemetry, audio-corpus consent fold) composed into their
     // host. Same host-only pattern as the flat sections above; no section-reset link
-    // (the corpus consents are privacy state cleared from the Diagnostics page's own
+    // (these opt-ins carry no resettable default — a privacy opt-in has no per-row
     // reset), so the composer's DirtyChanged is left unwired here.
     private SettingsComposer? _diagnosticsComposer;
 
