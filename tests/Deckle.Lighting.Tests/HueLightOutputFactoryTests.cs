@@ -21,6 +21,30 @@ public sealed class HueLightOutputFactoryTests
     }
 
     [Fact]
+    public async Task CreatePreferredAsyncUsesRestWhenEntertainmentHasNoChannels()
+    {
+        var entertainment = new FakeOutput();
+        var rest = new FakeOutput();
+        var bridge = FakeBridge.WithEntertainment(
+            entertainment,
+            rest,
+            areas:
+            [
+                new HueEntertainmentArea(
+                    "00112233-4455-6677-8899-aabbccddeeff",
+                    "Living Room",
+                    [],
+                    []),
+            ]);
+
+        var output = await HueLightOutputFactory.CreatePreferredAsync(bridge, "7", CancellationToken.None);
+
+        Assert.Same(rest, output);
+        Assert.False(entertainment.IsConnected);
+        Assert.False(rest.IsConnected);
+    }
+
+    [Fact]
     public async Task CreateConnectedPreferredAsyncUsesConnectedEntertainmentWhenAvailable()
     {
         var entertainment = new FakeOutput();
@@ -137,11 +161,16 @@ public sealed class HueLightOutputFactoryTests
 
         public HueCredentials? Credentials { get; }
 
-        public static FakeBridge WithEntertainment(FakeOutput entertainment, FakeOutput rest, string clientKey = "aabbcc")
+        public static FakeBridge WithEntertainment(
+            FakeOutput entertainment,
+            FakeOutput rest,
+            string clientKey = "aabbcc",
+            IReadOnlyList<HueEntertainmentArea>? areas = null)
             => new(
                 entertainment,
                 rest,
                 clientKey,
+                areas ??
                 [
                     new HueEntertainmentArea(
                         "00112233-4455-6677-8899-aabbccddeeff",

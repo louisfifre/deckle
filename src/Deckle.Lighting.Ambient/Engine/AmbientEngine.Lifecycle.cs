@@ -149,6 +149,7 @@ public sealed partial class AmbientEngine
             _output = await HueLightOutputFactory
                 .ConnectPreparedPreferredAsync(_bridgeClient, _output, ambient.HueLastGroupId, ct)
                 .ConfigureAwait(false);
+            _requiresContinuousColorUpdates = _output.RequiresContinuousColorUpdates;
             ThrowIfStartAbortRequested();
 
             // Resolve pipeline shape after Connect (ListLightsAsync
@@ -344,6 +345,7 @@ public sealed partial class AmbientEngine
         _bridgeClient = null;
         _multiLights = null;
         _multiLastPushed = null;
+        _requiresContinuousColorUpdates = false;
 
         // EventStream task was running on _cts.Token — already cancelled
         // by Stop(). Await briefly to let the SSE socket close cleanly

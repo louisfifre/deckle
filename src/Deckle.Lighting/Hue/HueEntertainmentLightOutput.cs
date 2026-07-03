@@ -44,6 +44,7 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
     }
 
     public bool IsConnected => _connected;
+    public bool RequiresContinuousColorUpdates => true;
 
     public async Task ConnectAsync(CancellationToken ct = default)
     {

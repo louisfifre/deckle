@@ -119,10 +119,12 @@ public sealed partial class AmbientEngine
         // even when the delta gate drops the actual push.
         PublishGroupEmitted(targetR, targetG, targetB);
 
-        int delta = Math.Abs(targetR - _lastR)
-                  + Math.Abs(targetG - _lastG)
-                  + Math.Abs(targetB - _lastB);
-        bool dropped = _lastR >= 0 && delta < _changeThreshold;
+        var color = new LightColor(targetR, targetG, targetB);
+        bool dropped = AmbientPushGate.ShouldDrop(
+            color,
+            (_lastR, _lastG, _lastB),
+            _changeThreshold,
+            _requiresContinuousColorUpdates);
 
         if (dropped)
         {
@@ -131,7 +133,6 @@ public sealed partial class AmbientEngine
             return; // Silent : the heartbeat will summarise.
         }
 
-        var color = new LightColor(targetR, targetG, targetB);
         try
         {
             long pushStart = Stopwatch.GetTimestamp();
@@ -268,10 +269,12 @@ public sealed partial class AmbientEngine
             PublishMultiEmitted(light.Id, targetR, targetG, targetB);
 
             var prev = _multiLastPushed.TryGetValue(light.Id, out var last) ? last : (-1, -1, -1);
-            int delta = Math.Abs(targetR - prev.Item1)
-                      + Math.Abs(targetG - prev.Item2)
-                      + Math.Abs(targetB - prev.Item3);
-            bool dropped = prev.Item1 >= 0 && delta < _changeThreshold;
+            var targetColor = new LightColor(targetR, targetG, targetB);
+            bool dropped = AmbientPushGate.ShouldDrop(
+                targetColor,
+                prev,
+                _changeThreshold,
+                _requiresContinuousColorUpdates);
 
             if (dropped)
             {
@@ -279,7 +282,7 @@ public sealed partial class AmbientEngine
                 continue;
             }
 
-            toPush[light.Id] = new LightColor(targetR, targetG, targetB);
+            toPush[light.Id] = targetColor;
             _multiLastPushed[light.Id] = (targetR, targetG, targetB);
         }
 

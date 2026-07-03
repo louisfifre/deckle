@@ -734,6 +734,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
 │   │   │   ├── AmbientModePresets.cs
+│   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightZone.cs
@@ -1182,6 +1183,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientHueChangeAttributorTests.cs
+│   │   ├── AmbientPushGateTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   └── DeckleAmbientSourceTests.cs
 │   ├── Deckle.Lighting.Tests/

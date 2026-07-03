@@ -24,7 +24,7 @@ public static class HueLightOutputFactory
         ct.ThrowIfCancellationRequested();
 
         var area = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
-        if (area is not null && !string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
+        if (area is { Channels.Count: > 0 } && !string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
         {
             return bridge.CreateEntertainmentOutput(area, bridge.Credentials.ClientKey);
         }

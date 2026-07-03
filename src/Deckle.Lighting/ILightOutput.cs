@@ -44,6 +44,12 @@ public interface ILightOutput : IAsyncDisposable
     /// external-change detection during the active session.</summary>
     bool UsesStateEventAttribution => false;
 
+    /// <summary>True when the connected output is a live stream that
+    /// must keep receiving colour updates even when the desired colour
+    /// has not changed. Consumers use this to bypass their delta gate
+    /// while keeping persistent-state outputs such as REST throttled.</summary>
+    bool RequiresContinuousColorUpdates => false;
+
     /// <summary>Open the session with the configured sink. Throws if
     /// the sink is unreachable, the credentials are rejected, or any
     /// protocol-level handshake fails. Idempotent — calling twice on

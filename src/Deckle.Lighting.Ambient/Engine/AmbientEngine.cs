@@ -218,6 +218,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // Active pipeline shape. Set in StartAsync, read by the loop.
     private bool _multiLightActive;
     private int _pushIntervalMs = 1000 / GroupPushHz;
+    private bool _requiresContinuousColorUpdates;
 
     private long _pushedCount;
     private long _droppedCount;
