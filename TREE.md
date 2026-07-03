@@ -447,6 +447,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAutocorrectSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
 │   ├── Deckle.Autocorrect.Lab/
+│   │   ├── Replay/
+│   │   │   ├── CorpusReader.cs
+│   │   │   ├── MarginCalibration.cs
+│   │   │   ├── ReplayRunner.cs
+│   │   │   ├── SentenceAlignment.cs
+│   │   │   └── SentenceReplay.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
 │   │   ├── HarvestData.cs
@@ -466,7 +472,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Autocorrect.Onnx/
 │   │   ├── CandidateCompletionPlan.cs
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
-│   │   └── OnnxSentenceScorer.cs
+│   │   ├── OnnxSentenceScorer.cs
+│   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Autocorrect.Probe/
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs
@@ -1107,6 +1114,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
+│   │   ├── CorpusReaderTests.cs
 │   │   ├── CorrectionBenchmarkSummaryTests.cs
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
@@ -1119,12 +1127,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
+│   │   ├── MarginCalibrationTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── OnnxSentenceScorerTests.cs
+│   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
+│   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
+│   │   ├── SentenceReplayGestureTests.cs
+│   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── VerbMorphologyTests.cs
