@@ -9,6 +9,44 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.8.0](https://github.com/louisfifre/deckle/compare/v0.7.2...v0.8.0) — 2026-07-03
+
+### Added
+
+- **scripts:** Fold the version cut into the publish release flow
+- **anytype:** Resolve the installed backend binary and its serve spec
+- **app:** Start the Anytype backend at launch
+- **anytype:** Resolve the API bearer from the vault, headless-first
+- **mcp:** Serve external clients over one resident HTTP door
+- **app:** Host the MCP HTTP door in the resident core
+- **installer:** Let setup choose Start Menu shortcut
+- **anytype:** Supervise the serve in-process, windowless
+- **autocorrect:** Give the typed corpus an ordered per-slot history
+- **autocorrect:** Count the personal WMR in the activity rollup
+- **autocorrect:** Wire the restricted English lexicon tier
+- **autocorrect:** Complete phase 2 correction pipeline
+- **catalog:** Extend the settings composer for the refonte
+- **rewrite:** Compose the enable and endpoint settings
+- **settings:** Add a whole-page Reset all to General and Diagnostics
+- **autocorrect:** Add ONNX sentence judge probe
+- **autocorrect:** Add closed correction benchmark
+
+### Changed
+
+- **mcp:** Pivot the host core to per-message dispatch
+- **rewrite:** Expose shared rewrite service
+- **settings:** Register module nav pages through a runtime registry
+- **trackpad:** Adopt the magnitude control for drag speed
+- **settings:** Compose the diagnostics corpus consent fold
+
+### Fixed
+
+- **core:** Run the post-load migration on the parse-failure fallback
+- **autocorrect:** Land the phase-1 sanitization gesture
+- **installer:** Ignore missing install location
+- **autocorrect:** Add deterministic locative la rule
+- **autocorrect:** Score suffix evidence in ONNX judge
+
 ## [0.7.2](https://github.com/louisfifre/deckle/compare/v0.7.1...v0.7.2) — 2026-07-02
 
 ### Added
