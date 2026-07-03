@@ -14,7 +14,7 @@ internal sealed record CorrectionBenchmarkSummary(
     int ScoringErrors)
 {
     public int Misses => AbstainedCorrections + MissedKeeps;
-    public double ChangePrecision => Changes == 0 ? 1.0 : (double)Fixes / Changes;
+    public double ChangePrecision => Changes == 0 ? double.NaN : (double)Fixes / Changes;
     public double CorrectionRecall => Correctable == 0 ? 1.0 : (double)Fixes / Correctable;
     public double UnsafeRate => Total == 0 ? 0.0 : (double)WrongChanges / Total;
 

@@ -64,6 +64,53 @@ public sealed class CorrectionBenchmarkSummaryTests
         Assert.Equal(0, summary.WrongChanges);
     }
 
+    [Fact]
+    public void CreateTreatsZeroMarginAsAbstention()
+    {
+        CorrectionBenchmarkSummary summary = CorrectionBenchmarkSummary.Create(new[]
+        {
+            Result(Case(literalIndex: 0, goldIndex: 1), bestIndex: 1, margin: 0.0),
+        }, threshold: 0.0);
+
+        Assert.Equal(0, summary.Changes);
+        Assert.Equal(1, summary.AbstainedCorrections);
+    }
+
+    [Fact]
+    public void FromOutcomeRejectsScoreOrderThatDoesNotMatchCandidates()
+    {
+        CorrectionBenchmarkCase benchmarkCase = Case(literalIndex: 0, goldIndex: 1);
+        var outcome = new SentenceScoringOutcome(
+            Chosen: "variant",
+            Scores: new[]
+            {
+                new SentenceCandidateScore("variant", 0.0, 0.0, 1),
+                new SentenceCandidateScore("literal", 1.0, 1.0, 1),
+            },
+            Margin: 1.0,
+            Threshold: 0.0,
+            AbstainReason: null);
+
+        CorrectionBenchmarkResult result = CorrectionBenchmarkResult.FromOutcome(
+            benchmarkCase,
+            outcome,
+            TimeSpan.Zero);
+
+        Assert.Equal(CorrectionBenchmarkVerdict.ScoringError, result.Verdict(threshold: 0.25));
+    }
+
+    [Fact]
+    public void ChangePrecisionIsNotMeasuredWhenThereIsNoChange()
+    {
+        CorrectionBenchmarkSummary summary = CorrectionBenchmarkSummary.Create(new[]
+        {
+            Result(Case(literalIndex: 0, goldIndex: 1), bestIndex: 1, margin: 0.1),
+        }, threshold: 0.25);
+
+        Assert.Equal(0, summary.Changes);
+        Assert.True(double.IsNaN(summary.ChangePrecision));
+    }
+
     private static CorrectionBenchmarkCase Case(int literalIndex, int goldIndex) =>
         new(
             "case",

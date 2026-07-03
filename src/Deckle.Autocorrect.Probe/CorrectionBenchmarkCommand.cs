@@ -131,13 +131,13 @@ internal static class CorrectionBenchmarkCommand
         Console.WriteLine($"Path : {model.Directory}");
         Console.WriteLine($"Time : {results.Sum(static r => r.Duration.TotalSeconds):0.0}s");
         Console.WriteLine();
-        Console.WriteLine("threshold  changes  fixes  wrong  precision  recall  abstain  miss_keep  errors");
+        Console.WriteLine("threshold  changes  fixes  wrong  precision  recall  safe_abs  miss_abs  miss_keep  errors");
 
         foreach (double threshold in parsed.Thresholds)
         {
             CorrectionBenchmarkSummary summary = CorrectionBenchmarkSummary.Create(results, threshold);
             Console.WriteLine(
-                $"{summary.Threshold,9:0.##}  {summary.Changes,7}  {summary.Fixes,5}  {summary.WrongChanges,5}  {summary.ChangePrecision,9:P0}  {summary.CorrectionRecall,6:P0}  {summary.AbstainedCorrections + summary.SafeAbstentions,7}  {summary.MissedKeeps,9}  {summary.ScoringErrors,6}");
+                $"{summary.Threshold,9:0.##}  {summary.Changes,7}  {summary.Fixes,5}  {summary.WrongChanges,5}  {FormatPercent(summary.ChangePrecision),9}  {FormatPercent(summary.CorrectionRecall),6}  {summary.SafeAbstentions,8}  {summary.AbstainedCorrections,8}  {summary.MissedKeeps,9}  {summary.ScoringErrors,6}");
         }
 
         Console.WriteLine();
@@ -192,4 +192,11 @@ internal static class CorrectionBenchmarkCommand
                 Console.WriteLine($"  reason : {result.AbstainReason}");
         }
     }
+
+    private static string FormatPercent(double value) =>
+        double.IsNaN(value)
+            ? "N/A"
+            : string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"{value * 100.0:0}%");
 }

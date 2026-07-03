@@ -6,7 +6,7 @@ namespace Deckle.Autocorrect.Tests;
 public sealed class CandidateCompletionPlanTests
 {
     [Fact]
-    public void CreateScoresOnlyTokensBetweenCommonPrefixAndSuffix()
+    public void CreateScoresFromFirstDifferenceThroughCandidateEnd()
     {
         CandidateCompletionPlan[] plans = CandidateCompletionPlan.Create(new[]
         {
@@ -14,12 +14,12 @@ public sealed class CandidateCompletionPlanTests
             new[] { 10, 21, 30, 40 },
         });
 
-        Assert.Equal(new CandidateCompletionPlan(1, 1), plans[0]);
-        Assert.Equal(new CandidateCompletionPlan(1, 1), plans[1]);
+        Assert.Equal(new CandidateCompletionPlan(1, 3), plans[0]);
+        Assert.Equal(new CandidateCompletionPlan(1, 3), plans[1]);
     }
 
     [Fact]
-    public void CreateKeepsMiddleCommonTokensWhenThereAreMultipleDifferences()
+    public void CreateKeepsFullTailWhenThereAreMultipleDifferences()
     {
         CandidateCompletionPlan[] plans = CandidateCompletionPlan.Create(new[]
         {
@@ -27,8 +27,8 @@ public sealed class CandidateCompletionPlanTests
             new[] { 10, 21, 30, 41, 50 },
         });
 
-        Assert.Equal(new CandidateCompletionPlan(1, 3), plans[0]);
-        Assert.Equal(new CandidateCompletionPlan(1, 3), plans[1]);
+        Assert.Equal(new CandidateCompletionPlan(1, 4), plans[0]);
+        Assert.Equal(new CandidateCompletionPlan(1, 4), plans[1]);
     }
 
     [Fact]

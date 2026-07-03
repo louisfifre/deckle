@@ -10,20 +10,19 @@ internal readonly record struct CandidateCompletionPlan(int Start, int Count)
             return Array.Empty<CandidateCompletionPlan>();
 
         int commonPrefix = CommonPrefixLength(completions);
-        int commonSuffix = CommonSuffixLength(completions, commonPrefix);
 
         var plans = new CandidateCompletionPlan[completions.Count];
-        bool hasEmptyDiscriminator = false;
+        bool hasEmptyScoredTail = false;
         for (int i = 0; i < completions.Count; i++)
         {
-            int count = completions[i].Length - commonPrefix - commonSuffix;
+            int count = completions[i].Length - commonPrefix;
             if (count <= 0)
-                hasEmptyDiscriminator = true;
+                hasEmptyScoredTail = true;
 
             plans[i] = new CandidateCompletionPlan(commonPrefix, count);
         }
 
-        if (!hasEmptyDiscriminator)
+        if (!hasEmptyScoredTail)
             return plans;
 
         for (int i = 0; i < completions.Count; i++)
@@ -47,25 +46,5 @@ internal readonly record struct CandidateCompletionPlan(int Start, int Count)
         }
 
         return prefix;
-    }
-
-    private static int CommonSuffixLength(IReadOnlyList<int[]> completions, int commonPrefix)
-    {
-        int minLength = completions.Min(static c => c.Length);
-        int suffix = 0;
-        while (suffix < minLength - commonPrefix)
-        {
-            int token = completions[0][completions[0].Length - 1 - suffix];
-            for (int i = 1; i < completions.Count; i++)
-            {
-                int[] completion = completions[i];
-                if (completion[completion.Length - 1 - suffix] != token)
-                    return suffix;
-            }
-
-            suffix++;
-        }
-
-        return suffix;
     }
 }

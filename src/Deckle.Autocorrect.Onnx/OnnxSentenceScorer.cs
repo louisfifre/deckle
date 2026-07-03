@@ -152,7 +152,7 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
             return CandidateScore.AbstainedMany(candidates.Count, SentenceScoringOutcome.AbstainReasons.EmptyCandidate);
 
         int[][] completionTokens = candidates
-            .Select(candidate => StripBos(Encode(candidate)))
+            .Select(candidate => StripBos(Encode(candidate + "\n")))
             .ToArray();
         CandidateCompletionPlan[] plans = CandidateCompletionPlan.Create(completionTokens);
 

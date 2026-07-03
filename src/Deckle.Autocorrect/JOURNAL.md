@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-03 — ONNX judge scoring now includes the suffix evidence
+
+Found that scoring only the discriminating middle removed useful evidence from the shared suffix, such as `personne` after `la`/`là`. The ONNX judge now scores from the first candidate divergence through a newline answer delimiter. On the hardened 30-case benchmark, Qwen3-4B CPU int4 took about 546 s; at margin `0.25` it made one false literal change and fixed 13/14 correctable cases, while at margin `0.5` it made no false change and fixed 12/14. Qwen3-0.6B took about 107 s; at margin `0.5` it made no false change and fixed 7/14.
+
 ## 2026-07-03 — Closed-candidate Qwen bench rejects silent use
 
 Benchmarked 30 closed French correction cases against staged Qwen3 ONNX Runtime GenAI CPU int4 models with the forced-logprob judge. At margin `0.25`, 0.6B and 1.7B each made one high-margin false literal change, 4B made one high-margin false literal change, and 8B made two high-margin false changes; no tested Qwen size is safe for silent sentence correction without another guard. Timings for 30 cases were about 68 s, 171 s, 360 s, and 647 s.

@@ -35,7 +35,8 @@ internal sealed record CorrectionBenchmarkResult(
                 outcome.AbstainReason);
 
         if (outcome.Scores.Count != benchmarkCase.Candidates.Length ||
-            outcome.Scores.Any(static score => string.IsNullOrEmpty(score.Text) || !double.IsFinite(score.Score)))
+            outcome.Scores.Any(static score => string.IsNullOrEmpty(score.Text) || !double.IsFinite(score.Score)) ||
+            !ScoresMatchCandidates(benchmarkCase, outcome))
             return new CorrectionBenchmarkResult(
                 benchmarkCase,
                 null,
@@ -56,7 +57,7 @@ internal sealed record CorrectionBenchmarkResult(
         if (AbstainReason is not null || BestIndex is null)
             return CorrectionBenchmarkVerdict.ScoringError;
 
-        if (!double.IsFinite(Margin) || Margin < threshold)
+        if (!double.IsFinite(Margin) || Margin <= 0.0 || Margin < threshold)
             return Case.RequiresCorrection
                 ? CorrectionBenchmarkVerdict.AbstainedCorrection
                 : CorrectionBenchmarkVerdict.SafeAbstention;
@@ -71,5 +72,16 @@ internal sealed record CorrectionBenchmarkResult(
             return CorrectionBenchmarkVerdict.MissedKeep;
 
         return CorrectionBenchmarkVerdict.WrongChange;
+    }
+
+    private static bool ScoresMatchCandidates(
+        CorrectionBenchmarkCase benchmarkCase,
+        SentenceScoringOutcome outcome)
+    {
+        for (int i = 0; i < benchmarkCase.Candidates.Length; i++)
+            if (!string.Equals(outcome.Scores[i].Text, benchmarkCase.Candidates[i], StringComparison.Ordinal))
+                return false;
+
+        return true;
     }
 }
