@@ -441,6 +441,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── AutocorrectViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── AutocorrectSettings.cs
+│   │   ├── AutocorrectSettingsModule.cs
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Autocorrect.csproj
@@ -500,7 +501,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ConfirmationService.cs
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
-│   │   └── Loc.cs
+│   │   ├── Loc.cs
+│   │   └── SettingsModuleDescriptor.cs
 │   ├── Deckle.Chrono/
 │   │   ├── ChronoFormatter.cs
 │   │   ├── ChronoTimer.cs
@@ -671,6 +673,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
 │   │   ├── TrackpadSettings.cs
+│   │   ├── TrackpadSettingsModule.cs
 │   │   └── TrackpadSettingsService.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
@@ -742,6 +745,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
 │   │   ├── AmbientSettings.cs
+│   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.cs
@@ -779,6 +783,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
+│   │   ├── LlmSettingsModule.cs
 │   │   └── LlmSettingsService.cs
 │   ├── Deckle.Notifications/
 │   │   ├── Catalog/
@@ -857,7 +862,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorpusConsentDialog.cs
 │   │   │   └── MicrophoneTelemetryConsentDialog.cs
 │   │   ├── Modules/
-│   │   │   ├── SettingsModuleDescriptor.cs
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
 │   │   │   ├── DiagnosticsPage.xaml
@@ -1010,7 +1014,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml
-│   │   └── WhisperPage.xaml.cs
+│   │   ├── WhisperPage.xaml.cs
+│   │   └── WhisperSettingsModule.cs
 │   ├── Deckle.Transcription.Whisper/
 │   │   ├── Engine/
 │   │   │   └── WhisperParamsMapper.cs

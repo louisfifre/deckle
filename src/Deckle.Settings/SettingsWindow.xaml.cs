@@ -150,9 +150,11 @@ public sealed partial class SettingsWindow : Window
 
     // ── Module nav band ──────────────────────────────────────────────────────
     //
-    // Builds one NavigationViewItem per registered module and inserts them between
-    // the Recording anchor and the Diagnostics anchor, in the registry's Order.
-    // Idempotent: any items a previous call inserted are removed first, so a live
+    // Builds one NavigationViewItem per registered module and routes it into the
+    // band its Tier names: Header at the top of the primary menu, Main between the
+    // Recording and Diagnostics anchors, Footer into the footer menu. Within a band,
+    // the registry already hands them back in (Tier, Order) order. Idempotent: any
+    // items a previous call inserted are removed from both menus first, so a live
     // registry change rebuilds the band rather than duplicating it. Labels resolve
     // from the OWNING module's PRI subtree (Loc.GetFrom) — the module ships its own
     // nav wording — and the glyph is a Glyphs.* character built straight into a
@@ -160,13 +162,18 @@ public sealed partial class SettingsWindow : Window
     private void BuildModuleNavItems()
     {
         foreach (NavigationViewItem old in _moduleNavItems)
+        {
             Nav.MenuItems.Remove(old);
+            Nav.FooterMenuItems.Remove(old);
+        }
         _moduleNavItems.Clear();
 
-        // Insert before Diagnostics; if that anchor is somehow absent, append to
-        // the end of the primary menu rather than throwing.
-        int insertAt = Nav.MenuItems.IndexOf(DiagnosticsNavItem);
-        if (insertAt < 0) insertAt = Nav.MenuItems.Count;
+        // Main items land before Diagnostics; if that anchor is somehow absent,
+        // append to the end of the primary menu rather than throwing. Header items
+        // go to the very top and push the Main anchor down as they are inserted.
+        int mainInsertAt = Nav.MenuItems.IndexOf(DiagnosticsNavItem);
+        if (mainInsertAt < 0) mainInsertAt = Nav.MenuItems.Count;
+        int headerInsertAt = 0;
 
         foreach (SettingsModuleDescriptor module in SettingsModuleRegistry.Modules)
         {
@@ -176,9 +183,23 @@ public sealed partial class SettingsWindow : Window
                 Tag = module.PageTag,
                 Icon = new FontIcon { Glyph = module.Glyph },
             };
-            Nav.MenuItems.Insert(insertAt, item);
+
+            switch (module.Tier)
+            {
+                case SettingsNavTier.Header:
+                    Nav.MenuItems.Insert(headerInsertAt, item);
+                    headerInsertAt++;
+                    mainInsertAt++;
+                    break;
+                case SettingsNavTier.Footer:
+                    Nav.FooterMenuItems.Add(item);
+                    break;
+                default: // Main
+                    Nav.MenuItems.Insert(mainInsertAt, item);
+                    mainInsertAt++;
+                    break;
+            }
             _moduleNavItems.Add(item);
-            insertAt++;
         }
     }
 

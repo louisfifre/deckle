@@ -494,55 +494,20 @@ public partial class App : Microsoft.UI.Xaml.Application
         Settings.SettingsHost.IsSpeechProvisioned =
             () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
 
-        // Settings module nav registry — the five module-owned settings pages
-        // register their nav identity (page tag + module PRI + glyph + order) so
-        // the shell builds their NavigationView items from the registry instead of
-        // hardcoding them in SettingsWindow.xaml. This is the seam the module
-        // installer needs: a module appears / disappears here without editing the
-        // shell. The shell's own General / Recording / Diagnostics stay static
-        // anchors; Logs stays a footer command. Order leaves gaps so a later module
-        // can land between two existing ones. Same lib-exposes-a-static /
-        // App-owns-the-contract pattern as SettingsHost above.
-        Settings.SettingsModuleRegistry.Register(new Settings.SettingsModuleDescriptor
-        {
-            Id = "whisp",
-            PageTag = "Deckle.Transcription.WhisperPage, Deckle.Transcription",
-            OwningAssembly = "Deckle.Transcription",
-            Glyph = Catalog.Glyphs.Speech,
-            Order = 100,
-        });
-        Settings.SettingsModuleRegistry.Register(new Settings.SettingsModuleDescriptor
-        {
-            Id = "llm",
-            PageTag = "Deckle.Llm.Rewrite.LlmPage, Deckle.Llm.Rewrite",
-            OwningAssembly = "Deckle.Llm.Rewrite",
-            Glyph = Catalog.Glyphs.Sparkle,
-            Order = 200,
-        });
-        Settings.SettingsModuleRegistry.Register(new Settings.SettingsModuleDescriptor
-        {
-            Id = "autocorrect",
-            PageTag = "Deckle.Autocorrect.AutocorrectPage, Deckle.Autocorrect",
-            OwningAssembly = "Deckle.Autocorrect",
-            Glyph = Catalog.Glyphs.Autocorrect,
-            Order = 300,
-        });
-        Settings.SettingsModuleRegistry.Register(new Settings.SettingsModuleDescriptor
-        {
-            Id = "ambient",
-            PageTag = "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient",
-            OwningAssembly = "Deckle.Lighting.Ambient",
-            Glyph = Catalog.Glyphs.Lightbulb,
-            Order = 400,
-        });
-        Settings.SettingsModuleRegistry.Register(new Settings.SettingsModuleDescriptor
-        {
-            Id = "trackpad",
-            PageTag = "Deckle.Input.Trackpad.TrackpadPage, Deckle.Input.Trackpad",
-            OwningAssembly = "Deckle.Input.Trackpad",
-            Glyph = Catalog.Glyphs.Trackpad,
-            Order = 500,
-        });
+        // Settings module nav registry — each module-owned settings page declares
+        // its own nav identity (page tag + module PRI + icon) in its own assembly,
+        // via its <Module>SettingsModule.Describe(order). The composition root supplies
+        // ONLY the Order here, so the shell builds their NavigationView items from
+        // the registry instead of hardcoding them in SettingsWindow.xaml. This is
+        // the seam the module installer needs: a module appears / disappears here
+        // without editing the shell. The shell's own General / Recording /
+        // Diagnostics stay static anchors; Logs stays a footer command. Order leaves
+        // gaps so a later module can land between two existing ones.
+        Settings.SettingsModuleRegistry.Register(Transcription.WhisperSettingsModule.Describe(order: 100));
+        Settings.SettingsModuleRegistry.Register(Llm.Rewrite.LlmSettingsModule.Describe(order: 200));
+        Settings.SettingsModuleRegistry.Register(Autocorrect.AutocorrectSettingsModule.Describe(order: 300));
+        Settings.SettingsModuleRegistry.Register(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400));
+        Settings.SettingsModuleRegistry.Register(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500));
 
         // Message-only Win32 host — invisible by construction (HWND_MESSAGE
         // parent). Hosts the tray callback, global hotkeys, and the shared

@@ -1,4 +1,17 @@
-namespace Deckle.Settings;
+namespace Deckle.Catalog;
+
+// ── SettingsNavTier ───────────────────────────────────────────────────────────
+//
+// Which band of the Settings NavigationView a module's page lands in. Header sits
+// above the main list, Main is the ordinary body, Footer is the bottom band (where
+// the shell keeps cross-cutting commands like Logs). Order sorts WITHIN a tier, so
+// a module places itself in a band and then among its band-mates.
+public enum SettingsNavTier
+{
+    Header,
+    Main,
+    Footer,
+}
 
 // ── SettingsModuleDescriptor ──────────────────────────────────────────────────
 //
@@ -7,6 +20,11 @@ namespace Deckle.Settings;
 // the module at compile time. Registered into SettingsModuleRegistry (by the App
 // composition root today, by the future module installer tomorrow); the shell
 // materialises one NavigationViewItem per descriptor at window-build time.
+//
+// It lives in Deckle.Catalog, the settings floor every settings-bearing module
+// already references (the composer was relocated here for the same reason) — so a
+// module DECLARES its own nav identity without a reference back to the shell. The
+// module owns its name AND its icon; the composition root supplies only the Order.
 //
 // Deliberately UI-agnostic and late-bound, mirroring the shell's existing nav:
 // PageTag is a Type.GetType string (assembly-qualified for a module page in its
@@ -44,11 +62,21 @@ public sealed record SettingsModuleDescriptor
 
     // Header glyph character from the Glyphs.* constants (the C# mirror of
     // Icons.xaml), built straight into a FontIcon — no StaticResource lookup, the
-    // blessed programmatic path.
+    // blessed programmatic path. Module-owned: the module picks its own icon.
     public required string Glyph { get; init; }
 
-    // Sort key inside the module band (between the shell's Recording and
-    // Diagnostics anchors). Ascending; leaves gaps between values so a later
+    // Which nav band this page lands in. Defaults to Main — the ordinary body,
+    // between the shell's own anchors — so a plain module reads as one line without
+    // stating a tier. Header / Footer opt into the top or bottom bands.
+    public SettingsNavTier Tier { get; init; } = SettingsNavTier.Main;
+
+    // Sort key WITHIN the tier. Ascending; leaves gaps between values so a later
     // module can land between two existing ones.
     public int Order { get; init; }
+
+    // Optional parent module id, for a future nested nav (parent → children in the
+    // rail). Dormant by decision: the current nav is one page per family with
+    // in-page sections, no expandable nesting — the field is reserved so the
+    // contract need not change if that decision is ever revisited.
+    public string? ParentId { get; init; }
 }
