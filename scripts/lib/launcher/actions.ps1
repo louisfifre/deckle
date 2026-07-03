@@ -50,7 +50,33 @@ function Select-VersionBump {
     }
 }
 
-function Invoke-UpdateVersion {
+function Test-ChangelogVersionSection {
+    param(
+        [Parameter(Mandatory)][string]$Worktree,
+        [Parameter(Mandatory)][string]$Version
+    )
+    $path = Join-Path $Worktree 'CHANGELOG.md'
+    if (-not (Test-Path $path)) { return $false }
+    $content = Get-Content -Raw -LiteralPath $path
+    $escaped = [regex]::Escape($Version)
+    return $content -match "(?m)^## \[$escaped\]"
+}
+
+function Get-RecordableCommitCountSinceTag {
+    param(
+        [Parameter(Mandatory)][string]$Worktree,
+        [Parameter(Mandatory)][string]$Tag
+    )
+    $subjects = & git -C $Worktree log --format='%s' "$Tag..HEAD"
+    if ($LASTEXITCODE -ne 0) { throw "git log $Tag..HEAD failed (code $LASTEXITCODE)" }
+    $count = 0
+    foreach ($subject in $subjects) {
+        if ($subject -cmatch '^(feat|fix|perf|refactor|revert)(?:\([^)]+\))?!?:\s+') { $count++ }
+    }
+    return $count
+}
+
+function Invoke-RecordVersion {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
     $cur = Get-CsprojVersion -Worktree $wt
@@ -58,27 +84,53 @@ function Invoke-UpdateVersion {
         Write-Host "No MAJOR.MINOR.PATCH <Version> found in that worktree." -ForegroundColor Red
         return
     }
-    $choice = Select-VersionBump -Current $cur -Header 'Update version - pick the increment:'
-    if ($null -eq $choice) {
-        Write-Host "Cancelled." -ForegroundColor DarkGray
-        return
+
+    $tag = "v$cur"
+    $alreadyCut = [bool](& git -C $wt tag --list $tag)
+    $alreadyBaked = Test-ChangelogVersionSection -Worktree $wt -Version $cur
+    $recordableSinceTag = if ($alreadyCut) { Get-RecordableCommitCountSinceTag -Worktree $wt -Tag $tag } else { 0 }
+    $recordArgs = @{ Target = $wt; Push = $true }
+    $target = $cur
+
+    if ($alreadyCut -and $recordableSinceTag -gt 0) {
+        Write-Host "$recordableSinceTag user-facing commit(s) exist after $tag." -ForegroundColor DarkGray
+        $choice = Select-VersionBump -Current $cur -Header 'Record version - changes after current tag, pick the increment:'
+        if ($null -eq $choice) {
+            Write-Host "Cancelled." -ForegroundColor DarkGray
+            return
+        }
+        $recordArgs.Bump = $choice.Seg
+        $target = $choice.Target
+    } elseif ($alreadyCut -and -not $alreadyBaked) {
+        $recordArgs.Current = $true
+        Write-Host "v$cur is already cut but not baked into CHANGELOG.md." -ForegroundColor DarkGray
+    } else {
+        $choice = Select-VersionBump -Current $cur -Header 'Record version - pick the increment:'
+        if ($null -eq $choice) {
+            Write-Host "Cancelled." -ForegroundColor DarkGray
+            return
+        }
+        $recordArgs.Bump = $choice.Seg
+        $target = $choice.Target
     }
+
     Write-Host ""
-    Write-Host "Recorded on this worktree and tagged locally. Nothing is pushed." -ForegroundColor DarkGray
-    if (-not (Read-YesNo -Question "Set Deckle to v$($choice.Target)?" -Default $true)) {
+    Write-Host "This records v$target in git and CHANGELOG.md, pushes the branch + tag, and creates NO GitHub Release." -ForegroundColor Yellow
+    if (-not (Read-YesNo -Question "Record Deckle v$target now?" -Default $true)) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
+
     Begin-DeckleAction
-    & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $choice.Seg
+    & (Join-Path $LibDir 'record-version.ps1') @recordArgs
 }
 
 # The whole release ritual behind one consent: bump (asked here, skipped when the
-# current <Version> already has its tag — a cut made via Update version, or a
-# previous run that failed past the cut), changelog bake, push of main and the
-# tag, then the public GitHub Release. Each step stays a single-purpose script;
-# this action only composes them, and every git step is idempotent so a re-run
-# resumes where the last one stopped.
+# current <Version> already has its tag — a cut made via Record version, or a
+# previous run that failed past the cut), record-version bake/push, then the
+# public GitHub Release. Each step stays a single-purpose script; this action
+# only composes them, and every git step is idempotent so a re-run resumes where
+# the last one stopped.
 function Invoke-PublishRelease {
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
@@ -88,49 +140,43 @@ function Invoke-PublishRelease {
         return
     }
 
-    $alreadyCut = [bool](& git -C $wt tag --list "v$cur")
-    $bump = $null
+    $tag = "v$cur"
+    $alreadyCut = [bool](& git -C $wt tag --list $tag)
+    $recordableSinceTag = if ($alreadyCut) { Get-RecordableCommitCountSinceTag -Worktree $wt -Tag $tag } else { 0 }
+    $recordArgs = @{ Target = $wt; Push = $true }
     $target = $cur
-    if ($alreadyCut) {
-        Write-Host "v$cur is already cut (tag exists) - this run publishes it." -ForegroundColor DarkGray
+    if ($alreadyCut -and $recordableSinceTag -gt 0) {
+        Write-Host "$recordableSinceTag user-facing commit(s) exist after $tag - this run records a new version before publishing." -ForegroundColor DarkGray
+        $choice = Select-VersionBump -Current $cur -Header 'Publish release - changes after current tag, pick the increment:'
+        if ($null -eq $choice) {
+            Write-Host "Cancelled." -ForegroundColor DarkGray
+            return
+        }
+        $recordArgs.Bump = $choice.Seg
+        $target = $choice.Target
+        Write-Host ""
+    } elseif ($alreadyCut) {
+        Write-Host "$tag is already cut and no user-facing commit exists after it - this run publishes it." -ForegroundColor DarkGray
+        $recordArgs.Current = $true
     } else {
         $choice = Select-VersionBump -Current $cur -Header 'Publish release - pick the increment:'
         if ($null -eq $choice) {
             Write-Host "Cancelled." -ForegroundColor DarkGray
             return
         }
-        $bump = $choice.Seg
+        $recordArgs.Bump = $choice.Seg
         $target = $choice.Target
         Write-Host ""
     }
 
-    Write-Host "This cuts v$target if needed, bakes the changelog, pushes main + tag, and publishes a PUBLIC GitHub Release (installer exe + app ZIP + sha256)." -ForegroundColor Yellow
+    Write-Host "This records v$target, pushes the branch + tag, and publishes a PUBLIC GitHub Release (installer exe + app ZIP + sha256)." -ForegroundColor Yellow
     if (-not (Read-YesNo -Question "Publish Deckle v$target to GitHub now?" -Default $true)) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
 
     Begin-DeckleAction
-    if (-not $alreadyCut) {
-        & (Join-Path $LibDir 'cut-version.ps1') -Target $wt -Bump $bump
-    }
-
-    # Bake the changelog section — idempotent: regeneration is wholesale, and the
-    # commit only happens when the file actually changed.
-    & (Join-Path $LibDir 'changelog.ps1') -Target $wt
-    & git -C $wt add -- CHANGELOG.md
-    & git -C $wt diff --cached --quiet -- CHANGELOG.md
-    if ($LASTEXITCODE -ne 0) {
-        & git -C $wt commit -m "docs(changelog): bake the v$target section"
-        if ($LASTEXITCODE -ne 0) { throw "changelog bake commit failed (code $LASTEXITCODE)" }
-    }
-
-    # Push main and the tag — both no-ops when already on origin.
-    & git -C $wt push
-    if ($LASTEXITCODE -ne 0) { throw "git push failed (code $LASTEXITCODE)" }
-    & git -C $wt push origin "v$target"
-    if ($LASTEXITCODE -ne 0) { throw "git push origin v$target failed (code $LASTEXITCODE)" }
-
+    & (Join-Path $LibDir 'record-version.ps1') @recordArgs
     & (Join-Path $LibDir 'publish-app.ps1') -Target $wt -Publish
 }
 

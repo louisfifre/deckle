@@ -18,8 +18,8 @@ All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`]
 | **Run** | Launch app (Release / Debug) | yes | `lib/launch-app.ps1 -Configuration Release\|Debug` |
 |  | Build and run app (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug` |
 |  | Build app without running (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug -NoRun` |
-| **Project** | Update version | yes | `lib/cut-version.ps1` |
-| **More > Release** | Publish app release | yes | `lib/publish-app.ps1 -Publish` (confirms first) |
+| **Project** | Record version | yes | `lib/record-version.ps1 -Push` |
+| **More > Release** | Publish app release | yes | records a pending version when needed, then `lib/publish-app.ps1 -Publish` (confirms first) |
 |  | Prepare app release artifacts | yes | `lib/publish-app.ps1` |
 |  | Prepare native runtime release | no | `lib/publish-native-runtime.ps1` (publishing confirms first) |
 | **More > Maintenance** | Clean build outputs | yes | `lib/clean.ps1` |
@@ -48,7 +48,8 @@ Each worker is callable directly from a terminal or a `launch.json` profile — 
 | [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight files over 500 / 1000 raw lines, summarize modules by source LOC, list file types dynamically, and print the per-file module table. Excludes `bin/obj/artifacts/.vs/Properties` and generated files (`*.g.cs`, `*.g.i.cs`, `*.xaml.g.cs`). | `-Target <worktree>`, `-Pick`, `-Json <path>` |
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
 | [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Runtime assets are left to the app's first-run wizard unless explicitly requested. | `-DryRun`, `-Full`, `-Yes`, `-IncludeAssets`, `-AssetsRelease X.Y.Z` |
-| [`lib/cut-version.ps1`](lib/cut-version.ps1) | Bump the single source-of-truth `<Version>` in `Deckle.App.csproj`, commit only that one-line change as `chore(release): vX.Y.Z`, and create the local tag. It does not push. Run before release artifact preparation / publishing so the built app carries the intended version. | `-Target <worktree>`, `-Pick`, `-Bump patch\|minor\|major`, `-NoCommit` |
+| [`lib/record-version.ps1`](lib/record-version.ps1) | Frequent versioning path: cut the next `vX.Y.Z` through `cut-version.ps1` or finish an already-cut tag, regenerate `CHANGELOG.md`, commit the generated section, and optionally push the branch + tag. It never builds artifacts and never creates a GitHub Release. | `-Target <worktree>`, `-Pick`, `-Bump patch\|minor\|major`, `-Current`, `-Push` |
+| [`lib/cut-version.ps1`](lib/cut-version.ps1) | Low-level atomic bump: update the single source-of-truth `<Version>` in `Deckle.App.csproj`, commit only that one-line change as `chore(release): vX.Y.Z`, and create the local tag. It does not update the changelog and does not push; prefer `record-version.ps1` for normal version records. | `-Target <worktree>`, `-Pick`, `-Bump patch\|minor\|major`, `-NoCommit` |
 | [`lib/install-hooks.ps1`](lib/install-hooks.ps1) | Install the local git hooks sourced from `scripts/hooks/` into `.git/hooks/` and register the local `merge.ours` driver used by `TREE.md`. | |
 | [`lib/update-readme-stats.ps1`](lib/update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. Also used by the monthly GitHub Action. | `-Target <worktree>`, `-Pick`, `-ReadmePath <path>` |
 | [`lib/changelog.ps1`](lib/changelog.ps1) | Generate `CHANGELOG.md` and release notes from the Conventional-Commit history — plain `git log` + PowerShell, no external tool or API. Default regenerates the whole `CHANGELOG.md` from the `v0.4.0` floor forward; `-NotesFor X.Y.Z` emits a single version's section for `gh … --notes-file` (consumed by `publish-app.ps1`). | `-Target <worktree>`, `-Pick`, `-NotesFor X.Y.Z`, `-OutFile <path>` |
@@ -73,7 +74,7 @@ pwsh scripts/lib/update-readme-stats.ps1
 
 GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manual dispatch. The workflow checks out full history (`fetch-depth: 0`), runs the same script, and commits `README.md` only when the generated section changed.
 
-`CHANGELOG.md` is the same maintenance family: it is regenerated from local Git history, not hand-edited and not a publish action. Regenerate it locally through the menu (`Update changelog`) or directly:
+`CHANGELOG.md` is the same maintenance family: it is regenerated from local Git history, not hand-edited and not a publish action. The normal path is `Record version`, which cuts or finishes a tag and commits the generated changelog section without creating a GitHub Release. `Publish app release` uses the same record step first; if the current version tag already exists but changelog-worthy commits (`feat`, `fix`, `perf`, `refactor`, `revert`) landed after it, the launcher asks for the next patch/minor/major before publishing. Regenerate the changelog alone through the menu (`Update changelog`) or directly:
 
 ```powershell
 pwsh scripts/lib/changelog.ps1
