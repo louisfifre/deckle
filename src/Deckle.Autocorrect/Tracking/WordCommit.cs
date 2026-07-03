@@ -5,8 +5,13 @@ namespace Deckle.Autocorrect;
 // PreviousPreviousWord the one before that (elision prefixes keep their
 // apostrophe: « l' »); both null after a reset, the second also null one word
 // into a sentence. The two together feed the trigram disambiguator.
+// Reopened is set when this commit came from a word the user backspaced into
+// and retyped: the deliberate keystroke asserts intent, so the commit stage
+// must leave it literal — only the sentence stage, with full context, keeps
+// the right to revise it.
 public sealed record WordCommit(
-    string Word, char Boundary, string? PreviousWord, string? PreviousPreviousWord, double TimestampMs);
+    string Word, char Boundary, string? PreviousWord, string? PreviousPreviousWord, double TimestampMs,
+    bool Reopened = false);
 
 // The user backspaced into the word committed just before and retyped
 // it differently — the raw material of correction harvesting.

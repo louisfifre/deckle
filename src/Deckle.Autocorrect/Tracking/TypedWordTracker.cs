@@ -251,7 +251,7 @@ public sealed class TypedWordTracker
         _reopened = false;
 
         WordCommitted?.Invoke(
-            new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs));
+            new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs, wasReopened));
 
         if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
             WordEdited?.Invoke(new WordEdit(original, word, timestampMs));

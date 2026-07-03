@@ -91,6 +91,31 @@ public sealed class AutocorrectEngineBackspaceTests
         Assert.DoesNotContain(("ça", "ca"), h.Injector.Calls);
     }
 
+    // A word the user reopened and retyped is exempt from the COMMIT stage: the
+    // deliberate keystroke asserts intent, so the engine must leave the literal
+    // alone — the commit policy is not even consulted. Retyping by hand the very
+    // form the engine corrects must stick this time (the sentence stage, absent
+    // from this rig, is what keeps the right to revise from full context).
+    [Fact]
+    public void AReopenedRetypedWordIsExemptFromTheCommitStage()
+    {
+        using var h = Corrected(); // typed « ca », corrected to « ça » — one correction landed
+        var scripted = (ScriptedPolicy)h.Policy;
+        Assert.Single(scripted.Calls); // self-certify: the commit stage ran once, for the first « ca »
+
+        // Reopen the corrected « ça » and retype the bare « ca » by hand.
+        h.Backspace(); // re-opens the live buffer as « ça »
+        h.Backspace(); // « ç »
+        h.Backspace(); // « » — empty, still a reopened slot
+        h.Type("ca "); // re-commit « ca » — deliberately the form the policy corrects
+
+        // The reopened commit skipped the policy entirely, and no second
+        // correction landed: the hand-retyped literal stands.
+        Assert.Single(scripted.Calls);    // still just the first « ca » — the reopen was exempt
+        Assert.Single(h.Applied);         // still just the original correction
+        Assert.Single(h.Injector.Calls);  // no re-correction was injected for the retype
+    }
+
     private sealed class TempDictPath : IDisposable
     {
         public string Value { get; } = Path.Combine(
