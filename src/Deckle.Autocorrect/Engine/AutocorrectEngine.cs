@@ -290,12 +290,15 @@ public sealed class AutocorrectEngine : IDisposable
                 ? new[] { commit.PreviousWord }
                 : new[] { commit.PreviousPreviousWord, commit.PreviousWord };
 
-        // The decision ledger is built only on an enrolled surface and only when
-        // the opt-in toggle is on — otherwise null, and the chain runs at no cost.
-        CorrectionTrace? trace = enabledHere && _decisionTelemetry?.Invoke() == true
+        // A word the user reopened and retyped is exempt from the commit stage:
+        // the deliberate keystroke asserts intent, so the literal stands here and
+        // no decision is computed. The sentence stage keeps its full rights below.
+        // The decision ledger is otherwise built only on an enrolled surface and
+        // only when the opt-in toggle is on — null, and the chain runs at no cost.
+        CorrectionTrace? trace = !commit.Reopened && enabledHere && _decisionTelemetry?.Invoke() == true
             ? new CorrectionTrace()
             : null;
-        var decision = _policy.Evaluate(commit.Word, leftContext, trace);
+        var decision = commit.Reopened ? null : _policy.Evaluate(commit.Word, leftContext, trace);
 
         // A suppressed pair never fires again whatever the policy says — enforced
         // here so even a policy without dictionary access honors the suppression.
@@ -312,7 +315,9 @@ public sealed class AutocorrectEngine : IDisposable
 
             // Learning feeds on words the engine leaves alone. A corrected commit
             // must NOT reinforce the bare typo, or a few repetitions would adopt
-            // it and silently disable its own correction.
+            // it and silently disable its own correction. A reopened word reaches
+            // this branch too (its literal stands): the retype is a fresh clean
+            // occurrence, while OnWordEdited debits the form it reopened.
             if (decision is null)
                 RecordCommitLearning(commit.Word);
             else
