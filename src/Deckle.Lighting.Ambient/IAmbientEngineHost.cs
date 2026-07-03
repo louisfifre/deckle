@@ -8,7 +8,8 @@ namespace Deckle.Lighting.Ambient;
 // without any event subscription.
 //
 // The engine reads its settings on every tick : the HDR tuning
-// sliders (ExposureEv, SaturationBoost, MinBrightness), the zone
+// controls (ExposureEv, SaturationBoost, Bézier brightness response,
+// MinBrightnessEnabled / MinBrightness), the zone
 // assignments and the per-light brightness, the multi-light master
 // flag, and the Hue bridge credentials. The engine doesn't write
 // back yet — a SaveSettings() method will be added here when the

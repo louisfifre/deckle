@@ -246,26 +246,26 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // _host.Ambient. Live-reload — settings changes apply on the next
     // tick without restarting the pipeline. See
     // AmbientSettings.ExposureEv / SaturationBoost / MinBrightness /
-    // BrightnessCurveParam for the user-facing semantics. The snapshot
+    // BrightnessCurveX1..Y2 for the user-facing semantics. The snapshot
     // avoids re-reading the host on every pixel inside the helpers.
     //   - Exposure is forwarded to FrameSampler (applied in linear
     //     light before the tone-map, mathematically correct).
     //   - Saturation boost is applied here on the sRGB output (OKLCh
     //     chroma amplification to keep hue stable and perceived
     //     luminance constant across the hue wheel).
-    //   - Brightness curve gamma is applied here on the sRGB output
-    //     as a uniform RGB scale (xy chromaticity invariant — only
-    //     the bri derived from max(R,G,B) drops). Squashes the bottom
-    //     of the bri range so dim scenes don't read as visibly lit in
-    //     a dark room. γ = 1.0 is a no-op.
+    //   - Brightness curve is applied here on the sRGB output as a
+    //     uniform RGB scale (xy chromaticity invariant — only the bri
+    //     derived from max(R,G,B) moves).
     //   - Min brightness is applied last on the sRGB output (raises
     //     the max channel to the floor while preserving chromaticity).
     //     Comes after the curve so the effective floor matches the
     //     value the user set, not the curve-attenuated version of it.
-    private double _saturationBoost               = 1.0;
-    private double _brightnessCurveParam          = 1.0;
-    private double _brightnessCurveSCurveSteepness = 2.0;
-    private BrightnessCurveType _brightnessCurveType = BrightnessCurveType.Linear;
+    private double _saturationBoost       = 1.0;
+    private double _brightnessCurveX1     = 0.42;
+    private double _brightnessCurveY1     = 0.00;
+    private double _brightnessCurveX2     = 1.00;
+    private double _brightnessCurveY2     = 1.00;
+    private bool   _minBrightnessEnabled  = true;
     private int    _minBrightness         = 0;
     private int    _changeThreshold       = 6;
     // Zone-sampling band thickness snapshot. See the field-doc block

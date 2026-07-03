@@ -725,6 +725,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightDescriptor.cs
 │   ├── Deckle.Lighting.Ambient/
 │   │   ├── Engine/
+│   │   │   ├── AmbientBrightnessCurve.cs
 │   │   │   ├── AmbientColorPipeline.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
 │   │   │   ├── AmbientEngine.cs
@@ -1182,6 +1183,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
+│   │   ├── AmbientBrightnessCurveTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj

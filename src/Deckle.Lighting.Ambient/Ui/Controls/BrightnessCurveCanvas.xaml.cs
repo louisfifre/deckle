@@ -1,180 +1,283 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 
 namespace Deckle.Lighting.Ambient;
 
-// Small square widget that plots the brightness response curve used by
-// AmbientEngine.ApplyBrightnessCurve. Two polylines overlap inside a
-// 160×160 canvas — a grey dashed diagonal as the linear reference,
-// and the live accent curve recomputed every time the CurveType or
-// the Gamma (parameter) dependency property changes.
-//
-// Four curve shapes are supported : Linear (passes through the
-// reference diagonal), Gamma (power law), SCurve (logistic
-// normalised to the corners), Logarithmic (lifts the bottom of the
-// range). The Gamma DP doubles as a generic parameter — it carries
-// the gamma exponent for Gamma curves and the steepness k for
-// SCurves. Linear and Logarithmic ignore it.
-//
-// Axes : X = input max channel (0 → 255 left-to-right), Y = pushed
-// bri (0 bottom → 254 top). No labels — the consumer places captions
-// outside the widget.
-//
-// The accent curve is greyed when the widget is set as "muted" by
-// the consumer (Opacity = 0.4 via XAML) — useful for curves whose
-// parameter the user can't tune (Linear, Logarithmic).
+// Compact editor for the Ambient brightness-response curve. X is the
+// sampled max-channel input, Y is the pushed Hue bri response, both in
+// normalised [0,1] space. The two draggable handles edit the same
+// cubic-Bézier control points the engine samples.
 public sealed partial class BrightnessCurveCanvas : UserControl
 {
-    private const int SampleCount = 64;
-    private const double PlotPadding  = 4.0;
+    private const int SampleCount = 80;
+    private const double PlotPadding = 6.0;
+    private const double HandleSize = 24.0;
+    private const double HandleRadius = HandleSize / 2.0;
 
     public BrightnessCurveCanvas()
     {
         InitializeComponent();
-        Loaded += (_, _) => RebuildCurves();
-        SizeChanged += (_, _) => RebuildCurves();
+        Loaded += (_, _) => RebuildPlot();
+        ActualThemeChanged += (_, _) => RebuildPlot();
+        Handle1.DragDelta += OnHandle1DragDelta;
+        Handle2.DragDelta += OnHandle2DragDelta;
     }
 
-    // ── Curve parameter DP ───────────────────────────────────────────
-    //
-    // Generic shape parameter. Gamma exponent for CurveType.Gamma,
-    // logistic steepness k for CurveType.SCurve. Ignored by Linear
-    // and Logarithmic. Defensive clamps in RebuildCurves catch NaN /
-    // ≤ 0 values from misconfigured callers.
-
-    public static readonly DependencyProperty GammaProperty =
+    public static readonly DependencyProperty X1Property =
         DependencyProperty.Register(
-            nameof(Gamma),
+            nameof(X1),
             typeof(double),
             typeof(BrightnessCurveCanvas),
-            new PropertyMetadata(1.0, OnAnyVisualChanged));
+            new PropertyMetadata(0.42, OnAnyVisualChanged));
 
-    public double Gamma
+    public double X1
     {
-        get => (double)GetValue(GammaProperty);
-        set => SetValue(GammaProperty, value);
+        get => (double)GetValue(X1Property);
+        set => SetValue(X1Property, value);
     }
 
-    // ── Curve type DP ────────────────────────────────────────────────
-    //
-    // Selects the shape the canvas plots. Stored as int so the DP
-    // system doesn't choke on the enum default — consumers set it
-    // through the typed CurveType property below.
-
-    public static readonly DependencyProperty CurveTypeProperty =
+    public static readonly DependencyProperty Y1Property =
         DependencyProperty.Register(
-            nameof(CurveType),
-            typeof(BrightnessCurveType),
+            nameof(Y1),
+            typeof(double),
             typeof(BrightnessCurveCanvas),
-            new PropertyMetadata(BrightnessCurveType.Gamma, OnAnyVisualChanged));
+            new PropertyMetadata(0.00, OnAnyVisualChanged));
 
-    public BrightnessCurveType CurveType
+    public double Y1
     {
-        get => (BrightnessCurveType)GetValue(CurveTypeProperty);
-        set => SetValue(CurveTypeProperty, value);
+        get => (double)GetValue(Y1Property);
+        set => SetValue(Y1Property, value);
+    }
+
+    public static readonly DependencyProperty X2Property =
+        DependencyProperty.Register(
+            nameof(X2),
+            typeof(double),
+            typeof(BrightnessCurveCanvas),
+            new PropertyMetadata(1.00, OnAnyVisualChanged));
+
+    public double X2
+    {
+        get => (double)GetValue(X2Property);
+        set => SetValue(X2Property, value);
+    }
+
+    public static readonly DependencyProperty Y2Property =
+        DependencyProperty.Register(
+            nameof(Y2),
+            typeof(double),
+            typeof(BrightnessCurveCanvas),
+            new PropertyMetadata(1.00, OnAnyVisualChanged));
+
+    public double Y2
+    {
+        get => (double)GetValue(Y2Property);
+        set => SetValue(Y2Property, value);
+    }
+
+    public static readonly DependencyProperty MinBrightnessEnabledProperty =
+        DependencyProperty.Register(
+            nameof(MinBrightnessEnabled),
+            typeof(bool),
+            typeof(BrightnessCurveCanvas),
+            new PropertyMetadata(true, OnAnyVisualChanged));
+
+    public bool MinBrightnessEnabled
+    {
+        get => (bool)GetValue(MinBrightnessEnabledProperty);
+        set => SetValue(MinBrightnessEnabledProperty, value);
+    }
+
+    public static readonly DependencyProperty MinBrightnessProperty =
+        DependencyProperty.Register(
+            nameof(MinBrightness),
+            typeof(int),
+            typeof(BrightnessCurveCanvas),
+            new PropertyMetadata(180, OnAnyVisualChanged));
+
+    public int MinBrightness
+    {
+        get => (int)GetValue(MinBrightnessProperty);
+        set => SetValue(MinBrightnessProperty, value);
     }
 
     private static void OnAnyVisualChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is BrightnessCurveCanvas self) self.RebuildCurves();
+        if (d is BrightnessCurveCanvas self)
+            self.RebuildPlot();
     }
 
-    private void RebuildCurves()
+    private void OnPlotCanvasSizeChanged(object sender, SizeChangedEventArgs e) => RebuildPlot();
+
+    private void RebuildPlot()
     {
-        // Width / height come from the canvas's actual layout slot ;
-        // before the first measure pass they're 0 (Loaded fires after
-        // measure on the standard show path, so 0 means "called too
-        // early" — bail and let the next change re-trigger).
+        if (PlotCanvas is null || Handle1 is null || Handle2 is null) return;
+
         double w = PlotCanvas.ActualWidth;
         double h = PlotCanvas.ActualHeight;
         if (w <= 0 || h <= 0) return;
 
         PlotCanvas.Children.Clear();
 
-        // Linear reference (γ = 1) from bottom-left to top-right.
-        // Always drawn so the eye can compare the accent curve to
-        // the baseline even when the active curve happens to be
-        // Linear (the reference will sit underneath, perfectly
-        // matched).
-        var reference = new Polyline
+        var g = new PlotRect(w, h);
+        if (!g.Valid) return;
+
+        AddReference(g);
+        AddFloor(g);
+        AddCurve(g);
+        AddStems(g);
+        RepositionHandles(g);
+    }
+
+    private void AddReference(PlotRect g)
+    {
+        var reference = new Line
         {
-            Stroke = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
+            X1 = g.Left,
+            Y1 = g.Bottom,
+            X2 = g.Right,
+            Y2 = g.Top,
+            Stroke = ResourceBrush("DividerStrokeColorDefaultBrush"),
             StrokeThickness = 1.0,
             StrokeDashArray = new DoubleCollection { 3.0, 3.0 },
         };
-        reference.Points.Add(new Point(PlotPadding, h - PlotPadding));
-        reference.Points.Add(new Point(w - PlotPadding, PlotPadding));
         PlotCanvas.Children.Add(reference);
+    }
 
-        // Accent curve sampled along the selected shape.
+    private void AddFloor(PlotRect g)
+    {
+        if (!MinBrightnessEnabled) return;
+
+        double floor = Math.Clamp(MinBrightness / 254.0, 0.0, 1.0);
+        double y = g.MapY(floor);
+        var line = new Line
+        {
+            X1 = g.Left,
+            Y1 = y,
+            X2 = g.Right,
+            Y2 = y,
+            Stroke = ResourceBrush("SystemFillColorCautionBrush"),
+            StrokeThickness = 1.0,
+            StrokeDashArray = new DoubleCollection { 2.0, 3.0 },
+            Opacity = 0.85,
+        };
+        PlotCanvas.Children.Add(line);
+    }
+
+    private void AddCurve(PlotRect g)
+    {
         var curve = new Polyline
         {
-            Stroke = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"],
-            StrokeThickness = 1.5,
+            Stroke = ResourceBrush("AccentFillColorDefaultBrush"),
+            StrokeThickness = 1.75,
             StrokeLineJoin = PenLineJoin.Round,
             StrokeStartLineCap = PenLineCap.Round,
             StrokeEndLineCap = PenLineCap.Round,
         };
 
-        // Defensive : NaN means a misconfigured caller, fall back to
-        // the neutral 1.0 (Linear-equivalent under every curve type).
-        // Negative values are valid under the SCurve type — they
-        // flag the anti-S variant — so don't clamp them away.
-        double param = double.IsNaN(Gamma) ? 1.0 : Gamma;
-
+        var bez = new AmbientBrightnessCurve(X1, Y1, X2, Y2);
         for (int i = 0; i <= SampleCount; i++)
         {
-            double ratio = (double)i / SampleCount;
-            double yNorm = SampleCurve(CurveType, param, ratio); // [0, 1]
-            double x = PlotPadding + ratio * (w - 2 * PlotPadding);
-            double y = (h - PlotPadding) - yNorm * (h - 2 * PlotPadding);
-            curve.Points.Add(new Point(x, y));
+            double x = (double)i / SampleCount;
+            double y = bez.Solve(x);
+            curve.Points.Add(new Point(g.MapX(x), g.MapY(y)));
         }
-
         PlotCanvas.Children.Add(curve);
     }
 
-    // Same shape definitions as AmbientEngine.ApplyBrightnessCurve, in
-    // a normalised [0, 1] → [0, 1] form. Kept here rather than shared
-    // with the engine because the canvas is a pure visualisation —
-    // splitting the math out would couple the UI control to the
-    // engine assembly for one short switch.
-    private static double SampleCurve(BrightnessCurveType type, double param, double x)
+    private void AddStems(PlotRect g)
     {
-        switch (type)
+        var brush = ResourceBrush("AccentFillColorDefaultBrush");
+        AddStem(g.MapX(0), g.MapY(0), g.MapX(Clamp01(X1)), g.MapY(Clamp01(Y1)), brush);
+        AddStem(g.MapX(1), g.MapY(1), g.MapX(Clamp01(X2)), g.MapY(Clamp01(Y2)), brush);
+    }
+
+    private void AddStem(double x1, double y1, double x2, double y2, Brush brush)
+    {
+        var stem = new Line
         {
-            case BrightnessCurveType.Linear:
-                return x;
+            X1 = x1,
+            Y1 = y1,
+            X2 = x2,
+            Y2 = y2,
+            Stroke = brush,
+            StrokeThickness = 1.0,
+            Opacity = 0.35,
+        };
+        PlotCanvas.Children.Add(stem);
+    }
 
-            case BrightnessCurveType.Gamma:
-                // Math.Pow handles γ ∈ (0, ∞) naturally — γ < 1 lifts
-                // the bottom of the range (concave, similar in spirit
-                // to Logarithmic), γ > 1 squashes it. γ = 1 collapses
-                // to Linear.
-                return System.Math.Pow(x, param);
+    private void RepositionHandles(PlotRect g)
+    {
+        Place(Handle1, g.MapX(Clamp01(X1)), g.MapY(Clamp01(Y1)));
+        Place(Handle2, g.MapX(Clamp01(X2)), g.MapY(Clamp01(Y2)));
+    }
 
-            case BrightnessCurveType.SCurve:
-                // Matches AmbientEngine.ApplyBrightnessCurve : |k| for
-                // the logistic, dead-zone around 0 (the normalisation
-                // divides by zero at k = 0), reflection around y = x
-                // when k is negative — gives the anti-S that flattens
-                // mid-tones toward grey.
-                if (System.Math.Abs(param) < 0.05) return x;
-                double k = System.Math.Abs(param);
-                double a = 1.0 / (1.0 + System.Math.Exp(0.5 * k));
-                double b = 1.0 / (1.0 + System.Math.Exp(-0.5 * k));
-                double raw = 1.0 / (1.0 + System.Math.Exp(-k * (x - 0.5)));
-                double y = (raw - a) / (b - a);
-                return param < 0.0 ? (2.0 * x - y) : y;
+    private static void Place(Thumb t, double cx, double cy)
+    {
+        Canvas.SetLeft(t, cx - HandleRadius);
+        Canvas.SetTop(t, cy - HandleRadius);
+    }
 
-            case BrightnessCurveType.Logarithmic:
-                return System.Math.Log10(1.0 + 9.0 * x);
+    private void OnHandle1DragDelta(object sender, DragDeltaEventArgs e) => DragHandle(Handle1, e, first: true);
+    private void OnHandle2DragDelta(object sender, DragDeltaEventArgs e) => DragHandle(Handle2, e, first: false);
 
-            default:
-                return x;
+    private void DragHandle(Thumb handle, DragDeltaEventArgs e, bool first)
+    {
+        var g = new PlotRect(PlotCanvas.ActualWidth, PlotCanvas.ActualHeight);
+        if (!g.Valid) return;
+
+        double curLeft = Canvas.GetLeft(handle);
+        double curTop = Canvas.GetTop(handle);
+        if (double.IsNaN(curLeft) || double.IsNaN(curTop))
+        {
+            RepositionHandles(g);
+            return;
         }
+
+        double cx = curLeft + HandleRadius + e.HorizontalChange;
+        double cy = curTop + HandleRadius + e.VerticalChange;
+        double nx = Math.Round(Math.Clamp((cx - g.Left) / (g.Right - g.Left), 0.0, 1.0), 2);
+        double ny = Math.Round(Math.Clamp((g.Bottom - cy) / (g.Bottom - g.Top), 0.0, 1.0), 2);
+
+        if (first)
+        {
+            X1 = nx;
+            Y1 = ny;
+        }
+        else
+        {
+            X2 = nx;
+            Y2 = ny;
+        }
+    }
+
+    private Brush ResourceBrush(string key) => (Brush)Application.Current.Resources[key];
+
+    private static double Clamp01(double value)
+        => double.IsNaN(value) || double.IsInfinity(value)
+            ? 0.0
+            : Math.Clamp(value, 0.0, 1.0);
+
+    private readonly struct PlotRect
+    {
+        public readonly bool Valid;
+        public readonly double Left, Right, Top, Bottom;
+
+        public PlotRect(double w, double h)
+        {
+            Left = PlotPadding;
+            Right = w - PlotPadding;
+            Top = PlotPadding;
+            Bottom = h - PlotPadding;
+            Valid = w > 0 && h > 0 && Right - Left >= 20 && Bottom - Top >= 20;
+        }
+
+        public double MapX(double x) => Left + x * (Right - Left);
+        public double MapY(double y) => Bottom - y * (Bottom - Top);
     }
 }

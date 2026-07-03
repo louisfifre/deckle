@@ -29,9 +29,9 @@ namespace Deckle.Playground;
 //   • AmbientPage.LightZones.cs — per-light zone assignment UI + Identify.
 //   • AmbientPage.Preview.cs    — sampled-pixel grid + swatch strip + zone
 //                                 overlay rendering + idle blanking.
-//   • AmbientPage.HdrTuning.cs  — pipeline toggle + Mode / Brightness curve /
-//                                 Smoothing / Change threshold / Exposure /
-//                                 Saturation / Min brightness sliders.
+//   • AmbientPage.HdrTuning.cs  — pipeline toggle + Mode / Bézier brightness
+//                                 response / Smoothing / Change threshold /
+//                                 Exposure / Saturation / Min brightness.
 //
 // Lifetime contract :
 //   • Page instance is cached (NavigationCacheMode.Required).
@@ -133,6 +133,7 @@ public sealed partial class AmbientPage : Page
         // close.
         HuePairingService.Instance.BridgeChanged += OnHueBridgeChanged;
         AmbientSettingsService.Instance.Changed  += OnAmbientSettingsChanged;
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         if (AmbientEngine.Current is { } engine)
         {
             _observedEngine = engine;
@@ -225,6 +226,7 @@ public sealed partial class AmbientPage : Page
 
         HuePairingService.Instance.BridgeChanged -= OnHueBridgeChanged;
         AmbientSettingsService.Instance.Changed  -= OnAmbientSettingsChanged;
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         if (_observedEngine is { } engine)
         {
             engine.StateChanged -= OnAmbientEngineStateChanged;

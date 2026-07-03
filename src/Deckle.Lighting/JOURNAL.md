@@ -7,6 +7,14 @@ type: module-journal
 
 Not read by default. The *why* behind the RGB→Hue color math the code doesn't explain on its own.
 
+## 2026-07-03 — Ambient brightness response is one cubic Bézier
+
+Chose one cubic-Bézier brightness response for Ambient instead of the previous Linear / Gamma / S-Curve / Logarithmic family picker. The runtime and the compact Playground editor must sample the same curve coordinates, so the plotted shape is the contract, not a visualization of separate engine math.
+
+Minimum brightness is now an explicit floor switch plus a retained floor value. Off means dark scenes may go fully black; on means non-dark scenes are raised to the stored floor.
+
+No fine migration was kept for old custom curve-family settings. Old JSON fields can remain ignored; new Bézier fields take their compiled defaults.
+
 ## Color science — the Night Owl bug and the gamut/averaging decisions
 
 ### The bug

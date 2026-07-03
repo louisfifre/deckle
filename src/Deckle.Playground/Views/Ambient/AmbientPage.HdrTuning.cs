@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -7,21 +8,14 @@ using Deckle.Lighting.Ambient;
 
 namespace Deckle.Playground;
 
-// ─── AmbientPage — pipeline + HDR tuning sliders ────────────────────────────
+// ─── AmbientPage — pipeline + HDR tuning controls ──────────────────────────
 //
 // Pipeline toggle (master Enabled flag of the AmbientEngine) and the
-// HDR knobs sandbox : Mode preset, Brightness curve (type + param),
-// Smoothing α, Change threshold, Exposure, Saturation, Min brightness.
-// Slider handlers write through the ViewModel which persists into
-// AmbientSettings via AmbientSettingsService — same store the Settings
-// AmbientPage and the engine itself consume.
-//
-// PushViewModelToControls is the inverse pump : after ViewModel.Load
-// pulls fresh values from AmbientSettings, this method seeds every
-// slider / combo / canvas so the visuals match. Wrapped by the caller
-// in `_initializing = true` so the synthetic ValueChanged events fired
-// by Slider.Value = X don't loop back through the VM setters.
-
+// HDR knobs sandbox : Mode preset, compact Bézier brightness response,
+// optional minimum-brightness floor, Smoothing α, Change threshold,
+// Exposure and Saturation. Handlers write through the ViewModel which
+// persists into AmbientSettings via AmbientSettingsService — same store
+// the Settings AmbientPage and the engine consume.
 public sealed partial class AmbientPage
 {
     // ── Pipeline ────────────────────────────────────────────────────────────
@@ -92,102 +86,7 @@ public sealed partial class AmbientPage
         ViewModel.UseMultiLight = useMulti;
     }
 
-    // ── HDR tuning : combo selectors + slider Min/Max + canvas type ─────────
-
-    private double SelectCurveParamForType(BrightnessCurveType type)
-        => type switch
-        {
-            BrightnessCurveType.Gamma  => ViewModel.BrightnessCurveParam,
-            BrightnessCurveType.SCurve => ViewModel.BrightnessCurveSCurveSteepness,
-            _                          => ViewModel.BrightnessCurveParam,
-        };
-
-    private void SelectBrightnessCurveTypeInCombo(BrightnessCurveType type)
-    {
-        string tag = type.ToString();
-        for (int i = 0; i < PlaygroundBrightnessCurveCombo.Items.Count; i++)
-        {
-            if (PlaygroundBrightnessCurveCombo.Items[i] is ComboBoxItem cbi
-                && (cbi.Tag as string) == tag)
-            {
-                PlaygroundBrightnessCurveCombo.SelectedIndex = i;
-                return;
-            }
-        }
-        PlaygroundBrightnessCurveCombo.SelectedIndex = 1;
-    }
-
-    private void UpdatePlaygroundBrightnessCurveDependentUi()
-    {
-        var type = ReadBrightnessCurveTypeFromCombo();
-        bool paramHasEffect = type == BrightnessCurveType.Gamma
-                           || type == BrightnessCurveType.SCurve;
-        PlaygroundGammaSlider.IsEnabled = paramHasEffect;
-
-        // Slider range follows the active curve.
-        //   - Gamma [0.3, 3.0] with 1.0 as the neutral mid-point.
-        //     γ > 1 squashes the bottom of the range (legacy direction) ;
-        //     γ < 1 lifts the bottom, behaving like a tunable
-        //     Logarithmic. The asymmetric range mirrors that γ = 1/x
-        //     is the symmetric reflection through y = x, but the lower
-        //     half is sharper perceptually so [0.3, 1] covers enough.
-        //   - SCurve [-5.0, 5.0] symmetric around 0. k > 0 is the
-        //     classic S that pushes mid-tones away from grey ; k < 0
-        //     is the anti-S that flattens mid-tones toward grey. The
-        //     dead-zone around 0 reads as Linear (the engine traps
-        //     |k| < 0.05). 5 reads "near-step" per the engine notes,
-        //     overshoot beyond that buys nothing.
-        // Order matters when shrinking (Max < current Value clamps
-        // Value), so we always set Max before Min and the caller
-        // re-projects Value right after.
-        switch (type)
-        {
-            case BrightnessCurveType.Gamma:
-                PlaygroundGammaSlider.Maximum = 3.0;
-                PlaygroundGammaSlider.Minimum = 0.3;
-                break;
-            case BrightnessCurveType.SCurve:
-                PlaygroundGammaSlider.Maximum = 5.0;
-                PlaygroundGammaSlider.Minimum = -5.0;
-                break;
-            default:
-                PlaygroundGammaSlider.Maximum = 5.0;
-                PlaygroundGammaSlider.Minimum = -5.0;
-                break;
-        }
-
-        PlaygroundGammaCanvas.CurveType = type;
-        PlaygroundGammaCanvas.Opacity   = paramHasEffect ? 1.0 : 0.4;
-
-        PlaygroundGammaSliderRow.Visibility = paramHasEffect
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-
-        PlaygroundGammaCaption.Text = type switch
-        {
-            BrightnessCurveType.Linear      => "Direct pass-through — input max channel is sent to the lamp as-is. No parameter to tune ; rely on smoothing and min brightness for fine control.",
-            BrightnessCurveType.Gamma       => "Power-law shaping on the bri range. γ > 1 squashes dim scenes harder without touching saturated highlights. γ < 1 lifts the bottom of the range — same direction as Logarithmic, with the slider letting you dial how hard. 0.5 — strongly lifted shadows · 1.0 — linear · 1.8 — default · 2.5 — strongly dimmed shadows.",
-            BrightnessCurveType.SCurve      => "Logistic shaping around the mid-grey. k > 0 pushes mid-tones away from grey (dim scenes darker, bright scenes brighter — high-contrast feel). k < 0 mirrors the curve into an anti-S that flattens mid-tones toward grey (calmer, averaging feel). −5.0 — near anti-step · −2.0 — soft anti-S · 0 — linear · 2.0 — default · 5.0 — near-step.",
-            BrightnessCurveType.Logarithmic => "Lifts the bottom of the range so even very dim scenes stay clearly lit. No parameter to tune — the curve is fixed.",
-            _ => string.Empty,
-        };
-
-        // Smoothing slider range — same constraint as the gamma
-        // slider above. Maximum first, then Minimum (Range invariant).
-        PlaygroundSmoothingSlider.Maximum = 1.0;
-        PlaygroundSmoothingSlider.Minimum = 0.05;
-    }
-
-    private BrightnessCurveType ReadBrightnessCurveTypeFromCombo()
-    {
-        if (PlaygroundBrightnessCurveCombo.SelectedItem is ComboBoxItem cbi
-         && cbi.Tag is string tag
-         && Enum.TryParse<BrightnessCurveType>(tag, out var parsed))
-        {
-            return parsed;
-        }
-        return BrightnessCurveType.Gamma;
-    }
+    // ── HDR tuning : selectors + live controls ──────────────────────────────
 
     private void SelectAmbientModeInCombo(AmbientMode mode)
     {
@@ -208,78 +107,52 @@ public sealed partial class AmbientPage
     //
     // Inverse of the slider handlers below. Seeded after ViewModel.Load
     // by both OnPageLoaded (first nav) and OnNavigatedTo (cached page
-    // reuse) ; the caller is responsible for wrapping in
-    // `_initializing = true` so the synthetic ValueChanged events fired
-    // here don't loop back through the VM setters and re-Save.
+    // reuse) ; the caller wraps in `_initializing = true` so synthetic
+    // ValueChanged / Toggled events don't loop back through the VM.
 
     private void PushViewModelToControls()
     {
         PlaygroundExposureSlider.Value         = ViewModel.ExposureEv;
         PlaygroundSaturationSlider.Value       = ViewModel.SaturationBoost * 100.0;
         PlaygroundMinBrightnessSlider.Value    = ViewModel.MinBrightness;
+        PlaygroundMinBrightnessToggle.IsOn     = ViewModel.MinBrightnessEnabled;
 
-        // ComboBoxes first : SelectBrightnessCurveTypeInCombo drives
-        // the curve type that UpdatePlaygroundBrightnessCurveDependentUi
-        // reads to rescale the param slider range. Then Min/Max are
-        // set. Only then can the Value safely take any SCurve k (which
-        // may be negative now) without being clamped by a stale Gamma
-        // [0.3, 3.0] window.
-        SelectBrightnessCurveTypeInCombo(ViewModel.BrightnessCurveType);
+        PlaygroundBrightnessCurveCanvas.X1 = ViewModel.BrightnessCurveX1;
+        PlaygroundBrightnessCurveCanvas.Y1 = ViewModel.BrightnessCurveY1;
+        PlaygroundBrightnessCurveCanvas.X2 = ViewModel.BrightnessCurveX2;
+        PlaygroundBrightnessCurveCanvas.Y2 = ViewModel.BrightnessCurveY2;
+        PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = ViewModel.MinBrightnessEnabled;
+        PlaygroundBrightnessCurveCanvas.MinBrightness = ViewModel.MinBrightness;
+
         SelectAmbientModeInCombo(ViewModel.Mode);
-        UpdatePlaygroundBrightnessCurveDependentUi();
 
-        double curveParam = SelectCurveParamForType(ViewModel.BrightnessCurveType);
-        PlaygroundGammaSlider.Value            = curveParam;
-        PlaygroundGammaCanvas.Gamma            = curveParam;
-        PlaygroundSmoothingSlider.Value        = ViewModel.SmoothingAlpha;
-        PlaygroundChangeThresholdSlider.Value  = ViewModel.ChangeThreshold;
+        PlaygroundSmoothingSlider.Maximum = 1.0;
+        PlaygroundSmoothingSlider.Minimum = 0.05;
+        PlaygroundSmoothingSlider.Value   = ViewModel.SmoothingAlpha;
+        PlaygroundChangeThresholdSlider.Value = ViewModel.ChangeThreshold;
 
         // Zone sampling. Share slider is in percent (5–50, integer
         // steps for clean ticks) ; the ViewModel stores the fraction
         // (0.05–0.50). Cells slider is the raw count (1–15). Clamp
         // before assignment so a hand-edited settings.json out of
-        // range doesn't throw inside RangeBase. SelectBorderModeInRadios
-        // + UpdateBorderRowsVisibility hide/show the active row.
-        PlaygroundBorderDepthSlider.Value      = Math.Clamp(ViewModel.BorderDepth, 0.05, 0.5) * 100.0;
-        PlaygroundBorderCellsSlider.Value      = Math.Clamp(ViewModel.BorderCells, 4, 24);
+        // range doesn't throw inside RangeBase.
+        PlaygroundBorderDepthSlider.Value = Math.Clamp(ViewModel.BorderDepth, 0.05, 0.5) * 100.0;
+        PlaygroundBorderCellsSlider.Value = Math.Clamp(ViewModel.BorderCells, 4, 24);
         SelectBorderModeInRadios(ViewModel.BorderMode);
         UpdateBorderRowsVisibility(ViewModel.BorderMode);
 
         UpdatePlaygroundExposureText();
         UpdatePlaygroundSaturationText();
         UpdatePlaygroundMinBrightnessText();
-        UpdatePlaygroundGammaText();
+        UpdatePlaygroundMinBrightnessUi();
+        UpdatePlaygroundBrightnessCurveText();
         UpdatePlaygroundSmoothingText();
         UpdatePlaygroundChangeThresholdText();
         UpdatePlaygroundBorderDepthText();
         UpdatePlaygroundBorderCellsText();
     }
 
-    // ── Slider handlers ─────────────────────────────────────────────────────
-
-    private void OnPlaygroundGammaSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {
-        UpdatePlaygroundGammaText();
-        PlaygroundGammaCanvas.Gamma = PlaygroundGammaSlider.Value;
-
-        if (_initializing) return;
-
-        // Route to the parameter that belongs to the active curve,
-        // leaving the other curves' parameters untouched. Linear /
-        // Logarithmic ignore the slider but we still write through
-        // into the Gamma slot so the value is preserved if the user
-        // switches back later.
-        var type = ReadBrightnessCurveTypeFromCombo();
-        switch (type)
-        {
-            case BrightnessCurveType.SCurve:
-                ViewModel.BrightnessCurveSCurveSteepness = PlaygroundGammaSlider.Value;
-                break;
-            default:
-                ViewModel.BrightnessCurveParam = PlaygroundGammaSlider.Value;
-                break;
-        }
-    }
+    // ── Slider / switch handlers ────────────────────────────────────────────
 
     private void OnPlaygroundExposureSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
@@ -295,9 +168,17 @@ public sealed partial class AmbientPage
         ViewModel.SaturationBoost = PlaygroundSaturationSlider.Value / 100.0;
     }
 
+    private void OnPlaygroundMinBrightnessEnabledToggled(object sender, RoutedEventArgs e)
+    {
+        UpdatePlaygroundMinBrightnessUi();
+        if (_initializing) return;
+        ViewModel.MinBrightnessEnabled = PlaygroundMinBrightnessToggle.IsOn;
+    }
+
     private void OnPlaygroundMinBrightnessSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         UpdatePlaygroundMinBrightnessText();
+        PlaygroundBrightnessCurveCanvas.MinBrightness = (int)Math.Round(PlaygroundMinBrightnessSlider.Value);
         if (_initializing) return;
         ViewModel.MinBrightness = (int)Math.Round(PlaygroundMinBrightnessSlider.Value);
     }
@@ -369,32 +250,6 @@ public sealed partial class AmbientPage
             : Visibility.Collapsed;
     }
 
-    private void OnPlaygroundBrightnessCurveTypeChanged(object sender, SelectionChangedEventArgs e)
-    {
-        var type = ReadBrightnessCurveTypeFromCombo();
-
-        // Order matters when the slider range is shrinking : Min/Max
-        // must be set before Value so we don't transiently clamp a
-        // valid SCurve k = −4 onto Gamma's 0.3 floor (or k = 4 onto
-        // Gamma's 3.0 ceiling) and lose the user's intent.
-        UpdatePlaygroundBrightnessCurveDependentUi();
-        bool prev = _initializing;
-        _initializing = true;
-        try
-        {
-            PlaygroundGammaSlider.Value = SelectCurveParamForType(type);
-        }
-        finally
-        {
-            _initializing = prev;
-        }
-
-        UpdatePlaygroundGammaText();
-
-        if (_initializing) return;
-        ViewModel.BrightnessCurveType = type;
-    }
-
     private void OnPlaygroundAmbientModeChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_initializing) return;
@@ -410,17 +265,44 @@ public sealed partial class AmbientPage
         }
     }
 
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(AmbientViewModel.BrightnessCurveX1):
+            case nameof(AmbientViewModel.BrightnessCurveY1):
+            case nameof(AmbientViewModel.BrightnessCurveX2):
+            case nameof(AmbientViewModel.BrightnessCurveY2):
+                if (PlaygroundBrightnessCurveText is not null)
+                    UpdatePlaygroundBrightnessCurveText();
+                break;
+            case nameof(AmbientViewModel.MinBrightnessEnabled):
+            case nameof(AmbientViewModel.MinBrightness):
+                if (PlaygroundBrightnessCurveCanvas is not null)
+                {
+                    PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = ViewModel.MinBrightnessEnabled;
+                    PlaygroundBrightnessCurveCanvas.MinBrightness = ViewModel.MinBrightness;
+                }
+                break;
+        }
+    }
+
     // ── Value-text formatters ───────────────────────────────────────────────
 
-    private void UpdatePlaygroundGammaText()
+    private void UpdatePlaygroundBrightnessCurveText()
+        => PlaygroundBrightnessCurveText.Text =
+            $"cubic-bezier({ViewModel.BrightnessCurveX1:0.00}, {ViewModel.BrightnessCurveY1:0.00}, {ViewModel.BrightnessCurveX2:0.00}, {ViewModel.BrightnessCurveY2:0.00})";
+
+    private void UpdatePlaygroundMinBrightnessUi()
     {
-        var type = ReadBrightnessCurveTypeFromCombo();
-        PlaygroundGammaValueText.Text = type switch
-        {
-            BrightnessCurveType.Gamma  => $"γ {PlaygroundGammaSlider.Value:F2}",
-            BrightnessCurveType.SCurve => $"k {PlaygroundGammaSlider.Value:F2}",
-            _                          => "—",
-        };
+        bool enabled = PlaygroundMinBrightnessToggle.IsOn;
+        PlaygroundMinBrightnessRow.Visibility = enabled
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        PlaygroundMinBrightnessCaption.Text = enabled
+            ? "Floor on bulb brightness when on. Stops the diffuser swallowing mid-tone scenes."
+            : "Off leaves dark scenes free to fall to black.";
+        PlaygroundBrightnessCurveCanvas.MinBrightnessEnabled = enabled;
     }
 
     private void UpdatePlaygroundExposureText()

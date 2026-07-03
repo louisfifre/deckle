@@ -186,14 +186,14 @@ public sealed class AmbientSettings
     //     bri ≈ 31 %, dim enough that the lamp's diffuser swallows
     //     the colour. A floor of ~180 keeps the chromaticity
     //     readable on the lamp without manual scene-by-scene
-    //     adjustment.
-    //   - Brightness curve gamma squashes the bottom of the bri range
-    //     via a power law on max(R,G,B). The linear default reads as
-    //     visibly lit in a dark room on dim scenes (max ≈ 25/255 still
-    //     pushes bri ≈ 25). gamma > 1 stretches the bottom of the
-    //     range without touching saturated highlights : (max/255)^γ ×
-    //     254. gamma = 1.0 disables. Applied as a uniform RGB scale
-    //     so xy chromaticity stays invariant — only bri drops.
+    //     adjustment. The floor has its own switch so the user can
+    //     choose between true black and a readable low-light floor
+    //     without losing the chosen floor value.
+    //   - Brightness curve reshapes the max-channel response through
+    //     one cubic-Bézier easing. It replaces the previous family
+    //     picker (Linear / Gamma / S-Curve / Logarithmic) with one
+    //     directly manipulable shape. Applied as a uniform RGB scale
+    //     so xy chromaticity stays invariant — only bri moves.
 
     /// <summary>Exposure compensation in EV (stops of light) applied
     /// in linear-light before the tone-map. 0 = no change (default),
@@ -207,54 +207,38 @@ public sealed class AmbientSettings
     /// [0, 2]. Applied in HSV-S to keep hue stable.</summary>
     public double SaturationBoost { get; set; } = 1.0;
 
+    /// <summary>Whether <see cref="MinBrightness"/> is applied to the
+    /// derived Hue <c>bri</c>. False keeps black / near-black scenes
+    /// free to go fully dark ; true lifts any non-dark scene to the
+    /// stored floor.</summary>
+    public bool MinBrightnessEnabled { get; set; } = true;
+
     /// <summary>Floor for the bri value pushed to Hue, in the bridge's
     /// 0–254 range. The derived bri (max-channel based) is raised to
-    /// this floor when the lamp is on (i.e. above OffThreshold), so
-    /// mid-tone scenes don't dim the lamp below readability. 0
-    /// disables the floor, 254 forces full brightness for any non-
-    /// dark scene. Default 180 ≈ 70 % — bright enough to colour the
-    /// room, dim enough to follow the screen's intent. Tuned in
-    /// AmbientPage.</summary>
+    /// this floor only when <see cref="MinBrightnessEnabled"/> is true
+    /// and the lamp is on (i.e. above OffThreshold), so mid-tone scenes
+    /// don't dim the lamp below readability. 254 forces full brightness
+    /// for any non-dark scene. Default 180 ≈ 70 % — bright enough to
+    /// colour the room, dim enough to follow the screen's intent.
+    /// Tuned in AmbientPage.</summary>
     public int MinBrightness { get; set; } = 180;
 
-    /// <summary>Shape of the brightness response curve applied to the
-    /// max-channel before deriving the Hue <c>bri</c> value. Lets the
-    /// user pick between four canonical responses without piling more
-    /// sliders — a single parameter (<see cref="BrightnessCurveParam"/>)
-    /// is reinterpreted by each curve. See the enum members for
-    /// details.</summary>
-    public BrightnessCurveType BrightnessCurveType { get; set; } = BrightnessCurveType.Gamma;
+    /// <summary>First cubic-Bézier control point X coordinate in [0, 1].
+    /// The anchors are fixed at (0,0) and (1,1), so the four stored
+    /// values are directly equivalent to CSS <c>cubic-bezier()</c>.
+    /// The shipping default keeps the previous gamma-like feel :
+    /// shadows are held low while highlights still reach full output.</summary>
+    public double BrightnessCurveX1 { get; set; } = 0.42;
 
-    /// <summary>Gamma exponent for <see cref="BrightnessCurveType.Gamma"/>,
-    /// in [0.3, 3.0]. Default 1.8 (legacy shipping curve). 1.0
-    /// collapses to Linear ; γ &gt; 1 squashes dim scenes harder
-    /// without touching saturated highlights ; γ &lt; 1 lifts the
-    /// bottom of the range (concave, similar in spirit to
-    /// Logarithmic) — picked up after the 2026-05-19 HDR session
-    /// where the "log + min 20" combo worked because every other
-    /// curve only offered the squash direction. Ignored by every
-    /// other curve type — they have their own dedicated parameter
-    /// so the slider value stays meaningful when the user switches
-    /// curves.</summary>
-    public double BrightnessCurveParam { get; set; } = 1.8;
+    /// <summary>First cubic-Bézier control point Y coordinate in [0, 1].
+    /// Lower values squash dim scenes ; higher values lift them.</summary>
+    public double BrightnessCurveY1 { get; set; } = 0.00;
 
-    /// <summary>Logistic steepness for <see cref="BrightnessCurveType.SCurve"/>,
-    /// in [-5.0, 5.0]. Default 2.0 — a visible mid-tone contrast
-    /// without sliding into near-step territory. k &gt; 0 is the
-    /// classic S-curve (pushes mid-tones away from grey, dims dim
-    /// scenes harder, brightens bright scenes harder). k &lt; 0
-    /// mirrors the curve around the y=x diagonal, giving an anti-S
-    /// that flattens mid-tones toward grey — useful when the screen
-    /// content is already high-contrast and the user wants the lamp
-    /// to read closer to the average rather than amplifying
-    /// extremes. |k| &lt; 0.05 collapses to Linear (the normalisation
-    /// is numerically degenerate at k = 0). |k| ≈ 1 reads almost
-    /// linear, |k| = 5 reads almost step. Stored separately from
-    /// <see cref="BrightnessCurveParam"/> so toggling between Gamma
-    /// and SCurve doesn't reinterpret one knob's value as another
-    /// curve's parameter (a Gamma 1.8 read as SCurve k = 1.8 is
-    /// nearly invisible, which is exactly the surprise we avoid).</summary>
-    public double BrightnessCurveSCurveSteepness { get; set; } = 2.0;
+    /// <summary>Second cubic-Bézier control point X coordinate in [0, 1].</summary>
+    public double BrightnessCurveX2 { get; set; } = 1.00;
+
+    /// <summary>Second cubic-Bézier control point Y coordinate in [0, 1].</summary>
+    public double BrightnessCurveY2 { get; set; } = 1.00;
 
     /// <summary>Sum-of-absolute-channel-deltas threshold that gates
     /// pushes — if the new tuned-and-smoothed colour differs from the
@@ -328,41 +312,4 @@ public enum BorderThicknessMode
     /// percentages make the top and bottom bands feel too thin
     /// compared to the sides.</summary>
     Cells,
-}
-
-/// <summary>Shape of the brightness response curve applied to the
-/// max-channel of the tuned sRGB output before the Hue <c>bri</c>
-/// value is derived. Each shape reinterprets the auxiliary
-/// <see cref="AmbientSettings.BrightnessCurveParam"/> slider so the
-/// user can swap responses without losing the slider's footprint.</summary>
-public enum BrightnessCurveType
-{
-    /// <summary>Direct pass-through : <c>bri = max</c>. Param ignored.
-    /// Use when smoothing alone is enough to keep the lamp readable
-    /// on dim scenes and any non-linear squash would feel uneven.</summary>
-    Linear,
-
-    /// <summary>Power-law : <c>bri = (max/255)^γ × 254</c> with γ =
-    /// param. γ = 1.0 collapses to Linear. γ &gt; 1 squashes the
-    /// bottom of the range — a scene with max = 25/255 pushes bri
-    /// ≈ 4 at γ = 1.8 instead of bri ≈ 25 linear, which reads as
-    /// dim in a dark room. Saturated highlights are untouched.
-    /// Range of practical interest [1.0, 3.0]. Default shape.</summary>
-    Gamma,
-
-    /// <summary>Logistic S-curve centered on 0.5 with steepness = param :
-    /// <c>bri = 1 / (1 + exp(-k × (x - 0.5)))</c> remapped so the
-    /// endpoints stay at 0 and 254. Pushes mid-tones away from grey
-    /// in both directions — dim scenes get darker, bright scenes
-    /// brighter — useful when the screen content is high-contrast.
-    /// Param range [1.0, 5.0] ; 1.0 reads almost-linear, 5.0
-    /// reads almost-hard-step.</summary>
-    SCurve,
-
-    /// <summary>Logarithmic : <c>bri = log(1 + 9 × x) / log(10) × 254</c>.
-    /// Pushes the bottom of the range up — even very dim scenes
-    /// stay clearly lit. Param ignored. Use when the room is bright
-    /// enough that subtle scenes would otherwise read as "lamp
-    /// off".</summary>
-    Logarithmic,
 }

@@ -40,13 +40,19 @@ public partial class AmbientViewModel : ObservableObject
     public partial int MinBrightness { get; set; }
 
     [ObservableProperty]
-    public partial BrightnessCurveType BrightnessCurveType { get; set; }
+    public partial bool MinBrightnessEnabled { get; set; }
 
     [ObservableProperty]
-    public partial double BrightnessCurveParam { get; set; }
+    public partial double BrightnessCurveX1 { get; set; }
 
     [ObservableProperty]
-    public partial double BrightnessCurveSCurveSteepness { get; set; }
+    public partial double BrightnessCurveY1 { get; set; }
+
+    [ObservableProperty]
+    public partial double BrightnessCurveX2 { get; set; }
+
+    [ObservableProperty]
+    public partial double BrightnessCurveY2 { get; set; }
 
     [ObservableProperty]
     public partial int ChangeThreshold { get; set; }
@@ -132,29 +138,47 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnBrightnessCurveTypeChanged(BrightnessCurveType value)
+    partial void OnMinBrightnessEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveType", value.ToString());
-        AmbientSettingsService.Instance.Current.BrightnessCurveType = value;
+        DecklePlaygroundSource.Log.TuningChanged("MinBrightnessEnabled", value ? "on" : "off");
+        AmbientSettingsService.Instance.Current.MinBrightnessEnabled = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnBrightnessCurveParamChanged(double value)
+    partial void OnBrightnessCurveX1Changed(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveParam", value.ToString("F2"));
-        AmbientSettingsService.Instance.Current.BrightnessCurveParam = value;
+        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveX1", value.ToString("F2"));
+        AmbientSettingsService.Instance.Current.BrightnessCurveX1 = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnBrightnessCurveSCurveSteepnessChanged(double value)
+    partial void OnBrightnessCurveY1Changed(double value)
     {
         if (_isSyncing) return;
-        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveSCurveSteepness", value.ToString("F2"));
-        AmbientSettingsService.Instance.Current.BrightnessCurveSCurveSteepness = value;
+        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveY1", value.ToString("F2"));
+        AmbientSettingsService.Instance.Current.BrightnessCurveY1 = value;
+        FlipToCustomMode();
+        AmbientSettingsService.Instance.Save();
+    }
+
+    partial void OnBrightnessCurveX2Changed(double value)
+    {
+        if (_isSyncing) return;
+        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveX2", value.ToString("F2"));
+        AmbientSettingsService.Instance.Current.BrightnessCurveX2 = value;
+        FlipToCustomMode();
+        AmbientSettingsService.Instance.Save();
+    }
+
+    partial void OnBrightnessCurveY2Changed(double value)
+    {
+        if (_isSyncing) return;
+        DecklePlaygroundSource.Log.TuningChanged("BrightnessCurveY2", value.ToString("F2"));
+        AmbientSettingsService.Instance.Current.BrightnessCurveY2 = value;
         FlipToCustomMode();
         AmbientSettingsService.Instance.Save();
     }
@@ -223,7 +247,7 @@ public partial class AmbientViewModel : ObservableObject
     {
         if (_isSyncing) return;
         // ApplyPreset copies the preset's tuning snapshot onto every other
-        // knob (saturation, exposure, gamma, etc.) and saves. Custom is a
+        // knob (saturation, exposure, Bézier curve, etc.) and saves. Custom is a
         // no-op there — the preset code-path is a "snap back to a named
         // tuning", not "snap back to whatever the user had".
         AmbientSettingsService.Instance.ApplyPreset(value);
@@ -258,18 +282,20 @@ public partial class AmbientViewModel : ObservableObject
 
         ExposureEv                      = 0.0;
         SaturationBoost                 = 1.0;
-        MinBrightness                   = 180;
-        BrightnessCurveType             = BrightnessCurveType.Gamma;
-        BrightnessCurveParam            = 1.8;
-        BrightnessCurveSCurveSteepness  = 2.0;
-        ChangeThreshold                 = 6;
-        SmoothingAlpha                  = 0.30;
-        BorderMode                      = BorderThicknessMode.Share;
-        BorderDepth                     = 0.33;
-        BorderCells                     = 8;
-        Mode                            = AmbientMode.Game;
-        UseMultiLight                   = false;
-        Enabled                         = false;
+        MinBrightness          = 180;
+        MinBrightnessEnabled   = true;
+        BrightnessCurveX1      = 0.42;
+        BrightnessCurveY1      = 0.00;
+        BrightnessCurveX2      = 1.00;
+        BrightnessCurveY2      = 1.00;
+        ChangeThreshold        = 6;
+        SmoothingAlpha         = 0.30;
+        BorderMode             = BorderThicknessMode.Share;
+        BorderDepth            = 0.33;
+        BorderCells            = 8;
+        Mode                   = AmbientMode.Game;
+        UseMultiLight          = false;
+        Enabled                = false;
 
         // _isSyncing stays true — Load() flips it to false.
     }
@@ -282,18 +308,20 @@ public partial class AmbientViewModel : ObservableObject
             var s = AmbientSettingsService.Instance.Current;
             ExposureEv                      = s.ExposureEv;
             SaturationBoost                 = s.SaturationBoost;
-            MinBrightness                   = s.MinBrightness;
-            BrightnessCurveType             = s.BrightnessCurveType;
-            BrightnessCurveParam            = s.BrightnessCurveParam;
-            BrightnessCurveSCurveSteepness  = s.BrightnessCurveSCurveSteepness;
-            ChangeThreshold                 = s.ChangeThreshold;
-            SmoothingAlpha                  = s.SmoothingAlpha;
-            BorderMode                      = s.BorderMode;
-            BorderDepth                     = s.BorderDepth;
-            BorderCells                     = s.BorderCells;
-            Mode                            = s.Mode;
-            UseMultiLight                   = s.UseMultiLight;
-            Enabled                         = s.Enabled;
+            MinBrightness         = s.MinBrightness;
+            MinBrightnessEnabled  = s.MinBrightnessEnabled;
+            BrightnessCurveX1     = s.BrightnessCurveX1;
+            BrightnessCurveY1     = s.BrightnessCurveY1;
+            BrightnessCurveX2     = s.BrightnessCurveX2;
+            BrightnessCurveY2     = s.BrightnessCurveY2;
+            ChangeThreshold       = s.ChangeThreshold;
+            SmoothingAlpha        = s.SmoothingAlpha;
+            BorderMode            = s.BorderMode;
+            BorderDepth           = s.BorderDepth;
+            BorderCells           = s.BorderCells;
+            Mode                  = s.Mode;
+            UseMultiLight         = s.UseMultiLight;
+            Enabled               = s.Enabled;
         }
         finally
         {
@@ -345,15 +373,17 @@ public partial class AmbientViewModel : ObservableObject
     // selects a whole tuning, so it resets with the grading it drives).
     private static void ApplyHdrDefaults(AmbientSettings cur, AmbientSettings d)
     {
-        cur.ExposureEv                     = d.ExposureEv;
-        cur.SaturationBoost                = d.SaturationBoost;
-        cur.MinBrightness                  = d.MinBrightness;
-        cur.BrightnessCurveType            = d.BrightnessCurveType;
-        cur.BrightnessCurveParam           = d.BrightnessCurveParam;
-        cur.BrightnessCurveSCurveSteepness = d.BrightnessCurveSCurveSteepness;
-        cur.ChangeThreshold                = d.ChangeThreshold;
-        cur.SmoothingAlpha                 = d.SmoothingAlpha;
-        cur.Mode                           = d.Mode;
+        cur.ExposureEv            = d.ExposureEv;
+        cur.SaturationBoost       = d.SaturationBoost;
+        cur.MinBrightnessEnabled  = d.MinBrightnessEnabled;
+        cur.MinBrightness         = d.MinBrightness;
+        cur.BrightnessCurveX1     = d.BrightnessCurveX1;
+        cur.BrightnessCurveY1     = d.BrightnessCurveY1;
+        cur.BrightnessCurveX2     = d.BrightnessCurveX2;
+        cur.BrightnessCurveY2     = d.BrightnessCurveY2;
+        cur.ChangeThreshold       = d.ChangeThreshold;
+        cur.SmoothingAlpha        = d.SmoothingAlpha;
+        cur.Mode                  = d.Mode;
     }
 
     private static void ApplyZoneSamplingDefaults(AmbientSettings cur, AmbientSettings d)
@@ -372,17 +402,19 @@ public partial class AmbientViewModel : ObservableObject
         var d = new AmbientSettings();
         var s = AmbientSettingsService.Instance.Current;
         CanReset =
-            s.ExposureEv                     != d.ExposureEv ||
-            s.SaturationBoost                != d.SaturationBoost ||
-            s.MinBrightness                  != d.MinBrightness ||
-            s.BrightnessCurveType            != d.BrightnessCurveType ||
-            s.BrightnessCurveParam           != d.BrightnessCurveParam ||
-            s.BrightnessCurveSCurveSteepness != d.BrightnessCurveSCurveSteepness ||
-            s.ChangeThreshold                != d.ChangeThreshold ||
-            s.SmoothingAlpha                 != d.SmoothingAlpha ||
-            s.BorderMode                     != d.BorderMode ||
-            s.BorderDepth                    != d.BorderDepth ||
-            s.BorderCells                    != d.BorderCells ||
-            s.Mode                           != d.Mode;
+            s.ExposureEv            != d.ExposureEv ||
+            s.SaturationBoost       != d.SaturationBoost ||
+            s.MinBrightnessEnabled  != d.MinBrightnessEnabled ||
+            s.MinBrightness         != d.MinBrightness ||
+            s.BrightnessCurveX1     != d.BrightnessCurveX1 ||
+            s.BrightnessCurveY1     != d.BrightnessCurveY1 ||
+            s.BrightnessCurveX2     != d.BrightnessCurveX2 ||
+            s.BrightnessCurveY2     != d.BrightnessCurveY2 ||
+            s.ChangeThreshold       != d.ChangeThreshold ||
+            s.SmoothingAlpha        != d.SmoothingAlpha ||
+            s.BorderMode            != d.BorderMode ||
+            s.BorderDepth           != d.BorderDepth ||
+            s.BorderCells           != d.BorderCells ||
+            s.Mode                  != d.Mode;
     }
 }

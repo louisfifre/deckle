@@ -2,21 +2,52 @@
 <UserControl
     x:Class="Deckle.Lighting.Ambient.BrightnessCurveCanvas"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives">
 
-    <!-- Square canvas tied to a fixed pixel size on purpose : the curve
-         viz is a small diagnostic widget that reads at one zoom level
-         and shouldn't reflow with the parent. Both consumers (Settings
-         AmbientPage card + Playground tuning row) wrap us in a layout
-         that allocates exactly Width × Height — no Stretch shenanigans. -->
+    <UserControl.Resources>
+        <Style x:Key="CurveHandleStyle" TargetType="primitives:Thumb">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="primitives:Thumb">
+                        <Grid Background="Transparent">
+                            <Ellipse Width="14"
+                                     Height="14"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                     Stroke="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                                     StrokeThickness="2" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- Compact cubic-Bézier editor for Ambient brightness response.
+         It is intentionally square and self-contained so the same
+         control can later sit inside Settings without bringing the
+         large segmentation editor footprint with it. -->
     <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
             CornerRadius="{ThemeResource ControlCornerRadius}"
-            Width="160"
-            Height="160">
-        <Canvas x:Name="PlotCanvas"
-                Width="160"
-                Height="160" />
+            Width="180"
+            Height="180"
+            Padding="10">
+        <Grid>
+            <Canvas x:Name="PlotCanvas"
+                    SizeChanged="OnPlotCanvasSizeChanged" />
+            <Canvas x:Name="HandleLayer">
+                <primitives:Thumb x:Name="Handle1"
+                                  Style="{StaticResource CurveHandleStyle}" />
+                <primitives:Thumb x:Name="Handle2"
+                                  Style="{StaticResource CurveHandleStyle}" />
+            </Canvas>
+        </Grid>
     </Border>
 </UserControl>

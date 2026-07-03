@@ -23,16 +23,18 @@ public sealed partial class AmbientEngine
                 // edits a one-tick reaction window without a restart.
                 var ambient = _host.Ambient;
                 _sampler!.SetExposureEv(ambient.ExposureEv);
-                _saturationBoost                = ambient.SaturationBoost;
-                _brightnessCurveType            = ambient.BrightnessCurveType;
-                _brightnessCurveParam           = ambient.BrightnessCurveParam;
-                _brightnessCurveSCurveSteepness = ambient.BrightnessCurveSCurveSteepness;
-                _minBrightness                  = ambient.MinBrightness;
-                _changeThreshold                = ambient.ChangeThreshold;
-                _smoothingAlpha                 = ambient.SmoothingAlpha;
-                _borderMode                     = ambient.BorderMode;
-                _borderDepth                    = ambient.BorderDepth;
-                _borderCells                    = ambient.BorderCells;
+                _saturationBoost       = ambient.SaturationBoost;
+                _brightnessCurveX1     = ambient.BrightnessCurveX1;
+                _brightnessCurveY1     = ambient.BrightnessCurveY1;
+                _brightnessCurveX2     = ambient.BrightnessCurveX2;
+                _brightnessCurveY2     = ambient.BrightnessCurveY2;
+                _minBrightnessEnabled  = ambient.MinBrightnessEnabled;
+                _minBrightness         = ambient.MinBrightness;
+                _changeThreshold       = ambient.ChangeThreshold;
+                _smoothingAlpha        = ambient.SmoothingAlpha;
+                _borderMode            = ambient.BorderMode;
+                _borderDepth           = ambient.BorderDepth;
+                _borderCells           = ambient.BorderCells;
 
                 var sample = _sampler!.LatestSample;
                 if (sample is null)
@@ -355,9 +357,11 @@ public sealed partial class AmbientEngine
             b,
             isDark,
             _saturationBoost,
-            _brightnessCurveType,
-            _brightnessCurveParam,
-            _brightnessCurveSCurveSteepness,
+            _brightnessCurveX1,
+            _brightnessCurveY1,
+            _brightnessCurveX2,
+            _brightnessCurveY2,
+            _minBrightnessEnabled,
             _minBrightness);
 
     // EMA smoothing — group mode. State carried in _smoothedR/G/B as

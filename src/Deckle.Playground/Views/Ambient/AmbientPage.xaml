@@ -299,49 +299,125 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <ambientControls:BrightnessCurveCanvas
-                                x:Name="PlaygroundGammaCanvas"
+                                x:Name="PlaygroundBrightnessCurveCanvas"
                                 Grid.Column="0"
-                                VerticalAlignment="Center" />
+                                VerticalAlignment="Top"
+                                X1="{x:Bind ViewModel.BrightnessCurveX1, Mode=TwoWay}"
+                                Y1="{x:Bind ViewModel.BrightnessCurveY1, Mode=TwoWay}"
+                                X2="{x:Bind ViewModel.BrightnessCurveX2, Mode=TwoWay}"
+                                Y2="{x:Bind ViewModel.BrightnessCurveY2, Mode=TwoWay}"
+                                MinBrightnessEnabled="{x:Bind ViewModel.MinBrightnessEnabled, Mode=OneWay}"
+                                MinBrightness="{x:Bind ViewModel.MinBrightness, Mode=OneWay}" />
                             <StackPanel Grid.Column="1"
-                                        VerticalAlignment="Center"
+                                        VerticalAlignment="Top"
                                         Spacing="6">
-                                <TextBlock Text="Brightness curve"
+                                <TextBlock Text="Brightness response"
                                            Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                <ComboBox x:Name="PlaygroundBrightnessCurveCombo"
-                                          HorizontalAlignment="Stretch"
-                                          SelectionChanged="OnPlaygroundBrightnessCurveTypeChanged">
-                                    <ComboBoxItem Content="Linear (pass-through)" Tag="Linear" />
-                                    <ComboBoxItem Content="Gamma (power law)" Tag="Gamma" />
-                                    <ComboBoxItem Content="S-Curve (logistic)" Tag="SCurve" />
-                                    <ComboBoxItem Content="Logarithmic" Tag="Logarithmic" />
-                                </ComboBox>
-                                <Grid x:Name="PlaygroundGammaSliderRow"
-                                      ColumnSpacing="12">
+                                <TextBlock x:Name="PlaygroundBrightnessCurveText"
+                                           FontFamily="Cascadia Mono, Consolas"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           IsTextSelectionEnabled="True"
+                                           TextWrapping="Wrap" />
+                                <Grid ColumnSpacing="8"
+                                      RowSpacing="6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <Slider x:Name="PlaygroundGammaSlider"
-                                            Grid.Column="0"
-                                            StepFrequency="0.1"
-                                            SmallChange="0.1" LargeChange="0.5"
-                                            TickFrequency="0.5"
-                                            TickPlacement="Outside"
-                                            ValueChanged="OnPlaygroundGammaSliderChanged" />
-                                    <TextBlock x:Name="PlaygroundGammaValueText"
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <NumberBox Grid.Row="0"
+                                               Grid.Column="0"
+                                               Header="x1"
+                                               Minimum="0"
+                                               Maximum="1"
+                                               SmallChange="0.01"
+                                               LargeChange="0.1"
+                                               SpinButtonPlacementMode="Compact"
+                                               ValidationMode="InvalidInputOverwritten"
+                                               Value="{x:Bind ViewModel.BrightnessCurveX1, Mode=TwoWay}" />
+                                    <NumberBox Grid.Row="0"
                                                Grid.Column="1"
-                                               VerticalAlignment="Center"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               MinWidth="56"
-                                               TextAlignment="End" />
+                                               Header="y1"
+                                               Minimum="0"
+                                               Maximum="1"
+                                               SmallChange="0.01"
+                                               LargeChange="0.1"
+                                               SpinButtonPlacementMode="Compact"
+                                               ValidationMode="InvalidInputOverwritten"
+                                               Value="{x:Bind ViewModel.BrightnessCurveY1, Mode=TwoWay}" />
+                                    <NumberBox Grid.Row="1"
+                                               Grid.Column="0"
+                                               Header="x2"
+                                               Minimum="0"
+                                               Maximum="1"
+                                               SmallChange="0.01"
+                                               LargeChange="0.1"
+                                               SpinButtonPlacementMode="Compact"
+                                               ValidationMode="InvalidInputOverwritten"
+                                               Value="{x:Bind ViewModel.BrightnessCurveX2, Mode=TwoWay}" />
+                                    <NumberBox Grid.Row="1"
+                                               Grid.Column="1"
+                                               Header="y2"
+                                               Minimum="0"
+                                               Maximum="1"
+                                               SmallChange="0.01"
+                                               LargeChange="0.1"
+                                               SpinButtonPlacementMode="Compact"
+                                               ValidationMode="InvalidInputOverwritten"
+                                               Value="{x:Bind ViewModel.BrightnessCurveY2, Mode=TwoWay}" />
                                 </Grid>
-                                <TextBlock x:Name="PlaygroundGammaCaption"
-                                           Text="Power-law squash on the bottom of the bri range. Higher γ dims dim scenes harder without touching saturated highlights."
+                                <TextBlock Text="Drag the handles to shape how screen brightness becomes lamp brightness. The dashed diagonal is linear."
                                            Style="{ThemeResource CaptionTextBlockStyle}"
                                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
+
+                        <StackPanel Spacing="6">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="Minimum brightness"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                           VerticalAlignment="Center" />
+                                <ToggleSwitch x:Name="PlaygroundMinBrightnessToggle"
+                                              Grid.Column="1"
+                                              OnContent="Floor on"
+                                              OffContent="Black allowed"
+                                              Toggled="OnPlaygroundMinBrightnessEnabledToggled" />
+                            </Grid>
+                            <Grid x:Name="PlaygroundMinBrightnessRow"
+                                  ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="PlaygroundMinBrightnessSlider"
+                                        Grid.Column="0"
+                                        Minimum="0" Maximum="254"
+                                        StepFrequency="5"
+                                        SmallChange="5" LargeChange="25"
+                                        TickFrequency="50"
+                                        TickPlacement="Outside"
+                                        ValueChanged="OnPlaygroundMinBrightnessSliderChanged" />
+                                <TextBlock x:Name="PlaygroundMinBrightnessValueText"
+                                           Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           MinWidth="56"
+                                           TextAlignment="End" />
+                            </Grid>
+                            <TextBlock x:Name="PlaygroundMinBrightnessCaption"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
 
                         <StackPanel Spacing="6">
                             <TextBlock Text="Smoothing"
@@ -458,34 +534,6 @@
                                        TextWrapping="Wrap" />
                         </StackPanel>
 
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="Minimum brightness"
-                                       Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Slider x:Name="PlaygroundMinBrightnessSlider"
-                                        Grid.Column="0"
-                                        Minimum="0" Maximum="254"
-                                        StepFrequency="5"
-                                        SmallChange="5" LargeChange="25"
-                                        TickFrequency="50"
-                                        TickPlacement="Outside"
-                                        ValueChanged="OnPlaygroundMinBrightnessSliderChanged" />
-                                <TextBlock x:Name="PlaygroundMinBrightnessValueText"
-                                           Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           MinWidth="56"
-                                           TextAlignment="End" />
-                            </Grid>
-                            <TextBlock Text="Floor on the bulb brightness when on. Stops the diffuser swallowing mid-tone scenes."
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
                     </StackPanel>
                 </controls:TuningCard>
 
