@@ -8,5 +8,7 @@
     <!-- The CamemBERT reranker (public CamembertReranker factory) — exercised by a
          gated integration test that loads the real ONNX model when present. -->
     <ProjectReference Include="..\..\src\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj" />
+    <!-- ONNX Runtime GenAI sentence scorer prototype, gated by a staged model. -->
+    <ProjectReference Include="..\..\src\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
   </ItemGroup>
 </Project>

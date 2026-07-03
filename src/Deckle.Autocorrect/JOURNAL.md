@@ -5,6 +5,26 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-03 — ONNX GenAI scorer kept outside the engine
+
+Chose a separate `Deckle.Autocorrect.Onnx` module for the first ONNX Runtime GenAI sentence scorer. The scorer compares closed full-sentence candidates by forced token log-probabilities and returns margin plus abstention reason; live sentence-stage integration and DirectML remain outside this first proof.
+
+## 2026-07-03 — Qwen first, visible probe before live wiring
+
+Chose Qwen3-0.6B as the first smoke-test model and Qwen3-1.7B as the next audition if the 0.6B signal is weak. Added a console probe before live integration so model load, candidate scores, margin and abstention are visible before any silent correction path can use them.
+
+## 2026-07-03 — Qwen 0.6B needs judge prompting, not raw likelihood
+
+Staged `onnx-community/Qwen3-0.6B-ONNX` CPU int4 ORT GenAI locally and smoke-tested closed candidates through the probe. Raw sentence likelihood picked the wrong side on `il a dit` / `il à dit`; label-only judging exposed a strong position bias. Kept the useful shape: a judge prompt listing closed variants, forced scoring of exact candidate answers, and an order-normalized pass. With a margin such as `0.25`, `la/là`, `a/à`, and `ou/où` pass clearly, while weak `er/é` evidence abstains instead of silently applying.
+
+## 2026-07-03 — Candidate scoring moved to the discriminating span
+
+Found that full-answer average log-probability still carries noise from shared words. The ONNX judge now plans each candidate completion into common prefix, discriminating middle, and common suffix; it feeds the common prefix but scores only the discriminating middle. On Qwen3-0.6B CPU int4 this sharpened accent/homophone margins while keeping weak `er/é` evidence below the abstention threshold.
+
+## 2026-07-03 — Qwen CPU int4 model audition started
+
+Staged `onnx-community/Qwen3-0.6B-ONNX`, `Qwen3-1.7B-ONNX`, `Qwen3-4B-ONNX`, and `Qwen3-8B-ONNX` CPU int4 ORT GenAI exports locally. Their staged sizes are about 0.5 GB, 1.32 GB, 2.7 GB, and 5.67 GB. On the `rien de cassé` / `rien de casser` trap, 0.6B and 1.7B chose the wrong infinitive, 4B chose the participle, and 8B abstained at margin `0.25`.
+
 ## 2026-07-02 — Implementation grill: fine behavior and order settled
 
 Order: function first, interactions last. The injection fix, the purge of both poisoned stores, the removal of the implicit Backspace revert and a clean restart of the collection datasets land in one gesture; the correction inlay (and with it one-gesture undo and negative learning) closes the chantier instead of opening it — during the functional phase the only recourse against a bad correction is manual re-editing, accepted.

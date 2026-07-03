@@ -41,6 +41,11 @@
          holds. The native onnxruntime.dll resolves at the App's win-x64 build. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
 
+    <!-- ONNX Runtime GenAI CPU package for Deckle.Autocorrect.Onnx's first
+         closed-candidate sentence scorer prototype. DirectML remains a separate
+         runtime choice once the forced-logprob path is proven. -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntimeGenAI" Version="0.14.1" />
+
     <!-- Managed SentencePiece/BPE tokenizers (no native lib, no Python) — used by
          the autocorrect CLI's CamemBERT MLM reranker probe to segment text. -->
     <PackageVersion Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
