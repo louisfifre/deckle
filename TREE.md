@@ -701,12 +701,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
 │   │   │   ├── HueBridgeClient.V2.cs
+│   │   │   ├── HueClientKeyStore.cs
 │   │   │   ├── HueColorMath.cs
+│   │   │   ├── HueCredentialVault.cs
 │   │   │   ├── HueDiscovery.cs
 │   │   │   ├── HueEntertainmentArea.cs
+│   │   │   ├── HueEntertainmentFrameBuilder.cs
+│   │   │   ├── HueEntertainmentLightOutput.cs
+│   │   │   ├── HueEntertainmentTransport.cs
 │   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
+│   │   │   ├── HueLightOutputFactory.cs
 │   │   │   ├── HueProjectedState.cs
 │   │   │   └── HueRestLightOutput.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Generalist light-output driver — the ILightOutput abstraction and the REST Hue…
@@ -1178,6 +1184,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   └── DeckleAmbientSourceTests.cs
+│   ├── Deckle.Lighting.Tests/
+│   │   ├── Deckle.Lighting.Tests.csproj
+│   │   ├── HueCredentialVaultTests.cs
+│   │   ├── HueEntertainmentFrameBuilderTests.cs
+│   │   ├── HueEntertainmentLightOutputTests.cs
+│   │   └── HueLightOutputFactoryTests.cs
 │   ├── Deckle.Notifications.Tests/
 │   │   ├── Deckle.Notifications.Tests.csproj
 │   │   ├── DeckleNotificationsSourceTests.cs

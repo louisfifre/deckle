@@ -54,4 +54,26 @@ public class DeckleAmbientSourceTests
         Assert.Equal("light", ev.Payload?[1]);
         Assert.Equal(1100, ev.Payload?[2]);
     }
+
+    [Fact]
+    public void HeartbeatNamesPushStatsInsteadOfHttpStats()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.Heartbeat(
+            mode: "multi",
+            period_sec: 5.0,
+            ticks: 46,
+            pushed: 12,
+            dropped: 34,
+            unmapped_lights: 0,
+            push_stats_suffix: " | push_avg_ms=0.1 | push_p95_ms=0.2 | push_max_ms=0.3");
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAmbientSource.EvtHeartbeat, ev.EventId);
+        Assert.Equal("push_stats_suffix", ev.PayloadNames?[6]);
+        var suffix = Assert.IsType<string>(ev.Payload?[6]);
+        Assert.Contains("push_avg_ms", suffix);
+        Assert.DoesNotContain("http_avg_ms", suffix);
+    }
 }

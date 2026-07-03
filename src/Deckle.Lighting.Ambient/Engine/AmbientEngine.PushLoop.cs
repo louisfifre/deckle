@@ -134,10 +134,10 @@ public sealed partial class AmbientEngine
         var color = new LightColor(targetR, targetG, targetB);
         try
         {
-            long httpStart = Stopwatch.GetTimestamp();
+            long pushStart = Stopwatch.GetTimestamp();
             await _output!.SetColorAsync(color, ct).ConfigureAwait(false);
-            double httpMs = (Stopwatch.GetTimestamp() - httpStart) * 1000.0 / Stopwatch.Frequency;
-            _hbHttpDurationsMs.Add(httpMs);
+            double pushMs = (Stopwatch.GetTimestamp() - pushStart) * 1000.0 / Stopwatch.Frequency;
+            _hbPushDurationsMs.Add(pushMs);
 
             _lastR = targetR; _lastG = targetG; _lastB = targetB;
             // Stamp the pushed Hue state for echo discrimination — the
@@ -151,7 +151,7 @@ public sealed partial class AmbientEngine
             // (App.OnLaunched) : provider=Deckle.Ambient + capture
             // gate open + user toggle off ⇒ this Verbose is filtered
             // before buffer insertion. No call-site check needed.
-            DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, httpMs);
+            DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, pushMs);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -304,10 +304,10 @@ public sealed partial class AmbientEngine
         try
         {
             var multi = (IMultiLightOutput)_output!;
-            long httpStart = Stopwatch.GetTimestamp();
+            long pushStart = Stopwatch.GetTimestamp();
             await multi.SetLightColorsAsync(toPush, ct).ConfigureAwait(false);
-            double httpMs = (Stopwatch.GetTimestamp() - httpStart) * 1000.0 / Stopwatch.Frequency;
-            _hbHttpDurationsMs.Add(httpMs);
+            double pushMs = (Stopwatch.GetTimestamp() - pushStart) * 1000.0 / Stopwatch.Frequency;
+            _hbPushDurationsMs.Add(pushMs);
 
             // Stamp pushed Hue states for echo discrimination — the
             // bridge emits a light EventStream update for each PUT,
@@ -319,7 +319,7 @@ public sealed partial class AmbientEngine
             }
             _pushedCount++;
             _hbPushed++;
-            DeckleAmbientSource.Log.PushMulti(toPush.Count, _multiLights.Count, FormatPushedColors(toPush), httpMs);
+            DeckleAmbientSource.Log.PushMulti(toPush.Count, _multiLights.Count, FormatPushedColors(toPush), pushMs);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -439,26 +439,26 @@ public sealed partial class AmbientEngine
         double elapsedMs = (now - _hbTimestamp) * 1000.0 / Stopwatch.Frequency;
         if (elapsedMs < HeartbeatIntervalMs) return;
 
-        // HTTP stats over the elapsed window. Skipped from the line
+        // Push stats over the elapsed window. Skipped from the line
         // when no push happened in the window (static screen) — the
         // ticks=N pushed=0 prefix already says "loop alive, nothing
-        // to push", a "http_avg_ms=0.0" suffix would be misleading.
-        string httpStats = "";
-        if (_hbHttpDurationsMs.Count > 0)
+        // to push", a "push_avg_ms=0.0" suffix would be misleading.
+        string pushStats = "";
+        if (_hbPushDurationsMs.Count > 0)
         {
             double min = double.MaxValue, max = 0, sum = 0;
-            foreach (var v in _hbHttpDurationsMs)
+            foreach (var v in _hbPushDurationsMs)
             {
                 if (v < min) min = v;
                 if (v > max) max = v;
                 sum += v;
             }
-            double avg = sum / _hbHttpDurationsMs.Count;
-            var sorted = _hbHttpDurationsMs.ToArray();
+            double avg = sum / _hbPushDurationsMs.Count;
+            var sorted = _hbPushDurationsMs.ToArray();
             Array.Sort(sorted);
             int p95Idx = Math.Max(0, Math.Min(sorted.Length - 1, (int)Math.Ceiling(sorted.Length * 0.95) - 1));
             double p95 = sorted[p95Idx];
-            httpStats = $" | http_avg_ms={avg:F1} | http_p95_ms={p95:F1} | http_max_ms={max:F1}";
+            pushStats = $" | push_avg_ms={avg:F1} | push_p95_ms={p95:F1} | push_max_ms={max:F1}";
         }
 
         // Per-tick Verbose : filtered by the LogWindow drop filter
@@ -473,10 +473,10 @@ public sealed partial class AmbientEngine
             _hbPushed,
             _hbDropped,
             _multiLightActive ? _hbUnmappedLights : 0,
-            httpStats);
+            pushStats);
 
         _hbTimestamp = now;
         _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
-        _hbHttpDurationsMs.Clear();
+        _hbPushDurationsMs.Clear();
     }
 }

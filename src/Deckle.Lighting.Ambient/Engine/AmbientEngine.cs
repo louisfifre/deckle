@@ -233,14 +233,13 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private int  _hbDropped;
     private int  _hbUnmappedLights;
 
-    // Per-push HTTP duration buffer for the heartbeat. Reset every
+    // Per-push duration buffer for the heartbeat. Reset every
     // HeartbeatIntervalMs. Captures the wall-clock cost of the
     // await on _output.SetColorAsync / IMultiLightOutput.SetLight-
-    // ColorsAsync — i.e. the bridge round-trip + any back-pressure
-    // from the HttpClient itself. Useful to diagnose the lag
-    // accumulation observed in the Hue REST CLIP v1 pipeline (one
-    // pushed value per tick — drops are not counted).
-    private readonly List<double> _hbHttpDurationsMs = new(128);
+    // ColorsAsync — REST includes the bridge HTTP round-trip,
+    // Entertainment covers the DTLS/UDP send path plus any local
+    // back-pressure. One pushed value per tick — drops are not counted.
+    private readonly List<double> _hbPushDurationsMs = new(128);
 
     // HDR tuning snapshot, refreshed at the top of each tick from
     // _host.Ambient. Live-reload — settings changes apply on the next

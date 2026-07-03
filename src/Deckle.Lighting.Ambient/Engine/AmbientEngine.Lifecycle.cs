@@ -241,7 +241,7 @@ public sealed partial class AmbientEngine
             _pushedCount = 0;
             _droppedCount = 0;
             _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
-            _hbHttpDurationsMs.Clear();
+            _hbPushDurationsMs.Clear();
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
             _multiSmoothed.Clear();

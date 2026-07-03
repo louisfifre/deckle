@@ -419,10 +419,10 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "heartbeat | mode={0} | period_sec={1:F1} | ticks={2} | pushed={3} | dropped={4} | unmapped_lights={5}{6}")]
-    public void Heartbeat(string mode, double period_sec, int ticks, int pushed, int dropped, int unmapped_lights, string http_stats_suffix)
+    public void Heartbeat(string mode, double period_sec, int ticks, int pushed, int dropped, int unmapped_lights, string push_stats_suffix)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtHeartbeat, mode, period_sec, ticks, pushed, dropped, unmapped_lights, http_stats_suffix);
+        WriteEvent(EvtHeartbeat, mode, period_sec, ticks, pushed, dropped, unmapped_lights, push_stats_suffix);
     }
 
     // ── HuePairingService ───────────────────────────────────────────────
