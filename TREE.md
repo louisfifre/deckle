@@ -449,6 +449,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Replay/
 │   │   │   ├── CorpusReader.cs
+│   │   │   ├── MarginCalibration.cs
+│   │   │   ├── ReplayRunner.cs
 │   │   │   ├── SentenceAlignment.cs
 │   │   │   └── SentenceReplay.cs
 │   │   ├── DataSet.cs
@@ -1124,14 +1126,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
+│   │   ├── MarginCalibrationTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── OnnxSentenceScorerTests.cs
 │   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
+│   │   ├── SentenceReplayGestureTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TypedWordTrackerTests.cs
