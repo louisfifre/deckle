@@ -24,10 +24,6 @@ public partial class DiagnosticsViewModel
     // persistence are unchanged, the composer only drives the UI.
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
     [
-        Setting.Toggle("LoggingAmbientCard",
-            () => LogAmbientCaptureActivity,
-            value => LogAmbientCaptureActivity = value,
-            glyph: Glyphs.Lightbulb),
         Setting.Toggle("LoggingStreamingCard",
             () => LogStreamingTranscriptionActivity,
             value => LogStreamingTranscriptionActivity = value,

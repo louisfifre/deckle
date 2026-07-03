@@ -25,29 +25,6 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     // ── Logging — runtime emission filters ──────────────────────────────────
 
-    // Capture-window logging toggle for the ambient pipeline. The
-    // listener-side filter (App.ShouldDropAmbientCaptureVerbose, combining
-    // AmbientCaptureGate with this toggle) decides, per Verbose event from
-    // the ambient providers — Deckle.Ambient / Vision / Lighting and the
-    // per-frame Deckle.Diagnostics.Resource firehose — what reaches the
-    // LogWindow buffer or app.jsonl. Off (default): nothing Verbose passes
-    // while a capture loop runs, the 5 s heartbeat included — the user
-    // only sees the Info / Warning / Error milestones that say whether it
-    // runs and when it stops. On: the 5 s heartbeat and the occasional
-    // start / stop detail pass, but the high-frequency firehose (per-tick
-    // Push, per-frame Resource) stays dropped even opt-in — the rollup is
-    // the ceiling, the per-event torrent is reserved for a deep dive in
-    // code. The gate is opened right before the push loop (after the
-    // started milestones) and closed at the top of Stop (before the
-    // stopped milestones), so the bracketing milestones and any
-    // out-of-loop user action pass through. Non-Verbose levels always
-    // pass. The section will grow with sibling per-loop toggles for
-    // Whisp / Audio / Llm. Wired through LoggingSettingsService — separate
-    // store from TelemetrySettings so flipping it leaves the disk-
-    // persistence opt-ins untouched.
-    [ObservableProperty]
-    public partial bool LogAmbientCaptureActivity { get; set; }
-
     // Streaming transcription Verbose toggle: when off, the 1 Hz heartbeat and
     // the per-utterance details from the Whisp provider are dropped during a
     // streaming take. Milestones (StreamingPipelineStarted, StreamingDrained)
@@ -134,13 +111,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     // the override is empty.
     [ObservableProperty]
     public partial string TelemetryStorageDirectory { get; set; }
-
-    partial void OnLogAmbientCaptureActivityChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
-        PushLoggingToSettings();
-    }
 
     partial void OnLogStreamingTranscriptionActivityChanged(bool value)
     {
@@ -245,7 +215,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         // but for a different reason : disk-persistence streams stay
         // off until the user explicitly opts in to where their data
         // lands.
-        LogAmbientCaptureActivity = false;
         LogStreamingTranscriptionActivity = false;
         LogAutocorrectActivity = false;
         LogWindowingActivity = false;
@@ -268,7 +237,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             var l = LoggingSettingsService.Instance.Current;
-            LogAmbientCaptureActivity = l.LogAmbientCaptureActivity;
             LogStreamingTranscriptionActivity = l.LogStreamingTranscriptionActivity;
             LogAutocorrectActivity = l.LogAutocorrectActivity;
             LogWindowingActivity = l.LogWindowingActivity;
@@ -293,7 +261,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushLoggingToSettings()
     {
         var l = LoggingSettingsService.Instance.Current;
-        l.LogAmbientCaptureActivity = LogAmbientCaptureActivity;
         l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
         l.LogAutocorrectActivity = LogAutocorrectActivity;
         l.LogWindowingActivity = LogWindowingActivity;
@@ -324,7 +291,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            LogAmbientCaptureActivity = false;
             LogStreamingTranscriptionActivity = false;
             LogAutocorrectActivity = false;
             LogWindowingActivity = false;
