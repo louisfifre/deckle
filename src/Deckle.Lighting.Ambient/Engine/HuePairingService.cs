@@ -9,13 +9,13 @@ namespace Deckle.Lighting.Ambient;
 // in one place, and re-pairing from one surface is reflected
 // immediately in the other via the BridgeChanged event.
 //
-// Why here and not under Deckle.Lighting. The service has to
-// persist the bridge ip/id/username, which lives in AmbientSettings
-// (the only configured consumer of Hue today). Lighting can't
-// reference Lighting.Ambient (would create a cycle), so the service
-// is anchored on the consumer side. If a future module needs Hue
-// without ambient, we extract a thin Lighting-level state interface
-// and keep the persistence here.
+// Why here and not under Deckle.Lighting. The service has to persist
+// the Ambient user's selected bridge target, which lives in
+// AmbientSettings. Lighting owns the reusable Hue driver pieces
+// (client, output factory, clientkey store), but it cannot reference
+// Lighting.Ambient without creating a cycle. If another module needs
+// Hue pairing without Ambient, split this into a Lighting-level
+// pairing coordinator plus an Ambient target store.
 //
 // Ownership and disposal. The service owns the HueBridgeClient
 // instance after a successful pair or restore. Forget() and
@@ -158,14 +158,19 @@ public sealed class HuePairingService : IDisposable
         }
         previous?.Dispose();
 
-        // Persist the durable identifiers : ip, id, username. The
-        // client key (Entertainment v2 PSK) is intentionally NOT
-        // persisted — by doctrine and because the REST path doesn't
-        // need it.
+        // Persist the durable identifiers : ip, id, username in the
+        // Ambient settings, and the Entertainment v2 PSK in the shared
+        // secret vault. REST does not need the key, but the bridge only
+        // issues it at pairing time; losing it would force an avoidable
+        // re-pair before a Hue Entertainment session can start.
         var settings = AmbientSettingsService.Instance.Current;
         settings.HueBridgeIp = bridge.InternalIpAddress;
         settings.HueBridgeId = bridge.Id;
         settings.HueUsername = creds.Username;
+        if (!string.IsNullOrWhiteSpace(creds.ClientKey))
+        {
+            HueClientKeyStore.StoreClientKey(bridge.Id, creds.Username, creds.ClientKey);
+        }
         AmbientSettingsService.Instance.Save();
 
         DeckleAmbientSource.Log.BridgePairingStored();
@@ -202,7 +207,8 @@ public sealed class HuePairingService : IDisposable
         // 443. v1 bridges that needed port 80 are out of scope ;
         // discovery never returns them in the cloud lookup any more.
         var bridge = new HueBridge(settings.HueBridgeId!, settings.HueBridgeIp!, 443);
-        var creds  = new HueCredentials(settings.HueUsername!, "");
+        var clientKey = HueClientKeyStore.TryGetClientKey(settings.HueBridgeId!, settings.HueUsername!) ?? "";
+        var creds  = new HueCredentials(settings.HueUsername!, clientKey);
         var client = new HueBridgeClient(bridge, creds);
 
         HueBridgeClient? previous;
@@ -267,6 +273,11 @@ public sealed class HuePairingService : IDisposable
         previous?.Dispose();
 
         var settings = AmbientSettingsService.Instance.Current;
+        if (!string.IsNullOrWhiteSpace(settings.HueBridgeId) &&
+            !string.IsNullOrWhiteSpace(settings.HueUsername))
+        {
+            HueClientKeyStore.RemoveClientKey(settings.HueBridgeId, settings.HueUsername);
+        }
         settings.HueBridgeIp   = null;
         settings.HueBridgeId   = null;
         settings.HueUsername   = null;

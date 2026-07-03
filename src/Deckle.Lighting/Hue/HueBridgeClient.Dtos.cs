@@ -75,9 +75,20 @@ public sealed partial class HueBridgeClient
 
     // CLIP v2 wraps every collection response in {"data":[...], "errors":[...]}.
     // We only project the fields we consume here.
-    private sealed class HueV2Response<T>
+    private interface IHueV2Response
+    {
+        List<HueV2ErrorDto>? Errors { get; }
+    }
+
+    private sealed class HueV2Response<T> : IHueV2Response
     {
         [JsonPropertyName("data")] public List<T>? Data { get; set; }
+        [JsonPropertyName("errors")] public List<HueV2ErrorDto>? Errors { get; set; }
+    }
+
+    private sealed class HueV2ErrorDto
+    {
+        [JsonPropertyName("description")] public string? Description { get; set; }
     }
 
     private sealed class HueV2LightDto
@@ -100,6 +111,7 @@ public sealed partial class HueBridgeClient
         [JsonPropertyName("id")]        public string?         Id        { get; set; }
         [JsonPropertyName("metadata")]  public HueV2Metadata?  Metadata  { get; set; }
         [JsonPropertyName("locations")] public HueV2Locations? Locations { get; set; }
+        [JsonPropertyName("channels")]  public List<HueV2EntertainmentChannelDto>? Channels { get; set; }
     }
 
     private sealed class HueV2Metadata
@@ -117,6 +129,23 @@ public sealed partial class HueBridgeClient
         [JsonPropertyName("service")]   public HueV2ResourceRef?    Service   { get; set; }
         [JsonPropertyName("position")]  public HueV2Position?       Position  { get; set; }
         [JsonPropertyName("positions")] public List<HueV2Position>? Positions { get; set; }
+    }
+
+    private sealed class HueV2EntertainmentChannelDto
+    {
+        [JsonPropertyName("channel_id")] public int ChannelId { get; set; }
+        [JsonPropertyName("position")]   public HueV2Position? Position { get; set; }
+        [JsonPropertyName("members")]    public List<HueV2EntertainmentMemberDto>? Members { get; set; }
+    }
+
+    private sealed class HueV2EntertainmentMemberDto
+    {
+        [JsonPropertyName("service")] public HueV2ResourceRef? Service { get; set; }
+    }
+
+    private sealed class HueV2EntertainmentActionRequest
+    {
+        [JsonPropertyName("action")] public string Action { get; set; } = "";
     }
 
     private sealed class HueV2ResourceRef

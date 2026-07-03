@@ -38,6 +38,12 @@ public interface ILightOutput : IAsyncDisposable
     /// successfully and the driver is ready to accept colour pushes.</summary>
     bool IsConnected { get; }
 
+    /// <summary>True when state-change events observed from the sink
+    /// can be attributed back to this output's own writes. Consumers
+    /// use this to decide whether bridge-side events are useful for
+    /// external-change detection during the active session.</summary>
+    bool UsesStateEventAttribution => false;
+
     /// <summary>Open the session with the configured sink. Throws if
     /// the sink is unreachable, the credentials are rejected, or any
     /// protocol-level handshake fails. Idempotent — calling twice on

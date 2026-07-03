@@ -55,6 +55,10 @@
          dictionary. CLI-only; the app and the engine never touch it. -->
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="6.0.0" />
 
+    <!-- Managed DTLS-PSK for Hue Entertainment v2. Kept inside Deckle.Lighting's
+         Hue driver so the transport dependency does not leak into Ambient. -->
+    <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
+
     <!-- Test stack (tests/Deckle.*.Tests): xUnit v3 on the Microsoft Testing Platform,
          VSTest bridge for the Test Explorer. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />

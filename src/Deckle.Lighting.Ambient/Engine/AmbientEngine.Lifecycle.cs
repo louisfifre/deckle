@@ -103,7 +103,9 @@ public sealed partial class AmbientEngine
             _bridgeClient = HuePairingService.Instance.Bridge
                 ?? throw new InvalidOperationException(
                     "HuePairingService restored no bridge from settings — paired state in settings.json is inconsistent.");
-            _output = new HueRestLightOutput(_bridgeClient, ambient.HueLastGroupId);
+            _output = await HueLightOutputFactory
+                .CreateConnectedPreferredAsync(_bridgeClient, ambient.HueLastGroupId, ct)
+                .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
             _capture = new ScreenCaptureService();
@@ -137,7 +139,6 @@ public sealed partial class AmbientEngine
             _capture.FormatChanged += OnCaptureFormatChanged;
             ThrowIfStartAbortRequested();
 
-            await _output!.ConnectAsync(ct).ConfigureAwait(false);
             ThrowIfStartAbortRequested();
 
             // Resolve pipeline shape after Connect (ListLightsAsync
@@ -172,21 +173,29 @@ public sealed partial class AmbientEngine
                 _pushIntervalMs = 1000 / GroupPushHz;
             }
 
-            // Fetch the v2 ↔ v1 id maps for EventStream-driven external
-            // change detection. Best effort : if the bridge happens to
-            // reject (rare ; older firmware, weird LAN), we log and
-            // continue without external-change detection — the engine
-            // still pushes normally until the next StartAsync.
-            try
+            if (_output.UsesStateEventAttribution)
             {
-                var maps = await _bridgeClient.FetchV2IdMapsAsync(ct).ConfigureAwait(false);
-                _v2LightMap = maps.Lights;
-                _v2GroupedLightMap = maps.GroupedLights;
+                // Fetch the v2 ↔ v1 id maps for EventStream-driven external
+                // change detection. Best effort : if the bridge happens to
+                // reject (rare ; older firmware, weird LAN), we log and
+                // continue without external-change detection — the engine
+                // still pushes normally until the next StartAsync.
+                try
+                {
+                    var maps = await _bridgeClient.FetchV2IdMapsAsync(ct).ConfigureAwait(false);
+                    _v2LightMap = maps.Lights;
+                    _v2GroupedLightMap = maps.GroupedLights;
+                }
+                catch (Exception ex)
+                {
+                    DeckleAmbientSource.Log.EventStreamSetupFailed();
+                    DeckleAmbientSource.Log.EventStreamSetupFailedDetail(ex.GetType().Name, ex.Message);
+                    _v2LightMap = null;
+                    _v2GroupedLightMap = null;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                DeckleAmbientSource.Log.EventStreamSetupFailed();
-                DeckleAmbientSource.Log.EventStreamSetupFailedDetail(ex.GetType().Name, ex.Message);
                 _v2LightMap = null;
                 _v2GroupedLightMap = null;
             }

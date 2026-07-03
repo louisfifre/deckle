@@ -70,6 +70,7 @@ public sealed partial class HueBridgeClient
         foreach (var ent in entResponse.Data)
         {
             var placements = new List<HueLightPlacement>();
+            var channels = new List<HueEntertainmentChannel>();
             if (ent.Locations?.ServiceLocations is not null)
             {
                 foreach (var loc in ent.Locations.ServiceLocations)
@@ -84,10 +85,38 @@ public sealed partial class HueBridgeClient
                     placements.Add(new HueLightPlacement(v1Id, name, x, y, z));
                 }
             }
+
+            if (ent.Channels is not null)
+            {
+                foreach (var channel in ent.Channels)
+                {
+                    var serviceIds = ExtractChannelServiceIds(channel);
+                    string? v1Id = null;
+                    string name = "";
+                    foreach (var serviceId in serviceIds)
+                    {
+                        if (!entUuidToV1.TryGetValue(serviceId, out v1Id)) continue;
+                        name = v1Names.TryGetValue(v1Id, out var nm) ? nm : $"Light {v1Id}";
+                        break;
+                    }
+
+                    var p = channel.Position;
+                    channels.Add(new HueEntertainmentChannel(
+                        channel.ChannelId,
+                        v1Id,
+                        name,
+                        p?.X ?? 0,
+                        p?.Y ?? 0,
+                        p?.Z ?? 0,
+                        serviceIds));
+                }
+            }
+
             areas.Add(new HueEntertainmentArea(
                 ent.Id ?? "",
                 ent.Metadata?.Name ?? "",
-                placements));
+                placements,
+                channels));
         }
 
         DeckleLightingSource.Log.EntertainmentListed(areas.Count);
@@ -100,6 +129,49 @@ public sealed partial class HueBridgeClient
             }
         }
         return areas;
+    }
+
+    public async Task SetEntertainmentStreamingAsync(
+        string entertainmentConfigurationId,
+        bool active,
+        CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsurePaired();
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"clip/v2/resource/entertainment_configuration/{entertainmentConfigurationId}");
+        request.Headers.Add("hue-application-key", _credentials!.Username);
+        request.Content = JsonContent.Create(
+            new HueV2EntertainmentActionRequest { Action = active ? "start" : "stop" },
+            options: _jsonOptions);
+
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            DeckleLightingSource.Log.ClipV2GetFailed();
+            DeckleLightingSource.Log.ClipV2GetFailedDetail("resource/entertainment_configuration/{id}", (int)response.StatusCode);
+            response.EnsureSuccessStatusCode();
+        }
+
+        var payload = await response.Content
+            .ReadFromJsonAsync<HueV2Response<object>>(_jsonOptions, ct)
+            .ConfigureAwait(false);
+        ThrowIfV2Errors(payload, "resource/entertainment_configuration/{id}");
+    }
+
+    private static List<string> ExtractChannelServiceIds(HueV2EntertainmentChannelDto channel)
+    {
+        var ids = new List<string>();
+        if (channel.Members is null) return ids;
+
+        foreach (var member in channel.Members)
+        {
+            if (!string.IsNullOrEmpty(member.Service?.Rid))
+                ids.Add(member.Service.Rid);
+        }
+        return ids;
     }
 
     private async Task<Dictionary<string, string>> FetchV2LightNamesAsync(CancellationToken ct)
@@ -187,6 +259,19 @@ public sealed partial class HueBridgeClient
             DeckleLightingSource.Log.ClipV2GetFailedDetail(path, (int)response.StatusCode);
             response.EnsureSuccessStatusCode();
         }
-        return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct).ConfigureAwait(false);
+        var payload = await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct).ConfigureAwait(false);
+        if (payload is IHueV2Response objectResponse)
+            ThrowIfV2Errors(objectResponse, path);
+        return payload;
+    }
+
+    private static void ThrowIfV2Errors(IHueV2Response? payload, string path)
+    {
+        if (payload?.Errors is null || payload.Errors.Count == 0) return;
+
+        string message = payload.Errors[0].Description ?? "Unknown CLIP v2 error.";
+        DeckleLightingSource.Log.ClipV2GetFailed();
+        DeckleLightingSource.Log.ClipV2GetFailedDetail(path, 200);
+        throw new HttpRequestException($"Hue CLIP v2 request failed: {message}");
     }
 }

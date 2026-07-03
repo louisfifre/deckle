@@ -13,13 +13,14 @@ namespace Deckle.Lighting;
 // — we derive the suggestion from the position and let them override
 // if our heuristic gets it wrong.
 //
-// The DTLS / streaming side of entertainment areas (Entertainment v2
-// API) is out of scope ; this record only mirrors the resting
-// configuration accessible through plain CLIP v2 REST.
+// The resting CLIP v2 configuration is also the catalogue the
+// Entertainment v2 streaming driver uses: channels identify what a
+// HueStream datagram addresses, placements help Ambient suggest zones.
 public sealed record HueEntertainmentArea(
     string Id,
     string Name,
-    IReadOnlyList<HueLightPlacement> LightPlacements);
+    IReadOnlyList<HueLightPlacement> LightPlacements,
+    IReadOnlyList<HueEntertainmentChannel> Channels);
 
 // Normalised 3D position of one light inside its entertainment area,
 // keyed by the CLIP v1 integer-as-string light id so consumers can
@@ -43,3 +44,18 @@ public sealed record HueLightPlacement(
     double X,
     double Y,
     double Z);
+
+// One HueStream-addressable channel inside an entertainment area.
+// ChannelId is the byte-sized number the bridge expects in each
+// HueStream frame; ServiceIds are CLIP v2 entertainment-service UUIDs
+// attached to that channel. Deckle keeps the v1 LightId when it can
+// translate the service UUID because Ambient settings and placement UI
+// already key per-light state by the driver-facing id.
+public sealed record HueEntertainmentChannel(
+    int ChannelId,
+    string? LightId,
+    string Name,
+    double X,
+    double Y,
+    double Z,
+    IReadOnlyList<string> ServiceIds);
