@@ -8,7 +8,7 @@ namespace Deckle.Anytype.Mcp.Tests;
 // Unit tests for ToolCatalog.Build. The gestures wrap a real AnytypeApiClient
 // built from dummy credentials, but Build only constructs descriptors (the
 // handlers are lazy lambdas) so no HTTP call is ever made here. These pin the
-// advertised surface: exactly the 15 base named tools, each with a well-formed
+// advertised surface: exactly the 16 base named tools, each with a well-formed
 // object input schema that forbids extra properties.
 [Trait("Category", "unit")]
 public class ToolCatalogTests
@@ -17,7 +17,7 @@ public class ToolCatalogTests
     {
         "session_start", "log", "get", "project_overview", "create_task",
         "complete", "archive", "link", "list_projects", "search", "subtask",
-        "create_project", "create_idea", "update", "replace_section",
+        "create_project", "create_idea", "create_document", "update", "replace_section",
     };
 
     static IReadOnlyList<ToolDescriptor> BuildCatalog()
@@ -34,7 +34,8 @@ public class ToolCatalogTests
             new SessionGestures(client, resolver),
             new TaskGestures(client, resolver),
             new ProjectGestures(client, resolver),
-            new QueryGestures(client, resolver));
+            new QueryGestures(client, resolver),
+            new DocumentGestures(client));
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class ToolCatalogTests
     {
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
-        Assert.Equal(15, names.Length);
+        Assert.Equal(16, names.Length);
         Assert.Equal(
             ExpectedToolNames.OrderBy(n => n),
             names.OrderBy(n => n));
