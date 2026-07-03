@@ -5,14 +5,11 @@ namespace Deckle.Lighting.Ambient;
 // Each module owns its own settings POCO; the consumer code reads from
 // AmbientSettingsService.Instance.Current.
 //
-// J0c shipped only the master Enabled toggle. J3 step 2 adds the
-// minimal Hue bridge state we need to skip the link-button dance on
-// every app start : the bridge IP / id, the application username, and
-// the last selected light group. The Entertainment v2 DTLS pre-shared
-// key (clientkey) is NOT persisted — the REST path doesn't need it,
-// and storing it would land a PSK in a JSON file we'd rather keep
-// unsensitive. Subsequent milestones add the active mode (Realistic /
-// Game), the game-specific profiles, and the monitor source override.
+// Hue bridge coordinates stored here are the Ambient user's selected
+// target: bridge IP / id, the application username, and the last
+// selected light group. The Entertainment v2 DTLS pre-shared key
+// (clientkey) is intentionally not stored in this JSON file; the Hue
+// driver persists it in Deckle.Security's DPAPI-backed vault.
 public sealed class AmbientSettings
 {
     // Master toggle for the Ambient Light module. When false, the

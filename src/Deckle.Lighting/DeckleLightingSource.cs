@@ -93,6 +93,8 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public const int EvtIdentifyFailedDetail        = 49;
     public const int EvtListingLightsInGroupDetail  = 50;
     public const int EvtBridgeReturnedNoLightsDetail = 51;
+    public const int EvtEntertainmentRestFallback   = 52;
+    public const int EvtEntertainmentRestFallbackDetail = 53;
 
     // ── Discovery ───────────────────────────────────────────────────────
 
@@ -430,6 +432,24 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public void ClipV2GetFailedDetail(string path, int http_status)
     {
         if (IsEnabled()) WriteEvent(EvtClipV2GetFailedDetail, path, http_status);
+    }
+
+    [Event(EvtEntertainmentRestFallback,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Hue Entertainment unavailable — using REST fallback")]
+    public void EntertainmentRestFallback()
+    {
+        if (IsEnabled()) WriteEvent(EvtEntertainmentRestFallback);
+    }
+
+    [Event(EvtEntertainmentRestFallbackDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "entertainment fallback | reason={0} | ex_type={1} | message={2}")]
+    public void EntertainmentRestFallbackDetail(string reason, string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtEntertainmentRestFallbackDetail, reason, ex_type, message);
     }
 
     // ── Identify ────────────────────────────────────────────────────────

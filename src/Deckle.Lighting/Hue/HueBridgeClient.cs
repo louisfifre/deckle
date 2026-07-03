@@ -30,7 +30,7 @@ namespace Deckle.Lighting;
 // CLIP v2 (request via `hue-application-key` header, resource-oriented
 // `/clip/v2/resource/*` paths) can land later behind the same
 // HueBridgeClient API.
-public sealed partial class HueBridgeClient : IDisposable
+public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBridgeClient
 {
     // Hue caps the `devicetype` string at 40 chars total. "deckle#" is
     // 7 chars, so we have 33 left for the machine name suffix.
@@ -68,9 +68,10 @@ public sealed partial class HueBridgeClient : IDisposable
     /// Used at app start to skip the link-button dance when the user has
     /// already paired in a previous session — the bridge keeps the
     /// username valid until manually revoked from the Hue app. The
-    /// ClientKey field can be left empty when restoring from persisted
-    /// state : the REST CLIP v1 path only uses Username, the PSK is
-    /// reserved for Entertainment v2 DTLS (not in scope J3).
+    /// ClientKey can be empty when restoring legacy pairings: the REST
+    /// CLIP v1 path only uses Username. Hue Entertainment v2 requires
+    /// the PSK, so callers that want streaming restore it from the
+    /// secret vault when available.
     /// </summary>
     public HueBridgeClient(HueBridge bridge, HueCredentials credentials)
         : this(bridge)

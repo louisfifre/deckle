@@ -46,6 +46,7 @@ public sealed class HueRestLightOutput : IMultiLightOutput
     }
 
     public bool IsConnected => _connected && _client.IsPaired;
+    public bool UsesStateEventAttribution => true;
 
     public Task ConnectAsync(CancellationToken ct = default)
     {
