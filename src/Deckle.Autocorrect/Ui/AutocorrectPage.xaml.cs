@@ -33,12 +33,18 @@ public sealed partial class AutocorrectPage : Page
     // pattern TrackpadPage/GeneralPage use.
     private SettingsComposer? _settingsComposer;
 
+    // Drives the composed Diagnostics section (log-activity + the two telemetry
+    // opt-ins). Its own composer/host, held in a field for the same lifetime
+    // reason as the master one above.
+    private SettingsComposer? _diagnosticsComposer;
+
     public AutocorrectPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
 
         ComposeSettings();
+        ComposeDiagnostics();
 
         ViewModel.Apps.CollectionChanged += OnAppsChanged;
         // The master switch gates the whole Apps section (mask-never-grey), so
@@ -58,6 +64,17 @@ public sealed partial class AutocorrectPage : Page
     {
         _settingsComposer = new SettingsComposer(MasterHost, ViewModel);
         _settingsComposer.Compose(ViewModel.AutocorrectSettingsManifest);
+    }
+
+    // Same host-only pattern as ComposeSettings, for the always-visible
+    // Diagnostics section: the composer builds the three observability toggles
+    // (declared in AutocorrectViewModel.Settings.cs) into DiagnosticsHost and
+    // subscribes to the ViewModel, so they reflect Load() with no code-behind
+    // sync. Unlike the Apps section, this one is not gated on the master switch.
+    private void ComposeDiagnostics()
+    {
+        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
+        _diagnosticsComposer.Compose(ViewModel.DiagnosticsSettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

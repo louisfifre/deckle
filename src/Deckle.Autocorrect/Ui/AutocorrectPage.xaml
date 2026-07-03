@@ -118,6 +118,22 @@
 
                 </StackPanel>
 
+                <!-- ── Diagnostics ───────────────────────────────────────────── -->
+                <!-- The module's observability opt-ins, relocated here from the
+                     shared Diagnostics page so they sit beside the engine they
+                     observe: log-activity (a runtime filter, no consent) plus the
+                     decisions and text telemetry opt-ins (each consent-gated,
+                     independent). All three are COMPOSED — declared in
+                     AutocorrectViewModel.Settings.cs (DiagnosticsSettings) and
+                     built into DiagnosticsHost by the SettingsComposer. This
+                     section is NOT gated by the master switch: it is always
+                     visible, unlike the Apps section above. -->
+                <TextBlock x:Uid="AutocorrectPageDiagnosticsHeader"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <StackPanel x:Name="DiagnosticsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

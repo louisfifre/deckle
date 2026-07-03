@@ -3,6 +3,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Autocorrect;
 
@@ -27,9 +29,48 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     // display name so the list is stable across reloads.
     public ObservableCollection<AutocorrectAppRow> Apps { get; } = new();
 
+    // ── Observability ────────────────────────────────────────────────────────
+    //
+    // The module's own diagnostics opt-ins, relocated here from the shared
+    // Diagnostics page so they sit beside the engine they observe. These write
+    // to the LoggingSettings / TelemetrySettings stores — NOT to
+    // AutocorrectSettings — so their pushes stay separate from the master
+    // switch and the per-app map above. The App's central gates read those two
+    // POCOs directly; this VM only mirrors the values to the UI.
+    //
+    // Log activity — a runtime emission filter, no consent (nothing leaves the
+    // device). Decisions and Text are disk-persistence opt-ins, each gated by a
+    // consent dialog at the card (declared in the settings manifest). The two
+    // telemetry values share PushTelemetryToSettings; the log value has its own
+    // PushLoggingToSettings — a single toggle touches only its own store.
+
+    // Log autocorrect activity — the engine's Verbose channel (per-focus probe,
+    // learning signals, activity rollup). Off by default; applied corrections and
+    // injection failures surface regardless.
+    [ObservableProperty]
+    public partial bool LogAutocorrectActivity { get; set; }
+
+    // Autocorrect decisions — the per-word decision dataset
+    // (autocorrect.decisions.jsonl). Consent-gated, off by default.
+    [ObservableProperty]
+    public partial bool AutocorrectDecisions { get; set; }
+
+    // Autocorrect text — the verbatim typed-sentence corpus
+    // (autocorrect.text.jsonl). The heaviest text capture; consent-gated,
+    // independent of Decisions, off by default.
+    [ObservableProperty]
+    public partial bool AutocorrectText { get; set; }
+
     public AutocorrectViewModel()
     {
         _isSyncing = true;
+
+        // Seed the observability opt-ins closed; Load() overwrites from the
+        // stores under the sync guard.
+        LogAutocorrectActivity = false;
+        AutocorrectDecisions = false;
+        AutocorrectText = false;
+
         Load();
     }
 
@@ -40,6 +81,13 @@ public sealed partial class AutocorrectViewModel : ObservableObject
         {
             var settings = AutocorrectSettingsService.Instance.Current;
             Enabled = settings.Enabled;
+
+            // Observability opt-ins pulled from their own stores, not
+            // AutocorrectSettings.
+            LogAutocorrectActivity = LoggingSettingsService.Instance.Current.LogAutocorrectActivity;
+            var telemetry = TelemetrySettingsService.Instance.Current;
+            AutocorrectDecisions = telemetry.AutocorrectDecisions;
+            AutocorrectText = telemetry.AutocorrectText;
 
             Apps.Clear();
             foreach (var entry in settings.Apps
@@ -59,6 +107,41 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     {
         if (_isSyncing) return;
         AutocorrectSettingsService.Instance.SetEnabled(value);
+    }
+
+    partial void OnLogAutocorrectActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        PushLoggingToSettings();
+    }
+
+    partial void OnAutocorrectDecisionsChanged(bool value)
+    {
+        if (_isSyncing) return;
+        PushTelemetryToSettings();
+    }
+
+    partial void OnAutocorrectTextChanged(bool value)
+    {
+        if (_isSyncing) return;
+        PushTelemetryToSettings();
+    }
+
+    // Observability pushes, kept separate from the AutocorrectSettingsService
+    // writes above: each touches only its own store, so flipping a log filter
+    // never rewrites the telemetry file and vice-versa.
+    private void PushLoggingToSettings()
+    {
+        LoggingSettingsService.Instance.Current.LogAutocorrectActivity = LogAutocorrectActivity;
+        LoggingSettingsService.Instance.Save();
+    }
+
+    private void PushTelemetryToSettings()
+    {
+        var telemetry = TelemetrySettingsService.Instance.Current;
+        telemetry.AutocorrectDecisions = AutocorrectDecisions;
+        telemetry.AutocorrectText = AutocorrectText;
+        TelemetrySettingsService.Instance.Save();
     }
 
     private static void OnRowToggled(AutocorrectAppRow row, bool enabled)

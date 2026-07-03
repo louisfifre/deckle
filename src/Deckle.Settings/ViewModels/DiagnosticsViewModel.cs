@@ -25,21 +25,11 @@ public partial class DiagnosticsViewModel : ObservableObject
 
     // ── Logging — runtime emission filters ──────────────────────────────────
 
-    // Autocorrect Verbose toggle: when off (default), only the edits surface —
-    // an applied correction's Verbose detail (reason and lengths, never the
-    // word) plus its milestone. The per-focus SurfaceChanged firehose, the
-    // learning signals and the 30 s activity rollup are dropped; a heartbeat is
-    // meaningless for a keystroke-driven subsystem. Sister to
-    // LogAmbientCaptureActivity, but with no capture window — the engine runs
-    // continuously.
-    [ObservableProperty]
-    public partial bool LogAutocorrectActivity { get; set; }
-
     // Windowing Verbose toggle: when off (default), the whole Deckle-Windowing
     // firehose is dropped — placement, overlay slots, popup anchoring, z-order,
     // resize frames, first-open timings. The provider emits Verbose only, so off
     // means a fully silent channel; on surfaces everything for a placement /
-    // resize-lag dive. Sister to LogAutocorrectActivity, no capture window.
+    // resize-lag dive. No capture window — the windows exist continuously.
     [ObservableProperty]
     public partial bool LogWindowingActivity { get; set; }
 
@@ -51,36 +41,12 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool ApplicationLogToDisk { get; set; }
 
-    // Autocorrect decisions — the per-word decision dataset
-    // (autocorrect.decisions.jsonl): every corrected or left-literal word on an
-    // enrolled surface with its candidates, scores, margins and the guard that
-    // decided it. Carries typed words by design — the diagnostic surface for tuning
-    // the corrector before adding grammar — so it is consent-gated like the other
-    // text captures. Off by default.
-    [ObservableProperty]
-    public partial bool AutocorrectDecisions { get; set; }
-
-    // Autocorrect text — the typed-sentence corpus (autocorrect.text.jsonl): each
-    // sentence typed at the keyboard on an enrolled surface, verbatim form paired
-    // with the corrected one. The substrate for modelling the user's own error
-    // patterns. The heaviest text capture — a verbatim record of typed input — so it
-    // is nested under the decision toggle in the UI and off by default.
-    [ObservableProperty]
-    public partial bool AutocorrectText { get; set; }
-
     // Storage folder override — empty = AppPaths.TelemetryDirectory.
     // FolderPickerCard.DefaultPath is wired to the resolved default in
     // the page code-behind ; the picker shows it as a placeholder when
     // the override is empty.
     [ObservableProperty]
     public partial string TelemetryStorageDirectory { get; set; }
-
-    partial void OnLogAutocorrectActivityChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAutocorrectActivity", value.ToString());
-        PushLoggingToSettings();
-    }
 
     partial void OnLogWindowingActivityChanged(bool value)
     {
@@ -93,20 +59,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("Telemetry.ApplicationLogToDisk", value.ToString());
-        PushTelemetryToSettings();
-    }
-
-    partial void OnAutocorrectDecisionsChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.AutocorrectDecisions", value.ToString());
-        PushTelemetryToSettings();
-    }
-
-    partial void OnAutocorrectTextChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.AutocorrectText", value.ToString());
         PushTelemetryToSettings();
     }
 
@@ -133,11 +85,8 @@ public partial class DiagnosticsViewModel : ObservableObject
         // but for a different reason : disk-persistence streams stay
         // off until the user explicitly opts in to where their data
         // lands.
-        LogAutocorrectActivity = false;
         LogWindowingActivity = false;
         ApplicationLogToDisk = false;
-        AutocorrectDecisions = false;
-        AutocorrectText = false;
         TelemetryStorageDirectory = "";
 
         // _isSyncing stays true — Load() will set it to false.
@@ -149,13 +98,10 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             var l = LoggingSettingsService.Instance.Current;
-            LogAutocorrectActivity = l.LogAutocorrectActivity;
             LogWindowingActivity = l.LogWindowingActivity;
 
             var t = TelemetrySettingsService.Instance.Current;
             ApplicationLogToDisk = t.ApplicationLogToDisk;
-            AutocorrectDecisions = t.AutocorrectDecisions;
-            AutocorrectText = t.AutocorrectText;
             TelemetryStorageDirectory = t.StorageDirectory;
         }
         finally
@@ -167,7 +113,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushLoggingToSettings()
     {
         var l = LoggingSettingsService.Instance.Current;
-        l.LogAutocorrectActivity = LogAutocorrectActivity;
         l.LogWindowingActivity = LogWindowingActivity;
         LoggingSettingsService.Instance.Save();
     }
@@ -176,8 +121,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     {
         var t = TelemetrySettingsService.Instance.Current;
         t.ApplicationLogToDisk = ApplicationLogToDisk;
-        t.AutocorrectDecisions = AutocorrectDecisions;
-        t.AutocorrectText = AutocorrectText;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
         TelemetrySettingsService.Instance.Save();
     }
@@ -189,7 +132,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            LogAutocorrectActivity = false;
             LogWindowingActivity = false;
         }
         finally { _isSyncing = false; }
@@ -204,8 +146,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             ApplicationLogToDisk = false;
-            AutocorrectDecisions = false;
-            AutocorrectText = false;
             TelemetryStorageDirectory = "";
         }
         finally { _isSyncing = false; }
