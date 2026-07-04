@@ -197,13 +197,28 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
             plan.EndExclusive > completionTokens.Length)
             return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.TooFewTokens);
 
+        // One forward over prompt + the scored completion span, reading the
+        // teacher-forced logits at every scored position from a single pass.
+        // DirectML rejects continuous decoding (a second AppendTokens on a live
+        // generator), so the earlier incremental per-token loop cannot run there;
+        // feeding the whole span at once is also one forward instead of N, and
+        // causal masking makes each scored row identical to the incremental read.
+        int promptLen = promptTokens.Length;
+        var input = new int[promptLen + plan.EndExclusive];
+        Array.Copy(promptTokens, 0, input, 0, promptLen);
+        Array.Copy(completionTokens, 0, input, promptLen, plan.EndExclusive);
+
         using var generatorParams = new GeneratorParams(_model);
-        generatorParams.SetSearchOption("max_length", promptTokens.Length + plan.EndExclusive + 1);
+        generatorParams.SetSearchOption("max_length", input.Length + 1);
 
         using var generator = new Generator(_model, generatorParams);
-        generator.AppendTokens(promptTokens);
-        if (plan.Start > 0)
-            generator.AppendTokens(completionTokens.AsSpan(0, plan.Start));
+        generator.AppendTokens(input);
+
+        using Tensor logits = generator.GetOutput(LogitsOutputName);
+        long numElements = logits.NumElements();
+        if (numElements % _vocabSize != 0)
+            return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.LogitsUnavailable);
+        int rows = (int)(numElements / _vocabSize);
 
         double logProbability = 0.0;
         int scored = 0;
@@ -213,16 +228,22 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
             if (tokenId < 0 || tokenId >= _vocabSize)
                 return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.TokenOutOfVocab);
 
-            using Tensor logits = generator.GetOutput(LogitsOutputName);
-            ReadOnlySpan<float> row = LastLogitsRow(logits);
+            // The logits at position p score the token at position p + 1, so the
+            // distribution for completion token `next` is read at promptLen+next-1.
+            int predictPos = promptLen + next - 1;
+            if (predictPos < 0 || predictPos >= rows)
+                return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.LogitsUnavailable);
+
+            float[] row = LogitsRow(logits, predictPos);
             if (row.Length <= tokenId)
                 return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.LogitsUnavailable);
 
             logProbability += LogProbability(row, tokenId);
             scored++;
-
-            generator.AppendTokens(completionTokens.AsSpan(next, 1));
         }
+
+        if (scored == 0)
+            return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.TooFewTokens);
 
         return new CandidateScore(
             Score: logProbability / scored,
@@ -305,13 +326,40 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
         return tokens[1..];
     }
 
-    private ReadOnlySpan<float> LastLogitsRow(Tensor logits)
+    // Reads one vocabulary-wide logits row, upcast to float. The judge's logits come
+    // back float32 from the CPU int4 export but float16 from the DirectML export — a
+    // `-e dml` build forces a FLOAT16 io dtype (there is no FP32 DML path) — so the
+    // row is read in its own element type. The per-row allocation is dwarfed by the
+    // forward pass it follows.
+    private float[] LogitsRow(Tensor logits, int position)
     {
-        ReadOnlySpan<float> data = logits.GetData<float>();
-        if (data.Length < _vocabSize || data.Length % _vocabSize != 0)
-            return ReadOnlySpan<float>.Empty;
+        int offset = position * _vocabSize;
+        switch (logits.Type())
+        {
+            case ElementType.float32:
+            {
+                ReadOnlySpan<float> data = logits.GetData<float>();
+                if ((long)offset + _vocabSize > data.Length)
+                    return Array.Empty<float>();
 
-        return data.Slice(data.Length - _vocabSize, _vocabSize);
+                return data.Slice(offset, _vocabSize).ToArray();
+            }
+            case ElementType.float16:
+            {
+                ReadOnlySpan<Half> data = logits.GetData<Half>();
+                if ((long)offset + _vocabSize > data.Length)
+                    return Array.Empty<float>();
+
+                ReadOnlySpan<Half> row = data.Slice(offset, _vocabSize);
+                var upcast = new float[_vocabSize];
+                for (int i = 0; i < _vocabSize; i++)
+                    upcast[i] = (float)row[i];
+
+                return upcast;
+            }
+            default:
+                return Array.Empty<float>();
+        }
     }
 
     private static double LogProbability(ReadOnlySpan<float> logits, int tokenId)
