@@ -5,6 +5,40 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-04 (later) — The sentence judge runs on the GPU (DirectML), measured against CPU int4
+
+The Qwen3 closed-candidate judge now runs on the RX 7900 XT through a genai `-e dml` int4 export on the DmlExecutionProvider. CPU int4 and DirectML exports coexist under each model dir (`onnxruntime/cpu_and_mobile/…` and `onnxruntime/directml/directml-int4-block-32`); the provider is chosen in code and, for the bench, by `Deckle.Autocorrect.Probe --provider <cpu|dml>`.
+
+Closed-candidate benchmark (30 cases, thresholds 0.25/0.5), summed per-case scoring time, CPU int4 vs DirectML:
+
+| size | CPU int4 | DirectML | speedup | CPU @0.25 prec/recall/wrong | DML @0.25 prec/recall/wrong |
+|------|---------:|---------:|--------:|-----------------------------|-----------------------------|
+| 0.6B | 88.6s    | 18.0s    | ~4.9×   | 89% / 57% / 1               | 86% / 43% / 1               |
+| 1.7B | 220.6s   | 19.2s    | ~11.5×  | 93% / 93% / 1               | 100% / 93% / 0              |
+| 4B   | 470.1s   | 24.7s    | ~19.0×  | 93% / 93% / 1               | 82% / 64% / 2               |
+
+Findings, measured:
+- DirectML time is nearly flat across sizes (18→19→25s) while CPU scales with params (89→221→470s), so the GPU win grows with model size (≈5× → 19×). Per-case DML time is dominated by per-candidate generator creation, not the matmuls; DirectML compute-engine utilization sampled 4–34% during a run — engaged, far from saturated. On GPU, going from 0.6B to 4B costs almost nothing.
+- 1.7B on DirectML is the cleanest operating point: 100% precision (zero false changes, vs the CPU int4's one on `ou_choice`) at 93% recall, in ~19s.
+- The fp16 + accuracy_level-0 DML quantization is noisier at the extremes: 0.6B loses recall (57%→43%), and 4B makes two false literal-trap changes at margin 0.25 (both clean at 0.5). The CPU int4-kld export and the DML export are different quantizations — their margins are not interchangeable; the operating margin must be recalibrated per export.
+
+Build recipe (onnxruntime-genai 0.13.0 model builder, Python 3.13 venv at `D:\models\_genai-build`):
+`python -m onnxruntime_genai.models.builder -m Qwen/Qwen3-<size> -o <out> -p int4 -e dml -c <cache> --extra_options hf_token=false`
+- `hf_token=false` is required to fetch ungated Qwen3 anonymously — without it the builder passes `token=True` and dies with `LocalTokenNotFoundError`.
+- Beyond `onnxruntime-genai-directml==0.13.0` + torch (CPU is enough) + transformers + onnx, the builder needs `onnx_ir` — an undeclared import of both the builder and the int4 quantizer.
+- No GPU is used at build time; RTN int4 quantization runs CPU-side.
+
+Traps confirmed at the runtime:
+- `-e dml` forces a FLOAT16 io dtype (there is no FP32 DML path), so the judge's logits come back float16; the scorer reads each row in its own element type.
+- DirectML rejects continuous decoding — a second AppendTokens on a live generator throws "Continuous decoding is not supported on the selected device type". The scorer scores each candidate in a single forward.
+- The CPU int4 export cannot run on DML: its accuracy_level-4 MatMulNBits nodes do not partition to DmlExecutionProvider, so session init fails ("graph capture … not all nodes partitioned"). A dedicated `-e dml` export (accuracy_level 0, fp16 io) is required — confirmed by loading each.
+- `DirectML.dll` resolves from `System32` (v1.15.5); the genai NuGet does not bundle it.
+
+Decisions taken without the maintainer (reversible, for review):
+- Build route over download: no prebuilt small-Qwen3 DirectML genai export exists (onnx-community ships cpu/cuda/webgpu int4 for Qwen3 but no dml; only third-party 14B/32B DML builds exist). Built 0.6B/1.7B/4B locally with the builder defaults for `-e dml` (accuracy_level 0, block 32).
+- Exports staged under `%LOCALAPPDATA%\Deckle\models\qwen3-<size>-onnx\onnxruntime\directml\directml-int4-block-32`, mirroring onnx-community's per-EP layout.
+- `accuracy_level=1` (fp32 activation upcast, the onnx-community DML publishers' documented alternative) was not explored — a lever if the 0.6B/4B margin noise ever needs closing on GPU.
+
 ## 2026-07-04 — The stack is split across two runtime worlds; direction is DirectML with GenAI alongside
 
 Grounded in the current code (on main): the four inference stages do not share a runtime. Reranker (CamemBERT, commit + contextual) runs on plain ONNX Runtime — an `InferenceSession` encoder, CPU-bound and single-threaded (`BackgroundRerankLane`). The sentence judge runs on onnxruntime-genai (CPU int4 today, DirectML targeted). Rewrite runs on Ollama (llama.cpp / ggml). ASR runs on whisper.cpp (native ggml), not ONNX. So two stages live in the ONNX world and two in the ggml/Vulkan world — the latter being the 7900 XT's strong GPU path. The "run everything under the same system" wish is therefore a real substrate fork (ONNX/DirectML vs ggml/Vulkan), left open, not a settled convergence.
