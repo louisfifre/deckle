@@ -20,6 +20,7 @@ internal static class CorrectionBenchmarkCommand
             return RunBatch(parsed);
 
         Console.WriteLine($"Cases     : {CorrectionBenchmarkCorpus.All.Count}");
+        Console.WriteLine($"Provider  : {parsed.Provider}");
         Console.WriteLine($"Thresholds: {string.Join(", ", parsed.Thresholds.Select(static t => t.ToString("0.##")))}");
         Console.WriteLine();
 
@@ -34,11 +35,11 @@ internal static class CorrectionBenchmarkCommand
                 continue;
             }
 
-            ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(model.Directory, margin: 0.0);
+            ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(model.Directory, margin: 0.0, parsed.Provider);
             if (scorer is null)
             {
                 Console.WriteLine($"Model: {model.Label}");
-                Console.WriteLine("  failed to load as an ONNX Runtime GenAI model.");
+                Console.WriteLine($"  failed to load as an ONNX Runtime GenAI model on provider '{parsed.Provider}'.");
                 Console.WriteLine();
                 continue;
             }
@@ -46,7 +47,7 @@ internal static class CorrectionBenchmarkCommand
             loaded++;
             try
             {
-                IReadOnlyList<CorrectionBenchmarkResult> results = RunModel(scorer);
+                IReadOnlyList<CorrectionBenchmarkResult> results = RunModel(model, scorer);
                 PrintModelSummary(model, results, parsed);
             }
             finally
@@ -79,6 +80,8 @@ internal static class CorrectionBenchmarkCommand
             process.StartInfo.ArgumentList.Add("--benchmark");
             process.StartInfo.ArgumentList.Add("--model");
             process.StartInfo.ArgumentList.Add($"{model.Label}={model.Directory}");
+            process.StartInfo.ArgumentList.Add("--provider");
+            process.StartInfo.ArgumentList.Add(parsed.Provider);
             foreach (double threshold in parsed.Thresholds)
             {
                 process.StartInfo.ArgumentList.Add("--threshold");
@@ -88,14 +91,21 @@ internal static class CorrectionBenchmarkCommand
             if (parsed.ShowCases)
                 process.StartInfo.ArgumentList.Add("--show-cases");
 
+            // Forward the child's stderr live (its per-case progress) and read stdout
+            // (the summary, emitted at the end) on this thread. Reading one stream fully
+            // before the other deadlocks once the child fills the unread pipe's buffer —
+            // the likely cause of a batch run appearing to hang with no visible output.
+            process.ErrorDataReceived += static (_, e) =>
+            {
+                if (e.Data is not null)
+                    Console.Error.WriteLine(e.Data);
+            };
             process.Start();
+            process.BeginErrorReadLine();
             string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
             process.WaitForExit();
 
             Console.Write(output);
-            if (!string.IsNullOrWhiteSpace(error))
-                Console.Error.Write(error);
 
             if (process.ExitCode != 0)
                 exitCode = process.ExitCode;
@@ -104,9 +114,11 @@ internal static class CorrectionBenchmarkCommand
         return exitCode;
     }
 
-    private static IReadOnlyList<CorrectionBenchmarkResult> RunModel(ISentenceScorer scorer)
+    private static IReadOnlyList<CorrectionBenchmarkResult> RunModel(ModelSpec model, ISentenceScorer scorer)
     {
-        var results = new List<CorrectionBenchmarkResult>(CorrectionBenchmarkCorpus.All.Count);
+        int total = CorrectionBenchmarkCorpus.All.Count;
+        var results = new List<CorrectionBenchmarkResult>(total);
+        int index = 0;
         foreach (CorrectionBenchmarkCase benchmarkCase in CorrectionBenchmarkCorpus.All)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -117,6 +129,13 @@ internal static class CorrectionBenchmarkCommand
                 benchmarkCase,
                 outcome,
                 stopwatch.Elapsed));
+
+            // One line per case to stderr so a slow model (seconds per case on the CPU
+            // EP) shows life rather than a silent multi-minute wait; stdout stays the
+            // clean summary. The load-bearing timing lives in each result, not here.
+            index++;
+            Console.Error.WriteLine(
+                $"  [{model.Label}] {index}/{total} {benchmarkCase.Id} {stopwatch.Elapsed.TotalMilliseconds:0}ms");
         }
 
         return results;
@@ -129,6 +148,7 @@ internal static class CorrectionBenchmarkCommand
     {
         Console.WriteLine($"Model: {model.Label}");
         Console.WriteLine($"Path : {model.Directory}");
+        Console.WriteLine($"EP   : {parsed.Provider}");
         Console.WriteLine($"Time : {results.Sum(static r => r.Duration.TotalSeconds):0.0}s");
         Console.WriteLine();
         Console.WriteLine("threshold  changes  fixes  wrong  precision  recall  safe_abs  miss_abs  miss_keep  errors");

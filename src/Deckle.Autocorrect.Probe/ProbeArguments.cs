@@ -17,6 +17,12 @@ internal sealed class ProbeArguments
     public required IReadOnlyList<string> Candidates { get; init; }
     public bool ShowCases { get; private init; }
 
+    // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" drives
+    // the forced-decoding judge on the GPU (DirectML), "cpu" the built-in CPU EP.
+    // The scorer selects it in code, so one export can be benchmarked on either —
+    // the lever for the CPU-int4-vs-DirectML comparison. Defaults to "dml".
+    public string Provider { get; private init; } = "dml";
+
     public static ProbeArguments? Parse(string[] args)
     {
         ProbeMode mode = ProbeMode.Single;
@@ -25,6 +31,7 @@ internal sealed class ProbeArguments
         var thresholds = new List<double>();
         var candidates = new List<string>();
         bool showCases = false;
+        string provider = "dml";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -59,6 +66,15 @@ internal sealed class ProbeArguments
                     !double.TryParse(args[i], CultureInfo.InvariantCulture, out margin))
                     return null;
 
+                continue;
+            }
+
+            if (arg is "--provider" or "-e")
+            {
+                if (++i >= args.Length || string.IsNullOrWhiteSpace(args[i]))
+                    return null;
+
+                provider = args[i].Trim();
                 continue;
             }
 
@@ -99,6 +115,7 @@ internal sealed class ProbeArguments
                 Thresholds = Array.Empty<double>(),
                 Candidates = candidates,
                 ShowCases = showCases,
+                Provider = provider,
             };
         }
 
@@ -115,6 +132,7 @@ internal sealed class ProbeArguments
                 : new[] { 0.0, 0.10, 0.25, 0.50, 0.75 },
             Candidates = Array.Empty<string>(),
             ShowCases = showCases,
+            Provider = provider,
         };
     }
 }
@@ -124,9 +142,11 @@ internal static class ProbeUsage
     public static void Print()
     {
         Console.Error.WriteLine("Usage:");
-        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --model <dir> [--margin <n>] --candidate <text> --candidate <text> [...]");
-        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --benchmark [--model <label=dir>] [--threshold <n>] [--show-cases]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --model <dir> [--margin <n>] [--provider <cpu|dml>] --candidate <text> --candidate <text> [...]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --benchmark [--model <label=dir>] [--threshold <n>] [--provider <cpu|dml>] [--show-cases]");
         Console.Error.WriteLine();
+        Console.Error.WriteLine(
+            "--provider selects the ONNX Runtime GenAI execution provider (default dml = GPU/DirectML; cpu = built-in CPU EP).");
         Console.Error.WriteLine(
             "If --model is omitted in single mode, the default is %LOCALAPPDATA%\\Deckle\\models\\qwen3-0.6b-onnx\\onnxruntime\\cpu_and_mobile\\cpu-int4-kld-block-128.");
         Console.Error.WriteLine(
