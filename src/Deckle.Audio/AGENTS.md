@@ -1,5 +1,5 @@
 ---
-description: Audio module — the home for capturing and analyzing sound: microphone capture, RMS telemetry/calibration, and the pre-processing DSP for transcription.
+description: Audio module — the home for capturing, decoding and analyzing sound: microphone capture, audio-file decoding to the pipeline format, RMS telemetry/calibration, and the pre-processing DSP for transcription.
 type: agent-instructions
 ---
 
@@ -18,6 +18,10 @@ An optional, user-toggled DSP stage (high-pass, optional gate, gentle compressor
 ## Render output (`SpeakerOutput`)
 
 The first output primitive — the symmetric counterpart of `MicrophoneCapture`: a single-clip, blocking `waveOut` render of a finished mono float buffer to the default device. Format is carried per call (TTS is 24 kHz, not the 16 kHz capture is fixed to). It returns whether the clip reached the driver, so the caller can tell a silent device-open failure from success; `Deckle.Speech` drives it.
+
+## File decoding (`AudioFileDecoder`)
+
+The second input primitive: a pre-recorded audio file in, the fixed pipeline format out (16 kHz mono float, resampled and downmixed by Media Foundation's source reader). Like capture, it doesn't know why it runs — file transcription drives it today. Decode failures are statuses, not exceptions; the caller owns their localization. The COM interop stays module-internal under `Internal/` and follows the `Deckle.Vision` vtable style — no `[ComImport]`, slots audited in place.
 
 ## Observability
 

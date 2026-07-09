@@ -367,7 +367,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Audio module — the home for capturing and analyzing sound: microphone capture,…
+│   │   ├── AGENTS.md  — [agent-instructions] Audio module — the home for capturing, decoding and analyzing sound: microphone…
 │   │   ├── AudioFileDecoder.cs
 │   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
