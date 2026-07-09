@@ -590,10 +590,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatter.cs
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
 │   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Logging.csproj
+│   │   ├── DiagnosticsPage.xaml
+│   │   ├── DiagnosticsPage.xaml.cs
+│   │   ├── DiagnosticsSettingsModule.cs
+│   │   ├── DiagnosticsViewModel.cs
+│   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilter.cs
@@ -896,8 +904,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
-│   │   │   ├── DiagnosticsPage.xaml
-│   │   │   ├── DiagnosticsPage.xaml.cs
 │   │   │   ├── GeneralPage.xaml
 │   │   │   └── GeneralPage.xaml.cs
 │   │   ├── Persistence/
@@ -909,8 +915,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── DiagnosticsViewModel.cs
-│   │   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── GeneralViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…

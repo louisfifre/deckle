@@ -45,11 +45,9 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- DiagnosticsViewModel consomme LoggingSettingsService /
-         TelemetrySettingsService: canonical successors of the legacy stores
-         (Deckle.Logging removed in sub-wave 6g). -->
-    <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
-    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <!-- Deckle.Diagnostics.Logging / Deckle.Diagnostics.Telemetry refs dropped when
+         DiagnosticsPage + DiagnosticsViewModel moved to Deckle.Diagnostics.Logging:
+         no remaining Settings source references either store's types. -->
     <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <!-- Deckle.Transcription and Deckle.Llm.Rewrite refs dropped in slice C1:

@@ -1,10 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Core;
 using Deckle.Diagnostics;
-using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Settings;
+namespace Deckle.Diagnostics.Logging;
 
 // ViewModel for DiagnosticsPage — bridges TelemetrySettings and
 // LoggingSettings to the XAML via x:Bind. Originally migrated from

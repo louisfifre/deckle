@@ -30,12 +30,12 @@
                         SelectionChanged="OnNavSelectionChanged"
                         ItemInvoked="OnNavItemInvoked">
 
-            <!-- Shell-owned pages are static anchors; the module pages that live
-                 in other assemblies (Transcription, Rewriting, Autocorrect,
-                 Ambient, Trackpad) are materialised from SettingsModuleRegistry in
-                 the code-behind and inserted between Recording and Diagnostics, so
-                 a module can appear / disappear without editing this file (the seam
-                 the module installer needs). -->
+            <!-- General is the shell's one static anchor; every module page (from
+                 Recording through Diagnostics) lives in its own assembly and is
+                 materialised from SettingsModuleRegistry in the code-behind, appended
+                 after General in (tier, order) order — so a module can appear /
+                 disappear without editing this file (the seam the module installer
+                 needs). -->
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Uid="SettingsNavGeneral"
                                     Tag="Deckle.Settings.GeneralPage">
@@ -44,15 +44,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!-- Module pages inserted here from SettingsModuleRegistry, in
-                     (tier, order) order — Recording first, then the other modules,
-                     before the Diagnostics anchor. -->
-                <NavigationViewItem x:Uid="SettingsNavDiagnostics"
-                                    x:Name="DiagnosticsNavItem"
-                                    Tag="Deckle.Settings.DiagnosticsPage">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{StaticResource Icon.Diagnostics}" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
+                     (tier, order) order — Recording first through Diagnostics last. -->
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>

@@ -148,7 +148,7 @@
        Shared tooltips for the Pick + Open buttons rendered by the two
        UserControls under Deckle.Settings/. Header / Description for
        each instance are passed in via the consumer's x:Uid (e.g.
-       GeneralStorageFolderCard.Header). These two strings stay
+       GeneralBackupLocationCard.Header). These two strings stay
        generic so a single key covers every folder picker in the app. -->
   <data name="FolderPickerCard_PickButton.Content" xml:space="preserve">
     <value>Set</value>
@@ -602,13 +602,10 @@
   <data name="SettingsNavRecording.Content" xml:space="preserve">
     <value>Recording</value>
   </data>
-  <!-- The module pages' nav labels (Transcription, Rewriting, Autocorrect,
-       Ambient Light, Trackpad) moved to each owning module's own .resw as
-       SettingsModuleNavLabel — the shell builds those items from
-       SettingsModuleRegistry and resolves their label from the module PRI. -->
-  <data name="SettingsNavDiagnostics.Content" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
+  <!-- The module pages' nav labels (Recording, Transcription, Rewriting,
+       Autocorrect, Ambient Light, Trackpad, Diagnostics) moved to each owning
+       module's own .resw as SettingsModuleNavLabel — the shell builds those items
+       from SettingsModuleRegistry and resolves their label from the module PRI. -->
   <data name="SettingsNavLogs.Content" xml:space="preserve">
     <value>Logs</value>
   </data>
@@ -626,27 +623,14 @@
     <value>Reset all</value>
   </data>
 
-  <!-- Whole-page "Reset all" buttons on GeneralPage and DiagnosticsPage (title
-       row, trailing edge). Same affordance as WhisperPage / LlmPage; both are
-       active-when-dirty. General's has no dialog (reversible preferences);
-       Diagnostics' confirms because it clears recorded consents. -->
+  <!-- Whole-page "Reset all" button on GeneralPage (title row, trailing edge).
+       Same affordance as WhisperPage / LlmPage; active-when-dirty. General's has
+       no dialog (reversible preferences). -->
   <data name="GeneralPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
     <value>Reset this page to defaults</value>
   </data>
   <data name="GeneralPageResetAllLabel.Text" xml:space="preserve">
     <value>Reset all</value>
-  </data>
-  <data name="DiagnosticsPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this page to defaults</value>
-  </data>
-  <data name="DiagnosticsPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
-  <data name="Settings_ResetDiagnosticsDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
   </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
@@ -800,12 +784,6 @@
   <data name="GeneralLatencyCard.Description" xml:space="preserve">
     <value>Record per-step timings of each transcription — voice detection, Whisper, rewrite, clipboard, paste — to latency.jsonl. Timings only, no transcript text.</value>
   </data>
-  <data name="GeneralAppLogCard.Header" xml:space="preserve">
-    <value>Application log</value>
-  </data>
-  <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>Mirror every in-app log line to app.jsonl to diagnose a specific issue across restarts. Verbose — around 2 MB per 30 min of active use. Rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …).</value>
-  </data>
   <data name="DiagnosticsAutocorrectDecisionsExpander.Header" xml:space="preserve">
     <value>Autocorrect decisions</value>
   </data>
@@ -841,12 +819,6 @@
   </data>
   <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
     <value>Always raw</value>
-  </data>
-  <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
-    <value>Storage folder</value>
-  </data>
-  <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Shared root for every telemetry stream enabled above. Leave empty to use the default %LOCALAPPDATA%\Deckle\telemetry\.</value>
   </data>
   <data name="GeneralBackupExpander.Header" xml:space="preserve">
     <value>Back up and restore your settings</value>
@@ -1273,23 +1245,12 @@
     <value>Back up &amp; restore</value>
   </data>
 
-  <!-- ─── DiagnosticsPage ─────────────────────────────────────────────
-       Page extracted from GeneralPage in slice S2. Hosts the telemetry
-       opt-ins (Application log, Microphone, Latency, Corpus + Audio
-       corpus, Storage folder). Card-level x:Uid keys (GeneralLog…,
-       GeneralLatency…, GeneralAppLog…, GeneralCorpus…, GeneralStorage…)
-       are reused as-is — the General* prefix is a historical naming
-       artifact, not a page binding ; renaming would require touching
-       every translation file. -->
-  <data name="DiagnosticsPageTitleLabel.Text" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
-  <data name="DiagnosticsPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Configure how Deckle reports its runtime activity — in-app log verbosity and the telemetry streams Deckle can persist to disk for offline troubleshooting. Everything is opt-in and stored locally.</value>
-  </data>
-  <data name="DiagnosticsPageLoggingHeaderLabel.Text" xml:space="preserve">
-    <value>Logging</value>
-  </data>
+  <!-- ─── Residual logging-card keys ──────────────────────────────────
+       The DiagnosticsPage that once hosted these moved to
+       Deckle.Diagnostics.Logging. LoggingAmbient / LoggingStreaming /
+       LoggingAutocorrect are composed by their own module pages now (each
+       carries its own copy in its module .resw), so these shell copies are
+       unreferenced — left in place, cleanup out of this move's scope. -->
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
     <value>Log ambient capture activity</value>
   </data>
@@ -1307,24 +1268,6 @@
   </data>
   <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
     <value>Per-focus surface checks, learning signals and the periodic activity summary from the autocorrect engine. With this off, only applied corrections are logged — what changed (reason and lengths), never the word itself.</value>
-  </data>
-  <data name="LoggingWindowingCard.Header" xml:space="preserve">
-    <value>Log windowing activity</value>
-  </data>
-  <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
-  </data>
-  <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
-    <value>Telemetry</value>
-  </data>
-  <data name="DiagnosticsPageFilesHeaderLabel.Text" xml:space="preserve">
-    <value>Diagnostic files</value>
-  </data>
-  <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
-    <value>Setup and error logs</value>
-  </data>
-  <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>Recorded automatically and kept on this device — never sent anywhere. Open the folder to find them when reporting a first-run or crash problem.</value>
   </data>
   <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
     <value>Application data</value>
@@ -1411,14 +1354,6 @@
   </data>
   <data name="Settings_ResetWhisperDialog_Content" xml:space="preserve">
     <value>This will restore every transcription setting on this page to its default value.</value>
-  </data>
-
-  <!-- DiagnosticsPage Telemetry reset dialog -->
-  <data name="Settings_ResetTelemetryDialog_Title" xml:space="preserve">
-    <value>Reset telemetry settings?</value>
-  </data>
-  <data name="Settings_ResetTelemetryDialog_Content" xml:space="preserve">
-    <value>Every telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->

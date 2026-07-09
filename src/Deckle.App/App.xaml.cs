@@ -505,16 +505,18 @@ public partial class App : Microsoft.UI.Xaml.Application
         // ONLY the Order here, so the shell builds their NavigationView items from
         // the registry instead of hardcoding them in SettingsWindow.xaml. This is
         // the seam the module installer needs: a module appears / disappears here
-        // without editing the shell. The shell's own General and Diagnostics stay
-        // static anchors; Logs stays a footer command. Order leaves gaps so a later
-        // module can land between two existing ones. Recording (order 50) sits first
-        // in the band — right after General — where its former static anchor was.
+        // without editing the shell. The shell's own General stays a static anchor;
+        // Logs stays a footer command. Order leaves gaps so a later module can land
+        // between two existing ones. Recording (order 50) sits first in the band —
+        // right after General — where its former static anchor was; Diagnostics
+        // (order 600) sits last, where its own former static anchor was.
         Settings.SettingsModuleRegistry.Register(Audio.RecordingSettingsModule.Describe(order: 50));
         Settings.SettingsModuleRegistry.Register(Transcription.WhisperSettingsModule.Describe(order: 100));
         Settings.SettingsModuleRegistry.Register(Llm.Rewrite.LlmSettingsModule.Describe(order: 200));
         Settings.SettingsModuleRegistry.Register(Autocorrect.AutocorrectSettingsModule.Describe(order: 300));
         Settings.SettingsModuleRegistry.Register(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400));
         Settings.SettingsModuleRegistry.Register(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500));
+        Settings.SettingsModuleRegistry.Register(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600));
 
         // Message-only Win32 host — invisible by construction (HWND_MESSAGE
         // parent). Hosts the tray callback, global hotkeys, and the shared
