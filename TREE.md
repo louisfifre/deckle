@@ -208,7 +208,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── inventaire-settings.md
 ├── logo/
 │   ├── primary.png
-│   └── primary.svg
+│   ├── primary.svg
+│   └── secondary.png
 ├── scripts/
 │   ├── hooks/
 │   │   ├── pre-commit
