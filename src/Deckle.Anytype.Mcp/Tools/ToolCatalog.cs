@@ -6,7 +6,7 @@ namespace Deckle.Anytype.Mcp;
 
 // ─── Tool catalog ─────────────────────────────────────────────────────────────
 //
-// Builds the 15 base MCP tools over the four gesture classes. Each descriptor pairs a
+// Builds the 16 base MCP tools over the gesture classes. Each descriptor pairs a
 // JSON Schema (2020-12, additionalProperties:false) with a handler that reads and
 // type-checks the arguments before invoking the gesture.
 //
@@ -99,7 +99,7 @@ public static class ToolCatalog
 
             new(
                 "link",
-                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, rapport -> task(s) (a report links the task(s) it concerns; its project is derived through them), project -> project (depend_de — the source depends on the target). Targets are appended, never replaced. No other pairs exist — it cannot attach anything to an epic.",
+                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, rapport -> task(s) (a report links the task(s) it concerns; its project is derived through them), project -> project (depend_de — the source depends on the target), project -> epic (collection membership). Targets are appended, never replaced.",
                 Schema(
                     required:
                     [

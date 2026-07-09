@@ -16,6 +16,8 @@ namespace Deckle.Anytype.Tests;
 public class QueryGesturesTests
 {
     const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string EpicId = "bafyreiepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static QueryGestures NewGestures(FakeAnytypeServer server)
@@ -60,6 +62,28 @@ public class QueryGesturesTests
             ["id"] = TaskId,
             ["name"] = "Un rapport",
             ["type"] = new JsonObject { ["key"] = DevSpace.Types.Rapport },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    static JsonObject ProjectObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = ProjectId,
+            ["name"] = "Deckle",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Project },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    static JsonObject EpicObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = EpicId,
+            ["name"] = "Applications",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Epic },
             ["properties"] = new JsonArray(),
         },
     };
@@ -246,6 +270,27 @@ public class QueryGesturesTests
 
         Assert.Contains("Archivé", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // ── LinkAsync ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task LinkProjectToEpicAddsTheProjectToTheEpicCollectionWithoutPatchingTheProject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnPostListObjects(EpicId, "\"Objects added successfully\"");
+
+        string digest = await NewGestures(server).LinkAsync(ProjectId, [EpicId], Ct);
+
+        Assert.Contains("rattachement", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+
+        JsonObject posted = server.LastBodyFor("POST");
+        JsonArray objects = Assert.IsType<JsonArray>(posted["objects"]);
+        string id = Assert.Single(objects)!.GetValue<string>();
+        Assert.Equal(ProjectId, id);
     }
 
     // ── ReplaceSectionAsync ─────────────────────────────────────────────────────

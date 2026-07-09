@@ -73,10 +73,11 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     // type) pair. The API PATCH replaces a property's value wholesale, so this is
     // a read-modify-write: union the current refs with the resolved target ids.
     //
-    // Supported pairs (property written on the SOURCE):
+    // Supported pairs (property written on the SOURCE unless noted):
     //   task    → project   : relation_projet
     //   rapport → task      : tache(s)_liee(s)
     //   project → project   : depend_de
+    //   project → epic      : collection membership, written on the epic list
     public async Task<string> LinkAsync(string source, IReadOnlyList<string> targets, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -95,29 +96,32 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         // A mixed batch (e.g. a task linked to a project AND a rapport) groups by
         // destination property and writes each property once.
         var byProp = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var collectionAdds = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (string t in targets)
         {
             string targetId = await resolver.ResolveAsync(t, typeKeys: null, ct);
             JsonObject targetObj = await api.GetObjectAsync(targetId, ct);
             string targetType = QueryProp.TypeKey(targetObj) ?? "";
 
-            string? propKey = LinkPropertyFor(sourceType, targetType);
-            if (propKey is null)
+            LinkRoute? route = LinkRouteFor(sourceType, targetType);
+            if (route is null)
                 throw new InvalidOperationException(SupportedPairsError(sourceType, targetType));
 
-            (byProp.TryGetValue(propKey, out var list) ? list : byProp[propKey] = []).Add(targetId);
+            if (route.PropertyKey is { } propKey)
+                (byProp.TryGetValue(propKey, out var list) ? list : byProp[propKey] = []).Add(targetId);
+            else
+                (collectionAdds.TryGetValue(targetId, out var list) ? list : collectionAdds[targetId] = []).Add(sourceId);
         }
 
         // Per property: union the new ids with the existing refs (PATCH replaces a
         // property's value wholesale, so the full set must be re-sent).
         var entries = new JsonArray();
-        int added = 0, total = 0;
+        int added = 0;
         foreach ((string propKey, List<string> ids) in byProp)
         {
             var union = new List<string>(QueryProp.ObjectRefs(sourceObj, propKey));
             foreach (string id in ids)
             {
-                total++;
                 if (!union.Contains(id)) { union.Add(id); added++; }
             }
 
@@ -126,10 +130,21 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
             entries.Add(new JsonObject { ["key"] = propKey, ["objects"] = refs });
         }
 
-        await api.UpdateObjectAsync(sourceId, new JsonObject { ["properties"] = entries }, ct);
+        if (entries.Count > 0)
+            await api.UpdateObjectAsync(sourceId, new JsonObject { ["properties"] = entries }, ct);
+
+        int collectionRequests = 0;
+        foreach ((string collectionId, List<string> ids) in collectionAdds)
+        {
+            await api.AddToCollectionAsync(collectionId, ids.Distinct(StringComparer.Ordinal).ToArray(), ct);
+            collectionRequests++;
+        }
 
         DeckleAnytypeSource.Log.GestureCompleted("link", Elapsed(started));
-        return $"Lié : {QueryProp.Name(sourceObj)} → {total} cible(s), {added} ajout(s).";
+        string collectionSuffix = collectionRequests > 0
+            ? $", {collectionRequests} rattachement(s) collection demandé(s)"
+            : "";
+        return $"Lié : {QueryProp.Name(sourceObj)} → {targets.Count} cible(s), {added} ajout(s){collectionSuffix}.";
     }
 
     // Renames an object and/or sets its properties in ONE PATCH. The name (when
@@ -324,17 +339,20 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 
     // The natural link property for a (source, target) type pair, or null if the
     // pair is unsupported. Matrix is exhaustive — see the brief.
-    static string? LinkPropertyFor(string sourceType, string targetType)
+    sealed record LinkRoute(string? PropertyKey);
+
+    static LinkRoute? LinkRouteFor(string sourceType, string targetType)
     {
-        if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Project) return DevSpace.Props.RelationProjet;
-        if (sourceType == DevSpace.Types.Rapport && targetType == DevSpace.Types.Task) return DevSpace.Props.TachesLiees;
-        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return DevSpace.Props.DependDe;
+        if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Project) return new(DevSpace.Props.RelationProjet);
+        if (sourceType == DevSpace.Types.Rapport && targetType == DevSpace.Types.Task) return new(DevSpace.Props.TachesLiees);
+        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return new(DevSpace.Props.DependDe);
+        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Epic) return new(null);
         return null;
     }
 
     static string SupportedPairsError(string sourceType, string targetType) =>
         $"Liaison non supportée : {sourceType} → {targetType}. " +
-        "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet.";
+        "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet, projet→epic.";
 
     // The body's headings, quoted, for the « introuvable » error — it tells the
     // model which titles actually exist so it can retry with one of them.

@@ -39,7 +39,7 @@ public class ToolCatalogTests
     }
 
     [Fact]
-    public void BuildExposesExactlyTheFifteenNamedTools()
+    public void BuildExposesExactlyTheSixteenNamedTools()
     {
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
@@ -47,6 +47,15 @@ public class ToolCatalogTests
         Assert.Equal(
             ExpectedToolNames.OrderBy(n => n),
             names.OrderBy(n => n));
+    }
+
+    [Fact]
+    public void LinkDescriptionAdvertisesProjectToEpicMembership()
+    {
+        ToolDescriptor link = BuildCatalog().Single(t => t.Name == "link");
+
+        Assert.Contains("project -> epic", link.Description);
+        Assert.DoesNotContain("cannot attach anything to an epic", link.Description);
     }
 
     [Fact]
