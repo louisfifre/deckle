@@ -93,7 +93,12 @@ public static class SchemaAdminToolCatalog
         {
             ["key"] = new JsonObject { ["type"] = "string" },
             ["name"] = new JsonObject { ["type"] = "string" },
-            ["layout"] = new JsonObject { ["type"] = "string" },
+            ["plural_name"] = new JsonObject { ["type"] = "string" },
+            ["layout"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["enum"] = new JsonArray { "basic", "profile", "action", "note" },
+            },
             ["properties"] = ArrayOf(new JsonObject { ["type"] = "string" }),
         },
         ["required"] = new JsonArray { "key", "name" },
