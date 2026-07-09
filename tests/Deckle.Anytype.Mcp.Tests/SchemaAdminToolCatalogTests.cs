@@ -62,5 +62,15 @@ public class SchemaAdminToolCatalogTests
         JsonObject properties = Assert.IsType<JsonObject>(manifest["properties"]);
         Assert.Contains("types", properties.Select(p => p.Key));
         Assert.Contains("properties", properties.Select(p => p.Key));
+
+        JsonObject typeArray = Assert.IsType<JsonObject>(properties["types"]);
+        JsonObject typeSchema = Assert.IsType<JsonObject>(typeArray["items"]);
+        JsonObject typeProperties = Assert.IsType<JsonObject>(typeSchema["properties"]);
+        Assert.Contains("plural_name", typeProperties.Select(p => p.Key));
+
+        JsonObject layout = Assert.IsType<JsonObject>(typeProperties["layout"]);
+        JsonArray values = Assert.IsType<JsonArray>(layout["enum"]);
+        Assert.Contains(values, node => node?.GetValue<string>() == "basic");
+        Assert.DoesNotContain(values, node => node?.GetValue<string>() == "page");
     }
 }

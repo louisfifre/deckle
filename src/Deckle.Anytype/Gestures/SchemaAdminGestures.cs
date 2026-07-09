@@ -74,16 +74,16 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
                 "L'état Anytype a changé depuis le preview et produit maintenant un conflit. Relance schema_preview.");
         EnsureNoUnpreviewedActions(preview, livePlan);
 
-        var propertyIds = snapshot.Properties.ToDictionary(
-            p => p.Key, p => p.Value.Id, StringComparer.Ordinal);
-        var typeIds = snapshot.Types.ToDictionary(
-            t => t.Key, t => t.Value.Id, StringComparer.Ordinal);
+        var propertiesByKey = snapshot.Properties.ToDictionary(
+            p => p.Key, p => p.Value, StringComparer.Ordinal);
+        var typesByKey = snapshot.Types.ToDictionary(
+            t => t.Key, t => t.Value, StringComparer.Ordinal);
 
         var applied = new List<string>();
 
         foreach (PropertySpec spec in preview.Manifest.Properties)
         {
-            if (propertyIds.ContainsKey(spec.Key)) continue;
+            if (propertiesByKey.ContainsKey(spec.Key)) continue;
 
             JsonObject created = await api.CreatePropertyAsync(
                 preview.SpaceId,
@@ -95,16 +95,20 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
                 },
                 ct);
 
-            string id = JsonObj.Id(created);
-            if (id.Length > 0)
-                propertyIds[spec.Key] = id;
+            JsonObject createdObject = JsonObj.Payload(created);
+            string id = JsonObj.Id(createdObject);
+            propertiesByKey[spec.Key] = new PropertyInfo(
+                id,
+                OrDefault(JsonObj.Str(createdObject, "key"), spec.Key),
+                OrDefault(JsonObj.Str(createdObject, "name"), spec.Name),
+                OrDefault(JsonObj.Str(createdObject, "format"), spec.Format));
             applied.Add($"propriété créée {spec.Key}");
         }
 
         foreach (PropertySpec spec in preview.Manifest.Properties)
         {
             if (!IsTagFormat(spec.Format) || spec.Tags.Count == 0) continue;
-            if (!propertyIds.TryGetValue(spec.Key, out string? propertyId) || propertyId.Length == 0)
+            if (!propertiesByKey.TryGetValue(spec.Key, out PropertyInfo? property) || property.Id.Length == 0)
                 throw new InvalidOperationException(
                     $"Impossible de créer les tags de « {spec.Key} » : id de propriété introuvable.");
 
@@ -122,72 +126,68 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
                     ["name"] = tag.Name,
                     ["color"] = tag.Color ?? "grey",
                 };
-                await api.CreatePropertyTagAsync(preview.SpaceId, propertyId, payload, ct);
+                await api.CreatePropertyTagAsync(preview.SpaceId, property.Id, payload, ct);
                 applied.Add($"tag créé {spec.Key}:{tag.Name}");
             }
         }
 
         foreach (TypeSpec spec in preview.Manifest.Types)
         {
-            if (typeIds.ContainsKey(spec.Key)) continue;
+            if (typesByKey.ContainsKey(spec.Key)) continue;
+
+            IReadOnlyList<PropertyLinkInfo> links = RequestedPropertyLinks(spec, propertiesByKey);
 
             JsonObject created = await api.CreateTypeAsync(
                 preview.SpaceId,
-                new JsonObject
-                {
-                    ["key"] = spec.Key,
-                    ["name"] = spec.Name,
-                    ["layout"] = spec.Layout,
-                },
+                TypeCreatePayload(spec, links),
                 ct);
 
-            string id = JsonObj.Id(created);
-            if (id.Length > 0)
-                typeIds[spec.Key] = id;
+            JsonObject createdObject = JsonObj.Payload(created);
+            string id = JsonObj.Id(createdObject);
+            IReadOnlyList<PropertyLinkInfo> createdLinks = JsonObj.PropertyLinks(createdObject);
+            typesByKey[spec.Key] = new TypeInfo(
+                id,
+                spec.Key,
+                OrDefault(JsonObj.Str(createdObject, "name"), spec.Name),
+                OrDefault(JsonObj.Str(createdObject, "plural_name"), spec.PluralName),
+                OrDefault(JsonObj.Str(createdObject, "layout"), spec.Layout),
+                createdLinks.Count > 0 ? createdLinks : links);
             applied.Add($"type créé {spec.Key}");
         }
 
         foreach (TypeSpec type in preview.Manifest.Types)
         {
             if (type.Properties.Count == 0) continue;
-            if (!typeIds.TryGetValue(type.Key, out string? typeId) || typeId.Length == 0)
+            if (!typesByKey.TryGetValue(type.Key, out TypeInfo? liveType) || liveType.Id.Length == 0)
                 throw new InvalidOperationException(
                     $"Impossible d'attacher les propriétés à « {type.Key} » : id de type introuvable.");
 
-            var refs = new List<string>();
-            string liveTypeName = type.Name;
-            if (snapshot.Types.TryGetValue(type.Key, out TypeInfo? existingType))
-            {
-                refs.AddRange(existingType.PropertyRefs);
-                if (existingType.Name.Length > 0)
-                    liveTypeName = existingType.Name;
-            }
+            var links = ResolveTypePropertyLinks(liveType, propertiesByKey).ToList();
 
             bool changed = false;
             foreach (string propKey in type.Properties)
             {
-                if (!propertyIds.TryGetValue(propKey, out string? propertyId) || propertyId.Length == 0)
+                if (!propertiesByKey.TryGetValue(propKey, out PropertyInfo? property))
                     throw new InvalidOperationException(
                         $"Propriété « {propKey} » introuvable pour le type « {type.Key} ».");
 
-                if (!refs.Contains(propertyId) && !refs.Contains(propKey))
+                if (!links.Any(link => LinkMatches(link, property)))
                 {
-                    refs.Add(propertyId);
+                    links.Add(LinkFrom(property));
                     changed = true;
                 }
             }
 
             if (!changed) continue;
 
-            var properties = new JsonArray();
-            foreach (string propRef in refs) properties.Add(propRef);
             await api.UpdateTypeAsync(
                 preview.SpaceId,
-                typeId,
+                liveType.Id,
                 new JsonObject
                 {
-                    ["name"] = liveTypeName,
-                    ["properties"] = properties,
+                    ["name"] = OrDefault(liveType.Name, type.Name),
+                    ["plural_name"] = OrDefault(liveType.PluralName, type.PluralName),
+                    ["properties"] = PropertyLinkArray(links),
                 },
                 ct);
             applied.Add($"propriétés attachées à {type.Key}");
@@ -277,8 +277,9 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
                 JsonObj.Id(obj),
                 key,
                 JsonObj.Str(obj, "name"),
+                JsonObj.Str(obj, "plural_name"),
                 JsonObj.Str(obj, "layout"),
-                JsonObj.PropertyRefs(obj));
+                JsonObj.PropertyLinks(obj));
         }
         return result;
     }
@@ -417,11 +418,112 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
 
     private static bool IsPropertyAttached(TypeInfo type, SchemaSnapshot snapshot, string propKey)
     {
-        if (type.PropertyRefs.Contains(propKey)) return true;
         return snapshot.Properties.TryGetValue(propKey, out PropertyInfo? prop)
-            && prop.Id.Length > 0
-            && type.PropertyRefs.Contains(prop.Id);
+            ? type.PropertyLinks.Any(link => LinkMatches(link, prop))
+            : type.PropertyLinks.Any(link => string.Equals(link.Key, propKey, StringComparison.Ordinal));
     }
+
+    private static IReadOnlyList<PropertyLinkInfo> RequestedPropertyLinks(
+        TypeSpec type,
+        IReadOnlyDictionary<string, PropertyInfo> propertiesByKey)
+    {
+        var links = new List<PropertyLinkInfo>();
+        foreach (string propKey in type.Properties)
+        {
+            if (!propertiesByKey.TryGetValue(propKey, out PropertyInfo? property))
+                throw new InvalidOperationException(
+                    $"Propriété « {propKey} » introuvable pour le type « {type.Key} ».");
+            if (!links.Any(link => LinkMatches(link, property)))
+                links.Add(LinkFrom(property));
+        }
+        return links;
+    }
+
+    private static JsonObject TypeCreatePayload(TypeSpec spec, IReadOnlyList<PropertyLinkInfo> links)
+    {
+        var payload = new JsonObject
+        {
+            ["key"] = spec.Key,
+            ["name"] = spec.Name,
+            ["plural_name"] = spec.PluralName,
+            ["layout"] = spec.Layout,
+        };
+        if (links.Count > 0)
+            payload["properties"] = PropertyLinkArray(links);
+        return payload;
+    }
+
+    private static IEnumerable<PropertyLinkInfo> ResolveTypePropertyLinks(
+        TypeInfo type,
+        IReadOnlyDictionary<string, PropertyInfo> propertiesByKey)
+    {
+        foreach (PropertyLinkInfo link in type.PropertyLinks)
+        {
+            if (TryResolveLink(link, propertiesByKey, out PropertyInfo? property))
+            {
+                yield return LinkFrom(property!);
+                continue;
+            }
+
+            if (link.HasPayload)
+            {
+                yield return link;
+                continue;
+            }
+
+            throw new InvalidOperationException(
+                $"Type « {type.Key} » : lien de propriété existant impossible à résoudre. " +
+                "schema_apply refuse de réécrire ce type sans key, name et format.");
+        }
+    }
+
+    private static bool TryResolveLink(
+        PropertyLinkInfo link,
+        IReadOnlyDictionary<string, PropertyInfo> propertiesByKey,
+        out PropertyInfo? property)
+    {
+        if (link.Key.Length > 0 && propertiesByKey.TryGetValue(link.Key, out property))
+            return true;
+
+        if (link.Id.Length > 0)
+        {
+            property = propertiesByKey.Values.FirstOrDefault(p =>
+                string.Equals(p.Id, link.Id, StringComparison.Ordinal));
+            return property is not null;
+        }
+
+        property = null;
+        return false;
+    }
+
+    private static JsonArray PropertyLinkArray(IEnumerable<PropertyLinkInfo> links)
+    {
+        var properties = new JsonArray();
+        foreach (PropertyLinkInfo link in links)
+        {
+            if (!link.HasPayload)
+                throw new InvalidOperationException(
+                    "Un lien de propriété Anytype doit porter key, name et format.");
+
+            properties.Add(new JsonObject
+            {
+                ["key"] = link.Key,
+                ["name"] = link.Name,
+                ["format"] = link.Format,
+            });
+        }
+        return properties;
+    }
+
+    private static PropertyLinkInfo LinkFrom(PropertyInfo property) =>
+        new(property.Id, property.Key, property.Name, property.Format);
+
+    private static bool LinkMatches(PropertyLinkInfo link, PropertyInfo property) =>
+        (link.Key.Length > 0 && string.Equals(link.Key, property.Key, StringComparison.Ordinal))
+        || (link.Id.Length > 0 && string.Equals(link.Id, property.Id, StringComparison.Ordinal));
+
+    private static string OrDefault(string value, string fallback) =>
+        value.Length > 0 ? value : fallback;
 
     private static void EnsureNoUnpreviewedActions(SchemaPreview preview, SchemaPreview livePlan)
     {
@@ -466,10 +568,16 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
         string Id,
         string Key,
         string Name,
+        string PluralName,
         string Layout,
-        IReadOnlyList<string> PropertyRefs);
+        IReadOnlyList<PropertyLinkInfo> PropertyLinks);
 
     private sealed record PropertyInfo(string Id, string Key, string Name, string Format);
+    internal sealed record PropertyLinkInfo(string Id, string Key, string Name, string Format)
+    {
+        public bool HasPayload => Key.Length > 0 && Name.Length > 0 && Format.Length > 0;
+    }
+
     private sealed record TagInfo(string Id, string Key, string Name, string Color);
 }
 
@@ -522,16 +630,26 @@ sealed record SchemaManifest(
 sealed record TypeSpec(
     string Key,
     string Name,
+    string PluralName,
     string Layout,
     IReadOnlyList<string> Properties)
 {
+    private static readonly HashSet<string> AllowedLayouts =
+        new(StringComparer.Ordinal) { "basic", "profile", "action", "note" };
+
     public static TypeSpec Parse(JsonObject obj)
     {
-        JsonShape.RequireOnly(obj, ["key", "name", "layout", "properties"], "type");
+        JsonShape.RequireOnly(obj, ["key", "name", "plural_name", "layout", "properties"], "type");
 
         string key = RequiredKey(obj, "key");
         string name = RequiredString(obj, "name");
-        string layout = OptionalString(obj, "layout") ?? "page";
+        string pluralName = OptionalString(obj, "plural_name") ?? DefaultPluralName(name);
+        string layout = OptionalString(obj, "layout") ?? "basic";
+        if (!AllowedLayouts.Contains(layout))
+            throw new ArgumentException(
+                $"Layout inconnu « {layout} » pour le type « {key} ». " +
+                $"Layouts acceptés : {string.Join(", ", AllowedLayouts)}.");
+
         var props = new List<string>();
         if (obj.TryGetPropertyValue("properties", out JsonNode? propsNode) && propsNode is not null)
         {
@@ -549,7 +667,7 @@ sealed record TypeSpec(
             }
         }
         JsonShape.RequireUnique(props, $"type {key}.properties");
-        return new TypeSpec(key, name, layout, props);
+        return new TypeSpec(key, name, pluralName, layout, props);
     }
 
     private static string RequiredKey(JsonObject obj, string name) =>
@@ -560,10 +678,19 @@ sealed record TypeSpec(
         ?? throw new ArgumentException($"Champ requis manquant « {name} ».");
 
     private static string? OptionalString(JsonObject obj, string name) =>
-        obj[name] is JsonValue value && value.TryGetValue<string>(out string? s) && !string.IsNullOrWhiteSpace(s)
-            ? s.Trim()
+        obj.TryGetPropertyValue(name, out JsonNode? node) && node is not null
+            ? StringValue(node, name)
             : null;
 
+    private static string? StringValue(JsonNode node, string name)
+    {
+        if (node is not JsonValue value || !value.TryGetValue<string>(out string? s))
+            throw new ArgumentException($"Le champ « {name} » doit être une string.");
+        return string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+    }
+
+    private static string DefaultPluralName(string name) =>
+        name.EndsWith('s') || name.EndsWith('x') ? name : name + "s";
 }
 
 sealed record PropertySpec(
@@ -706,25 +833,28 @@ static class JsonObj
 
     public static string Id(JsonObject obj) => Str(obj, "id");
 
+    public static JsonObject Payload(JsonObject obj) => obj["object"] as JsonObject ?? obj;
+
     public static string Str(JsonObject obj, string key) =>
         obj[key] is JsonValue value && value.TryGetValue<string>(out string? s) && s is not null
             ? s
             : "";
 
-    public static IReadOnlyList<string> PropertyRefs(JsonObject obj)
+    public static IReadOnlyList<SchemaAdminGestures.PropertyLinkInfo> PropertyLinks(JsonObject obj)
     {
         if (obj["properties"] is not JsonArray arr) return [];
-        var result = new List<string>();
+        var result = new List<SchemaAdminGestures.PropertyLinkInfo>();
         foreach (JsonNode? node in arr)
         {
             if (node is JsonValue value && value.TryGetValue<string>(out string? s) && !string.IsNullOrEmpty(s))
-                result.Add(s);
+                result.Add(new SchemaAdminGestures.PropertyLinkInfo(s, s, "", ""));
             else if (node is JsonObject p)
             {
                 string id = Str(p, "id");
                 string key = Str(p, "key");
-                if (id.Length > 0) result.Add(id);
-                if (key.Length > 0) result.Add(key);
+                string name = Str(p, "name");
+                string format = Str(p, "format");
+                result.Add(new SchemaAdminGestures.PropertyLinkInfo(id, key, name, format));
             }
         }
         return result;

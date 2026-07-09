@@ -28,12 +28,16 @@ public class SchemaAdminGesturesTests
         ["pagination"] = new JsonObject { ["has_more"] = hasMore },
     };
 
-    static JsonObject ExistingType(string name = "Pièce", JsonArray? properties = null) => new()
+    static JsonObject ExistingType(
+        string name = "Pièce",
+        string pluralName = "Pièces",
+        JsonArray? properties = null) => new()
     {
         ["id"] = "type-piece",
         ["key"] = "piece",
         ["name"] = name,
-        ["layout"] = "page",
+        ["plural_name"] = pluralName,
+        ["layout"] = "basic",
         ["properties"] = properties ?? new JsonArray(),
     };
 
@@ -73,7 +77,8 @@ public class SchemaAdminGesturesTests
             {
                 ["key"] = "piece",
                 ["name"] = "Pièce",
-                ["layout"] = "page",
+                ["plural_name"] = "Pièces",
+                ["layout"] = "basic",
                 ["properties"] = new JsonArray { "etat_identification" },
             },
         },
@@ -100,6 +105,20 @@ public class SchemaAdminGesturesTests
     {
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType(properties: new JsonArray { "prop-etat" }) }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty() }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", Manifest(), Ct);
+
+        Assert.DoesNotContain("attach_property", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
+    public async Task PreviewDoesNotReattachExistingPropertyReferencedByKey()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(properties: new JsonArray { "etat_identification" }) }));
         server.OnListProperties(Page(new JsonArray { ExistingProperty() }));
         server.OnListPropertyTags("prop-etat", EmptyList());
 
@@ -200,6 +219,45 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewRejectsAnytypeLayoutsThatCannotCreateTypes()
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject manifest = new()
+        {
+            ["types"] = new JsonArray
+            {
+                new JsonObject { ["key"] = "piece", ["name"] = "Pièce", ["layout"] = "page" },
+            },
+        };
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).PreviewAsync("home", manifest, Ct));
+
+        Assert.Contains("Layout inconnu", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    public async Task PreviewRejectsNonStringTypeLayoutBeforeReadingAnytype()
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject manifest = new()
+        {
+            ["types"] = new JsonArray
+            {
+                new JsonObject { ["key"] = "piece", ["name"] = "Pièce", ["layout"] = 42 },
+            },
+        };
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).PreviewAsync("home", manifest, Ct));
+
+        Assert.Contains("doit être une string", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+
+    [Fact]
     public async Task ApplyRequiresConfirmTrueBeforeLookingUpPreview()
     {
         using var server = new FakeAnytypeServer();
@@ -236,14 +294,8 @@ public class SchemaAdminGesturesTests
             ["id"] = "type-piece",
             ["key"] = "piece",
             ["name"] = "Pièce",
-            ["layout"] = "page",
-        });
-        server.OnPatchType("type-piece", new JsonObject
-        {
-            ["id"] = "type-piece",
-            ["key"] = "piece",
-            ["name"] = "Pièce",
-            ["layout"] = "page",
+            ["plural_name"] = "Pièces",
+            ["layout"] = "basic",
         });
 
         var gestures = NewGestures(server);
@@ -255,7 +307,7 @@ public class SchemaAdminGesturesTests
         Assert.Contains("propriété créée etat_identification", digest);
         Assert.Contains("tag créé etat_identification:Confirmé", digest);
         Assert.Contains("type créé piece", digest);
-        Assert.Contains("propriétés attachées à piece", digest);
+        Assert.DoesNotContain("propriétés attachées à piece", digest);
 
         JsonObject property = server.Requests
             .Where(r => r.Method == "POST" && r.Path.EndsWith("/properties", StringComparison.Ordinal))
@@ -264,9 +316,18 @@ public class SchemaAdminGesturesTests
         Assert.Equal("etat_identification", property["key"]!.GetValue<string>());
         Assert.Equal("select", property["format"]!.GetValue<string>());
 
-        JsonObject typePatch = server.LastBodyFor("PATCH");
-        JsonArray refs = Assert.IsType<JsonArray>(typePatch["properties"]);
-        Assert.Equal("prop-etat", Assert.Single(refs)!.GetValue<string>());
+        JsonObject typeCreate = server.Requests
+            .Where(r => r.Method == "POST" && r.Path.EndsWith("/types", StringComparison.Ordinal))
+            .Select(r => (JsonObject)JsonNode.Parse(r.Body)!)
+            .Single();
+        Assert.Equal("basic", typeCreate["layout"]!.GetValue<string>());
+        Assert.Equal("Pièces", typeCreate["plural_name"]!.GetValue<string>());
+        JsonArray links = Assert.IsType<JsonArray>(typeCreate["properties"]);
+        JsonObject link = Assert.IsType<JsonObject>(Assert.Single(links));
+        Assert.Equal("etat_identification", link["key"]!.GetValue<string>());
+        Assert.Equal("État d'identification", link["name"]!.GetValue<string>());
+        Assert.Equal("select", link["format"]!.GetValue<string>());
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
     [Fact]
@@ -299,6 +360,12 @@ public class SchemaAdminGesturesTests
 
         JsonObject typePatch = server.LastBodyFor("PATCH");
         Assert.Equal("Nom live", typePatch["name"]!.GetValue<string>());
+        Assert.Equal("Pièces", typePatch["plural_name"]!.GetValue<string>());
+        JsonArray links = Assert.IsType<JsonArray>(typePatch["properties"]);
+        JsonObject link = Assert.IsType<JsonObject>(Assert.Single(links));
+        Assert.Equal("etat_identification", link["key"]!.GetValue<string>());
+        Assert.Equal("État d'identification", link["name"]!.GetValue<string>());
+        Assert.Equal("select", link["format"]!.GetValue<string>());
     }
 
     [Fact]
