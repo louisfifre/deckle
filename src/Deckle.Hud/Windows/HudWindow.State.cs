@@ -49,6 +49,17 @@ public sealed partial class HudWindow : Window
                 SuccessDuration),
             reason: "show_copied"));
 
+    // File transcription completion. The saved .txt file is the primary
+    // outcome — the transcript is on disk — so this is a *success* message; the
+    // clipboard copy is a next-step hint under the title, exactly as ShowCopied
+    // frames its own hint. Same green checkmark, same SuccessDuration.
+    public void ShowFileSaved() =>
+        EnqueueUI(() => SetState(HudState.Message,
+            new MessagePayload(MessageKind.Success,
+                Loc.Get("Hud_FileSaved_Title"), Loc.Get("Hud_FileSaved_Hint"),
+                SuccessDuration),
+            reason: "show_file_saved"));
+
     // ─── Feedback routing ───────────────────────────────────────────────────
     //
     // Severity and duration arrive as primitives rather than as a
