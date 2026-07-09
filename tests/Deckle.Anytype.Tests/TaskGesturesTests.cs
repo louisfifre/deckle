@@ -182,6 +182,7 @@ internal sealed class FakeAnytypeServer : IDisposable
     readonly HttpListener _listener;
     readonly string _prefix;
     readonly List<Route> _routes = new();
+    readonly ConcurrentDictionary<string, int> _routeHits = new();
     readonly ConcurrentQueue<Received> _received = new();
     readonly Task _loop;
 
@@ -214,6 +215,18 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostObject(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/objects", 200, response.ToJsonString()));
 
+    public void OnListTypes(JsonObject response) =>
+        _routes.Add(new("GET", $"{SpacePath}/types", 200, response.ToJsonString()));
+
+    public void OnPostType(JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/types", 201, response.ToJsonString()));
+
+    public void OnPatchType(string id, JsonObject response) =>
+        _routes.Add(new("PATCH", $"{SpacePath}/types/{id}", 200, response.ToJsonString()));
+
+    public void OnPostProperty(JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/properties", 201, response.ToJsonString()));
+
     public void OnDeleteObject(string id, JsonObject response) =>
         _routes.Add(new("DELETE", $"{SpacePath}/objects/{id}", 200, response.ToJsonString()));
 
@@ -243,6 +256,9 @@ internal sealed class FakeAnytypeServer : IDisposable
     // routing; the query string is dropped before the match.
     public void OnListPropertyTags(string propertyId, JsonObject response) =>
         _routes.Add(new("GET", $"{SpacePath}/properties/{propertyId}/tags", 200, response.ToJsonString()));
+
+    public void OnPostPropertyTag(string propertyId, JsonObject response) =>
+        _routes.Add(new("POST", $"{SpacePath}/properties/{propertyId}/tags", 201, response.ToJsonString()));
 
     // ── Request introspection ─────────────────────────────────────────────────
 
@@ -275,7 +291,7 @@ internal sealed class FakeAnytypeServer : IDisposable
                 body = await reader.ReadToEndAsync();
             _received.Enqueue(new Received(method, path, body));
 
-            Route? route = _routes.FirstOrDefault(r => r.Method == method && r.Path == path);
+            Route? route = NextRoute(method, path);
             byte[] payload = Encoding.UTF8.GetBytes(route?.Json ?? "{}");
             ctx.Response.StatusCode = route?.Status ?? 404;
             ctx.Response.ContentType = "application/json";
@@ -283,6 +299,16 @@ internal sealed class FakeAnytypeServer : IDisposable
             await ctx.Response.OutputStream.WriteAsync(payload);
             ctx.Response.Close();
         }
+    }
+
+    Route? NextRoute(string method, string path)
+    {
+        Route[] matches = _routes.Where(r => r.Method == method && r.Path == path).ToArray();
+        if (matches.Length == 0) return null;
+
+        string key = method + " " + path;
+        int hit = _routeHits.AddOrUpdate(key, 1, (_, count) => count + 1);
+        return matches[Math.Min(hit - 1, matches.Length - 1)];
     }
 
     static int FreePort()

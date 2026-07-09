@@ -76,6 +76,26 @@ public class McpToolsetTests
     }
 
     [Fact]
+    public void SchemaAdminMountsOnlySchemaTools()
+    {
+        var aliases = new AnytypeSpaceAliases(
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["dev"] = "dummy-space",
+            });
+        var (tools, descriptor) = McpToolset.Build(
+            DummyClient(), ToolProfile.SchemaAdmin, management: true, aliases);
+        var names = Names(tools);
+
+        Assert.Contains("schema_preview", names);
+        Assert.Contains("schema_apply", names);
+        Assert.DoesNotContain("create_task", names);
+        Assert.DoesNotContain("dialogue_create", names);
+        Assert.DoesNotContain("delete", names);
+        Assert.Contains("schema administration", descriptor.Instructions);
+    }
+
+    [Fact]
     public void EachBuildYieldsFreshDescriptorInstances()
     {
         // The gesture graph is session-scoped, so every Build must rebuild it: two

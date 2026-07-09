@@ -7,5 +7,6 @@ public enum ToolProfile
 {
     ProjectManagement,
     Dialogues,
+    SchemaAdmin,
     All,
 }
