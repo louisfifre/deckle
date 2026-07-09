@@ -35,9 +35,10 @@ public sealed partial class TrayContextMenuHost
         };
 
         // Ambient Light first: this is Louis's most frequent toggle command
-        // (turn LEDs on/off without navigating into Settings). Window-opening
-        // commands come next, separated from lifecycle commands (Restart,
-        // Quit) by a final separator.
+        // (turn LEDs on/off without navigating into Settings). The command
+        // group comes next — file transcription, then the window-opening
+        // commands — separated from lifecycle commands (Restart, Quit) by a
+        // final separator.
         //
         // Ambient item built through the reusable TraySwitchMenuItem helper,
         // which applies ToggleSwitchMenuItemStyle (hand-drawn custom pill, see
@@ -68,6 +69,7 @@ public sealed partial class TrayContextMenuHost
         _flyout.Items.Add(_taskbarCoverItem);
 
         _flyout.Items.Add(new MenuFlyoutSeparator());
+        _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_TranscribeFile"), () => OnTranscribeFile?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Logs"),       () => OnShowLogs?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Settings"),   () => OnShowSettings?.Invoke()));
         _flyout.Items.Add(CreateItem(Loc.Get("TrayMenu_Playground"), () => OnShowPlayground?.Invoke()));
