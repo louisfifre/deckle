@@ -206,6 +206,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── research--onnx-judge-runtime--2026-07-02.md  — [research-report] Recherche vérifiée (deep-research, 2026-07-02) — faisabilité du juge ONNX de l'…
 │   │   └── research--system-autocorrect--2026-06-12.md
 │   └── inventaire-settings.md
+├── logo/
+│   ├── primary.png
+│   └── primary.svg
 ├── scripts/
 │   ├── hooks/
 │   │   ├── pre-commit
