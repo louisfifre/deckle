@@ -195,6 +195,16 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribeHallucinationFiltered  = 153;
     public const int EvtTranscribeHallucinationFilteredDetail = 154;
     public const int EvtPrimeOverlap                     = 155;
+    // File transcription (tray → decode → monolithic backend → .txt on disk).
+    public const int EvtFileTranscriptionStarted         = 156;
+    public const int EvtFileTranscriptionStartedDetail   = 157;
+    public const int EvtFileTranscriptionSaved           = 158;
+    public const int EvtFileTranscriptionSavedDetail     = 159;
+    public const int EvtFileTranscriptionIgnored         = 160;
+    public const int EvtFileDecodeFailed                 = 161;
+    public const int EvtFileDecodeFailedDetail           = 162;
+    public const int EvtFileTranscriptionWriteFailed     = 163;
+    public const int EvtFileTranscriptionWriteFailedDetail = 164;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits

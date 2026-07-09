@@ -17,7 +17,10 @@ namespace Deckle.Transcription;
 //                     couldn't confirm, foreground was Deckle, SendInput
 //                     partial…); HUD shows the Ctrl+V reminder for a few
 //                     seconds. This is the safe default when in doubt.
-public enum TranscriptionOutcome { None, Pasted, ClipboardOnly }
+//   SavedToFile     — file-transcription run: the transcript was written to a
+//                     .txt on disk (and the clipboard) — the HUD shows the
+//                     saved-file confirmation. Never emitted by a dictation run.
+public enum TranscriptionOutcome { None, Pasted, ClipboardOnly, SavedToFile }
 
 // Pipeline state — single source of truth for the recording lifecycle.
 // Manipulated exclusively via Interlocked.CompareExchange on _state. Each
@@ -190,6 +193,16 @@ public sealed partial class TranscriptionEngine : IDisposable
     // based on recording duration). Captured when the hotkey starts the run
     // (TryStartFromIdle) and consumed in FinalizeTranscription.
     private string?         _manualProfileName = null;
+
+    // Path of the audio file being transcribed on a file-transcription run, or
+    // null on a dictation run. Set by RequestFileTranscription before the file
+    // worker is spawned, cleared by TryStartFromIdle so a dictation run never
+    // inherits a stale path. Read in ProduceFileAsync (the source path) and in
+    // FinalizeTranscription, where non-null selects the file tail: no rewrite,
+    // no paste, no corpus — write the transcript to disk instead. Not volatile:
+    // the Thread.Start that spawns the worker is the memory barrier, same as
+    // _manualProfileName.
+    private string?         _fileTranscriptionPath = null;
 
     // Stable identifier for the current pipeline invocation. Regenerated once
     // per recording in WorkerRun (before the strategy runs); stamped on every

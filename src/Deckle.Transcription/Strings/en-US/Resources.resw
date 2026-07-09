@@ -324,6 +324,48 @@
     <value>Length mismatch on read-back.</value>
   </data>
 
+  <!-- ─── File transcription ─────────────────────────────────────────
+       UserFeedback Title/Body pairs raised by the file-transcription path
+       (RequestFileTranscription, ProduceFileAsync, WriteFileTranscript).
+       Busy is an Overlay warning (a run is already in flight); the decode
+       and write failures replace / warn per their severity. The five
+       DecodeFailed bodies map one-to-one to AudioFileDecodeStatus.
+
+       Loc-mirror-pattern : the engine emits these via Loc.Get, which only
+       resolves the host app's root map, so each key is mirrored in
+       Deckle.App's Resources.resw. This copy is the source of truth for
+       wording — keep the mirror in sync. -->
+  <data name="FileTranscription_Busy_Title" xml:space="preserve">
+    <value>Transcription in progress</value>
+  </data>
+  <data name="FileTranscription_Busy_Body" xml:space="preserve">
+    <value>Finish the current one before starting another.</value>
+  </data>
+  <data name="FileTranscription_DecodeFailed_Title" xml:space="preserve">
+    <value>Couldn't read the audio file</value>
+  </data>
+  <data name="FileTranscription_DecodeFailed_Body_FileNotFound" xml:space="preserve">
+    <value>The file was moved or deleted. Pick another one.</value>
+  </data>
+  <data name="FileTranscription_DecodeFailed_Body_UnsupportedFormat" xml:space="preserve">
+    <value>This audio format isn't supported. Try MP3, WAV, or M4A.</value>
+  </data>
+  <data name="FileTranscription_DecodeFailed_Body_NoAudioTrack" xml:space="preserve">
+    <value>This file has no audio track to transcribe.</value>
+  </data>
+  <data name="FileTranscription_DecodeFailed_Body_ProtectedContent" xml:space="preserve">
+    <value>This file is copy-protected and can't be read.</value>
+  </data>
+  <data name="FileTranscription_DecodeFailed_Body_ReadError" xml:space="preserve">
+    <value>The file couldn't be read. It may be corrupt or in use.</value>
+  </data>
+  <data name="FileTranscription_WriteFailed_Title" xml:space="preserve">
+    <value>Couldn't save the transcript</value>
+  </data>
+  <data name="FileTranscription_WriteFailed_Body" xml:space="preserve">
+    <value>The text file couldn't be written, but it's still on the clipboard.</value>
+  </data>
+
   <!-- ─── Microphone errors ──────────────────────────────────────────
        UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The

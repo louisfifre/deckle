@@ -51,6 +51,13 @@ public sealed partial class TranscriptionEngine
         long    transcribeMsTotal = prod.TotalTranscribeMs;
         int     nSeg              = prod.NSegments;
 
+        // A file-transcription run: the tail diverges from dictation in three
+        // places below — no rewrite (verbatim, V1), delivery is a .txt on disk
+        // (plus the clipboard) instead of a paste, and the voice corpus is not
+        // fed. _fileTranscriptionPath is the source audio path, set by
+        // RequestFileTranscription and cleared by TryStartFromIdle.
+        bool isFileRun = _fileTranscriptionPath is not null;
+
         // Low-audio warning is emitted live by MicrophoneCapture once 5 s
         // of sustained sub-threshold signal has accumulated — see the
         // tracker in WaveInLoop.Pump and the OnCaptureLowAudioDetected
@@ -68,6 +75,15 @@ public sealed partial class TranscriptionEngine
         swClip.Stop();
         if (!rawCopyOk)
         {
+            // On a file run the .txt is the primary deliverable: a transient
+            // clipboard failure (another process holding it open) must not
+            // throw away minutes of decode + inference. Write the file anyway,
+            // but keep the outcome None so the Critical clipboard feedback
+            // stays visible — SavedToFile would replace it with a success
+            // banner whose "also copied" hint would be false, inviting a paste
+            // of stale clipboard content. The transcript is on disk either way.
+            if (isFileRun)
+                WriteFileTranscript(fullText);
             RaiseStatus(Loc.Get("Status_Ready"));
             RaiseFinished(TranscriptionOutcome.None);
             return;
@@ -84,10 +100,18 @@ public sealed partial class TranscriptionEngine
         int rawWordCount = TextMetrics.CountWords(fullText);
 
         // Rewrite profile resolution:
+        // - file run → NONE. File transcription is verbatim in V1: force-skip the
+        //   whole resolution. A null _manualProfileName alone would NOT skip it —
+        //   the auto-rule branch fires on duration/word rules whenever LLM is
+        //   enabled — so the skip has to be explicit.
         // - manual rewrite hotkey → the profile name passed to StartRecording
         // - plain transcribe hotkey → first matching AutoRewriteRule (duration-based)
         RewriteProfile? profile = null;
-        if (!string.IsNullOrWhiteSpace(_manualProfileName) && llmSettings.Enabled)
+        if (isFileRun)
+        {
+            // No rewrite for file runs (V1). profile stays null.
+        }
+        else if (!string.IsNullOrWhiteSpace(_manualProfileName) && llmSettings.Enabled)
         {
             profile = llmSettings.Profiles.Find(p =>
                 string.Equals(p.Name, _manualProfileName, StringComparison.OrdinalIgnoreCase));
@@ -199,8 +223,20 @@ public sealed partial class TranscriptionEngine
         // the text made it to the clipboard but paste was disabled or refused
         // (target lost, Deckle itself, SendInput partial) — the HUD uses
         // this to flash "Copied" or the Ctrl+V reminder before hiding.
-        var outcome = (_shouldPaste && pasteVerified) ? TranscriptionOutcome.Pasted
+        // On a file run the paste block above never ran (_shouldPaste is forced
+        // false at start), so delivery is the disk write here: success →
+        // SavedToFile, a write failure degrades to ClipboardOnly (the text is
+        // already on the clipboard, so the loop still closes) plus a warning.
+        TranscriptionOutcome outcome;
+        if (isFileRun)
+        {
+            outcome = WriteFileTranscript(fullText);
+        }
+        else
+        {
+            outcome = (_shouldPaste && pasteVerified) ? TranscriptionOutcome.Pasted
                                                       : TranscriptionOutcome.ClipboardOnly;
+        }
         int finalWordCount = TextMetrics.CountWords(fullText);
 
         // Snapshot stage timers once for both the log line and the telemetry
@@ -235,37 +271,50 @@ public sealed partial class TranscriptionEngine
         RaiseStatus(Loc.Get("Status_Ready"));
         _recordingSw?.Stop();
 
-        DeckleWhispSource.Log.LatencyRecorded(
-            audio_sec:            audioSec,
-            model_load_ms:        _modelLoadMs,
-            hotkey_to_capture_ms: hotkeyToCaptureMs,
-            record_drain_ms:      recordDrainMs,
-            stop_to_pipeline_ms:  stopToPipelineMs,
-            whisper_init_ms:      whisperInitMs,
-            whisper_ms:           whisperMs,
-            llm_ms:               llmMs,
-            ollama_load_ms:       ollamaLoadMs,
-            llm_prompt_eval_ms:   llmPromptEvalMs,
-            llm_eval_ms:          llmEvalMs,
-            llm_prompt_tokens:    llmPromptTokens,
-            llm_eval_tokens:      llmEvalTokens,
-            clipboard_ms:         swClip.ElapsedMilliseconds,
-            paste_ms:             pasteMs,
-            strategy:             strategyLabel,
-            n_segments:           nSeg,
-            text_chars:           fullText.Length,
-            text_words:           finalWordCount,
-            profile:              profile?.Name ?? "",
-            pasted:               pasteVerified,
-            outcome:              outcome.ToString());
+        // LatencyRecorded is the canonical latency.jsonl heartbeat, analysed as a
+        // dictation dataset: hotkey→capture, record-drain and stop-to-pipeline are
+        // its load-bearing columns, and a file run has none of those phases (all
+        // zero). Emitting a file run here would seed the dataset with rows that
+        // aren't dictation and skew every per-phase average, so it is skipped. The
+        // human PipelineTimings/Outputs lines above still land in the LogWindow, so
+        // a file run stays fully observable — it just doesn't pollute the metric.
+        if (!isFileRun)
+        {
+            DeckleWhispSource.Log.LatencyRecorded(
+                audio_sec:            audioSec,
+                model_load_ms:        _modelLoadMs,
+                hotkey_to_capture_ms: hotkeyToCaptureMs,
+                record_drain_ms:      recordDrainMs,
+                stop_to_pipeline_ms:  stopToPipelineMs,
+                whisper_init_ms:      whisperInitMs,
+                whisper_ms:           whisperMs,
+                llm_ms:               llmMs,
+                ollama_load_ms:       ollamaLoadMs,
+                llm_prompt_eval_ms:   llmPromptEvalMs,
+                llm_eval_ms:          llmEvalMs,
+                llm_prompt_tokens:    llmPromptTokens,
+                llm_eval_tokens:      llmEvalTokens,
+                clipboard_ms:         swClip.ElapsedMilliseconds,
+                paste_ms:             pasteMs,
+                strategy:             strategyLabel,
+                n_segments:           nSeg,
+                text_chars:           fullText.Length,
+                text_words:           finalWordCount,
+                profile:              profile?.Name ?? "",
+                pasted:               pasteVerified,
+                outcome:              outcome.ToString());
+        }
 
         // Normalized corpus: see ADR-0006. Two distinct events joined by
         // _transcriptionId: CorpusAsrRecorded always captures ASR output,
         // CorpusRewriteRecorded is only emitted if a rewrite profile ran. The
         // flat WAV audio under audio/<id>.wav is shared between both sides
         // through audioFileName.
+        // File runs are excluded from the voice corpus: the corpus is a dataset of
+        // the user's own captured dictation (ADR-0006), and an arbitrary imported
+        // file is not that — it would pollute the training distribution.
         var telemetrySettings = _host.Telemetry;
-        if (telemetrySettings.CorpusEnabled)
+        if (telemetrySettings.CorpusEnabled && !isFileRun)
         {
             var asrSettings = _host.Transcription.Engine;
 
@@ -343,6 +392,45 @@ public sealed partial class TranscriptionEngine
         }
 
         RaiseFinished(outcome);
+    }
+
+    // ── File-transcription delivery ─────────────────────────────────────────────
+    //
+    // Writes the transcript to a .txt named after the source audio file, under the
+    // user's configured output folder (empty = Desktop, resolved here). Called only
+    // on a file run — normally after a successful clipboard copy (a write failure
+    // then degrades to ClipboardOnly rather than losing the result), and best-effort
+    // when the copy itself failed, so the disk keeps the text either way. The catch
+    // covers the filesystem exceptions plus the invalid-path family — an empty
+    // resolved directory (a profile whose Desktop is not materialized) surfaces as
+    // ArgumentException from Directory.CreateDirectory and must degrade gracefully,
+    // not masquerade as a pipeline crash. Anything else is a genuine bug and
+    // propagates to the worker's crash handler.
+    private TranscriptionOutcome WriteFileTranscript(string fullText)
+    {
+        string dir = TranscriptionSettingsService.ResolveFileTranscriptionOutputDirectory(
+            _host.Transcription.FileTranscriptionOutputDirectory);
+        string audioPath = _fileTranscriptionPath ?? "";
+
+        try
+        {
+            string written = TranscriptFileWriter.Write(fullText, audioPath, dir);
+            DeckleWhispSource.Log.FileTranscriptionSaved();
+            DeckleWhispSource.Log.FileTranscriptionSavedDetail(written, fullText.Length);
+            return TranscriptionOutcome.SavedToFile;
+        }
+        catch (Exception ex) when (
+            ex is IOException or UnauthorizedAccessException
+               or ArgumentException or NotSupportedException)
+        {
+            DeckleWhispSource.Log.FileTranscriptionWriteFailed();
+            DeckleWhispSource.Log.FileTranscriptionWriteFailedDetail(ex.GetType().Name, ex.Message);
+            EmitUserFeedback(FB_WARN,
+                Loc.Get("FileTranscription_WriteFailed_Title"),
+                Loc.Get("FileTranscription_WriteFailed_Body"),
+                FB_OVERLAY);
+            return TranscriptionOutcome.ClipboardOnly;
+        }
     }
 
     // ── Presse-papier ─────────────────────────────────────────────────────────

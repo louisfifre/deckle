@@ -1000,6 +1000,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionEngine.cs
+│   │   │   ├── TranscriptionEngine.FilePipeline.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
@@ -1028,6 +1029,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
+│   │   ├── DeckleWhispSource.FileTranscription.cs
 │   │   ├── DeckleWhispSource.PipelineCompletion.cs
 │   │   ├── DeckleWhispSource.Preprocessing.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs

@@ -92,6 +92,103 @@ public sealed partial class TranscriptionEngine
         return TryStartFromIdle(manualProfileName, shouldPaste);
     }
 
+    // ── File-transcription entry point ──────────────────────────────────────
+    //
+    // A tray-driven request to transcribe one audio file. Shares the whole
+    // downstream machinery with dictation — the same CAS guard, the same prime,
+    // the same backend, the same HUD states, the same shared finalize — but
+    // enters WITHOUT a microphone: no probe, no capture, no chrono. The decode
+    // (Media Foundation → 16 kHz mono float) and the single backend call both run
+    // on the file worker; the shared finalize takes the file tail (no rewrite, no
+    // paste, no corpus — write the transcript to disk + clipboard).
+    //
+    // Returns Started when the file worker was spawned, IgnoredBusy when a
+    // dictation or another file run holds the engine (the busy feedback is emitted
+    // HERE — the contract has the App do nothing on this result), IgnoredDisposed
+    // during shutdown. Never Stopped: a file run is a one-shot, never a toggle.
+    public ToggleResult RequestFileTranscription(string audioFilePath)
+    {
+        if (_disposed) return ToggleResult.IgnoredDisposed;
+
+        // CAS Idle → Starting up front, exactly as TryStartFromIdle does for the
+        // hotkey. A file request that lands while a pipeline is in flight rebounds
+        // cleanly instead of double-spawning a worker. There is no Recording
+        // branch: a file run is never a Stop, so any non-Idle state is a refusal.
+        if (Interlocked.CompareExchange(
+                ref _state,
+                (int)PipelineState.Starting,
+                (int)PipelineState.Idle)
+            != (int)PipelineState.Idle)
+        {
+            var current = (PipelineState)Volatile.Read(ref _state);
+            if (current == PipelineState.Disposed) return ToggleResult.IgnoredDisposed;
+
+            // Engine busy. Unlike the dictation path (silent, telemetry-only —
+            // the user is mid-recording and knows it), the file entry is a direct
+            // tray action with no HUD showing, so the refusal must be visible: the
+            // engine owns the busy feedback here (Overlay, non-blocking).
+            DeckleWhispSource.Log.FileTranscriptionIgnored(current.ToString());
+            EmitUserFeedback(FB_WARN,
+                Loc.Get("FileTranscription_Busy_Title"),
+                Loc.Get("FileTranscription_Busy_Body"),
+                FB_OVERLAY);
+            return ToggleResult.IgnoredBusy;
+        }
+
+        // We own the Idle → Starting edge. _idleEvent stays reset until either the
+        // rollback below or the file worker's terminal Idle transition.
+        _idleEvent.Reset();
+
+        bool committed = false;
+        try
+        {
+            // Per-run latency timers read by the shared finalize. A file run has
+            // no hotkey→capture, drain, or stop-to-pipeline phase — leave those at
+            // their zero/null defaults (finalize null-coalesces them to 0) so a
+            // prior dictation run's stopwatches never leak into this run's log.
+            // Only _modelLoadMs / _primeMs get filled, by the prime.
+            _modelLoadMs         = 0;
+            _primeMs             = 0;
+            _hotkeySw            = null;
+            _recordingSw         = null;
+            _recordDrainDuration = System.TimeSpan.Zero;
+            _stopToPipelineSw    = null;
+
+            // A file run never pastes and never rewrites (V1). Force both off so
+            // the shared finalize takes the file-save tail whatever the dictation
+            // defaults are; stash the path the file tail and the decode both read.
+            _shouldPaste           = false;
+            _manualProfileName     = null;
+            _fileTranscriptionPath = audioFilePath;
+
+            // Cancel any pending idle unload — a pipeline is starting.
+            _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+
+            // Spawn the file worker while the state is still Starting: it owns the
+            // Starting → Transcribing → Idle edge from here (no Recording — there
+            // is no capture and no chrono, so that phase is skipped entirely). Same
+            // background/priority flags as the mic worker; the distinct name marks
+            // it in the thread list and the logs.
+            _worker = new Thread(FileWorkerRun)
+            {
+                IsBackground = true,
+                Name = "TranscriptionEngine.FileWorker",
+                Priority = ThreadPriority.AboveNormal,
+            };
+            _worker.Start();
+
+            committed = true;
+            return ToggleResult.Started;
+        }
+        finally
+        {
+            if (!committed)
+            {
+                RollbackToIdle();
+            }
+        }
+    }
+
     // Idle → Starting → Recording. Called only when RequestToggle has
     // verified the engine is in Idle and (for rewrite hotkeys) the profile
     // is bound. CAS Idle → Starting up front so a second hotkey press
@@ -152,8 +249,12 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredBusy;
             }
 
-            _shouldPaste       = shouldPaste;
-            _manualProfileName = manualProfileName;
+            _shouldPaste           = shouldPaste;
+            _manualProfileName     = manualProfileName;
+            // Clear any file path left by a prior file-transcription run so this
+            // dictation run takes the mic tail in FinalizeTranscription, not the
+            // file tail.
+            _fileTranscriptionPath = null;
 
             // Cancel any pending idle unload — a new pipeline is starting.
             _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
@@ -316,80 +417,92 @@ public sealed partial class TranscriptionEngine
         }
         finally
         {
-            // Settle the prime before any teardown. On the normal path the gate
-            // (AwaitPrime) already awaited it; this also covers the early-exit
-            // paths that bypass the gate (a mic error before the first backend
-            // call) and makes the _backend.IsModelLoaded check below reflect the
-            // load result. It MUST run before _drainCts is disposed: the prime's
-            // abort_callback polls that token, and touching a disposed CTS can
-            // throw across the native boundary. On Dispose, _drainCts is already
-            // cancelled, so the wait is bounded — the dummy inference aborts; a
-            // model load in flight is not cancellable but completes in a few
-            // seconds, well within the join timeout. The result is swallowed: a
-            // prime failure already surfaced its UserFeedback inside LoadModel.
-            try { primeTask.GetAwaiter().GetResult(); }
-            catch { /* prime failure already surfaced; nothing user-facing here */ }
+            SettleWorkerToIdle(primeTask);
+        }
+    }
 
-            // Terminal Idle transition — owned by the worker thread, in this
-            // exact order: state, worker reference, idle event, then status.
-            // The status fires last so any subscriber that reads _state from
-            // a StatusChanged handler (tray tooltip, HudWindow) sees Idle by
-            // the time "Ready" arrives.
-            //
-            // ★ THIS IS THE ONLY SITE THAT EMITS "Ready" ON THE SUCCESS PATH.
-            // UnloadModel mirrors it for the cold-load case but also gates
-            // on _state == Idle so the two never race.
-            //
-            // CAS loop instead of Exchange so a concurrent Dispose
-            // transitioning *→Disposed wins cleanly: every CAS attempt re-
-            // reads _state, sees Disposed, and bails out. Disposed must
-            // persist past the worker's exit; a "Ready" emitted post-
-            // Dispose would re-arm the tray on a half-shut-down engine.
-            // The loop terminates in at most 2 iterations under contention
-            // (only Dispose can compete with the worker for _state writes).
-            int prev;
-            while (true)
+    // Terminal teardown shared by the mic worker (WorkerRun) and the file worker
+    // (FileWorkerRun). Both converge on the exact same lockout-critical sequence,
+    // so it lives once here rather than being copied into each worker's finally —
+    // a divergence between the two would be the module's documented lockout
+    // hazard. Settles the prime, runs the worker-owned *→Idle CAS, arms the idle
+    // unload when the model is still resident, disposes the per-run cancellation
+    // tokens, then emits "Ready" — in that order.
+    private void SettleWorkerToIdle(Task<bool> primeTask)
+    {
+        // Settle the prime before any teardown. On the normal path the gate
+        // (AwaitPrime) already awaited it; this also covers the early-exit
+        // paths that bypass the gate (a mic error before the first backend
+        // call) and makes the _backend.IsModelLoaded check below reflect the
+        // load result. It MUST run before _drainCts is disposed: the prime's
+        // abort_callback polls that token, and touching a disposed CTS can
+        // throw across the native boundary. On Dispose, _drainCts is already
+        // cancelled, so the wait is bounded — the dummy inference aborts; a
+        // model load in flight is not cancellable but completes in a few
+        // seconds, well within the join timeout. The result is swallowed: a
+        // prime failure already surfaced its UserFeedback inside LoadModel.
+        try { primeTask.GetAwaiter().GetResult(); }
+        catch { /* prime failure already surfaced; nothing user-facing here */ }
+
+        // Terminal Idle transition — owned by the worker thread, in this
+        // exact order: state, worker reference, idle event, then status.
+        // The status fires last so any subscriber that reads _state from
+        // a StatusChanged handler (tray tooltip, HudWindow) sees Idle by
+        // the time "Ready" arrives.
+        //
+        // ★ THIS IS THE ONLY SITE THAT EMITS "Ready" ON THE SUCCESS PATH.
+        // UnloadModel mirrors it for the cold-load case but also gates
+        // on _state == Idle so the two never race.
+        //
+        // CAS loop instead of Exchange so a concurrent Dispose
+        // transitioning *→Disposed wins cleanly: every CAS attempt re-
+        // reads _state, sees Disposed, and bails out. Disposed must
+        // persist past the worker's exit; a "Ready" emitted post-
+        // Dispose would re-arm the tray on a half-shut-down engine.
+        // The loop terminates in at most 2 iterations under contention
+        // (only Dispose can compete with the worker for _state writes).
+        int prev;
+        while (true)
+        {
+            prev = Volatile.Read(ref _state);
+            if (prev == (int)PipelineState.Disposed) break;
+            if (Interlocked.CompareExchange(
+                    ref _state, (int)PipelineState.Idle, prev) == prev)
             {
-                prev = Volatile.Read(ref _state);
-                if (prev == (int)PipelineState.Disposed) break;
-                if (Interlocked.CompareExchange(
-                        ref _state, (int)PipelineState.Idle, prev) == prev)
-                {
-                    break;
-                }
+                break;
             }
-            bool reachedIdle = prev != (int)PipelineState.Disposed;
-            _worker = null;
+        }
+        bool reachedIdle = prev != (int)PipelineState.Disposed;
+        _worker = null;
 
-            // Arm the idle-unload whenever the worker exits with the model
-            // resident and the engine is still live (reachedIdle). This is the
-            // single arming point now: it covers the success path AND every
-            // early return that primed the model then bailed (mic error after
-            // prime, lost Transcribe CAS…), so a loaded model is never left in
-            // VRAM with no scheduled unload. Skipped when Dispose won — the
-            // timer is torn down in Dispose anyway.
-            if (reachedIdle && _backend.IsModelLoaded)
-            {
-                ResetIdleTimer();
-            }
+        // Arm the idle-unload whenever the worker exits with the model
+        // resident and the engine is still live (reachedIdle). This is the
+        // single arming point now: it covers the success path AND every
+        // early return that primed the model then bailed (mic error after
+        // prime, lost Transcribe CAS…), so a loaded model is never left in
+        // VRAM with no scheduled unload. Skipped when Dispose won — the
+        // timer is torn down in Dispose anyway.
+        if (reachedIdle && _backend.IsModelLoaded)
+        {
+            ResetIdleTimer();
+        }
 
-            // Dispose and clear the per-run cancellation tokens. Done before
-            // _idleEvent.Set() so a Dispose Wait that races on the event
-            // doesn't see a still-live CTS field — fields read from there
-            // are observably consistent with the worker exit.
-            try { _recordCts?.Dispose(); }
-            catch (ObjectDisposedException) { /* worker raced our dispose */ }
-            _recordCts = null;
+        // Dispose and clear the per-run cancellation tokens. Done before
+        // _idleEvent.Set() so a Dispose Wait that races on the event
+        // doesn't see a still-live CTS field — fields read from there
+        // are observably consistent with the worker exit.
+        try { _recordCts?.Dispose(); }
+        catch (ObjectDisposedException) { /* worker raced our dispose */ }
+        _recordCts = null;
 
-            try { _drainCts?.Dispose(); }
-            catch (ObjectDisposedException) { /* worker raced our dispose */ }
-            _drainCts = null;
+        try { _drainCts?.Dispose(); }
+        catch (ObjectDisposedException) { /* worker raced our dispose */ }
+        _drainCts = null;
 
-            _idleEvent.Set();
-            if (reachedIdle)
-            {
-                RaiseStatus(Loc.Get("Status_Ready"));
-            }
+        _idleEvent.Set();
+        if (reachedIdle)
+        {
+            RaiseStatus(Loc.Get("Status_Ready"));
         }
     }
 
