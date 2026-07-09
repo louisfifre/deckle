@@ -195,8 +195,30 @@ _Avoid_ : backend, Anytype server.
 The always-on Deckle process (global hotkeys, orchestration) that hosts the MCP host and the lib and starts at login — distinct from the visible windows (HUD, Settings) that come and go.
 
 **MCP surface** :
-A capability exposed as one endpoint of the host — PM, Dialogue, Cartography. The unit of separation is the *capability*, never the space (a space is a per-call `space_id` parameter).
+A capability exposed as one endpoint of the host — PM, Dialogue, Home. The unit of separation is the *capability*, never the space (a space is a per-call `space_id` parameter).
 _Avoid_ : profile (the earlier name), server (there is only one).
+
+**Home surface** :
+The Anytype MCP surface dedicated to structured home knowledge: rooms, infrastructure, equipment, observations, links, and later home-management functions. It writes to a dedicated home Anytype space rather than the Dev project-management space; clients do not choose a space per call.
+_Avoid_ : Cartographie (too narrow for the intended long-term scope), Électrique (too narrow), Maison surface (French label rejected for the surface name), Maison générique (too broad).
+
+**Schema admin surface** :
+The Anytype MCP surface dedicated to schema administration: inspecting spaces, planning type/property/tag/template changes, previewing the diff against a live space, applying confirmed schema changes, and freezing the measured result into code. Its first scope is additive only: create or attach types, properties, tags and templates; no delete, key rename, property format change, or property removal. Cross-space work uses Deckle-configured aliases such as `dev` and `home`, never a free `space_id` argument.
+_Avoid_ : putting type/property creation inside Home tools, generic Anytype MCP (too unconstrained for Deckle's guarded workflow).
+
+**Étage** :
+The first spatial level in the Home space. An étage contains one or more pièces.
+
+**Pièce** :
+The second spatial level in the Home space. A pièce belongs to one étage and contains one or more emplacements.
+
+**Emplacement** :
+The third spatial level in the Home space: a precise physical place where equipment can be installed, observed, fixed, embedded, or linked. An emplacement belongs to one pièce.
+_Avoid_ : Endroit (too vague), Zone (rejected as a catch-all spatial type).
+
+**Home object type** :
+An Anytype type in the Home space that represents a stable spatial or material family, not a catch-all inventory bucket. Variants inside a family stay properties or categories; families with distinct properties and links become distinct types.
+_Avoid_ : Element (rejected as too generic for the Home inventory), one type per tiny variant.
 
 **Bot** :
 An Anytype account distinct from Louis, under which the headless writes, invited per space. One headless = one account = one author; one bot to start.
