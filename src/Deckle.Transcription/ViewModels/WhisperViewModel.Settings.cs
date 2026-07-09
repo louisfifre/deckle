@@ -115,6 +115,28 @@ public partial class WhisperViewModel
             defaultValue: () => new TranscriptionSettings().ModelsDirectory),
     ];
 
+    // File-transcription output folder — the destination where a transcribed
+    // audio file's .txt lands. Composes as a single Path leaf like the models
+    // directory above, but FolderPickerMode.Configure rather than Editable: the
+    // user repoints by BROWSING to a destination (and the card's Open button
+    // reaches the saved transcripts), not by pasting a path carried from another
+    // machine. PathArgs.DefaultPath surfaces the resolved empty-value readout —
+    // the user's Desktop — computed once at compose time. The default value is the
+    // TranscriptionSettings POCO initializer ("" = the Desktop sentinel), so the
+    // reset goes active exactly when the user has repointed the folder and rewrites
+    // the sentinel, never a resolved literal. The x:Uid resolves the card's
+    // Header/Description from this module's .resw.
+    public IReadOnlyList<SettingDescriptor> FileTranscriptionSettingsManifest =>
+    [
+        Setting.Path("WhisperFileTranscriptionDirCard",
+            () => FileTranscriptionOutputDirectory,
+            value => FileTranscriptionOutputDirectory = value,
+            new PathArgs(FolderPickerMode.Configure,
+                DefaultPath: () => TranscriptionSettingsService.ResolveFileTranscriptionOutputDirectory("")),
+            glyph: Glyphs.Folder,
+            defaultValue: () => new TranscriptionSettings().FileTranscriptionOutputDirectory),
+    ];
+
     // Voice activity detection — the Silero pre-trim fold. The master is the
     // VadEnabled toggle; the four detection parameters are its children, hidden by
     // the composer while the master is off (it composes the master into each

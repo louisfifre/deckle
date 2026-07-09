@@ -77,6 +77,7 @@ public sealed partial class WhisperPage : Page
         // — the same Compose-before-Load ordering RecordingPage uses. The composers
         // are held in fields so their subscriptions live as long as the cached page.
         ComposeBehaviourSection();
+        ComposeFileTranscriptionSection();
         ComposeUseGpuSection();
         ComposeModelsDirectorySection();
         ComposeVadSection();
@@ -152,6 +153,19 @@ public sealed partial class WhisperPage : Page
         _behaviourComposer.DirtyChanged += (_, _) =>
             BehaviourResetLink.IsEnabled = _behaviourComposer.IsDirty();
         _behaviourComposer.Compose(ViewModel.BehaviourSettings);
+    }
+
+    // File transcription — a lone Path leaf (the output destination folder),
+    // composed straight into its host like the models directory below. No
+    // section-reset link: a single-card section leans on the card's own per-card
+    // reset (and the page-wide "Reset all"), the same way ComposeModelsDirectorySection
+    // carries no DirtyChanged wiring.
+    private SettingsComposer? _fileTranscriptionComposer;
+
+    private void ComposeFileTranscriptionSection()
+    {
+        _fileTranscriptionComposer = new SettingsComposer(FileTranscriptionHost, ViewModel);
+        _fileTranscriptionComposer.Compose(ViewModel.FileTranscriptionSettingsManifest);
     }
 
     // GPU acceleration and the models directory are flat, restart-neutral leaves —

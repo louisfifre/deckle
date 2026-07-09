@@ -123,6 +123,18 @@
                 <StackPanel x:Name="BehaviourHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- ── File transcription ────────────────────────────────────────
+                     Where a transcribed audio file's .txt is written — a delivery-
+                     oriented section beside "Overlay and pasting" above, both about
+                     where output lands. Composed from
+                     WhisperViewModel.FileTranscriptionSettingsManifest into the host
+                     below; the single Path card carries its own per-card reset. -->
+                <TextBlock x:Uid="WhisperPageFileTranscriptionHeaderLabel"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                <StackPanel x:Name="FileTranscriptionHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <!-- ── Transcription ───────────────────────────────────────── -->
                 <!--
                     Order : Language → Initial prompt → GPU acceleration →

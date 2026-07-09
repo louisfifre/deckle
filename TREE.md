@@ -998,6 +998,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IAsrBackend.cs
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── TextMetrics.cs
+│   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
@@ -1247,6 +1248,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TranscriptFileWriterDiskTests.cs
+│   │   ├── TranscriptFileWriterTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   └── UnitBezierTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/

@@ -1004,6 +1004,12 @@
   <data name="WhisperModelsDirCard.Description" xml:space="preserve">
     <value>Where Whisper and Silero model files are stored on disk. Leave empty to use the default location next to the application.</value>
   </data>
+  <data name="WhisperFileTranscriptionDirCard.Header" xml:space="preserve">
+    <value>Transcripts folder</value>
+  </data>
+  <data name="WhisperFileTranscriptionDirCard.Description" xml:space="preserve">
+    <value>Where the text from a transcribed audio file is saved on disk. Leave empty to save to your Desktop.</value>
+  </data>
   <data name="WhisperRestartDiscard.Content" xml:space="preserve">
     <value>Discard</value>
   </data>
@@ -1200,6 +1206,9 @@
   </data>
   <data name="WhisperPageSubtitleLabel.Text" xml:space="preserve">
     <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
+  </data>
+  <data name="WhisperPageFileTranscriptionHeaderLabel.Text" xml:space="preserve">
+    <value>File transcription</value>
   </data>
   <data name="WhisperPageModelEngineHeaderLabel.Text" xml:space="preserve">
     <value>Model &amp; engine</value>
