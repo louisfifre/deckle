@@ -49,6 +49,18 @@ The boundary between `integration` and `system` plays out on *the weight of the 
 > — Et le micro maintenant ? Je voudrais tester qu'on ne plante pas quand il n'y en a pas.
 > — Integration. On simule un device qui retourne « no input » et on vérifie le chemin d'erreur. Un test interactive prendrait un vrai micro débranché — utile mais à la main.
 
+## Transcription — entry points
+
+Two ways into the same transcription pipeline, told apart by where the audio comes from and where the text lands. The engine, the model, and the HUD states are shared; only the edges differ.
+
+**Dictation** :
+The hotkey-driven live path — mic capture, energy-segmented or monolithic decode, delivery to the clipboard (with optional paste and rewrite). The historical and primary path; the T1 fidelity contract below describes it.
+_Avoid_ : recording (the capture phase, not the whole path).
+
+**File transcription** :
+The tray-initiated path over a pre-recorded audio file: picked through the system file dialog, decoded and resampled to the pipeline's native format, then run through the same monolithic pipeline and HUD states as dictation. Delivery differs by decision: the text is written to disk as a file named after the audio (in a user-configurable folder) and copied to the clipboard; paste and rewrite never run, and completion announces itself through the HUD message only — nothing opens.
+_Avoid_ : batch transcription (one file at a time), import (nothing enters a library).
+
 ## Transcription — fidelity criteria
 
 The T1 canonical mode (`apply_transcription_request`) is the production transcription path exposed by Deckle. Its output lands in the clipboard for immediate use. The implicit usage criterion is high-volume confidence — Louis must be able to dictate twenty minutes and trust the output without re-reading every line.
