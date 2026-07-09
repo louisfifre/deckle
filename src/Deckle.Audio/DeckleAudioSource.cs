@@ -63,6 +63,13 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // Speaker render (waveOut) — open-failure milestone + verbose mirror.
     public const int EvtSpeakerOpenFailed          = 24;
     public const int EvtSpeakerOpenFailedDetail    = 25;
+    // File transcription — Media Foundation decode of an audio file to 16 kHz
+    // mono float. Milestone + verbose mirror for both the success and the
+    // failure path.
+    public const int EvtAudioFileDecoded           = 26;
+    public const int EvtAudioFileDecodedDetail     = 27;
+    public const int EvtAudioFileDecodeFailed      = 28;
+    public const int EvtAudioFileDecodeFailedDetail = 29;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
@@ -247,6 +254,51 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public void SpeakerOpenFailedDetail(uint mmsys_err)
     {
         if (IsEnabled()) WriteEvent(EvtSpeakerOpenFailedDetail, mmsys_err);
+    }
+
+    // ── Audio-file decode (file transcription) ──────────────────────────────
+    //
+    // AudioFileDecoder decodes a picked audio file to 16 kHz mono float via
+    // Media Foundation, feeding the same pipeline dictation does. Success is a
+    // past-tense milestone with its Verbose mirror; failure follows
+    // MicrophoneOpenFailed's shape — a milestone plus a mirror carrying the
+    // status and raw HRESULT — but stays Warning, not Error, because a bad file
+    // is an expected user outcome, not a broken device.
+
+    [Event(EvtAudioFileDecoded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Decoded an audio file for transcription")]
+    public void AudioFileDecoded()
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecoded);
+    }
+
+    [Event(EvtAudioFileDecodedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "audio file decoded | source={0} | duration_sec={1:F1} | decoded_samples={2} | elapsed_ms={3}")]
+    public void AudioFileDecodedDetail(string source, double duration_sec, int decoded_samples, long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecodedDetail, source, duration_sec, decoded_samples, elapsed_ms);
+    }
+
+    [Event(EvtAudioFileDecodeFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Could not decode the audio file")]
+    public void AudioFileDecodeFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeFailed);
+    }
+
+    [Event(EvtAudioFileDecodeFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "audio file decode failed | status={0} | hr=0x{1:X8}")]
+    public void AudioFileDecodeFailedDetail(string status, int hr)
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeFailedDetail, status, hr);
     }
 
     // In-place clean (no params, no placeholders): the milestone is entirely a

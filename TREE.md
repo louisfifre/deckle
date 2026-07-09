@@ -348,6 +348,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SecondaryWindowPlacement.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
+│   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── PcmConversion.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
@@ -366,6 +367,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Audio module — the home for capturing and analyzing sound: microphone capture,…
+│   │   ├── AudioFileDecoder.cs
+│   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
 │   │   ├── CaptureFrame.cs
 │   │   ├── CaptureResult.cs
