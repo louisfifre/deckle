@@ -10,7 +10,10 @@ namespace Deckle.Anytype.Mcp;
 public static class McpToolset
 {
     public static (IReadOnlyList<ToolDescriptor> Tools, McpServer.Descriptor Descriptor) Build(
-        AnytypeApiClient api, ToolProfile profile, bool management)
+        AnytypeApiClient api,
+        ToolProfile profile,
+        bool management,
+        AnytypeSpaceAliases? aliases = null)
     {
         var resolver = new NameResolver(api);
         var session = new SessionGestures(api, resolver);
@@ -25,6 +28,8 @@ public static class McpToolset
         {
             ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, documents),
             ToolProfile.Dialogues => DialogueToolCatalog.Build(dialogues),
+            ToolProfile.SchemaAdmin => SchemaAdminToolCatalog.Build(
+                new SchemaAdminGestures(api, aliases ?? AnytypeSpaceAliases.Load(api.SpaceId))),
             ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query, documents)
                 .Concat(DialogueToolCatalog.Build(dialogues))
                 .ToArray(),
@@ -35,15 +40,15 @@ public static class McpToolset
         {
             ToolProfile.ProjectManagement => McpServer.ProjectManagementDescriptor,
             ToolProfile.Dialogues => McpServer.DialoguesDescriptor,
+            ToolProfile.SchemaAdmin => McpServer.SchemaAdminDescriptor,
             ToolProfile.All => McpServer.AllDescriptor,
             _ => McpServer.ProjectManagementDescriptor,
         };
 
         // Mount the supervised management catalog on demand, additive to the
-        // object-management surface. The Dialogues-only profile has no object to
-        // delete, so the flag is a no-op there. Default (flag off) serves none of
-        // these destructive tools.
-        if (management && profile != ToolProfile.Dialogues)
+        // object-management surfaces only. Dialogue and schema-admin sessions
+        // have no object lifecycle to delete, so the flag is a no-op there.
+        if (management && profile is ToolProfile.ProjectManagement or ToolProfile.All)
         {
             tools = tools.Concat(ManagementToolCatalog.Build(managementGestures)).ToArray();
             descriptor = descriptor with

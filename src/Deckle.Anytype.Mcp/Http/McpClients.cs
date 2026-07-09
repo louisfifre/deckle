@@ -27,5 +27,9 @@ public static class McpClients
     public static readonly McpClientProfile Codex = new(
         "codex", ToolProfile.All, false, "mcp-token-codex", "DECKLE_MCP_TOKEN_CODEX");
 
-    public static readonly IReadOnlyList<McpClientProfile> All = new[] { Claude, Codex };
+    public static readonly McpClientProfile SchemaAdmin = new(
+        "schema-admin", ToolProfile.SchemaAdmin, false,
+        "mcp-token-schema-admin", "DECKLE_MCP_TOKEN_SCHEMA_ADMIN");
+
+    public static readonly IReadOnlyList<McpClientProfile> All = new[] { Claude, Codex, SchemaAdmin };
 }

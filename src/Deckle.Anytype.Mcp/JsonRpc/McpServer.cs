@@ -48,6 +48,16 @@ public sealed class McpServer
         + "after_order_id to continue from the last seen message. These tools are "
         + "not project-management reports and do not journal work sessions.");
 
+    public static readonly Descriptor SchemaAdminDescriptor = new(
+        "deckle-anytype-schema-admin",
+        "Deckle Anytype Schema Admin",
+        "Anytype schema administration surface. It inspects configured space "
+        + "aliases, previews additive type/property/tag changes, then applies a "
+        + "previous preview only when confirm:true is passed. It never accepts a "
+        + "raw space_id; use configured aliases such as dev or home. First scope "
+        + "is additive only: no delete, key rename, property format change, or "
+        + "property removal.");
+
     public static readonly Descriptor AllDescriptor = new(
         "deckle-anytype-all",
         "Deckle Anytype All",

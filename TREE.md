@@ -246,6 +246,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Api/
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
+│   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
@@ -264,9 +265,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── Resolution.cs
+│   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
+│   │   │   ├── AnytypeSpaceAliases.cs
 │   │   │   ├── DevSpace.cs
 │   │   │   └── SCHEMA.md
 │   │   ├── AGENTS.md  — [agent-instructions] Anytype core module — headless backend supervision, REST transport, frozen Dev-…
@@ -285,6 +288,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Tools/
 │   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
+│   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Anytype MCP adapter — streamable-HTTP host, client surfaces, and JSON-RPC tool…
@@ -1106,9 +1110,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpServerTests.cs
 │   │   ├── McpToolsetTests.cs
+│   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
@@ -1119,6 +1125,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
+│   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesTests.cs
 │   │   ├── SpaceWriteLockTests.cs
 │   │   └── TaskGesturesTests.cs

@@ -95,16 +95,19 @@ public class McpClientTokensTests
     {
         var (tokens, vault) = Minted();
 
-        // Claude's bearer must authenticate as claude and nothing else: presenting it
-        // must not resolve to codex, and vice versa. This is the whole security model —
+        // Each bearer must authenticate as its own client and nothing else. This is the whole security model —
         // the token IS the identity.
         vault.TryGet(McpClients.Claude.TokenSecretName, out string? claudeToken);
         vault.TryGet(McpClients.Codex.TokenSecretName, out string? codexToken);
+        vault.TryGet(McpClients.SchemaAdmin.TokenSecretName, out string? schemaToken);
 
         Assert.Same(McpClients.Claude, tokens.Authenticate(claudeToken));
         Assert.Same(McpClients.Codex, tokens.Authenticate(codexToken));
+        Assert.Same(McpClients.SchemaAdmin, tokens.Authenticate(schemaToken));
         Assert.NotSame(McpClients.Codex, tokens.Authenticate(claudeToken));
         Assert.NotSame(McpClients.Claude, tokens.Authenticate(codexToken));
+        Assert.NotSame(McpClients.SchemaAdmin, tokens.Authenticate(claudeToken));
+        Assert.NotSame(McpClients.Claude, tokens.Authenticate(schemaToken));
     }
 
     [Theory]
