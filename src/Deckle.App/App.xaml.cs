@@ -621,6 +621,12 @@ public partial class App : Microsoft.UI.Xaml.Application
                         // clipboard and keep the HUD up long enough to read.
                         _hudWindow.ShowCopied();
                         break;
+                    case TranscriptionOutcome.SavedToFile:
+                        // File transcription: the transcript was written to disk
+                        // (and copied to the clipboard). Nothing opens — the HUD
+                        // message is the only completion signal.
+                        _hudWindow.ShowFileSaved();
+                        break;
                     default:
                         _hudWindow.Hide();
                         break;
@@ -674,6 +680,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // shown at the cursor with a Win11-native MenuFlyout.
         _trayMenu = new TrayContextMenuHost(_messageHost.Hwnd)
         {
+            // File transcription — opens the system file picker and runs the
+            // chosen audio file through the same pipeline as dictation (see
+            // App.FileTranscription.cs). Delivered on the UI thread the tray
+            // click arrives on.
+            OnTranscribeFile = () => TranscribeFileFromTray(),
             OnShowLogs       = () => ShowLogWindowLazy(),
             OnShowSettings   = () => ShowSettingsWindowLazy(),
             OnShowPlayground = () => ShowPlaygroundLazy(),

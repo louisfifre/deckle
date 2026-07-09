@@ -325,6 +325,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
+│   │   ├── App.FileTranscription.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
 │   │   ├── App.Lifetime.cs
