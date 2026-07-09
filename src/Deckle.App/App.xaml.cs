@@ -406,10 +406,10 @@ public partial class App : Microsoft.UI.Xaml.Application
         _ = InitializeAutocorrectAsync();
         Milestone("autocorrect");
 
-        // Anytype headless backend — supervise-and-start through its scheduled
-        // task (see App.Anytype.cs). Fire-and-forget: the readiness poll runs
-        // off the boot path and the backend process outlives the app; the
-        // milestone marks the dispatch, not readiness.
+        // Anytype headless backend — start/adopt a windowless serve process
+        // and supervise it from App.Anytype.cs. Fire-and-forget: readiness
+        // runs off the boot path, and shutdown stops supervision rather than
+        // killing the warm backend; the milestone marks dispatch, not readiness.
         _ = InitializeAnytypeBackendAsync();
         Milestone("anytype_backend");
 
