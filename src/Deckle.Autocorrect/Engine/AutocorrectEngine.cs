@@ -219,13 +219,18 @@ public sealed class AutocorrectEngine : IDisposable
     // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
     // model. Enter is forwarded verbatim so the coordinator can vouch the next word
     // as sentence-initial; every other reason is a caret move to an unknown spot.
-    private void OnTrackerReset(ResetReason reason)
+    private void OnTrackerReset(ResetReason reason, bool droppedPartialWord)
     {
         // Close the corpus sentence first (Enter emits it tagged "enter", any other
         // reason emits the partial run tagged "interrupted" — still verbatim keyboard
         // input); the emit is gated downstream by the sink, so a flip to off between
         // accumulation and reset cannot leak a sentence to disk.
         _corpus?.Reset(reason);
+        // A reset that threw away a word in flight can leave its tail to commit as
+        // the next "word" — a fragment that used to pollute corpus sentence starts
+        // (« e Setting UX … »). The corpus holds that next word suspect and drops it.
+        if (droppedPartialWord)
+            _corpus?.MarkNextWordSuspect();
         _coordinator?.Invalidate(reason);
     }
 

@@ -86,6 +86,35 @@ public class SentenceCorpusTests
     }
 
     [Fact]
+    public void DropsTheSuspectWordAfterAResetThatDroppedAPartial()
+    {
+        // « probl|reset|ème » — the tail commits as « ème », a fragment the user
+        // never typed as a word. Marked suspect, it never becomes a slot; the
+        // words after it are kept as usual.
+        var (c, done) = New();
+        c.MarkNextWordSuspect();
+        c.Word("ème", "ème", ' ');
+        c.Word("bonjour", "bonjour", '.');
+
+        var rec = Assert.Single(done);
+        Assert.Equal("bonjour.", rec.Typed);
+    }
+
+    [Fact]
+    public void ASuspectMarkDoesNotSurviveTheNextReset()
+    {
+        // A second reset re-evaluates from its own dropped-partial signal; a stale
+        // mark must not eat a legitimate first word of the following run.
+        var (c, done) = New();
+        c.MarkNextWordSuspect();
+        c.Reset(ResetReason.FocusChanged); // empty run, emits nothing, clears the mark
+        c.Word("bonjour", "bonjour", '.');
+
+        var rec = Assert.Single(done);
+        Assert.Equal("bonjour.", rec.Typed);
+    }
+
+    [Fact]
     public void EnterEndsASentence()
     {
         var (c, done) = New();

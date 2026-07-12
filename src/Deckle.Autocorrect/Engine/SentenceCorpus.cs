@@ -84,6 +84,17 @@ public sealed class SentenceCorpus
     /// dedicated, consent-gated dataset.</summary>
     public Action<SentenceRecord>? Completed;
 
+    // Set when the last reset threw away a word in flight: the next committed
+    // "word" may be that word's tail (« probl|reset|ème » commits « ème »), a
+    // fragment the user never typed as a word. It is dropped from the corpus —
+    // one word of loss against a polluted sentence start. Cleared by the word it
+    // judges or by the next reset, whose own drop signal re-arms it or not.
+    private bool _nextWordSuspect;
+
+    /// <summary>The last reset dropped a partial word; hold the next committed
+    /// word suspect and keep it out of the corpus.</summary>
+    public void MarkNextWordSuspect() => _nextWordSuspect = true;
+
     // A committed word: its typed form, the form left on screen after the commit
     // stage (the same word when the gate stood aside), the boundary that ended it,
     // and the commit time in ms (0 = unknown, e.g. from a caller without a clock).
@@ -91,6 +102,12 @@ public sealed class SentenceCorpus
     // start with the same separator; only a re-edit can split them.
     public void Word(string typed, string final, char boundary, long timestampMs = 0)
     {
+        if (_nextWordSuspect)
+        {
+            _nextWordSuspect = false;
+            return; // a likely fragment tail — never a slot
+        }
+
         string separator = WordBoundaries.DisplaySeparator(boundary);
         var slot = new Slot
         {
@@ -147,9 +164,12 @@ public sealed class SentenceCorpus
 
     // Enter ends a sentence (closure "enter"); every other reset interrupts it before
     // an ending boundary, so the partial run is emitted tagged "interrupted" rather
-    // than dropped — it is still verbatim keyboard input.
+    // than dropped — it is still verbatim keyboard input. A pending suspect mark
+    // does not survive the reset: each reset re-arms it (or not) from its own
+    // dropped-partial signal.
     public void Reset(ResetReason reason)
     {
+        _nextWordSuspect = false;
         Flush(reason == ResetReason.Enter ? "enter" : "interrupted");
     }
 

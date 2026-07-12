@@ -47,6 +47,30 @@ public sealed class AutocorrectEngineCorpusTests
     }
 
     [Fact]
+    public void KeepsAFragmentTailOutOfTheCorpusSentence()
+    {
+        // A pointer reset in the middle of a word throws the typed prefix away;
+        // the word's tail then commits alone and used to open the next corpus
+        // sentence as a fragment (« e Setting UX … »). The tracker now reports
+        // the dropped partial and the corpus drops that suspect first word.
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
+        h.Start();
+
+        h.Type("probl");
+        h.Pointer();            // mid-word reset — the tail below is a fragment
+        h.Type("eme bonjour.");
+
+        Assert.Contains(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "typed") is "bonjour.");
+        Assert.DoesNotContain(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "typed") is string typed && typed.Contains("eme"));
+    }
+
+    [Fact]
     public void NeverFeedsTheCorpusOnAPasswordSurface()
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
