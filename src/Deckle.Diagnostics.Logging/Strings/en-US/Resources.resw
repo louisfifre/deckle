@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Nav label — module-owned. The Settings shell reads this bare key straight
+       into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+
+  <!-- Shared section-reset link. Copied here (each WinUI assembly resolves x:Uid
+       against its own PRI subtree); the same key also lives in the Settings shell
+       for the pages that stayed there. -->
+  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset this section to defaults</value>
+  </data>
+
+  <!-- Shared folder-picker Open button. Copied here for the same reason; the key
+       also lives in the Settings shell for the two FolderPicker UserControls. -->
+  <data name="FolderPickerCard_OpenButton.Content" xml:space="preserve">
+    <value>Open</value>
+  </data>
+
+  <!-- DiagnosticsPage — page chrome (x:Uid) -->
+  <data name="DiagnosticsPageTitleLabel.Text" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="DiagnosticsPageSubtitleLabel.Text" xml:space="preserve">
+    <value>Configure how Deckle reports its runtime activity — in-app log verbosity and the telemetry streams Deckle can persist to disk for offline troubleshooting. Everything is opt-in and stored locally.</value>
+  </data>
+  <data name="DiagnosticsPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset this page to defaults</value>
+  </data>
+  <data name="DiagnosticsPageResetAllLabel.Text" xml:space="preserve">
+    <value>Reset all</value>
+  </data>
+
+  <!-- Logging section (x:Uid header + composed card label key) -->
+  <data name="DiagnosticsPageLoggingHeaderLabel.Text" xml:space="preserve">
+    <value>Logging</value>
+  </data>
+  <data name="LoggingWindowingCard.Header" xml:space="preserve">
+    <value>Log windowing activity</value>
+  </data>
+  <data name="LoggingWindowingCard.Description" xml:space="preserve">
+    <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
+  </data>
+
+  <!-- Telemetry section (x:Uid header + composed card label keys). The General*
+       prefix on the card keys is a historical naming artifact carried over from
+       the shell, not a page binding. -->
+  <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
+    <value>Telemetry</value>
+  </data>
+  <data name="GeneralAppLogCard.Header" xml:space="preserve">
+    <value>Application log</value>
+  </data>
+  <data name="GeneralAppLogCard.Description" xml:space="preserve">
+    <value>Mirror every in-app log line to app.jsonl to diagnose a specific issue across restarts. Verbose — around 2 MB per 30 min of active use. Rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …).</value>
+  </data>
+  <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
+    <value>Storage folder</value>
+  </data>
+  <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
+    <value>Shared root for every telemetry stream enabled above. Leave empty to use the default %LOCALAPPDATA%\Deckle\telemetry\.</value>
+  </data>
+
+  <!-- Diagnostic files section (x:Uid) -->
+  <data name="DiagnosticsPageFilesHeaderLabel.Text" xml:space="preserve">
+    <value>Diagnostic files</value>
+  </data>
+  <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
+    <value>Setup and error logs</value>
+  </data>
+  <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
+    <value>Recorded automatically and kept on this device — never sent anywhere. Open the folder to find them when reporting a first-run or crash problem.</value>
+  </data>
+
+  <!-- Reset dialogs (Loc.Get from code-behind). Source of truth for the wording;
+       Loc.Get resolves the runtime copy from Deckle.App's root map. -->
+  <data name="Settings_ResetTelemetryDialog_Title" xml:space="preserve">
+    <value>Reset telemetry settings?</value>
+  </data>
+  <data name="Settings_ResetTelemetryDialog_Content" xml:space="preserve">
+    <value>Every telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+  </data>
+  <data name="Settings_ResetDiagnosticsDialog_Title" xml:space="preserve">
+    <value>Reset all settings?</value>
+  </data>
+  <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
+    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+  </data>
+</root>

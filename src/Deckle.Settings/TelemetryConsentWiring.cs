@@ -8,12 +8,11 @@ namespace Deckle.Settings;
 // internal to Deckle.Settings; module settings pages reach their consent through
 // the Catalog delegate slots, never the dialog types.
 //
-// ApplicationLog is not wired here: it stays on the Diagnostics page (this
-// assembly), which invokes ApplicationLogConsentDialog directly.
 public static class TelemetryConsentWiring
 {
     public static void Wire()
     {
+        Catalog.TelemetryConsent.ApplicationLog       = ApplicationLogConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.Microphone           = MicrophoneTelemetryConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.Corpus               = CorpusConsentDialog.ShowAsync;
         Catalog.TelemetryConsent.AudioCorpus          = AudioCorpusConsentDialog.ShowAsync;

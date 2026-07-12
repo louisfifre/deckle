@@ -3,7 +3,7 @@ using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Settings;
+namespace Deckle.Diagnostics.Logging;
 
 // ── DiagnosticsViewModel — settings manifest ──────────────────────────────────
 //
@@ -32,14 +32,16 @@ public partial class DiagnosticsViewModel
 
     // Telemetry opt-ins (the "Telemetry" section). One composable toggle now:
     // Application log carries a confirmOnEnable gate so the composer holds its
-    // OFF→ON write behind the consent dialog — exactly the off→on-shows-a-dialog
-    // flow the hand-authored card ran, now declared rather than wired in the page.
-    // The Microphone opt-in moved to the Recording module's own page (it observes
-    // that module's capture pipeline); the Latency toggle and the Corpus fold moved
-    // to the Dictation (Whisper) page (they observe the dictation pipeline); and the
-    // Autocorrect capture opt-ins moved to the Autocorrect module's own page. No
-    // hand-authored telemetry row remains here — Application log is the page's one
-    // composable telemetry toggle.
+    // OFF→ON write behind the consent dialog. Now that the page lives in its own
+    // module, that dialog is reached through the Catalog registry
+    // (TelemetryConsent.RequestApplicationLog, a method group the App wires at boot)
+    // rather than the shell's dialog class directly — so the module gates its enable
+    // behind consent without referencing Deckle.Settings. The Microphone opt-in moved
+    // to the Recording module's own page (it observes that module's capture pipeline);
+    // the Latency toggle and the Corpus fold moved to the Dictation (Whisper) page
+    // (they observe the dictation pipeline); and the Autocorrect capture opt-ins moved
+    // to the Autocorrect module's own page. No hand-authored telemetry row remains
+    // here — Application log is the page's one composable telemetry toggle.
     //
     // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
     // default" affordance per row (the section "Reset" clears it), so the composer
@@ -50,7 +52,7 @@ public partial class DiagnosticsViewModel
             () => ApplicationLogToDisk,
             value => ApplicationLogToDisk = value,
             glyph: Glyphs.AppLog,
-            confirmOnEnable: root => ApplicationLogConsentDialog.ShowAsync(root)),
+            confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
     // Storage folder — the shared JSONL root for every telemetry stream. A Path

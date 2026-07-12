@@ -19,10 +19,12 @@ namespace Deckle.Catalog;
 // telemetry opt-in never enables without a wired consent — the privacy-safe
 // fallback for tests/previews where no shell is present.
 //
-// ApplicationLogToDisk is deliberately absent: it stays on the Diagnostics page
-// (shell), which invokes its dialog directly, so no registry slot is needed.
+// ApplicationLog joined the registry when the Diagnostics page moved into its own
+// module (Deckle.Diagnostics.Logging): it can no longer reach the shell's dialog
+// class directly, so like every other module opt-in it gates through this slot.
 public static class TelemetryConsent
 {
+    public static Func<XamlRoot, Task<bool>>? ApplicationLog { get; set; }
     public static Func<XamlRoot, Task<bool>>? Microphone { get; set; }
     public static Func<XamlRoot, Task<bool>>? Corpus { get; set; }
     public static Func<XamlRoot, Task<bool>>? AudioCorpus { get; set; }
@@ -31,6 +33,9 @@ public static class TelemetryConsent
 
     // Null-safe invokers the module manifests pass to Setting.confirmOnEnable as a
     // method group. Deny (false) when the matching slot is unwired.
+    public static Task<bool> RequestApplicationLog(XamlRoot root) =>
+        ApplicationLog?.Invoke(root) ?? Task.FromResult(false);
+
     public static Task<bool> RequestMicrophone(XamlRoot root) =>
         Microphone?.Invoke(root) ?? Task.FromResult(false);
 

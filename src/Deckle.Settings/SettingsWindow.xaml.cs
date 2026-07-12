@@ -151,14 +151,14 @@ public sealed partial class SettingsWindow : Window
     // ── Module nav band ──────────────────────────────────────────────────────
     //
     // Builds one NavigationViewItem per registered module and routes it into the
-    // band its Tier names: Header at the top of the primary menu, Main between the
-    // Recording and Diagnostics anchors, Footer into the footer menu. Within a band,
-    // the registry already hands them back in (Tier, Order) order. Idempotent: any
-    // items a previous call inserted are removed from both menus first, so a live
-    // registry change rebuilds the band rather than duplicating it. Labels resolve
-    // from the OWNING module's PRI subtree (Loc.GetFrom) — the module ships its own
-    // nav wording — and the glyph is a Glyphs.* character built straight into a
-    // FontIcon, the same code-side path the composer uses.
+    // band its Tier names: Header at the top of the primary menu, Main appended after
+    // the General anchor, Footer into the footer menu. Within a band, the registry
+    // already hands them back in (Tier, Order) order. Idempotent: any items a previous
+    // call inserted are removed from both menus first, so a live registry change
+    // rebuilds the band rather than duplicating it. Labels resolve from the OWNING
+    // module's PRI subtree (Loc.GetFrom) — the module ships its own nav wording — and
+    // the glyph is a Glyphs.* character built straight into a FontIcon, the same
+    // code-side path the composer uses.
     private void BuildModuleNavItems()
     {
         foreach (NavigationViewItem old in _moduleNavItems)
@@ -168,11 +168,10 @@ public sealed partial class SettingsWindow : Window
         }
         _moduleNavItems.Clear();
 
-        // Main items land before Diagnostics; if that anchor is somehow absent,
-        // append to the end of the primary menu rather than throwing. Header items
-        // go to the very top and push the Main anchor down as they are inserted.
-        int mainInsertAt = Nav.MenuItems.IndexOf(DiagnosticsNavItem);
-        if (mainInsertAt < 0) mainInsertAt = Nav.MenuItems.Count;
+        // Main items append after General, the sole remaining static anchor (its
+        // count is the current end of the primary menu). Header items go to the very
+        // top and push the Main insertion point down as they are inserted.
+        int mainInsertAt = Nav.MenuItems.Count;
         int headerInsertAt = 0;
 
         foreach (SettingsModuleDescriptor module in SettingsModuleRegistry.Modules)

@@ -1334,12 +1334,18 @@
     <value>This will restore every transcription setting on this page to its default value.</value>
   </data>
 
-  <!-- DiagnosticsPage Telemetry reset dialog -->
+  <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->
   <data name="Settings_ResetTelemetryDialog_Title" xml:space="preserve">
     <value>Reset telemetry settings?</value>
   </data>
   <data name="Settings_ResetTelemetryDialog_Content" xml:space="preserve">
     <value>Every telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+  </data>
+  <data name="Settings_ResetDiagnosticsDialog_Title" xml:space="preserve">
+    <value>Reset all settings?</value>
+  </data>
+  <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
+    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
