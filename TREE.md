@@ -467,7 +467,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MarginCalibration.cs
 │   │   │   ├── ReplayRunner.cs
 │   │   │   ├── SentenceAlignment.cs
-│   │   │   └── SentenceReplay.cs
+│   │   │   ├── SentenceReplay.cs
+│   │   │   └── TruthOverlay.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
 │   │   ├── HarvestData.cs
@@ -1168,6 +1169,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceReplayGestureTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── TruthOverlayTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs

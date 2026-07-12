@@ -65,13 +65,22 @@ public sealed class SentenceReplayGestureTests
         Assert.NotNull(judge);
         Console.Error.WriteLine("[replay] judge loaded — replaying corpus, nothing is applied");
 
+        // The maintainer's truth sheet sits next to the corpus. The file-based Run
+        // has already read its resolved cells and measured agreement against them;
+        // here the sheet is regenerated from this pass's disagreements and MERGED
+        // with the existing one, so a filled truth cell survives corpus growth.
+        string sheetPath = TruthOverlay.SheetPathFor(corpusPath!);
+        var existingSheet = TruthOverlay.Read(sheetPath);
+
         ReplayReport report = ReplayRunner.Run(corpusPath!, probe, judge!, onProgress: OnReplayProgress);
 
         string reportPath = Path.Combine(Path.GetDirectoryName(corpusPath!)!, "autocorrect.replay-calibration.md");
         File.WriteAllText(reportPath, report.Markdown);
+        File.WriteAllText(sheetPath, TruthOverlay.Render(TruthOverlay.Merge(report.TruthReview, existingSheet)));
 
         Console.Error.WriteLine(
-            $"[replay] done — {report.Summary.AmbiguousSlots} slots over {report.Summary.Sentences} sentences → {reportPath}");
+            $"[replay] done — {report.Summary.AmbiguousSlots} slots over {report.Summary.Sentences} sentences, "
+            + $"{report.TruthReview.Count} to review → {reportPath}");
         _out.WriteLine($"{report.Summary.AmbiguousSlots} ambiguous slots judged over {report.Summary.Sentences} sentences.");
         _out.WriteLine($"Calibration report → {reportPath}");
 
