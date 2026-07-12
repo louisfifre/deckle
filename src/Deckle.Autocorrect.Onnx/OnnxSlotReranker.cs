@@ -15,6 +15,15 @@ namespace Deckle.Autocorrect.Onnx;
 // replay over the collected corpus — not a synchronous hot-path stage.
 public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
 {
+    // Context floor: the judge is unreliable on short sentences. Replayed over the
+    // maintainer's corpus its changes-only precision was 33% on 1–3-word sentences
+    // and 39% on 4–6 words, against 55–65% at 7+ — the wrong changes being
+    // sentence-initial imperatives it reads as participles (continue→continué),
+    // where margin does not separate the two but sentence length does. Below four
+    // word tokens the judge abstains outright. The floor lives here, the choke
+    // point shared by the live stage and the offline replay, so both inherit it.
+    private const int MinSentenceWordTokens = 4;
+
     private readonly ISentenceScorer _scorer;
     private readonly bool _ownsScorer;
 
@@ -41,6 +50,24 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.NoRule);
         if (slotIndex < 0 || slotIndex >= sentence.Count)
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
+
+        // Context floor (see MinSentenceWordTokens): a sentence carrying too few
+        // word tokens does not give the judge enough to be trusted, so abstain
+        // before scoring. Word tokens are the entries that carry a letter — the
+        // sentence is a list of output word-forms, punctuation living on the
+        // boundary rather than as its own token.
+        int wordTokens = 0;
+        foreach (string token in sentence)
+        {
+            foreach (char c in token)
+                if (char.IsLetter(c))
+                {
+                    wordTokens++;
+                    break;
+                }
+        }
+        if (wordTokens < MinSentenceWordTokens)
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.ShortContext);
 
         // One full-sentence candidate per surface form, in candidate order: the
         // slot word is swapped, the rest of the sentence held fixed.
