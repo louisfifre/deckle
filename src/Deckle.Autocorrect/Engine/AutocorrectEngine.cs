@@ -39,9 +39,12 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly Func<bool>? _decisionTelemetry;
 
     // Opt-in typed-sentence corpus. When this returns true, each committed word on
-    // an enrolled surface feeds the accumulator, which emits the (typed, final)
-    // sentence pair to the autocorrect.text dataset. Null = no accumulator built.
-    // Off by default. The heaviest text capture — a verbatim record of typed input.
+    // ANY editable, non-password surface feeds the accumulator — enrollment does not
+    // bound it, since the point is the user's own typing reference (auto-corrections,
+    // style, rhythm), not only what the corrector touched. The accumulator emits the
+    // (typed, final) sentence pair to the autocorrect.text dataset. Null = no
+    // accumulator built. Off by default. The heaviest text capture — a verbatim
+    // record of typed input, so it stands behind its own dedicated consent toggle.
     private readonly Func<bool>? _textTelemetry;
     private readonly SentenceCorpus? _corpus;
 
@@ -218,9 +221,10 @@ public sealed class AutocorrectEngine : IDisposable
     // as sentence-initial; every other reason is a caret move to an unknown spot.
     private void OnTrackerReset(ResetReason reason)
     {
-        // Close the corpus sentence first (Enter emits it, any other reason drops
-        // the partial run); the emit is gated downstream by the sink, so a flip to
-        // off between accumulation and reset cannot leak a sentence to disk.
+        // Close the corpus sentence first (Enter emits it tagged "enter", any other
+        // reason emits the partial run tagged "interrupted" — still verbatim keyboard
+        // input); the emit is gated downstream by the sink, so a flip to off between
+        // accumulation and reset cannot leak a sentence to disk.
         _corpus?.Reset(reason);
         _coordinator?.Invalidate(reason);
     }
@@ -271,10 +275,13 @@ public sealed class AutocorrectEngine : IDisposable
         bool enabledHere = IsEnabledFor(settings, surface.ProcessName);
         bool undecided = !IsDecided(settings, surface.ProcessName);
 
-        // A declined app (decided, off) is left entirely alone — no policy run,
-        // no suggestion. Only an enabled or a not-yet-decided app is evaluated.
+        // A declined app (decided, off) is left alone for CORRECTION — no policy
+        // run, no suggestion — but the text corpus still records what was typed:
+        // enrollment no longer bounds collection. Only an enabled or a not-yet-
+        // decided app is evaluated by the policy below.
         if (!enabledHere && !undecided)
         {
+            FeedCorpus(commit, commit.Word); // on-screen is the verbatim typed word
             _rollupGated++;
             _coordinator?.Invalidate(ResetReason.FocusChanged);
             MaybeRollup(commit.TimestampMs);
@@ -326,10 +333,9 @@ public sealed class AutocorrectEngine : IDisposable
             if (trace is not null)
                 EmitDecision(wordId, commit.Word, leftContext, trace);
 
-            // Feed the typed-sentence corpus the (typed, on-screen) pair. Gated on
-            // the dedicated toggle, so nothing accumulates when it is off.
-            if (_textTelemetry?.Invoke() == true)
-                _corpus?.Word(commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary);
+            // Feed the typed-sentence corpus the (typed, on-screen) pair — the
+            // decision replacement when one applied, else the typed word itself.
+            FeedCorpus(commit, decision?.Replacement ?? commit.Word);
 
             // Feed the contextual stage both the typed literal and the on-screen
             // form. It may weigh literals the commit stage left alone, and may
@@ -345,6 +351,8 @@ public sealed class AutocorrectEngine : IDisposable
             // applied is the trigger to offer enrollment for this app — once.
             if (decision is not null)
                 MaybeSuggestEnrollment(surface.ProcessName);
+            // Correction withheld, so the on-screen form is the typed word itself.
+            FeedCorpus(commit, commit.Word);
             _rollupGated++;
             _coordinator?.Invalidate(ResetReason.FocusChanged);
         }
@@ -379,19 +387,32 @@ public sealed class AutocorrectEngine : IDisposable
         }
     }
 
+    // Feed the typed-sentence corpus one word: the verbatim typed form paired with
+    // the form the engine left on screen (onScreen). Collection reaches here only for
+    // editable, non-password, master-on commits — the two early gates already withheld
+    // the rest — and spans every such surface regardless of enrollment. The dedicated
+    // consent toggle is the sole remaining gate, and exactly one call fires per commit.
+    // commit.TimestampMs feeds the corpus rhythm (cast to whole ms; 0 stays unknown).
+    private void FeedCorpus(WordCommit commit, string onScreen)
+    {
+        if (_textTelemetry?.Invoke() == true)
+            _corpus?.Word(commit.Word, onScreen, commit.Boundary, (long)commit.TimestampMs);
+    }
+
+    // Emits one completed corpus sentence on the dedicated dataset, tagged with the
+    // current process, its closure (how the run ended) and its per-slot timing. Runs
+    // on the input thread (the accumulator is synchronous), so _surface is the live
+    // surface that produced the sentence.
+    private void EmitText(SentenceCorpus.SentenceRecord rec)
+    {
+        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
+            _surface.ProcessName, rec.Typed, rec.Final, rec.History, rec.Closure, rec.Timing);
+    }
+
     // The synchronous decision line of the per-word telemetry: the word, its left
     // context, the outcome, the decisive stage/reason, that stage's candidate pool
     // and safety gauges, and the full per-stage trail. The deferred reranker verdict
     // (when the word becomes an ambiguous slot) joins it later on the same id.
-    // Emits one completed corpus sentence on the dedicated dataset, tagged with the
-    // current process. Runs on the input thread (the accumulator is synchronous), so
-    // _surface is the live surface that produced the sentence.
-    private void EmitText(SentenceCorpus.SentenceRecord rec)
-    {
-        DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
-            _surface.ProcessName, rec.Typed, rec.Final, rec.History);
-    }
-
     private static void EmitDecision(long id, string word, IReadOnlyList<string> leftContext, CorrectionTrace trace)
     {
         DeckleAutocorrectSource.Log.AutocorrectDecisionRecorded(

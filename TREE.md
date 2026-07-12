@@ -1127,6 +1127,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AssemblyInfo.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
+│   │   ├── AutocorrectEngineCorpusTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
 │   │   ├── AutocorrectEngineHarness.cs

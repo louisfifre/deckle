@@ -15,7 +15,8 @@ namespace Deckle.Settings;
 //
 // Same pattern as AutocorrectDecisionsConsentDialog, but this is the heaviest
 // text capture in the app — a verbatim record of everything typed at the keyboard
-// on enrolled apps — so the wording is the most explicit of the consent dialogs.
+// in any editable field (never password fields), enrolled or not — so the wording
+// is the most explicit of the consent dialogs.
 // Strings via Loc.Get / Resources.resw; the where path is the actual file.
 
 internal static class AutocorrectTextConsentDialog
