@@ -112,7 +112,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         //     own variants (personal wins ties), filter by frequency floor and
         //     drop any pair the user has suppressed. A valid literal competes
         //     as a candidate of its own.
-        var candidates = BuildCandidates(lower, literalValid, out var fromPersonal);
+        var candidates = BuildCandidates(lower, literalValid, applyRarityGate: false, out var fromPersonal);
         st?.WithCandidates(candidates, v =>
             fromPersonal.Contains(v.Form) ? CorrectionTrace.Sources.Personal
             : v.Form == lower             ? CorrectionTrace.Sources.Literal
@@ -224,7 +224,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         if (word.Length < _options.MinWordLength && !literalValid && !includeTypedLiteral)
             return Array.Empty<AccentVariant>();
 
-        var merged = BuildCandidates(lower, literalValid, out _);
+        var merged = BuildCandidates(lower, literalValid, applyRarityGate: true, out _);
         if (includeTypedLiteral && !merged.Exists(v => string.Equals(v.Form, lower, StringComparison.Ordinal)))
         {
             double frequency = literalValid ? _french.FrequencyOf(lower) : 0.0;
@@ -240,7 +240,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
     // variants that fold to the same key (élève vs élevé) must both survive.
     // A merged personal variant re-sorts the list to keep frequency-desc order.
     private List<AccentVariant> BuildCandidates(
-        string lower, bool literalValid, out HashSet<string> fromPersonal)
+        string lower, bool literalValid, bool applyRarityGate, out HashSet<string> fromPersonal)
     {
         fromPersonal = new HashSet<string>(StringComparer.Ordinal);
 
@@ -261,12 +261,27 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
             }
         }
 
-        // Filter: frequency floor, then drop user-suppressed pairs (suppression
-        // is case-insensitive on both the original and the candidate form).
+        // Sentence-stage rarity gate: measured against the typed literal's own
+        // frequency, a folded variant far rarer than it is almost always a wrong
+        // change (mais→maïs, le→lé). Drop anything under literalFreq × ratio —
+        // never the typed literal itself. Off unless the caller is the sentence
+        // stage (applyRarityGate) and the literal is a valid form with a
+        // meaningful reference frequency; a misspelled literal has none. Zero when
+        // off, so the per-candidate test below is a no-op.
+        double rarityFloor = applyRarityGate && literalValid
+            ? _french.FrequencyOf(lower) * _options.MinCandidateFrequencyRatio
+            : 0.0;
+
+        // Filter: frequency floor, the rarity gate, then drop user-suppressed pairs
+        // (suppression is case-insensitive on both the original and the candidate form).
         var kept = new List<AccentVariant>(merged.Count);
         foreach (var v in merged)
         {
             if (v.FrequencyPerMillion < _options.MinCandidateFrequencyPerMillion)
+                continue;
+            if (rarityFloor > 0.0
+                && v.FrequencyPerMillion < rarityFloor
+                && !string.Equals(v.Form, lower, StringComparison.Ordinal))
                 continue;
             if (_personal?.IsSuppressed(lower, v.Form.ToLowerInvariant()) == true)
             {

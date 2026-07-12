@@ -20,7 +20,13 @@ public class DiacriticsRestorerTests
         "français\t400\nécole\t200\nélève\t30\nélevé\t25\n" +
         "côte\t60\ncote\t50\nà\t9000\na\t10000\n" +
         "aujourd'hui\t80\ndéjà\t150\nmarché\t90\nmarche\t85\ncafé\t120\n" +
-        "étant\t100\nêtant\t1\nvoila\t35\nvoilà\t700\n";
+        "étant\t100\nêtant\t1\nvoila\t35\nvoilà\t700\n" +
+        // Rarity-gate fixture. "mais" (valid, 500) hides maïs (3): ratio 0.006,
+        // under the 0.01 floor. "taches" (40) hides tâches (20): ratio 0.5, above.
+        // "cotes" (50) hides côtes (40, kept) and cotés (0.1, dropped). "ete" is
+        // NOT a valid literal — its variants été/êté have no reference frequency.
+        "mais\t500\nmaïs\t3\ntaches\t40\ntâches\t20\n" +
+        "cotes\t50\ncôtes\t40\ncotés\t0.1\nété\t500\nêté\t1\n";
 
     private const string EnglishTsv = "the\t60000\nbut\t9000\nmode\t500\ncafe\t0.1\n";
 
@@ -276,6 +282,65 @@ public class DiacriticsRestorerTests
         Assert.NotNull(ecole);
         Assert.Equal("école", ecole!.Replacement);
         Assert.Equal(CorrectionReason.LexicalGate, ecole.Reason);
+    }
+
+    // ── Sentence-stage rarity gate ──────────────────────────────────────────
+    //
+    // The gate lives in the sentence-stage candidate set, so these exercise
+    // SentenceCandidates / AmbiguousCandidates, not Evaluate (the commit stage,
+    // which the gate leaves untouched).
+
+    [Fact]
+    public void RarityGateDropsAFarRarerVariantWhenTheLiteralIsValid()
+    {
+        // "cotes" (50) is a valid literal; cotés (0.1) is 500× rarer — ratio
+        // 0.002, well under the 0.01 floor — so it is dropped from the slot.
+        var candidates = Restorer().SentenceCandidates("cotes", includeTypedLiteral: true);
+
+        Assert.DoesNotContain(candidates, v => v.Form == "cotés");
+    }
+
+    [Fact]
+    public void RarityGateKeepsAModerateRatioVariant()
+    {
+        // tâches (20) against the "taches" literal (40) is ratio 0.5 — far above
+        // the floor, the class of correct restoration the gate must not touch.
+        var candidates = Restorer().SentenceCandidates("taches", includeTypedLiteral: true);
+
+        Assert.Contains(candidates, v => v.Form == "tâches");
+    }
+
+    [Fact]
+    public void RarityGateDoesNotApplyWhenTheLiteralIsNotAValidForm()
+    {
+        // "ete" is in no lexicon, so there is no reference frequency: the gate
+        // stays off and even êté (1), 500× rarer than été, survives the slot.
+        var candidates = Restorer().AmbiguousCandidates("ete");
+
+        Assert.Contains(candidates, v => v.Form == "été");
+        Assert.Contains(candidates, v => v.Form == "êté");
+    }
+
+    [Fact]
+    public void RarityGateNeverDropsTheTypedLiteralItself()
+    {
+        // The literal is the reference, never a casualty: "cotes" stays in the
+        // slot even as its far-rarer fold-mate cotés is dropped around it.
+        var candidates = Restorer().SentenceCandidates("cotes", includeTypedLiteral: true);
+
+        Assert.Contains(candidates, v => v.Form == "cotes");
+        Assert.Contains(candidates, v => v.Form == "côtes");
+    }
+
+    [Fact]
+    public void RarityGateCollapsingASlotBelowTwoFormsMakesItUnambiguous()
+    {
+        // "mais" (500) has only maïs (3) behind it, and the gate drops maïs. With
+        // just the literal left the fold is no longer a two-way slot at all.
+        var restorer = Restorer();
+
+        Assert.Empty(restorer.SentenceCandidates("mais", includeTypedLiteral: true));
+        Assert.Empty(restorer.AmbiguousCandidates("mais"));
     }
 
     // ── Stubs ───────────────────────────────────────────────────────────────

@@ -26,6 +26,18 @@ public sealed record RestorerOptions
     // everything the index holds; raise it to prune corpus noise.
     public double MinCandidateFrequencyPerMillion { get; init; } = 0.0;
 
+    // Sentence-stage rarity gate. A folded variant is dropped when its frequency
+    // is below (typed literal's frequency × this ratio) — i.e. more than 1/ratio
+    // rarer than what was typed — and only when the literal is itself a valid
+    // lexicon form, so there is a meaningful reference frequency to compare
+    // against. Replay of the ONNX sentence judge over the maintainer's real corpus
+    // showed its wrong changes cluster on forms hundreds to thousands of times
+    // rarer than the typed word (mais→maïs, le→lé, de→dé); a 100× floor (0.01)
+    // removed 32 of 57 residual wrong changes on the clean subset while touching
+    // none of the correct restorations, which sit at ratios of 0.09–0.5. The
+    // commit-stage gate does not apply this; only the sentence stage does.
+    public double MinCandidateFrequencyRatio { get; init; } = 0.01;
+
     // Eval-only mode: lets the pair model overturn a *valid* French form
     // (a→à, du→dû — the real-word class). Off in the live engine by doctrine;
     // the offline eval measures what it would buy and what it would break.
