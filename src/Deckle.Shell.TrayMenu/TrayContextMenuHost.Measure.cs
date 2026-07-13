@@ -34,6 +34,18 @@ public sealed partial class TrayContextMenuHost
     // process lifetime.
     private void PrimeFlyout()
     {
+        // Module-owned entries follow their delegate: the flyout is built in
+        // the constructor, before the App wires the commands of the modules
+        // actually installed, so presence lands here as a visibility pass —
+        // an unwired command simply never shows. Applied BEFORE the ShowAt so
+        // the primed sizes (and the presenter capture below) reflect the menu
+        // the user will actually see; presence is boot-constant, so once is
+        // enough.
+        if (_ambientItem is not null)
+            _ambientItem.Visibility = OnToggleAmbient is null ? Visibility.Collapsed : Visibility.Visible;
+        if (_transcribeFileItem is not null)
+            _transcribeFileItem.Visibility = OnTranscribeFile is null ? Visibility.Collapsed : Visibility.Visible;
+
         var sw = Stopwatch.StartNew();
         _flyout!.ShowAt(_frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
 
@@ -67,14 +79,17 @@ public sealed partial class TrayContextMenuHost
                     _primedSizes[item] = item.DesiredSize;
 
                 // Capture the real presenter size (walking up from the first
-                // item, attached at this point). Its DesiredSize includes its
-                // padding + border, so it exactly reflects the visible card; in
-                // contrast, the item sum ignores those and we compensated with
-                // an imprecise flat margin.
+                // VISIBLE item, attached at this point — a collapsed item may
+                // never mount into the popup tree and would dead-end the walk).
+                // Its DesiredSize includes its padding + border, so it exactly
+                // reflects the visible card; in contrast, the item sum ignores
+                // those and we compensated with an imprecise flat margin.
                 _primedPresenterSize = null;
-                if (_flyout.Items.Count > 0)
+                var firstVisible = _flyout.Items
+                    .FirstOrDefault(i => i.Visibility == Visibility.Visible);
+                if (firstVisible is not null)
                 {
-                    var presenter = FindAncestorPresenter(_flyout.Items[0]);
+                    var presenter = FindAncestorPresenter(firstVisible);
                     if (presenter is not null)
                     {
                         presenter.UpdateLayout();

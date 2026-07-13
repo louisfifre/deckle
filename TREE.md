@@ -345,6 +345,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
+│   │   ├── AppModules.cs
 │   │   ├── AutocorrectNotifications.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.App.csproj

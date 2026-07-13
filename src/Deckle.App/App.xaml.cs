@@ -4,6 +4,7 @@ using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
 using Deckle.Lighting.Ambient;
+using Deckle.Modules;
 using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
@@ -205,6 +206,21 @@ public partial class App : Microsoft.UI.Xaml.Application
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
         Milestone("settings-bootstrap");
 
+        // Presence catalogue + the user's module choice, before any module is
+        // composed or registered: every gate below reads these flags. Presence
+        // (chosen at install, via the wizard's module selector) sits above the
+        // per-module Enabled toggles — an absent module's engine is not
+        // composed and its settings pages never register, where a disabled one
+        // is merely stopped. No recorded choice means everything is present.
+        AppModules.RegisterAll();
+        bool transcriptionPresent = ModulePresence.IsPresent(AppModules.Transcription);
+        bool rewritePresent       = ModulePresence.IsPresent(AppModules.Rewrite);
+        bool autocorrectPresent   = ModulePresence.IsPresent(AppModules.Autocorrect);
+        bool ambientPresent       = ModulePresence.IsPresent(AppModules.Ambient);
+        bool trackpadPresent      = ModulePresence.IsPresent(AppModules.Trackpad);
+        bool anytypePresent       = ModulePresence.IsPresent(AppModules.Anytype);
+        Milestone("modules");
+
         // Wiring for `Deckle.Core.CorpusPaths` (relocated in sub-wave 6a):
         // the storage paths helper needed a getter for the user
         // StorageDirectory without depending on an observability module. The
@@ -301,7 +317,10 @@ public partial class App : Microsoft.UI.Xaml.Application
         var toastChannel = new Deckle.Notifications.ToastChannel();
         var dispatcher = Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
         dispatcher.Catalog.Register(PlaygroundNotifications.All);
-        dispatcher.Catalog.Register(AutocorrectNotifications.All);
+        // A module's notification descriptors follow its presence: an absent
+        // module has no surface that could raise them.
+        if (autocorrectPresent)
+            dispatcher.Catalog.Register(AutocorrectNotifications.All);
         Milestone("notifications");
 
         // Speech provisioning is decoupled from boot. Whisper is one module
@@ -315,7 +334,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // DllNotFoundException without the native runtime, so its construction
         // is guarded by this check; the event wiring further down carries the
         // same guard.
-        bool speechReady = NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
+        bool speechReady = transcriptionPresent
+            && NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
         if (speechReady)
         {
             // Compose the engine with the Whisper backend — the App is the
@@ -329,10 +349,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         }
         else
         {
-            // No native runtime and/or model yet — the dictation module stays
-            // dormant. Recorded as a boot milestone (with the two readiness
-            // flags) so a support trace shows exactly which half is missing.
-            Milestone($"engine_skipped native={NativeRuntime.IsInstalled()} model={SpeechModels.IsDefaultInstalled()}");
+            // Module unchecked, or no native runtime and/or model yet — the
+            // dictation module stays dormant. Recorded as a boot milestone
+            // (with the three readiness flags) so a support trace shows
+            // exactly which part is missing.
+            Milestone($"engine_skipped present={transcriptionPresent} native={NativeRuntime.IsInstalled()} model={SpeechModels.IsDefaultInstalled()}");
         }
 
         // Read-aloud (TTS) engine with the placeholder Chatterbox backend —
@@ -350,30 +371,44 @@ public partial class App : Microsoft.UI.Xaml.Application
         // user persisted Enabled=true from a previous session, the
         // pipeline boots automatically when the engine starts (fire-and-
         // forget Task so OnLaunched stays non-blocking).
-        _ambientEngine = new AmbientEngine(new AppAmbientEngineHost());
-        // Surface every state transition in the logs (Info level so it
-        // lands in app.jsonl without requiring the LogAmbientCapture-
-        // Activity toggle). Subscribers in the windows (AmbientPage
-        // ProgressRing, Playground status) hook directly to the engine
-        // event ; we don't relay through tray UpdateStatus to avoid
-        // squatting the Whisp recording tooltip.
-        _ambientEngine.StateChanged += s =>
+        if (ambientPresent)
         {
-            DeckleAppSource.Log.AmbientPipelineState();
-            DeckleAppSource.Log.AmbientPipelineStateDetail(s.ToString());
-        };
-        // AmbientPage's NotPaired InfoBar action button needs to open
-        // the Playground (where Hue pairing lives in V0). Lighting.
-        // Ambient cannot reference Deckle, so the App fills the slot.
-        AmbientEngine.OpenPlaygroundRequested = () => ShowPlaygroundLazy();
-        Milestone("ambient_engine");
+            _ambientEngine = new AmbientEngine(new AppAmbientEngineHost());
+            // Surface every state transition in the logs (Info level so it
+            // lands in app.jsonl without requiring the LogAmbientCapture-
+            // Activity toggle). Subscribers in the windows (AmbientPage
+            // ProgressRing, Playground status) hook directly to the engine
+            // event ; we don't relay through tray UpdateStatus to avoid
+            // squatting the Whisp recording tooltip.
+            _ambientEngine.StateChanged += s =>
+            {
+                DeckleAppSource.Log.AmbientPipelineState();
+                DeckleAppSource.Log.AmbientPipelineStateDetail(s.ToString());
+            };
+            // AmbientPage's NotPaired InfoBar action button needs to open
+            // the Playground (where Hue pairing lives in V0). Lighting.
+            // Ambient cannot reference Deckle, so the App fills the slot.
+            AmbientEngine.OpenPlaygroundRequested = () => ShowPlaygroundLazy();
+            Milestone("ambient_engine");
+        }
+        else
+        {
+            Milestone("ambient_engine_skipped");
+        }
 
         // Trackpad module — Raw Input host + three-finger drag engine +
         // frame recorder, reconciled with the persisted module settings
         // (off by default: the host thread only spins up when the master
         // switch or the frame-recording diagnostic is on).
-        InitializeTrackpad();
-        Milestone("trackpad");
+        if (trackpadPresent)
+        {
+            InitializeTrackpad();
+            Milestone("trackpad");
+        }
+        else
+        {
+            Milestone("trackpad_skipped");
+        }
 
         // Taskbar cover module — dedicated band thread reconciled with the
         // persisted module settings (off by default; the thread only spins
@@ -403,15 +438,29 @@ public partial class App : Microsoft.UI.Xaml.Application
         // engine has no synchronous consumer in OnLaunched, same posture as
         // ApplyAmbientEnabledAsync. The milestone marks the dispatch, not load
         // completion.
-        _ = InitializeAutocorrectAsync();
-        Milestone("autocorrect");
+        if (autocorrectPresent)
+        {
+            _ = InitializeAutocorrectAsync();
+            Milestone("autocorrect");
+        }
+        else
+        {
+            Milestone("autocorrect_skipped");
+        }
 
         // Anytype headless backend — start/adopt a windowless serve process
         // and supervise it from App.Anytype.cs. Fire-and-forget: readiness
         // runs off the boot path, and shutdown stops supervision rather than
         // killing the warm backend; the milestone marks dispatch, not readiness.
-        _ = InitializeAnytypeBackendAsync();
-        Milestone("anytype_backend");
+        if (anytypePresent)
+        {
+            _ = InitializeAnytypeBackendAsync();
+            Milestone("anytype_backend");
+        }
+        else
+        {
+            Milestone("anytype_backend_skipped");
+        }
 
         // Lazy LogWindow: instantiated on first open via ShowLogWindowLazy().
         // The ILogWindowSink is attached at that point via
@@ -515,29 +564,34 @@ public partial class App : Microsoft.UI.Xaml.Application
         // that materialises its rail item, and into the search index paired with the
         // module's SettingsSearch.Entries — the page's findable cards, resolved from the
         // module's own PRI subtree without composing the page.
-        var recording = Audio.RecordingSettingsModule.Describe(order: 50);
-        var whisper = Transcription.WhisperSettingsModule.Describe(order: 100);
-        var rewrite = Llm.Rewrite.LlmSettingsModule.Describe(order: 200);
-        var autocorrect = Autocorrect.AutocorrectSettingsModule.Describe(order: 300);
-        var ambient = Lighting.Ambient.AmbientSettingsModule.Describe(order: 400);
-        var trackpad = Input.Trackpad.TrackpadSettingsModule.Describe(order: 500);
-        var diagnostics = Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600);
+        // A page registers only when the presence module that owns it is
+        // installed: an absent module has no rail entry and no search hits.
+        // Both registrations travel together — a nav item without its search
+        // entries (or the reverse) would read as a half-installed module.
+        void RegisterSettingsModule(
+            Catalog.SettingsModuleDescriptor page,
+            System.Collections.Generic.IReadOnlyList<Catalog.SettingSearchEntry> entries)
+        {
+            Settings.SettingsModuleRegistry.Register(page);
+            Settings.SettingsSearchIndex.Register(page, entries);
+        }
 
-        Settings.SettingsModuleRegistry.Register(recording);
-        Settings.SettingsModuleRegistry.Register(whisper);
-        Settings.SettingsModuleRegistry.Register(rewrite);
-        Settings.SettingsModuleRegistry.Register(autocorrect);
-        Settings.SettingsModuleRegistry.Register(ambient);
-        Settings.SettingsModuleRegistry.Register(trackpad);
-        Settings.SettingsModuleRegistry.Register(diagnostics);
-
-        Settings.SettingsSearchIndex.Register(recording, Audio.SettingsSearch.Entries);
-        Settings.SettingsSearchIndex.Register(whisper, Transcription.SettingsSearch.Entries);
-        Settings.SettingsSearchIndex.Register(rewrite, Llm.Rewrite.SettingsSearch.Entries);
-        Settings.SettingsSearchIndex.Register(autocorrect, Autocorrect.SettingsSearch.Entries);
-        Settings.SettingsSearchIndex.Register(ambient, Lighting.Ambient.SettingsSearch.Entries);
-        Settings.SettingsSearchIndex.Register(trackpad, Input.Trackpad.SettingsSearch.Entries);
-        Settings.SettingsSearchIndex.Register(diagnostics, Diagnostics.Logging.SettingsSearch.Entries);
+        if (transcriptionPresent)
+        {
+            RegisterSettingsModule(Audio.RecordingSettingsModule.Describe(order: 50), Audio.SettingsSearch.Entries);
+            RegisterSettingsModule(Transcription.WhisperSettingsModule.Describe(order: 100), Transcription.SettingsSearch.Entries);
+        }
+        if (rewritePresent)
+            RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);
+        if (autocorrectPresent)
+            RegisterSettingsModule(Autocorrect.AutocorrectSettingsModule.Describe(order: 300), Autocorrect.SettingsSearch.Entries);
+        if (ambientPresent)
+            RegisterSettingsModule(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.SettingsSearch.Entries);
+        if (trackpadPresent)
+            RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);
+        // Diagnostics is shell-level observability, not a presence module —
+        // always registered.
+        RegisterSettingsModule(Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600), Diagnostics.Logging.SettingsSearch.Entries);
 
         // General is the shell's one static nav anchor, not a registry module, so it has
         // no descriptor to read coordinates off: its cards register with the values its
@@ -684,8 +738,10 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         // Initial status — model loads on-demand at first hotkey, not at
         // startup. With speech unprovisioned the engine is absent, so the
-        // tooltip says so rather than implying dictation is ready.
-        string initialStatus = _engine is not null ? "Ready" : "Dictation not set up";
+        // tooltip says so rather than implying dictation is ready. A module
+        // absent by choice is not a missing setup — the tooltip stays quiet.
+        string initialStatus = _engine is not null || !transcriptionPresent
+            ? "Ready" : "Dictation not set up";
         _tray.UpdateStatus(initialStatus);
         DeckleAppSource.Log.StatusChanged();
         DeckleAppSource.Log.StatusChangedDetail(initialStatus);
@@ -695,18 +751,22 @@ public partial class App : Microsoft.UI.Xaml.Application
         // preference: the app should not start screen capture + Hue traffic on
         // its own at launch. Subscribe the observer AFTER the force-off so the
         // Changed event does not bounce a Start call we just suppressed.
-        if (AmbientSettingsService.Instance.Current.Enabled)
+        // Presence-gated with the engine above: absent module, no observer.
+        if (ambientPresent)
         {
-            AmbientSettingsService.Instance.Current.Enabled = false;
-            AmbientSettingsService.Instance.Save();
-            DeckleAppSource.Log.AmbientMasterForcedOff();
-        }
+            if (AmbientSettingsService.Instance.Current.Enabled)
+            {
+                AmbientSettingsService.Instance.Current.Enabled = false;
+                AmbientSettingsService.Instance.Save();
+                DeckleAppSource.Log.AmbientMasterForcedOff();
+            }
 
-        // Ambient Light master toggle observer. Drives Start / Stop on
-        // the canonical engine instantiated above. The engine owns its
-        // own capture / sampler / Hue dependencies so the pipeline runs
-        // without any window needing to be open.
-        AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
+            // Ambient Light master toggle observer. Drives Start / Stop on
+            // the canonical engine instantiated above. The engine owns its
+            // own capture / sampler / Hue dependencies so the pipeline runs
+            // without any window needing to be open.
+            AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
+        }
 
         // Tray context menu — WinUI 3 SecondWindow pattern. The host needs
         // the message-only HWND as its owner so its popup inherits the tray's
@@ -715,26 +775,10 @@ public partial class App : Microsoft.UI.Xaml.Application
         // shown at the cursor with a Win11-native MenuFlyout.
         _trayMenu = new TrayContextMenuHost(_messageHost.Hwnd)
         {
-            // File transcription — opens the system file picker and runs the
-            // chosen audio file through the same pipeline as dictation (see
-            // App.FileTranscription.cs). Delivered on the UI thread the tray
-            // click arrives on.
-            OnTranscribeFile = () => TranscribeFileFromTray(),
             OnShowLogs       = () => ShowLogWindowLazy(),
             OnShowSettings   = () => ShowSettingsWindowLazy(),
             OnShowPlayground = () => ShowPlaygroundLazy(),
-            // Ambient Light tray entry — checkmark mirrors the persisted
-            // AmbientSettings.Enabled, click flips it. The actual engine
-            // start/stop reacts via the AmbientSettingsService.Changed
-            // observer wired in phase I.
-            IsAmbientOn      = () => AmbientSettingsService.Instance.Current.Enabled,
-            OnToggleAmbient  = () =>
-            {
-                var s = AmbientSettingsService.Instance.Current;
-                s.Enabled = !s.Enabled;
-                AmbientSettingsService.Instance.Save();
-            },
-            // Taskbar cover tray entry — same posture as Ambient: the pill
+            // Taskbar cover tray entry — the pill
             // mirrors the persisted TaskbarCoverSettings.Enabled, click flips
             // it, the host start/stop reacts via the settings observer wired
             // in InitializeTaskbarCover.
@@ -752,6 +796,32 @@ public partial class App : Microsoft.UI.Xaml.Application
             // tangent to the icon regardless of taskbar orientation.
             GetIconRect      = () => _tray.GetIconRect(),
         };
+
+        // Module-owned tray entries follow presence: the menu host shows an
+        // item only when its delegate is wired, so an absent module's command
+        // simply never appears (see TrayContextMenuHost.PrimeFlyout).
+        if (transcriptionPresent)
+        {
+            // File transcription — opens the system file picker and runs the
+            // chosen audio file through the same pipeline as dictation (see
+            // App.FileTranscription.cs). Delivered on the UI thread the tray
+            // click arrives on.
+            _trayMenu.OnTranscribeFile = () => TranscribeFileFromTray();
+        }
+        if (ambientPresent)
+        {
+            // Ambient Light tray entry — checkmark mirrors the persisted
+            // AmbientSettings.Enabled, click flips it. The actual engine
+            // start/stop reacts via the AmbientSettingsService.Changed
+            // observer wired above.
+            _trayMenu.IsAmbientOn     = () => AmbientSettingsService.Instance.Current.Enabled;
+            _trayMenu.OnToggleAmbient = () =>
+            {
+                var s = AmbientSettingsService.Instance.Current;
+                s.Enabled = !s.Enabled;
+                AmbientSettingsService.Instance.Save();
+            };
+        }
         _tray.RightClickRequested += () => _trayMenu.Show();
 
         _tray.Register(_messageHost.Hwnd);
