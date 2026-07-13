@@ -1055,6 +1055,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes and kept decisions for Deckle.Transcription — read on demand wh…
+│   │   ├── SettingsSearch.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml
