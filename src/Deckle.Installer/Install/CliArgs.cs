@@ -2,44 +2,34 @@ namespace Deckle.Installer;
 
 // ── CliArgs ───────────────────────────────────────────────────────────────────
 //
-// The installer is a double-click console app first: with no arguments it runs
-// the interactive flow and prompts for the folders. Flags exist for the advanced
-// / scripted path (and for the uninstaller entry the installer registers, which
-// re-invokes the same exe with --uninstall).
+// The stub is a double-click GUI app first: with no arguments it downloads the
+// latest Deckle and hands off to the first-run wizard. The only flags are for the
+// uninstaller path the wizard registers — it re-invokes this same exe with
+// --uninstall — and -y/--yes for the quiet uninstall the Installed-apps
+// QuietUninstallString drives.
 //
-// Raw flags only — default resolution and prompting live in the flow, so the two
-// concerns stay separated (parse is pure, the flow owns the interaction).
-internal sealed record CliArgs(
-    bool Uninstall,
-    bool AssumeYes,
-    string? InstallDir,
-    string? DataDir)
+// Folder choice used to live here (--install-dir / --data-dir); it moved into the
+// WinUI wizard, so the stub no longer parses it.
+internal sealed record CliArgs(bool Uninstall, bool AssumeYes)
 {
     public static CliArgs Parse(string[] args)
     {
         bool uninstall = false, yes = false;
-        string? installDir = null, dataDir = null;
 
-        for (int i = 0; i < args.Length; i++)
+        foreach (string arg in args)
         {
-            switch (args[i].ToLowerInvariant())
+            switch (arg.ToLowerInvariant())
             {
                 case "--uninstall":
                     uninstall = true;
                     break;
                 case "-y":
                 case "--yes":
-                    yes = true; // accept defaults, no prompts
-                    break;
-                case "--install-dir":
-                    if (i + 1 < args.Length) installDir = args[++i];
-                    break;
-                case "--data-dir":
-                    if (i + 1 < args.Length) dataDir = args[++i];
+                    yes = true; // skip the uninstall prompts, keep data
                     break;
             }
         }
 
-        return new CliArgs(uninstall, yes, installDir, dataDir);
+        return new CliArgs(uninstall, yes);
     }
 }

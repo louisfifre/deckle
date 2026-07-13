@@ -738,8 +738,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Release/
 │   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
-│   │   │   └── ConsoleUi.cs
+│   │   │   ├── MessageDialog.cs
+│   │   │   └── ProgressWindow.cs
 │   │   ├── AGENTS.md  — [agent-instructions] NativeAOT download stub — silent, no console; fetches the payload to temp and h…
+│   │   ├── app.manifest
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Installer.csproj
 │   │   └── Program.cs

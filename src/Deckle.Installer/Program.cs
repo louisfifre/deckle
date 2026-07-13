@@ -1,36 +1,14 @@
 using Deckle.Installer;
 
-// Entry point. Top-level statements compile to a NativeAOT-friendly Main.
-
-ConsoleUi.EnableVirtualTerminal();
+// Entry point. WinExe: no console is allocated, so the stub is silent by design —
+// it speaks only through its native progress window and, on failure, a message box.
+// Routing is minimal: --uninstall reverses an install, anything else installs.
+//
+// Both entry points own the whole window lifecycle: they create the window, drive
+// the work on a background thread, and pump the message loop here on the main
+// thread (a window must be serviced on its creating thread).
 CliArgs cli = CliArgs.Parse(args);
 
-using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
-
-int code;
-try
-{
-    code = cli.Uninstall
-        ? await Uninstaller.RunAsync(cli, cts.Token)
-        : await InstallFlow.RunAsync(cli, cts.Token);
-}
-catch (OperationCanceledException)
-{
-    ConsoleUi.Warn("Cancelled.");
-    code = 130; // 128 + SIGINT, the conventional Ctrl+C exit code
-}
-catch (Exception ex)
-{
-    ConsoleUi.Error(ex.Message);
-    code = 1;
-}
-
-// Keep the window up when double-clicked (interactive run), so the user reads the
-// outcome instead of a console that flashes and vanishes. A clean uninstall holds
-// inside Uninstaller instead — its self-delete must be scheduled only after the
-// user lets go of the console, so this exe exits (and unlocks its image) right away.
-if (!cli.AssumeYes && !(cli.Uninstall && code == 0))
-    ConsoleUi.HoldOpen();
-
-return code;
+return cli.Uninstall
+    ? Uninstaller.Run(cli)
+    : InstallFlow.Run(cli);
