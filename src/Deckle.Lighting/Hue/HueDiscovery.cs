@@ -2,25 +2,9 @@ using System.Net.Http.Json;
 
 namespace Deckle.Lighting;
 
-// Bridge discovery on the local network. J2 only ships the cloud
-// lookup path : a GET to discovery.meethue.com returns the IPs of the
-// bridges that have phoned home from this WAN egress IP (typically
-// everything on the user's local network). It's a Philips-hosted
-// service but contains no auth-bearing data and works without an
-// account — a thin convenience over the LAN-scan alternatives (mDNS
-// `_hue._tcp.local.`, SSDP `IpBridge`).
-//
-// The mDNS path is the offline-friendly alternative ; it lands as a
-// follow-up once the REST happy path is validated, since it requires
-// either ~200 lines of DNS-over-UDP custom or a P/Invoke through
-// `windns` / `DnsServiceBrowse`. For J2 first, cloud + manual IP fall-
-// back covers the realistic cases (corporate firewall blocking the
-// cloud lookup is rare for home users).
-//
-// The static HttpClient is intentionally process-wide. HttpClient is
-// designed to be reused — instantiating one per call exhausts socket
-// handles. The 10 s timeout matches the SLA Philips publishes for the
-// discovery endpoint.
+// Public discovery facade. Local DNS-SD is the default because a Hue bridge is
+// a LAN device and Philips deprecated its older UPnP/SSDP discovery path. The
+// hosted endpoint remains available only as an explicitly requested fallback.
 public static class HueDiscovery
 {
     private const string CloudDiscoveryUrl = "https://discovery.meethue.com/";
@@ -31,11 +15,15 @@ public static class HueDiscovery
     };
 
     /// <summary>
-    /// Looks up Hue bridges reachable from the current WAN egress via
-    /// the Philips-hosted discovery endpoint. Returns an empty list if
-    /// no bridges are paired, or if the cloud service is unreachable
-    /// — the latter case logs a Warning and surfaces nothing as an
-    /// error so the caller can fall back to manual IP entry.
+    /// Finds Hue bridges advertised on the local link as
+    /// <c>_hue._tcp.local</c>. No request leaves the local network.
+    /// </summary>
+    public static Task<IReadOnlyList<HueBridge>> DiscoverLocalAsync(CancellationToken ct = default)
+        => HueLocalDiscovery.DiscoverAsync(ct);
+
+    /// <summary>
+    /// Looks up Hue bridges associated with the current public IP through the
+    /// Philips-hosted endpoint. This is an explicit fallback, never the default.
     /// </summary>
     public static async Task<IReadOnlyList<HueBridge>> DiscoverViaCloudAsync(CancellationToken ct = default)
     {
@@ -49,18 +37,20 @@ public static class HueDiscovery
 
             DeckleLightingSource.Log.DiscoveryFound();
             DeckleLightingSource.Log.DiscoveryFoundDetail(bridges.Length);
-            foreach (var b in bridges)
+            foreach (var bridge in bridges)
             {
-                DeckleLightingSource.Log.DiscoveryBridgeFound(b.Id, b.InternalIpAddress);
+                DeckleLightingSource.Log.DiscoveryBridgeFound(
+                    bridge.Id,
+                    bridge.InternalIpAddress);
             }
             return bridges;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            // Cloud lookup is a convenience, not a requirement — log
-            // Warning and return empty so the UI can prompt for manual
-            // IP entry. TaskCanceledException covers both the explicit
-            // CancellationToken path and the HttpClient.Timeout firing.
             DeckleLightingSource.Log.DiscoveryFailed();
             DeckleLightingSource.Log.DiscoveryFailedDetail(ex.GetType().Name, ex.Message);
             return [];

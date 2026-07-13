@@ -104,6 +104,12 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public const int EvtEntertainmentPrePrimeDetail = 60;
     public const int EvtEntertainmentPrePrimeFailed = 61;
     public const int EvtEntertainmentPrePrimeFailedDetail = 62;
+    public const int EvtLocalDiscoveryStarted = 63;
+    public const int EvtLocalDiscoveryStartedDetail = 64;
+    public const int EvtLocalDiscoveryCompleted = 65;
+    public const int EvtLocalDiscoveryCompletedDetail = 66;
+    public const int EvtLocalDiscoveryFailed = 67;
+    public const int EvtLocalDiscoveryFailedDetail = 68;
 
     // ── Discovery ───────────────────────────────────────────────────────
 
@@ -168,6 +174,60 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public void DiscoveryFailedDetail(string ex_type, string message)
     {
         if (IsEnabled()) WriteEvent(EvtDiscoveryFailedDetail, ex_type, message);
+    }
+
+    [Event(EvtLocalDiscoveryStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Looking for Hue bridges on the local network")]
+    public void LocalDiscoveryStarted()
+    {
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryStarted);
+    }
+
+    [Event(EvtLocalDiscoveryStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "discover start | source=mdns | service={0}")]
+    public void LocalDiscoveryStartedDetail(string service)
+    {
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryStartedDetail, service);
+    }
+
+    [Event(EvtLocalDiscoveryCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Local Hue bridge discovery completed")]
+    public void LocalDiscoveryCompleted()
+    {
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryCompleted);
+    }
+
+    [Event(EvtLocalDiscoveryCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "discover result | source=mdns | count={0}")]
+    public void LocalDiscoveryCompletedDetail(int count)
+    {
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryCompletedDetail, count);
+    }
+
+    [Event(EvtLocalDiscoveryFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Local Hue bridge discovery failed")]
+    public void LocalDiscoveryFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryFailed);
+    }
+
+    [Event(EvtLocalDiscoveryFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "discover failed | source=mdns | ex_type={0} | message={1}")]
+    public void LocalDiscoveryFailedDetail(string ex_type, string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryFailedDetail, ex_type, message);
     }
 
     // ── Pairing ─────────────────────────────────────────────────────────
