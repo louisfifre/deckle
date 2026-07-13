@@ -473,7 +473,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
+│   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Replay/
 │   │   │   ├── CorpusReader.cs
