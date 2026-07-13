@@ -153,6 +153,15 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     // Plumbing detail with a tag and a key ⇒ Verbose (no user milestone).
     public const int EvtSearchEntrySkipped                = 74;
 
+    // ── Settings cross-page search (TitleBar box) ───────────────────────
+    // A debounced query ran: query length (not the text — privacy) and hit count
+    // are measures ⇒ Verbose, no milestone (it fires per settled keystroke).
+    // Picking a hit is a deliberate user action ⇒ Info milestone with no ids, its
+    // page/card tags in the Verbose mirror that follows.
+    public const int EvtSearchExecuted                    = 75;
+    public const int EvtSearchNavigated                   = 76;
+    public const int EvtSearchNavigatedDetail             = 77;
+
     // ── Bootstrap ───────────────────────────────────────────────────────
 
     [Event(EvtMigrationDispatched,
@@ -803,5 +812,34 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public void SearchEntrySkipped(string page_tag, string label_key)
     {
         if (IsEnabled()) WriteEvent(EvtSearchEntrySkipped, page_tag, label_key);
+    }
+
+    // ── Settings cross-page search (TitleBar box) ───────────────────────
+
+    [Event(EvtSearchExecuted,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "search executed | query_len={0} | hits={1}")]
+    public void SearchExecuted(int query_len, int hits)
+    {
+        if (IsEnabled()) WriteEvent(EvtSearchExecuted, query_len, hits);
+    }
+
+    [Event(EvtSearchNavigated,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Navigated from search")]
+    public void SearchNavigated()
+    {
+        if (IsEnabled()) WriteEvent(EvtSearchNavigated);
+    }
+
+    [Event(EvtSearchNavigatedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "search navigation | page={0} | card={1}")]
+    public void SearchNavigatedDetail(string page_tag, string card_tag)
+    {
+        if (IsEnabled()) WriteEvent(EvtSearchNavigatedDetail, page_tag, card_tag);
     }
 }

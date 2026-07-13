@@ -618,6 +618,28 @@
     <value>Logs</value>
   </data>
 
+  <!-- Cross-page search (TitleBar central Content). x:Uid strings resolve locally.
+       The box collapses to SettingsSearchIconButton below a width threshold. The two
+       Settings_Search_* strings below are built in code (dynamic count, constructed
+       rows) so they go through Loc and are mirrored in Deckle.App's root map. -->
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SettingsSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SettingsSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SettingsSearchIconButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>No results found</value>
+  </data>
+  <data name="Settings_Search_MoreResults_Format" xml:space="preserve">
+    <value>+{0} more — refine your search</value>
+  </data>
 
   <!-- ─── Settings — common section actions ──────────────────────────
        Per-section "Reset" hyperlink and its tooltip. Reused on every

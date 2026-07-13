@@ -67,6 +67,9 @@ public sealed partial class SettingsWindow : Window
 
         SystemBackdrop = new MicaBackdrop();
 
+        // Cross-page search in the TitleBar: wire the responsive collapse.
+        InitializeSearch();
+
         // Keep the pane's open state aligned with the display mode as the
         // window is resized across the Auto breakpoints.
         Nav.DisplayModeChanged += OnNavDisplayModeChanged;

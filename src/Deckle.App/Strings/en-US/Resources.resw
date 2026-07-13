@@ -1466,6 +1466,16 @@
     <value>Deckle Overlay</value>
   </data>
 
+  <!-- ── Settings cross-page search (code-behind, Loc.Get / Loc.Format) ──
+       Terminal, non-navigating rows the suggestion list is closed with:
+       built in code (SettingsWindow.Search.cs), so x:Uid cannot carry them. -->
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>No results found</value>
+  </data>
+  <data name="Settings_Search_MoreResults_Format" xml:space="preserve">
+    <value>+{0} more — refine your search</value>
+  </data>
+
   <!-- ── AmbientPage code-behind (Loc.Get / Loc.Format) ──────
        Duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
        Resources.resw because the default ResourceLoader binds to
