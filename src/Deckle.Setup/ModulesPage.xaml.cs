@@ -65,6 +65,7 @@ public sealed partial class ModulesPage : Page
             StringComparer.Ordinal);
 
         BuildModuleCards(catalog);
+        SyncSelectionToContext();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -123,6 +124,29 @@ public sealed partial class ModulesPage : Page
         {
             _syncing = false;
         }
+
+        SyncSelectionToContext();
+    }
+
+    // The context mirrors the live selection so the estimate (here and on the
+    // Choices recap) always totals what the install step would actually run.
+    private void SyncSelectionToContext()
+    {
+        if (_setup is null) return;
+        _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
+
+        long pendingBytes = InstallPlan.PendingBytes(_setup.Context);
+        TotalEstimateBar.Message = pendingBytes > 0
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", FormatBytes(pendingBytes))
+            : Loc.Get("Setup_TotalEstimate_NothingPending");
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)               return $"{bytes} B";
+        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
+        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
     }
 
     // ── Next ──────────────────────────────────────────────────────────────────
@@ -132,7 +156,6 @@ public sealed partial class ModulesPage : Page
         if (_setup is null) return;
 
         ModulePresence.Save(_selection.ToList());
-        _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
 
         // Dictation selected → its Choices page first (model pick). Otherwise
         // straight to the install step when a selected module still has

@@ -501,7 +501,7 @@
   <data name="SetupChoicesSpeechModel.Description" xml:space="preserve">
     <value>Pick the Whisper model the engine will run. You can swap it later from Settings.</value>
   </data>
-  <data name="SetupChoicesTotalEstimateBar.Title" xml:space="preserve">
+  <data name="SetupTotalEstimateBar.Title" xml:space="preserve">
     <value>Total install size</value>
   </data>
   <data name="Setup_Native_Installed" xml:space="preserve">

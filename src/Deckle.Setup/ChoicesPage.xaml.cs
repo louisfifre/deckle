@@ -184,11 +184,7 @@ public sealed partial class ChoicesPage : Page
         // fetch for the selected modules — the same plan InstallingPage runs,
         // summed over the items not yet on disk. The model radio feeds the
         // plan through SelectedModel, so a model swap re-totals live.
-        long pendingBytes = 0;
-        foreach (InstallItem item in InstallPlan.Build(_context))
-        {
-            if (!item.IsInstalled()) pendingBytes += item.SizeBytes;
-        }
+        long pendingBytes = InstallPlan.PendingBytes(_context);
 
         TotalEstimateBar.Message = pendingBytes > 0
             ? Loc.Format("Setup_TotalEstimate_Pending_Format", FormatBytes(pendingBytes))

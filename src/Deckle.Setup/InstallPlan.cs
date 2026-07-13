@@ -32,6 +32,19 @@ internal static class InstallPlan
     public const string CamembertItemId     = "camembert-base";
     public const string AnytypeItemId       = "anytype-cli";
 
+    // The download weight still ahead of the user: the plan's items not yet
+    // on disk, summed. Both estimate bars (module selector and Choices recap)
+    // read this, so they can never disagree with what the install step runs.
+    public static long PendingBytes(SetupContext context)
+    {
+        long pending = 0;
+        foreach (InstallItem item in Build(context))
+        {
+            if (!item.IsInstalled()) pending += item.SizeBytes;
+        }
+        return pending;
+    }
+
     public static IReadOnlyList<InstallItem> Build(SetupContext context)
     {
         var items = new List<InstallItem>();

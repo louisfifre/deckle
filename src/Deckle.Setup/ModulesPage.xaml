@@ -5,8 +5,20 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <!-- One SettingsCard per catalogue module, built in code from
-             ModuleRegistry (BuildModuleCards) — the list is data, not layout. -->
-        <StackPanel x:Name="ModulesList" Spacing="4" MaxWidth="640" HorizontalAlignment="Stretch" />
+        <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch">
+
+            <!-- One SettingsCard per catalogue module, built in code from
+                 ModuleRegistry (BuildModuleCards) — the list is data, not layout. -->
+            <StackPanel x:Name="ModulesList" Spacing="4" />
+
+            <!-- Same estimate bar as the Choices recap, retotalled on every
+                 checkbox change from the same install plan. -->
+            <InfoBar x:Name="TotalEstimateBar"
+                     x:Uid="SetupTotalEstimateBar"
+                     IsOpen="True"
+                     IsClosable="False"
+                     Severity="Informational" />
+
+        </StackPanel>
     </ScrollViewer>
 </Page>
