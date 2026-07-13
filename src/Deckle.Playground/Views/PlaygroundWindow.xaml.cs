@@ -10,6 +10,7 @@ using WinRT.Interop;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Shell;
+using Deckle.Shell.WindowChrome;
 
 namespace Deckle.Playground;
 
@@ -68,6 +69,10 @@ public sealed partial class PlaygroundWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
 
+        // The control stamps its caption padding in raw physical pixels — an
+        // upstream px/DIP bug that inflates the reserve at >100 % scale.
+        CaptionInsetCorrection.Attach(AppTitleBar, AppWindow);
+
         SystemBackdrop = new MicaBackdrop();
 
         // Wire the Pages → shell navigation callback. HomePage's
@@ -83,12 +88,15 @@ public sealed partial class PlaygroundWindow : Window
         // keeps everything reachable below that.
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1800, 1440));
 
+        // Presenter minimums are PHYSICAL pixels — scale the intended DIPs,
+        // or a 200 % display halves the real floor.
         var presenter = OverlappedPresenter.Create();
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
         presenter.IsResizable   = true;
-        presenter.PreferredMinimumWidth  = 1280;
-        presenter.PreferredMinimumHeight = 600;
+        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        presenter.PreferredMinimumWidth  = (int)(1280 * dpiScale);
+        presenter.PreferredMinimumHeight = (int)(600 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
         // Close → real destruction. The Playground holds heavy runtime
