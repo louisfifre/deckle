@@ -2,6 +2,7 @@
     x:Class="Deckle.Settings.SettingsWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Settings"
     Title="Deckle Settings">
 
     <Grid x:Name="RootGrid">
@@ -10,25 +11,50 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Native TitleBar: icon + title only. Navigation and content remain
-             below the title bar. -->
+        <!-- Native TitleBar: icon + title, plus the pane-toggle (hamburger) and
+             the Logs command. The NavigationView's own pane toggle is turned off
+             (IsPaneToggleButtonVisible=False below); the TitleBar carries it and
+             relays through PaneToggleRequested — the WinUI 3 Gallery pattern, pure
+             code-behind, no automatic link between the two controls.
+             No back button: IsBackButtonVisible stays at its default (false).
+             Frame.Navigate pushes the back stack on every nav change, so binding
+             the button to CanGoBack would surface it for first-level navigation,
+             against the flat-nav intent. Wire it once a genuine navigated
+             sub-page (returnable from the title bar) exists. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
-                  x:Uid="SettingsTitleBar">
+                  x:Uid="SettingsTitleBar"
+                  IsPaneToggleButtonVisible="True"
+                  PaneToggleRequested="OnTitleBarPaneToggleRequested">
             <TitleBar.IconSource>
                 <ImageIconSource x:Name="AppTitleBarIcon" />
             </TitleBar.IconSource>
+            <TitleBar.RightHeader>
+                <!-- Logs: opens the shared LogWindow through the App callback. A
+                     lateral command, so RightHeader — the central Content slot is
+                     reserved for the interactive search added later. -->
+                <Button x:Name="LogsButton"
+                        x:Uid="SettingsLogsButton"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        VerticalAlignment="Center"
+                        MinWidth="36"
+                        Padding="8,4"
+                        Click="OnLogsButtonClick">
+                    <FontIcon Glyph="{StaticResource Icon.Logs}" FontSize="16" />
+                </Button>
+            </TitleBar.RightHeader>
         </TitleBar>
 
         <!-- NavigationView. PaneDisplayMode=Auto (default) lets WinUI choose
-             Left / LeftCompact / LeftMinimal. Tag = full Page type name,
-             resolved through Type.GetType in the handler. -->
+             Left / LeftCompact / LeftMinimal. Its own pane toggle is off — the
+             TitleBar carries it. Tag = full Page type name, resolved through
+             Type.GetType in the handler. -->
         <NavigationView Grid.Row="1"
                         x:Name="Nav"
                         IsBackButtonVisible="Collapsed"
+                        IsPaneToggleButtonVisible="False"
                         IsSettingsVisible="False"
-                        SelectionChanged="OnNavSelectionChanged"
-                        ItemInvoked="OnNavItemInvoked">
+                        SelectionChanged="OnNavSelectionChanged">
 
             <!-- General is the shell's one static anchor; every module page (from
                  Recording through Diagnostics) lives in its own assembly and is
@@ -47,18 +73,9 @@
                      (tier, order) order — Recording first through Diagnostics last. -->
             </NavigationView.MenuItems>
 
-            <NavigationView.FooterMenuItems>
-                <!-- Logs: opens the shared LogWindow through the App callback.
-                     SelectsOnInvoked=False → no persistent selection, no Frame
-                     navigation; the click is recovered through ItemInvoked. -->
-                <NavigationViewItem x:Uid="SettingsNavLogs"
-                                    Tag="logs"
-                                    SelectsOnInvoked="False">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{StaticResource Icon.Logs}" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-            </NavigationView.FooterMenuItems>
+            <!-- Footer menu holds only Footer-tier module items, inserted from
+                 SettingsModuleRegistry in the code-behind. Logs moved to the
+                 TitleBar. -->
 
             <!-- Content area: NavigationView already places its Layer surface
                  with a rounded DWM top-left corner. No Border wrapper, no
