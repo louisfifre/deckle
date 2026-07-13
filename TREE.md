@@ -934,6 +934,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleSettingsSource.cs
 │   │   ├── SettingSearchHit.cs
 │   │   ├── SettingsHost.cs
+│   │   ├── SettingsSearch.cs
 │   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingsWindow.xaml
 │   │   ├── SettingsWindow.xaml.cs
