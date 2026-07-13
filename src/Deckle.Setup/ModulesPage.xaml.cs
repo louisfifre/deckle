@@ -132,12 +132,20 @@ public sealed partial class ModulesPage : Page
         if (_setup is null) return;
 
         ModulePresence.Save(_selection.ToList());
+        _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
 
-        // Dictation selected → the provisioning flow it needs (runtime +
-        // model). Otherwise there is nothing to install today — the choice is
-        // recorded and the wizard is done.
+        // Dictation selected → its Choices page first (model pick). Otherwise
+        // straight to the install step when a selected module still has
+        // something to put on disk, and to completion when nothing does.
         if (_selection.Contains(ModuleIds.Transcription))
+        {
             _setup.Body.Navigate(typeof(ChoicesPage), _setup);
+            return;
+        }
+
+        bool anythingToInstall = InstallPlan.Build(_setup.Context).Any(i => !i.IsInstalled());
+        if (anythingToInstall)
+            _setup.Body.Navigate(typeof(InstallingPage), _setup);
         else
             _setup.Complete(true);
     }

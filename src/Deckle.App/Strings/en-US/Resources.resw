@@ -547,12 +547,6 @@
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
     <value>Downloading the speech runtime and model. This can take a while on a slow link.</value>
   </data>
-  <data name="Setup_Install_Step1Of2_Format" xml:space="preserve">
-    <value>Step 1 of 2 — installing {0}...</value>
-  </data>
-  <data name="Setup_Install_Step2Of2_Format" xml:space="preserve">
-    <value>Step 2 of 2 — downloading {0}...</value>
-  </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
     <value>Connecting...</value>
   </data>
@@ -576,9 +570,6 @@
   </data>
   <data name="Setup_Install_AlreadyInstalled" xml:space="preserve">
     <value>Already installed</value>
-  </data>
-  <data name="SetupInstallNativeLabel.Text" xml:space="preserve">
-    <value>Whisper.cpp + Vulkan runtime</value>
   </data>
   <data name="Setup_Install_Progress_WithTotal_Format" xml:space="preserve">
     <value>{0} / {1}  ({2})</value>
@@ -1664,6 +1655,15 @@
   </data>
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
+  <data name="Setup_Item_SileroVad" xml:space="preserve">
+    <value>Voice detection model (Silero VAD)</value>
+  </data>
+  <data name="Setup_Item_Camembert" xml:space="preserve">
+    <value>Contextual correction model (CamemBERT)</value>
+  </data>
+  <data name="Setup_Install_StepOfTotal_Format" xml:space="preserve">
+    <value>Step {0} of {1} — {2}</value>
   </data>
 
 </root>

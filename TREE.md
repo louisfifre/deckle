@@ -969,6 +969,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── InstallingPage.xaml
 │   │   ├── InstallingPage.xaml.cs
+│   │   ├── InstallItem.cs
+│   │   ├── InstallPlan.cs
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── SetupContext.cs

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using Deckle.Core;
@@ -29,6 +30,13 @@ public sealed class SetupContext
     // an app restart in V1, so this stays read-only after construction.
     public string Location { get; init; } = AppPaths.UserDataRoot;
 
+    // The module selection the install plan is built from. Seeded by
+    // SetupWindow from the recorded presence choice (or the full catalogue
+    // when none is recorded), then overwritten by the Modules page when the
+    // user commits a new selection.
+    public IReadOnlySet<string> SelectedModules { get; set; } =
+        new HashSet<string>(StringComparer.Ordinal);
+
     // Speech model the user picked in the Choices page. Null until the
     // wizard page initializes it from the active backend's catalog —
     // SetupContext itself does not couple to any specific backend, so it
@@ -40,8 +48,7 @@ public sealed class SetupContext
     public bool ChoicesConfirmed { get; set; }
 
     // Per-item results captured by the Installing page, displayed on the
-    // Summary page. Populated in order: native runtime first, then the
-    // chosen model.
+    // Summary page. Populated in the install plan's order.
     public List<InstallResult> Results { get; } = new();
 
     // True when every Results entry is Success — drives the Summary page's
