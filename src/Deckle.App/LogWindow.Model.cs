@@ -86,13 +86,13 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void AddEntrySafe(LogEntry entry)
     {
-        _entries.Add(entry);
+        FilterBar.Observe(entry.Entry);
+        _entries.Enqueue(entry);
 
         const int MaxEntries = 5000;
         while (_entries.Count > MaxEntries)
         {
-            var removed = _entries[0];
-            _entries.RemoveAt(0);
+            var removed = _entries.Dequeue();
             // Ref equality (LogEntry is a class) → no possible collision
             // between two entries with the same Text.
             _visible.Remove(removed);
@@ -108,14 +108,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private bool Matches(LogEntry e)
     {
-        // Progressive event + level filter (All > Activity > Alerts):
-        //   All       → everything passes (events at any level
-        //               + telemetry rows)
-        //   Activity  → Informational + Warning + Error + Critical,
-        //               excluding Verbose and telemetry rows
-        //   Alerts    → Warning + Error + Critical uniquement,
-        //               excluding telemetry rows
-        if (!LogWindowFilter.IsVisible(e.Level, e.EventName, _filterMode)) return false;
+        if (!_filterSelection.Matches(e.Entry)) return false;
 
         if (_currentSearch.Length > 0 &&
             e.Text.IndexOf(_currentSearch, StringComparison.OrdinalIgnoreCase) < 0) return false;
@@ -124,11 +117,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void ApplyFilter()
     {
-        _visible.Clear();
-        foreach (var e in _entries)
-        {
-            if (Matches(e)) _visible.Add(e);
-        }
+        _visible.ReplaceAll(_entries.Where(Matches));
         if (_isVisible && AutoScrollToggle?.IsChecked == true) ScrollToBottom();
     }
 

@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Automation;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
 using System.Text;
@@ -17,6 +18,7 @@ using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
+using Deckle.Diagnostics.Logging.Ui.Collections;
 using Deckle.Shell;
 using Deckle.Shell.WindowChrome;
 
@@ -26,19 +28,19 @@ namespace Deckle.App;
 //
 // Custom title bar (ExtendsContentIntoTitleBar) with centered search field.
 // Mica + system theme (light/dark auto, no forced RequestedTheme).
-// SelectorBar All/Activity/Alerts (default = All).
-// CommandBar: Copy/Save/Clear (buttons) + Auto-scroll/Word wrap (toggles).
+// Three-dimensional filter editor: Severity / Module / Category.
+// CommandBar: Filters/Copy/Save/Clear + Auto-scroll/Word wrap.
 // Live search via AutoSuggestBox.
 //
 // Model:
 //   _entries : full buffer (cap 5000) — every LogEntry, any event
-//   _visible : displayed subset (event/level filter + search)
+//   _visible : displayed subset (structured filter + search)
 // Copy/Save operate on _visible — the user copies what they see.
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
-    private readonly List<LogEntry> _entries = new();
-    private readonly ObservableCollection<LogEntry> _visible = new();
+    private readonly Queue<LogEntry> _entries = new();
+    private readonly RangeObservableCollection<LogEntry> _visible = new();
     private readonly IntPtr _hwnd;
     private bool _isVisible;
 
@@ -52,7 +54,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private ScrollViewer? _listScrollViewer;
     private ItemsStackPanel? _itemsPanel;
 
-    private LogWindowVisibilityMode _filterMode = LogWindowVisibilityMode.All;
+    private readonly LogFilterSelection _filterSelection = LogWindowFilterSession.Selection;
     private string _currentSearch = "";
     private bool _isRecording;
 
@@ -75,6 +77,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         _hwnd = WindowNative.GetWindowHandle(this);
 
         LogItems.ItemsSource = _visible;
+        FilterBar.Selection = _filterSelection;
+        UpdateFiltersToggleLabel();
 
         // Click-to-copy + drag-to-select: PointerPressed/Released are marked
         // handled by the ListView for its own selection management, so
@@ -112,20 +116,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // Win11 required (OK here); falls back to transparent otherwise.
         SystemBackdrop = new MicaBackdrop();
 
-        // Initial SelectorBar selection: All — the broadest view by default.
-        // Activity / Alerts remain one click away when the user wants to narrow
-        // down. Narrative entries (white, full-strength text) sit alongside the
-        // other levels in Activity rather than in their own dedicated tab —
-        // they read as natural milestones inside the broader stream instead
-        // of feeling cut off from context.
-        _filterMode = LoggingSettingsService.Instance.Current.LogWindowVisibilityMode;
-        LevelSelector.SelectedItem = _filterMode switch
-        {
-            LogWindowVisibilityMode.Activity => LevelFiltered,
-            LogWindowVisibilityMode.Alerts   => LevelCritical,
-            _                                => LevelFull,
-        };
-
         Title = Loc.Get("LogWindow_WindowTitle");
         // ~1:2 aspect ratio (vertical) — two stacked squares. Window sizes are
         // PHYSICAL pixels — scale the intended DIPs (or a 200 % display opens a
@@ -150,7 +140,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         presenter.PreferredMinimumHeight = (int)(300 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
-        Closed += (_, _) => _isVisible = false;
+        Closed += (_, _) =>
+        {
+            _isVisible = false;
+            FilterBar.Detach();
+        };
 
         // Responsive TitleBar search (Task Manager pattern).
         SizeChanged += OnWindowSizeChanged;
@@ -234,16 +228,25 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             wrap ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
     }
 
-    private void OnLevelSelectorChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    private void OnFiltersToggleClick(object sender, RoutedEventArgs e)
     {
-        var sel = sender.SelectedItem;
-        _filterMode = sel == LevelFiltered ? LogWindowVisibilityMode.Activity
-                    : sel == LevelCritical ? LogWindowVisibilityMode.Alerts
-                    : LogWindowVisibilityMode.All;
-        var settings = LoggingSettingsService.Instance.Current;
-        settings.LogWindowVisibilityMode = _filterMode;
-        LoggingSettingsService.Instance.Save();
+        FilterBar.Visibility = FiltersToggle.IsChecked == true
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void OnFilterChanged(object sender, EventArgs e)
+    {
+        UpdateFiltersToggleLabel();
         ApplyFilter();
+    }
+
+    private void UpdateFiltersToggleLabel()
+    {
+        FiltersToggle.Label = _filterSelection.Count == 0
+            ? Loc.Get("LogWindow_FiltersButton_Default")
+            : Loc.Format("LogWindow_FiltersButton_Format", _filterSelection.Count);
+        AutomationProperties.SetName(FiltersToggle, FiltersToggle.Label);
     }
 
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

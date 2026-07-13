@@ -600,7 +600,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
+│   │   ├── Ui/
+│   │   │   ├── Collections/
+│   │   │   │   └── RangeObservableCollection.cs
+│   │   │   └── Controls/
+│   │   │       ├── LogFilterBar.xaml
+│   │   │       └── LogFilterBar.xaml.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow filters and runtime logging gates.
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Logging.csproj
@@ -609,10 +615,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DiagnosticsSettingsModule.cs
 │   │   ├── DiagnosticsViewModel.cs
 │   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   ├── LogFilterDimension.cs
+│   │   ├── LogFilterSelection.cs
+│   │   ├── LogFilterToken.cs
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
-│   │   ├── LogWindowFilter.cs
-│   │   ├── LogWindowVisibilityMode.cs
+│   │   ├── LogWindowFilterSession.cs
 │   │   ├── SettingsSearch.cs
 │   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
@@ -1222,6 +1230,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ChronoTimerTests.cs
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   └── DeckleChronoSourceTests.cs
+│   ├── Deckle.Diagnostics.Logging.Tests/
+│   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
+│   │   ├── LogFilterSelectionTests.cs
+│   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
 │   │   └── TelemetryListenerBootstrapTests.cs

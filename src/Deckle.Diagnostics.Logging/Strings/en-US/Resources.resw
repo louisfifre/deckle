@@ -136,6 +136,99 @@
     <value>Recorded automatically and kept on this device — never sent anywhere. Open the folder to find them when reporting a first-run or crash problem.</value>
   </data>
 
+  <!-- Shared log filter bar. The live Log Window and the app.jsonl settings
+       instantiate the same control with independent filter selections. -->
+  <data name="LogFilterBarSeverityButton.Content" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="LogFilterBarSeverityButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Filter by severity</value>
+  </data>
+  <data name="LogFilterBarModuleButton.Content" xml:space="preserve">
+    <value>Module</value>
+  </data>
+  <data name="LogFilterBarModuleButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Filter by Deckle module</value>
+  </data>
+  <data name="LogFilterBarCategoryButton.Content" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="LogFilterBarCategoryButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Filter by diagnostic category</value>
+  </data>
+  <data name="LogFilterBarResetButton.Content" xml:space="preserve">
+    <value>Reset filters</value>
+  </data>
+  <data name="LogFilterBarResetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show all log entries</value>
+  </data>
+  <data name="LogFilter_Added" xml:space="preserve">
+    <value>Added</value>
+  </data>
+  <data name="LogFilter_Chip_Format" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="LogFilter_Remove_Format" xml:space="preserve">
+    <value>Remove {0} filter</value>
+  </data>
+  <data name="LogFilter_Dimension_Severity" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="LogFilter_Dimension_Module" xml:space="preserve">
+    <value>Module</value>
+  </data>
+  <data name="LogFilter_Dimension_Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="LogFilter_Severity_Verbose" xml:space="preserve">
+    <value>Verbose</value>
+  </data>
+  <data name="LogFilter_Severity_Informational" xml:space="preserve">
+    <value>Informational</value>
+  </data>
+  <data name="LogFilter_Severity_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="LogFilter_Severity_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="LogFilter_Severity_Critical" xml:space="preserve">
+    <value>Critical</value>
+  </data>
+  <data name="LogFilter_Category_Lifecycle" xml:space="preserve">
+    <value>Lifecycle</value>
+  </data>
+  <data name="LogFilter_Category_Capture" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="LogFilter_Category_Pipeline" xml:space="preserve">
+    <value>Pipeline</value>
+  </data>
+  <data name="LogFilter_Category_Push" xml:space="preserve">
+    <value>Push</value>
+  </data>
+  <data name="LogFilter_Category_Heartbeat" xml:space="preserve">
+    <value>Heartbeat</value>
+  </data>
+  <data name="LogFilter_Category_Windowing" xml:space="preserve">
+    <value>Windowing</value>
+  </data>
+  <data name="LogFilter_Category_Threading" xml:space="preserve">
+    <value>Threading</value>
+  </data>
+  <data name="LogFilter_Category_Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="LogFilter_Category_Resource" xml:space="preserve">
+    <value>Resource</value>
+  </data>
+  <data name="LogFilter_Category_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="LogFilter_Module_Dictation" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+
   <!-- Reset dialogs (Loc.Get from code-behind). Source of truth for the wording;
        Loc.Get resolves the runtime copy from Deckle.App's root map. -->
   <data name="Settings_ResetTelemetryDialog_Title" xml:space="preserve">

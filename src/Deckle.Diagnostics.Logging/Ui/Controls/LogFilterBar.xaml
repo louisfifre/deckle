@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Diagnostics.Logging.Ui.Controls.LogFilterBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Diagnostics.Logging.Ui.Controls">
+
+    <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="12,8">
+        <Grid RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid x:Name="FilterCommands" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <DropDownButton x:Name="SeverityButton"
+                                x:Uid="LogFilterBarSeverityButton"
+                                Grid.Column="0">
+                    <DropDownButton.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                            <ScrollViewer MaxHeight="360"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="SeverityOptions"
+                                            MinWidth="200"
+                                            Spacing="2" />
+                            </ScrollViewer>
+                        </Flyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <DropDownButton x:Name="ModuleButton"
+                                x:Uid="LogFilterBarModuleButton"
+                                Grid.Column="1">
+                    <DropDownButton.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                            <ScrollViewer MaxHeight="360"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="ModuleOptions"
+                                            MinWidth="220"
+                                            Spacing="2" />
+                            </ScrollViewer>
+                        </Flyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <DropDownButton x:Name="CategoryButton"
+                                x:Uid="LogFilterBarCategoryButton"
+                                Grid.Column="2">
+                    <DropDownButton.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                            <ScrollViewer MaxHeight="360"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="CategoryOptions"
+                                            MinWidth="200"
+                                            Spacing="2" />
+                            </ScrollViewer>
+                        </Flyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <Button x:Name="ResetButton"
+                        x:Uid="LogFilterBarResetButton"
+                        Grid.Column="4"
+                        HorizontalAlignment="Right"
+                        Visibility="Collapsed"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Click="OnResetClick" />
+            </Grid>
+
+            <ItemsControl x:Name="ActiveFilters"
+                          Grid.Row="1"
+                          Visibility="Collapsed">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapGrid Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:ActiveLogFilterChip">
+                        <Button Margin="0,0,6,6"
+                                Padding="10,4"
+                                MinHeight="28"
+                                CornerRadius="14"
+                                Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                Tag="{x:Bind}"
+                                AutomationProperties.Name="{x:Bind AccessibleName}"
+                                ToolTipService.ToolTip="{x:Bind AccessibleName}"
+                                Click="OnRemoveFilterClick"
+                                PointerEntered="OnChipPointerEntered"
+                                PointerExited="OnChipPointerExited"
+                                GotFocus="OnChipGotFocus"
+                                LostFocus="OnChipLostFocus">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{x:Bind Label}"
+                                           VerticalAlignment="Center" />
+                                <!-- Width is reserved so revealing the close glyph
+                                     never changes the chip's measure. -->
+                                <FontIcon Glyph="&#xE711;"
+                                          FontSize="10"
+                                          Width="12"
+                                          Opacity="0" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Border>
+</UserControl>

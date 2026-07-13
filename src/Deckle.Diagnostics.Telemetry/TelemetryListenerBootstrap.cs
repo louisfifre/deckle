@@ -20,8 +20,8 @@ namespace Deckle.Diagnostics.Telemetry;
 //     host side. May be called before or after Configure; predicates read the
 //     last known value at each emission, so a delegate update propagates
 //     without rebuilding sinks.
-//   - ConfigureApplicationLogDropFilter(...) wires the entry-level projection
-//     filter for the application log (e.g. sharing the LogWindow Activity lens).
+//   - ConfigureApplicationLogDropFilter(...) wires the app.jsonl-specific
+//     entry-level projection filter supplied by the host.
 //     The capture-Verbose silencing is NOT here — that is the dispatcher's
 //     central gate, applied once for every sink. This module keeps only the
 //     app.jsonl-specific entry-level filter, and stays independent from
@@ -226,12 +226,10 @@ public static class TelemetryListenerBootstrap
         _gateReader = gateReader;
     }
 
-    // Wires the entry-level projection filter that removes some events from the
-    // persisted application log (e.g. sharing the LogWindow Activity lens). The
-    // predicate reads the same EventEntry as the live window, which keeps
-    // app.jsonl aligned without introducing a Telemetry → Logging reference.
-    // This is app.jsonl-specific; the transverse capture gate lives on the
-    // dispatcher, not here.
+    // Wires the entry-level projection filter that removes events from app.jsonl.
+    // Its state is deliberately independent from the live LogWindow lens. The
+    // host supplies the predicate, so Telemetry does not depend on Logging; the
+    // transverse capture gate remains on the dispatcher.
     public static void ConfigureApplicationLogDropFilter(Func<EventEntry, bool> filter)
     {
         if (filter is null) throw new ArgumentNullException(nameof(filter));
