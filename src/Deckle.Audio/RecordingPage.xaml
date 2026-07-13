@@ -61,6 +61,7 @@
 
                 <controls:SettingsCard x:Name="AudioInputCard"
                                        x:Uid="GeneralMicrophoneCard"
+                                       Tag="GeneralMicrophoneCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}">
                     <ComboBox x:Name="AudioInputCombo"
                               MinWidth="240"
@@ -92,6 +93,7 @@
                      no value converter is involved. -->
                 <controls:SettingsCard x:Name="MicCheckCard"
                                        x:Uid="RecordingPageMicCheckCard"
+                                       Tag="RecordingPageMicCheckCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.VoiceLevel}}">
                     <Button x:Uid="RecordingPageMicCheckButton"
                             MinWidth="120"

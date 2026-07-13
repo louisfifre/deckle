@@ -395,6 +395,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RecordingSettingsModule.cs
 │   │   ├── RecordingViewModel.cs
 │   │   ├── RecordingViewModel.Settings.cs
+│   │   ├── SettingsSearch.cs
 │   │   └── SpeakerOutput.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
