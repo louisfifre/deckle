@@ -13,27 +13,19 @@ namespace Deckle.App;
 // registry) because the installer companion's end state is a catalogue that can
 // describe a module whose DLLs are not on disk yet — see Deckle.Modules.
 //
-// The ids below are the vocabulary of the presence model: the presence file
-// stores them, the selector's wording is keyed by them, and OnLaunched gates
-// each module's composition and settings registration on them. Support
-// assemblies (Core, Audio, Vad, Vision, Lighting, …) are not modules — they are
-// the floor the modules stand on and never appear here.
+// The id vocabulary lives in Deckle.Modules (ModuleIds) — the wizard's
+// selector speaks it too. Support assemblies (Core, Audio, Vad, Vision,
+// Lighting, …) are not modules — they are the floor the modules stand on and
+// never appear here.
 internal static class AppModules
 {
-    public const string Transcription = "transcription";
-    public const string Rewrite       = "rewrite";
-    public const string Autocorrect   = "autocorrect";
-    public const string Ambient       = "ambient";
-    public const string Trackpad      = "trackpad";
-    public const string Anytype       = "anytype";
-
     // Fills the catalogue. Called once from OnLaunched, before anything reads
     // ModulePresence, so the selector and the gates see the same set.
     public static void RegisterAll()
     {
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = Transcription,
+            Id = ModuleIds.Transcription,
             Glyph = Glyphs.Speech,
             Order = 100,
             // The engine ctor loads the model and faults without the native
@@ -43,38 +35,38 @@ internal static class AppModules
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = Rewrite,
+            Id = ModuleIds.Rewrite,
             Glyph = Glyphs.Sparkle,
             Order = 200,
             // The rewrite stage runs inside the transcription pipeline; alone
             // it has nothing to rewrite.
-            DependsOn = [Transcription],
+            DependsOn = [ModuleIds.Transcription],
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = Autocorrect,
+            Id = ModuleIds.Autocorrect,
             Glyph = Glyphs.Autocorrect,
             Order = 300,
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = Ambient,
+            Id = ModuleIds.Ambient,
             Glyph = Glyphs.Lightbulb,
             Order = 400,
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = Trackpad,
+            Id = ModuleIds.Trackpad,
             Glyph = Glyphs.Trackpad,
             Order = 500,
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
-            Id = Anytype,
+            Id = ModuleIds.Anytype,
             Glyph = Glyphs.List,
             Order = 600,
             IsProvisioned = BackendInstallation.IsInstalled,

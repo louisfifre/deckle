@@ -1620,5 +1620,50 @@
   <data name="AutocorrectNotifications_Enroll_Decline" xml:space="preserve">
     <value>No thanks</value>
   </data>
+  <data name="Setup_StepTitle_Modules" xml:space="preserve">
+    <value>Choose your modules</value>
+  </data>
+  <data name="Setup_StepSubtitle_Modules" xml:space="preserve">
+    <value>Pick what this Deckle installs. You can come back and change it later.</value>
+  </data>
+  <data name="Setup_NextLabel_Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Setup_Module_transcription_Label" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="Setup_Module_transcription_Description" xml:space="preserve">
+    <value>Voice transcription on a hotkey, running on a local speech model</value>
+  </data>
+  <data name="Setup_Module_rewrite_Label" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="Setup_Module_rewrite_Description" xml:space="preserve">
+    <value>Cleans up dictated text with a local language model — needs Dictation</value>
+  </data>
+  <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
+    <value>Autocorrect</value>
+  </data>
+  <data name="Setup_Module_autocorrect_Description" xml:space="preserve">
+    <value>Corrects typed text machine-wide, as you type</value>
+  </data>
+  <data name="Setup_Module_ambient_Label" xml:space="preserve">
+    <value>Ambient light</value>
+  </data>
+  <data name="Setup_Module_ambient_Description" xml:space="preserve">
+    <value>Matches Philips Hue lights to what is on screen</value>
+  </data>
+  <data name="Setup_Module_trackpad_Label" xml:space="preserve">
+    <value>Trackpad gestures</value>
+  </data>
+  <data name="Setup_Module_trackpad_Description" xml:space="preserve">
+    <value>Three-finger drag on the precision touchpad</value>
+  </data>
+  <data name="Setup_Module_anytype_Label" xml:space="preserve">
+    <value>Anytype workspace</value>
+  </data>
+  <data name="Setup_Module_anytype_Description" xml:space="preserve">
+    <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
 
 </root>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Deckle.Setup.ModulesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <!-- One SettingsCard per catalogue module, built in code from
+             ModuleRegistry (BuildModuleCards) — the list is data, not layout. -->
+        <StackPanel x:Name="ModulesList" Spacing="4" MaxWidth="640" HorizontalAlignment="Stretch" />
+    </ScrollViewer>
+</Page>

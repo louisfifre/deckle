@@ -213,12 +213,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         // composed and its settings pages never register, where a disabled one
         // is merely stopped. No recorded choice means everything is present.
         AppModules.RegisterAll();
-        bool transcriptionPresent = ModulePresence.IsPresent(AppModules.Transcription);
-        bool rewritePresent       = ModulePresence.IsPresent(AppModules.Rewrite);
-        bool autocorrectPresent   = ModulePresence.IsPresent(AppModules.Autocorrect);
-        bool ambientPresent       = ModulePresence.IsPresent(AppModules.Ambient);
-        bool trackpadPresent      = ModulePresence.IsPresent(AppModules.Trackpad);
-        bool anytypePresent       = ModulePresence.IsPresent(AppModules.Anytype);
+        bool transcriptionPresent = ModulePresence.IsPresent(ModuleIds.Transcription);
+        bool rewritePresent       = ModulePresence.IsPresent(ModuleIds.Rewrite);
+        bool autocorrectPresent   = ModulePresence.IsPresent(ModuleIds.Autocorrect);
+        bool ambientPresent       = ModulePresence.IsPresent(ModuleIds.Ambient);
+        bool trackpadPresent      = ModulePresence.IsPresent(ModuleIds.Trackpad);
+        bool anytypePresent       = ModulePresence.IsPresent(ModuleIds.Anytype);
         Milestone("modules");
 
         // Wiring for `Deckle.Core.CorpusPaths` (relocated in sub-wave 6a):
@@ -529,17 +529,20 @@ public partial class App : Microsoft.UI.Xaml.Application
             // (extracted out of Deckle.App/Shell/Setup/ for J3). Detached
             // from the Settings window — Settings stays open behind it.
             var setup = new Deckle.Setup.SetupWindow();
-            setup.Body.Navigate(typeof(Deckle.Setup.ChoicesPage), setup);
+            setup.Body.Navigate(typeof(Deckle.Setup.ModulesPage), setup);
             setup.Activate();
 
-            // Provisioning is decoupled from boot: the transcription engine is
-            // composed at startup only when the runtime + model are present. A
-            // first successful setup from a running session (or a model swap)
-            // therefore needs a restart to (re)compose the engine. Bounce the
-            // app back onto the Dictation page once the wizard reports success.
+            // Provisioning AND presence are decoupled from boot: engines are
+            // composed at startup only for the modules chosen and provisioned.
+            // A successful wizard run (module change, first setup, model swap)
+            // therefore needs a restart to (re)compose. Land on the Dictation
+            // page when transcription is still part of the install, on the
+            // Settings default otherwise — its page no longer exists.
             bool ok = await setup.Completion;
             if (ok)
-                RestartApp("Deckle.Transcription.WhisperPage, Deckle.Transcription");
+                RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
+                    ? "Deckle.Transcription.WhisperPage, Deckle.Transcription"
+                    : null);
         };
 
         // Readiness probe for the Dictation settings page's "set up" CTA. That

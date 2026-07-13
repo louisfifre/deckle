@@ -43,11 +43,13 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
-        setup.SetBackEnabled(false);
+        // The module selector precedes this page — Back returns to it.
+        setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);
         setup.SetCancelVisible(true);
         setup.NextRequested += OnNextRequested;
+        setup.BackRequested += OnBackRequested;
 
         LocationPathText.Text = _context.Location;
         PopulateModelRadio();
@@ -58,7 +60,15 @@ public sealed partial class ChoicesPage : Page
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
-        if (_setup is not null) _setup.NextRequested -= OnNextRequested;
+        if (_setup is null) return;
+        _setup.NextRequested -= OnNextRequested;
+        _setup.BackRequested -= OnBackRequested;
+    }
+
+    private void OnBackRequested()
+    {
+        if (_setup is null) return;
+        if (_setup.Body.CanGoBack) _setup.Body.GoBack();
     }
 
     // ── Speech runtime ────────────────────────────────────────────────────────

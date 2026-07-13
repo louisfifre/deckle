@@ -846,6 +846,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleModulesSource.cs
 │   │   ├── ModuleDescriptor.cs
 │   │   ├── ModuleGraph.cs
+│   │   ├── ModuleIds.cs
 │   │   ├── ModulePresence.cs
 │   │   ├── ModuleRegistry.cs
 │   │   └── PresenceFile.cs
@@ -959,7 +960,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard provisioning ASR runtimes and models — owns the flow, delegate…
+│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
 │   │   ├── CLAUDE.md
@@ -967,6 +968,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleSetupSource.cs
 │   │   ├── InstallingPage.xaml
 │   │   ├── InstallingPage.xaml.cs
+│   │   ├── ModulesPage.xaml
+│   │   ├── ModulesPage.xaml.cs
 │   │   ├── SetupContext.cs
 │   │   ├── SetupWindow.xaml
 │   │   ├── SetupWindow.xaml.cs

@@ -26,6 +26,9 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Presence catalogue — the module selector (ModulesPage) reads the
+         registry and records the choice through ModulePresence. -->
+    <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
     <!-- Transcription parent owns the wizard-agnostic primitives (ModelEntry,
          Downloader) and the EventSource provider. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
