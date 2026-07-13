@@ -1,25 +1,10 @@
 // LogWindow — ring-buffer/filter engine and ILogWindowSink marshalling.
 
-using Microsoft.UI.Windowing;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Input;
-using System.Collections.ObjectModel;
-using System.Diagnostics.Tracing;
-using System.Text;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using System.Threading.Tasks;
-using Microsoft.UI.Xaml.Data;
-using WinRT.Interop;
-using Deckle.App;
-using Deckle.Core;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
 namespace Deckle.App;
 
@@ -93,9 +78,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         while (_entries.Count > MaxEntries)
         {
             var removed = _entries.Dequeue();
-            // Ref equality (LogEntry is a class) → no possible collision
-            // between two entries with the same Text.
-            _visible.Remove(removed);
+            // The visible projection preserves queue order. If the expired
+            // entry is visible it can only be at index 0, so avoid the linear
+            // IndexOf performed by ObservableCollection.Remove.
+            if (_visible.Count > 0 && ReferenceEquals(_visible[0], removed))
+                _visible.RemoveAt(0);
         }
 
         if (Matches(entry)) _visible.Add(entry);
@@ -103,7 +90,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (!_isVisible) return;
         if (AutoScrollToggle?.IsChecked != true) return;
 
-        ScrollToBottom();
+        RequestScrollToBottom();
     }
 
     private bool Matches(LogEntry e)
@@ -118,7 +105,26 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private void ApplyFilter()
     {
         _visible.ReplaceAll(_entries.Where(Matches));
-        if (_isVisible && AutoScrollToggle?.IsChecked == true) ScrollToBottom();
+        if (_isVisible && AutoScrollToggle?.IsChecked == true)
+            RequestScrollToBottom();
+    }
+
+    private void RequestScrollToBottom()
+    {
+        if (_autoScrollPending) return;
+        _autoScrollPending = true;
+
+        bool enqueued = DispatcherQueue.TryEnqueueOrLog(
+            () =>
+            {
+                _autoScrollPending = false;
+                if (_isVisible && AutoScrollToggle?.IsChecked == true)
+                    ScrollToBottom();
+            },
+            "LOGWIN", "auto scroll",
+            DispatcherQueuePriority.Low);
+
+        if (!enqueued) _autoScrollPending = false;
     }
 
     private void ScrollToBottom()

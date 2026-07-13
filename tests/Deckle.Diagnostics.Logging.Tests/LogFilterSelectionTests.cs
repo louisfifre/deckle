@@ -58,6 +58,13 @@ public sealed class LogFilterSelectionTests
             "Deckle-Audio", EventLevel.Verbose, Keywords.Heartbeat)));
         Assert.False(selection.Matches(Entry(
             "Deckle-Audio", EventLevel.Verbose, Keywords.Lifecycle)));
+
+        selection.Remove(Category(Keywords.Capture));
+
+        Assert.False(selection.Matches(Entry(
+            "Deckle-Audio", EventLevel.Verbose, Keywords.Capture)));
+        Assert.True(selection.Matches(Entry(
+            "Deckle-Audio", EventLevel.Verbose, Keywords.Heartbeat)));
     }
 
     [Fact]

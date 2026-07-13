@@ -34,6 +34,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private bool _isDragging;
     private int _dragStartIndex = -1;
+    private int _dragCurrentIndex = -1;
 
     private void OnLogPointerPressed(object sender, PointerRoutedEventArgs e)
     {
@@ -48,9 +49,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         _isDragging = true;
         var localY = e.GetCurrentPoint(LogItems).Position.Y;
         var container = FindContainerAtY(localY);
-        _dragStartIndex = container?.Content is LogEntry ev
-            ? _visible.IndexOf(ev)
-            : -1;
+        _dragStartIndex = container is null
+            ? -1
+            : LogItems.IndexFromContainer(container);
+        _dragCurrentIndex = -1;
     }
 
     private static bool IsFromScrollBar(DependencyObject? source)
@@ -80,11 +82,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         CopyBadgeTransform.Y = pos.Y + (container.ActualHeight - CopyBadge.ActualHeight) / 2;
         CopyBadge.Visibility = Visibility.Visible;
 
-        if (_isDragging && _dragStartIndex >= 0 && container.Content is LogEntry currentEntry)
+        if (_isDragging && _dragStartIndex >= 0)
         {
-            int currentIndex = _visible.IndexOf(currentEntry);
-            if (currentIndex >= 0)
+            int currentIndex = LogItems.IndexFromContainer(container);
+            if (currentIndex >= 0 && currentIndex != _dragCurrentIndex)
             {
+                _dragCurrentIndex = currentIndex;
                 int start = Math.Min(_dragStartIndex, currentIndex);
                 int end = Math.Max(_dragStartIndex, currentIndex);
 
@@ -107,15 +110,17 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         _isDragging = false;
 
         // Copy all selected lines in display order.
-        var selected = LogItems.SelectedItems;
-        if (selected.Count > 0)
+        if (_dragStartIndex >= 0)
         {
             var sb = new StringBuilder();
-            foreach (var item in _visible)
-            {
-                if (selected.Contains(item))
-                    sb.AppendLine(item.Text);
-            }
+            int currentIndex = _dragCurrentIndex >= 0
+                ? _dragCurrentIndex
+                : _dragStartIndex;
+            int start = Math.Min(_dragStartIndex, currentIndex);
+            int end = Math.Max(_dragStartIndex, currentIndex);
+            for (int i = start; i <= end; i++)
+                sb.AppendLine(_visible[i].Text);
+
             if (CopyToClipboard(sb.ToString()))
                 ShowCopiedFeedback();
             else
@@ -126,6 +131,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (_visible.Count > 0)
             LogItems.DeselectRange(new ItemIndexRange(0, (uint)_visible.Count));
         _dragStartIndex = -1;
+        _dragCurrentIndex = -1;
     }
 
     private void OnLogPointerExited(object sender, PointerRoutedEventArgs e)

@@ -12,6 +12,7 @@ public sealed class LogFilterSelection
     private readonly HashSet<EventLevel> _severities = [];
     private readonly HashSet<string> _modules = new(StringComparer.Ordinal);
     private readonly HashSet<Keywords> _categories = [];
+    private Keywords _categoryMask;
 
     public event EventHandler? Changed;
 
@@ -40,8 +41,7 @@ public sealed class LogFilterSelection
                                         && _severities.Add(level),
             LogFilterDimension.Module => !string.IsNullOrWhiteSpace(token.Value)
                                       && _modules.Add(token.Value),
-            LogFilterDimension.Category => TryParseCategory(token.Value, out var category)
-                                        && _categories.Add(category),
+            LogFilterDimension.Category => AddCategory(token.Value),
             _ => false,
         };
 
@@ -56,8 +56,7 @@ public sealed class LogFilterSelection
             LogFilterDimension.Severity => TryParseSeverity(token.Value, out var level)
                                         && _severities.Remove(level),
             LogFilterDimension.Module => _modules.Remove(token.Value),
-            LogFilterDimension.Category => TryParseCategory(token.Value, out var category)
-                                        && _categories.Remove(category),
+            LogFilterDimension.Category => RemoveCategory(token.Value),
             _ => false,
         };
 
@@ -71,6 +70,7 @@ public sealed class LogFilterSelection
         _severities.Clear();
         _modules.Clear();
         _categories.Clear();
+        _categoryMask = Keywords.None;
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -84,19 +84,9 @@ public sealed class LogFilterSelection
         if (_modules.Count > 0 && !_modules.Contains(entry.Provider))
             return false;
 
-        if (_categories.Count > 0)
-        {
-            var entryKeywords = (Keywords)(long)entry.Keywords;
-            bool categoryMatch = false;
-            foreach (Keywords category in _categories)
-            {
-                if ((entryKeywords & category) == 0) continue;
-                categoryMatch = true;
-                break;
-            }
-
-            if (!categoryMatch) return false;
-        }
+        if (_categoryMask != Keywords.None &&
+            (((Keywords)(long)entry.Keywords) & _categoryMask) == 0)
+            return false;
 
         return true;
     }
@@ -151,5 +141,25 @@ public sealed class LogFilterSelection
     {
         bool parsed = Enum.TryParse(value, ignoreCase: false, out category);
         return parsed && CategoryOrder.Contains(category);
+    }
+
+    private bool AddCategory(string value)
+    {
+        if (!TryParseCategory(value, out Keywords category) ||
+            !_categories.Add(category))
+            return false;
+
+        _categoryMask |= category;
+        return true;
+    }
+
+    private bool RemoveCategory(string value)
+    {
+        if (!TryParseCategory(value, out Keywords category) ||
+            !_categories.Remove(category))
+            return false;
+
+        _categoryMask &= ~category;
+        return true;
     }
 }

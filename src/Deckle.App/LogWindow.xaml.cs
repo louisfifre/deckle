@@ -53,6 +53,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private ScrollViewer? _listScrollViewer;
     private ItemsStackPanel? _itemsPanel;
+    private bool _autoScrollPending;
 
     private readonly LogFilterSelection _filterSelection = LogWindowFilterSession.Selection;
     private string _currentSearch = "";
