@@ -147,6 +147,12 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtSettingsModuleRegistered          = 72;
     public const int EvtSettingsModuleUnregistered        = 73;
 
+    // ── Settings cross-page search index ──
+    // A search entry whose header key does not resolve when the index is built —
+    // a dangling contribution, skipped so the rest of the page still indexes.
+    // Plumbing detail with a tag and a key ⇒ Verbose (no user milestone).
+    public const int EvtSearchEntrySkipped                = 74;
+
     // ── Bootstrap ───────────────────────────────────────────────────────
 
     [Event(EvtMigrationDispatched,
@@ -786,5 +792,16 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public void SettingsModuleUnregistered(string id)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsModuleUnregistered, id);
+    }
+
+    // ── Settings cross-page search index ────────────────────────────────
+
+    [Event(EvtSearchEntrySkipped,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "search entry skipped | reason=header-unresolved | page={0} | key={1}")]
+    public void SearchEntrySkipped(string page_tag, string label_key)
+    {
+        if (IsEnabled()) WriteEvent(EvtSearchEntrySkipped, page_tag, label_key);
     }
 }

@@ -926,7 +926,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
+│   │   ├── SettingSearchHit.cs
 │   │   ├── SettingsHost.cs
+│   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingsWindow.xaml
 │   │   ├── SettingsWindow.xaml.cs
 │   │   └── TelemetryConsentWiring.cs
