@@ -796,7 +796,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.cs
-│   │   └── IAmbientEngineHost.cs
+│   │   ├── IAmbientEngineHost.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj
 │   │   ├── DeckleLlmSource.cs
