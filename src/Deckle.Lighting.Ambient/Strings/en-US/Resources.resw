@@ -136,7 +136,7 @@
     <value>Ambient Light</value>
   </data>
   <data name="AmbientEnabledCard.Description" xml:space="preserve">
-    <value>When on, your Hue lights follow what's on screen. Capture runs locally on your primary monitor — nothing leaves your machine.</value>
+    <value>When on, your Hue lights follow what's on screen. Capture runs locally on your selected display — nothing leaves your machine.</value>
   </data>
   <data name="AmbientNotPairedInfoBar.Title" xml:space="preserve">
     <value>Hue bridge not configured</value>
@@ -197,6 +197,24 @@
   <data name="AmbientConfigSectionHeader.Text" xml:space="preserve">
     <value>Configuration</value>
   </data>
+  <data name="AmbientMonitorCard.Header" xml:space="preserve">
+    <value>Capture display</value>
+  </data>
+  <data name="AmbientMonitorCard.Description" xml:space="preserve">
+    <value>Choose the display Ambient Light follows. Changes apply the next time it starts.</value>
+  </data>
+  <data name="AmbientMonitor_Primary" xml:space="preserve">
+    <value>Primary display (follow Windows)</value>
+  </data>
+  <data name="AmbientMonitor_CurrentPrimarySuffix" xml:space="preserve">
+    <value> — current primary</value>
+  </data>
+  <data name="AmbientMonitor_DisplayFormat" xml:space="preserve">
+    <value>Display {0} — {1} × {2}{3}</value>
+  </data>
+  <data name="AmbientMonitor_UnavailableFormat" xml:space="preserve">
+    <value>Unavailable display — {0}</value>
+  </data>
   <data name="HueBridgeExpander.Header" xml:space="preserve">
     <value>Hue bridge</value>
   </data>
@@ -208,6 +226,9 @@
   </data>
   <data name="HueDiscoverButton.Content" xml:space="preserve">
     <value>Find bridge</value>
+  </data>
+  <data name="HueCloudDiscoverButton.Content" xml:space="preserve">
+    <value>Search with Philips Hue online</value>
   </data>
   <data name="HueBridgeGroupCard.Header" xml:space="preserve">
     <value>Room or zone</value>
@@ -257,6 +278,18 @@
        Cleared back to empty when the row should disappear. -->
   <data name="AmbientHue_PairStatus_IpRequired" xml:space="preserve">
     <value>Enter a bridge IP address.</value>
+  </data>
+  <data name="AmbientHue_Discovery_LocalFound" xml:space="preserve">
+    <value>Bridge found on your local network.</value>
+  </data>
+  <data name="AmbientHue_Discovery_LocalEmpty" xml:space="preserve">
+    <value>No bridge found locally. Enter its IP address, or search with Philips Hue online.</value>
+  </data>
+  <data name="AmbientHue_Discovery_OnlineFound" xml:space="preserve">
+    <value>Bridge found through Philips Hue online.</value>
+  </data>
+  <data name="AmbientHue_Discovery_OnlineEmpty" xml:space="preserve">
+    <value>No bridge found online. Enter its IP address manually.</value>
   </data>
   <data name="AmbientHue_PairStatus_PressLink" xml:space="preserve">
     <value>Press the link button on the bridge within 30 seconds.</value>

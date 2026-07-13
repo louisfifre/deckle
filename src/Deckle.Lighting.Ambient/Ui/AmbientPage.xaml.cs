@@ -5,6 +5,7 @@ using Deckle.Lighting;
 using Deckle.Catalog;
 using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
+using Deckle.Vision;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -47,6 +48,7 @@ public sealed partial class AmbientPage : Page
     // combo's Items collection.
     private CancellationTokenSource? _huePairCts;
     private bool _hueIsPairing;
+    private HueBridge? _hueDiscoveredBridge;
     private IReadOnlyList<HueGroup> _hueGroups = [];
     private bool _hueGroupComboSuppress;
 
@@ -119,6 +121,7 @@ public sealed partial class AmbientPage : Page
                 }
             }
             ModeCombo.SelectedItem = toSelect ?? ModeCombo.Items[0];
+            PopulateMonitorChoices(s.SelectedMonitorDeviceName);
 
             // Pair completeness drives the NotPaired InfoBar. The
             // criteria mirror AmbientEngine.StartAsync's validation
@@ -164,7 +167,9 @@ public sealed partial class AmbientPage : Page
     // the engine runs.
     private void ApplyEngineState(AmbientEngineState state)
     {
-        ModeCombo.IsEnabled = state != AmbientEngineState.Running;
+        bool canReconfigure = state != AmbientEngineState.Running;
+        ModeCombo.IsEnabled = canReconfigure;
+        MonitorCombo.IsEnabled = canReconfigure;
     }
 
     private void EnabledToggle_Toggled(object sender, RoutedEventArgs e)
@@ -195,6 +200,65 @@ public sealed partial class AmbientPage : Page
             // exactly where the user left them.
             AmbientSettingsService.Instance.ApplyPreset(mode);
         }
+    }
+
+    private void PopulateMonitorChoices(string? selectedDeviceName)
+    {
+        MonitorCombo.Items.Clear();
+        MonitorCombo.Items.Add(new ComboBoxItem
+        {
+            Content = Loc.Get("AmbientMonitor_Primary"),
+            Tag = null,
+        });
+
+        ComboBoxItem? selected = null;
+        var monitors = ScreenCaptureService.GetAvailableMonitors();
+        for (var index = 0; index < monitors.Count; index++)
+        {
+            var monitor = monitors[index];
+            var primarySuffix = monitor.IsPrimary
+                ? Loc.Get("AmbientMonitor_CurrentPrimarySuffix")
+                : string.Empty;
+            var item = new ComboBoxItem
+            {
+                Content = Loc.Format(
+                    "AmbientMonitor_DisplayFormat",
+                    index + 1,
+                    monitor.Width,
+                    monitor.Height,
+                    primarySuffix),
+                Tag = monitor.DeviceName,
+            };
+            MonitorCombo.Items.Add(item);
+
+            if (string.Equals(
+                selectedDeviceName,
+                monitor.DeviceName,
+                StringComparison.Ordinal))
+            {
+                selected = item;
+            }
+        }
+
+        if (selected is null && !string.IsNullOrEmpty(selectedDeviceName))
+        {
+            selected = new ComboBoxItem
+            {
+                Content = Loc.Format("AmbientMonitor_UnavailableFormat", selectedDeviceName),
+                Tag = selectedDeviceName,
+            };
+            MonitorCombo.Items.Add(selected);
+        }
+
+        MonitorCombo.SelectedItem = selected ?? MonitorCombo.Items[0];
+    }
+
+    private void MonitorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || MonitorCombo.SelectedItem is not ComboBoxItem item) return;
+
+        AmbientSettingsService.Instance.Current.SelectedMonitorDeviceName = item.Tag as string;
+        AmbientSettingsService.Instance.Save();
     }
 
     // The four HDR slider handlers (ExposureSlider_ValueChanged et al.)
@@ -292,6 +356,8 @@ public sealed partial class AmbientPage : Page
     private async void OnHueDiscoverClick(object sender, RoutedEventArgs e)
     {
         HueDiscoverButton.IsEnabled = false;
+        HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
+        SetHuePairStatus(string.Empty);
         try
         {
             var bridges = await HuePairingService.Instance
@@ -299,15 +365,45 @@ public sealed partial class AmbientPage : Page
                 .ConfigureAwait(true);
             if (bridges.Count > 0)
             {
-                HueBridgeIpTextBox.Text = bridges[0].InternalIpAddress;
+                _hueDiscoveredBridge = bridges[0];
+                HueBridgeIpTextBox.Text = _hueDiscoveredBridge.InternalIpAddress;
+                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_LocalFound"));
             }
-            // Empty bridges list : leave the textbox alone, user types
-            // the IP manually (the LogWindow shows the verbose discovery
-            // outcome). No status dot change.
+            else
+            {
+                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_LocalEmpty"));
+                HueCloudDiscoverButton.Visibility = Visibility.Visible;
+            }
         }
         finally
         {
             HueDiscoverButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnHueCloudDiscoverClick(object sender, RoutedEventArgs e)
+    {
+        HueCloudDiscoverButton.IsEnabled = false;
+        try
+        {
+            var bridges = await HuePairingService.Instance
+                .DiscoverViaCloudAsync()
+                .ConfigureAwait(true);
+            if (bridges.Count > 0)
+            {
+                _hueDiscoveredBridge = bridges[0];
+                HueBridgeIpTextBox.Text = _hueDiscoveredBridge.InternalIpAddress;
+                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_OnlineFound"));
+                HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_OnlineEmpty"));
+            }
+        }
+        finally
+        {
+            HueCloudDiscoverButton.IsEnabled = true;
         }
     }
 
@@ -349,7 +445,10 @@ public sealed partial class AmbientPage : Page
         HuePairLabel.Text       = Loc.Get("AmbientHue_PairLabel_Waiting");
         SetHuePairStatus(Loc.Get("AmbientHue_PairStatus_PressLink"));
 
-        var target = new HueBridge(Id: "manual", InternalIpAddress: ip, Port: 443);
+        var target = _hueDiscoveredBridge is { } discovered
+                     && string.Equals(discovered.InternalIpAddress, ip, StringComparison.Ordinal)
+            ? discovered
+            : new HueBridge(Id: "manual", InternalIpAddress: ip, Port: 443);
         try
         {
             await HuePairingService.Instance

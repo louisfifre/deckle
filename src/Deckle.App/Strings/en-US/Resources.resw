@@ -1503,6 +1503,30 @@
   <data name="AmbientHue_PairStatus_IpRequired" xml:space="preserve">
     <value>Enter a bridge IP address.</value>
   </data>
+  <data name="AmbientHue_Discovery_LocalFound" xml:space="preserve">
+    <value>Bridge found on your local network.</value>
+  </data>
+  <data name="AmbientHue_Discovery_LocalEmpty" xml:space="preserve">
+    <value>No bridge found locally. Enter its IP address, or search with Philips Hue online.</value>
+  </data>
+  <data name="AmbientHue_Discovery_OnlineFound" xml:space="preserve">
+    <value>Bridge found through Philips Hue online.</value>
+  </data>
+  <data name="AmbientHue_Discovery_OnlineEmpty" xml:space="preserve">
+    <value>No bridge found online. Enter its IP address manually.</value>
+  </data>
+  <data name="AmbientMonitor_Primary" xml:space="preserve">
+    <value>Primary display (follow Windows)</value>
+  </data>
+  <data name="AmbientMonitor_CurrentPrimarySuffix" xml:space="preserve">
+    <value> — current primary</value>
+  </data>
+  <data name="AmbientMonitor_DisplayFormat" xml:space="preserve">
+    <value>Display {0} — {1} × {2}{3}</value>
+  </data>
+  <data name="AmbientMonitor_UnavailableFormat" xml:space="preserve">
+    <value>Unavailable display — {0}</value>
+  </data>
   <data name="AmbientHue_PairStatus_PressLink" xml:space="preserve">
     <value>Press the link button on the bridge within 30 seconds.</value>
   </data>

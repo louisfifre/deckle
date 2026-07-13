@@ -120,6 +120,13 @@
                 <TextBlock x:Uid="AmbientConfigSectionHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
+                <controls:SettingsCard x:Uid="AmbientMonitorCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Window}}">
+                    <ComboBox x:Name="MonitorCombo"
+                              MinWidth="280"
+                              SelectionChanged="MonitorCombo_SelectionChanged" />
+                </controls:SettingsCard>
+
                 <controls:SettingsExpander x:Uid="HueBridgeExpander"
                                            x:Name="HueBridgeExpander"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Bridge}}">
@@ -140,10 +147,10 @@
                         <!-- Bridge address row. SettingsCard default
                              layout : Header on the left, content on the
                              right, mirrors the HDR tuning cards above.
-                             Discover queries discovery.meethue.com and
-                             autofills the textbox ; manual entry is the
-                             fallback when the cloud lookup returns
-                             nothing (firewall, offline, etc.). Pair
+                             Find bridge uses local DNS-SD and autofills
+                             the textbox. Manual entry remains available,
+                             and online discovery is revealed only after
+                             a local result with no bridge. Pair
                              launches the 30 s link-button countdown via
                              HuePairingService.PairAsync. Transient
                              status text lives below the card (separate
@@ -177,6 +184,13 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    Margin="16,4,16,8" />
+
+                        <HyperlinkButton x:Name="HueCloudDiscoverButton"
+                                         x:Uid="HueCloudDiscoverButton"
+                                         Visibility="Collapsed"
+                                         HorizontalAlignment="Left"
+                                         Margin="4,0,4,4"
+                                         Click="OnHueCloudDiscoverClick" />
 
                         <!-- Entertainment group / room. -->
                         <controls:SettingsCard x:Uid="HueBridgeGroupCard">
