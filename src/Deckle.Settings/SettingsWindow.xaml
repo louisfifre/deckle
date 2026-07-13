@@ -7,9 +7,10 @@
 
     <Grid x:Name="RootGrid">
         <Grid.Resources>
-            <!-- Search box width. A fixed inline width would be a magic number; a
-                 named resource keeps it self-documenting and single-sourced. -->
-            <x:Double x:Key="SettingsSearchBoxWidth">360</x:Double>
+            <!-- Search box cap. The box stretches with the TitleBar's central zone
+                 and stops growing here; a named resource keeps the cap
+                 self-documenting and single-sourced. -->
+            <x:Double x:Key="SettingsSearchBoxMaxWidth">360</x:Double>
 
             <!-- Suggestion rows: a rich hit (page glyph + card label with matched
                  terms bold + breadcrumb line) and a terminal notice ("+N more",
@@ -68,30 +69,39 @@
                   x:Uid="SettingsTitleBar"
                   IsPaneToggleButtonVisible="True"
                   PaneToggleRequested="OnTitleBarPaneToggleRequested">
+            <TitleBar.Resources>
+                <!-- The Content slot centers at its DesiredSize by default; Stretch
+                     hands it the zone's full width, and the box caps itself at its
+                     MaxWidth — the WinUI 3 Gallery shipped pattern. -->
+                <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
+            </TitleBar.Resources>
             <TitleBar.IconSource>
                 <ImageIconSource x:Name="AppTitleBarIcon" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <!-- Cross-page search, central slot. Below the collapse threshold
-                     (code-behind) the box folds into a search icon that reveals it
-                     on click, and focus leaving an empty box restores the icon —
-                     the LogWindow / Task Manager pattern. Fixed width, centered:
-                     stretching to fill needs a TitleBar content-alignment theme
-                     override that could not be verified to compile, so the proven
-                     fixed-width box is used, matching LogWindow. -->
-                <Grid HorizontalAlignment="Center"
+                <!-- Cross-page search, central slot. The zone is the TitleBar's one
+                     star column, so its width IS the space the bar can afford: the
+                     box stretches with it up to its cap, and when the zone drops
+                     below the box's useful floor the code-behind swaps it for the
+                     search icon, whose click floats the same box in SearchOverlay
+                     below the bar. At extreme widths the TitleBar's own Compact
+                     state reclaims the title area natively. -->
+                <Grid x:Name="SearchZone"
                       VerticalAlignment="Center"
-                      Margin="8,0">
+                      Margin="8,0"
+                      SizeChanged="OnSearchZoneSizeChanged">
                     <AutoSuggestBox x:Name="SearchBox"
                                     x:Uid="SettingsSearchBox"
                                     QueryIcon="Find"
-                                    Width="{StaticResource SettingsSearchBoxWidth}"
+                                    MaxWidth="{StaticResource SettingsSearchBoxMaxWidth}"
+                                    HorizontalAlignment="Stretch"
                                     VerticalAlignment="Center"
                                     ItemTemplateSelector="{StaticResource SearchSuggestionSelector}"
                                     TextChanged="OnSearchTextChanged"
                                     SuggestionChosen="OnSearchSuggestionChosen"
                                     QuerySubmitted="OnSearchQuerySubmitted"
-                                    LostFocus="OnSearchBoxLostFocus" />
+                                    LostFocus="OnSearchBoxLostFocus"
+                                    KeyDown="OnSearchBoxKeyDown" />
                     <Button x:Name="SearchIconButton"
                             x:Uid="SettingsSearchIconButton"
                             Style="{StaticResource SubtleButtonStyle}"
@@ -160,5 +170,24 @@
                  pattern). Auto-save everywhere → no global Cancel/Save. -->
             <Frame x:Name="PageFrame" />
         </NavigationView>
+
+        <!-- Narrow-window search overlay. When the TitleBar can only afford the
+             search icon, clicking it floats the SAME AutoSuggestBox here — the
+             code-behind reparents it in, and back out on dismissal — so there is
+             one search control, one state, whatever the window size. Transient
+             surface, so flyout acrylic and flyout stroke; declared after the
+             NavigationView to render above the page. -->
+        <Border x:Name="SearchOverlay"
+                Grid.Row="1"
+                MaxWidth="376"
+                Margin="12,4"
+                Padding="8,6"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Stretch"
+                Background="{ThemeResource FlyoutPresenterBackground}"
+                BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
+                BorderThickness="1"
+                CornerRadius="{ThemeResource OverlayCornerRadius}"
+                Visibility="Collapsed" />
     </Grid>
 </Window>

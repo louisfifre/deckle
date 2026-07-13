@@ -4,7 +4,9 @@ using System.Linq;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using VirtualKey = Windows.System.VirtualKey;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
@@ -20,14 +22,28 @@ namespace Deckle.Settings;
 // results page: Enter without a chosen hit is a no-op by spec, and an overflow beyond
 // the cap surfaces as an inert "+N more — refine" hint, not a "see all" link.
 //
-// Collapse mirrors LogWindow: below a width threshold the inline box folds into a
-// search icon that reveals it on click — the Windows 11 Task Manager pattern.
+// Presentation is measure-driven, not window-width-driven: the TitleBar's central
+// zone is its one star column, so the zone's own width IS the space the bar can
+// afford. Wide, the box stretches with the zone up to its cap; when the zone drops
+// below the box's useful floor it swaps for the search icon; clicking the icon
+// floats the SAME box in the SearchOverlay below the bar (reparented in, and back
+// out on dismissal — one control, one state). At extreme widths the TitleBar's own
+// Compact visual state reclaims the title area natively; no title juggling here.
 
 public sealed partial class SettingsWindow
 {
+    // The box's useful floor and the restore width above it. Zone widths in DIPs;
+    // the 24 gap is hysteresis so the swap cannot oscillate on a boundary pixel.
+    // Element-measured, so title length, DPI and the Logs command all price
+    // themselves in without a window-width constant.
+    private const double SearchIconZoneWidth = 180.0;
+    private const double SearchInlineZoneWidth = 204.0;
+
+    private enum SearchPresentation { Inline, Icon, Overlay }
+    private SearchPresentation _searchPresentation = SearchPresentation.Inline;
+
     // Rebuilt (created lazily) on first keystroke; a single dedicated debounce timer.
     private DispatcherQueueTimer? _searchDebounce;
-    private bool _isSearchNarrow;
 
     // Debounce window before a query runs: long enough to skip mid-word passes,
     // short enough to feel immediate once the user pauses.
@@ -37,17 +53,135 @@ public sealed partial class SettingsWindow
     // rather than growing the list — the search stays a shortcut, not a browser.
     private const int MaxSuggestions = 7;
 
-    // Below this window width (DIPs) the inline box collapses to an icon so the
-    // title bar (title + Logs command + caption buttons) stays legible on a narrow
-    // window. An empirical dip, not a documented breakpoint — hence a named constant.
-    private const double SearchCollapseThreshold = 560.0;
-
     private void InitializeSearch()
     {
-        // Responsive collapse only; the default XAML state (box visible, icon
-        // collapsed) is correct at the window's opening width. The first resize
-        // below the threshold folds it, matching LogWindow.
-        SizeChanged += OnWindowSizeChanged;
+        // Click-away: page background and nav chrome are not focusable, so a press
+        // there never pulls focus off the box on its own. Observe every press
+        // (handledEventsToo) and release the search focus when one lands outside
+        // the search surfaces.
+        RootGrid.AddHandler(UIElement.PointerPressedEvent,
+            new PointerEventHandler(OnRootPointerPressed), handledEventsToo: true);
+
+        // The TitleBar sits first in tab order, so initial focus would land in the
+        // box and swallow the first keystrokes. Hand it to the content instead.
+        RootGrid.Loaded += (_, _) => PageFrame.Focus(FocusState.Programmatic);
+    }
+
+    // ── Presentation: inline box ↔ icon ↔ floating overlay ───────────────────
+
+    private void OnSearchZoneSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        double zone = e.NewSize.Width;
+        switch (_searchPresentation)
+        {
+            case SearchPresentation.Inline when zone < SearchIconZoneWidth:
+                SetSearchPresentation(SearchPresentation.Icon, zone);
+                break;
+            // The overlay only exists because the zone could not host the box; once
+            // the zone can again, fold it straight back into the bar.
+            case SearchPresentation.Icon or SearchPresentation.Overlay
+                when zone >= SearchInlineZoneWidth:
+                SetSearchPresentation(SearchPresentation.Inline, zone);
+                break;
+        }
+    }
+
+    private void OnSearchIconClick(object sender, RoutedEventArgs e)
+    {
+        SetSearchPresentation(SearchPresentation.Overlay, SearchZone.ActualWidth);
+        SearchBox.Focus(FocusState.Programmatic);
+    }
+
+    private void SetSearchPresentation(SearchPresentation target, double zoneWidth)
+    {
+        if (target == _searchPresentation) return;
+        DeckleSettingsSource.Log.SearchPresentationChanged(
+            _searchPresentation.ToString(), target.ToString(), (int)zoneWidth);
+        _searchPresentation = target;
+
+        // The box lives in exactly one of two hosts: the TitleBar zone or the
+        // overlay shell. Reparent first, then set the visibilities of the state.
+        if (target == SearchPresentation.Overlay)
+        {
+            SearchZone.Children.Remove(SearchBox);
+            SearchOverlay.Child = SearchBox;
+            SearchBox.Visibility = Visibility.Visible;
+            SearchOverlay.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            if (SearchOverlay.Child == SearchBox)
+            {
+                SearchOverlay.Child = null;
+                SearchZone.Children.Insert(0, SearchBox);
+            }
+            SearchOverlay.Visibility = Visibility.Collapsed;
+            SearchBox.Visibility = target == SearchPresentation.Inline
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+        SearchIconButton.Visibility = target == SearchPresentation.Inline
+            ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // ── Focus release ────────────────────────────────────────────────────────
+    //
+    // The box holds focus until something focusable takes it, which a Mica
+    // backdrop or a page background never does — so give focus explicit exits:
+    // Escape, and any press outside the search surfaces.
+
+    private void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        // First Escape closes the suggestion list (handled by the box itself);
+        // the next one releases focus and retracts the overlay.
+        if (e.Key != VirtualKey.Escape || SearchBox.IsSuggestionListOpen) return;
+        ReleaseSearchFocus("escape");
+        e.Handled = true;
+    }
+
+    private void OnRootPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (!IsFocusInSearch()) return;
+        if (e.OriginalSource is DependencyObject src &&
+            (IsWithin(src, SearchZone) || IsWithin(src, SearchOverlay))) return;
+        ReleaseSearchFocus("pointer");
+    }
+
+    private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_searchPresentation != SearchPresentation.Overlay) return;
+        // Focus transits through the suggestion flyout mid-selection; decide on the
+        // settled state, one dispatcher tick later, not on the transient.
+        DispatcherQueue.TryEnqueueObserved(
+            operation: "ui-update", caller: "settings-search-dismiss",
+            callback: () =>
+            {
+                if (_searchPresentation != SearchPresentation.Overlay) return;
+                if (IsFocusInSearch() || SearchBox.IsSuggestionListOpen) return;
+                SetSearchPresentation(SearchPresentation.Icon, SearchZone.ActualWidth);
+            },
+            rejectSource: "SETTINGS", rejectWhat: "search overlay dismissal");
+    }
+
+    private void ReleaseSearchFocus(string via)
+    {
+        if (_searchPresentation == SearchPresentation.Overlay)
+            SetSearchPresentation(SearchPresentation.Icon, SearchZone.ActualWidth);
+        // The Frame takes programmatic focus; if a page ever refuses it, fall back
+        // to wherever tab order goes next — anywhere out of the box will do.
+        if (!PageFrame.Focus(FocusState.Programmatic))
+            _ = FocusManager.TryMoveFocusAsync(FocusNavigationDirection.Next);
+        DeckleSettingsSource.Log.SearchFocusReleased(via);
+    }
+
+    private bool IsFocusInSearch()
+        => FocusManager.GetFocusedElement(Content.XamlRoot) is DependencyObject focused &&
+           (IsWithin(focused, SearchZone) || IsWithin(focused, SearchOverlay));
+
+    private static bool IsWithin(DependencyObject node, DependencyObject root)
+    {
+        for (DependencyObject? d = node; d is not null; d = VisualTreeHelper.GetParent(d))
+            if (ReferenceEquals(d, root)) return true;
+        return false;
     }
 
     // ── Query → suggestions ──────────────────────────────────────────────────
@@ -185,8 +319,11 @@ public sealed partial class SettingsWindow
         if (PageFrame.Content is not FrameworkElement page) return;
 
         // Clear the query: leaves the box empty and collapses the dropdown. This is a
-        // ProgrammaticChange, so the search does not re-run.
+        // ProgrammaticChange, so the search does not re-run. The overlay, if it carried
+        // the query, has done its job — retract it before focus moves to the card.
         SearchBox.Text = string.Empty;
+        if (_searchPresentation == SearchPresentation.Overlay)
+            SetSearchPresentation(SearchPresentation.Icon, SearchZone.ActualWidth);
 
         if (page.IsLoaded)
         {
@@ -245,43 +382,5 @@ public sealed partial class SettingsWindow
             if (found is not null) return found;
         }
         return null;
-    }
-
-    // ── Responsive collapse (LogWindow pattern) ──────────────────────────────
-
-    private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs args)
-    {
-        bool narrow = args.Size.Width < SearchCollapseThreshold;
-        if (narrow == _isSearchNarrow) return;
-        _isSearchNarrow = narrow;
-        if (narrow) ShowSearchIcon();
-        else ShowSearchBox();
-    }
-
-    private void OnSearchIconClick(object sender, RoutedEventArgs e)
-    {
-        ShowSearchBox();
-        SearchBox.Focus(FocusState.Programmatic);
-    }
-
-    private void OnSearchBoxLostFocus(object sender, RoutedEventArgs e)
-    {
-        // Retract to the icon only when narrow, and only if no query is left behind —
-        // an active search stays reachable to be read or cleared.
-        if (!_isSearchNarrow) return;
-        if (!string.IsNullOrEmpty(SearchBox.Text)) return;
-        ShowSearchIcon();
-    }
-
-    private void ShowSearchBox()
-    {
-        SearchIconButton.Visibility = Visibility.Collapsed;
-        SearchBox.Visibility = Visibility.Visible;
-    }
-
-    private void ShowSearchIcon()
-    {
-        SearchBox.Visibility = Visibility.Collapsed;
-        SearchIconButton.Visibility = Visibility.Visible;
     }
 }

@@ -162,6 +162,12 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtSearchNavigated                   = 76;
     public const int EvtSearchNavigatedDetail             = 77;
 
+    // ── Settings search presentation ──
+    // The search box's presentation transitions (inline box / icon / floating
+    // overlay) and its explicit focus releases — diagnostic detail ⇒ Verbose.
+    public const int EvtSearchPresentationChanged         = 79;
+    public const int EvtSearchFocusReleased               = 80;
+
     // ── Bootstrap ───────────────────────────────────────────────────────
 
     [Event(EvtMigrationDispatched,
@@ -841,5 +847,25 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public void SearchNavigatedDetail(string page_tag, string card_tag)
     {
         if (IsEnabled()) WriteEvent(EvtSearchNavigatedDetail, page_tag, card_tag);
+    }
+
+    // ── Settings search presentation ─────────────────────────────────────
+
+    [Event(EvtSearchPresentationChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "search presentation | from={0} | to={1} | zone={2}")]
+    public void SearchPresentationChanged(string from, string to, int zone_w)
+    {
+        if (IsEnabled()) WriteEvent(EvtSearchPresentationChanged, from, to, zone_w);
+    }
+
+    [Event(EvtSearchFocusReleased,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "search focus released | via={0}")]
+    public void SearchFocusReleased(string via)
+    {
+        if (IsEnabled()) WriteEvent(EvtSearchFocusReleased, via);
     }
 }
