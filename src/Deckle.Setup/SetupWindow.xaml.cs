@@ -56,14 +56,31 @@ public sealed partial class SetupWindow : Window
     public event Action? NextRequested;
     public event Action? BackRequested;
 
-    public SetupWindow()
+    public SetupWindow() : this(null) { }
+
+    // The install-mode host (App's --install / --install-continue branches)
+    // builds the context itself — mode flags, source/stub/cleanup paths, the
+    // model relayed across the process boundary — and passes it in. The
+    // parameterless path keeps the in-app behaviour: the window seeds the
+    // default context.
+    public SetupWindow(SetupContext? context)
     {
         InitializeComponent();
         // SetupContext stays backend-agnostic (no hard reference to any
         // ASR catalog). The wizard host wires the default Whisper model
         // into the initial state — when a second backend ships (Voxtral),
         // the host picks the catalog based on the user's selected engine.
-        Context = new SetupContext { SelectedModel = SpeechModels.DefaultWhisperModel };
+        // The module selection is seeded from the recorded presence choice
+        // (full catalogue when none), so the install plan is meaningful even
+        // if a navigation path skips the Modules page.
+        Context = context ?? new SetupContext
+        {
+            SelectedModel = SpeechModels.DefaultWhisperModel,
+            SelectedModules = Deckle.Modules.ModulePresence.Choice
+                ?? Deckle.Modules.ModuleRegistry.Modules
+                    .Select(m => m.Id)
+                    .ToHashSet(StringComparer.Ordinal),
+        };
 
         // Mica on long-lived windows — same primitive as Settings, Logs,
         // and the rest of the app's persistent surfaces. DWM applies the

@@ -67,6 +67,7 @@ public sealed partial class TrayContextMenuHost : IDisposable
     private MenuFlyout? _flyout;
     private MenuFlyoutItem? _ambientItem;
     private MenuFlyoutItem? _taskbarCoverItem;
+    private MenuFlyoutItem? _transcribeFileItem;
     private IntPtr _hwnd;
     private AppWindow? _appWindow;
 

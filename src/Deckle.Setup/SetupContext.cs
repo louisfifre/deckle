@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using Deckle.Core;
@@ -23,11 +24,47 @@ namespace Deckle.Setup;
 // setup classes free of UI types.
 public sealed class SetupContext
 {
-    // Where to install. Defaults to whatever AppPaths resolved at start-up
-    // (LOCALAPPDATA or env-var override). The wizard's location section
-    // doesn't yet support changing this in-process — a custom path needs
-    // an app restart in V1, so this stays read-only after construction.
-    public string Location { get; init; } = AppPaths.UserDataRoot;
+    // Where the data root lives. In the normal in-app wizard this is whatever
+    // AppPaths resolved at start-up (LOCALAPPDATA or env-var override) and
+    // never changes. In install mode the Folders page overwrites it with the
+    // user's data-folder choice, so the Choices recap shows the real target.
+    public string Location { get; set; } = AppPaths.UserDataRoot;
+
+    // ── Install mode (the wizard as installer) ──────────────────────────────
+    //
+    // True when the wizard was launched by the download stub (`Deckle.exe
+    // --install`), running from the extracted payload in a temp folder. The
+    // flow gains a Folders step, ends in a Deploy step (copy + integrate +
+    // relaunch from the install folder) instead of the provisioning step, and
+    // the presence choice is written into the CHOSEN data root rather than
+    // through AppPaths — which froze on the default root in this process.
+    public bool InstallMode { get; init; }
+
+    // The extracted payload the temp process runs from — what Deploy copies
+    // into the install folder.
+    public string SourceDirectory { get; init; } = System.AppContext.BaseDirectory;
+
+    // The stub exe that launched us (`--stub <path>`). Deploy copies it into
+    // the install folder as the uninstaller. Null on a dev launch of
+    // `--install` without a stub — integration then skips the Installed-apps
+    // entry, which would otherwise point at a missing uninstaller.
+    public string? StubPath { get; init; }
+
+    // The stub's temp root (`--cleanup <path>`), forwarded to the installed
+    // process so it can delete the extraction once the wizard is done with it.
+    public string? CleanupDirectory { get; init; }
+
+    // The two folders the Folders page collects. App = binaries (per user),
+    // Data = models/settings/logs, relocatable off a saturated C:.
+    public string InstallDirectory { get; set; } = Deckle.Install.InstallPaths.DefaultInstallDir;
+    public string DataDirectory { get; set; } = Deckle.Install.InstallPaths.DefaultDataDir;
+
+    // The module selection the install plan is built from. Seeded by
+    // SetupWindow from the recorded presence choice (or the full catalogue
+    // when none is recorded), then overwritten by the Modules page when the
+    // user commits a new selection.
+    public IReadOnlySet<string> SelectedModules { get; set; } =
+        new HashSet<string>(StringComparer.Ordinal);
 
     // Speech model the user picked in the Choices page. Null until the
     // wizard page initializes it from the active backend's catalog —
@@ -40,8 +77,7 @@ public sealed class SetupContext
     public bool ChoicesConfirmed { get; set; }
 
     // Per-item results captured by the Installing page, displayed on the
-    // Summary page. Populated in order: native runtime first, then the
-    // chosen model.
+    // Summary page. Populated in the install plan's order.
     public List<InstallResult> Results { get; } = new();
 
     // True when every Results entry is Success — drives the Summary page's

@@ -1,12 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- WinExe, not Exe: the stub is a transparent web-installer (VS Code / Discord
+         pattern) with no console. It shows only a native progress window and, on
+         failure, a message box; any Console.* call would be inert anyway with no
+         console allocated. -->
+    <OutputType>WinExe</OutputType>
     <RootNamespace>Deckle.Installer</RootNamespace>
-    <!-- The distributed file the end user double-clicks (and that stays on disk
-         as the uninstaller). Dashed file name is fine for an exe; it never
-         appears as a C# identifier. -->
+    <!-- The distributed file the end user double-clicks (and that the wizard copies
+         into the install folder as the uninstaller). Dashed file name is fine for an
+         exe; it never appears as a C# identifier. -->
     <AssemblyName>Deckle-Installer</AssemblyName>
+
+    <!-- Declares PerMonitorV2 DPI awareness and the comctl32 v6 dependency the
+         progress bar needs for its themed (non pre-XP) style. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
 
     <!-- TargetFramework is inherited from Directory.Build.props
          (net10.0-windows10.0.26100.0). A bare net10.0-windows would default
@@ -29,5 +37,11 @@
          (System.Runtime.InteropServices.Marshalling) and XML/HTTP all ship in the
          net10.0-windows framework — conforms to the zero-dependency doctrine. -->
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Windows-integration primitives shared with the install-mode wizard
+         (Deckle.Setup). AOT-safe by that module's own contract. -->
+    <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
+  </ItemGroup>
 
 </Project>

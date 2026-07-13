@@ -43,11 +43,13 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
-        setup.SetBackEnabled(false);
+        // The module selector precedes this page — Back returns to it.
+        setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);
         setup.SetCancelVisible(true);
         setup.NextRequested += OnNextRequested;
+        setup.BackRequested += OnBackRequested;
 
         LocationPathText.Text = _context.Location;
         PopulateModelRadio();
@@ -58,7 +60,15 @@ public sealed partial class ChoicesPage : Page
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
-        if (_setup is not null) _setup.NextRequested -= OnNextRequested;
+        if (_setup is null) return;
+        _setup.NextRequested -= OnNextRequested;
+        _setup.BackRequested -= OnBackRequested;
+    }
+
+    private void OnBackRequested()
+    {
+        if (_setup is null) return;
+        if (_setup.Body.CanGoBack) _setup.Body.GoBack();
     }
 
     // ── Speech runtime ────────────────────────────────────────────────────────
@@ -170,34 +180,15 @@ public sealed partial class ChoicesPage : Page
     {
         if (_context is null) return;
 
-        // SelectedModel is initialized by SetupWindow construction — null
-        // here would mean a code path bypassed the wizard host, which we
-        // surface as a developer error rather than silently coercing.
-        long modelsBytes = _context.SelectedModel!.SizeBytes;
-        bool nativeInstalled  = NativeRuntime.IsInstalled();
-        bool autoDownloadable = !nativeInstalled && !NativeRuntime.BundleUrlIsPlaceholder;
+        // The consolidated total: everything the install step will actually
+        // fetch for the selected modules — the same plan InstallingPage runs,
+        // summed over the items not yet on disk. The model radio feeds the
+        // plan through SelectedModel, so a model swap re-totals live.
+        long pendingBytes = InstallPlan.PendingBytes(_context);
 
-        if (autoDownloadable)
-        {
-            // Auto-download path — fold the bundle size into the total so the
-            // user sees a single number for what the install page will fetch.
-            long totalBytes = modelsBytes + NativeRuntime.CurrentBundle.SizeBytes;
-            TotalEstimateBar.Message = Loc.Format(
-                "Setup_TotalEstimate_WithNative_Format",
-                FormatBytes(totalBytes));
-        }
-        else
-        {
-            // Either already installed (no native traffic) or placeholder URL
-            // (the user will Browse... locally). The legacy two-suffix wording
-            // covers both, with the suffix telling the truth about native.
-            TotalEstimateBar.Message = Loc.Format(
-                "Setup_TotalEstimate_Format",
-                FormatBytes(modelsBytes),
-                Loc.Get(nativeInstalled
-                    ? "Setup_TotalEstimate_NativeAlreadyInstalled"
-                    : "Setup_TotalEstimate_NativeNotInstalled"));
-        }
+        TotalEstimateBar.Message = pendingBytes > 0
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", FormatBytes(pendingBytes))
+            : Loc.Get("Setup_TotalEstimate_NothingPending");
     }
 
     private void UpdateNextEnabled()
@@ -228,6 +219,13 @@ public sealed partial class ChoicesPage : Page
         _context.ChoicesConfirmed = true;
         DeckleSetupSource.Log.ChoicesConfirmed();
         DeckleSetupSource.Log.ChoicesConfirmedDetail(_context.Location, _context.SelectedModel!.Id);
-        _setup.Body.Navigate(typeof(InstallingPage), _setup);
+
+        // Install mode: provisioning cannot run in this temp process (AppPaths
+        // froze on the default data root), so Install means Deploy — place the
+        // binaries and relaunch from the install folder; the installed process
+        // runs the provisioning step with the right paths.
+        _setup.Body.Navigate(
+            _context.InstallMode ? typeof(DeployPage) : typeof(InstallingPage),
+            _setup);
     }
 }

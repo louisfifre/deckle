@@ -6,7 +6,10 @@ namespace Deckle.Vad;
 // upstream master.
 public static class SileroVadModel
 {
-    public const string FileName = "silero_vad.onnx";
-    public const string Url      = "https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx";
-    public const string Sha256   = "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3";
+    public const string FileName  = "silero_vad.onnx";
+    public const string Url       = "https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/src/silero_vad/data/silero_vad.onnx";
+    public const string Sha256    = "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3";
+    // Stable with the pin: the URL points at an immutable release tag, so the
+    // byte count cannot drift. Feeds the wizard's download estimate.
+    public const long   SizeBytes = 2_327_524;
 }

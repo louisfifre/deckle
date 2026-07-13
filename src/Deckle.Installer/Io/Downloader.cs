@@ -1,23 +1,25 @@
 using System.Net.Http;
 using System.Security.Cryptography;
 
-using Deckle.Installer;
-
 namespace Deckle.Installer;
 
 // ── Downloader ────────────────────────────────────────────────────────────────
 //
-// Streams an HTTP download to disk while drawing a console progress bar and
-// computing SHA-256 incrementally. Deliberately a console-local re-take of
+// Streams an HTTP download to disk while reporting byte progress and computing
+// SHA-256 incrementally. Deliberately a stub-local re-take of
 // Deckle.Transcription.Downloader rather than a reference to it: that one
 // lives in a WinUI module and reports through IProgress<T> on a UI dispatcher;
 // pulling it in would drag all of WinUI into a stub whose entire reason to exist
 // is to stay small and self-contained. The shared shape (atomic .partial →
 // rename, streaming hash, throttled progress) is reproduced, ~80 lines.
+//
+// Progress is a plain callback (downloaded, total-or-null) rather than a hard
+// dependency on the window: the caller wires it to the progress window, and the
+// downloader stays UI-agnostic.
 internal static class Downloader
 {
     private const int BufferSize = 81920;          // 80 KB, the CopyToAsync default
-    private const int ProgressThrottleMs = 100;    // ~10 bar redraws/sec, no flicker
+    private const int ProgressThrottleMs = 100;    // ~10 updates/sec, no flicker
 
     private static readonly HttpClient s_http = CreateClient();
 
@@ -27,7 +29,7 @@ internal static class Downloader
     // checksum error. Atomic: bytes go to .partial and are renamed only on a clean
     // finish; an aborted run leaves a .partial the next attempt overwrites.
     public static async Task<string> DownloadAsync(
-        string url, string destPath, bool showProgress, CancellationToken ct)
+        string url, string destPath, Action<long, long?>? onProgress, CancellationToken ct)
     {
         string partial = destPath + ".partial";
         Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
@@ -54,19 +56,15 @@ internal static class Downloader
                 downloaded += read;
 
                 long now = Environment.TickCount64;
-                if (showProgress && now - lastTick >= ProgressThrottleMs)
+                if (onProgress is not null && now - lastTick >= ProgressThrottleMs)
                 {
-                    ConsoleUi.ProgressBar(downloaded, total);
+                    onProgress(downloaded, total);
                     lastTick = now;
                 }
             }
         }
 
-        if (showProgress)
-        {
-            ConsoleUi.ProgressBar(downloaded, total); // land the bar at 100%
-            ConsoleUi.ProgressDone();
-        }
+        onProgress?.Invoke(downloaded, total); // land the report at 100%
 
         File.Move(partial, destPath, overwrite: true);
         return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Modules</RootNamespace>
+    <!-- EventSource [Event] parameters intentionally use snake_case
+         so the ETW payload keys land directly in the JSONL output.
+         Suppress the naming-style warning — the convention is
+         documented in Deckle.Diagnostics/CLAUDE.md. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <!-- Module catalogue and presence — which user-facing modules exist, what
+       they depend on, and which ones the user chose to have installed. Pure
+       non-UI support: no XAML, no WindowsAppSDK. Depends on Deckle.Core for
+       AppPaths and Deckle.Diagnostics to expose its EventSource. -->
+</Project>

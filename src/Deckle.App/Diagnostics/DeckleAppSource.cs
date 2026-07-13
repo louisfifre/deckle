@@ -66,6 +66,9 @@ public sealed class DeckleAppSource : DeckleEventSource
     public const int EvtHotkeyNoProfileDetail       = 38;
     public const int EvtHudWarningDetail            = 39;
     public const int EvtLogWindowWarningDetail      = 40;
+    // Install mode (the wizard as installer).
+    public const int EvtInstallModeEntered          = 41;
+    public const int EvtInstallModeEnteredDetail    = 42;
 
     // ── Crash safety net ────────────────────────────────────────────────
 
@@ -306,6 +309,24 @@ public sealed class DeckleAppSource : DeckleEventSource
     public void CmdLinePostBuildFlag()
     {
         if (IsEnabled()) WriteEvent(EvtCmdLinePostBuildFlag);
+    }
+
+    [Event(EvtInstallModeEntered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The app was launched in install mode")]
+    public void InstallModeEntered()
+    {
+        if (IsEnabled()) WriteEvent(EvtInstallModeEntered);
+    }
+
+    [Event(EvtInstallModeEnteredDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "install mode | phase={0} | stub={1} | cleanup={2} | model={3}")]
+    public void InstallModeEnteredDetail(string phase, string stub, string cleanup, string model)
+    {
+        if (IsEnabled()) WriteEvent(EvtInstallModeEnteredDetail, phase, stub, cleanup, model);
     }
 
     // ── Ambient observer ────────────────────────────────────────────────

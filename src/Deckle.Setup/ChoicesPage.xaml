@@ -37,7 +37,7 @@
             </controls:SettingsCard>
 
             <InfoBar x:Name="TotalEstimateBar"
-                     x:Uid="SetupChoicesTotalEstimateBar"
+                     x:Uid="SetupTotalEstimateBar"
                      IsOpen="True"
                      IsClosable="False"
                      Severity="Informational" />

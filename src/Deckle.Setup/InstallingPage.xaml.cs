@@ -1,6 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Dispatching;
@@ -9,43 +9,34 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Core;
-using Deckle.Transcription;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
 // ── InstallingPage ───────────────────────────────────────────────────────────
 //
-// Runs the installs in bulk (sequential V1) and reports per-item progress.
-// Two rows now: native runtime (whisper.cpp + Vulkan + MinGW DLLs) and
-// the chosen Whisper model. The native row was added when the wizard
-// moved away from forcing the user to Browse... for a folder of DLLs —
-// the auto-download path fetches the versioned zip from the Deckle GitHub
-// Release defined in NativeRuntime.CurrentBundle.
+// Runs the install plan in bulk (sequential V1) and reports per-item progress.
+// The rows are no longer hardcoded: InstallPlan maps the wizard's module
+// selection to install items (Dictation → native runtime + model + VAD model,
+// Autocorrect → CamemBERT, Anytype → the pinned CLI), and this page renders
+// one row per item and runs them in order.
 //
-// Already-installed shortcut applies to both: a row that detects an
-// existing valid install renders as "already installed" green check
-// without consuming bandwidth.
+// Already-installed shortcut: a row whose item detects an existing valid
+// install renders as "already installed" without consuming bandwidth.
 //
-// Cancellation is handled inline (Cancel install button on the page),
-// not via the shell footer. The shell's Cancel button is hidden while
-// this page is active to avoid two competing affordances.
+// Errors don't abort the run — each item's result is appended independently so
+// the user sees what worked and what didn't, and SummaryPage offers Retry.
 //
-// On completion (success or failure), the page navigates to SummaryPage
-// which renders the Results captured here. Errors don't abort the run —
-// each item's result is appended independently so the user sees what
-// worked and what didn't, EXCEPT for a placeholder native bundle URL,
-// which short-circuits the run since nothing else can be installed
-// without the runtime.
+// Cancellation is handled inline (Cancel install button on the page), not via
+// the shell footer. The shell's Cancel button is hidden while this page is
+// active to avoid two competing affordances.
 public sealed partial class InstallingPage : Page
 {
-    private const int TotalSteps = 2;
-    private const string NativeRuntimeItemId = "native-runtime";
-
     private SetupWindow? _setup;
     private SetupContext? _context;
     private CancellationTokenSource? _cts;
     private DispatcherQueue? _dispatcher;
+
+    private sealed record ItemRow(FontIcon Icon, ProgressBar Bar, TextBlock Status);
 
     public InstallingPage()
     {
@@ -67,9 +58,6 @@ public sealed partial class InstallingPage : Page
         setup.SetNextEnabled(false);
         setup.SetNextVisible(false);
         setup.SetCancelVisible(false); // inline Cancel install button instead
-
-        // SelectedModel is guaranteed non-null by SetupWindow construction.
-        WhisperLabel.Text = _context.SelectedModel!.DisplayName;
 
         _ = InstallAllAsync();
     }
@@ -96,278 +84,145 @@ public sealed partial class InstallingPage : Page
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
 
-        Directory.CreateDirectory(AppPaths.ModelsDirectory);
+        IReadOnlyList<InstallItem> plan = InstallPlan.Build(_context);
+        IReadOnlyList<ItemRow> rows = BuildItemRows(plan);
+        GlobalProgress.Maximum = plan.Count;
 
-        // Step 1 — native runtime (whisper.cpp + Vulkan + MinGW DLLs).
-        bool nativeOk = await InstallNativeRuntimeStepAsync(ct);
-        if (!nativeOk)
+        // A re-entry (SummaryPage's Retry) starts a fresh result set — stale
+        // failures must not survive a run that may now succeed.
+        _context.Results.Clear();
+
+        for (int i = 0; i < plan.Count; i++)
         {
-            // Placeholder URL with no local install — the run cannot proceed
-            // because everything downstream depends on libwhisper. Hand off
-            // to summary so the user sees the explicit failure.
-            _setup.Body.Navigate(typeof(SummaryPage), _setup);
-            return;
-        }
+            InstallItem item = plan[i];
+            ItemRow row = rows[i];
 
-        // Step 2 — Whisper model (skip if already on disk — saves a 3 GB
-        // re-download when the user only wiped the native bundle).
-        // SelectedModel guaranteed non-null by SetupWindow construction.
-        // Local snapshot lifts the !-assertion to a single site instead of
-        // repeating it on every member access below.
-        ModelEntry selectedModel = _context.SelectedModel!;
-        if (SpeechModels.IsInstalled(selectedModel))
-        {
-            _context.Results.Add(new InstallResult(
-                ItemId:      selectedModel.Id,
-                DisplayName: selectedModel.DisplayName,
-                Success:     true,
-                ErrorMessage: null,
-                Bytes:        new FileInfo(Path.Combine(AppPaths.ModelsDirectory, selectedModel.FileName)).Length));
-            UpdateGlobalStep(2, Loc.Get("Setup_Install_AlreadyInstalled"));
-            SetItemDone(WhisperIcon, WhisperProgress, WhisperStatus, Loc.Get("Setup_Install_AlreadyInstalled"));
-        }
-        else
-        {
-            await DownloadModelStepAsync(
-                entry:     selectedModel,
-                stepIndex: 1,
-                icon:      WhisperIcon,
-                label:     WhisperLabel,
-                bar:       WhisperProgress,
-                status:    WhisperStatus,
-                ct:        ct);
-        }
+            UpdateGlobalStep(i, Loc.Format("Setup_Install_StepOfTotal_Format",
+                (i + 1).ToString(CultureInfo.CurrentCulture),
+                plan.Count.ToString(CultureInfo.CurrentCulture),
+                item.DisplayName));
 
-        UpdateGlobalStep(TotalSteps, Loc.Get("Setup_Install_Done"));
-
-        // Hand off to the summary page. Frame.Navigate is UI-thread-safe
-        // when invoked from an awaited continuation that resumed on the
-        // UI thread (the awaiter for Downloader.DownloadAsync runs on the
-        // captured SyncContext = DispatcherQueueSynchronizationContext).
-        _setup.Body.Navigate(typeof(SummaryPage), _setup);
-    }
-
-    // ── Native runtime step ───────────────────────────────────────────────────
-
-    // Returns true when the native runtime is present at the end of the step
-    // (already installed, or just installed). Returns false only when the
-    // bundle URL is still a placeholder AND nothing was previously installed
-    // — that's the one fatal short-circuit because libwhisper is required
-    // for everything downstream.
-    private async Task<bool> InstallNativeRuntimeStepAsync(CancellationToken ct)
-    {
-        if (_context is null) return false;
-
-        // Path A — already installed (Browse... on ChoicesPage, setup-assets.ps1,
-        // or a previous wizard run).
-        if (NativeRuntime.IsInstalled())
-        {
-            _context.Results.Add(new InstallResult(
-                ItemId:       NativeRuntimeItemId,
-                DisplayName:  NativeRuntime.CurrentBundle.DisplayName,
-                Success:      true,
-                ErrorMessage: null,
-                Bytes:        null));
-            SetItemDone(NativeIcon, NativeProgress, NativeStatus, Loc.Get("Setup_Install_AlreadyInstalled"));
-            return true;
-        }
-
-        // Path B — placeholder URL (build artifact: the Deckle release that
-        // hosts the runtime zip hasn't been published yet). ChoicesPage gates
-        // Next on IsInstalled when the URL is a placeholder, so reaching this
-        // branch means a bug. Surface it explicitly rather than crashing on
-        // a 404 download.
-        if (NativeRuntime.BundleUrlIsPlaceholder)
-        {
-            _context.Results.Add(new InstallResult(
-                ItemId:       NativeRuntimeItemId,
-                DisplayName:  NativeRuntime.CurrentBundle.DisplayName,
-                Success:      false,
-                ErrorMessage: "auto-download URL is a placeholder; use Browse... on the previous step",
-                Bytes:        null));
-            DeckleSetupSource.Log.NativeRuntimeAborted();
-            DeckleSetupSource.Log.NativeRuntimeAbortedDetail("placeholder_url");
-            SetItemFailed(NativeIcon, NativeProgress, NativeStatus,
-                Loc.Get("Setup_Install_NativePlaceholderUrl"));
-            return false;
-        }
-
-        // Path C — auto-download from the Deckle release.
-        return await DownloadAndInstallNativeAsync(ct);
-    }
-
-    private async Task<bool> DownloadAndInstallNativeAsync(CancellationToken ct)
-    {
-        if (_context is null) return false;
-
-        var bundle = NativeRuntime.CurrentBundle;
-
-        UpdateGlobalStep(0, Loc.Format("Setup_Install_Step1Of2_Format", bundle.DisplayName));
-        SetItemRunning(NativeIcon, NativeProgress, NativeStatus, Loc.Get("Setup_Install_Connecting"));
-
-        // Stage to <NativeDirectory>/_bundle.zip — same drive as the final
-        // location, so File.Move during InstallFromZipAsync is rename-only,
-        // not copy-then-delete.
-        Directory.CreateDirectory(AppPaths.NativeDirectory);
-        string zipPath = Path.Combine(AppPaths.NativeDirectory, "_bundle.zip");
-
-        long startTicks = Environment.TickCount64;
-        var progress = new Progress<Downloader.DownloadProgress>(p => OnDownloadProgress(p, NativeProgress, NativeStatus));
-
-        try
-        {
-            var dl = await Downloader.DownloadAsync(
-                bundle.Url, zipPath, bundle.Sha256, progress, ct);
-
-            if (!dl.Success)
+            if (item.IsInstalled())
             {
-                _context.Results.Add(new InstallResult(
-                    ItemId:       NativeRuntimeItemId,
-                    DisplayName:  bundle.DisplayName,
-                    Success:      false,
-                    ErrorMessage: dl.ErrorMessage,
-                    Bytes:        null));
-                DeckleSetupSource.Log.NativeDownloadFailed();
-                DeckleSetupSource.Log.NativeDownloadFailedDetail(dl.ErrorMessage ?? "");
-                SetItemFailed(NativeIcon, NativeProgress, NativeStatus,
-                    dl.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError"));
-                TryDelete(zipPath);
-                return false;
+                _context.Results.Add(new InstallResult(item.Id, item.DisplayName, true, null, null));
+                SetItemDone(row, Loc.Get("Setup_Install_AlreadyInstalled"));
+                continue;
             }
 
-            // Extract → atomic rename per file → delete the staged zip.
-            SetItemRunning(NativeIcon, NativeProgress, NativeStatus, Loc.Get("Setup_Install_Extracting"));
-            int extracted = await NativeRuntime.InstallFromZipAsync(zipPath, ct);
-            TryDelete(zipPath);
+            SetItemRunning(row, Loc.Get("Setup_Install_Connecting"));
+            var progress = new Progress<Downloader.DownloadProgress>(p => OnDownloadProgress(p, row));
 
-            long bytes = bundle.SizeBytes;
-            long durMs = Environment.TickCount64 - startTicks;
-
-            if (extracted < NativeRuntime.RequiredDllNames.Count)
+            long startTicks = Environment.TickCount64;
+            InstallItemOutcome outcome;
+            try
             {
-                string err = $"bundle is incomplete (extracted {extracted}/{NativeRuntime.RequiredDllNames.Count} DLLs)";
-                _context.Results.Add(new InstallResult(
-                    ItemId:       NativeRuntimeItemId,
-                    DisplayName:  bundle.DisplayName,
-                    Success:      false,
-                    ErrorMessage: err,
-                    Bytes:        bytes));
-                DeckleSetupSource.Log.NativeBundleIncomplete();
-                DeckleSetupSource.Log.NativeBundleIncompleteDetail(extracted, NativeRuntime.RequiredDllNames.Count);
-                SetItemFailed(NativeIcon, NativeProgress, NativeStatus, err);
-                return false;
+                outcome = await item.RunAsync(progress, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                outcome = InstallItemOutcome.Fail("cancelled");
+            }
+            catch (Exception ex)
+            {
+                // An item must never take the run down — the failure lands in
+                // its row and the next item still gets its chance.
+                outcome = InstallItemOutcome.Fail($"{ex.GetType().Name}: {ex.Message}");
             }
 
             _context.Results.Add(new InstallResult(
-                ItemId:       NativeRuntimeItemId,
-                DisplayName:  bundle.DisplayName,
-                Success:      true,
-                ErrorMessage: null,
-                Bytes:        bytes));
-            DeckleSetupSource.Log.NativeInstalled();
-            DeckleSetupSource.Log.NativeInstalledDetail($"native-v{bundle.Version}", bytes, durMs, dl.ActualSha256 ?? "");
-            SetItemDone(NativeIcon, NativeProgress, NativeStatus,
-                Loc.Format("Setup_Install_Done_Format", FormatBytes(bytes)));
-            return true;
-        }
-        catch (OperationCanceledException)
-        {
-            _context.Results.Add(new InstallResult(
-                ItemId:       NativeRuntimeItemId,
-                DisplayName:  bundle.DisplayName,
-                Success:      false,
-                ErrorMessage: "cancelled",
-                Bytes:        null));
-            DeckleSetupSource.Log.NativeCancelled();
-            SetItemFailed(NativeIcon, NativeProgress, NativeStatus, Loc.Get("Setup_Install_Cancelled"));
-            TryDelete(zipPath);
-            return false;
-        }
-    }
+                item.Id, item.DisplayName, outcome.Success, outcome.ErrorMessage, outcome.Bytes));
 
-    // ── Model step (Whisper + VAD share this) ─────────────────────────────────
-
-    // Runs one model download against an entry that exposes a Url. Updates
-    // the matching UI controls + emits the per-item Result. Catches inside,
-    // never throws to the caller — failures land in Results and the run
-    // continues with the next item.
-    private async Task DownloadModelStepAsync(
-        ModelEntry entry,
-        int stepIndex,
-        FontIcon icon,
-        TextBlock label,
-        ProgressBar bar,
-        TextBlock status,
-        CancellationToken ct)
-    {
-        if (_context is null) return;
-
-        UpdateGlobalStep(stepIndex, FormatStepLabel(stepIndex, entry.DisplayName));
-        SetItemRunning(icon, bar, status, Loc.Get("Setup_Install_Connecting"));
-
-        long startTicks = Environment.TickCount64;
-        var progress = new Progress<Downloader.DownloadProgress>(p => OnDownloadProgress(p, bar, status));
-
-        try
-        {
-            var result = await Downloader.DownloadAsync(
-                entry.Url,
-                Path.Combine(AppPaths.ModelsDirectory, entry.FileName),
-                entry.Sha256,
-                progress,
-                ct);
-
-            long durMs = Environment.TickCount64 - startTicks;
-
-            if (result.Success)
+            if (outcome.Success)
             {
-                long bytes = new FileInfo(Path.Combine(AppPaths.ModelsDirectory, entry.FileName)).Length;
-                _context.Results.Add(new InstallResult(
-                    ItemId:      entry.Id,
-                    DisplayName: entry.DisplayName,
-                    Success:     true,
-                    ErrorMessage: null,
-                    Bytes:        bytes));
                 DeckleSetupSource.Log.ItemInstalled();
-                DeckleSetupSource.Log.ItemInstalledDetail(entry.Id, bytes, durMs, result.ActualSha256 ?? "");
-                SetItemDone(icon, bar, status, Loc.Format("Setup_Install_Done_Format", FormatBytes(bytes)));
+                DeckleSetupSource.Log.ItemInstalledDetail(
+                    item.Id, outcome.Bytes ?? 0, Environment.TickCount64 - startTicks, outcome.Sha256 ?? "");
+                SetItemDone(row, outcome.Bytes is { } b
+                    ? Loc.Format("Setup_Install_Done_Format", FormatBytes(b))
+                    : Loc.Get("Setup_Install_Done"));
+            }
+            else if (outcome.ErrorMessage == "cancelled")
+            {
+                DeckleSetupSource.Log.ItemCancelled();
+                DeckleSetupSource.Log.ItemCancelledDetail(item.Id);
+                SetItemFailed(row, Loc.Get("Setup_Install_Cancelled"));
             }
             else
             {
-                _context.Results.Add(new InstallResult(
-                    ItemId:      entry.Id,
-                    DisplayName: entry.DisplayName,
-                    Success:     false,
-                    ErrorMessage: result.ErrorMessage,
-                    Bytes:        null));
                 DeckleSetupSource.Log.ItemDownloadFailed();
-                DeckleSetupSource.Log.ItemDownloadFailedDetail(entry.Id, result.ErrorMessage ?? "");
-                SetItemFailed(icon, bar, status, result.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError"));
+                DeckleSetupSource.Log.ItemDownloadFailedDetail(item.Id, outcome.ErrorMessage ?? "");
+                SetItemFailed(row, outcome.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError"));
             }
         }
-        catch (OperationCanceledException)
-        {
-            _context.Results.Add(new InstallResult(
-                ItemId:      entry.Id,
-                DisplayName: entry.DisplayName,
-                Success:     false,
-                ErrorMessage: "cancelled",
-                Bytes:        null));
-            DeckleSetupSource.Log.ItemCancelled();
-            DeckleSetupSource.Log.ItemCancelledDetail(entry.Id);
-            SetItemFailed(icon, bar, status, Loc.Get("Setup_Install_Cancelled"));
-        }
+
+        UpdateGlobalStep(plan.Count, Loc.Get("Setup_Install_Done"));
+
+        // Hand off to the summary page. Frame.Navigate is UI-thread-safe when
+        // invoked from an awaited continuation that resumed on the UI thread.
+        _setup.Body.Navigate(typeof(SummaryPage), _setup);
     }
 
-    private static string FormatStepLabel(int stepIndex, string itemName) => stepIndex switch
+    // ── Rows ──────────────────────────────────────────────────────────────────
+
+    // One Grid per item: glyph column + (label / progress / status) rows —
+    // the same shape the former static rows had.
+    private IReadOnlyList<ItemRow> BuildItemRows(IReadOnlyList<InstallItem> plan)
     {
-        1 => Loc.Format("Setup_Install_Step2Of2_Format", itemName),
-        _ => itemName,
-    };
+        ItemsPanel.Children.Clear();
+        var rows = new List<ItemRow>(plan.Count);
+
+        foreach (InstallItem item in plan)
+        {
+            var grid = new Grid { ColumnSpacing = 12, RowSpacing = 4 };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var icon = new FontIcon
+            {
+                Glyph = Glyphs.Download,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            };
+            Grid.SetColumn(icon, 0);
+            Grid.SetRow(icon, 0);
+            grid.Children.Add(icon);
+
+            var label = new TextBlock
+            {
+                Text = item.DisplayName,
+                Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
+            };
+            Grid.SetColumn(label, 1);
+            Grid.SetRow(label, 0);
+            grid.Children.Add(label);
+
+            var bar = new ProgressBar();
+            Grid.SetColumn(bar, 1);
+            Grid.SetRow(bar, 1);
+            grid.Children.Add(bar);
+
+            var status = new TextBlock
+            {
+                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            };
+            Grid.SetColumn(status, 1);
+            Grid.SetRow(status, 2);
+            grid.Children.Add(status);
+
+            ItemsPanel.Children.Add(grid);
+            rows.Add(new ItemRow(icon, bar, status));
+        }
+
+        return rows;
+    }
 
     // ── UI helpers (must run on UI thread) ────────────────────────────────────
 
-    private void OnDownloadProgress(Downloader.DownloadProgress p, ProgressBar bar, TextBlock status)
+    private void OnDownloadProgress(Downloader.DownloadProgress p, ItemRow row)
     {
         if (_dispatcher is null) return;
 
@@ -375,11 +230,11 @@ public sealed partial class InstallingPage : Page
         {
             if (p.Percent is double pct)
             {
-                bar.IsIndeterminate = false;
-                bar.Minimum = 0;
-                bar.Maximum = 1;
-                bar.Value   = pct;
-                status.Text = Loc.Format(
+                row.Bar.IsIndeterminate = false;
+                row.Bar.Minimum = 0;
+                row.Bar.Maximum = 1;
+                row.Bar.Value   = pct;
+                row.Status.Text = Loc.Format(
                     "Setup_Install_Progress_WithTotal_Format",
                     FormatBytes(p.BytesDownloaded),
                     FormatBytes(p.TotalBytes ?? 0),
@@ -387,47 +242,41 @@ public sealed partial class InstallingPage : Page
             }
             else
             {
-                bar.IsIndeterminate = true;
-                status.Text = Loc.Format("Setup_Install_Progress_NoTotal_Format", FormatBytes(p.BytesDownloaded));
+                row.Bar.IsIndeterminate = true;
+                row.Status.Text = Loc.Format("Setup_Install_Progress_NoTotal_Format", FormatBytes(p.BytesDownloaded));
             }
         });
     }
 
     private void UpdateGlobalStep(int completedTasks, string status)
     {
-        GlobalProgress.Value     = completedTasks;
-        GlobalStatusText.Text    = status;
+        GlobalProgress.Value  = completedTasks;
+        GlobalStatusText.Text = status;
     }
 
-    private void SetItemRunning(FontIcon icon, ProgressBar bar, TextBlock status, string text)
+    private static void SetItemRunning(ItemRow row, string text)
     {
-        icon.Glyph = Glyphs.Download;
-        bar.Visibility = Visibility.Visible;
-        bar.IsIndeterminate = true;
-        status.Text = text;
+        row.Icon.Glyph = Glyphs.Download;
+        row.Bar.Visibility = Visibility.Visible;
+        row.Bar.IsIndeterminate = true;
+        row.Status.Text = text;
     }
 
-    private void SetItemDone(FontIcon icon, ProgressBar bar, TextBlock status, string text)
+    private static void SetItemDone(ItemRow row, string text)
     {
-        icon.Glyph = Glyphs.Badge.Success;
-        bar.IsIndeterminate = false;
-        bar.Maximum = 1;
-        bar.Value = 1;
-        status.Text = text;
+        row.Icon.Glyph = Glyphs.Badge.Success;
+        row.Bar.IsIndeterminate = false;
+        row.Bar.Maximum = 1;
+        row.Bar.Value = 1;
+        row.Status.Text = text;
     }
 
-    private void SetItemFailed(FontIcon icon, ProgressBar bar, TextBlock status, string text)
+    private static void SetItemFailed(ItemRow row, string text)
     {
-        icon.Glyph = Glyphs.Badge.Critical;
-        bar.IsIndeterminate = false;
-        bar.Value = 0;
-        status.Text = text;
-    }
-
-    private static void TryDelete(string path)
-    {
-        try { if (File.Exists(path)) File.Delete(path); }
-        catch { /* best-effort cleanup */ }
+        row.Icon.Glyph = Glyphs.Badge.Critical;
+        row.Bar.IsIndeterminate = false;
+        row.Bar.Value = 0;
+        row.Status.Text = text;
     }
 
     private static string FormatBytes(long bytes)

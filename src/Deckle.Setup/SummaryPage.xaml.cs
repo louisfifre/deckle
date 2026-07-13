@@ -193,11 +193,20 @@ public sealed partial class SummaryPage : Page
 
     // The recovery row for one failed item. The item id resolves the asset URL
     // and the import kind through the catalogs: a model entry means a single
-    // file, otherwise it's the native runtime folder of DLLs.
+    // file, the native runtime a folder of DLLs. The plan's other items
+    // (VAD model, CamemBERT set, anytype-cli) get the manual-download link
+    // only — their import path is a wizard re-run (Retry), not a local pick.
     private FrameworkElement BuildRecoveryRow(InstallResult r)
     {
         ModelEntry? model = SpeechModels.WhisperModels.FirstOrDefault(m => m.Id == r.ItemId);
-        string? url = model is not null ? model.Url : NativeRuntime.CurrentBundle.Url;
+        bool isNativeRuntime = r.ItemId == InstallPlan.NativeRuntimeItemId;
+        string? url = model?.Url ?? r.ItemId switch
+        {
+            InstallPlan.NativeRuntimeItemId => NativeRuntime.CurrentBundle.Url,
+            InstallPlan.SileroItemId        => Deckle.Vad.SileroVadModel.Url,
+            InstallPlan.AnytypeItemId       => Deckle.Anytype.BackendInstallation.CurrentBundle.Url,
+            _ => null,
+        };
 
         var row = new StackPanel
         {
@@ -215,21 +224,28 @@ public sealed partial class SummaryPage : Page
             });
         }
 
-        var importButton = new Button
+        // Local import exists only where a picked file/folder can satisfy the
+        // item in place: a catalog model (single checksum-verified file) or
+        // the native runtime (folder of DLLs).
+        if (model is not null || isNativeRuntime)
         {
-            Content = Loc.Get(model is not null ? "Setup_ImportFile" : "Setup_ImportFolder"),
-        };
-        var importStatus = new TextBlock
-        {
-            VerticalAlignment = VerticalAlignment.Center,
-            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-            TextWrapping = TextWrapping.Wrap,
-        };
-        importButton.Click += async (_, _) => await OnImportAsync(r, model, importButton, importStatus);
+            var importButton = new Button
+            {
+                Content = Loc.Get(model is not null ? "Setup_ImportFile" : "Setup_ImportFolder"),
+            };
+            var importStatus = new TextBlock
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                TextWrapping = TextWrapping.Wrap,
+            };
+            importButton.Click += async (_, _) => await OnImportAsync(r, model, importButton, importStatus);
 
-        row.Children.Add(importButton);
-        row.Children.Add(importStatus);
+            row.Children.Add(importButton);
+            row.Children.Add(importStatus);
+        }
+
         return row;
     }
 

@@ -8,70 +8,15 @@
 
         <StackPanel Spacing="6">
             <ProgressBar x:Name="GlobalProgress"
-                         Minimum="0"
-                         Maximum="2" />
+                         Minimum="0" />
             <TextBlock x:Name="GlobalStatusText"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
         </StackPanel>
 
-        <!-- Native runtime (Whisper.cpp + Vulkan) -->
-        <Grid x:Name="NativeRow"
-              ColumnSpacing="12" RowSpacing="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <FontIcon x:Name="NativeIcon"
-                      Grid.Column="0" Grid.Row="0"
-                      Glyph="{StaticResource Icon.Download}"
-                      VerticalAlignment="Center"
-                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock x:Name="NativeLabel"
-                       x:Uid="SetupInstallNativeLabel"
-                       Grid.Column="1" Grid.Row="0"
-                       Style="{ThemeResource BodyStrongTextBlockStyle}" />
-            <ProgressBar x:Name="NativeProgress"
-                         Grid.Column="1" Grid.Row="1" />
-            <TextBlock x:Name="NativeStatus"
-                       Grid.Column="1" Grid.Row="2"
-                       Style="{ThemeResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        </Grid>
-
-        <!-- Whisper model -->
-        <Grid ColumnSpacing="12" RowSpacing="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <FontIcon x:Name="WhisperIcon"
-                      Grid.Column="0" Grid.Row="0"
-                      Glyph="{StaticResource Icon.Download}"
-                      VerticalAlignment="Center"
-                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock x:Name="WhisperLabel"
-                       Grid.Column="1" Grid.Row="0"
-                       Style="{ThemeResource BodyStrongTextBlockStyle}" />
-            <ProgressBar x:Name="WhisperProgress"
-                         Grid.Column="1" Grid.Row="1" />
-            <TextBlock x:Name="WhisperStatus"
-                       Grid.Column="1" Grid.Row="2"
-                       Style="{ThemeResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        </Grid>
+        <!-- One row per install item, built in code from the plan
+             (BuildItemRows) — the list is data, not layout. -->
+        <StackPanel x:Name="ItemsPanel" Spacing="20" />
 
         <Button x:Name="CancelDownloadButton"
                 x:Uid="SetupCancelInstallButton"

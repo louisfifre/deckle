@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Deckle.Install;
 
 namespace Deckle.Installer;
 
@@ -6,86 +7,83 @@ namespace Deckle.Installer;
 //
 // Reached when the installed copy is re-invoked with --uninstall (the
 // UninstallString registered in Installed apps). It runs from inside the install
-// folder, so the install location is simply this exe's directory. Same grammar as
-// the install: a recap of what goes, every question up front, then an unattended
-// run.
+// folder, so the install location is simply this exe's directory.
 //
-// Removal order: deregister first (shortcut, Installed-apps key), optionally drop
-// the data folder, then schedule the binaries — including this running exe — for
-// deletion. A process can't delete its own image, so a detached cmd waits for exit
-// and removes the folder; the "Press Enter to close" hold therefore happens here,
-// BEFORE scheduling, so the delayed delete never races a user still reading the
-// console. Models are preserved unless the user explicitly opts in: re-downloading
-// 3 GB is not something to do silently.
+// The stub kept this role even after the install flow moved into the WinUI wizard:
+// the wizard copies this exe into the install folder, and --uninstall reverses the
+// integration here — deregister the shortcut and the Installed-apps key, optionally
+// drop the data folder, then schedule the binaries (this running exe included) for
+// deletion. UX is two message boxes up front — remove, then keep-or-drop data —
+// followed by a marquee progress window while it works. -y/--yes skips both prompts
+// and keeps data (what the Installed-apps QuietUninstallString uses).
+//
+// Removal order matters: a process can't delete its own image, so a detached cmd
+// waits for exit and removes the folder. That schedule is the very last step, after
+// the window is gone and this process is about to exit, so nothing races the delete.
 internal static class Uninstaller
 {
-    public static Task<int> RunAsync(CliArgs cli, CancellationToken ct)
+    public static int Run(CliArgs cli)
     {
-        ConsoleUi.Banner("Uninstaller");
-
         string installDir = Path.GetDirectoryName(Environment.ProcessPath
             ?? throw new InvalidOperationException("cannot resolve the uninstaller's own path."))!;
         string? dataRoot = UserEnvironment.GetDataRoot();
         string dataDir = dataRoot ?? InstallPaths.DefaultDataDir;
 
-        // ── Recap + questions, all up front ───────────────────────────────────────
-        ConsoleUi.Headline("Deckle — ready to remove");
-        Console.WriteLine();
-        ConsoleUi.Row("App", installDir);
-        ConsoleUi.Row("Data", dataDir);
-        ConsoleUi.RowNote("models and settings — kept unless you opt in below");
-        Console.WriteLine();
-
-        bool interactive = !cli.AssumeYes && !Console.IsInputRedirected;
-        if (interactive && !ConsoleUi.Confirm("Remove Deckle?", defaultYes: true))
+        // ── Confirmations up front ────────────────────────────────────────────────
+        bool removeData = false;
+        if (!cli.AssumeYes)
         {
-            ConsoleUi.Info("Cancelled.");
-            ConsoleUi.HoldOpen();
-            return Task.FromResult(0);
+            bool proceed = MessageDialog.Confirm(nint.Zero,
+                $"Remove Deckle?\n\nThis deletes the app folder:\n{installDir}",
+                "Uninstall Deckle");
+            if (!proceed) return 0;
+
+            // Models are the expensive thing to lose — re-downloading is gigabytes —
+            // so keeping them is the default (No), stated plainly.
+            if (Directory.Exists(dataDir))
+                removeData = MessageDialog.Confirm(nint.Zero,
+                    $"Also delete Deckle's data folder?\n\n{dataDir}\n\n" +
+                    "This holds your settings and the downloaded speech models (several gigabytes). " +
+                    "Choose No to keep them.",
+                    "Delete data and models");
         }
-        bool removeData = interactive
-            && Directory.Exists(dataDir)
-            && ConsoleUi.Confirm("Also delete data and models?", defaultYes: false);
 
-        // A running Deckle keeps its image locked — the scheduled folder delete
-        // would leave binaries behind. Same gate as the install side; the running
-        // uninstaller itself is skipped by the detection.
-        while (true)
+        // A running Deckle keeps its image locked, so the scheduled folder delete would
+        // leave binaries behind. Detection skips this very process; no retry loop — a
+        // silent stub can't usefully wait, so it asks the user to close it and re-run.
+        string[] running = RunningProcesses.FromFolder(installDir);
+        if (running.Length > 0)
         {
-            string[] running = RunningProcesses.FromFolder(installDir);
-            if (running.Length == 0) break;
-            string names = string.Join(", ", running);
-            if (!interactive)
+            MessageDialog.Error(nint.Zero,
+                $"Deckle is still running ({string.Join(", ", running)}).\n\n" +
+                "Close it, then run the uninstaller again.");
+            return 1;
+        }
+
+        // ── Removal, under a marquee window ───────────────────────────────────────
+        var window = new ProgressWindow("Uninstall Deckle");
+        Task worker = Task.Run(() =>
+        {
+            try
             {
-                ConsoleUi.Error($"Deckle is running ({names}) — close it and re-run the uninstaller.");
-                return Task.FromResult(1);
+                window.ReportMarquee("Removing Deckle…");
+                Shortcut.RemoveStartMenu("Deckle");
+                UninstallEntry.Remove();
+                if (removeData) TryDeleteTree(dataDir);
+                if (dataRoot is not null) UserEnvironment.ClearDataRoot();
             }
-            ConsoleUi.Warn($"Deckle is running ({names}) — close it, then press Enter to retry.");
-            ConsoleUi.WaitKey(ConsoleKey.Enter);
-        }
+            catch { /* best-effort removal — nothing to abort onto */ }
+            finally { window.RequestClose(); }
+        });
 
-        // ── Unattended run ────────────────────────────────────────────────────────
-        ConsoleUi.Phase("Removing");
-        Shortcut.RemoveStartMenu("Deckle");
-        UninstallEntry.Remove();
-        ConsoleUi.Ok("Start Menu · Installed apps");
+        window.Show();
+        window.RunMessageLoop();
+        worker.GetAwaiter().GetResult();
 
-        if (removeData)
-        {
-            TryDeleteTree(dataDir);
-            ConsoleUi.Ok("data and models deleted");
-        }
-        if (dataRoot is not null)
-        {
-            UserEnvironment.ClearDataRoot();
-            ConsoleUi.Ok("DECKLE_DATA_ROOT cleared");
-        }
-
-        Console.WriteLine();
-        ConsoleUi.Success("Deckle removed.");
-        if (interactive) ConsoleUi.HoldOpen(); // must precede the self-delete schedule
+        // Last, with the window gone and this process about to exit: schedule the
+        // delete of the install folder, this exe included.
         ScheduleFolderDeletion(installDir);
-        return Task.FromResult(0);
+        return 0;
     }
 
     // Spawns a detached cmd that waits ~1 s for this process to release its image,
@@ -105,7 +103,6 @@ internal static class Uninstaller
     {
         if (installDir.IndexOfAny(CmdMetacharacters) >= 0)
         {
-            ConsoleUi.Warn($"install path holds shell metacharacters, skipping delayed delete: {installDir}");
             TryDeleteTree(installDir);
             return;
         }
@@ -127,6 +124,6 @@ internal static class Uninstaller
     private static void TryDeleteTree(string dir)
     {
         try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
-        catch (Exception ex) { ConsoleUi.Warn($"could not delete {dir}: {ex.Message}"); }
+        catch { /* best-effort */ }
     }
 }

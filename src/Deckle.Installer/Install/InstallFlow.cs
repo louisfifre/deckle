@@ -6,240 +6,156 @@ namespace Deckle.Installer;
 
 // ── InstallFlow ───────────────────────────────────────────────────────────────
 //
-// Recap → one keystroke → unattended run. Everything is resolved before anything
-// is asked (system check, latest release, folder defaults), so the consent screen
-// states exactly what will happen — version, download size, both folders. Enter
-// is the whole fast path; C reopens the folders; after consent the machine runs
-// without questions. The only progress bar is the download's, driven by actual
-// bytes, and ticks appear as real work completes — no phantom progress.
+// The silent stub: resolve the latest GitHub release, download the app payload
+// into a unique temp folder, verify its SHA-256, extract it there, then launch the
+// WinUI first-run wizard from that folder and exit. Nothing is asked and nothing is
+// integrated here — folder choice, module selection, the Start Menu shortcut, the
+// Installed-apps entry, DECKLE_DATA_ROOT and the binary copy all moved into the
+// wizard. This is the web-installer half of a VS Code / Discord style setup.
 //
-// What this does NOT do: provision the whisper.cpp native runtime or the speech
-// models. Those are the app's first-run wizard's job (auto-download, per user).
-// The installer's contract is narrow: place the app, integrate it, launch it.
+// The wizard is handed two things it can't otherwise know: --stub, this running
+// exe's path, which it copies into the install folder as the registered
+// uninstaller; and --cleanup, the temp root, which it deletes once it has read what
+// it needs. The temp folder is therefore deliberately NOT cleaned on success — the
+// wizard owns it. On any failure the temp folder is removed best-effort and the
+// error goes to a message box.
 internal static class InstallFlow
 {
-    public static async Task<int> RunAsync(CliArgs cli, CancellationToken ct)
+    // Owns the window and the message loop; the work runs on a background Task that
+    // reports through the window and, when done or cancelled, tears it down.
+    public static int Run(CliArgs cli)
     {
-        ConsoleUi.Banner("Installer");
+        var window = new ProgressWindow("Deckle Setup");
+        using var cts = new CancellationTokenSource();
+        window.Cancelled += cts.Cancel; // title-bar X cancels the token
 
-        // ── Resolve everything before asking anything ─────────────────────────────
+        int exitCode = 0;
+        Task worker = Task.Run(async () =>
+        {
+            try { exitCode = await RunCoreAsync(window, cts.Token).ConfigureAwait(false); }
+            finally { window.RequestClose(); }
+        });
+
+        window.Show();
+        window.RunMessageLoop();           // blocks on the main thread until torn down
+        worker.GetAwaiter().GetResult();   // let cancellation/cleanup finish before exit
+        return exitCode;
+    }
+
+    private static async Task<int> RunCoreAsync(ProgressWindow window, CancellationToken ct)
+    {
         if (!Environment.Is64BitOperatingSystem)
         {
-            ConsoleUi.Error("Deckle requires 64-bit Windows.");
+            MessageDialog.Error(window.Handle, "Deckle requires 64-bit Windows.");
             return 1;
         }
 
-        ReleaseResolver.ResolvedRelease release;
+        // Tracked so every failure path can remove it; left in place only on success,
+        // where the wizard takes ownership.
+        string? tempDir = null;
         try
         {
-            release = await ReleaseResolver.ResolveLatestAsync(ct);
-        }
-        catch (HttpRequestException ex)
-        {
-            ConsoleUi.Error($"Could not reach GitHub to find the latest release — check your connection. ({ex.Message})");
-            return 1;
-        }
+            window.ReportMarquee("Finding the latest Deckle release…");
+            ReleaseResolver.ResolvedRelease release = await ReleaseResolver.ResolveLatestAsync(ct).ConfigureAwait(false);
+            string version = BareVersion(release.Tag);
 
-        // A previous install is recognised from its Installed-apps registration —
-        // the run then reads as an update and starts from the folders that install
-        // actually uses, not from pristine defaults.
-        UninstallEntry.ExistingInstall? existing = UninstallEntry.Read();
-        string version = BareVersion(release.Tag);
+            tempDir = Path.Combine(Path.GetTempPath(), "Deckle-Setup-" + Guid.NewGuid().ToString("N")[..8]);
+            Directory.CreateDirectory(tempDir);
+            string zipPath = Path.Combine(tempDir, $"Deckle-{release.Tag}.zip");
 
-        // A previous install may have moved the data root: the variable, not the
-        // hardcoded default, is where the app actually reads — the recap must show
-        // that reality, and Enter must preserve it.
-        string? existingDataRoot = UserEnvironment.GetDataRoot();
-        string? existingInstallDir = existing is null ? null : Path.GetFullPath(existing.InstallDir);
+            string expectedSha = ParseSha256Sidecar(await Downloader.GetStringAsync(release.Sha256Url, ct).ConfigureAwait(false));
 
-        string? installDirNote = null;
-        string installDir = cli.InstallDir is { } requestedInstallDir
-            ? Path.GetFullPath(requestedInstallDir)
-            : ResolveInitialInstallDir(existingInstallDir, out installDirNote);
-        string dataDir = Path.GetFullPath(cli.DataDir ?? existingDataRoot ?? InstallPaths.DefaultDataDir);
-
-        // ── Recap + single-keystroke consent ──────────────────────────────────────
-        // The recap re-prints after each folder edit, so what Enter commits to is
-        // always the block on screen.
-        bool interactive = !cli.AssumeYes && !Console.IsInputRedirected;
-        string enterVerb = existing is null ? "installs" : existing.Version == version ? "reinstalls" : "updates";
-        bool createStartMenuShortcut = true;
-        while (true)
-        {
-            Recap(release, existing, installDir, installDirNote, dataDir, createStartMenuShortcut);
-            if (!interactive) break;
-            ConsoleUi.Hint($"Enter {enterVerb} · C folders · S shortcut · Ctrl+C cancels");
-            ConsoleKey key = ConsoleUi.WaitKey(ConsoleKey.Enter, ConsoleKey.C, ConsoleKey.S);
-            if (key == ConsoleKey.Enter) break;
-            if (key == ConsoleKey.S)
+            window.ReportMarquee($"Downloading Deckle {version}…");
+            string actualSha = await Downloader.DownloadAsync(release.ZipUrl, zipPath, (done, total) =>
             {
-                createStartMenuShortcut = !createStartMenuShortcut;
-                Console.WriteLine();
-                continue;
-            }
+                string status = DownloadStatus(version, done, total);
+                if (total is > 0) window.ReportProgress(status, done, total.Value);
+                else window.ReportMarquee(status); // no Content-Length: keep the bar alive
+            }, ct).ConfigureAwait(false);
 
-            Console.WriteLine();
-            installDir = Path.GetFullPath(ConsoleUi.PromptPath("App folder", installDir));
-            installDirNote = null;
-            dataDir = Path.GetFullPath(ConsoleUi.PromptPath("Data folder", dataDir));
-            Console.WriteLine();
-        }
-
-        // ── Unattended run ────────────────────────────────────────────────────────
-        ConsoleUi.Phase(existing is null ? "Installing" : "Updating");
-        string tempDir = Path.Combine(Path.GetTempPath(), "Deckle-Installer");
-        Directory.CreateDirectory(tempDir);
-        string zipPath = Path.Combine(tempDir, $"Deckle-{release.Tag}.zip");
-
-        string expectedSha = ParseSha256Sidecar(await Downloader.GetStringAsync(release.Sha256Url, ct));
-        string actualSha = await Downloader.DownloadAsync(release.ZipUrl, zipPath, showProgress: true, ct);
-        if (!string.Equals(actualSha, expectedSha, StringComparison.OrdinalIgnoreCase))
-        {
-            ConsoleUi.Error($"Checksum mismatch — expected {expectedSha}, got {actualSha}.");
-            TryDelete(zipPath);
-            return 1;
-        }
-
-        // Windows locks an exe's image while it runs: replacing binaries under a
-        // live Deckle would fault mid-extraction and leave a mixed install. Gate
-        // here — close-and-retry when someone can answer, a clean error otherwise.
-        while (true)
-        {
-            string[] running = RunningDeckleProcesses(installDir, existingInstallDir);
-            if (running.Length == 0) break;
-            string names = string.Join(", ", running);
-            if (!interactive)
+            if (!string.Equals(actualSha, expectedSha, StringComparison.OrdinalIgnoreCase))
             {
-                ConsoleUi.Error($"Deckle is running ({names}) — close it and re-run the installer.");
-                TryDelete(zipPath);
+                TryDeleteTree(tempDir);
+                MessageDialog.Error(window.Handle,
+                    "The downloaded file failed its integrity check and was discarded.\n\n" +
+                    $"Expected SHA-256:\n{expectedSha}\n\nActual:\n{actualSha}");
                 return 1;
             }
-            ConsoleUi.Warn($"Deckle is running ({names}) — close it, then press Enter to retry.");
-            ConsoleUi.WaitKey(ConsoleKey.Enter);
+
+            window.ReportMarquee($"Extracting Deckle {version}…");
+            string payloadDir = Path.Combine(tempDir, "app");
+            Directory.CreateDirectory(payloadDir);
+            ZipFile.ExtractToDirectory(zipPath, payloadDir, overwriteFiles: true);
+            TryDelete(zipPath); // dead weight now — the wizard runs from the extracted tree
+
+            string? appExe = FindDeckleExe(payloadDir);
+            if (appExe is null)
+            {
+                TryDeleteTree(tempDir);
+                MessageDialog.Error(window.Handle, "The downloaded package did not contain Deckle.exe.");
+                return 1;
+            }
+
+            // Hand off to the wizard living inside the payload. It runs from the
+            // extracted folder; --stub lets it register this exe as the uninstaller,
+            // and --cleanup lets it delete the whole temp root when it is finished.
+            var psi = new ProcessStartInfo(appExe)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(appExe)!,
+            };
+            psi.ArgumentList.Add("--install");
+            psi.ArgumentList.Add("--stub");
+            psi.ArgumentList.Add(Environment.ProcessPath ?? string.Empty);
+            psi.ArgumentList.Add("--cleanup");
+            psi.ArgumentList.Add(tempDir);
+            Process.Start(psi);
+            return 0; // temp left in place on purpose — the wizard owns it now
         }
-
-        Directory.CreateDirectory(installDir);
-        CleanInstallFolder(installDir);
-        ZipFile.ExtractToDirectory(zipPath, installDir, overwriteFiles: true);
-        TryDelete(zipPath);
-        string uninstallerPath = CopySelfAsUninstaller(installDir);
-        ConsoleUi.Ok($"verified (SHA-256) and unpacked — {Mb(DirectorySize(installDir)):0} MB");
-
-        string appExe = Path.Combine(installDir, "Deckle.exe");
-        if (createStartMenuShortcut)
+        catch (OperationCanceledException)
         {
-            Shortcut.CreateStartMenu(appExe, "Deckle", "Deckle");
+            if (tempDir is not null) TryDeleteTree(tempDir);
+            return 1; // user closed the window; no error dialog
         }
-        else
+        catch (Exception ex)
         {
-            Shortcut.RemoveStartMenu("Deckle");
+            if (tempDir is not null) TryDeleteTree(tempDir);
+            MessageDialog.Error(window.Handle, FriendlyError(ex));
+            return 1;
         }
-
-        UninstallEntry.Write(installDir, version, uninstallerPath, DirectorySize(installDir));
-        ConsoleUi.Ok(createStartMenuShortcut ? "Start Menu · Installed apps" : "Installed apps · no Start Menu shortcut");
-
-        // The variable exists only while the data folder is off the default: set it
-        // on a non-default choice, clear it when the user comes back to the default
-        // (previously the stale variable silently overrode that choice), and leave
-        // no trace on a default-to-default run.
-        if (!PathsEqual(dataDir, InstallPaths.DefaultDataDir))
-        {
-            UserEnvironment.SetDataRoot(dataDir);
-            ConsoleUi.Ok($"DECKLE_DATA_ROOT = {dataDir}");
-        }
-        else if (existingDataRoot is not null)
-        {
-            UserEnvironment.ClearDataRoot();
-            ConsoleUi.Ok("DECKLE_DATA_ROOT cleared — data folder back to the default");
-        }
-
-        // Moving the root does not move the files: the app will start fresh at the
-        // new location (and re-download models). Say so instead of letting the old
-        // folder look silently lost.
-        string previousRoot = Path.GetFullPath(existingDataRoot ?? InstallPaths.DefaultDataDir);
-        if (!PathsEqual(previousRoot, dataDir) && Directory.Exists(previousRoot))
-            ConsoleUi.Info($"data folder changed — existing files stay at {previousRoot} and are not moved");
-        if (existingInstallDir is not null && !PathsEqual(existingInstallDir, installDir) && Directory.Exists(existingInstallDir))
-            ConsoleUi.Info($"app folder changed — existing files stay at {existingInstallDir} and are not moved");
-
-        Process.Start(new ProcessStartInfo(appExe) { UseShellExecute = true, WorkingDirectory = installDir });
-        Console.WriteLine();
-        ConsoleUi.Success(existing is null ? "Deckle is installed and running." : "Deckle is up to date and running.");
-        // The provisioning note only concerns a first install — an update keeps the
-        // data folder, so the app comes back already provisioned.
-        if (existing is null)
-            ConsoleUi.Info("First launch downloads the speech runtime and a model — follow the setup window.");
-        return 0;
     }
 
-    // The consent screen: what will happen (install, update or reinstall), how
-    // heavy the download is, where the two folders land, and why the data folder
-    // is the one worth moving.
-    private static void Recap(
-        ReleaseResolver.ResolvedRelease release,
-        UninstallEntry.ExistingInstall? existing,
-        string installDir,
-        string? installDirNote,
-        string dataDir,
-        bool createStartMenuShortcut)
+    // The status line under the bar — "Downloading Deckle 0.4.0…  (52 MB of 300 MB)".
+    private static string DownloadStatus(string version, long done, long? total)
     {
-        string terms = release.ZipSize > 0
-            ? $"{Mb(release.ZipSize):0} MB download, no admin"
-            : "no admin";
-        string headline = existing is null
-            ? $"Deckle {release.Tag} — ready to install ({terms})"
-            : existing.Version == BareVersion(release.Tag)
-                ? $"Deckle {release.Tag} — ready to reinstall ({terms})"
-                : $"Deckle v{existing.Version} → {release.Tag} — ready to update ({terms})";
-        ConsoleUi.Headline(headline);
-        Console.WriteLine();
-        ConsoleUi.Row("App", installDir);
-        if (!string.IsNullOrWhiteSpace(installDirNote)) ConsoleUi.RowNote(installDirNote);
-        ConsoleUi.Row("Data", dataDir);
-        ConsoleUi.RowNote("speech models live here and can reach ~3 GB");
-        ConsoleUi.Row("Shortcut", createStartMenuShortcut ? "Start Menu" : "none");
-        Console.WriteLine();
+        static double Mb(long bytes) => bytes / (1024.0 * 1024.0);
+        return total is > 0
+            ? $"Downloading Deckle {version}…  ({Mb(done):0} MB of {Mb(total.Value):0} MB)"
+            : $"Downloading Deckle {version}…  ({Mb(done):0} MB)";
     }
 
-    // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, as the registry and
-    // the recap compare it.
+    private static string FriendlyError(Exception ex) => ex switch
+    {
+        HttpRequestException =>
+            "Could not reach GitHub to download Deckle.\n\nCheck your internet connection and try again.",
+        _ => "Deckle Setup could not complete:\n\n" + ex.Message,
+    };
+
+    // Locates Deckle.exe in the extracted tree — flat at the root for today's zip,
+    // but tolerant of a single wrapping folder by taking the shallowest match.
+    private static string? FindDeckleExe(string root)
+    {
+        string direct = Path.Combine(root, "Deckle.exe");
+        if (File.Exists(direct)) return direct;
+
+        return Directory.EnumerateFiles(root, "Deckle.exe", SearchOption.AllDirectories)
+            .OrderBy(path => path.Count(c => c == Path.DirectorySeparatorChar))
+            .FirstOrDefault();
+    }
+
+    // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, as the wizard and the
+    // status text want it.
     private static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
-
-    private static string ResolveInitialInstallDir(string? existingInstallDir, out string? note)
-    {
-        note = null;
-        if (existingInstallDir is null) return Path.GetFullPath(InstallPaths.DefaultInstallDir);
-
-        if (!Directory.Exists(existingInstallDir))
-        {
-            note = "previous app folder was not found; using the default";
-            return Path.GetFullPath(InstallPaths.DefaultInstallDir);
-        }
-
-        return existingInstallDir;
-    }
-
-    // Empties the install folder before extraction, so files a newer version
-    // renamed or dropped never linger beside the fresh payload. Safe by
-    // construction: user data lives in the separate data folder. The one spared
-    // entry is this very exe when the installed stub is the process running the
-    // update — a process cannot delete its own image; that stub then simply stays
-    // in place as the registered uninstaller.
-    private static void CleanInstallFolder(string installDir)
-    {
-        // Only a folder that actually holds Deckle binaries gets cleaned: stale
-        // files only exist over a previous install, and the guard keeps a mistyped
-        // custom folder (Documents, a drive root) from being emptied.
-        if (!File.Exists(Path.Combine(installDir, "Deckle.exe"))) return;
-
-        string? self = Environment.ProcessPath;
-        foreach (string entry in Directory.EnumerateFileSystemEntries(installDir))
-        {
-            if (self is not null && PathsEqual(entry, self)) continue;
-            if (Directory.Exists(entry)) Directory.Delete(entry, recursive: true);
-            else File.Delete(entry);
-        }
-    }
 
     // The .sha256 sidecar is `<hex> *<filename>` (sha256sum -c format). Take the hex.
     private static string ParseSha256Sidecar(string content)
@@ -248,49 +164,15 @@ internal static class InstallFlow
         return first.ToLowerInvariant();
     }
 
-    // Copies the running installer into the install folder as the uninstaller. When
-    // the installer is re-run from inside the folder, source and dest coincide —
-    // skip the copy rather than fault on a same-file copy.
-    private static string CopySelfAsUninstaller(string installDir)
-    {
-        string self = Environment.ProcessPath
-            ?? throw new InvalidOperationException("cannot resolve the installer's own path.");
-        string dest = Path.Combine(installDir, "Deckle-Installer.exe");
-        if (!PathsEqual(self, dest)) File.Copy(self, dest, overwrite: true);
-        return dest;
-    }
-
-    private static bool PathsEqual(string a, string b) =>
-        string.Equals(Path.GetFullPath(a).TrimEnd('\\'), Path.GetFullPath(b).TrimEnd('\\'),
-            StringComparison.OrdinalIgnoreCase);
-
-    private static string[] RunningDeckleProcesses(string installDir, string? existingInstallDir)
-    {
-        var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (string folder in InstallFoldersToCheck(installDir, existingInstallDir))
-        {
-            foreach (string name in RunningProcesses.FromFolder(folder))
-                names.Add(name);
-        }
-
-        return names.ToArray();
-    }
-
-    private static IEnumerable<string> InstallFoldersToCheck(string installDir, string? existingInstallDir)
-    {
-        yield return installDir;
-        if (existingInstallDir is not null && !PathsEqual(existingInstallDir, installDir))
-            yield return existingInstallDir;
-    }
-
-    private static long DirectorySize(string dir) =>
-        new DirectoryInfo(dir).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
-
-    private static double Mb(long bytes) => bytes / (1024.0 * 1024.0);
-
     private static void TryDelete(string path)
     {
         try { if (File.Exists(path)) File.Delete(path); }
+        catch { /* best-effort */ }
+    }
+
+    private static void TryDeleteTree(string dir)
+    {
+        try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
         catch { /* best-effort */ }
     }
 }

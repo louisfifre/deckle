@@ -415,7 +415,7 @@
   <data name="SetupChoicesSpeechModel.Description" xml:space="preserve">
     <value>Pick the Whisper model the engine will run. You can swap it later from Settings.</value>
   </data>
-  <data name="SetupChoicesTotalEstimateBar.Title" xml:space="preserve">
+  <data name="SetupTotalEstimateBar.Title" xml:space="preserve">
     <value>Total install size</value>
   </data>
   <data name="Setup_Native_Installed" xml:space="preserve">
@@ -436,18 +436,6 @@
   <data name="Setup_Native_ImportFailed_Format" xml:space="preserve">
     <value>Could not import: {0}</value>
   </data>
-  <data name="Setup_TotalEstimate_Format" xml:space="preserve">
-    <value>~{0} to download for the model and VAD. Native runtime is {1}</value>
-  </data>
-  <data name="Setup_TotalEstimate_WithNative_Format" xml:space="preserve">
-    <value>~{0} to download (speech runtime, model, and VAD).</value>
-  </data>
-  <data name="Setup_TotalEstimate_NativeAlreadyInstalled" xml:space="preserve">
-    <value>already installed.</value>
-  </data>
-  <data name="Setup_TotalEstimate_NativeNotInstalled" xml:space="preserve">
-    <value>not yet installed.</value>
-  </data>
 
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
@@ -460,12 +448,6 @@
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
     <value>Downloading the speech runtime and model. This can take a while on a slow link.</value>
-  </data>
-  <data name="Setup_Install_Step1Of2_Format" xml:space="preserve">
-    <value>Step 1 of 2 — installing {0}...</value>
-  </data>
-  <data name="Setup_Install_Step2Of2_Format" xml:space="preserve">
-    <value>Step 2 of 2 — downloading {0}...</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
     <value>Connecting...</value>
@@ -490,9 +472,6 @@
   </data>
   <data name="Setup_Install_AlreadyInstalled" xml:space="preserve">
     <value>Already installed</value>
-  </data>
-  <data name="SetupInstallNativeLabel.Text" xml:space="preserve">
-    <value>Whisper.cpp + Vulkan runtime</value>
   </data>
   <data name="Setup_Install_Progress_WithTotal_Format" xml:space="preserve">
     <value>{0} / {1}  ({2})</value>
@@ -1415,6 +1394,117 @@
   </data>
   <data name="AmbientHue_ForgetDialog_CloseButton" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="Setup_StepTitle_Modules" xml:space="preserve">
+    <value>Choose your modules</value>
+  </data>
+  <data name="Setup_StepSubtitle_Modules" xml:space="preserve">
+    <value>Pick what this Deckle installs. You can come back and change it later.</value>
+  </data>
+  <data name="Setup_NextLabel_Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Setup_Module_transcription_Label" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="Setup_Module_transcription_Description" xml:space="preserve">
+    <value>Voice transcription on a hotkey, running on a local speech model</value>
+  </data>
+  <data name="Setup_Module_rewrite_Label" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="Setup_Module_rewrite_Description" xml:space="preserve">
+    <value>Cleans up dictated text with a local language model — needs Dictation</value>
+  </data>
+  <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
+    <value>Autocorrect</value>
+  </data>
+  <data name="Setup_Module_autocorrect_Description" xml:space="preserve">
+    <value>Corrects typed text machine-wide, as you type</value>
+  </data>
+  <data name="Setup_Module_ambient_Label" xml:space="preserve">
+    <value>Ambient light</value>
+  </data>
+  <data name="Setup_Module_ambient_Description" xml:space="preserve">
+    <value>Matches Philips Hue lights to what is on screen</value>
+  </data>
+  <data name="Setup_Module_trackpad_Label" xml:space="preserve">
+    <value>Trackpad gestures</value>
+  </data>
+  <data name="Setup_Module_trackpad_Description" xml:space="preserve">
+    <value>Three-finger drag on the precision touchpad</value>
+  </data>
+  <data name="Setup_Module_anytype_Label" xml:space="preserve">
+    <value>Anytype workspace</value>
+  </data>
+  <data name="Setup_Module_anytype_Description" xml:space="preserve">
+    <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
+  <data name="Setup_Item_SileroVad" xml:space="preserve">
+    <value>Voice detection model (Silero VAD)</value>
+  </data>
+  <data name="Setup_Item_Camembert" xml:space="preserve">
+    <value>Contextual correction model (CamemBERT)</value>
+  </data>
+  <data name="Setup_Install_StepOfTotal_Format" xml:space="preserve">
+    <value>Step {0} of {1} — {2}</value>
+  </data>
+  <data name="Setup_TotalEstimate_Pending_Format" xml:space="preserve">
+    <value>~{0} to download for the selected modules.</value>
+  </data>
+  <data name="Setup_TotalEstimate_NothingPending" xml:space="preserve">
+    <value>Everything selected is already installed.</value>
+  </data>
+  <data name="Setup_StepTitle_Folders" xml:space="preserve">
+    <value>Choose the folders</value>
+  </data>
+  <data name="Setup_StepSubtitle_Folders" xml:space="preserve">
+    <value>Where the app and its data will live. Models can grow large — the data folder can go on another drive.</value>
+  </data>
+  <data name="SetupFoldersAppCard.Header" xml:space="preserve">
+    <value>Application folder</value>
+  </data>
+  <data name="SetupFoldersAppCard.Description" xml:space="preserve">
+    <value>The program files</value>
+  </data>
+  <data name="SetupFoldersDataCard.Header" xml:space="preserve">
+    <value>Data folder</value>
+  </data>
+  <data name="SetupFoldersDataCard.Description" xml:space="preserve">
+    <value>Models, settings and logs</value>
+  </data>
+  <data name="Setup_Folders_DriveLine_Format" xml:space="preserve">
+    <value>{0} needs about {1} — {2} free</value>
+  </data>
+  <data name="Setup_Folders_DriveUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="Setup_StepTitle_Deploy" xml:space="preserve">
+    <value>Installing Deckle</value>
+  </data>
+  <data name="Setup_StepSubtitle_Deploy" xml:space="preserve">
+    <value>Placing the app and registering it with Windows.</value>
+  </data>
+  <data name="Setup_Deploy_Checking" xml:space="preserve">
+    <value>Checking for a running Deckle…</value>
+  </data>
+  <data name="Setup_Deploy_Copying" xml:space="preserve">
+    <value>Copying files…</value>
+  </data>
+  <data name="Setup_Deploy_Integrating" xml:space="preserve">
+    <value>Registering with Windows…</value>
+  </data>
+  <data name="Setup_Deploy_Launching" xml:space="preserve">
+    <value>Starting the installed Deckle…</value>
+  </data>
+  <data name="Setup_Deploy_AppRunning" xml:space="preserve">
+    <value>Deckle is currently running. Close it, then retry.</value>
+  </data>
+  <data name="Setup_Deploy_Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Setup_Deploy_Failed_Format" xml:space="preserve">
+    <value>Installation failed — {0}</value>
   </data>
 
 </root>
