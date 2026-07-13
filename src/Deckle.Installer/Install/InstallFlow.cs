@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http;
+using Deckle.Install;
 
 namespace Deckle.Installer;
 

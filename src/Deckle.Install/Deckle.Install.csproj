@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Install</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Windows integration of an installed Deckle — the primitives shared by the
+       download stub (Deckle.Installer, NativeAOT) and the install-mode wizard
+       (Deckle.Setup): install locations, Start Menu shortcut, Installed-apps
+       registration, DECKLE_DATA_ROOT, and the running-process gate. Deliberately
+       dependency-free and AOT-safe: no WinUI, no Deckle.* reference — Win32,
+       registry and source-generated COM only. -->
+</Project>

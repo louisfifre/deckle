@@ -30,4 +30,10 @@
          net10.0-windows framework — conforms to the zero-dependency doctrine. -->
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The Windows-integration primitives shared with the install-mode wizard
+         (Deckle.Setup). AOT-safe by that module's own contract. -->
+    <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
+  </ItemGroup>
+
 </Project>

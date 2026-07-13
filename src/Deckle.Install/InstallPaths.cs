@@ -1,4 +1,4 @@
-namespace Deckle.Installer;
+namespace Deckle.Install;
 
 // ── InstallPaths ──────────────────────────────────────────────────────────────
 //
@@ -17,7 +17,7 @@ namespace Deckle.Installer;
 // %LOCALAPPDATA%\Programs is the documented per-user install root and never
 // requires elevation — C:\Program Files is deliberately avoided (forces C: + an
 // admin prompt = double friction for a family machine).
-internal static class InstallPaths
+public static class InstallPaths
 {
     public static string DefaultInstallDir => Path.Combine(LocalAppData, "Programs", "Deckle");
 

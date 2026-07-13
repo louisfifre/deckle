@@ -1,4 +1,4 @@
-namespace Deckle.Installer;
+namespace Deckle.Install;
 
 // ── UserEnvironment ───────────────────────────────────────────────────────────
 //
@@ -9,7 +9,7 @@ namespace Deckle.Installer;
 //
 // SetEnvironmentVariable(..., User) writes HKCU\Environment and broadcasts
 // WM_SETTINGCHANGE, so a newly launched Deckle.exe sees the value without a logoff.
-internal static class UserEnvironment
+public static class UserEnvironment
 {
     public const string DataRootVariable = "DECKLE_DATA_ROOT";
 

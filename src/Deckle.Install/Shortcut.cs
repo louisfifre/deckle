@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Deckle.Installer;
+namespace Deckle.Install;
 
 // ── Shortcut ──────────────────────────────────────────────────────────────────
 //
@@ -11,7 +11,7 @@ namespace Deckle.Installer;
 // ([GeneratedComInterface]) rather than the classic ComImport/coclass activation,
 // which NativeAOT doesn't support: we CoCreateInstance the ShellLink ourselves and
 // wrap the raw pointer with StrategyBasedComWrappers.
-internal static partial class Shortcut
+public static partial class Shortcut
 {
     public static void CreateStartMenu(string targetExe, string shortcutName, string? description)
     {

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Deckle.Installer;
+namespace Deckle.Install;
 
 // ── RunningProcesses ──────────────────────────────────────────────────────────
 //
@@ -11,7 +11,7 @@ namespace Deckle.Installer;
 // dev build running from a worktree never blocks an install into %LOCALAPPDATA%,
 // and the current process (the installed stub running its own update) never
 // blocks its own run.
-internal static class RunningProcesses
+public static class RunningProcesses
 {
     public static string[] FromFolder(string folder)
     {

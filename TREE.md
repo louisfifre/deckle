@@ -718,19 +718,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrackpadSettings.cs
 │   │   ├── TrackpadSettingsModule.cs
 │   │   └── TrackpadSettingsService.cs
+│   ├── Deckle.Install/
+│   │   ├── AGENTS.md  — [agent-instructions] Windows integration of an installed Deckle — install locations, Start Menu shor…
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Install.csproj
+│   │   ├── InstallPaths.cs
+│   │   ├── RunningProcesses.cs
+│   │   ├── Shortcut.cs
+│   │   ├── UninstallEntry.cs
+│   │   └── UserEnvironment.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
 │   │   │   ├── InstallFlow.cs
-│   │   │   ├── InstallPaths.cs
 │   │   │   └── Uninstaller.cs
 │   │   ├── Io/
 │   │   │   └── Downloader.cs
-│   │   ├── Platform/
-│   │   │   ├── RunningProcesses.cs
-│   │   │   ├── Shortcut.cs
-│   │   │   ├── UninstallEntry.cs
-│   │   │   └── UserEnvironment.cs
 │   │   ├── Release/
 │   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/

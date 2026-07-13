@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Deckle.Install;
 
 namespace Deckle.Installer;
 

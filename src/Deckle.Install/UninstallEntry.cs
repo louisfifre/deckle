@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace Deckle.Installer;
+namespace Deckle.Install;
 
 // ── UninstallEntry ────────────────────────────────────────────────────────────
 //
@@ -12,7 +12,7 @@ namespace Deckle.Installer;
 // Windows reads this key to list the app, show its version, and run its removal;
 // NoModify/NoRepair hide the buttons we don't implement. The installer reads the
 // same key back to recognise an existing copy and run as an update.
-internal static class UninstallEntry
+public static class UninstallEntry
 {
     private const string KeyPath =
         @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Deckle";
