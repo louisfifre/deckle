@@ -95,7 +95,14 @@ public sealed partial class SettingsWindow : Window
         Nav.SelectedItem = Nav.MenuItems[0];
 
         Title = Loc.Get("Settings_WindowTitle");
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(960, 1440));
+        // Window sizes are PHYSICAL pixels — scale the intended DIPs (or a
+        // 200 % display opens a half-size window), clamped to the display's
+        // work area so the scaled height never overflows the screen.
+        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(
+            Math.Min((int)(960 * dpiScale), workArea.Width),
+            Math.Min((int)(1440 * dpiScale), workArea.Height)));
 
         var presenter = OverlappedPresenter.Create();
         presenter.IsMinimizable = true;
@@ -107,7 +114,6 @@ public sealed partial class SettingsWindow : Window
         // icon, search icon, Logs, caption group; the title yields first via the
         // control's Compact state), while staying below the NavigationView Auto
         // breakpoints (640/1008) so the native LeftMinimal mode stays reachable.
-        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
         presenter.PreferredMinimumWidth  = (int)(400 * dpiScale);
         presenter.PreferredMinimumHeight = (int)(400 * dpiScale);
         AppWindow.SetPresenter(presenter);
