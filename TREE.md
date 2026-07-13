@@ -494,6 +494,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RestorationEvaluator.cs
 │   │   └── RestorationReport.cs
 │   ├── Deckle.Autocorrect.Mlm/
+│   │   ├── CamembertAssets.cs
 │   │   ├── CamembertMlmScorer.cs
 │   │   ├── CamembertReranker.cs
 │   │   ├── CamembertSentenceReranker.cs

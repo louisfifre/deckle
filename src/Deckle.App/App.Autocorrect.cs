@@ -83,7 +83,7 @@ public partial class App
                 // The contextual reranker's model is large (~440 MB) and optional:
                 // TryLoad returns null when it is absent, leaving gate + typo only.
                 // Loaded here, off the UI thread, alongside the lexicons.
-                string modelDir = Path.Combine(AppPaths.ModelsDirectory, "camembert-base");
+                string modelDir = Path.Combine(AppPaths.ModelsDirectory, Deckle.Autocorrect.Mlm.CamembertAssets.DirectoryName);
                 ISentenceReranker? rr = CamembertReranker.TryLoad(
                     modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
                 return (fr, en, idx, ctx, rr, vb);
