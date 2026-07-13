@@ -127,8 +127,15 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         };
 
         Title = Loc.Get("LogWindow_WindowTitle");
-        // ~1:2 aspect ratio (vertical) — two stacked squares. Fits on a 4K display.
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(960, 1440));
+        // ~1:2 aspect ratio (vertical) — two stacked squares. Window sizes are
+        // PHYSICAL pixels — scale the intended DIPs (or a 200 % display opens a
+        // half-size window), clamped to the display's work area so the scaled
+        // height never overflows the screen.
+        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(
+            Math.Min((int)(960 * dpiScale), workArea.Width),
+            Math.Min((int)(1440 * dpiScale), workArea.Height)));
 
         // Standard window: min, max, resize.
         // Min size: prevents the responsive command bar from being crushed
@@ -139,7 +146,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
         presenter.IsResizable   = true;
-        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
         presenter.PreferredMinimumWidth  = (int)(400 * dpiScale);
         presenter.PreferredMinimumHeight = (int)(300 * dpiScale);
         AppWindow.SetPresenter(presenter);
