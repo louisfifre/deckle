@@ -83,10 +83,17 @@ public sealed partial class PlaygroundWindow : Window
         PlaygroundShell.NavigateTo = NavigateTo;
 
         Title = "Deckle Playground";
-        // Default 1800×1440 — comfortable two-column footprint (preview
+        // Default 1800×1440 DIPs — comfortable two-column footprint (preview
         // + tuning expanders) on a typical 1440p display. Min 1280×600
-        // keeps everything reachable below that.
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(1800, 1440));
+        // keeps everything reachable below that. Window sizes are PHYSICAL
+        // pixels — scale the intended DIPs (or a 200 % display opens a
+        // half-size window), clamped to the display's work area so the
+        // scaled size never overflows the screen.
+        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(
+            Math.Min((int)(1800 * dpiScale), workArea.Width),
+            Math.Min((int)(1440 * dpiScale), workArea.Height)));
 
         // Presenter minimums are PHYSICAL pixels — scale the intended DIPs,
         // or a 200 % display halves the real floor.
@@ -94,7 +101,6 @@ public sealed partial class PlaygroundWindow : Window
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
         presenter.IsResizable   = true;
-        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
         presenter.PreferredMinimumWidth  = (int)(1280 * dpiScale);
         presenter.PreferredMinimumHeight = (int)(600 * dpiScale);
         AppWindow.SetPresenter(presenter);
