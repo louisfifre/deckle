@@ -336,6 +336,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.FileTranscription.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
+│   │   ├── App.Install.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
@@ -345,6 +346,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
+│   │   ├── AppModules.cs
 │   │   ├── AutocorrectNotifications.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.App.csproj
@@ -493,6 +495,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RestorationEvaluator.cs
 │   │   └── RestorationReport.cs
 │   ├── Deckle.Autocorrect.Mlm/
+│   │   ├── CamembertAssets.cs
 │   │   ├── CamembertMlmScorer.cs
 │   │   ├── CamembertReranker.cs
 │   │   ├── CamembertSentenceReranker.cs
@@ -600,7 +603,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
+│   │   ├── Ui/
+│   │   │   ├── Collections/
+│   │   │   │   └── RangeObservableCollection.cs
+│   │   │   └── Controls/
+│   │   │       ├── LogFilterBar.xaml
+│   │   │       └── LogFilterBar.xaml.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow filters and runtime logging gates.
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Logging.csproj
@@ -609,10 +618,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DiagnosticsSettingsModule.cs
 │   │   ├── DiagnosticsViewModel.cs
 │   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   ├── LogFilterDimension.cs
+│   │   ├── LogFilterSelection.cs
+│   │   ├── LogFilterToken.cs
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
-│   │   ├── LogWindowFilter.cs
-│   │   ├── LogWindowVisibilityMode.cs
+│   │   ├── LogWindowFilterSession.cs
 │   │   ├── SettingsSearch.cs
 │   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
@@ -716,24 +727,29 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrackpadSettings.cs
 │   │   ├── TrackpadSettingsModule.cs
 │   │   └── TrackpadSettingsService.cs
+│   ├── Deckle.Install/
+│   │   ├── AGENTS.md  — [agent-instructions] Windows integration of an installed Deckle — install locations, Start Menu shor…
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Install.csproj
+│   │   ├── InstallPaths.cs
+│   │   ├── RunningProcesses.cs
+│   │   ├── Shortcut.cs
+│   │   ├── UninstallEntry.cs
+│   │   └── UserEnvironment.cs
 │   ├── Deckle.Installer/
 │   │   ├── Install/
 │   │   │   ├── CliArgs.cs
 │   │   │   ├── InstallFlow.cs
-│   │   │   ├── InstallPaths.cs
 │   │   │   └── Uninstaller.cs
 │   │   ├── Io/
 │   │   │   └── Downloader.cs
-│   │   ├── Platform/
-│   │   │   ├── RunningProcesses.cs
-│   │   │   ├── Shortcut.cs
-│   │   │   ├── UninstallEntry.cs
-│   │   │   └── UserEnvironment.cs
 │   │   ├── Release/
 │   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
-│   │   │   └── ConsoleUi.cs
-│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT console stub that downloads, installs, and uninstalls Deckle per-user…
+│   │   │   ├── MessageDialog.cs
+│   │   │   └── ProgressWindow.cs
+│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT download stub — silent, no console; fetches the payload to temp and h…
+│   │   ├── app.manifest
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Installer.csproj
 │   │   └── Program.cs
@@ -838,6 +854,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LlmSettingsModule.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Modules/
+│   │   ├── AGENTS.md  — [agent-instructions] Module catalogue and presence — which user-facing modules exist, their dependen…
+│   │   ├── CLAUDE.md
+│   │   ├── Deckle.Modules.csproj
+│   │   ├── DeckleModulesSource.cs
+│   │   ├── ModuleDescriptor.cs
+│   │   ├── ModuleGraph.cs
+│   │   ├── ModuleIds.cs
+│   │   ├── ModulePresence.cs
+│   │   ├── ModuleRegistry.cs
+│   │   └── PresenceFile.cs
 │   ├── Deckle.Notifications/
 │   │   ├── Catalog/
 │   │   │   ├── NotificationAction.cs
@@ -948,14 +975,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard provisioning ASR runtimes and models — owns the flow, delegate…
+│   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Setup.csproj
 │   │   ├── DeckleSetupSource.cs
+│   │   ├── DeployPage.xaml
+│   │   ├── DeployPage.xaml.cs
+│   │   ├── FoldersPage.xaml
+│   │   ├── FoldersPage.xaml.cs
 │   │   ├── InstallingPage.xaml
 │   │   ├── InstallingPage.xaml.cs
+│   │   ├── InstallItem.cs
+│   │   ├── InstallPlan.cs
+│   │   ├── ModulesPage.xaml
+│   │   ├── ModulesPage.xaml.cs
 │   │   ├── SetupContext.cs
 │   │   ├── SetupWindow.xaml
 │   │   ├── SetupWindow.xaml.cs
@@ -1222,6 +1257,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ChronoTimerTests.cs
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   └── DeckleChronoSourceTests.cs
+│   ├── Deckle.Diagnostics.Logging.Tests/
+│   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
+│   │   ├── LogFilterSelectionTests.cs
+│   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
 │   │   └── TelemetryListenerBootstrapTests.cs
@@ -1258,6 +1297,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   └── HueLocalDiscoveryTests.cs
+│   ├── Deckle.Modules.Tests/
+│   │   ├── Deckle.Modules.Tests.csproj
+│   │   ├── ModuleGraphTests.cs
+│   │   └── PresenceFileTests.cs
 │   ├── Deckle.Notifications.Tests/
 │   │   ├── Deckle.Notifications.Tests.csproj
 │   │   ├── DeckleNotificationsSourceTests.cs

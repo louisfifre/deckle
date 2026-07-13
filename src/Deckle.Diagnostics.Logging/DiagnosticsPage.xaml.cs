@@ -61,9 +61,8 @@ public sealed partial class DiagnosticsPage : Page
     //
     // Same host-only pattern as the Logging section. One composable row now: the
     // Application log consent opt-in (its off→on dialog carried by a confirmOnEnable
-    // gate the composer runs). The Corpus fold and the Autocorrect capture opt-ins
-    // that once neighboured it here have moved to their own module pages; the
-    // storage-folder path composes into its own host below. Composed before
+    // gate the composer runs). Dataset-specific opt-ins live on their module
+    // pages; the storage-folder path composes into its own host below. Composed before
     // LoadAndSync so the composer's PropertyChanged subscription catches Load(); held
     // in a field so the subscription lives as long as the (cached) page.
     private SettingsComposer? _telemetryComposer;
@@ -78,8 +77,7 @@ public sealed partial class DiagnosticsPage : Page
     //
     // The telemetry storage-folder path, a Path descriptor composed through the
     // shared FolderPickerCard (resolved by the composer's PathControlFactory). Its
-    // own host — separate from the telemetry toggles above — because it keeps its
-    // former slot BELOW them (once the Corpus/Autocorrect expanders sat between).
+    // own host keeps the path row structurally separate from consent toggles.
     // The picker's empty-value
     // DefaultPath (<UserDataRoot>\telemetry\) now travels in the descriptor's
     // PathArgs, so the old SyncFolderPickerDefault code-behind push is gone. Composed

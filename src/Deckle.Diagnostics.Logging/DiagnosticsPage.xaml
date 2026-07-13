@@ -65,12 +65,11 @@
                            Margin="0,0,0,12" />
 
                 <!-- ── Logging ─────────────────────────────────────────────────
-                     Runtime emission filters. Distinct from Telemetry below :
-                     this section controls what the in-app log surface (and
-                     the JSONL pipeline downstream) actually emit, while
-                     Telemetry controls which of those streams are persisted
-                     to disk. The two sections are structured identically so
-                     the page reads as two parallel groups of opt-ins. -->
+                     Runtime emission gates. They stop selected noisy streams
+                     before every sink, independently from the LogWindow display
+                     lens and the future app.jsonl persistence lens. Module-owned
+                     gates stay on their module pages; only the transverse
+                     Windowing gate belongs on Diagnostics. -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -86,13 +85,8 @@
                                      Click="ResetLogging_Click" />
                 </Grid>
 
-                <!-- Composed region — proof of the declarative SettingsComposer.
-                     The four runtime-emission toggles are no longer hand-authored
-                     here: DiagnosticsPage.ComposeLoggingSection() declares them as
-                     SettingDescriptors and the composer builds the SettingsCards
-                     into this host. Everything below (Telemetry, Diagnostic files)
-                     stays hand-authored — composed and bespoke sections interleave
-                     freely in the same StackPanel. -->
+                <!-- Composed Windowing gate. Other noisy modules expose their
+                     gates beside the feature they control. -->
                 <StackPanel x:Name="LoggingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
@@ -116,24 +110,15 @@
                      an off→on consent dialog, declared in DiagnosticsViewModel.TelemetrySettings
                      via a confirmOnEnable gate the composer runs before persisting the
                      enable. ComposeTelemetrySection() hands it to the composer, which
-                     builds the SettingsCard into this host. The Latency toggle and the
-                     Corpus fold moved to the Dictation page (they observe the dictation
-                     pipeline); the storage-folder card below stays hand-authored — a
-                     folder path the composer can't express. -->
+                     builds the SettingsCard into this host. Dataset-specific opt-ins
+                     remain on the pages of the modules they observe. -->
                 <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
-
-                <!-- The Autocorrect decisions/text opt-ins moved to the Autocorrect
-                     module's own page (Deckle.Autocorrect), beside the engine they
-                     observe; they consume their consent dialogs through the Catalog
-                     TelemetryConsent registry the shell still wires below. -->
 
                 <!-- Composed region — the telemetry storage-folder path. A Path
                      descriptor in DiagnosticsViewModel.StorageFolderSettings, built
                      by ComposeStorageFolderSection() into this host through the
-                     shared FolderPickerCard the composer's PathControlFactory
-                     resolves. Its own host (not TelemetryHost above) so it keeps
-                     this slot below the Corpus/Autocorrect expanders. -->
+                     shared FolderPickerCard the composer's PathControlFactory resolves. -->
                 <StackPanel x:Name="StorageFolderHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 

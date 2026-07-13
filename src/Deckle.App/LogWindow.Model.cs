@@ -1,25 +1,10 @@
 // LogWindow — ring-buffer/filter engine and ILogWindowSink marshalling.
 
-using Microsoft.UI.Windowing;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Input;
-using System.Collections.ObjectModel;
-using System.Diagnostics.Tracing;
-using System.Text;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using System.Threading.Tasks;
-using Microsoft.UI.Xaml.Data;
-using WinRT.Interop;
-using Deckle.App;
-using Deckle.Core;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
 namespace Deckle.App;
 
@@ -86,16 +71,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void AddEntrySafe(LogEntry entry)
     {
-        _entries.Add(entry);
+        FilterBar.Observe(entry.Entry);
+        _entries.Enqueue(entry);
 
         const int MaxEntries = 5000;
         while (_entries.Count > MaxEntries)
         {
-            var removed = _entries[0];
-            _entries.RemoveAt(0);
-            // Ref equality (LogEntry is a class) → no possible collision
-            // between two entries with the same Text.
-            _visible.Remove(removed);
+            var removed = _entries.Dequeue();
+            // The visible projection preserves queue order. If the expired
+            // entry is visible it can only be at index 0, so avoid the linear
+            // IndexOf performed by ObservableCollection.Remove.
+            if (_visible.Count > 0 && ReferenceEquals(_visible[0], removed))
+                _visible.RemoveAt(0);
         }
 
         if (Matches(entry)) _visible.Add(entry);
@@ -103,19 +90,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (!_isVisible) return;
         if (AutoScrollToggle?.IsChecked != true) return;
 
-        ScrollToBottom();
+        RequestScrollToBottom();
     }
 
     private bool Matches(LogEntry e)
     {
-        // Progressive event + level filter (All > Activity > Alerts):
-        //   All       → everything passes (events at any level
-        //               + telemetry rows)
-        //   Activity  → Informational + Warning + Error + Critical,
-        //               excluding Verbose and telemetry rows
-        //   Alerts    → Warning + Error + Critical uniquement,
-        //               excluding telemetry rows
-        if (!LogWindowFilter.IsVisible(e.Level, e.EventName, _filterMode)) return false;
+        if (!_filterSelection.Matches(e.Entry)) return false;
 
         if (_currentSearch.Length > 0 &&
             e.Text.IndexOf(_currentSearch, StringComparison.OrdinalIgnoreCase) < 0) return false;
@@ -124,12 +104,27 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void ApplyFilter()
     {
-        _visible.Clear();
-        foreach (var e in _entries)
-        {
-            if (Matches(e)) _visible.Add(e);
-        }
-        if (_isVisible && AutoScrollToggle?.IsChecked == true) ScrollToBottom();
+        _visible.ReplaceAll(_entries.Where(Matches));
+        if (_isVisible && AutoScrollToggle?.IsChecked == true)
+            RequestScrollToBottom();
+    }
+
+    private void RequestScrollToBottom()
+    {
+        if (_autoScrollPending) return;
+        _autoScrollPending = true;
+
+        bool enqueued = DispatcherQueue.TryEnqueueOrLog(
+            () =>
+            {
+                _autoScrollPending = false;
+                if (_isVisible && AutoScrollToggle?.IsChecked == true)
+                    ScrollToBottom();
+            },
+            "LOGWIN", "auto scroll",
+            DispatcherQueuePriority.Low);
+
+        if (!enqueued) _autoScrollPending = false;
     }
 
     private void ScrollToBottom()

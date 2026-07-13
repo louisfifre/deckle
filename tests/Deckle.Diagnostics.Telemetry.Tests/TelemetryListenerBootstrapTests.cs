@@ -193,7 +193,7 @@ public sealed class TelemetryListenerBootstrapTests
     }
 
     [Fact]
-    public void ApplicationLogCanShareActivityProjectionWithLogWindow()
+    public void ApplicationLogCanUseAnIndependentFilterSelection()
     {
         string root = Path.Combine(
             AppContext.BaseDirectory,
@@ -206,8 +206,12 @@ public sealed class TelemetryListenerBootstrapTests
         {
             TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
+            var selection = new LogFilterSelection();
+            selection.Add(new LogFilterToken(
+                LogFilterDimension.Severity,
+                EventLevel.Informational.ToString()));
             TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(
-                entry => !LogWindowFilter.IsVisible(entry, LogWindowVisibilityMode.Activity));
+                entry => !selection.Matches(entry));
 
             TestTelemetrySource.Log.VerboseDetail("hidden-verbose");
             TestTelemetrySource.Log.InfoLine("visible-activity");

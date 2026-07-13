@@ -3,11 +3,9 @@ namespace Deckle.Diagnostics.Logging;
 // User-facing settings of the live LogWindow. POCO with per-module
 // persistence — loaded / saved by LoggingSettingsService.
 //
-// Minimal layout: a single gate for now, dedicated to runtime filtering of
-// ambient capture loop noise and the All / Activity / Alerts level projection
-// shared between LogWindow and app.jsonl. ApplicationLogToDisk lives on the
-// TelemetrySettings side (Diagnostics.Telemetry) because it is a disk
-// persistence gate, not an emission gate.
+// These settings are runtime emission gates. The LogWindow display lens and
+// app.jsonl persistence lens are independent filter selections with different
+// lifetime policies; neither belongs in this emission-gate POCO.
 public sealed class LoggingSettings
 {
     // When false and an ambient capture loop is active, Verbose events
@@ -48,8 +46,4 @@ public sealed class LoggingSettings
     // same quiet-by-default posture as its siblings.
     public bool LogWindowingActivity { get; set; } = false;
 
-    // Current journal projection. Search text stays UI-local, but the
-    // level-family selector is persisted and reused by app.jsonl so the
-    // disk journal follows the same broad visibility mode for new events.
-    public LogWindowVisibilityMode LogWindowVisibilityMode { get; set; } = LogWindowVisibilityMode.All;
 }

@@ -36,12 +36,9 @@ public partial class DiagnosticsViewModel
     // module, that dialog is reached through the Catalog registry
     // (TelemetryConsent.RequestApplicationLog, a method group the App wires at boot)
     // rather than the shell's dialog class directly — so the module gates its enable
-    // behind consent without referencing Deckle.Settings. The Microphone opt-in moved
-    // to the Recording module's own page (it observes that module's capture pipeline);
-    // the Latency toggle and the Corpus fold moved to the Dictation (Whisper) page
-    // (they observe the dictation pipeline); and the Autocorrect capture opt-ins moved
-    // to the Autocorrect module's own page. No hand-authored telemetry row remains
-    // here — Application log is the page's one composable telemetry toggle.
+    // behind consent without referencing Deckle.Settings. Dataset-specific opt-ins
+    // live on the pages of the modules they observe. Application log is this page's
+    // one composable telemetry toggle.
     //
     // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
     // default" affordance per row (the section "Reset" clears it), so the composer
@@ -65,11 +62,9 @@ public partial class DiagnosticsViewModel
     // the manifest carries it. The reset default is the POCO initializer (empty →
     // "empty means AppPaths"), the one source of truth.
     //
-    // Its own manifest, composed into a dedicated host, because it keeps its former
-    // on-screen slot BELOW the Corpus/Autocorrect expanders — hosting it in the same
-    // panel as the toggles above would pull it up ahead of them. A one-entry list is
-    // the price of preserving that position; the Path card is otherwise wired exactly
-    // like any other composed row.
+    // Its own manifest composes into a dedicated host because the path is a storage
+    // configuration row, not a consent toggle. The Path card is otherwise wired like
+    // any other composed row.
     public IReadOnlyList<SettingDescriptor> StorageFolderSettings =>
     [
         Setting.Path("GeneralStorageFolderCard",

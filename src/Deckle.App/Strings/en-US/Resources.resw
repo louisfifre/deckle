@@ -1407,6 +1407,18 @@
   <data name="LogWindowClearButton.Label" xml:space="preserve">
     <value>Clear</value>
   </data>
+  <data name="LogWindowFiltersToggle.Label" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="LogWindow_FiltersButton_Default" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="LogWindowFiltersToggle.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Show or hide filters</value>
+  </data>
+  <data name="LogWindow_FiltersButton_Format" xml:space="preserve">
+    <value>Filters ({0})</value>
+  </data>
   <data name="LogWindowAutoScrollToggle.Label" xml:space="preserve">
     <value>Auto-scroll</value>
   </data>
