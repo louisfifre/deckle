@@ -65,6 +65,10 @@ public sealed partial class SettingsWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
+        // The control stamps its caption padding in raw physical pixels — an
+        // upstream px/DIP bug that inflates the reserve at >100 % scale.
+        InitializeCaptionInsetFix();
+
         SystemBackdrop = new MicaBackdrop();
 
         // Cross-page search in the TitleBar: wire the responsive collapse.
@@ -96,10 +100,15 @@ public sealed partial class SettingsWindow : Window
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
         presenter.IsResizable   = true;
-        // Minimum consistent with NavigationView Auto breakpoints (640/1008).
-        // Go below 640 to expose the native LeftMinimal mode.
-        presenter.PreferredMinimumWidth  = 320;
-        presenter.PreferredMinimumHeight = 400;
+        // Presenter minimums are PHYSICAL pixels — scale the intended DIPs, or a
+        // 200 % display halves the real floor. 400 DIPs wide is the narrowest
+        // width at which the TitleBar still shows every command (pane toggle,
+        // icon, search icon, Logs, caption group; the title yields first via the
+        // control's Compact state), while staying below the NavigationView Auto
+        // breakpoints (640/1008) so the native LeftMinimal mode stays reachable.
+        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        presenter.PreferredMinimumWidth  = (int)(400 * dpiScale);
+        presenter.PreferredMinimumHeight = (int)(400 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
         // Theme: wire ActualThemeChanged on the XAML root to trace
