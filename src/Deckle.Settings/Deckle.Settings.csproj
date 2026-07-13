@@ -50,6 +50,8 @@
          no remaining Settings source references either store's types. -->
     <!-- Shell: AutostartService + SettingsWindow's IconAssets + native methods. -->
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+    <!-- WindowChrome: shared TitleBar caption-inset correction. -->
+    <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
     <!-- Deckle.Transcription and Deckle.Llm.Rewrite refs dropped in slice C1:
          their pages moved out, and the Settings shell no longer references
          their POCOs (each module owns its own JSON file via
