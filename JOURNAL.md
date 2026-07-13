@@ -7,6 +7,10 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-07-13 — WinAppSDK TitleBar control scales its caption reserve wrong
+
+Measured through the new TitleBar layout probe at 200 % display scale: the native `TitleBar` control stamps its caption padding column with `AppWindowTitleBar.RightInset`'s raw physical pixels (upstream `UpdatePadding` in microsoft-ui-xaml `TitleBar.cpp`, no scale division — their TODO 50724421), so the bar reserves scale× the room the caption buttons take. Same px/DIP confusion on `OverlappedPresenter.PreferredMinimum*`, which are physical pixels. Corrected for the Settings window in `SettingsWindow.CaptionInset.cs` (re-stamps the columns in DIPs; delete when the SDK fixes) and by scaling the presenter minimums; every other window using the `TitleBar` control or presenter minimums (LogWindow, Playground) has the same defect — generalization spun off as its own workstream.
+
 ## 2026-07-01 — Settings-UX composer doctrine graved; composer gaps against it
 
 Graved the settings composer doctrine into `deckle-settings-ux` (rewrote the skill, added `references/controls-and-behaviour.md`).

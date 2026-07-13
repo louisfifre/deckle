@@ -11,6 +11,10 @@ The Settings UI shell. It hosts the window (adaptive NavigationView + page Frame
 
 A static set of typed delegates the app wires at boot (`ApplyTheme`, `RestartApp`, `GetSettingsWindow`, `OpenSetupWizard`, …). A module page calls them (`SettingsHost.X?.Invoke(...)`) to trigger a shell action without `Deckle.Settings` ever referencing the host project. Deliberately not a disguised service locator: each capability is one nominal field, added and wired explicitly, null-safe when the shell hasn't wired it (isolated module test).
 
+## Cross-page search index
+
+`SettingsSearchIndex` (static, filled by the composition root at boot, same shape as `SettingsModuleRegistry`) lets the TitleBar box reach a card on any page without composing it: text resolves from each module's PRI subtree, keyed by the card's `LabelKey` — which the composer also stamps as the card's `Tag`, the scroll-to handle. Contribution contract for a module page: one `SettingSearchEntry` per findable card in the module's `SettingsSearch.cs`, plus `Tag="<key>"` in XAML on bespoke cards; folded children stay unindexed (a hit must be bringable into view) and bridge through the fold card's keywords.
+
 ## Per-module persistence
 
 Each module owns its `modules/<id>/settings.json`; the shell keeps only `settings.json`. Invariant: `SettingsBootstrap.MigrateLegacyToPerModule()` runs first in `App.OnLaunched`, before any service touches its file — otherwise the service writes defaults and the migration sees an already-populated target. New module migrations follow the same method.
