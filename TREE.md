@@ -613,6 +613,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilter.cs
 │   │   ├── LogWindowVisibilityMode.cs
+│   │   ├── SettingsSearch.cs
 │   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── AGENTS.md  — [agent-instructions] Structured JSONL persistence and consent gates.
