@@ -65,6 +65,8 @@ public sealed partial class SettingsWindow
         // The TitleBar sits first in tab order, so initial focus would land in the
         // box and swallow the first keystrokes. Hand it to the content instead.
         RootGrid.Loaded += (_, _) => PageFrame.Focus(FocusState.Programmatic);
+
+        InitializeTitleBarProbe();
     }
 
     // ── Presentation: inline box ↔ icon ↔ floating overlay ───────────────────
@@ -84,6 +86,7 @@ public sealed partial class SettingsWindow
                 SetSearchPresentation(SearchPresentation.Inline, zone);
                 break;
         }
+        ScheduleTitleBarProbe();
     }
 
     private void OnSearchIconClick(object sender, RoutedEventArgs e)
@@ -121,6 +124,8 @@ public sealed partial class SettingsWindow
         }
         SearchIconButton.Visibility = target == SearchPresentation.Inline
             ? Visibility.Collapsed : Visibility.Visible;
+
+        ScheduleTitleBarProbe();
     }
 
     // ── Focus release ────────────────────────────────────────────────────────

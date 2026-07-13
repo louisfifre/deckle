@@ -938,6 +938,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingSuggestion.cs
 │   │   ├── SettingsWindow.Search.cs
+│   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
 │   │   ├── SettingsWindow.xaml.cs
 │   │   └── TelemetryConsentWiring.cs

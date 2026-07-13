@@ -162,9 +162,12 @@ public sealed class DeckleSettingsSource : DeckleEventSource
     public const int EvtSearchNavigated                   = 76;
     public const int EvtSearchNavigatedDetail             = 77;
 
-    // ── Settings search presentation ──
-    // The search box's presentation transitions (inline box / icon / floating
-    // overlay) and its explicit focus releases — diagnostic detail ⇒ Verbose.
+    // ── Settings TitleBar layout & search presentation ──
+    // Geometry snapshot (debounced) after a resize or a presentation swap, plus
+    // the presentation transitions and explicit focus releases themselves — the
+    // observables that let a layout defect at an unseen window size be read back
+    // from a trace. Diagnostic detail, widths in DIPs ⇒ Verbose throughout.
+    public const int EvtTitleBarLayout                    = 78;
     public const int EvtSearchPresentationChanged         = 79;
     public const int EvtSearchFocusReleased               = 80;
 
@@ -849,7 +852,16 @@ public sealed class DeckleSettingsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSearchNavigatedDetail, page_tag, card_tag);
     }
 
-    // ── Settings search presentation ─────────────────────────────────────
+    // ── Settings TitleBar layout & search presentation ───────────────────
+
+    [Event(EvtTitleBarLayout,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "titlebar layout | bar={0} | zone={1} | box={2} | logs_x={3} | logs_w={4} | inset_r={5} | mode={6}")]
+    public void TitleBarLayout(int bar_w, int zone_w, int box_w, int logs_x, int logs_w, int inset_r, string mode)
+    {
+        if (IsEnabled()) WriteEvent(EvtTitleBarLayout, bar_w, zone_w, box_w, logs_x, logs_w, inset_r, mode);
+    }
 
     [Event(EvtSearchPresentationChanged,
            Level = EventLevel.Verbose,
