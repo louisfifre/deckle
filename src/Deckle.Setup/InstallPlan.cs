@@ -120,6 +120,7 @@ internal static class InstallPlan
     {
         Id          = SileroItemId,
         DisplayName = Loc.Get("Setup_Item_SileroVad"),
+        SizeBytes   = SileroVadModel.SizeBytes,
         IsInstalled = () => File.Exists(Path.Combine(AppPaths.ModelsDirectory, SileroVadModel.FileName)),
         RunAsync    = async (progress, ct) =>
         {

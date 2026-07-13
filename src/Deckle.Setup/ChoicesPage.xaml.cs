@@ -180,34 +180,19 @@ public sealed partial class ChoicesPage : Page
     {
         if (_context is null) return;
 
-        // SelectedModel is initialized by SetupWindow construction — null
-        // here would mean a code path bypassed the wizard host, which we
-        // surface as a developer error rather than silently coercing.
-        long modelsBytes = _context.SelectedModel!.SizeBytes;
-        bool nativeInstalled  = NativeRuntime.IsInstalled();
-        bool autoDownloadable = !nativeInstalled && !NativeRuntime.BundleUrlIsPlaceholder;
+        // The consolidated total: everything the install step will actually
+        // fetch for the selected modules — the same plan InstallingPage runs,
+        // summed over the items not yet on disk. The model radio feeds the
+        // plan through SelectedModel, so a model swap re-totals live.
+        long pendingBytes = 0;
+        foreach (InstallItem item in InstallPlan.Build(_context))
+        {
+            if (!item.IsInstalled()) pendingBytes += item.SizeBytes;
+        }
 
-        if (autoDownloadable)
-        {
-            // Auto-download path — fold the bundle size into the total so the
-            // user sees a single number for what the install page will fetch.
-            long totalBytes = modelsBytes + NativeRuntime.CurrentBundle.SizeBytes;
-            TotalEstimateBar.Message = Loc.Format(
-                "Setup_TotalEstimate_WithNative_Format",
-                FormatBytes(totalBytes));
-        }
-        else
-        {
-            // Either already installed (no native traffic) or placeholder URL
-            // (the user will Browse... locally). The legacy two-suffix wording
-            // covers both, with the suffix telling the truth about native.
-            TotalEstimateBar.Message = Loc.Format(
-                "Setup_TotalEstimate_Format",
-                FormatBytes(modelsBytes),
-                Loc.Get(nativeInstalled
-                    ? "Setup_TotalEstimate_NativeAlreadyInstalled"
-                    : "Setup_TotalEstimate_NativeNotInstalled"));
-        }
+        TotalEstimateBar.Message = pendingBytes > 0
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", FormatBytes(pendingBytes))
+            : Loc.Get("Setup_TotalEstimate_NothingPending");
     }
 
     private void UpdateNextEnabled()

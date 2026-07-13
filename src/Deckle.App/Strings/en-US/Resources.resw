@@ -522,18 +522,6 @@
   <data name="Setup_Native_ImportFailed_Format" xml:space="preserve">
     <value>Could not import: {0}</value>
   </data>
-  <data name="Setup_TotalEstimate_Format" xml:space="preserve">
-    <value>~{0} to download for the model and VAD. Native runtime is {1}</value>
-  </data>
-  <data name="Setup_TotalEstimate_WithNative_Format" xml:space="preserve">
-    <value>~{0} to download (speech runtime, model, and VAD).</value>
-  </data>
-  <data name="Setup_TotalEstimate_NativeAlreadyInstalled" xml:space="preserve">
-    <value>already installed.</value>
-  </data>
-  <data name="Setup_TotalEstimate_NativeNotInstalled" xml:space="preserve">
-    <value>not yet installed.</value>
-  </data>
 
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
@@ -1664,6 +1652,12 @@
   </data>
   <data name="Setup_Install_StepOfTotal_Format" xml:space="preserve">
     <value>Step {0} of {1} — {2}</value>
+  </data>
+  <data name="Setup_TotalEstimate_Pending_Format" xml:space="preserve">
+    <value>~{0} to download for the selected modules.</value>
+  </data>
+  <data name="Setup_TotalEstimate_NothingPending" xml:space="preserve">
+    <value>Everything selected is already installed.</value>
   </data>
 
 </root>
