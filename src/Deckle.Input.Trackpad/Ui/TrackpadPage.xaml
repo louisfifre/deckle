@@ -82,6 +82,7 @@
                      two states from AreNeutralized(), re-read after each
                      click. -->
                 <controls:SettingsCard x:Uid="TrackpadPage_GesturesCard"
+                                       Tag="TrackpadPage_GesturesCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Trackpad}}">
                     <Button x:Name="GesturesButton"
                             Click="GesturesButton_Click">
@@ -92,6 +93,7 @@
                 <!-- Repair the Apple driver pairing bug via the elevated
                      script (UAC prompt + interactive console). -->
                 <controls:SettingsCard x:Uid="TrackpadPage_RepairCard"
+                                       Tag="TrackpadPage_RepairCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Refresh}}">
                     <Button x:Name="RepairButton"
                             x:Uid="TrackpadPage_RepairButton"
@@ -103,6 +105,7 @@
                      or be UAC-cancelled, so the actual state is re-read back
                      into the switch after the call. -->
                 <controls:SettingsCard x:Uid="TrackpadPage_ElevatedCard"
+                                       Tag="TrackpadPage_ElevatedCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
                     <ToggleSwitch x:Name="ElevatedToggle"
                                   Toggled="ElevatedToggle_Toggled" />

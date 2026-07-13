@@ -711,6 +711,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
+│   │   ├── SettingsSearch.cs
 │   │   ├── TrackpadSettings.cs
 │   │   ├── TrackpadSettingsModule.cs
 │   │   └── TrackpadSettingsService.cs
