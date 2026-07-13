@@ -99,13 +99,14 @@ public sealed class HuePairingService : IDisposable
     public event Action? BridgeChanged;
 
     /// <summary>
-    /// Looks up Hue bridges on the local network via the cloud
-    /// discovery endpoint. Pure wrapper around
-    /// <see cref="HueDiscovery.DiscoverViaCloudAsync"/> — surfaced on
-    /// the service so callers don't need to import the lower-level
-    /// type.
+    /// Finds Hue bridges advertised on the local network. No request leaves
+    /// the LAN; callers may expose the online method as a separate fallback.
     /// </summary>
     public Task<IReadOnlyList<HueBridge>> DiscoverAsync(CancellationToken ct = default)
+        => HueDiscovery.DiscoverLocalAsync(ct);
+
+    /// <summary>Explicit Philips-hosted fallback for a local result with no bridge.</summary>
+    public Task<IReadOnlyList<HueBridge>> DiscoverViaCloudAsync(CancellationToken ct = default)
         => HueDiscovery.DiscoverViaCloudAsync(ct);
 
     /// <summary>

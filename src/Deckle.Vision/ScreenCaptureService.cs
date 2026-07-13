@@ -211,5 +211,18 @@ public sealed partial class ScreenCaptureService : IDisposable
     /// </summary>
     public static bool IsSupported() => true;
 
+    /// <summary>
+    /// Returns the displays currently attached to the desktop. The result is a
+    /// snapshot; call again after a Windows display configuration change.
+    /// </summary>
+    public static IReadOnlyList<CaptureMonitor> GetAvailableMonitors()
+        => ScreenCaptureInterop.EnumerateMonitors()
+            .Select(static monitor => new CaptureMonitor(
+                monitor.DeviceName,
+                monitor.IsPrimary,
+                monitor.Width,
+                monitor.Height))
+            .ToArray();
+
 
 }

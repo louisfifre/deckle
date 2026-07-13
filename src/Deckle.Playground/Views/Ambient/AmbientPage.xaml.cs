@@ -67,6 +67,7 @@ public sealed partial class AmbientPage : Page
 
     // ── Hue REST driver (J2) — see AmbientPage.Hue.cs ───────────────────────
     private CancellationTokenSource? _huePairCts;
+    private HueBridge? _hueDiscoveredBridge;
     private bool _hueIsPairing;
     private IReadOnlyList<HueGroup> _hueGroups = [];
     private HueRestLightOutput? _hueLightOutput;

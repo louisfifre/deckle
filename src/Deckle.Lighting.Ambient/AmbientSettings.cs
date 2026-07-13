@@ -49,20 +49,17 @@ public sealed class AmbientSettings
     /// after restoring from settings.</summary>
     public string? HueLastGroupId { get; set; }
 
-    // ── Monitor selection (J9 scaffolding) ─────────────────────────
+    // ── Monitor selection ──────────────────────────────────────────
     //
     // Win32 device name of the monitor the user picked as the capture
     // source (e.g. "\\\\.\\DISPLAY1"). Null = follow the primary, which
-    // is the V0 default and matches the current ScreenCaptureService
-    // behaviour. The UI selector lands in J9 ; the persistence field is
-    // pre-wired here so the J9 patch is purely UI + capture-service
-    // wiring, no settings migration. ScreenCaptureInterop.EnumerateMonitors
-    // exposes the candidate list.
+    // means follow whichever monitor Windows currently marks primary. A
+    // non-null device name pins capture to that physical output; the capture
+    // service falls back to primary if it is temporarily disconnected.
 
-    /// <summary>Selected capture source. Null = primary monitor (default,
-    /// matches MonitorFromPoint(0,0) used by the current capture service).
+    /// <summary>Selected capture source. Null = follow the primary monitor.
     /// Non-null = a Win32 device name like "\\\\.\\DISPLAY1" obtained from
-    /// <c>ScreenCaptureInterop.EnumerateMonitors</c>.</summary>
+    /// <c>ScreenCaptureService.GetAvailableMonitors</c>.</summary>
     public string? SelectedMonitorDeviceName { get; set; }
 
     // ── Mode selection (J6 scaffolding) ────────────────────────────

@@ -62,7 +62,8 @@ public sealed partial class AmbientPage
                 .ConfigureAwait(true);
             if (bridges.Count == 0) return;
 
-            HueBridgeIpTextBox.Text = bridges[0].InternalIpAddress;
+            _hueDiscoveredBridge = bridges[0];
+            HueBridgeIpTextBox.Text = _hueDiscoveredBridge.InternalIpAddress;
         }
         finally
         {
@@ -92,7 +93,10 @@ public sealed partial class AmbientPage
         HuePairStatusText.Text  = "Waiting (30 s)";
         HuePairStatusDot.Fill   = GetThemeBrush("SystemFillColorCautionBrush");
 
-        var target = new HueBridge(Id: "manual", InternalIpAddress: ip, Port: 443);
+        var target = _hueDiscoveredBridge is { } discovered
+                     && string.Equals(discovered.InternalIpAddress, ip, StringComparison.Ordinal)
+            ? discovered
+            : new HueBridge(Id: "manual", InternalIpAddress: ip, Port: 443);
         try
         {
             var creds = await HuePairingService.Instance
