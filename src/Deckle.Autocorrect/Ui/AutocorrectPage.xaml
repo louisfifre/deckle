@@ -59,7 +59,11 @@
                      Enabled PropertyChanged. When the master is on, the
                      empty-state and list trade places off Apps.Count, nested
                      under this gate. -->
+                <!-- Tag is the search index's scroll-to handle for this bespoke
+                     section (composed cards get theirs from the composer); it
+                     matches the SettingSearchEntry's LabelKey. -->
                 <StackPanel x:Name="AppsSection"
+                            Tag="AutocorrectPage_Section_Apps"
                             Spacing="{StaticResource SettingsCardSpacing}">
 
                     <TextBlock x:Uid="AutocorrectPage_Section_Apps"

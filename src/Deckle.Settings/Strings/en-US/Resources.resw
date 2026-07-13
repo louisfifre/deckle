@@ -590,8 +590,10 @@
   </data>
 
   <!-- ─── Settings shell ─────────────────────────────────────────────
-       NavigationView host: TitleBar + four nav items (3 main pages +
-       Logs in the footer). Window.Title XAML attribute is overridden
+       NavigationView host with a native TitleBar. The TitleBar carries
+       the pane toggle and the Logs command (RightHeader); the General
+       nav item is the sole static entry, every other page comes from
+       SettingsModuleRegistry. Window.Title XAML attribute is overridden
        in code-behind, only the TitleBar control title is loc'd. -->
   <data name="SettingsTitleBar.Title" xml:space="preserve">
     <value>Deckle Settings</value>
@@ -606,8 +608,37 @@
        Autocorrect, Ambient Light, Trackpad, Diagnostics) moved to each owning
        module's own .resw as SettingsModuleNavLabel — the shell builds those items
        from SettingsModuleRegistry and resolves their label from the module PRI. -->
-  <data name="SettingsNavLogs.Content" xml:space="preserve">
+
+  <!-- Logs command in the TitleBar (icon-only Button). Tooltip + accessible
+       name for the FontIcon glyph. -->
+  <data name="SettingsLogsButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Logs</value>
+  </data>
+  <data name="SettingsLogsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+
+  <!-- Cross-page search (TitleBar central Content). x:Uid strings resolve locally.
+       The box collapses to SettingsSearchIconButton below a width threshold. The two
+       Settings_Search_* strings below are built in code (dynamic count, constructed
+       rows) so they go through Loc and are mirrored in Deckle.App's root map. -->
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SettingsSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SettingsSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SettingsSearchIconButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="Settings_Search_NoResults" xml:space="preserve">
+    <value>No results found</value>
+  </data>
+  <data name="Settings_Search_MoreResults_Format" xml:space="preserve">
+    <value>+{0} more — refine your search</value>
   </data>
 
   <!-- ─── Settings — common section actions ──────────────────────────

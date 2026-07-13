@@ -148,6 +148,7 @@
 
                 <controls:SettingsCard x:Name="LanguageCard"
                                        x:Uid="WhisperLanguageCard"
+                                       Tag="WhisperLanguageCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <ComboBox x:Name="LanguageCombo"
@@ -176,6 +177,7 @@
 
                 <controls:SettingsExpander x:Name="InitialPromptCard"
                                            x:Uid="WhisperInitialPromptCard"
+                                           Tag="WhisperInitialPromptCard"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Prompt}}">
                     <Button x:Name="InitialPromptReset"
                             Style="{StaticResource ResetButtonStyle}"
@@ -212,6 +214,7 @@
                      this expander is now its own composed card below. -->
                 <controls:SettingsCard x:Name="ModelCard"
                                        x:Uid="WhisperModelCard"
+                                       Tag="WhisperModelCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Model}}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <AutoSuggestBox x:Name="ModelSuggest"

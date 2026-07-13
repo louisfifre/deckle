@@ -249,7 +249,11 @@ public sealed class SettingsComposer
 
     private SettingsCard BuildCard(SettingDescriptor s)
     {
-        var card = new SettingsCard { Header = ResolveHeader(s.LabelKey) };
+        // Tag carries the LabelKey as the card's runtime identity — the same key that
+        // drives its .resw header doubles as the handle a cross-page search walks the
+        // visual tree for, to bring THIS card into view. A code-created element gets no
+        // x:Name in the page's NameScope, so Tag is the one stable id it can carry.
+        var card = new SettingsCard { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
         string? description = ResolveDescription(s.LabelKey);
         if (description is not null) card.Description = description;
@@ -376,7 +380,8 @@ public sealed class SettingsComposer
     {
         var args = (GroupArgs)s.Args!;
 
-        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey) };
+        // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
+        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
         string? description = ResolveDescription(s.LabelKey);
         if (description is not null) expander.Description = description;
@@ -547,7 +552,8 @@ public sealed class SettingsComposer
     {
         var args = (SectionArgs)s.Args!;
 
-        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey) };
+        // Tag carries the LabelKey as this fold's runtime identity — see BuildCard.
+        var expander = new SettingsExpander { Header = ResolveHeader(s.LabelKey), Tag = s.LabelKey };
 
         string? description = ResolveDescription(s.LabelKey);
         if (description is not null) expander.Description = description;

@@ -395,6 +395,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RecordingSettingsModule.cs
 │   │   ├── RecordingViewModel.cs
 │   │   ├── RecordingViewModel.Settings.cs
+│   │   ├── SettingsSearch.cs
 │   │   └── SpeakerOutput.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
@@ -472,7 +473,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
+│   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Replay/
 │   │   │   ├── CorpusReader.cs
@@ -528,6 +530,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── Glyphs.cs
 │   │   ├── Loc.cs
+│   │   ├── SettingSearchEntry.cs
 │   │   ├── SettingsModuleDescriptor.cs
 │   │   └── TelemetryConsent.cs
 │   ├── Deckle.Chrono/
@@ -594,14 +597,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatter.cs
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
 │   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow settings and the ambient capture noise gate.
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Logging.csproj
+│   │   ├── DiagnosticsPage.xaml
+│   │   ├── DiagnosticsPage.xaml.cs
+│   │   ├── DiagnosticsSettingsModule.cs
+│   │   ├── DiagnosticsViewModel.cs
+│   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilter.cs
 │   │   ├── LogWindowVisibilityMode.cs
+│   │   ├── SettingsSearch.cs
 │   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── AGENTS.md  — [agent-instructions] Structured JSONL persistence and consent gates.
@@ -700,6 +712,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
+│   │   ├── SettingsSearch.cs
 │   │   ├── TrackpadSettings.cs
 │   │   ├── TrackpadSettingsModule.cs
 │   │   └── TrackpadSettingsService.cs
@@ -785,7 +798,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.cs
-│   │   └── IAmbientEngineHost.cs
+│   │   ├── IAmbientEngineHost.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj
 │   │   ├── DeckleLlmSource.cs
@@ -820,7 +834,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
-│   │   └── LlmSettingsService.cs
+│   │   ├── LlmSettingsService.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Notifications/
 │   │   ├── Catalog/
 │   │   │   ├── NotificationAction.cs
@@ -900,8 +915,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
-│   │   │   ├── DiagnosticsPage.xaml
-│   │   │   ├── DiagnosticsPage.xaml.cs
 │   │   │   ├── GeneralPage.xaml
 │   │   │   └── GeneralPage.xaml.cs
 │   │   ├── Persistence/
@@ -913,15 +926,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── DiagnosticsViewModel.cs
-│   │   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   │   ├── GeneralViewModel.cs
 │   │   │   └── GeneralViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.cs
+│   │   ├── SettingSearchHit.cs
 │   │   ├── SettingsHost.cs
+│   │   ├── SettingsSearch.cs
+│   │   ├── SettingsSearchIndex.cs
+│   │   ├── SettingSuggestion.cs
+│   │   ├── SettingsWindow.CaptionInset.cs
+│   │   ├── SettingsWindow.Search.cs
+│   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
 │   │   ├── SettingsWindow.xaml.cs
 │   │   └── TelemetryConsentWiring.cs
@@ -1047,6 +1065,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.WarmupModel.cs
 │   │   ├── ITranscriptionEngineHost.cs
 │   │   ├── JOURNAL.md  — [module-journal] Diagnosis notes and kept decisions for Deckle.Transcription — read on demand wh…
+│   │   ├── SettingsSearch.cs
 │   │   ├── TranscriptionSettings.cs
 │   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml

@@ -146,7 +146,8 @@
                 <TextBlock x:Uid="DiagnosticsPageFilesHeaderLabel"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsCard x:Uid="DiagnosticsFilesCard">
+                <controls:SettingsCard x:Uid="DiagnosticsFilesCard"
+                                       Tag="DiagnosticsFilesCard">
                     <Button x:Uid="FolderPickerCard_OpenButton"
                             Click="OpenDiagnosticsFolder_Click" />
                 </controls:SettingsCard>

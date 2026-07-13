@@ -85,6 +85,7 @@
                      event-handler style (Toggled / SelectionChanged →
                      AmbientSettings + Save) stays as-is. -->
                 <controls:SettingsCard x:Uid="AmbientEnabledCard"
+                                       Tag="AmbientEnabledCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}">
                     <ToggleSwitch x:Name="EnabledToggle"
                                   Toggled="EnabledToggle_Toggled" />
@@ -95,6 +96,7 @@
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
                 <controls:SettingsCard x:Uid="AmbientModeCard"
+                                       Tag="AmbientModeCard"
                                        HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Theme}}">
                     <ComboBox x:Name="ModeCombo"
                               MinWidth="160"
@@ -122,6 +124,7 @@
 
                 <controls:SettingsExpander x:Uid="HueBridgeExpander"
                                            x:Name="HueBridgeExpander"
+                                           Tag="HueBridgeExpander"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Bridge}}">
                     <!-- Header right-side : compact status text + dot. The
                          expander shows / hides the per-section cards below
@@ -148,7 +151,8 @@
                              HuePairingService.PairAsync. Transient
                              status text lives below the card (separate
                              TextBlock) so the card itself stays clean. -->
-                        <controls:SettingsCard x:Uid="HueBridgeAddressCard">
+                        <controls:SettingsCard x:Uid="HueBridgeAddressCard"
+                                               Tag="HueBridgeAddressCard">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBox x:Name="HueBridgeIpTextBox"
                                          Width="160"
@@ -179,7 +183,8 @@
                                    Margin="16,4,16,8" />
 
                         <!-- Entertainment group / room. -->
-                        <controls:SettingsCard x:Uid="HueBridgeGroupCard">
+                        <controls:SettingsCard x:Uid="HueBridgeGroupCard"
+                                               Tag="HueBridgeGroupCard">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <ComboBox x:Name="HueGroupComboBox"
                                           Width="240"
@@ -198,7 +203,8 @@
                              click, following Microsoft's official
                              Settings pattern (confirm-then-act, not
                              red-button-then-act). -->
-                        <controls:SettingsCard x:Uid="HueBridgeForgetCard">
+                        <controls:SettingsCard x:Uid="HueBridgeForgetCard"
+                                               Tag="HueBridgeForgetCard">
                             <Button x:Name="HueForgetButton"
                                     x:Uid="HueForgetButton"
                                     IsEnabled="False"
@@ -217,6 +223,7 @@
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
                 <controls:SettingsCard x:Uid="AmbientOpenPlaygroundCard"
+                                       Tag="AmbientOpenPlaygroundCard"
                                        IsClickEnabled="True"
                                        ActionIcon="{ui:FontIcon Glyph={StaticResource Icon.OpenExternal}}"
                                        Click="OpenPlaygroundCard_Click" />
@@ -225,7 +232,8 @@
                 <TextBlock x:Uid="AmbientPageDiagnosticsHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                <controls:SettingsCard x:Uid="AmbientLogActivityCard">
+                <controls:SettingsCard x:Uid="AmbientLogActivityCard"
+                                       Tag="AmbientLogActivityCard">
                     <ToggleSwitch x:Name="LogActivityToggle"
                                   Toggled="LogActivityToggle_Toggled" />
                 </controls:SettingsCard>

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -17,9 +16,10 @@ namespace Deckle.Settings;
 
 // ─── Settings Window ──────────────────────────────────────────────────────────
 //
-// Mica + system theme, native TitleBar (icon + title). NavigationView in
-// PaneDisplayMode=Auto manages the Left / LeftCompact / LeftMinimal switch
-// and its own native hamburger.
+// Mica + system theme, native TitleBar (icon + title + hamburger + Logs).
+// NavigationView in PaneDisplayMode=Auto manages the Left / LeftCompact /
+// LeftMinimal switch; its own pane toggle is off — the TitleBar carries the
+// hamburger and relays through PaneToggleRequested.
 //
 // Navigation: Tag on each item = full Page type name, resolved via
 // Type.GetType in OnNavSelectionChanged (pattern from the official Microsoft
@@ -35,8 +35,8 @@ public sealed partial class SettingsWindow : Window
     private BitmapImage? _iconIdle;
     private string? _iconIdlePath;
 
-    // Callback injected by App to open the shared LogWindow from the
-    // NavigationView "Logs" footer item. Left null = item has no effect.
+    // Callback injected by App to open the shared LogWindow from the TitleBar
+    // "Logs" command. Left null = the button has no effect.
     public Action? OnShowLogsRequested { get; set; }
 
     // The module nav items this window inserted from SettingsModuleRegistry,
@@ -59,43 +59,27 @@ public sealed partial class SettingsWindow : Window
         }
 
         // Native title bar: height/drag/caption are managed by the control.
-        // Standard keeps a compact bar because the title contains no
-        // interactive content.
+        // Tall gives the bar room for the interactive content it now carries
+        // (Logs command, and the search box added later).
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
+        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+
+        // The control stamps its caption padding in raw physical pixels — an
+        // upstream px/DIP bug that inflates the reserve at >100 % scale.
+        InitializeCaptionInsetFix();
 
         SystemBackdrop = new MicaBackdrop();
 
-        // NavigationView: when mode switches to Minimal (hamburger visible),
-        // the pane toggle button occupies ~48 px at the top of the content
-        // area. Push the Frame downward so the page title does not overlap the
-        // hamburger (Windows Terminal Settings pattern).
+        // Cross-page search in the TitleBar: wire the responsive collapse.
+        InitializeSearch();
+
+        // Keep the pane's open state aligned with the display mode as the
+        // window is resized across the Auto breakpoints.
         Nav.DisplayModeChanged += OnNavDisplayModeChanged;
 
-        // Override the NavigationView pane-toggle tooltip. WinUI 3
-        // sources that string from the OS locale ("Ouvrir navigation"
-        // on a French Windows install), which clashes with Deckle's
-        // English UI. The toggle button lives under the template part
-        // "TogglePaneButton" ; we walk the visual tree after the
-        // template generator has materialised it (Nav.Loaded + Low
-        // priority dispatch). PaneOpened / PaneClosed re-apply
-        // defensively in case the button is recreated when the state
-        // flips. No-op if the template part name changes upstream.
-        Nav.Loaded += (_, _) =>
-        {
-            DispatcherQueue.TryEnqueueObserved(
-                operation: "ui-update", caller: "settings-window-nav",
-                callback: () =>
-                {
-                    SyncNavigationPane(Nav);
-                    OverrideNavPaneToggleTooltip(Nav, "Open navigation");
-                },
-                rejectSource: "SETTINGS", rejectWhat: "nav tooltip override",
-                priority: Microsoft.UI.Dispatching.DispatcherQueuePriority.Low);
-        };
-        Nav.PaneOpened += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
-        Nav.PaneClosed += (_, _) => OverrideNavPaneToggleTooltip(Nav, "Open navigation");
+        // Same sync once the template is up, for the initial mode.
+        Nav.Loaded += (_, _) => SyncNavigationPane(Nav);
 
         // Materialise the module-owned pages from the registry into the nav
         // (between Recording and Diagnostics) before the initial selection, so
@@ -116,10 +100,15 @@ public sealed partial class SettingsWindow : Window
         presenter.IsMinimizable = true;
         presenter.IsMaximizable = true;
         presenter.IsResizable   = true;
-        // Minimum consistent with NavigationView Auto breakpoints (640/1008).
-        // Go below 640 to expose the native LeftMinimal mode.
-        presenter.PreferredMinimumWidth  = 320;
-        presenter.PreferredMinimumHeight = 400;
+        // Presenter minimums are PHYSICAL pixels — scale the intended DIPs, or a
+        // 200 % display halves the real floor. 400 DIPs wide is the narrowest
+        // width at which the TitleBar still shows every command (pane toggle,
+        // icon, search icon, Logs, caption group; the title yields first via the
+        // control's Compact state), while staying below the NavigationView Auto
+        // breakpoints (640/1008) so the native LeftMinimal mode stays reachable.
+        double dpiScale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+        presenter.PreferredMinimumWidth  = (int)(400 * dpiScale);
+        presenter.PreferredMinimumHeight = (int)(400 * dpiScale);
         AppWindow.SetPresenter(presenter);
 
         // Theme: wire ActualThemeChanged on the XAML root to trace
@@ -248,19 +237,34 @@ public sealed partial class SettingsWindow : Window
         WindowingProbe.EmitWindowPositioned(_hwnd, "settings", "Center");
     }
 
-    // ── NavigationView: content margin by DisplayMode ────────────────────
+    // ── TitleBar pane toggle ─────────────────────────────────────────────
     //
-    // In Minimal mode, the pane toggle button (hamburger) is rendered at the
-    // top of the content area and occupies ~48 px. Shift the Frame downward so
-    // the page H1 title is not at the same height as the hamburger. Same
-    // pattern as Windows Terminal Settings.
+    // The hamburger lives on the TitleBar; NavigationView.IsPaneToggleButtonVisible
+    // is False. Relay the request to the pane. SyncNavigationPane is deliberately
+    // NOT called here — it forces IsPaneOpen from the display mode, which would
+    // immediately re-close a pane the user just opened in a compact mode.
+
+    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args)
+    {
+        Nav.IsPaneOpen = !Nav.IsPaneOpen;
+    }
+
+    // Logs command in the TitleBar: delegate to App, which opens the shared
+    // LogWindow. The OnShowLogsRequested field (wired by App) is unchanged.
+    private void OnLogsButtonClick(object sender, RoutedEventArgs e)
+    {
+        DeckleSettingsSource.Log.OpenLogsFromFooter();
+        OnShowLogsRequested?.Invoke();
+    }
+
+    // ── NavigationView: pane sync by DisplayMode ─────────────────────────
+    //
+    // The pane toggle no longer renders inside the content area (it lives on
+    // the TitleBar), so no Frame margin compensation is needed in Minimal mode.
 
     private void OnNavDisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
     {
         SyncNavigationPane(sender);
-        PageFrame.Margin = sender.DisplayMode == NavigationViewDisplayMode.Minimal
-            ? new Thickness(0, 48, 0, 0)
-            : new Thickness(0);
     }
 
     // ── NavigationView: page swap ────────────────────────────────────────────
@@ -285,7 +289,6 @@ public sealed partial class SettingsWindow : Window
             DeckleSettingsSource.Log.NavImpossibleNoTagDetail(item.Content?.ToString() ?? "");
             return;
         }
-        if (tag == "logs") return;
 
         var pageType = Type.GetType(tag);
         if (pageType is null)
@@ -329,51 +332,8 @@ public sealed partial class SettingsWindow : Window
         }
     }
 
-    // Footer item "Logs": SelectsOnInvoked=False so no SelectionChanged,
-    // we go through ItemInvoked to capture the click and delegate to App
-    // which opens the shared LogWindow.
-    private void OnNavItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
-    {
-        var item = args.InvokedItemContainer as NavigationViewItem;
-        DeckleSettingsSource.Log.ItemInvoked(item?.Content?.ToString() ?? "", item?.Tag?.ToString() ?? "");
-        if (item?.Tag as string == "logs")
-        {
-            DeckleSettingsSource.Log.OpenLogsFromFooter();
-            OnShowLogsRequested?.Invoke();
-        }
-    }
-
-    // ── NavigationView tooltip i18n override ────────────────────────────────
-    //
-    // Duplicates the helpers in PlaygroundWindow.xaml.cs by design —
-    // two callsites isn't enough to justify a shared assembly yet, and
-    // pulling them into Deckle.Catalog would force that pure
-    // resw-facing module to take a WinUI 3 control dependency it
-    // doesn't otherwise need. Extract when a third caller appears.
-    private static void OverrideNavPaneToggleTooltip(NavigationView nav, string tooltip)
-    {
-        var toggle = FindVisualDescendantByName<Button>(nav, "TogglePaneButton");
-        if (toggle is null) return;
-        ToolTipService.SetToolTip(toggle, tooltip);
-        AutomationProperties.SetName(toggle, tooltip);
-    }
-
     private static void SyncNavigationPane(NavigationView nav)
     {
         nav.IsPaneOpen = nav.DisplayMode == NavigationViewDisplayMode.Expanded;
-    }
-
-    private static T? FindVisualDescendantByName<T>(DependencyObject root, string name)
-        where T : FrameworkElement
-    {
-        int count = VisualTreeHelper.GetChildrenCount(root);
-        for (int i = 0; i < count; i++)
-        {
-            var child = VisualTreeHelper.GetChild(root, i);
-            if (child is T t && t.Name == name) return t;
-            var found = FindVisualDescendantByName<T>(child, name);
-            if (found is not null) return found;
-        }
-        return null;
     }
 }
