@@ -98,7 +98,7 @@ public class ThreeFingerDragRecognizerTests
     }
 
     [Fact]
-    public void FourthFingerMidDragDoesNotEndTheDrag()
+    public void FourthFingerMidDragEndsAndReturningToThreeDoesNotRestart()
     {
         var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50 };
         var rec = new Recorder(r);
@@ -106,15 +106,25 @@ public class ThreeFingerDragRecognizerTests
         r.ProcessFrame(Frame(1, (1, 0, 0, true), (2, 0, 0, true), (3, 0, 0, true)));
         r.ProcessFrame(Frame(2, (1, 60, 0, true), (2, 60, 0, true), (3, 60, 0, true)));
         rec.Moves.Clear();
-        // Un quatrième doigt apparaît ; les trois identifiés continuent à
-        // porter le mouvement (+10 chacun). Toujours >= 3 tips → pas de fin.
+        // Un quatrième doigt apparaît : ce geste appartient à Windows,
+        // donc le drag injecté doit être relâché immédiatement.
         r.ProcessFrame(Frame(3,
             (1, 70, 0, true), (2, 70, 0, true), (3, 70, 0, true), (4, 999, 999, true)));
 
-        Assert.Equal(DragPhase.Dragging, r.Phase);
-        Assert.Empty(rec.Ended);
-        var move = Assert.Single(rec.Moves);
-        Assert.Equal(10, move.dx, precision: 6);
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Ended.ToArray());
+        Assert.Empty(rec.Moves);
+
+        // Lever seulement le quatrième doigt ne constitue pas un nouveau
+        // front montant depuis moins de trois : aucun second drag ne démarre.
+        r.ProcessFrame(Frame(4,
+            (1, 80, 0, true), (2, 80, 0, true), (3, 80, 0, true)));
+        r.ProcessFrame(Frame(5,
+            (1, 140, 0, true), (2, 140, 0, true), (3, 140, 0, true)));
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(1, rec.Started);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Ended.ToArray());
     }
 
     [Fact]

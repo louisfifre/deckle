@@ -25,6 +25,9 @@ internal enum DragPhase
 //   • engagement requires a rising edge (fewer than three tips on the
 //     previous frame): settling from a four-finger gesture onto three
 //     fingers must not start a drag;
+//   • a fourth finger ends an active drag immediately: four-finger
+//     gestures belong to Windows, and returning directly to three stays
+//     disqualified by the same rising-edge rule;
 //   • lifting below three fingers during a drag opens a grace window;
 //     three tips returning before the deadline resume the SAME drag, no
 //     release-and-repress;
@@ -100,6 +103,12 @@ internal sealed class ThreeFingerDragRecognizer
                 break;
 
             case DragPhase.Dragging:
+                if (tips > 3)
+                {
+                    EndDrag("fourth-finger");
+                    break;
+                }
+
                 if (tips < 3)
                 {
                     Phase = DragPhase.Grace;

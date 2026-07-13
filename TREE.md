@@ -757,6 +757,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
+│   │   │   ├── HueLocalDiscovery.cs
+│   │   │   ├── HueLocalDiscovery.Interop.cs
 │   │   │   ├── HueProjectedState.cs
 │   │   │   └── HueRestLightOutput.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Generalist light-output driver — the ILightOutput abstraction and the REST Hue…
@@ -1106,6 +1108,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── Deckle.Vision/
 │       ├── AGENTS.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
 │       ├── CapturedFrame.cs
+│       ├── CaptureMonitor.cs
 │       ├── CLAUDE.md
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
@@ -1253,7 +1256,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
-│   │   └── HueLightOutputFactoryTests.cs
+│   │   ├── HueLightOutputFactoryTests.cs
+│   │   └── HueLocalDiscoveryTests.cs
 │   ├── Deckle.Notifications.Tests/
 │   │   ├── Deckle.Notifications.Tests.csproj
 │   │   ├── DeckleNotificationsSourceTests.cs
