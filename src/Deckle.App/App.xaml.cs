@@ -172,6 +172,11 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        // Installer-mode launches (--install from the stub's temp extraction,
+        // --install-continue from the freshly placed copy) run the wizard and
+        // nothing else — no engines, no tray, no hotkeys. See App.Install.cs.
+        if (TryEnterInstallMode()) return;
+
         // Cold-start instrumentation. Milestones accumulate into a local
         // list during construction and get flushed as a single aggregate
         // EventSource line at the end of OnLaunched — LogWindow receives

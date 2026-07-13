@@ -85,6 +85,10 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
+    <!-- Windows-integration primitives shared with the download stub — the
+         install-mode branches (App.Install.cs) prefill folders from the
+         Installed-apps entry and the DECKLE_DATA_ROOT variable. -->
+    <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
     <!-- CamemBERT masked-LM reranker for the live contextual (la/là) stage; the

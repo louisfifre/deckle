@@ -29,6 +29,10 @@
     <!-- Presence catalogue — the module selector (ModulesPage) reads the
          registry and records the choice through ModulePresence. -->
     <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
+    <!-- Windows-integration primitives shared with the download stub — the
+         install-mode pages (Folders/Deploy) place the app, register it in
+         Installed apps, and write DECKLE_DATA_ROOT through them. -->
+    <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <!-- Per-module provisioning primitives the install plan composes:
          the VAD model identity, the CamemBERT asset catalog, and the pinned
          anytype-cli bundle — each beside the backend it serves. -->

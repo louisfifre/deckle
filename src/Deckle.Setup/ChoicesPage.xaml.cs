@@ -219,6 +219,13 @@ public sealed partial class ChoicesPage : Page
         _context.ChoicesConfirmed = true;
         DeckleSetupSource.Log.ChoicesConfirmed();
         DeckleSetupSource.Log.ChoicesConfirmedDetail(_context.Location, _context.SelectedModel!.Id);
-        _setup.Body.Navigate(typeof(InstallingPage), _setup);
+
+        // Install mode: provisioning cannot run in this temp process (AppPaths
+        // froze on the default data root), so Install means Deploy — place the
+        // binaries and relaunch from the install folder; the installed process
+        // runs the provisioning step with the right paths.
+        _setup.Body.Navigate(
+            _context.InstallMode ? typeof(DeployPage) : typeof(InstallingPage),
+            _setup);
     }
 }

@@ -23,7 +23,13 @@ public static class ModulePresence
     private static bool _loaded;
 
     // The choice file, beside the per-module folders it governs.
-    public static string FilePath => Path.Combine(AppPaths.ModulesDirectory, "presence.json");
+    public static string FilePath => FilePathUnder(AppPaths.UserDataRoot);
+
+    // The same location under an arbitrary data root — for the installer
+    // companion writing the choice into a root this process did not resolve
+    // (its own AppPaths froze on the default at first touch).
+    public static string FilePathUnder(string dataRoot) =>
+        Path.Combine(dataRoot, "modules", "presence.json");
 
     // Whether the user chose to have this module installed. True for every id
     // while no choice is recorded.

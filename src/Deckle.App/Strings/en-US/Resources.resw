@@ -1659,5 +1659,56 @@
   <data name="Setup_TotalEstimate_NothingPending" xml:space="preserve">
     <value>Everything selected is already installed.</value>
   </data>
+  <data name="Setup_StepTitle_Folders" xml:space="preserve">
+    <value>Choose the folders</value>
+  </data>
+  <data name="Setup_StepSubtitle_Folders" xml:space="preserve">
+    <value>Where the app and its data will live. Models can grow large — the data folder can go on another drive.</value>
+  </data>
+  <data name="SetupFoldersAppCard.Header" xml:space="preserve">
+    <value>Application folder</value>
+  </data>
+  <data name="SetupFoldersAppCard.Description" xml:space="preserve">
+    <value>The program files</value>
+  </data>
+  <data name="SetupFoldersDataCard.Header" xml:space="preserve">
+    <value>Data folder</value>
+  </data>
+  <data name="SetupFoldersDataCard.Description" xml:space="preserve">
+    <value>Models, settings and logs</value>
+  </data>
+  <data name="Setup_Folders_DriveLine_Format" xml:space="preserve">
+    <value>{0} needs about {1} — {2} free</value>
+  </data>
+  <data name="Setup_Folders_DriveUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="Setup_StepTitle_Deploy" xml:space="preserve">
+    <value>Installing Deckle</value>
+  </data>
+  <data name="Setup_StepSubtitle_Deploy" xml:space="preserve">
+    <value>Placing the app and registering it with Windows.</value>
+  </data>
+  <data name="Setup_Deploy_Checking" xml:space="preserve">
+    <value>Checking for a running Deckle…</value>
+  </data>
+  <data name="Setup_Deploy_Copying" xml:space="preserve">
+    <value>Copying files…</value>
+  </data>
+  <data name="Setup_Deploy_Integrating" xml:space="preserve">
+    <value>Registering with Windows…</value>
+  </data>
+  <data name="Setup_Deploy_Launching" xml:space="preserve">
+    <value>Starting the installed Deckle…</value>
+  </data>
+  <data name="Setup_Deploy_AppRunning" xml:space="preserve">
+    <value>Deckle is currently running. Close it, then retry.</value>
+  </data>
+  <data name="Setup_Deploy_Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Setup_Deploy_Failed_Format" xml:space="preserve">
+    <value>Installation failed — {0}</value>
+  </data>
 
 </root>

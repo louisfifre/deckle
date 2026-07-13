@@ -25,17 +25,30 @@ namespace Deckle.Setup;
 // provisioning act). The provisioning primitives stay in the modules they
 // serve — this plan only composes them, the same posture as the rest of the
 // wizard.
-internal static class InstallPlan
+public static class InstallPlan
 {
     public const string NativeRuntimeItemId = "native-runtime";
     public const string SileroItemId        = "silero-vad";
     public const string CamembertItemId     = "camembert-base";
     public const string AnytypeItemId       = "anytype-cli";
 
+    // The one question the App's install-continuation branch asks before
+    // opening the wizard on the provisioning step: is there anything left to
+    // put on disk for this selection? The plan itself (items, sizes) stays
+    // internal — only the wizard pages consume it.
+    public static bool HasPendingWork(SetupContext context)
+    {
+        foreach (InstallItem item in Build(context))
+        {
+            if (!item.IsInstalled()) return true;
+        }
+        return false;
+    }
+
     // The download weight still ahead of the user: the plan's items not yet
     // on disk, summed. Both estimate bars (module selector and Choices recap)
     // read this, so they can never disagree with what the install step runs.
-    public static long PendingBytes(SetupContext context)
+    internal static long PendingBytes(SetupContext context)
     {
         long pending = 0;
         foreach (InstallItem item in Build(context))
@@ -45,7 +58,7 @@ internal static class InstallPlan
         return pending;
     }
 
-    public static IReadOnlyList<InstallItem> Build(SetupContext context)
+    internal static IReadOnlyList<InstallItem> Build(SetupContext context)
     {
         var items = new List<InstallItem>();
 

@@ -336,6 +336,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.FileTranscription.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
+│   │   ├── App.Install.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
@@ -738,7 +739,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
 │   │   │   └── ConsoleUi.cs
-│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT console stub that downloads, installs, and uninstalls Deckle per-user…
+│   │   ├── AGENTS.md  — [agent-instructions] NativeAOT download stub — silent, no console; fetches the payload to temp and h…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Installer.csproj
 │   │   └── Program.cs
@@ -970,6 +971,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Setup.csproj
 │   │   ├── DeckleSetupSource.cs
+│   │   ├── DeployPage.xaml
+│   │   ├── DeployPage.xaml.cs
+│   │   ├── FoldersPage.xaml
+│   │   ├── FoldersPage.xaml.cs
 │   │   ├── InstallingPage.xaml
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs

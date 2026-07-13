@@ -155,6 +155,16 @@ public sealed partial class ModulesPage : Page
     {
         if (_setup is null) return;
 
+        // Install mode: the choice is NOT persisted from here — AppPaths froze
+        // on the default data root in this temp process, while the user may
+        // still pick a custom one on the next page. The Deploy step writes
+        // presence.json into the chosen root via PresenceFile.SaveTo.
+        if (_setup.Context.InstallMode)
+        {
+            _setup.Body.Navigate(typeof(FoldersPage), _setup);
+            return;
+        }
+
         ModulePresence.Save(_selection.ToList());
 
         // Dictation selected → its Choices page first (model pick). Otherwise

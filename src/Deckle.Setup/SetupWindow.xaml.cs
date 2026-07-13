@@ -56,7 +56,14 @@ public sealed partial class SetupWindow : Window
     public event Action? NextRequested;
     public event Action? BackRequested;
 
-    public SetupWindow()
+    public SetupWindow() : this(null) { }
+
+    // The install-mode host (App's --install / --install-continue branches)
+    // builds the context itself — mode flags, source/stub/cleanup paths, the
+    // model relayed across the process boundary — and passes it in. The
+    // parameterless path keeps the in-app behaviour: the window seeds the
+    // default context.
+    public SetupWindow(SetupContext? context)
     {
         InitializeComponent();
         // SetupContext stays backend-agnostic (no hard reference to any
@@ -66,7 +73,7 @@ public sealed partial class SetupWindow : Window
         // The module selection is seeded from the recorded presence choice
         // (full catalogue when none), so the install plan is meaningful even
         // if a navigation path skips the Modules page.
-        Context = new SetupContext
+        Context = context ?? new SetupContext
         {
             SelectedModel = SpeechModels.DefaultWhisperModel,
             SelectedModules = Deckle.Modules.ModulePresence.Choice
