@@ -937,7 +937,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SettingsSearch.cs
 │   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingSuggestion.cs
-│   │   ├── SettingsWindow.CaptionInset.cs
 │   │   ├── SettingsWindow.Search.cs
 │   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
@@ -1003,6 +1002,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrayContextMenuHost.Show.cs
 │   │   ├── TrayContextMenuHost.Window.cs
 │   │   └── TraySwitchMenuItem.cs
+│   ├── Deckle.Shell.WindowChrome/
+│   │   ├── AGENTS.md  — [agent-instructions] Window-chrome corrections shared by Deckle's XAML windows — workarounds for Win…
+│   │   ├── CaptionInsetCorrection.cs
+│   │   ├── CLAUDE.md
+│   │   └── Deckle.Shell.WindowChrome.csproj
 │   ├── Deckle.Speech/
 │   │   ├── AGENTS.md  — [agent-instructions] Read-aloud (TTS) output module — the ISpeechBackend boundary, the placeholder s…
 │   │   ├── ChatterboxSpeechBackend.cs

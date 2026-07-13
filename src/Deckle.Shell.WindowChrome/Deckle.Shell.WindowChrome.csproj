@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Shell.WindowChrome</RootNamespace>
+    <!-- WinUI 3 XAML types in a class library (TitleBar, VisualTreeHelper):
+         UseWinUI is what surfaces the Microsoft.WinUI reference from the
+         WindowsAppSDK package. The module ships no XAML page or resource of
+         its own, so no PRI emission (EnableMsixTooling) is needed. -->
+    <UseWinUI>true</UseWinUI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Strict alignment with Deckle.App.csproj: one WinAppSDK runtime per
+         process, synchronous bump obligatory across the whole solution. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+</Project>

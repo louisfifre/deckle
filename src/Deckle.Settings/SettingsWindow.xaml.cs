@@ -11,6 +11,7 @@ using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
+using Deckle.Shell.WindowChrome;
 
 namespace Deckle.Settings;
 
@@ -67,7 +68,7 @@ public sealed partial class SettingsWindow : Window
 
         // The control stamps its caption padding in raw physical pixels — an
         // upstream px/DIP bug that inflates the reserve at >100 % scale.
-        InitializeCaptionInsetFix();
+        CaptionInsetCorrection.Attach(AppTitleBar, AppWindow);
 
         SystemBackdrop = new MicaBackdrop();
 
