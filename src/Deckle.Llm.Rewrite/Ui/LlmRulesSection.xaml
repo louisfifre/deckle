@@ -4,7 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls">
 
-    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+    <StackPanel Tag="LlmRulesSection"
+                Spacing="{StaticResource SettingsCardSpacing}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -26,7 +27,8 @@
                    TextWrapping="Wrap"
                    Margin="1,0,0,8" />
 
-        <controls:SettingsCard x:Uid="LlmRulesMetricCard">
+        <controls:SettingsCard x:Uid="LlmRulesMetricCard"
+                               Tag="LlmRulesMetricCard">
             <RadioButtons x:Name="MetricRadios"
                           SelectionChanged="MetricRadios_SelectionChanged"
                           MaxColumns="2">

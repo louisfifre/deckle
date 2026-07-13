@@ -22,6 +22,7 @@
         </Grid>
 
         <controls:SettingsCard x:Uid="LlmPrimarySlotCard"
+                               Tag="LlmPrimarySlotCard"
                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
             <ComboBox x:Name="PrimaryRewriteProfileCombo"
                       MinWidth="200"
@@ -29,6 +30,7 @@
         </controls:SettingsCard>
 
         <controls:SettingsCard x:Uid="LlmSecondarySlotCard"
+                               Tag="LlmSecondarySlotCard"
                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Shortcut}}">
             <ComboBox x:Name="SecondaryRewriteProfileCombo"
                       MinWidth="200"

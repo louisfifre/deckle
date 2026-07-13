@@ -11,7 +11,8 @@
         <vm:TempTooltipConverter x:Key="TempTooltipConverter" />
     </UserControl.Resources>
 
-    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+    <StackPanel Tag="LlmProfilesSection"
+                Spacing="{StaticResource SettingsCardSpacing}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

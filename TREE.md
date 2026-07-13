@@ -830,7 +830,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
-│   │   └── LlmSettingsService.cs
+│   │   ├── LlmSettingsService.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Notifications/
 │   │   ├── Catalog/
 │   │   │   ├── NotificationAction.cs
