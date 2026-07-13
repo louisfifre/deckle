@@ -112,9 +112,9 @@ internal static partial class ScreenCaptureInterop
     /// Enumerates every monitor attached to the current desktop, in the
     /// order Windows reports them (typically primary first, then by
     /// GPU output index). The list is a snapshot — call again after
-    /// a display configuration change to refresh. Scaffolding for the
-    /// J9 monitor selector ; the V0 capture service still uses the
-    /// primary unconditionally.
+    /// a display configuration change to refresh. The public capture
+    /// service projects this internal, handle-bearing record to a
+    /// handle-free descriptor for settings UI.
     /// </summary>
     public static IReadOnlyList<MonitorInfo> EnumerateMonitors()
     {

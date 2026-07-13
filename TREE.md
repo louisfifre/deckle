@@ -1089,6 +1089,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   └── Deckle.Vision/
 │       ├── AGENTS.md  — [agent-instructions] Screen-capture and frame-analysis module — DXGI Output Duplication, the transie…
 │       ├── CapturedFrame.cs
+│       ├── CaptureMonitor.cs
 │       ├── CLAUDE.md
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
