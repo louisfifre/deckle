@@ -102,11 +102,14 @@
                                     QuerySubmitted="OnSearchQuerySubmitted"
                                     LostFocus="OnSearchBoxLostFocus"
                                     KeyDown="OnSearchBoxKeyDown" />
+                    <!-- Left-packed, not centered: grouped against the title, the
+                         narrow bar's idle space consolidates into one drag area
+                         instead of scattering around a floating icon. -->
                     <Button x:Name="SearchIconButton"
                             x:Uid="SettingsSearchIconButton"
                             Style="{StaticResource SubtleButtonStyle}"
                             Visibility="Collapsed"
-                            HorizontalAlignment="Center"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             MinWidth="36"
                             Padding="8,4"
