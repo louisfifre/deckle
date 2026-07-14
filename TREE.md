@@ -993,6 +993,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InstallPlan.cs
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
+│   │   ├── RelocatePage.xaml
+│   │   ├── RelocatePage.xaml.cs
 │   │   ├── SetupContext.cs
 │   │   ├── SetupNotifications.cs
 │   │   ├── SetupWindow.xaml

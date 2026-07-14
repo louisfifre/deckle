@@ -1545,5 +1545,26 @@
   <data name="SetupNotifications_UpdateAvailable_Later" xml:space="preserve">
     <value>Later</value>
   </data>
+  <data name="Setup_StepTitle_Relocate" xml:space="preserve">
+    <value>Moving app data</value>
+  </data>
+  <data name="Setup_StepSubtitle_Relocate" xml:space="preserve">
+    <value>Copying the data to its new folder. Deckle restarts when it is done.</value>
+  </data>
+  <data name="Setup_Relocate_Checking" xml:space="preserve">
+    <value>Checking free space…</value>
+  </data>
+  <data name="Setup_Relocate_Switching" xml:space="preserve">
+    <value>Switching to the new folder…</value>
+  </data>
+  <data name="Setup_Relocate_Restarting" xml:space="preserve">
+    <value>Restarting Deckle…</value>
+  </data>
+  <data name="Setup_Relocate_Failed_Format" xml:space="preserve">
+    <value>Move failed — {0}</value>
+  </data>
+  <data name="Setup_Relocate_InsufficientSpace_Format" xml:space="preserve">
+    <value>not enough space on {0} ({1} needed, {2} free)</value>
+  </data>
 
 </root>

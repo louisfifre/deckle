@@ -67,6 +67,15 @@ public sealed class SetupContext
     public bool UpdateMode { get; init; }
     public UpdateService.AvailableUpdate? PendingUpdate { get; init; }
 
+    // ── Relocate mode (the wizard as data mover) ────────────────────────────
+    //
+    // True in the dedicated `--relocate-data` process, which runs RelocatePage
+    // alone: copy the live data root into DataDirectory (reused as the target),
+    // flip DECKLE_DATA_ROOT, relaunch plain with the old root's cleanup. The
+    // copy cannot run inside the normal app — its sinks and engines hold files
+    // open under the very root being moved.
+    public bool RelocateMode { get; init; }
+
     // The two folders the Folders page collects. App = binaries (per user),
     // Data = models/settings/logs, relocatable off a saturated C:.
     public string InstallDirectory { get; set; } = Deckle.Install.InstallPaths.DefaultInstallDir;

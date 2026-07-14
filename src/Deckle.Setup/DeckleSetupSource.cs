@@ -79,6 +79,13 @@ public sealed class DeckleSetupSource : DeckleEventSource
     public const int EvtUpdateDownloadFailedDetail = 49;
     public const int EvtUpdateHandoff              = 50;
     public const int EvtUpdateHandoffDetail        = 51;
+    // Data-root relocation (--relocate-data, RelocatePage).
+    public const int EvtRelocateStarted            = 52;
+    public const int EvtRelocateStartedDetail      = 53;
+    public const int EvtRelocateCompleted          = 54;
+    public const int EvtRelocateCompletedDetail    = 55;
+    public const int EvtRelocateFailed             = 56;
+    public const int EvtRelocateFailedDetail       = 57;
 
     // ── Wizard lifecycle ──────────────────────────────────────────────────────
 
@@ -572,5 +579,67 @@ public sealed class DeckleSetupSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtUpdateHandoffDetail, exe, cleanup);
+    }
+
+    // ── Data-root relocation ──────────────────────────────────────────────────
+
+    [Event(EvtRelocateStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Moving the app data folder")]
+    public void RelocateStarted()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateStarted);
+    }
+
+    [Event(EvtRelocateStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "relocate | from={0} | to={1} | bytes={2}")]
+    public void RelocateStartedDetail(string from, string to, long bytes)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateStartedDetail, from, to, bytes);
+    }
+
+    [Event(EvtRelocateCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The app data folder moved")]
+    public void RelocateCompleted()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateCompleted);
+    }
+
+    [Event(EvtRelocateCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "relocate done | copied_bytes={0} | files={1} | skipped={2} | duration_ms={3}")]
+    public void RelocateCompletedDetail(long copied_bytes, int files, int skipped, long duration_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateCompletedDetail, copied_bytes, files, skipped, duration_ms);
+    }
+
+    [Event(EvtRelocateFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The app data move failed")]
+    public void RelocateFailed()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateFailed);
+    }
+
+    [Event(EvtRelocateFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "relocate failed | step={0} | reason={1}")]
+    public void RelocateFailedDetail(string step, string reason)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateFailedDetail, step, reason);
     }
 }
