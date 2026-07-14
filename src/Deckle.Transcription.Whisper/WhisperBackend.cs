@@ -300,14 +300,20 @@ public sealed class WhisperBackend : IAsrBackend
         _whisperInitSw = Stopwatch.StartNew();
 
         int result;
-        // whisper_full's pcmSamples parameter is `float[]` in the P/Invoke
-        // signature. ReadOnlyMemory.ToArray() is a defensive copy — we accept
-        // the allocation here to keep the IAsrBackend signature non-leaky
-        // (the orchestrator doesn't have to hand us a raw array).
-        float[] audioArray = pcmSamples.ToArray();
+        float[] audioArray;
+        int sampleCount = pcmSamples.Length;
+        if (MemoryMarshal.TryGetArray(pcmSamples, out ArraySegment<float> segment)
+            && segment.Offset == 0)
+        {
+            audioArray = segment.Array!;
+        }
+        else
+        {
+            audioArray = pcmSamples.ToArray();
+        }
         lock (_transcribeLock)
         {
-            result = WhisperPInvoke.whisper_full(ctx, wparams, audioArray, audioArray.Length);
+            result = WhisperPInvoke.whisper_full(ctx, wparams, audioArray, sampleCount);
         }
         _transcribeSw.Stop();
         long totalMs = _transcribeSw.ElapsedMilliseconds;

@@ -30,9 +30,9 @@ public enum AudioFileDecodeStatus
 
 // Returned from AudioFileDecoder.Decode. Pcm is float[-1, 1] mono 16 kHz — the
 // fixed transcription format, identical to what MicrophoneCapture produces — and
-// is non-null only when Status == Decoded. DurationSeconds is the decoded audio
-// length (decoded sample count / 16000), 0 on any failure.
+// is empty on failure. DurationSeconds is the decoded audio length (decoded
+// sample count / 16000), 0 on any failure.
 public readonly record struct AudioFileDecodeResult(
     AudioFileDecodeStatus Status,
-    float[]? Pcm,
+    ReadOnlyMemory<float> Pcm,
     double DurationSeconds);

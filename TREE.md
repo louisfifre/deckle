@@ -360,6 +360,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── MediaFoundationInterop.cs
+│   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
@@ -1198,6 +1199,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs
 │   ├── Deckle.Autocorrect.Tests/
