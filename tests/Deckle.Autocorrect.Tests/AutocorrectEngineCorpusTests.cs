@@ -98,6 +98,68 @@ public sealed class AutocorrectEngineCorpusTests
             e.EventId == DeckleAutocorrectSource.EvtAutocorrectText);
     }
 
+    [Fact]
+    public void DoesNotEmitAnAccumulatedRunAfterConsentIsWithdrawn()
+    {
+        bool consent = true;
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(textTelemetry: () => consent);
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
+        h.Start();
+
+        h.Type("bonjour ");
+        consent = false;
+        h.Engine.ReconcileTextTelemetry();
+        consent = true;
+        h.Type("salut.");
+
+        Assert.DoesNotContain(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "typed") is string typed
+            && typed.Contains("bonjour", StringComparison.Ordinal));
+        Assert.Contains(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "typed") is "salut.");
+    }
+
+    [Fact]
+    public void AttributesAnInterruptedRunToTheSurfaceThatProducedIt()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("notepad");
+        h.Start();
+
+        h.Type("bonjour ");
+        h.RefocusOn(AutocorrectEngineHarness.Editable("chrome"));
+
+        Assert.Contains(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "process") is "notepad"
+            && PayloadValue(e, "closure") is "interrupted");
+    }
+
+    [Fact]
+    public void FoldsAReEditOnADeclinedSurfaceIntoTheOriginalSlot()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
+        h.Settings.Apps["chrome"] = false;
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
+        h.Start();
+
+        h.Type("bonjour ");
+        for (int i = 0; i < 8; i++) h.Backspace(); // boundary, then seven letters
+        h.Type("bonsoir ami.");
+
+        Assert.Contains(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "typed") is "bonjour ami."
+            && PayloadValue(e, "final") is "bonsoir ami."
+            && PayloadValue(e, "history") is string history
+            && history.Contains("»user:bonsoir", StringComparison.Ordinal));
+    }
+
     private static object? PayloadValue(EventWrittenEventArgs ev, string name)
     {
         var names = ev.PayloadNames;

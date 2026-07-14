@@ -197,6 +197,8 @@ public partial class App
             _autocorrectEngine.EnrollmentSuggested += p => _ = PromptAutocorrectEnrollmentAsync(p);
 
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
+            Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Changed +=
+                ReconcileAutocorrectTelemetry;
             ReconcileAutocorrect();
 
             DeckleAutocorrectSource.Log.RerankerStatus(rerankerEngine, rerankerLoadMs);
@@ -231,6 +233,9 @@ public partial class App
             _autocorrectStarted = false;
         }
     }
+
+    private void ReconcileAutocorrectTelemetry() =>
+        _autocorrectEngine?.ReconcileTextTelemetry();
 
     // Called from QuitApp. Dispose stops the keyboard host (an injected burst
     // must never outlive the process), then the dictionary flushes its state.

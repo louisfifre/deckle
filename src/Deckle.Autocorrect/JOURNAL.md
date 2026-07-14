@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — Final-punctuation re-edit can outrun corpus attribution
+
+Found that a manual re-edit ending immediately with sentence-final punctuation can close and emit the sentence before `WordEdited` reaches `SentenceCorpus`; the corrected slot may therefore retain the pre-edit attribution. A clean fix requires changing the tracker-to-corpus commit contract rather than delaying punctuation handling.
+
 ## 2026-07-14 — The sentence judge is live, margin 1.0, decided
 
 The ONNX GenAI sentence judge (Qwen3-1.7B DML int4, `models\sentence-judge`) is wired into the live sentence stage, preferred over CamemBERT when its model directory is present, through the existing background rerank lane (single-flight, epoch-dropped staleness). Operating margin decided at 1.0 on the 2026-07 replay calibration (979 slots, maintainer truth overlaid): 92.2% precision at 20.8% coverage, against 90.8%/41.0% at 0.5 — chosen precision-first for the live start, to be relaxed as the widened corpus grows. Replay judged whole sentences while live sees ±12 words, so calibration precision is slightly optimistic for live. Margins remain per-export (see 2026-07-04): this one binds to the DML int4 export the live path loads.
