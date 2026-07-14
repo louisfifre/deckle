@@ -978,6 +978,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
+│   │   ├── ByteSizeFormatter.cs
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
 │   │   ├── CLAUDE.md

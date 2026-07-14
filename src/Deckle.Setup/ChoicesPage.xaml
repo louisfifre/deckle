@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:transcription="using:Deckle.Transcription"
     xmlns:ui="using:CommunityToolkit.WinUI">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -33,7 +34,13 @@
                                    HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}"
                                    ContentAlignment="Vertical">
                 <RadioButtons x:Name="ModelRadio"
-                              SelectionChanged="OnModelSelectionChanged" />
+                              SelectionChanged="OnModelSelectionChanged">
+                    <RadioButtons.ItemTemplate>
+                        <DataTemplate x:DataType="transcription:ModelEntry">
+                            <TextBlock Text="{x:Bind DisplayName}" />
+                        </DataTemplate>
+                    </RadioButtons.ItemTemplate>
+                </RadioButtons>
             </controls:SettingsCard>
 
             <InfoBar x:Name="TotalEstimateBar"

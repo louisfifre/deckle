@@ -168,7 +168,7 @@ public sealed partial class SummaryPage : Page
 
         string detail = r.Success
             ? (r.Bytes is long b
-                ? Loc.Format("Setup_Result_Detail_BytesInstalled_Format", FormatBytes(b))
+                ? Loc.Format("Setup_Result_Detail_BytesInstalled_Format", ByteSizeFormatter.Format(b))
                 : Loc.Get("Setup_Result_Detail_Installed"))
             : r.ErrorMessage ?? Loc.Get("Setup_Install_UnknownError");
 
@@ -374,11 +374,4 @@ public sealed partial class SummaryPage : Page
         return n;
     }
 
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)               return $"{bytes} B";
-        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
-        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
-    }
 }
