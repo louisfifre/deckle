@@ -1,5 +1,6 @@
 // LogWindow — ring-buffer/filter engine and ILogWindowSink marshalling.
 
+using System.Collections.Concurrent;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
@@ -10,6 +11,10 @@ namespace Deckle.App;
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
+    private const int EntryDrainBatchSize = 256;
+    private readonly ConcurrentQueue<LogEntry> _pendingEntries = new();
+    private int _entryDrainScheduled;
+
     // ── ILogWindowSink (events from LogWindowSink) ─────────────────────────────
 
     public void Write(EventEntry entry)
@@ -17,22 +22,34 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // The listener emits on the EventSource origin thread; immediately
         // wrap as LogEntry to precompute Text once (same reasons as the legacy
         // pipeline: avoid repeated formatting during ListView virtualization).
-        var le = new LogEntry(entry);
-        if (DispatcherQueue.HasThreadAccess) AddEntrySafe(le);
-        else
+        _pendingEntries.Enqueue(new LogEntry(entry));
+        ScheduleEntryDrain();
+    }
+
+    private void ScheduleEntryDrain()
+    {
+        if (Interlocked.Exchange(ref _entryDrainScheduled, 1) != 0)
+            return;
+
+        bool enqueued = DispatcherQueue.TryEnqueueOrLog(
+            DrainPendingEntries,
+            "LOGWIN", "log entry batch");
+        if (!enqueued)
+            Volatile.Write(ref _entryDrainScheduled, 0);
+    }
+
+    private void DrainPendingEntries()
+    {
+        int drained = 0;
+        while (drained < EntryDrainBatchSize && _pendingEntries.TryDequeue(out LogEntry? entry))
         {
-            // Cross-thread (EventSource listener from a worker thread to UI).
-            // Do NOT instrument this marshalling: observing the LogWindow
-            // append reinjects MarshalQueued/Completed into LogWindow, which
-            // re-appends, then re-observes: observer effect. The
-            // _emittingMarshal guard limits recursion to ×3 instead of stack
-            // overflow, but ×3 on the capture firehose is enough to drown the
-            // window. TryEnqueueOrLog keeps the useful rejection warning
-            // without the Verbose pair.
-            DispatcherQueue.TryEnqueueOrLog(
-                () => AddEntrySafe(le),
-                "LOGWIN", "log entry");
+            AddEntrySafe(entry);
+            drained++;
         }
+
+        Volatile.Write(ref _entryDrainScheduled, 0);
+        if (!_pendingEntries.IsEmpty)
+            ScheduleEntryDrain();
     }
 
     // Not exposed on the interface; ILogWindowSink is a write-only channel.
@@ -62,6 +79,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void ClearAll()
     {
+        while (_pendingEntries.TryDequeue(out _)) { }
         _entries.Clear();
         _visible.Clear();
         _itemsPanel = null;
