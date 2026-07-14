@@ -732,6 +732,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Install.csproj
 │   │   ├── InstallPaths.cs
+│   │   ├── ReleaseResolver.cs
 │   │   ├── RunningProcesses.cs
 │   │   ├── Shortcut.cs
 │   │   ├── UninstallEntry.cs
@@ -743,8 +744,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── Uninstaller.cs
 │   │   ├── Io/
 │   │   │   └── Downloader.cs
-│   │   ├── Release/
-│   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
 │   │   │   ├── MessageDialog.cs
 │   │   │   └── ProgressWindow.cs
