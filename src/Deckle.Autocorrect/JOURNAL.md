@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — The rarity gate falls back to the slot's best variant on an invalid literal
+
+The sentence-stage rarity gate (2026-07-12) compared candidates to the typed literal's frequency and was therefore disarmed when the literal was not a lexicon form — exactly the ca→çà residue: "ca" has no frequency, so çà (21/M) survived against ça (8 972/M), ratio 0.0024, four times under the 0.01 floor. The gate's reference now falls back to the slot's most frequent lexicon variant when the literal is invalid; personal variants never set the reference (their sentinel frequency would inflate it). Side effect, intended: a fold whose rare cousin drops can collapse to one form and stop being an ambiguous slot at all ("ete" → été alone; the commit stage already restores it deterministically).
+
 ## 2026-07-14 — Replay audit verdict: the 25% was a measurement artifact; the judge is rehabilitated
 
 The contested replay agreement (~25%) that had condemned the Qwen judge was audited and reversed. Three measurement faults, found and repaired: the corpus final string was scored as if it were ground truth (it is what landed on screen, not what was meant); 290 legacy records carried no keystroke history and were unrepairable as recorded; elision fusion misaligned slots. Measured cascade after repair: 23% → 58% (measurement fixed) → 80.7% changes-only against the maintainer-filled truth sheet (241 truths). The margin curve, flat-to-noisy before the repair, is monotonic after it (87.6% @0.25 · 90.8% @0.5 · 100% @3.0 on the 979-slot pass). Known sheet limit, accepted: a filled truth on a slot where the judge stops contradicting the final disappears at regeneration.

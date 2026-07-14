@@ -27,10 +27,12 @@ public sealed record RestorerOptions
     public double MinCandidateFrequencyPerMillion { get; init; } = 0.0;
 
     // Sentence-stage rarity gate. A folded variant is dropped when its frequency
-    // is below (typed literal's frequency × this ratio) — i.e. more than 1/ratio
-    // rarer than what was typed — and only when the literal is itself a valid
-    // lexicon form, so there is a meaningful reference frequency to compare
-    // against. Replay of the ONNX sentence judge over the maintainer's real corpus
+    // is below (reference frequency × this ratio) — i.e. more than 1/ratio rarer
+    // than the reference. The reference is the typed literal's frequency when the
+    // literal is a valid lexicon form; for a misspelled literal, which has no
+    // frequency of its own, it falls back to the slot's most frequent lexicon
+    // variant ("ca" → ça at 8 972/M anchors the slot, so çà at 21/M drops).
+    // Replay of the ONNX sentence judge over the maintainer's real corpus
     // showed its wrong changes cluster on forms hundreds to thousands of times
     // rarer than the typed word (mais→maïs, le→lé, de→dé); a 100× floor (0.01)
     // removed 32 of 57 residual wrong changes on the clean subset while touching

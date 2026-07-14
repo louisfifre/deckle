@@ -23,10 +23,13 @@ public class DiacriticsRestorerTests
         "étant\t100\nêtant\t1\nvoila\t35\nvoilà\t700\n" +
         // Rarity-gate fixture. "mais" (valid, 500) hides maïs (3): ratio 0.006,
         // under the 0.01 floor. "taches" (40) hides tâches (20): ratio 0.5, above.
-        // "cotes" (50) hides côtes (40, kept) and cotés (0.1, dropped). "ete" is
-        // NOT a valid literal — its variants été/êté have no reference frequency.
+        // "cotes" (50) hides côtes (40, kept) and cotés (0.1, dropped). "ete" and
+        // "ca" are NOT valid literals — their slots exercise the fallback
+        // reference (the most frequent lexicon variant): été (500) anchors
+        // against êté (1), ça (9000) against çà (20).
         "mais\t500\nmaïs\t3\ntaches\t40\ntâches\t20\n" +
-        "cotes\t50\ncôtes\t40\ncotés\t0.1\nété\t500\nêté\t1\n";
+        "cotes\t50\ncôtes\t40\ncotés\t0.1\nété\t500\nêté\t1\n" +
+        "ça\t9000\nçà\t20\n";
 
     private const string EnglishTsv = "the\t60000\nbut\t9000\nmode\t500\ncafe\t0.1\n";
 
@@ -311,14 +314,45 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
-    public void RarityGateDoesNotApplyWhenTheLiteralIsNotAValidForm()
+    public void RarityGateFallsBackToTheBestVariantWhenTheLiteralIsNotValid()
     {
-        // "ete" is in no lexicon, so there is no reference frequency: the gate
-        // stays off and even êté (1), 500× rarer than été, survives the slot.
-        var candidates = Restorer().AmbiguousCandidates("ete");
+        // "ete" is in no lexicon, so the gate's reference falls back to the
+        // slot's most frequent variant: été (500) anchors, êté (1) is 500× rarer
+        // and drops — collapsing the fold to one form, no longer an ambiguous
+        // slot at all (the commit stage restores it deterministically). Before
+        // the fallback the gate was disarmed here and êté survived to mislead
+        // the judge. With the typed literal included the slot still carries the
+        // surviving pair, êté-free.
+        Assert.Empty(Restorer().AmbiguousCandidates("ete"));
 
-        Assert.Contains(candidates, v => v.Form == "été");
-        Assert.Contains(candidates, v => v.Form == "êté");
+        var withLiteral = Restorer().SentenceCandidates("ete", includeTypedLiteral: true);
+        Assert.Contains(withLiteral, v => v.Form == "été");
+        Assert.DoesNotContain(withLiteral, v => v.Form == "êté");
+    }
+
+    [Fact]
+    public void RarityGateClosesTheCaCedillaHole()
+    {
+        // The motivating live residue: "ca" is not a valid form, its slot pairs
+        // ça (9000) with çà (20) — ratio 0.0022, under the 0.01 floor. The
+        // fallback reference drops çà; ça and the typed literal stay.
+        var candidates = Restorer().SentenceCandidates("ca", includeTypedLiteral: true);
+
+        Assert.Contains(candidates, v => v.Form == "ça");
+        Assert.Contains(candidates, v => v.Form == "ca");
+        Assert.DoesNotContain(candidates, v => v.Form == "çà");
+    }
+
+    [Fact]
+    public void RarityGateFallbackKeepsAModerateRatioPairIntact()
+    {
+        // "eleve" is not a valid form either, but élève (30) and élevé (25) sit
+        // at ratio 0.83 — both are plausible restorations and both must survive
+        // the fallback reference.
+        var candidates = Restorer().AmbiguousCandidates("eleve");
+
+        Assert.Contains(candidates, v => v.Form == "élève");
+        Assert.Contains(candidates, v => v.Form == "élevé");
     }
 
     [Fact]

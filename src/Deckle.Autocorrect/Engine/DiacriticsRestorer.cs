@@ -248,6 +248,24 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         if (literalValid)
             merged.Add(new AccentVariant(lower, _french.FrequencyOf(lower)));
 
+        // Reference frequency for the rarity gate: the typed literal's own when it
+        // is a valid form; otherwise the slot's most frequent lexicon variant. A
+        // misspelled literal has no frequency of its own ("ca"), yet its slot can
+        // still pair a dominant form with an ultra-rare cousin (ça at 8 972/M vs
+        // çà at 21/M) — without the fallback the gate is disarmed exactly where
+        // the judge's wrong changes cluster. Computed before personal variants
+        // join: their sentinel frequency would inflate the reference past every
+        // real form.
+        double rarityReference = 0.0;
+        if (applyRarityGate)
+        {
+            if (literalValid)
+                rarityReference = _french.FrequencyOf(lower);
+            else
+                foreach (var v in merged)
+                    rarityReference = Math.Max(rarityReference, v.FrequencyPerMillion);
+        }
+
         if (_personalVariants is not null)
         {
             foreach (var pv in _personalVariants(lower))
@@ -261,16 +279,13 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
             }
         }
 
-        // Sentence-stage rarity gate: measured against the typed literal's own
-        // frequency, a folded variant far rarer than it is almost always a wrong
-        // change (mais→maïs, le→lé). Drop anything under literalFreq × ratio —
+        // Sentence-stage rarity gate: measured against the reference above, a
+        // folded variant far rarer than it is almost always a wrong change
+        // (mais→maïs, le→lé, ca→çà). Drop anything under reference × ratio —
         // never the typed literal itself. Off unless the caller is the sentence
-        // stage (applyRarityGate) and the literal is a valid form with a
-        // meaningful reference frequency; a misspelled literal has none. Zero when
-        // off, so the per-candidate test below is a no-op.
-        double rarityFloor = applyRarityGate && literalValid
-            ? _french.FrequencyOf(lower) * _options.MinCandidateFrequencyRatio
-            : 0.0;
+        // stage (applyRarityGate); zero when off, so the per-candidate test
+        // below is a no-op.
+        double rarityFloor = rarityReference * _options.MinCandidateFrequencyRatio;
 
         // Filter: frequency floor, the rarity gate, then drop user-suppressed pairs
         // (suppression is case-insensitive on both the original and the candidate form).
