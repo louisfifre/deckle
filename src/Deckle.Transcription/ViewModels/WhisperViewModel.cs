@@ -545,7 +545,7 @@ public partial class WhisperViewModel : ObservableObject
 
         ModelsDirectory = "";
         FileTranscriptionOutputDirectory = "";
-        Model = "ggml-large-v3.bin";
+        Model = "ggml-base.bin";
         UseGpu = true;
         Language = "fr";
         InitialPrompt = "Bonjour. Voici une transcription en français, avec une ponctuation soignée et des phrases complètes.";

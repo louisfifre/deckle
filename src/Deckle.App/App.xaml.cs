@@ -329,7 +329,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         Milestone("notifications");
 
         // Speech provisioning is decoupled from boot. Whisper is one module
-        // among several: when its native runtime + default model aren't yet on
+        // among several: when its native runtime + a speech model aren't yet on
         // disk, the transcription engine is simply not composed and the rest of
         // the app runs its other modules normally. Provisioning happens on
         // demand from Settings › Dictation (SettingsHost.OpenSetupWizard, wired
@@ -340,7 +340,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // is guarded by this check; the event wiring further down carries the
         // same guard.
         bool speechReady = transcriptionPresent
-            && NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
+            && NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled();
         if (speechReady)
         {
             // Compose the engine with the Whisper backend — the App is the
@@ -358,7 +358,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             // dictation module stays dormant. Recorded as a boot milestone
             // (with the three readiness flags) so a support trace shows
             // exactly which part is missing.
-            Milestone($"engine_skipped present={transcriptionPresent} native={NativeRuntime.IsInstalled()} model={SpeechModels.IsDefaultInstalled()}");
+            Milestone($"engine_skipped present={transcriptionPresent} native={NativeRuntime.IsInstalled()} model={SpeechModels.IsAnyModelInstalled()}");
         }
 
         // Read-aloud (TTS) engine with the placeholder Chatterbox backend —
@@ -554,7 +554,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // page lives in Deckle.Transcription, which cannot see the Whisper child
         // module, so the App — which composes both — answers here.
         Settings.SettingsHost.IsSpeechProvisioned =
-            () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
+            () => NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled();
 
         // Settings module nav registry + cross-page search index — each module-owned
         // settings page declares its own nav identity (page tag + module PRI + icon) in

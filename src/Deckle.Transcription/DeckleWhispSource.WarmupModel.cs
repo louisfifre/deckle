@@ -270,6 +270,24 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnoredDetail, env_path, fallback);
     }
 
+    [Event(EvtModelFallback,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The configured model is not on disk, an installed one is used instead")]
+    public void ModelFallback()
+    {
+        if (IsEnabled()) WriteEvent(EvtModelFallback);
+    }
+
+    [Event(EvtModelFallbackDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "model fallback | reason=configured_file_absent | configured={0} | installed={1}")]
+    public void ModelFallbackDetail(string configured, string installed)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelFallbackDetail, configured, installed);
+    }
+
     // ── Whisper.cpp log redirect ────────────────────────────────────────
 
     [Event(EvtWhisperLogVerbose,

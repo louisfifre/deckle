@@ -23,20 +23,23 @@ public static class SpeechModels
     // Default Whisper model the engine targets when no override is set.
     // Single source of truth — TranscriptionEngine reads this rather than its
     // own copy of the filename. Swap it here when bumping the default.
-    public const string DefaultModelFileName = "ggml-large-v3.bin";
+    // base, not large-v3: the neophyte install path must not open on a 3 GB
+    // download. An install that already carries large-v3 keeps it through
+    // the installed-model fallback in WhisperBackend.ResolveModelPath.
+    public const string DefaultModelFileName = "ggml-base.bin";
 
     public static IReadOnlyList<ModelEntry> WhisperModels { get; } = new[]
     {
         new ModelEntry(
             Id:          "whisper-base",
-            FileName:    "ggml-base.bin",
+            FileName:    DefaultModelFileName,
             DisplayName: "Whisper base — multilingual, fast (~150 MB)",
             Url:         "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
             SizeBytes:   147_951_465L,
             Sha256:      "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe"),
         new ModelEntry(
             Id:          "whisper-large-v3",
-            FileName:    DefaultModelFileName,
+            FileName:    "ggml-large-v3.bin",
             DisplayName: "Whisper large-v3 — multilingual, best accuracy (~3 GB)",
             Url:         "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
             SizeBytes:   3_095_033_483L,
@@ -62,5 +65,33 @@ public static class SpeechModels
         }
     }
 
-    public static bool IsDefaultInstalled() => IsInstalled(DefaultWhisperModel);
+    // Provisioning/boot gates ask for a usable model, not specifically the
+    // default: the engine's ResolveModelPath falls back to the best installed
+    // model, so an install carrying only large-v3 is fully provisioned.
+    public static bool IsAnyModelInstalled() => WhisperModels.Any(IsInstalled);
+
+    // Best catalog model actually on disk in the given directory, largest
+    // first — quality tracks size in the Whisper family. Feeds the engine's
+    // installed-model fallback: an install whose settings target an absent
+    // file (a pre-ggml-base-default install that never wrote Engine.Model,
+    // a fresh install whose only download was the non-default choice) keeps
+    // transcribing with what it has instead of failing on a missing file.
+    public static string? BestInstalledFileName(string modelsDirectory)
+    {
+        try
+        {
+            return WhisperModels
+                .OrderByDescending(m => m.SizeBytes)
+                .Select(m => m.FileName)
+                .FirstOrDefault(f =>
+                {
+                    string path = Path.Combine(modelsDirectory, f);
+                    return File.Exists(path) && new FileInfo(path).Length > 0;
+                });
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

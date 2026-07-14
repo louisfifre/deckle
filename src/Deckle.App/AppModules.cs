@@ -30,7 +30,7 @@ internal static class AppModules
             Order = 100,
             // The engine ctor loads the model and faults without the native
             // runtime — the same probe that has always gated its composition.
-            IsProvisioned = () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled(),
+            IsProvisioned = () => NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled(),
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
