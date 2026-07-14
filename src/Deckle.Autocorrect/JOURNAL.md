@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — Mining chantier framed (grill session)
+
+Decisions, normative vocabulary in `CONTEXT.md` § Autocorrect: mistouch families are mined offline from the typed-sentence corpus and expressed as deterministic detector-generators — the judge only ever scores bounded candidates, never proposes. Routing follows ambiguity; commit-stage eligibility takes three cumulative conditions (impossible non-word trigger, unique repair, left context suffices), everything else feeds the sentence-stage judge. Families adopt automatically past a corpus-calibrated evidence threshold under the personal dictionary's discipline (inspectable, removable, undo writes suppression); the first mined batch alone is maintainer-reviewed. The typing stream captures everything typed on enrolled surfaces — runs segmented at backward repairs — serving both the error corpus and a natural-language corpus; same consent envelope, one JSONL kind among the autocorrect datasets; password surfaces stay outside, as everywhere. Surface profiles (closure/timing per application) calibrate the pause pass — an anticipated sentence-stage pass on a typing pause, so corrections land before the Enter that sends. Chantier order: typing stream first (corpus accrues while the rest is built), profile ventilation, miner, routing wiring, pause pass last. Evidence and pause thresholds are calibrated on the data, never guessed. ADR deferred until tested.
+
 ## 2026-07-14 — Final-punctuation re-edit can outrun corpus attribution
 
 Found that a manual re-edit ending immediately with sentence-final punctuation can close and emit the sentence before `WordEdited` reaches `SentenceCorpus`; the corrected slot may therefore retain the pre-edit attribution. A clean fix requires changing the tracker-to-corpus commit contract rather than delaying punctuation handling.
