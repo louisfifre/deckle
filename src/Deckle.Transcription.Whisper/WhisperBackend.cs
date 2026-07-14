@@ -175,31 +175,28 @@ public sealed class WhisperBackend : IAsrBackend
     //      bump without a 3 GB re-download or a dead engine.
     private string ResolveModelPath()
     {
-        var engine = _host.Transcription.Engine;
-        string modelFile = string.IsNullOrWhiteSpace(engine.Model)
-            ? SpeechModels.DefaultModelFileName
-            : engine.Model;
         string modelsDirectory = _host.ResolveModelsDirectory();
-        string fallback = Path.Combine(modelsDirectory, modelFile);
+        string? envPath = Environment.GetEnvironmentVariable("DECKLE_MODEL_PATH");
+        SpeechModelResolution resolution = SpeechModelResolver.ResolvePath(
+            _host.Transcription.Engine.Model,
+            modelsDirectory,
+            envPath,
+            SpeechModels.IsUsableModelFile);
 
-        if (!File.Exists(fallback)
-            && SpeechModels.BestInstalledFileName(modelsDirectory) is { } installed
-            && installed != modelFile)
+        if (resolution.InstalledFallbackFileName is { } installed)
         {
             DeckleWhispSource.Log.ModelFallback();
-            DeckleWhispSource.Log.ModelFallbackDetail(modelFile, installed);
-            fallback = Path.Combine(modelsDirectory, installed);
+            DeckleWhispSource.Log.ModelFallbackDetail(
+                resolution.ConfiguredFileName,
+                installed);
         }
 
-        string? envPath = Environment.GetEnvironmentVariable("DECKLE_MODEL_PATH");
-        if (string.IsNullOrWhiteSpace(envPath)) return fallback;
-        if (!Path.IsPathRooted(envPath) || !File.Exists(envPath))
+        if (resolution.IgnoredEnvironmentPath is { } ignored)
         {
             DeckleWhispSource.Log.ModelPathEnvIgnored();
-            DeckleWhispSource.Log.ModelPathEnvIgnoredDetail(envPath, fallback);
-            return fallback;
+            DeckleWhispSource.Log.ModelPathEnvIgnoredDetail(ignored, resolution.Path);
         }
-        return envPath;
+        return resolution.Path;
     }
 
     // ── Transcribe internals ─────────────────────────────────────────────────

@@ -120,10 +120,9 @@ public partial class App
             // from settings wins over the catalog default: the plan must ask
             // for what this install actually uses, not schedule the default's
             // download onto an install that never chose it.
-            SelectedModel = SpeechModels.WhisperModels.FirstOrDefault(m => m.Id == modelId)
-                ?? SpeechModels.WhisperModels.FirstOrDefault(m =>
-                    m.FileName == TranscriptionSettingsService.Instance.Current.Engine.Model)
-                ?? SpeechModels.DefaultWhisperModel,
+            SelectedModel = SpeechModelResolver.ResolveSelection(
+                modelId,
+                TranscriptionSettingsService.Instance.Current.Engine.Model),
             SelectedModules = ModulePresence.Choice
                 ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
         };
