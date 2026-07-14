@@ -564,6 +564,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // toast offers the explicit update flow. Lives in App.Update.cs.
         WireUpdater();
 
+        // Data-root move: Settings hands the validated target here; the live
+        // app cannot copy its own root, so it restarts into --relocate-data.
+        // Lives in App.Relocate.cs.
+        Settings.SettingsHost.RelocateDataRoot = StartDataRelocation;
+
         // Settings module nav registry + cross-page search index — each module-owned
         // settings page declares its own nav identity (page tag + module PRI + icon) in
         // its own assembly, via its <Module>SettingsModule.Describe(order). The
@@ -889,6 +894,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         // If launched with --settings (restart from Settings), automatically
         // reopen the Settings window on the right page.
         var cliArgs = Environment.GetCommandLineArgs();
+
+        // A relocated data root leaves its origin behind for this process to
+        // remove — the transaction's last step, run only once the new root is
+        // live and nothing holds the old tree. Guarded in App.Relocate.cs.
+        HandleDataRootCleanup(cliArgs);
+
         int settingsIdx = Array.IndexOf(cliArgs, "--settings");
         if (settingsIdx >= 0)
         {

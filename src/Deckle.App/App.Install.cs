@@ -46,6 +46,13 @@ public partial class App
             _ = RunUpdateApplyAsync(args);
             return true;
         }
+        if (Array.IndexOf(args, "--relocate-data") >= 0)
+        {
+            // The data-root move — the app restarted into a process that can
+            // copy the root it no longer holds open. Lives in App.Relocate.cs.
+            _ = RunDataRelocationAsync(args);
+            return true;
+        }
         return false;
     }
 

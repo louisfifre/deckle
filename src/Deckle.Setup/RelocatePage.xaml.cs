@@ -106,6 +106,24 @@ public sealed partial class RelocatePage : Page
                 return;
             }
 
+            // The app that spawned us is exiting right now, its sinks still
+            // flushing into the source — absorb that latency so the copy never
+            // snapshots files mid-write. Another Deckle still alive after the
+            // window is a genuine block, surfaced retryable.
+            step = "gate";
+            string exeDir = Path.GetDirectoryName(Environment.ProcessPath!)!;
+            string[] running = RunningProcesses.FromFolder(exeDir);
+            for (int i = 0; i < 30 && running.Length > 0; i++)
+            {
+                await Task.Delay(500, ct);
+                running = await Task.Run(() => RunningProcesses.FromFolder(exeDir), ct);
+            }
+            if (running.Length > 0)
+            {
+                Fail(step, "app_still_running", Loc.Get("Setup_Deploy_AppRunning"));
+                return;
+            }
+
             step = "copy";
             long startTicks = Environment.TickCount64;
             var progress = new Progress<(long copied, long total)>(p => OnCopyProgress(p.copied, p.total));

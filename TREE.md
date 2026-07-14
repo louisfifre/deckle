@@ -340,6 +340,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
+│   │   ├── App.Relocate.cs
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
