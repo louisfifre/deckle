@@ -85,15 +85,25 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtEngineReady);
     }
 
-    // Whether the contextual (CamemBERT) stage came up: true when its model was
-    // present and loaded, false when the engine runs gate + typo only.
+    // Which contextual (sentence-stage) engine came up and what its model load
+    // cost: engine names the winner of the composition-root preference order
+    // (RerankerEngines vocabulary), load_ms its wall-clock load. "none" means
+    // the engine runs gate + typo only, with deterministic sentence rules.
     [Event(EvtRerankerStatus,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Autocorrect contextual stage | model_present={0}")]
-    public void RerankerStatus(bool model_present)
+           Message = "Autocorrect contextual stage | engine={0} | load_ms={1}")]
+    public void RerankerStatus(string engine, long load_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtRerankerStatus, model_present);
+        if (IsEnabled()) WriteEvent(EvtRerankerStatus, engine, load_ms);
+    }
+
+    // Closed vocabulary for RerankerStatus.engine — one spelling, one place.
+    public static class RerankerEngines
+    {
+        public const string SentenceJudge = "sentence_judge"; // ONNX GenAI Qwen judge (DirectML)
+        public const string Camembert     = "camembert";      // masked-LM reranker
+        public const string None          = "none";           // deterministic rules only
     }
 
     // ── Surface gate ─────────────────────────────────────────────────────
