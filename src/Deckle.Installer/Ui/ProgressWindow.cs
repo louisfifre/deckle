@@ -176,7 +176,13 @@ internal sealed partial class ProgressWindow
 
     // ── UI-thread handlers ─────────────────────────────────────────────────────────
 
-    private void OnUserClose() => Cancelled?.Invoke();
+    private bool TryCancel()
+    {
+        Action? cancelled = Cancelled;
+        if (cancelled is null) return false;
+        cancelled();
+        return true;
+    }
 
     private void ApplyState()
     {
@@ -231,8 +237,11 @@ internal sealed partial class ProgressWindow
                 DestroyWindow(hwnd);
                 return nint.Zero;
             case WM_CLOSE:
-                s_instance?.OnUserClose();
-                DestroyWindow(hwnd);
+                // A subscribed install flow is cancellable. Uninstall deliberately
+                // has no subscriber once mutation starts, so its close request is
+                // ignored and the progress surface cannot disappear mid-removal.
+                if (s_instance?.TryCancel() == true)
+                    DestroyWindow(hwnd);
                 return nint.Zero;
             case WM_DESTROY:
                 PostQuitMessage(0);
