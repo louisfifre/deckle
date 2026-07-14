@@ -31,8 +31,12 @@
     <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
     <!-- Windows-integration primitives shared with the download stub — the
          install-mode pages (Folders/Deploy) place the app, register it in
-         Installed apps, and write DECKLE_DATA_ROOT through them. -->
+         Installed apps, and write DECKLE_DATA_ROOT through them; the update
+         check resolves releases through the shared ReleaseResolver. -->
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
+    <!-- The update check's one user-facing prompt (SetupNotifications) rides
+         the notification catalogue; the App registers it at boot. -->
+    <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
     <!-- Per-module provisioning primitives the install plan composes:
          the VAD model identity, the CamemBERT asset catalog, and the pinned
          anytype-cli bundle — each beside the backend it serves. -->

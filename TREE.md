@@ -974,6 +974,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── Update/
+│   │   │   └── UpdateService.cs
 │   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
@@ -991,10 +993,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
 │   │   ├── SetupContext.cs
+│   │   ├── SetupNotifications.cs
 │   │   ├── SetupWindow.xaml
 │   │   ├── SetupWindow.xaml.cs
 │   │   ├── SummaryPage.xaml
-│   │   └── SummaryPage.xaml.cs
+│   │   ├── SummaryPage.xaml.cs
+│   │   ├── UpdateDownloadPage.xaml
+│   │   └── UpdateDownloadPage.xaml.cs
 │   ├── Deckle.Shell/
 │   │   ├── AGENTS.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
 │   │   ├── AutostartService.cs

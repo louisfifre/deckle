@@ -46,9 +46,12 @@ public sealed partial class DeployPage : Page
         _context    = setup.Context;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
 
+        // Update mode reuses this page verbatim — same gate/copy/integrate —
+        // so only the narrative changes: the user asked for an update, not an
+        // install.
         setup.SetStepHeader(
-            Loc.Get("Setup_StepTitle_Deploy"),
-            Loc.Get("Setup_StepSubtitle_Deploy"));
+            Loc.Get(setup.Context.UpdateMode ? "Setup_StepTitle_UpdateApply" : "Setup_StepTitle_Deploy"),
+            Loc.Get(setup.Context.UpdateMode ? "Setup_StepSubtitle_UpdateApply" : "Setup_StepSubtitle_Deploy"));
         setup.SetBackEnabled(false);
         setup.SetNextEnabled(false);
         setup.SetNextVisible(false);
@@ -83,6 +86,19 @@ public sealed partial class DeployPage : Page
             // failure — the user closes the app and clicks Retry.
             SetStatus(Loc.Get("Setup_Deploy_Checking"));
             string[] running = await Task.Run(() => FindRunning(context));
+            if (running.Length > 0 && context.UpdateMode)
+            {
+                // Update chain: the old app spawned this process and is
+                // exiting right now — absorb its teardown latency instead of
+                // bouncing a one-click update into a manual Retry. A process
+                // still alive after the window is a genuine block and falls
+                // through to the usual retryable state.
+                for (int i = 0; i < 30 && running.Length > 0; i++)
+                {
+                    await Task.Delay(500);
+                    running = await Task.Run(() => FindRunning(context));
+                }
+            }
             if (running.Length > 0)
             {
                 DeckleSetupSource.Log.DeployBlockedByRunningApp();
