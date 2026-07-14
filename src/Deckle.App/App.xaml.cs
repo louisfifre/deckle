@@ -322,6 +322,9 @@ public partial class App : Microsoft.UI.Xaml.Application
         var toastChannel = new Deckle.Notifications.ToastChannel();
         var dispatcher = Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
         dispatcher.Catalog.Register(PlaygroundNotifications.All);
+        // Setup's update-available prompt — the wizard/updater is shell, not a
+        // presence-gated module, so it always registers.
+        dispatcher.Catalog.Register(Deckle.Setup.SetupNotifications.All);
         // A module's notification descriptors follow its presence: an absent
         // module has no surface that could raise them.
         if (autocorrectPresent)
@@ -555,6 +558,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // module, so the App — which composes both — answers here.
         Settings.SettingsHost.IsSpeechProvisioned =
             () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled();
+
+        // In-app updater: the General page's version-row hooks, plus the silent
+        // background check (installed launches only, opt-out in Settings) whose
+        // toast offers the explicit update flow. Lives in App.Update.cs.
+        WireUpdater();
 
         // Settings module nav registry + cross-page search index — each module-owned
         // settings page declares its own nav identity (page tag + module PRI + icon) in

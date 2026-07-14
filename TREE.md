@@ -343,6 +343,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
+│   │   ├── App.Update.cs
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
