@@ -56,7 +56,7 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
             throw new InvalidOperationException(
                 "schema_apply exige confirm:true avec un preview_id relu juste avant.");
 
-        if (!TryGetPreview(previewId, out SchemaPreview? preview))
+        if (!TryGetPreview(previewId, out SchemaPreview preview))
             throw new InvalidOperationException(
                 $"Preview inconnu « {previewId} ». Relance schema_preview.");
 
@@ -567,7 +567,7 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
         }
     }
 
-    private bool TryGetPreview(string id, out SchemaPreview? preview)
+    private bool TryGetPreview(string id, out SchemaPreview preview)
     {
         lock (_previewGate)
         {
@@ -577,7 +577,7 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
                 preview = stored.Preview;
                 return true;
             }
-            preview = null;
+            preview = null!;
             return false;
         }
     }
