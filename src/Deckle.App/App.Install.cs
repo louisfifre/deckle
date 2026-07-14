@@ -2,6 +2,7 @@ using Deckle.Core;
 using Deckle.Install;
 using Deckle.Modules;
 using Deckle.Setup;
+using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
@@ -36,6 +37,20 @@ public partial class App
         if (Array.IndexOf(args, "--install-continue") >= 0)
         {
             _ = RunInstallContinuationAsync(args);
+            return true;
+        }
+        if (Array.IndexOf(args, "--update-apply") >= 0)
+        {
+            // The in-app updater's second leg — the NEW payload placing itself
+            // over the live install. Lives in App.Update.cs beside the check.
+            _ = RunUpdateApplyAsync(args);
+            return true;
+        }
+        if (Array.IndexOf(args, "--relocate-data") >= 0)
+        {
+            // The data-root move — the app restarted into a process that can
+            // copy the root it no longer holds open. Lives in App.Relocate.cs.
+            _ = RunDataRelocationAsync(args);
             return true;
         }
         return false;
@@ -101,7 +116,13 @@ public partial class App
 
         var context = new SetupContext
         {
+            // Without --model (an update's continuation), the configured model
+            // from settings wins over the catalog default: the plan must ask
+            // for what this install actually uses, not schedule the default's
+            // download onto an install that never chose it.
             SelectedModel = SpeechModels.WhisperModels.FirstOrDefault(m => m.Id == modelId)
+                ?? SpeechModels.WhisperModels.FirstOrDefault(m =>
+                    m.FileName == TranscriptionSettingsService.Instance.Current.Engine.Model)
                 ?? SpeechModels.DefaultWhisperModel,
             SelectedModules = ModulePresence.Choice
                 ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),

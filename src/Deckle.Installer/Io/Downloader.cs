@@ -70,15 +70,6 @@ internal static class Downloader
         return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 
-    // Fetches a small text resource in full (the .sha256 sidecar). No streaming
-    // ceremony — these are a few dozen bytes.
-    public static async Task<string> GetStringAsync(string url, CancellationToken ct)
-    {
-        using var response = await s_http.GetAsync(url, ct).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-    }
-
     private static HttpClient CreateClient()
     {
         var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true })

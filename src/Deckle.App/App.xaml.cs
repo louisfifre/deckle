@@ -322,6 +322,9 @@ public partial class App : Microsoft.UI.Xaml.Application
         var toastChannel = new Deckle.Notifications.ToastChannel();
         var dispatcher = Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
         dispatcher.Catalog.Register(PlaygroundNotifications.All);
+        // Setup's update-available prompt — the wizard/updater is shell, not a
+        // presence-gated module, so it always registers.
+        dispatcher.Catalog.Register(Deckle.Setup.SetupNotifications.All);
         // A module's notification descriptors follow its presence: an absent
         // module has no surface that could raise them.
         if (autocorrectPresent)
@@ -555,6 +558,16 @@ public partial class App : Microsoft.UI.Xaml.Application
         // module, so the App — which composes both — answers here.
         Settings.SettingsHost.IsSpeechProvisioned =
             () => NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled();
+
+        // In-app updater: the General page's version-row hooks, plus the silent
+        // background check (installed launches only, opt-out in Settings) whose
+        // toast offers the explicit update flow. Lives in App.Update.cs.
+        WireUpdater();
+
+        // Data-root move: Settings hands the validated target here; the live
+        // app cannot copy its own root, so it restarts into --relocate-data.
+        // Lives in App.Relocate.cs.
+        Settings.SettingsHost.RelocateDataRoot = StartDataRelocation;
 
         // Settings module nav registry + cross-page search index — each module-owned
         // settings page declares its own nav identity (page tag + module PRI + icon) in
@@ -881,6 +894,12 @@ public partial class App : Microsoft.UI.Xaml.Application
         // If launched with --settings (restart from Settings), automatically
         // reopen the Settings window on the right page.
         var cliArgs = Environment.GetCommandLineArgs();
+
+        // A relocated data root leaves its origin behind for this process to
+        // remove — the transaction's last step, run only once the new root is
+        // live and nothing holds the old tree. Guarded in App.Relocate.cs.
+        HandleDataRootCleanup(cliArgs);
+
         int settingsIdx = Array.IndexOf(cliArgs, "--settings");
         if (settingsIdx >= 0)
         {

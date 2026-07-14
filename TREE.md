@@ -340,9 +340,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
+│   │   ├── App.Relocate.cs
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
+│   │   ├── App.Update.cs
 │   │   ├── App.Windows.cs
 │   │   ├── App.xaml
 │   │   ├── App.xaml.cs
@@ -735,6 +737,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Install.csproj
 │   │   ├── InstallPaths.cs
+│   │   ├── ReleaseResolver.cs
 │   │   ├── RunningProcesses.cs
 │   │   ├── Shortcut.cs
 │   │   ├── UninstallEntry.cs
@@ -746,8 +749,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── Uninstaller.cs
 │   │   ├── Io/
 │   │   │   └── Downloader.cs
-│   │   ├── Release/
-│   │   │   └── ReleaseResolver.cs
 │   │   ├── Ui/
 │   │   │   ├── MessageDialog.cs
 │   │   │   └── ProgressWindow.cs
@@ -978,6 +979,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── Update/
+│   │   │   └── UpdateService.cs
 │   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
 │   │   ├── ByteSizeFormatter.cs
 │   │   ├── ChoicesPage.xaml
@@ -993,13 +996,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InstallingPage.xaml.cs
 │   │   ├── InstallItem.cs
 │   │   ├── InstallPlan.cs
+│   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for the setup wizard — installer, updater, relocat…
 │   │   ├── ModulesPage.xaml
 │   │   ├── ModulesPage.xaml.cs
+│   │   ├── RelocatePage.xaml
+│   │   ├── RelocatePage.xaml.cs
 │   │   ├── SetupContext.cs
+│   │   ├── SetupNotifications.cs
 │   │   ├── SetupWindow.xaml
 │   │   ├── SetupWindow.xaml.cs
 │   │   ├── SummaryPage.xaml
-│   │   └── SummaryPage.xaml.cs
+│   │   ├── SummaryPage.xaml.cs
+│   │   ├── UpdateDownloadPage.xaml
+│   │   └── UpdateDownloadPage.xaml.cs
 │   ├── Deckle.Shell/
 │   │   ├── AGENTS.md  — [agent-instructions] System shell module — the low-level OS primitives (hotkeys, tray, autostart, me…
 │   │   ├── AutostartService.cs

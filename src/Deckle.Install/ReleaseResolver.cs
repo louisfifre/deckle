@@ -2,14 +2,16 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Deckle.Installer;
+namespace Deckle.Install;
 
 // ── ReleaseResolver ───────────────────────────────────────────────────────────
 //
-// Finds the release the installer should fetch. Re-running the installer means
-// "get me the newest Deckle", so the target is resolved live from GitHub rather
-// than baked into the stub — that decoupling is why the stub never needs a rebuild
-// per release.
+// Finds the newest published Deckle release on GitHub. Shared by the two
+// consumers of the release convention: the download stub ("get me the newest
+// Deckle" — the decoupling that spares the stub a rebuild per release) and the
+// installed app's update check (compare the newest tag against the registered
+// version). Lives here, below both, under this module's dependency-free and
+// AOT-safe contract — HttpClient and source-generated JSON only.
 //
 // Why the REST API and not /releases/latest: every 0.x release is published as a
 // pre-release, and GitHub's "latest" endpoint deliberately skips pre-releases. The
@@ -20,9 +22,9 @@ namespace Deckle.Installer;
 // (releases/download/v<X.Y.Z>/Deckle-v<X.Y.Z>.zip + .sha256); we still read them
 // from the assets list when present and fall back to the convention, so a future
 // naming tweak on one side doesn't silently break the other.
-internal static class ReleaseResolver
+public static class ReleaseResolver
 {
-    // The installer is distributed standalone, so owner/repo is a constant here
+    // The stub is distributed standalone, so owner/repo is a constant here
     // (unlike publish-app.ps1 which resolves it from the live git remote). Current
     // owner after the PelopeeNoire → louisfifre rename.
     private const string Repo = "louisfifre/deckle";
@@ -55,6 +57,18 @@ internal static class ReleaseResolver
 
         return new ResolvedRelease(tag, zip, sha, zipAsset?.Size ?? 0);
     }
+
+    // Fetches and parses the payload's .sha256 sidecar — `<hex> *<filename>`
+    // (sha256sum -c format), lower-cased hex returned.
+    public static async Task<string> GetSha256Async(ResolvedRelease release, CancellationToken ct)
+    {
+        string content = await s_http.GetStringAsync(release.Sha256Url, ct).ConfigureAwait(false);
+        return content.Trim().Split(' ', '\t', '\n', '\r')[0].ToLowerInvariant();
+    }
+
+    // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, the form the
+    // Installed-apps entry stores and version comparisons parse.
+    public static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
 
     private static GitHubAsset? FindAsset(GitHubRelease release, Func<string, bool> match) =>
         release.Assets?.FirstOrDefault(a => a.Name is not null && match(a.Name));

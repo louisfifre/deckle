@@ -24,12 +24,13 @@ public sealed partial class GeneralPage : Page
 
         ComposeAppearanceSection();
         ComposeStartupSection();
+        ComposeUpdatesSection();
         ComposeApplicationDataSection();
 
-        // The page-level "Reset all" gate spans all three section composers; re-gate it
+        // The page-level "Reset all" gate spans every section composer; re-gate it
         // whenever any goes dirty (each section link keeps its own gating too).
         foreach (var composer in new[]
-                 { _appearanceComposer, _startupComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
@@ -74,6 +75,21 @@ public sealed partial class GeneralPage : Page
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
+    // ── Composed Updates section ──────────────────────────────────────────────
+    //
+    // Same host-only pattern: the silent-check opt-out toggle. The version
+    // readout below it stays hand-authored (a status projection plus an
+    // action button, refreshed by LoadAndSync through the SettingsHost hooks).
+    private SettingsComposer? _updatesComposer;
+
+    private void ComposeUpdatesSection()
+    {
+        _updatesComposer = new SettingsComposer(UpdatesHost, ViewModel);
+        _updatesComposer.DirtyChanged += (_, _) =>
+            UpdatesResetLink.IsEnabled = _updatesComposer.IsDirty();
+        _updatesComposer.Compose(ViewModel.UpdatesSettings);
+    }
+
     // ── Composed backup-location card ─────────────────────────────────────────
     //
     // Same host-only pattern for the one settable value under "Application data":
@@ -110,9 +126,36 @@ public sealed partial class GeneralPage : Page
     {
         ViewModel.Load();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
+        // The move rides the App's relocate hook; unwired (tests, partial
+        // hosts) the affordance simply isn't there.
+        MoveDataFolderButton.Visibility = SettingsHost.RelocateDataRoot is null
+            ? Visibility.Collapsed : Visibility.Visible;
+        RefreshVersionCard();
         // Settle the page-reset gate off the freshly-loaded values — Load() may raise
         // no PropertyChanged on a clean profile, so no composer DirtyChanged would fire.
         GateResetAll();
+    }
+
+    // The version row reads through the SettingsHost hooks: the running build's
+    // version as the card description, and — when the silent check has parked a
+    // newer release — the offer text plus the "Install now" action. Unwired
+    // hooks (tests, partial hosts) leave a bare version row.
+    private void RefreshVersionCard()
+    {
+        VersionCard.Description = SettingsHost.GetAppVersion?.Invoke() ?? "";
+
+        string? available = SettingsHost.GetAvailableUpdateVersion?.Invoke();
+        bool hasUpdate = available is not null && SettingsHost.StartUpdate is not null;
+        UpdateAvailableText.Text = hasUpdate
+            ? Loc.Format("GeneralUpdateAvailableLabel_Format", available!)
+            : "";
+        UpdateAvailableText.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        InstallUpdateButton.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void InstallUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsHost.StartUpdate?.Invoke();
     }
 
     // ── Whole-page "Reset all" ────────────────────────────────────────────────
@@ -129,6 +172,7 @@ public sealed partial class GeneralPage : Page
         ResetAllButton.IsEnabled =
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
+            (_updatesComposer?.IsDirty() ?? false) ||
             (_applicationDataComposer?.IsDirty() ?? false);
     }
 
@@ -136,6 +180,7 @@ public sealed partial class GeneralPage : Page
     {
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
+        _updatesComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("General (all)");
@@ -168,6 +213,13 @@ public sealed partial class GeneralPage : Page
         DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
     }
 
+    private void ResetUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        _updatesComposer?.ResetAll();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Updates");
+    }
+
     // Opens the UserDataRoot in File Explorer — entry point for users who
     // want to inspect, back up, or wipe everything mutable the app stores.
     private void OpenDataFolderButton_Click(object sender, RoutedEventArgs e)
@@ -188,6 +240,124 @@ public sealed partial class GeneralPage : Page
             DeckleSettingsUxSource.Log.FolderPickerFailed();
             DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
         }
+    }
+
+    // ── Data-root move ──────────────────────────────────────────────────────
+    //
+    // The page owns the pre-flight only: pick a target, normalize it (a
+    // non-empty pick lands in a Deckle subfolder, so the later cleanup never
+    // entangles foreign files), refuse nesting and same-target, gate on the
+    // target drive's free space, then confirm — the restart makes this a
+    // held-until-confirmed action. The actual move runs in the dedicated
+    // relocate process behind SettingsHost.RelocateDataRoot, which re-checks
+    // space authoritatively before copying.
+
+    private async void MoveDataFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (SettingsHost.RelocateDataRoot is null) return;
+
+        try
+        {
+            var window = SettingsHost.GetSettingsWindow?.Invoke()
+                ?? throw new InvalidOperationException("Settings window not initialized");
+            FolderPickerCard.EmitFolderPickerAnchor(sender as FrameworkElement, window);
+
+            var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(window.AppWindow.Id)
+            {
+                SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.ComputerFolder,
+            };
+            var result = await picker.PickSingleFolderAsync();
+            if (result is null) return;
+
+            // Transient busy while the size scan runs — a data root can hold
+            // gigabytes across thousands of files.
+            MoveDataFolderButton.IsEnabled = false;
+            try { await BeginDataMoveAsync(result.Path); }
+            finally { MoveDataFolderButton.IsEnabled = true; }
+        }
+        catch (Exception ex)
+        {
+            DeckleSettingsUxSource.Log.FolderPickerFailed();
+            DeckleSettingsUxSource.Log.FolderPickerFailedDetail(ex.GetType().Name, ex.Message);
+        }
+    }
+
+    private async Task BeginDataMoveAsync(string picked)
+    {
+        DataMoveInfoBar.IsOpen = false;
+
+        string current = System.IO.Path.GetFullPath(AppPaths.UserDataRoot);
+        string target  = System.IO.Path.GetFullPath(picked);
+
+        if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any()
+            && !PathsEqual(target, current))
+            target = System.IO.Path.Combine(target, "Deckle");
+
+        if (PathsEqual(target, current))
+        {
+            ShowMoveOutcome(InfoBarSeverity.Informational, Loc.Get("Settings_MoveDataSameTarget"));
+            return;
+        }
+        if (IsNested(target, current) || IsNested(current, target)
+            || (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any()))
+        {
+            ShowMoveOutcome(InfoBarSeverity.Error, Loc.Get("Settings_MoveDataInvalidTarget"));
+            return;
+        }
+
+        long required = await Task.Run(() =>
+        {
+            long total = 0;
+            foreach (string file in Directory.EnumerateFiles(current, "*", System.IO.SearchOption.AllDirectories))
+            {
+                try { total += new FileInfo(file).Length; } catch { }
+            }
+            return total;
+        });
+        var drive = new DriveInfo(System.IO.Path.GetPathRoot(target)!);
+        if (drive.AvailableFreeSpace < required)
+        {
+            ShowMoveOutcome(InfoBarSeverity.Error, Loc.Format(
+                "Settings_MoveDataInsufficientSpace_Format",
+                drive.Name, FormatBytes(required), FormatBytes(drive.AvailableFreeSpace)));
+            return;
+        }
+
+        bool confirmed = await ConfirmationService.RequestAsync(
+            this.XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("Settings_MoveDataDialog_Title"),
+                Loc.Format("Settings_MoveDataDialog_Content_Format", FormatBytes(required), target),
+                Loc.Get("Settings_MoveDataDialog_PrimaryButton")));
+        if (!confirmed) return;
+
+        SettingsHost.RelocateDataRoot!.Invoke(target);
+    }
+
+    private void ShowMoveOutcome(InfoBarSeverity severity, string message)
+    {
+        DataMoveInfoBar.Severity = severity;
+        DataMoveInfoBar.Message = message;
+        DataMoveInfoBar.IsOpen = true;
+    }
+
+    private static bool PathsEqual(string a, string b) =>
+        string.Equals(
+            System.IO.Path.GetFullPath(a).TrimEnd('\\'),
+            System.IO.Path.GetFullPath(b).TrimEnd('\\'),
+            StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsNested(string child, string parent) =>
+        System.IO.Path.GetFullPath(child).TrimEnd('\\')
+            .StartsWith(System.IO.Path.GetFullPath(parent).TrimEnd('\\') + "\\",
+                StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)               return $"{bytes} B";
+        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
+        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
     }
 
     // Re-opens the first-run wizard on demand. Used to swap the Whisper

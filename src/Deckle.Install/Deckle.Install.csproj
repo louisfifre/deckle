@@ -6,7 +6,8 @@
   <!-- Windows integration of an installed Deckle — the primitives shared by the
        download stub (Deckle.Installer, NativeAOT) and the install-mode wizard
        (Deckle.Setup): install locations, Start Menu shortcut, Installed-apps
-       registration, DECKLE_DATA_ROOT, and the running-process gate. Deliberately
+       registration, DECKLE_DATA_ROOT, the running-process gate, and the GitHub
+       release resolver (stub download + in-app update check). Deliberately
        dependency-free and AOT-safe: no WinUI, no Deckle.* reference — Win32,
-       registry and source-generated COM only. -->
+       registry, source-generated COM and source-generated JSON only. -->
 </Project>

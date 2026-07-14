@@ -138,6 +138,50 @@
                 <StackPanel x:Name="StartupHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- ── Updates ─────────────────────────────────────────────── -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="GeneralPageUpdatesHeaderLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                    <HyperlinkButton x:Name="UpdatesResetLink"
+                                     x:Uid="Settings_SectionResetLink"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,0,2"
+                                     Click="ResetUpdates_Click" />
+                </Grid>
+
+                <!-- Composed: the silent-check opt-out — the section's lone
+                     settable value (GeneralViewModel.UpdatesSettings). -->
+                <StackPanel x:Name="UpdatesHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
+                <!-- Bespoke: the version readout is a live status projection,
+                     and "Install now" is an action — neither composes. The
+                     description carries the running version (code-behind);
+                     the content pair appears only while the silent check has
+                     a newer release parked. -->
+                <controls:SettingsCard x:Name="VersionCard"
+                                       x:Uid="GeneralVersionCard"
+                                       Tag="GeneralVersionCard"
+                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Download}}">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock x:Name="UpdateAvailableText"
+                                   VerticalAlignment="Center"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Visibility="Collapsed" />
+                        <Button x:Name="InstallUpdateButton"
+                                x:Uid="GeneralInstallUpdateButton"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Visibility="Collapsed"
+                                Click="InstallUpdateButton_Click" />
+                    </StackPanel>
+                </controls:SettingsCard>
+
                 <!-- ── Application data ────────────────────────────────────── -->
                 <TextBlock x:Uid="GeneralPageApplicationDataHeaderLabel"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
@@ -158,6 +202,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="DataFolderPathText"
                                    Grid.Column="0"
@@ -168,11 +213,23 @@
                                    TextTrimming="CharacterEllipsis"
                                    TextWrapping="NoWrap" />
                         <Button Grid.Column="1"
+                                x:Name="MoveDataFolderButton"
+                                x:Uid="GeneralDataFolderMoveButton"
+                                Visibility="Collapsed"
+                                Click="MoveDataFolderButton_Click" />
+                        <Button Grid.Column="2"
                                 x:Name="OpenDataFolderButton"
                                 x:Uid="GeneralDataFolderOpenButton"
                                 Click="OpenDataFolderButton_Click" />
                     </Grid>
                 </controls:SettingsCard>
+
+                <!-- Pre-flight outcomes of a data move that never left this
+                     page: same target, invalid target, not enough space. The
+                     move itself runs in the dedicated relocate process. -->
+                <InfoBar x:Name="DataMoveInfoBar"
+                         IsOpen="False"
+                         IsClosable="True" />
 
                 <controls:SettingsExpander x:Uid="GeneralBackupExpander"
                                            Tag="GeneralBackupExpander"

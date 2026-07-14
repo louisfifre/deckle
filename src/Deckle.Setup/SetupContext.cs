@@ -52,7 +52,29 @@ public sealed class SetupContext
 
     // The stub's temp root (`--cleanup <path>`), forwarded to the installed
     // process so it can delete the extraction once the wizard is done with it.
-    public string? CleanupDirectory { get; init; }
+    // In update mode the download page fills it in flight: the temp root it
+    // extracted the new payload into rides the same forwarding chain.
+    public string? CleanupDirectory { get; set; }
+
+    // ── Update mode (the wizard as updater) ─────────────────────────────────
+    //
+    // True on the two legs of an in-app update: the running app's download
+    // page (fetch + verify + extract + handoff), and the new payload's
+    // `--update-apply` process, which runs DeployPage over the live install —
+    // same gate/copy/integrate steps, folders and modules taken as they are
+    // instead of asked. PendingUpdate carries the release the check resolved;
+    // it is only read on the download leg.
+    public bool UpdateMode { get; init; }
+    public UpdateService.AvailableUpdate? PendingUpdate { get; init; }
+
+    // ── Relocate mode (the wizard as data mover) ────────────────────────────
+    //
+    // True in the dedicated `--relocate-data` process, which runs RelocatePage
+    // alone: copy the live data root into DataDirectory (reused as the target),
+    // flip DECKLE_DATA_ROOT, relaunch plain with the old root's cleanup. The
+    // copy cannot run inside the normal app — its sinks and engines hold files
+    // open under the very root being moved.
+    public bool RelocateMode { get; init; }
 
     // The two folders the Folders page collects. App = binaries (per user),
     // Data = models/settings/logs, relocatable off a saturated C:.

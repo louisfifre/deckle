@@ -31,8 +31,12 @@
     <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
     <!-- Windows-integration primitives shared with the download stub — the
          install-mode pages (Folders/Deploy) place the app, register it in
-         Installed apps, and write DECKLE_DATA_ROOT through them. -->
+         Installed apps, and write DECKLE_DATA_ROOT through them; the update
+         check resolves releases through the shared ReleaseResolver. -->
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
+    <!-- The update check's one user-facing prompt (SetupNotifications) rides
+         the notification catalogue; the App registers it at boot. -->
+    <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />
     <!-- Complete per-module provisioning gestures the install plan composes:
          each backend owns detection, download, placement and validation. -->
     <ProjectReference Include="..\Deckle.Vad\Deckle.Vad.csproj" />

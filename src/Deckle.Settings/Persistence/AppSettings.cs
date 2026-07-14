@@ -29,6 +29,15 @@ public sealed class AppSettings
     public AppearanceSettings  Appearance  { get; set; } = new();
     public OverlaySettings     Overlay     { get; set; } = new();
     public PasteSettings       Paste       { get; set; } = new();
+    public UpdatesSettings     Updates     { get; set; } = new();
+}
+
+// The silent update check (UpdateService, run by the App at boot then daily).
+// On by default with this opt-out — the one background network call the app
+// makes without a user act, so it stays a user's choice to keep.
+public sealed class UpdatesSettings
+{
+    public bool AutoCheckEnabled { get; set; } = true;
 }
 
 // Auto-paste after transcription. Off by default — the clipboard is the safe

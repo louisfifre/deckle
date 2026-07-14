@@ -66,6 +66,26 @@ public sealed class DeckleSetupSource : DeckleEventSource
     public const int EvtDeployFailed               = 37;
     public const int EvtDeployFailedDetail         = 38;
     public const int EvtDeployBlockedByRunningApp  = 39;
+    // In-app updater — silent check, download page, handoff to --update-apply.
+    public const int EvtUpdateUpToDate             = 40;
+    public const int EvtUpdateAvailable            = 41;
+    public const int EvtUpdateCheckDetail          = 42;
+    public const int EvtUpdateCheckFailed          = 43;
+    public const int EvtUpdateCheckFailedDetail    = 44;
+    public const int EvtUpdateCheckSkippedDetail   = 45;
+    public const int EvtUpdateDownloadStarted      = 46;
+    public const int EvtUpdateDownloadStartedDetail = 47;
+    public const int EvtUpdateDownloadFailed       = 48;
+    public const int EvtUpdateDownloadFailedDetail = 49;
+    public const int EvtUpdateHandoff              = 50;
+    public const int EvtUpdateHandoffDetail        = 51;
+    // Data-root relocation (--relocate-data, RelocatePage).
+    public const int EvtRelocateStarted            = 52;
+    public const int EvtRelocateStartedDetail      = 53;
+    public const int EvtRelocateCompleted          = 54;
+    public const int EvtRelocateCompletedDetail    = 55;
+    public const int EvtRelocateFailed             = 56;
+    public const int EvtRelocateFailedDetail       = 57;
 
     // ── Wizard lifecycle ──────────────────────────────────────────────────────
 
@@ -437,5 +457,189 @@ public sealed class DeckleSetupSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtSummaryShownDetail, success, items);
+    }
+
+    // ── In-app updater ────────────────────────────────────────────────────────
+
+    [Event(EvtUpdateUpToDate,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Deckle is up to date")]
+    public void UpdateUpToDate()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateUpToDate);
+    }
+
+    [Event(EvtUpdateAvailable,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A newer Deckle release is available")]
+    public void UpdateAvailable()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateAvailable);
+    }
+
+    [Event(EvtUpdateCheckDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "update check | installed={0} | latest={1} | newer={2}")]
+    public void UpdateCheckDetail(string installed, string latest, bool newer)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateCheckDetail, installed, latest, newer);
+    }
+
+    [Event(EvtUpdateCheckFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The update check could not complete")]
+    public void UpdateCheckFailed()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateCheckFailed);
+    }
+
+    [Event(EvtUpdateCheckFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "update check failed | reason={0}")]
+    public void UpdateCheckFailedDetail(string reason)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateCheckFailedDetail, reason);
+    }
+
+    [Event(EvtUpdateCheckSkippedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "update check skipped | reason={0}")]
+    public void UpdateCheckSkippedDetail(string reason)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateCheckSkippedDetail, reason);
+    }
+
+    [Event(EvtUpdateDownloadStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Downloading the Deckle update")]
+    public void UpdateDownloadStarted()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateDownloadStarted);
+    }
+
+    [Event(EvtUpdateDownloadStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "update download | version={0} | url={1} | size_bytes={2}")]
+    public void UpdateDownloadStartedDetail(string version, string url, long size_bytes)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateDownloadStartedDetail, version, url, size_bytes);
+    }
+
+    [Event(EvtUpdateDownloadFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The update download failed")]
+    public void UpdateDownloadFailed()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateDownloadFailed);
+    }
+
+    [Event(EvtUpdateDownloadFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "update download failed | step={0} | reason={1}")]
+    public void UpdateDownloadFailedDetail(string step, string reason)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateDownloadFailedDetail, step, reason);
+    }
+
+    [Event(EvtUpdateHandoff,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Handing off to the downloaded version")]
+    public void UpdateHandoff()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateHandoff);
+    }
+
+    [Event(EvtUpdateHandoffDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "update handoff | exe={0} | cleanup={1}")]
+    public void UpdateHandoffDetail(string exe, string cleanup)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateHandoffDetail, exe, cleanup);
+    }
+
+    // ── Data-root relocation ──────────────────────────────────────────────────
+
+    [Event(EvtRelocateStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Moving the app data folder")]
+    public void RelocateStarted()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateStarted);
+    }
+
+    [Event(EvtRelocateStartedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "relocate | from={0} | to={1} | bytes={2}")]
+    public void RelocateStartedDetail(string from, string to, long bytes)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateStartedDetail, from, to, bytes);
+    }
+
+    [Event(EvtRelocateCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The app data folder moved")]
+    public void RelocateCompleted()
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateCompleted);
+    }
+
+    [Event(EvtRelocateCompletedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "relocate done | copied_bytes={0} | files={1} | skipped={2} | duration_ms={3}")]
+    public void RelocateCompletedDetail(long copied_bytes, int files, int skipped, long duration_ms)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateCompletedDetail, copied_bytes, files, skipped, duration_ms);
+    }
+
+    [Event(EvtRelocateFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The app data move failed")]
+    public void RelocateFailed()
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateFailed);
+    }
+
+    [Event(EvtRelocateFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "relocate failed | step={0} | reason={1}")]
+    public void RelocateFailedDetail(string step, string reason)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateFailedDetail, step, reason);
     }
 }

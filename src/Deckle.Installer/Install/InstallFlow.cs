@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http;
 
+using Deckle.Install;
+
 namespace Deckle.Installer;
 
 // ── InstallFlow ───────────────────────────────────────────────────────────────
@@ -57,13 +59,13 @@ internal static class InstallFlow
         {
             window.ReportMarquee("Finding the latest Deckle release…");
             ReleaseResolver.ResolvedRelease release = await ReleaseResolver.ResolveLatestAsync(ct).ConfigureAwait(false);
-            string version = BareVersion(release.Tag);
+            string version = ReleaseResolver.BareVersion(release.Tag);
 
             tempDir = Path.Combine(Path.GetTempPath(), "Deckle-Setup-" + Guid.NewGuid().ToString("N")[..8]);
             Directory.CreateDirectory(tempDir);
             string zipPath = Path.Combine(tempDir, $"Deckle-{release.Tag}.zip");
 
-            string expectedSha = ParseSha256Sidecar(await Downloader.GetStringAsync(release.Sha256Url, ct).ConfigureAwait(false));
+            string expectedSha = await ReleaseResolver.GetSha256Async(release, ct).ConfigureAwait(false);
 
             window.ReportMarquee($"Downloading Deckle {version}…");
             string actualSha = await Downloader.DownloadAsync(release.ZipUrl, zipPath, (done, total) =>
@@ -156,17 +158,6 @@ internal static class InstallFlow
         return Directory.EnumerateFiles(root, "Deckle.exe", SearchOption.AllDirectories)
             .OrderBy(path => path.Count(c => c == Path.DirectorySeparatorChar))
             .FirstOrDefault();
-    }
-
-    // "v0.7.1" → "0.7.1" — the tag with its leading v dropped, as the wizard and the
-    // status text want it.
-    private static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
-
-    // The .sha256 sidecar is `<hex> *<filename>` (sha256sum -c format). Take the hex.
-    private static string ParseSha256Sidecar(string content)
-    {
-        string first = content.Trim().Split(' ', '\t', '\n', '\r')[0];
-        return first.ToLowerInvariant();
     }
 
     private static void TryDelete(string path)

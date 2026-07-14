@@ -63,6 +63,18 @@ public partial class GeneralViewModel : ObservableObject
         finally { _isSyncing = false; }
     }
 
+    // ── Updates ──────────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    public partial bool UpdateAutoCheckEnabled { get; set; }
+
+    partial void OnUpdateAutoCheckEnabledChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Updates.AutoCheckEnabled", value.ToString());
+        PushToSettings();
+    }
+
     // ── Backup ───────────────────────────────────────────────────────────────
     //
     // BackupDirectory is the user override for where snapshots live (empty =
@@ -122,12 +134,14 @@ public partial class GeneralViewModel : ObservableObject
         // only covers the gap before the first Load.
         var appearance = new AppearanceSettings();
         var paths = new PathsSettings();
+        var updates = new UpdatesSettings();
 
         Theme = appearance.Theme;
         // Autostart is OS-backed (registry + scheduled task), not an AppSettings
         // POCO — its conceptual default lives on the startup facade.
         AutostartEnabled = StartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
+        UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
 
         // _isSyncing stays true — Load() will set it to false.
     }
@@ -141,6 +155,7 @@ public partial class GeneralViewModel : ObservableObject
             Theme = shell.Appearance.Theme;
             AutostartEnabled = StartupService.StartsAtLogon();
             BackupDirectory = shell.Paths.BackupDirectory;
+            UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
         }
         finally
         {
@@ -157,6 +172,7 @@ public partial class GeneralViewModel : ObservableObject
         var shell = SettingsService.Instance.Current;
         shell.Appearance.Theme = Theme;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
+        shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
         SettingsService.Instance.Save();
     }
 

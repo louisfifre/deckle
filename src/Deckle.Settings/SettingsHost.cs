@@ -55,4 +55,21 @@ public static class SettingsHost
     // provisioning knowledge — Deckle.Transcription can't see the Whisper child
     // module. Null-safe: callers treat "unwired" as provisioned.
     public static Func<bool>? IsSpeechProvisioned;
+
+    // Version row on the General page. The update knowledge lives in
+    // Deckle.Setup (UpdateService) which this module must not reference —
+    // the App answers through these hooks, same posture as the wizard entry
+    // point above. GetAppVersion is the running build's display version;
+    // GetAvailableUpdateVersion is the newer release the silent check parked
+    // (null = none known); StartUpdate opens the explicit update flow.
+    public static Func<string>? GetAppVersion;
+    public static Func<string?>? GetAvailableUpdateVersion;
+    public static Action? StartUpdate;
+
+    // Starts the data-root move to the given target folder: the App restarts
+    // the process in its dedicated --relocate-data mode, since the live app
+    // cannot copy the root its own sinks and engines hold open. The General
+    // page validates (space, nesting, emptiness) and confirms before calling;
+    // unwired (null) hides the Move affordance entirely.
+    public static Action<string>? RelocateDataRoot;
 }

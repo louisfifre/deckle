@@ -1506,5 +1506,65 @@
   <data name="Setup_Deploy_Failed_Format" xml:space="preserve">
     <value>Installation failed — {0}</value>
   </data>
+  <data name="Setup_StepTitle_Update" xml:space="preserve">
+    <value>Updating Deckle</value>
+  </data>
+  <data name="Setup_StepSubtitle_Update" xml:space="preserve">
+    <value>Downloading the new version. Deckle restarts when it is ready.</value>
+  </data>
+  <data name="Setup_Update_Resolving" xml:space="preserve">
+    <value>Preparing the download…</value>
+  </data>
+  <data name="Setup_Update_Extracting" xml:space="preserve">
+    <value>Extracting…</value>
+  </data>
+  <data name="Setup_Update_HandingOff" xml:space="preserve">
+    <value>Restarting Deckle…</value>
+  </data>
+  <data name="Setup_Update_Failed_Format" xml:space="preserve">
+    <value>Update failed — {0}</value>
+  </data>
+  <data name="Setup_Update_PayloadMissingExe" xml:space="preserve">
+    <value>the downloaded package did not contain Deckle.exe</value>
+  </data>
+  <data name="Setup_StepTitle_UpdateApply" xml:space="preserve">
+    <value>Installing the update</value>
+  </data>
+  <data name="Setup_StepSubtitle_UpdateApply" xml:space="preserve">
+    <value>Replacing the app files. Deckle restarts when it is done.</value>
+  </data>
+  <data name="SetupNotifications_UpdateAvailable_Title" xml:space="preserve">
+    <value>Deckle update available</value>
+  </data>
+  <data name="SetupNotifications_UpdateAvailable_Body_Format" xml:space="preserve">
+    <value>Deckle {0} is ready to install.</value>
+  </data>
+  <data name="SetupNotifications_UpdateAvailable_Install" xml:space="preserve">
+    <value>Install now</value>
+  </data>
+  <data name="SetupNotifications_UpdateAvailable_Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Setup_StepTitle_Relocate" xml:space="preserve">
+    <value>Moving app data</value>
+  </data>
+  <data name="Setup_StepSubtitle_Relocate" xml:space="preserve">
+    <value>Copying the data to its new folder. Deckle restarts when it is done.</value>
+  </data>
+  <data name="Setup_Relocate_Checking" xml:space="preserve">
+    <value>Checking free space…</value>
+  </data>
+  <data name="Setup_Relocate_Switching" xml:space="preserve">
+    <value>Switching to the new folder…</value>
+  </data>
+  <data name="Setup_Relocate_Restarting" xml:space="preserve">
+    <value>Restarting Deckle…</value>
+  </data>
+  <data name="Setup_Relocate_Failed_Format" xml:space="preserve">
+    <value>Move failed — {0}</value>
+  </data>
+  <data name="Setup_Relocate_InsufficientSpace_Format" xml:space="preserve">
+    <value>not enough space on {0} ({1} needed, {2} free)</value>
+  </data>
 
 </root>
