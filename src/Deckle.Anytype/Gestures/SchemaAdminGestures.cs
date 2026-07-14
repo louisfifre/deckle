@@ -8,7 +8,10 @@ namespace Deckle.Anytype;
 public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliases aliases)
 {
     private const int PageLimit = 100;
-    private readonly Dictionary<string, SchemaPreview> _previews = new(StringComparer.Ordinal);
+    private const int MaxPreviews = 32;
+    private static readonly TimeSpan PreviewLifetime = TimeSpan.FromMinutes(15);
+    private readonly object _previewGate = new();
+    private readonly Dictionary<string, StoredPreview> _previews = new(StringComparer.Ordinal);
 
     public async Task<string> InspectAsync(string space, CancellationToken ct = default)
     {
@@ -39,7 +42,7 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
         SchemaSnapshot snapshot = await BuildSnapshotAsync(spaceId, manifest, ct);
         SchemaPreview preview = BuildPreview(space, spaceId, manifest, snapshot);
 
-        _previews[preview.Id] = preview;
+        StorePreview(preview);
 
         DeckleAnytypeSource.Log.GestureCompleted("schema_preview", Elapsed(started));
         return RenderPreview(preview);
@@ -53,7 +56,7 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
             throw new InvalidOperationException(
                 "schema_apply exige confirm:true avec un preview_id relu juste avant.");
 
-        if (!_previews.TryGetValue(previewId, out SchemaPreview? preview))
+        if (!TryGetPreview(previewId, out SchemaPreview? preview))
             throw new InvalidOperationException(
                 $"Preview inconnu « {previewId} ». Relance schema_preview.");
 
@@ -193,7 +196,7 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
             applied.Add($"propriétés attachées à {type.Key}");
         }
 
-        _previews.Remove(previewId);
+        RemovePreview(previewId);
 
         DeckleAnytypeSource.Log.GestureCompleted("schema_apply", Elapsed(started));
         return applied.Count == 0
@@ -548,6 +551,55 @@ public sealed class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpaceAliase
     }
 
     private static double Elapsed(DateTime startUtc) => (DateTime.UtcNow - startUtc).TotalMilliseconds;
+
+    private void StorePreview(SchemaPreview preview)
+    {
+        lock (_previewGate)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            RemoveExpiredPreviews(now);
+            if (_previews.Count >= MaxPreviews)
+            {
+                string oldest = _previews.MinBy(pair => pair.Value.CreatedAt).Key;
+                _previews.Remove(oldest);
+            }
+            _previews[preview.Id] = new StoredPreview(preview, now);
+        }
+    }
+
+    private bool TryGetPreview(string id, out SchemaPreview? preview)
+    {
+        lock (_previewGate)
+        {
+            RemoveExpiredPreviews(DateTimeOffset.UtcNow);
+            if (_previews.TryGetValue(id, out StoredPreview? stored))
+            {
+                preview = stored.Preview;
+                return true;
+            }
+            preview = null;
+            return false;
+        }
+    }
+
+    private void RemovePreview(string id)
+    {
+        lock (_previewGate)
+            _previews.Remove(id);
+    }
+
+    private void RemoveExpiredPreviews(DateTimeOffset now)
+    {
+        foreach (string id in _previews
+            .Where(pair => now - pair.Value.CreatedAt >= PreviewLifetime)
+            .Select(pair => pair.Key)
+            .ToArray())
+        {
+            _previews.Remove(id);
+        }
+    }
+
+    private sealed record StoredPreview(SchemaPreview Preview, DateTimeOffset CreatedAt);
 
     private sealed record SchemaPreview(
         string Id,
