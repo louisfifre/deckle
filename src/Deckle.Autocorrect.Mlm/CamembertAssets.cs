@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Autocorrect.Mlm;
 
 // ── CamembertAssets ───────────────────────────────────────────────────────────
@@ -74,4 +76,30 @@ public static class CamembertAssets
         File.Exists(Path.Combine(modelDirectory, "model.onnx"))
         && File.Exists(Path.Combine(modelDirectory, "sentencepiece.bpe.model"))
         && File.Exists(Path.Combine(modelDirectory, "tokenizer.json"));
+
+    public static async Task<ProvisioningResult> ProvisionAsync(
+        string modelDirectory,
+        IProgress<Downloader.DownloadProgress> progress,
+        CancellationToken ct)
+    {
+        long completedBytes = 0;
+        foreach (AssetFile file in Files)
+        {
+            long baseBytes = completedBytes;
+            var cumulativeProgress = new Progress<Downloader.DownloadProgress>(p =>
+                progress.Report(new Downloader.DownloadProgress(
+                    baseBytes + p.BytesDownloaded, TotalSizeBytes)));
+
+            string destination = Path.Combine(modelDirectory, file.FileName);
+            Downloader.DownloadResult download = await Downloader.DownloadAsync(
+                file.Url, destination, file.Sha256, cumulativeProgress, ct);
+            if (!download.Success)
+                return ProvisioningResult.Fail(
+                    $"{file.FileName}: {download.ErrorMessage ?? "download failed"}");
+
+            completedBytes += file.SizeBytes;
+        }
+
+        return ProvisioningResult.Ok(TotalSizeBytes);
+    }
 }

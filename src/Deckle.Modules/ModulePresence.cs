@@ -9,10 +9,9 @@ namespace Deckle.Modules;
 // module's engine or registering its settings pages; the module selector reads
 // Choice for its initial checkboxes and calls Save when the user commits.
 //
-// Presence is the choice axis only. Whether a chosen module's heavy assets are
-// actually on disk is the descriptor's IsProvisioned — a chosen-but-unprovisioned
-// module is present (its pages register, its setup entry points show) and simply
-// not runnable yet.
+// Presence is the choice axis only. Each domain module owns the probe for its
+// heavy assets; the setup plan composes those probes without duplicating them in
+// the presence catalogue.
 //
 // No choice on disk means everything is present: installs that predate the
 // presence model, and dev builds, keep behaving as before the model existed.

@@ -33,9 +33,8 @@
          install-mode pages (Folders/Deploy) place the app, register it in
          Installed apps, and write DECKLE_DATA_ROOT through them. -->
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
-    <!-- Per-module provisioning primitives the install plan composes:
-         the VAD model identity, the CamemBERT asset catalog, and the pinned
-         anytype-cli bundle — each beside the backend it serves. -->
+    <!-- Complete per-module provisioning gestures the install plan composes:
+         each backend owns detection, download, placement and validation. -->
     <ProjectReference Include="..\Deckle.Vad\Deckle.Vad.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj" />
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />

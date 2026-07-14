@@ -1,3 +1,5 @@
+using Deckle.Core;
+
 namespace Deckle.Vad;
 
 // Identity of the Silero VAD model VadService provisions and loads: file name,
@@ -12,4 +14,20 @@ public static class SileroVadModel
     // Stable with the pin: the URL points at an immutable release tag, so the
     // byte count cannot drift. Feeds the wizard's download estimate.
     public const long   SizeBytes = 2_327_524;
+
+    public static bool IsInstalled(string modelDirectory) =>
+        File.Exists(Path.Combine(modelDirectory, FileName));
+
+    public static async Task<ProvisioningResult> ProvisionAsync(
+        string modelDirectory,
+        IProgress<Downloader.DownloadProgress>? progress,
+        CancellationToken ct)
+    {
+        string destination = Path.Combine(modelDirectory, FileName);
+        Downloader.DownloadResult download = await Downloader.DownloadAsync(
+            Url, destination, Sha256, progress, ct).ConfigureAwait(false);
+        return download.Success
+            ? ProvisioningResult.Ok(new FileInfo(destination).Length, download.ActualSha256)
+            : ProvisioningResult.Fail(download.ErrorMessage ?? "download failed");
+    }
 }

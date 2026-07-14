@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <!-- The autocorrect engine: AccentVariant / ISentenceReranker the probe and
          the reranker build against. -->
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />

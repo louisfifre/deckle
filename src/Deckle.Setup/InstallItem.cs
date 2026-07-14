@@ -27,11 +27,5 @@ internal sealed record InstallItem
 
     public required Func<bool> IsInstalled { get; init; }
 
-    public required Func<IProgress<Downloader.DownloadProgress>, CancellationToken, Task<InstallItemOutcome>> RunAsync { get; init; }
-}
-
-internal sealed record InstallItemOutcome(bool Success, string? ErrorMessage, long? Bytes, string? Sha256 = null)
-{
-    public static InstallItemOutcome Ok(long? bytes, string? sha256 = null) => new(true, null, bytes, sha256);
-    public static InstallItemOutcome Fail(string message) => new(false, message, null);
+    public required Func<IProgress<Downloader.DownloadProgress>, CancellationToken, Task<ProvisioningResult>> RunAsync { get; init; }
 }

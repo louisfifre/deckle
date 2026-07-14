@@ -567,7 +567,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Win32Clipboard.cs
 │   │   │   └── Win32Util.cs
 │   │   ├── Io/
-│   │   │   └── Downloader.cs
+│   │   │   ├── Downloader.cs
+│   │   │   └── ProvisioningResult.cs
 │   │   ├── Paths/
 │   │   │   └── AppPaths.cs
 │   │   ├── CorpusPaths.cs

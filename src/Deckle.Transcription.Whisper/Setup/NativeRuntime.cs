@@ -198,6 +198,37 @@ public static class NativeRuntime
         return extracted;
     }
 
+    public static async Task<ProvisioningResult> ProvisionAsync(
+        IProgress<Downloader.DownloadProgress> progress,
+        CancellationToken ct)
+    {
+        if (BundleUrlIsPlaceholder)
+            return ProvisioningResult.Fail(
+                "auto-download URL is a placeholder; use Browse... on the previous step");
+
+        Directory.CreateDirectory(AppPaths.NativeDirectory);
+        string zipPath = Path.Combine(AppPaths.NativeDirectory, "_bundle.zip");
+        try
+        {
+            Downloader.DownloadResult download = await Downloader.DownloadAsync(
+                CurrentBundle.Url, zipPath, CurrentBundle.Sha256, progress, ct);
+            if (!download.Success)
+                return ProvisioningResult.Fail(download.ErrorMessage ?? "download failed");
+
+            int extracted = await InstallFromZipAsync(zipPath, ct);
+            if (extracted < RequiredDllNames.Count)
+                return ProvisioningResult.Fail(
+                    $"bundle is incomplete (extracted {extracted}/{RequiredDllNames.Count} DLLs)");
+
+            return ProvisioningResult.Ok(CurrentBundle.SizeBytes, download.ActualSha256);
+        }
+        finally
+        {
+            try { if (File.Exists(zipPath)) File.Delete(zipPath); }
+            catch { /* best-effort cleanup */ }
+        }
+    }
+
     // Reports which catalog DLLs are missing from NativeDirectory. Empty
     // result = fully installed. Used by the wizard to surface a precise
     // status ("4 of 8 files installed") and by diagnostics surfaces.

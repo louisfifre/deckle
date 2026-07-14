@@ -1,5 +1,6 @@
 using System.IO;
 using System.IO.Compression;
+using Deckle.Core;
 
 namespace Deckle.Anytype;
 
@@ -79,6 +80,31 @@ public static class BackendInstallation
 
             return File.Exists(ExecutablePath);
         }, ct).ConfigureAwait(false);
+    }
+
+    public static async Task<ProvisioningResult> ProvisionAsync(
+        IProgress<Downloader.DownloadProgress> progress,
+        CancellationToken ct)
+    {
+        Directory.CreateDirectory(InstallDirectory);
+        string zipPath = Path.Combine(InstallDirectory, "_bundle.zip");
+        try
+        {
+            Downloader.DownloadResult download = await Downloader.DownloadAsync(
+                CurrentBundle.Url, zipPath, CurrentBundle.Sha256, progress, ct);
+            if (!download.Success)
+                return ProvisioningResult.Fail(download.ErrorMessage ?? "download failed");
+
+            bool installed = await InstallFromZipAsync(zipPath, ct);
+            return installed
+                ? ProvisioningResult.Ok(CurrentBundle.SizeBytes, download.ActualSha256)
+                : ProvisioningResult.Fail("bundle did not contain anytype.exe");
+        }
+        finally
+        {
+            try { if (File.Exists(zipPath)) File.Delete(zipPath); }
+            catch { /* best-effort cleanup */ }
+        }
     }
 
     // The serve invocation the supervisor spawns. --no-update-check because
