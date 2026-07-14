@@ -1158,6 +1158,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MarginCalibrationTests.cs
 │   │   ├── MorphalouReaderTests.cs
+│   │   ├── OnnxJudgeSerialCollection.cs
 │   │   ├── OnnxSentenceScorerTests.cs
 │   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs

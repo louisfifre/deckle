@@ -16,6 +16,7 @@ namespace Deckle.Autocorrect.Tests;
 // judge is staged). Where both are present it is a deliberate, supervised run: the
 // judge is seconds per slot, so a full corpus is minutes, and nothing is applied.
 [Trait("Category", "gesture")]
+[Collection(OnnxJudgeSerialCollection.Name)]
 public sealed class SentenceReplayGestureTests
 {
     private readonly ITestOutputHelper _out;
@@ -60,9 +61,10 @@ public sealed class SentenceReplayGestureTests
         Console.Error.WriteLine($"[replay] loading judge — ep={ep}, dir={judgeDir}");
 
         // margin 0 → the judge returns its raw argmax and gap for every slot, so
-        // the sweep, not the model, sets the operating margin.
-        using OnnxSlotReranker? judge = OnnxSlotReranker.TryLoad(judgeDir, margin: 0.0, executionProvider: ep);
-        Assert.NotNull(judge);
+        // the sweep, not the model, sets the operating margin. Constructed
+        // directly, not TryLoad: a staged-but-broken export must fail loudly,
+        // and TryLoad swallows the load exception this test needs to see.
+        using var judge = new OnnxSlotReranker(new OnnxSentenceScorer(judgeDir, margin: 0.0, ep));
         Console.Error.WriteLine("[replay] judge loaded — replaying corpus, nothing is applied");
 
         // The maintainer's truth sheet sits next to the corpus. The file-based Run
