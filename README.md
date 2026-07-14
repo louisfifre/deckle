@@ -4,7 +4,7 @@
 
 An unpackaged Windows 11 desktop app built on WinUI 3, .NET 10, and the Windows App SDK. It lives in the tray and starts with you.
 
-> **Status — personal project, early public release (v0.6.0).** Tested on two Windows 11 machines. Windows 11 only, unpackaged (no Microsoft Store). No account, no cloud dependency, no telemetry leaving the device.
+> **Status — personal project, early public release.** Tested on two Windows 11 machines. Windows 11 only, unpackaged (no Microsoft Store). No account, no cloud dependency, no telemetry leaving the device.
 
 <!-- deckle-stats:start -->
 ## Development pulse
@@ -39,7 +39,7 @@ Transcription runs locally through Whisper ([whisper.cpp](https://github.com/gge
 
 **Type anywhere, and the accents you skipped come back — on your terms, app by app.** French-first today.
 
-Deckle watches the keyboard only in apps you have enrolled, and never in password fields, terminals, or code editors. Corrections stay conservative and reversible: a single Backspace takes any of them back. What it learns lives in a personal dictionary you can read, edit, and clear at will.
+Deckle watches the keyboard only in apps you have enrolled, and never in password fields, terminals, or code editors. Corrections stay conservative and reversible: the correction inlay lets you take any of them back explicitly. What it learns lives in a personal dictionary you can read, edit, and clear at will.
 
 ### Ambient lighting
 
@@ -76,7 +76,7 @@ To run it at every login: **Settings → General → Launch at startup**. It wri
 
 ### Build from source
 
-For contributors and the curious. Bootstrap a fresh Windows 11 machine, then build and run:
+For contributors and the curious. Read the [contribution notes](CONTRIBUTING.md), bootstrap a fresh Windows 11 machine, then build and run:
 
 ```powershell
 scripts/lib/bootstrap-dev-env.ps1              # .NET 10, VS 2026, tooling
@@ -93,8 +93,6 @@ The interactive menu at `scripts/deckle.ps1` wraps every dev workflow. The full 
 - A global hotkey is registered while the app runs. The clipboard write and auto-paste happen only after a UI Automation check that the target actually accepts text.
 - Autocorrect never observes password fields, and acts only in apps you enroll.
 - Telemetry is strictly opt-in, gated by an explicit consent dialog, and stored locally.
-
-Full posture in [SECURITY.md](SECURITY.md); the audit that preceded the public release is in [`docs/security-review--pre-publication--0.1.md`](docs/security-review--pre-publication--0.1.md).
 
 ---
 

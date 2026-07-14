@@ -1,6 +1,6 @@
 # Third-party notices
 
-Deckle depends on the following third-party components. License texts are reproduced from the upstream projects.
+Deckle depends on the following third-party components and data sources. This file records their provenance and applicable licenses; the linked upstream projects carry the authoritative license texts.
 
 ## Native dependencies
 
@@ -38,15 +38,26 @@ Deckle depends on the following third-party components. License texts are reprod
 
 ## .NET / NuGet packages
 
-The following packages are referenced via `src/Deckle.App/Deckle.App.csproj`. Each ships under its own license — see the package metadata on nuget.org or the upstream repository for the full text.
+The following third-party packages are referenced across the projects under `src/`. Versions are pinned centrally in `Directory.Packages.props`. Each package ships under its own license — see its NuGet metadata or upstream repository for the authoritative text.
 
 - `Microsoft.WindowsAppSDK` — MIT — Microsoft.
 - `Microsoft.Windows.SDK.BuildTools` — MIT — Microsoft.
 - `Microsoft.Graphics.Win2D` — MIT — Microsoft.
 - `CommunityToolkit.Mvvm` — MIT — Microsoft / .NET Foundation.
 - `CommunityToolkit.WinUI.Controls.SettingsControls` — MIT — .NET Foundation / Microsoft.
-- `CommunityToolkit.WinUI.Extensions` / `Helpers` / `Triggers` — MIT — .NET Foundation / Microsoft.
 - `Microsoft.ML.OnnxRuntime` — MIT — Microsoft. Runs the external Silero VAD on the CPU execution provider.
+- `Microsoft.ML.OnnxRuntimeGenAI.DirectML` — MIT — Microsoft. Runs the local closed-candidate sentence judge through ONNX Runtime GenAI, using DirectML or CPU as selected.
+- `Microsoft.ML.Tokenizers` — MIT — Microsoft. Tokenizes text for the CamemBERT masked-language-model probe.
+- `System.Security.Cryptography.ProtectedData` — MIT — .NET Foundation / Microsoft. Protects local autocorrect observation data with Windows DPAPI.
+- `BouncyCastle.Cryptography` — Bouncy Castle License (MIT X Consortium-based) — Legion of the Bouncy Castle. Provides the DTLS-PSK transport used for Philips Hue Entertainment.
+
+## Bundled assets
+
+### Bitcount Single
+
+- Project : https://github.com/petrvanblokland/TYPETR-Bitcount
+- License : SIL Open Font License 1.1 — Copyright 2024 The Bitcount Project Authors.
+- Used as : the bundled `BitcountSingle.ttf` display font.
 
 ## Lexical data
 
@@ -100,3 +111,9 @@ Whisper model weights downloaded from [ggerganov/whisper.cpp on Hugging Face](ht
 - Repository : https://huggingface.co/Xenova/camembert-base — ONNX export of [almanach/camembert-base](https://huggingface.co/almanach/camembert-base) (Inria — Martin, Müller, Suárez et al.).
 - License : MIT — the CamemBERT weights.
 - Used as : the `camembert-base` masked-LM (`model.onnx` + `tokenizer.json` + `sentencepiece.bpe.model`), downloaded on demand to the models directory and run by `Deckle.Autocorrect.Mlm` for the post-sentence reranker. Not redistributed in this repository.
+
+### Qwen3 (ONNX Runtime GenAI)
+
+- Repository : https://huggingface.co/Qwen/Qwen3-1.7B — Qwen Team.
+- License : Apache 2.0.
+- Used as : an optional locally built ONNX Runtime GenAI export for the autocorrect closed-candidate sentence judge. Model weights are not redistributed in this repository.

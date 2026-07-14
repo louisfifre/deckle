@@ -1371,6 +1371,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── CHANGELOG.md
 ├── CLAUDE.md
 ├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
+├── CONTRIBUTING.md
 ├── deckle.code-workspace
 ├── Deckle.Tests.sln
 ├── Directory.Build.props
