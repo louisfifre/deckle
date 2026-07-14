@@ -482,6 +482,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
+│   │   ├── Mining/
+│   │   │   ├── MistouchFamilyReport.cs
+│   │   │   └── MistouchMiner.cs
 │   │   ├── Profiling/
 │   │   │   ├── SurfaceProfiler.cs
 │   │   │   └── SurfaceProfileReport.cs
@@ -1262,6 +1265,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MarginCalibrationTests.cs
+│   │   ├── MistouchMinerTests.cs
+│   │   ├── MistouchMiningGestureTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── OnnxJudgeSerialCollection.cs
 │   │   ├── OnnxSentenceScorerTests.cs

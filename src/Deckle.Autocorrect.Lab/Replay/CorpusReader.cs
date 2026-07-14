@@ -12,9 +12,10 @@ namespace Deckle.Autocorrect.Lab;
 // to correct (property present, value ""). Only the reader can tell the two apart,
 // so it surfaces the fact rather than folding it into an empty string. Process is
 // the producing application (payload "process", "" when absent) — the replay never
-// reads it, the surface profiler ventilates on it.
+// reads it, the surface profiler ventilates on it. Day is the envelope timestamp's
+// date ("2026-07-14", "" when absent) — the miner's recurrence-across-days signal.
 public readonly record struct CorpusEntry(
-    SentenceCorpus.SentenceRecord Record, bool HistoryPresent, string Process = "");
+    SentenceCorpus.SentenceRecord Record, bool HistoryPresent, string Process = "", string Day = "");
 
 // Reads the typed-text corpus back off disk: one autocorrect.text.jsonl line per
 // completed sentence, the shape the JsonlSink writes —
@@ -72,9 +73,14 @@ public static class CorpusReader
             if (closure.Length == 0)
                 closure = "sentence";
 
+            // The envelope timestamp's date part — ISO on the wire, so the first
+            // ten chars are the day whatever the offset.
+            string stamp = String(doc.RootElement, "timestamp");
+            string day = stamp.Length >= 10 ? stamp[..10] : string.Empty;
+
             var record = new SentenceCorpus.SentenceRecord(
                 typed, final, String(payload, "history"), closure, String(payload, "timing"));
-            entry = new CorpusEntry(record, historyPresent, String(payload, "process"));
+            entry = new CorpusEntry(record, historyPresent, String(payload, "process"), day);
             return true;
         }
         catch (JsonException)

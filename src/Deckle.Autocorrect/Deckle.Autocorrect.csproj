@@ -38,6 +38,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
+    <!-- The offline miner reuses the engine's physical-layout model (QwertyAdjacency). -->
+    <InternalsVisibleTo Include="Deckle.Autocorrect.Lab" />
   </ItemGroup>
 
   <ItemGroup>
