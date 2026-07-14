@@ -85,7 +85,7 @@ public sealed class SpeechTrimSettings
 // the backend's model context.
 public sealed class EngineSettings
 {
-    public string Model { get; set; } = "ggml-large-v3.bin";
+    public string Model { get; set; } = "ggml-base.bin";
     public bool UseGpu { get; set; } = true;
     public string Language { get; set; } = "fr";
     public string InitialPrompt { get; set; } =

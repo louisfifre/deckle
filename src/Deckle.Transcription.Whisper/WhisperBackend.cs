@@ -170,13 +170,26 @@ public sealed class WhisperBackend : IAsrBackend
     //   1. DECKLE_MODEL_PATH env var if it points to an absolute existing path.
     //   2. host.Whisp.Engine.Model (user setting), fallback to the
     //      Whisper catalog's default, joined with host.ResolveModelsDirectory().
+    //   3. If that file is absent, the best catalog model actually installed —
+    //      an install carrying only large-v3 must survive the ggml-base default
+    //      bump without a 3 GB re-download or a dead engine.
     private string ResolveModelPath()
     {
         var engine = _host.Transcription.Engine;
         string modelFile = string.IsNullOrWhiteSpace(engine.Model)
             ? SpeechModels.DefaultModelFileName
             : engine.Model;
-        string fallback = Path.Combine(_host.ResolveModelsDirectory(), modelFile);
+        string modelsDirectory = _host.ResolveModelsDirectory();
+        string fallback = Path.Combine(modelsDirectory, modelFile);
+
+        if (!File.Exists(fallback)
+            && SpeechModels.BestInstalledFileName(modelsDirectory) is { } installed
+            && installed != modelFile)
+        {
+            DeckleWhispSource.Log.ModelFallback();
+            DeckleWhispSource.Log.ModelFallbackDetail(modelFile, installed);
+            fallback = Path.Combine(modelsDirectory, installed);
+        }
 
         string? envPath = Environment.GetEnvironmentVariable("DECKLE_MODEL_PATH");
         if (string.IsNullOrWhiteSpace(envPath)) return fallback;

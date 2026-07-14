@@ -205,6 +205,9 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtFileDecodeFailedDetail           = 162;
     public const int EvtFileTranscriptionWriteFailed     = 163;
     public const int EvtFileTranscriptionWriteFailedDetail = 164;
+    // Installed-model fallback (configured model file absent on disk).
+    public const int EvtModelFallback                    = 165;
+    public const int EvtModelFallbackDetail              = 166;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits
