@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Deckle.Core;
 using Deckle.Autocorrect;
 using Deckle.Autocorrect.Mlm;
+using Deckle.Autocorrect.Onnx;
 using Deckle.Input;
 using Deckle.Notifications;
 
@@ -21,9 +22,10 @@ namespace Deckle.App;
 //
 // The live post-sentence stage resolves real-word ambiguities — la/là, a/à,
 // ou/où — plus sentence-initial capitals. It starts with deterministic French
-// rules and delegates to CamemBERT when its optional ~440 MB ONNX model is
-// present. The model lives under the user data root (models\camembert-base\),
-// fetched by setup-assets, never shipped in the build.
+// rules and delegates to a model engine when one is present, by preference:
+// the ONNX GenAI sentence judge (models\sentence-judge\), else the CamemBERT
+// masked-LM (models\camembert-base\). Both live under the user data root,
+// staged by the maintainer, never shipped in the build.
 public partial class App
 {
     // Contextual reranker calibration — mirrors the offline EvaluateReranked
@@ -31,6 +33,15 @@ public partial class App
     // common form. Starting points to ground by the eval, not measured optima.
     private const double RerankerMargin = 2.0;
     private const double RerankerFreqPrior = 1.0;
+
+    // Sentence judge operating margin, maintainer-decided on the 2026-07 replay
+    // calibration (979 slots, maintainer truth overlaid): 1.0 holds 92.2%
+    // precision at 20.8% coverage, against 90.8%/41.0% at 0.5. Chosen on the
+    // precision side for the live start — an abstention is invisible, a wrong
+    // change erodes trust — to be relaxed as the widened corpus grows. Margins
+    // are per-export: this one is calibrated on the DML int4 export the live
+    // path loads, and must be recalibrated if the export changes.
+    private const double SentenceJudgeMargin = 1.0;
 
     private AutocorrectEngine? _autocorrectEngine;
     private PersonalDictionary? _autocorrectDictionary;
@@ -68,7 +79,7 @@ public partial class App
             // on the verbose LexiconLoadComplete (whisper's ModelLoadComplete
             // shape).
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, english, index, context, reranker, verbs) = await Task.Run(() =>
+            var (french, english, index, context, reranker, rerankerEngine, rerankerLoadMs, verbs) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
                 var en = AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir);
@@ -80,16 +91,31 @@ public partial class App
                 // agreement). Optional like the pair model — absent its artifact
                 // the engine simply runs the chain without agreement correction.
                 var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
-                // The contextual reranker's model is large (~440 MB) and optional:
-                // TryLoad returns null when it is absent, leaving gate + typo only.
-                // Loaded here, off the UI thread, alongside the lexicons.
-                string modelDir = Path.Combine(AppPaths.ModelsDirectory, Deckle.Autocorrect.Mlm.CamembertAssets.DirectoryName);
-                ISentenceReranker? rr = CamembertReranker.TryLoad(
-                    modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
-                return (fr, en, idx, ctx, rr, vb);
+                // The sentence-stage engine, by preference order: the ONNX GenAI
+                // sentence judge (Qwen3 DML int4, ~1.3 GB, resident on the GPU)
+                // when its model directory is present, else the CamemBERT
+                // masked-LM (~440 MB), else deterministic rules only. Both loads
+                // are optional TryLoads off the UI thread; the winner and its
+                // load cost go to RerankerStatus below.
+                var rerankerStopwatch = Stopwatch.StartNew();
+                string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
+                ISentenceReranker? rr = OnnxSlotReranker.TryLoad(judgeDir, margin: SentenceJudgeMargin);
+                string engine = DeckleAutocorrectSource.RerankerEngines.SentenceJudge;
+                if (rr is null)
+                {
+                    string modelDir = Path.Combine(AppPaths.ModelsDirectory, CamembertAssets.DirectoryName);
+                    rr = CamembertReranker.TryLoad(
+                        modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);
+                    engine = rr is null
+                        ? DeckleAutocorrectSource.RerankerEngines.None
+                        : DeckleAutocorrectSource.RerankerEngines.Camembert;
+                }
+                rerankerStopwatch.Stop();
+                return (fr, en, idx, ctx, rr, engine, rerankerStopwatch.ElapsedMilliseconds, vb);
             }).ConfigureAwait(true);
             loadStopwatch.Stop();
-            DeckleAutocorrectSource.Log.LexiconLoadComplete(loadStopwatch.ElapsedMilliseconds, french.Count);
+            DeckleAutocorrectSource.Log.LexiconLoadComplete(
+                loadStopwatch.ElapsedMilliseconds - rerankerLoadMs, french.Count);
 
             // The only persisted text in the module — under the user data root,
             // inspectable and removable through the CLI `dict` command.
@@ -151,8 +177,9 @@ public partial class App
                 french: french,
                 english: english,
                 // The post-sentence stage: deterministic French sentence rules,
-                // delegating to CamemBERT when its optional model is present; the
-                // diacritics gate is reused as the slot probe.
+                // delegating to the loaded model engine (sentence judge, else
+                // CamemBERT) when one is present; the diacritics gate is reused
+                // as the slot probe.
                 reranker: sentenceReranker,
                 probe: diacritics,
                 // Opt-in per-word decision telemetry, read live so a Settings flip
@@ -172,7 +199,7 @@ public partial class App
             AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
             ReconcileAutocorrect();
 
-            DeckleAutocorrectSource.Log.RerankerStatus(reranker is not null);
+            DeckleAutocorrectSource.Log.RerankerStatus(rerankerEngine, rerankerLoadMs);
 
             // Readiness edge: engine built, wired and reconciled. Concise
             // milestone, no number — the timing is on LexiconLoadComplete above.

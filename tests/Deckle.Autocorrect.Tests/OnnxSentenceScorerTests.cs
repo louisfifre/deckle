@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
+[Collection(OnnxJudgeSerialCollection.Name)]
 public sealed class OnnxSentenceScorerTests
 {
     [Fact]

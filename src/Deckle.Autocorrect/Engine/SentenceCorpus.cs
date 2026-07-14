@@ -12,19 +12,29 @@ namespace Deckle.Autocorrect;
 // go in, completed sentences come out through Completed; no OS calls, no
 // EventSource — the engine owns emission and the consent gate.
 //
-// A sentence is the run of committed words up to a sentence-ending boundary
-// ('.', '!', '?') or an Enter. Any OTHER reset (focus change, navigation, a
-// Ctrl-chord that may have pasted, …) DROPS the partial run: a sentence the
-// accumulator could not observe cleanly is never emitted. Paste and dictation
-// never reach the word stream in the first place (clipboard inserts raise no key
-// events; injected text is filtered upstream), so the corpus stays « what I
-// actually typed at the keyboard ».
+// A sentence is the run of committed words up to one of three closures, recorded on
+// the record so the reader can weigh a run by how it ended:
+//   • "sentence" — a sentence-ending boundary ('.', '!', '?') closed it;
+//   • "enter"    — an Enter closed it;
+//   • "interrupted" — any OTHER reset (focus change, navigation, a Ctrl-chord that
+//     may have pasted, …) cut it short before an ending boundary.
+// Earlier every reset but Enter DROPPED the partial run; it is now emitted tagged
+// "interrupted", because the run is still verbatim keyboard input worth mining. The
+// purity guarantee is what makes that safe: paste and dictation never reach the word
+// stream in the first place (clipboard inserts raise no key events; injected text is
+// filtered upstream), so even an interrupted run is « what I actually typed at the
+// keyboard ». An interrupted run whose slot list is already empty emits nothing.
 //
-// Reconstruction. Each slot carries the boundary char it closed on; the sentence
-// is the slots rejoined by those separators, so punctuation (the telling ';') and
-// spacing survive verbatim on both sides. The lone exception is the elision
-// apostrophe, which the tracker attaches to the word itself (« l' »); its boundary
-// collapses to an empty separator so the rejoin does not double it.
+// Reconstruction. Each slot carries the boundary chars it closed on; the sentence is
+// the slots rejoined by those separators, so punctuation (the telling ';') and
+// spacing survive verbatim on both sides. The elision apostrophe, which the tracker
+// attaches to the word itself (« l' »), collapses to an empty separator so the rejoin
+// does not double it. The typed side and the final side keep SEPARATE closing
+// separators per slot: a re-edit (Edit) can leave a slot whose typed first form ended
+// on one boundary while its on-screen final form ends on another — rejoining both
+// with a single separator fused two typed tokens (« de » + « avoir » → « deavoir »),
+// a proven corruption. Each side rejoins with its own boundary, so both still
+// tokenize back to the same slot count that offline alignment relies on.
 //
 // History. `typed` and `final` are the flat pair for direct mining; `history`
 // spells the ordered path of every slot that changed — first-typed then each
@@ -45,17 +55,27 @@ public sealed class SentenceCorpus
 
     public readonly record struct Transition(Stage By, string Form);
 
-    // A completed sentence handed to the engine: the two parallel strings for
-    // direct mining plus the per-slot ordered history (empty when nothing changed).
-    public readonly record struct SentenceRecord(string Typed, string Final, string History);
+    // A completed sentence handed to the engine: the two parallel strings for direct
+    // mining, the per-slot ordered history (empty when nothing changed), the closure
+    // that ended the run ("sentence" / "enter" / "interrupted"), and the typing rhythm
+    // as comma-joined per-slot inter-commit gaps in ms (first slot "0"; empty when no
+    // timestamps were available). The defaults mirror how a reader interprets a
+    // legacy record that predates the two fields: closed on a sentence boundary,
+    // rhythm unknown.
+    public readonly record struct SentenceRecord(
+        string Typed, string Final, string History, string Closure = "sentence", string Timing = "");
 
     // One committed word's life inside the sentence: the verbatim first-typed form,
-    // the separator that closed it, and each transition since. Final is the last
-    // transition's form, or the first-typed form when nothing touched it.
+    // the two separators that closed it on the typed and the final rendering (equal
+    // until a re-edit splits them), the commit timestamp, and each transition since.
+    // Final is the last transition's form, or the first-typed form when nothing
+    // touched it.
     private sealed class Slot
     {
         public string FirstTyped = string.Empty;
-        public string Separator = string.Empty;
+        public string TypedSeparator = string.Empty;
+        public string FinalSeparator = string.Empty;
+        public long TimestampMs;
         public readonly List<Transition> Transitions = new();
         public string Final => Transitions.Count == 0 ? FirstTyped : Transitions[^1].Form;
     }
@@ -64,17 +84,43 @@ public sealed class SentenceCorpus
     /// dedicated, consent-gated dataset.</summary>
     public Action<SentenceRecord>? Completed;
 
+    // Set when the last reset threw away a word in flight: the next committed
+    // "word" may be that word's tail (« probl|reset|ème » commits « ème »), a
+    // fragment the user never typed as a word. It is dropped from the corpus —
+    // one word of loss against a polluted sentence start. Cleared by the word it
+    // judges or by the next reset, whose own drop signal re-arms it or not.
+    private bool _nextWordSuspect;
+
+    /// <summary>The last reset dropped a partial word; hold the next committed
+    /// word suspect and keep it out of the corpus.</summary>
+    public void MarkNextWordSuspect() => _nextWordSuspect = true;
+
     // A committed word: its typed form, the form left on screen after the commit
-    // stage (the same word when the gate stood aside), and the boundary that ended
-    // it. A commit-stage repair is the slot's first transition.
-    public void Word(string typed, string final, char boundary)
+    // stage (the same word when the gate stood aside), the boundary that ended it,
+    // and the commit time in ms (0 = unknown, e.g. from a caller without a clock).
+    // A commit-stage repair is the slot's first transition. Typed and final rendering
+    // start with the same separator; only a re-edit can split them.
+    public void Word(string typed, string final, char boundary, long timestampMs = 0)
     {
-        var slot = new Slot { FirstTyped = typed, Separator = WordBoundaries.DisplaySeparator(boundary) };
+        if (_nextWordSuspect)
+        {
+            _nextWordSuspect = false;
+            return; // a likely fragment tail — never a slot
+        }
+
+        string separator = WordBoundaries.DisplaySeparator(boundary);
+        var slot = new Slot
+        {
+            FirstTyped = typed,
+            TypedSeparator = separator,
+            FinalSeparator = separator,
+            TimestampMs = timestampMs,
+        };
         if (!string.Equals(final, typed, StringComparison.Ordinal))
             slot.Transitions.Add(new Transition(Stage.Commit, final));
         _slots.Add(slot);
         if (IsSentenceEnd(boundary))
-            Flush();
+            Flush("sentence");
     }
 
     // The sentence stage rewrote a committed word from behind (original → new) while
@@ -97,6 +143,12 @@ public sealed class SentenceCorpus
     // WordEdit). The re-commit already appended a slot; fold it back into the one it
     // edited as a User transition — the first-typed stays the error worth mining, and
     // the retype's own commit repairs (if any) carry over so the history stays whole.
+    // The FINAL rendering adopts the redo's closing separator (the on-screen boundary
+    // the retype landed on); the TYPED rendering keeps the edited slot's OWN original
+    // separator, so the first-typed form rejoins on the boundary it was actually typed
+    // with — otherwise an elision-apostrophe retype (empty display separator) would
+    // fuse the typed side (« de »+« avoir » → « deavoir ») while the final side stays
+    // « d'avoir ».
     public void Edit(string original, string replacement)
     {
         if (_slots.Count < 2) return;
@@ -107,20 +159,21 @@ public sealed class SentenceCorpus
         edited.Transitions.Add(new Transition(Stage.User, redo.FirstTyped));
         foreach (Transition t in redo.Transitions) // the retype's own commit repairs, in order
             edited.Transitions.Add(t);
-        edited.Separator = redo.Separator;
+        edited.FinalSeparator = redo.FinalSeparator; // the typed side keeps its own boundary
     }
 
-    // Enter ends a sentence (emit); every other reset interrupts it before an ending
-    // boundary, so the partial run is dropped.
+    // Enter ends a sentence (closure "enter"); every other reset interrupts it before
+    // an ending boundary, so the partial run is emitted tagged "interrupted" rather
+    // than dropped — it is still verbatim keyboard input. A pending suspect mark
+    // does not survive the reset: each reset re-arms it (or not) from its own
+    // dropped-partial signal.
     public void Reset(ResetReason reason)
     {
-        if (reason == ResetReason.Enter)
-            Flush();
-        else
-            _slots.Clear();
+        _nextWordSuspect = false;
+        Flush(reason == ResetReason.Enter ? "enter" : "interrupted");
     }
 
-    private void Flush()
+    private void Flush(string closure)
     {
         if (_slots.Count == 0) return;
         var typed = new StringBuilder();
@@ -129,13 +182,36 @@ public sealed class SentenceCorpus
         for (int i = 0; i < _slots.Count; i++)
         {
             Slot s = _slots[i];
-            typed.Append(s.FirstTyped).Append(s.Separator);
-            final.Append(s.Final).Append(s.Separator);
+            typed.Append(s.FirstTyped).Append(s.TypedSeparator);
+            final.Append(s.Final).Append(s.FinalSeparator);
             if (s.Transitions.Count > 0)
                 AppendHistory(history, i, s);
         }
+        string timing = BuildTiming();
         _slots.Clear();
-        Completed?.Invoke(new SentenceRecord(typed.ToString(), final.ToString(), history.ToString()));
+        Completed?.Invoke(new SentenceRecord(
+            typed.ToString(), final.ToString(), history.ToString(), closure, timing));
+    }
+
+    // The typing rhythm: the first slot's gap is "0" and each later slot's is the ms
+    // elapsed since the previous slot's commit, comma-joined ("0,340,1220"). Empty
+    // when every slot's timestamp is 0 (the caller had no clock) — the whole string
+    // is unavailable rather than a run of zeros.
+    private string BuildTiming()
+    {
+        bool anyStamp = false;
+        foreach (Slot s in _slots)
+            if (s.TimestampMs != 0) { anyStamp = true; break; }
+        if (!anyStamp) return string.Empty;
+
+        var timing = new StringBuilder();
+        for (int i = 0; i < _slots.Count; i++)
+        {
+            if (i > 0) timing.Append(',');
+            long gap = i == 0 ? 0 : _slots[i].TimestampMs - _slots[i - 1].TimestampMs;
+            timing.Append(gap);
+        }
+        return timing.ToString();
     }
 
     // "#<index>=<firsttyped>»<stage>:<form>[»<stage>:<form>…]" per changed slot,

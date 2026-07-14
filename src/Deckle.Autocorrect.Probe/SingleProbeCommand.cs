@@ -14,11 +14,12 @@ internal static class SingleProbeCommand
         }
 
         Console.WriteLine($"Model     : {model.Directory}");
+        Console.WriteLine($"Provider  : {parsed.Provider}");
         Console.WriteLine($"Margin    : {parsed.Margin:0.###}");
         Console.WriteLine($"Candidates: {parsed.Candidates.Count}");
         Console.WriteLine();
 
-        ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(model.Directory, parsed.Margin);
+        ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(model.Directory, parsed.Margin, parsed.Provider);
         if (scorer is null)
         {
             Console.Error.WriteLine("Model failed to load as an ONNX Runtime GenAI model.");

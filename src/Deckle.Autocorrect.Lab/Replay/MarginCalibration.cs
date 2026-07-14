@@ -53,18 +53,50 @@ public static class MarginCalibration
     public static string Render(ReplaySummary summary, IReadOnlyList<CalibrationRow> rows)
     {
         var sb = new StringBuilder();
+        AppendHeader(sb, summary);
+        AppendTable(sb, rows);
+        return sb.ToString();
+    }
+
+    // The same report, with the corpus-intake block between the header and the curve:
+    // how many records were replayed vs repaired vs skipped (the guard against silent
+    // degradation), the closure mix, and how many slots were truth-overlaid.
+    public static string Render(
+        ReplaySummary summary, CorpusIntake intake, IReadOnlyList<CalibrationRow> rows)
+    {
+        var sb = new StringBuilder();
+        AppendHeader(sb, summary);
+        AppendIntake(sb, intake);
+        AppendTable(sb, rows);
+        return sb.ToString();
+    }
+
+    private static void AppendHeader(StringBuilder sb, ReplaySummary summary)
+    {
         sb.AppendLine("# Sentence-stage margin calibration");
         sb.AppendLine();
         sb.Append(Invariant($"Corpus: {summary.Sentences} sentences, {summary.AmbiguousSlots} ambiguous slots judged"));
         sb.AppendLine(Invariant($" — {summary.AgreedWithFinal} argmax matches, {summary.Abstained} model abstentions."));
+    }
+
+    private static void AppendIntake(StringBuilder sb, CorpusIntake intake)
+    {
+        sb.AppendLine(Invariant(
+            $"Records: {intake.Replayed} replayed ({intake.LegacyRepaired} legacy repaired via final-string), {intake.Skipped} skipped as unusable."));
+        sb.AppendLine(Invariant(
+            $"Closure mix (replayed): {intake.ClosedOnSentence} sentence, {intake.ClosedOnEnter} enter, {intake.Interrupted} interrupted."));
+        sb.AppendLine(Invariant(
+            $"Ground truth: {intake.TruthOverlaid} slots truth-overlaid — agreement uses maintainer truth where set, corpus final elsewhere."));
+    }
+
+    private static void AppendTable(StringBuilder sb, IReadOnlyList<CalibrationRow> rows)
+    {
         sb.AppendLine();
         sb.AppendLine("| margin ≥ | applied | agree | held | precision | coverage |");
         sb.AppendLine("|---------:|--------:|------:|-----:|----------:|---------:|");
         foreach (CalibrationRow r in rows)
             sb.AppendLine(Invariant(
                 $"| {r.Threshold:0.00} | {r.Applied} | {r.Agreed} | {r.Held} | {r.Precision:0.0%} | {r.Coverage:0.0%} |"));
-
-        return sb.ToString();
     }
 
     private static string Invariant(FormattableString s) => s.ToString(CultureInfo.InvariantCulture);

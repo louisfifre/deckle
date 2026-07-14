@@ -124,7 +124,7 @@
     <value>Keep the text I type</value>
   </data>
   <data name="AutocorrectTextCard.Description" xml:space="preserve">
-    <value>Also record each sentence you type at the keyboard on an enrolled app to autocorrect.text.jsonl — verbatim, paired with the corrected form — to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Paste and dictation are never recorded.</value>
+    <value>Also record each sentence you type at the keyboard — in every editable field, not only enrolled apps — to autocorrect.text.jsonl, verbatim and paired with the corrected form, to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Password fields, paste and dictation are never recorded.</value>
   </data>
 
   <data name="SettingsModuleNavLabel" xml:space="preserve">

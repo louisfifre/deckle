@@ -5,6 +5,54 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — The sentence judge is live, margin 1.0, decided
+
+The ONNX GenAI sentence judge (Qwen3-1.7B DML int4, `models\sentence-judge`) is wired into the live sentence stage, preferred over CamemBERT when its model directory is present, through the existing background rerank lane (single-flight, epoch-dropped staleness). Operating margin decided at 1.0 on the 2026-07 replay calibration (979 slots, maintainer truth overlaid): 92.2% precision at 20.8% coverage, against 90.8%/41.0% at 0.5 — chosen precision-first for the live start, to be relaxed as the widened corpus grows. Replay judged whole sentences while live sees ±12 words, so calibration precision is slightly optimistic for live. Margins remain per-export (see 2026-07-04): this one binds to the DML int4 export the live path loads.
+
+Trap, measured while validating: GenAI Model construction on the DML provider fails transiently with "Specified provider is not supported" — same binary and machine, next attempt clean; it surfaced under the parallel test host but one bare run also failed after the suite went serial, so it is a load flake, not (only) a concurrency artifact. Guards: one bounded retry in the scorer's model construction (every consumer inherits it), and the tests that open a real GenAI session run in a non-parallelized xunit collection.
+
+## 2026-07-14 — The rarity gate falls back to the slot's best variant on an invalid literal
+
+The sentence-stage rarity gate (2026-07-12) compared candidates to the typed literal's frequency and was therefore disarmed when the literal was not a lexicon form — exactly the ca→çà residue: "ca" has no frequency, so çà (21/M) survived against ça (8 972/M), ratio 0.0024, four times under the 0.01 floor. The gate's reference now falls back to the slot's most frequent lexicon variant when the literal is invalid; personal variants never set the reference (their sentinel frequency would inflate it). Side effect, intended: a fold whose rare cousin drops can collapse to one form and stop being an ambiguous slot at all ("ete" → été alone; the commit stage already restores it deterministically).
+
+## 2026-07-14 — Replay audit verdict: the 25% was a measurement artifact; the judge is rehabilitated
+
+The contested replay agreement (~25%) that had condemned the Qwen judge was audited and reversed. Three measurement faults, found and repaired: the corpus final string was scored as if it were ground truth (it is what landed on screen, not what was meant); 290 legacy records carried no keystroke history and were unrepairable as recorded; elision fusion misaligned slots. Measured cascade after repair: 23% → 58% (measurement fixed) → 80.7% changes-only against the maintainer-filled truth sheet (241 truths). The margin curve, flat-to-noisy before the repair, is monotonic after it (87.6% @0.25 · 90.8% @0.5 · 100% @3.0 on the 979-slot pass). Known sheet limit, accepted: a filled truth on a slot where the judge stops contradicting the final disappears at regeneration.
+
+## 2026-07-04 (later) — The sentence judge runs on the GPU (DirectML), measured against CPU int4
+
+The Qwen3 closed-candidate judge now runs on the RX 7900 XT through a genai `-e dml` int4 export on the DmlExecutionProvider. CPU int4 and DirectML exports coexist under each model dir (`onnxruntime/cpu_and_mobile/…` and `onnxruntime/directml/directml-int4-block-32`); the provider is chosen in code and, for the bench, by `Deckle.Autocorrect.Probe --provider <cpu|dml>`.
+
+Closed-candidate benchmark (30 cases, thresholds 0.25/0.5), summed per-case scoring time, CPU int4 vs DirectML:
+
+| size | CPU int4 | DirectML | speedup | CPU @0.25 prec/recall/wrong | DML @0.25 prec/recall/wrong |
+|------|---------:|---------:|--------:|-----------------------------|-----------------------------|
+| 0.6B | 88.6s    | 18.0s    | ~4.9×   | 89% / 57% / 1               | 86% / 43% / 1               |
+| 1.7B | 220.6s   | 19.2s    | ~11.5×  | 93% / 93% / 1               | 100% / 93% / 0              |
+| 4B   | 470.1s   | 24.7s    | ~19.0×  | 93% / 93% / 1               | 82% / 64% / 2               |
+
+Findings, measured:
+- DirectML time is nearly flat across sizes (18→19→25s) while CPU scales with params (89→221→470s), so the GPU win grows with model size (≈5× → 19×). Per-case DML time is dominated by per-candidate generator creation, not the matmuls; DirectML compute-engine utilization sampled 4–34% during a run — engaged, far from saturated. On GPU, going from 0.6B to 4B costs almost nothing.
+- 1.7B on DirectML is the cleanest operating point: 100% precision (zero false changes, vs the CPU int4's one on `ou_choice`) at 93% recall, in ~19s.
+- The fp16 + accuracy_level-0 DML quantization is noisier at the extremes: 0.6B loses recall (57%→43%), and 4B makes two false literal-trap changes at margin 0.25 (both clean at 0.5). The CPU int4-kld export and the DML export are different quantizations — their margins are not interchangeable; the operating margin must be recalibrated per export.
+
+Build recipe (onnxruntime-genai 0.13.0 model builder, Python 3.13 venv at `D:\models\_genai-build`):
+`python -m onnxruntime_genai.models.builder -m Qwen/Qwen3-<size> -o <out> -p int4 -e dml -c <cache> --extra_options hf_token=false`
+- `hf_token=false` is required to fetch ungated Qwen3 anonymously — without it the builder passes `token=True` and dies with `LocalTokenNotFoundError`.
+- Beyond `onnxruntime-genai-directml==0.13.0` + torch (CPU is enough) + transformers + onnx, the builder needs `onnx_ir` — an undeclared import of both the builder and the int4 quantizer.
+- No GPU is used at build time; RTN int4 quantization runs CPU-side.
+
+Traps confirmed at the runtime:
+- `-e dml` forces a FLOAT16 io dtype (there is no FP32 DML path), so the judge's logits come back float16; the scorer reads each row in its own element type.
+- DirectML rejects continuous decoding — a second AppendTokens on a live generator throws "Continuous decoding is not supported on the selected device type". The scorer scores each candidate in a single forward.
+- The CPU int4 export cannot run on DML: its accuracy_level-4 MatMulNBits nodes do not partition to DmlExecutionProvider, so session init fails ("graph capture … not all nodes partitioned"). A dedicated `-e dml` export (accuracy_level 0, fp16 io) is required — confirmed by loading each.
+- `DirectML.dll` resolves from `System32` (v1.15.5); the genai NuGet does not bundle it.
+
+Decisions taken without the maintainer (reversible, for review):
+- Build route over download: no prebuilt small-Qwen3 DirectML genai export exists (onnx-community ships cpu/cuda/webgpu int4 for Qwen3 but no dml; only third-party 14B/32B DML builds exist). Built 0.6B/1.7B/4B locally with the builder defaults for `-e dml` (accuracy_level 0, block 32).
+- Exports staged under `%LOCALAPPDATA%\Deckle\models\qwen3-<size>-onnx\onnxruntime\directml\directml-int4-block-32`, mirroring onnx-community's per-EP layout.
+- `accuracy_level=1` (fp32 activation upcast, the onnx-community DML publishers' documented alternative) was not explored — a lever if the 0.6B/4B margin noise ever needs closing on GPU.
+
 ## 2026-07-04 — The stack is split across two runtime worlds; direction is DirectML with GenAI alongside
 
 Grounded in the current code (on main): the four inference stages do not share a runtime. Reranker (CamemBERT, commit + contextual) runs on plain ONNX Runtime — an `InferenceSession` encoder, CPU-bound and single-threaded (`BackgroundRerankLane`). The sentence judge runs on onnxruntime-genai (CPU int4 today, DirectML targeted). Rewrite runs on Ollama (llama.cpp / ggml). ASR runs on whisper.cpp (native ggml), not ONNX. So two stages live in the ONNX world and two in the ggml/Vulkan world — the latter being the 7900 XT's strong GPU path. The "run everything under the same system" wish is therefore a real substrate fork (ONNX/DirectML vs ggml/Vulkan), left open, not a settled convergence.

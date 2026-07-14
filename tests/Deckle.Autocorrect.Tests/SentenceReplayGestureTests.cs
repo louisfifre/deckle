@@ -16,6 +16,7 @@ namespace Deckle.Autocorrect.Tests;
 // judge is staged). Where both are present it is a deliberate, supervised run: the
 // judge is seconds per slot, so a full corpus is minutes, and nothing is applied.
 [Trait("Category", "gesture")]
+[Collection(OnnxJudgeSerialCollection.Name)]
 public sealed class SentenceReplayGestureTests
 {
     private readonly ITestOutputHelper _out;
@@ -60,18 +61,28 @@ public sealed class SentenceReplayGestureTests
         Console.Error.WriteLine($"[replay] loading judge — ep={ep}, dir={judgeDir}");
 
         // margin 0 → the judge returns its raw argmax and gap for every slot, so
-        // the sweep, not the model, sets the operating margin.
-        using OnnxSlotReranker? judge = OnnxSlotReranker.TryLoad(judgeDir, margin: 0.0, executionProvider: ep);
-        Assert.NotNull(judge);
+        // the sweep, not the model, sets the operating margin. Constructed
+        // directly, not TryLoad: a staged-but-broken export must fail loudly,
+        // and TryLoad swallows the load exception this test needs to see.
+        using var judge = new OnnxSlotReranker(new OnnxSentenceScorer(judgeDir, margin: 0.0, ep));
         Console.Error.WriteLine("[replay] judge loaded — replaying corpus, nothing is applied");
+
+        // The maintainer's truth sheet sits next to the corpus. The file-based Run
+        // has already read its resolved cells and measured agreement against them;
+        // here the sheet is regenerated from this pass's disagreements and MERGED
+        // with the existing one, so a filled truth cell survives corpus growth.
+        string sheetPath = TruthOverlay.SheetPathFor(corpusPath!);
+        var existingSheet = TruthOverlay.Read(sheetPath);
 
         ReplayReport report = ReplayRunner.Run(corpusPath!, probe, judge!, onProgress: OnReplayProgress);
 
         string reportPath = Path.Combine(Path.GetDirectoryName(corpusPath!)!, "autocorrect.replay-calibration.md");
         File.WriteAllText(reportPath, report.Markdown);
+        File.WriteAllText(sheetPath, TruthOverlay.Render(TruthOverlay.Merge(report.TruthReview, existingSheet)));
 
         Console.Error.WriteLine(
-            $"[replay] done — {report.Summary.AmbiguousSlots} slots over {report.Summary.Sentences} sentences → {reportPath}");
+            $"[replay] done — {report.Summary.AmbiguousSlots} slots over {report.Summary.Sentences} sentences, "
+            + $"{report.TruthReview.Count} to review → {reportPath}");
         _out.WriteLine($"{report.Summary.AmbiguousSlots} ambiguous slots judged over {report.Summary.Sentences} sentences.");
         _out.WriteLine($"Calibration report → {reportPath}");
 

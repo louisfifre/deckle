@@ -60,16 +60,62 @@ public sealed class OnnxSlotRerankerTests
     [Fact]
     public void SurfacesTheJudgesAbstainReasonWhenItDeclines()
     {
-        var sentence = new[] { "il", "a", "dit" };
+        // Four word tokens clears the context floor so the judge is actually
+        // consulted; the point here is that its abstention is surfaced verbatim.
+        var sentence = new[] { "il", "nous", "a", "dit" };
         var candidates = new[] { new AccentVariant("a", 100), new AccentVariant("à", 50) };
         var scorer = new FakeScorer(_ =>
             SentenceScoringOutcome.Abstained(SentenceScoringOutcome.AbstainReasons.BelowMargin));
         using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
 
-        RerankOutcome outcome = reranker.Rerank(sentence, slotIndex: 1, candidates);
+        RerankOutcome outcome = reranker.Rerank(sentence, slotIndex: 2, candidates);
 
         Assert.Null(outcome.Chosen);
         Assert.Equal(SentenceScoringOutcome.AbstainReasons.BelowMargin, outcome.AbstainReason);
+    }
+
+    [Fact]
+    public void AbstainsOnAShortSentenceWithoutConsultingTheJudge()
+    {
+        // Three word tokens is below the context floor: the judge is never asked,
+        // and the pinned short-context reason is surfaced. The confusion this
+        // guards is a sentence-initial imperative read as a participle.
+        var scorer = new FakeScorer(_ =>
+            throw new InvalidOperationException("the judge must not be consulted below the context floor"));
+        using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
+        var sentence = new[] { "continue", "le", "travail" };
+        var candidates = new[] { new AccentVariant("continue", 100), new AccentVariant("continué", 5) };
+
+        RerankOutcome outcome = reranker.Rerank(sentence, slotIndex: 0, candidates);
+
+        Assert.Null(outcome.Chosen);
+        Assert.Equal(RerankOutcome.AbstainReasons.ShortContext, outcome.AbstainReason);
+        Assert.Null(scorer.Received);
+    }
+
+    [Fact]
+    public void JudgesASentenceThatMeetsTheContextFloor()
+    {
+        // Four word tokens is exactly the floor: the same slot now reaches the judge.
+        var sentence = new[] { "il", "continue", "le", "travail" };
+        var candidates = new[] { new AccentVariant("continue", 100), new AccentVariant("continué", 5) };
+        var scorer = new FakeScorer(cands => new SentenceScoringOutcome(
+            Chosen: cands[0],
+            Scores: new[]
+            {
+                new SentenceCandidateScore(cands[0], -1.0, -10.0, 8),
+                new SentenceCandidateScore(cands[1], -4.0, -40.0, 8),
+            },
+            Margin: 3.0,
+            Threshold: 0.25,
+            AbstainReason: null));
+        using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
+
+        RerankOutcome outcome = reranker.Rerank(sentence, slotIndex: 1, candidates);
+
+        Assert.NotNull(scorer.Received); // the floor let it through to the judge
+        Assert.Equal("continue", outcome.Chosen);
+        Assert.NotEqual(RerankOutcome.AbstainReasons.ShortContext, outcome.AbstainReason);
     }
 
     [Fact]

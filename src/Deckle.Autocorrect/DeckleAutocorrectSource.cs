@@ -85,15 +85,25 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtEngineReady);
     }
 
-    // Whether the contextual (CamemBERT) stage came up: true when its model was
-    // present and loaded, false when the engine runs gate + typo only.
+    // Which contextual (sentence-stage) engine came up and what its model load
+    // cost: engine names the winner of the composition-root preference order
+    // (RerankerEngines vocabulary), load_ms its wall-clock load. "none" means
+    // the engine runs gate + typo only, with deterministic sentence rules.
     [Event(EvtRerankerStatus,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Autocorrect contextual stage | model_present={0}")]
-    public void RerankerStatus(bool model_present)
+           Message = "Autocorrect contextual stage | engine={0} | load_ms={1}")]
+    public void RerankerStatus(string engine, long load_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtRerankerStatus, model_present);
+        if (IsEnabled()) WriteEvent(EvtRerankerStatus, engine, load_ms);
+    }
+
+    // Closed vocabulary for RerankerStatus.engine — one spelling, one place.
+    public static class RerankerEngines
+    {
+        public const string SentenceJudge = "sentence_judge"; // ONNX GenAI Qwen judge (DirectML)
+        public const string Camembert     = "camembert";      // masked-LM reranker
+        public const string None          = "none";           // deterministic rules only
     }
 
     // ── Surface gate ─────────────────────────────────────────────────────
@@ -237,25 +247,31 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     // ── Typed-sentence corpus ─────────────────────────────────────────────
     //
-    // One sentence the user typed on an enrolled surface, as two parallel strings:
-    // `typed` verbatim (keyboard substitutions and all — the telling ';' for an
-    // apostrophe survives) and `final` after the corrector — plus `history`, the
-    // ordered path of every slot that changed (first-typed then each stage's
-    // transition, "#i=typed»commit:…»user:…"), so a commit repair, a sentence-stage
-    // rewrite and a manual re-edit are told apart. Feeds the per-user error-pattern
-    // corpus; routed to the dedicated, opt-in autocorrect.text.jsonl sink (gated by
-    // AutocorrectText, off by default) and excluded from app.jsonl. The heaviest
-    // text capture in the module — a verbatim record of typed input — so its consent
-    // toggle stands on its own.
+    // One sentence the user typed at the keyboard on any editable, non-password
+    // surface (enrollment does not bound it), as two parallel strings: `typed`
+    // verbatim (keyboard substitutions and all — the telling ';' for an apostrophe
+    // survives) and `final` after the corrector — plus `history`, the ordered path of
+    // every slot that changed (first-typed then each stage's transition,
+    // "#i=typed»commit:…»user:…"), so a commit repair, a sentence-stage rewrite and a
+    // manual re-edit are told apart. `closure` says how the run ended — "sentence"
+    // (a '.'/'!'/'?' closed it), "enter" (an Enter), or "interrupted" (any other
+    // reset cut it short before an ending boundary) — so a partial run can be weighed
+    // apart from a clean one. `timing` is the typing rhythm: comma-joined per-slot
+    // inter-commit gaps in ms, first slot "0", empty when no timestamps were
+    // available. Feeds the per-user error-pattern corpus; routed to the dedicated,
+    // opt-in autocorrect.text.jsonl sink (gated by AutocorrectText, off by default)
+    // and excluded from app.jsonl. The heaviest text capture in the module — a
+    // verbatim record of typed input — so its consent toggle stands on its own.
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "text | {0} | {1}")]
-    public void AutocorrectTextRecorded(string process, string typed, string final, string history)
+           Message = "text | {0} | {1} | {4}")]
+    public void AutocorrectTextRecorded(
+        string process, string typed, string final, string history, string closure, string timing)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectText, process, typed, final, history);
+        WriteEvent(EvtAutocorrectText, process, typed, final, history, closure, timing);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

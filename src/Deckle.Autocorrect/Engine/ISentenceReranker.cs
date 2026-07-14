@@ -38,10 +38,11 @@ public readonly record struct RerankOutcome(
     // Closed vocabulary of abstain reasons.
     public static class AbstainReasons
     {
-        public const string MultiToken  = "multi_token";  // a candidate is not a single leading piece
-        public const string BelowMargin = "below_margin"; // top did not clear the confidence margin
-        public const string NoRule      = "no_rule";      // no deterministic rule or model handled the slot
-        public const string Error       = "error";        // inference threw — abstained, lane survives
+        public const string MultiToken   = "multi_token";   // a candidate is not a single leading piece
+        public const string BelowMargin  = "below_margin";  // top did not clear the confidence margin
+        public const string NoRule       = "no_rule";       // no deterministic rule or model handled the slot
+        public const string ShortContext = "short_context"; // too few word tokens for the judge to be reliable
+        public const string Error        = "error";         // inference threw — abstained, lane survives
     }
 }
 

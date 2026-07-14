@@ -18,12 +18,13 @@ public class TypedWordTrackerTests
         public readonly List<WordCommit> Commits = new();
         public readonly List<WordEdit> Edits = new();
         public readonly List<ResetReason> Resets = new();
+        public readonly List<bool> DroppedPartials = new();
 
         public Recorder(TypedWordTracker t)
         {
             t.WordCommitted += c => Commits.Add(c);
             t.WordEdited += e => Edits.Add(e);
-            t.TrackerReset += r => Resets.Add(r);
+            t.TrackerReset += (r, dropped) => { Resets.Add(r); DroppedPartials.Add(dropped); };
         }
     }
 
@@ -433,6 +434,33 @@ public class TypedWordTrackerTests
         Type(t2, "abc");
         t2.NotifyFocusChanged();
         Assert.Equal(new[] { ResetReason.FocusChanged }, rec2.Resets.ToArray());
+    }
+
+    [Fact]
+    public void ResetMidWordReportsTheDroppedPartial()
+    {
+        // Un reset en plein mot jette le préfixe déjà tapé ; le signal dit au
+        // consommateur que la suite du mot committera comme un fragment.
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "probl");
+        t.NotifyFocusChanged();
+
+        Assert.Equal(new[] { true }, rec.DroppedPartials.ToArray());
+    }
+
+    [Fact]
+    public void ResetBetweenWordsReportsNoDroppedPartial()
+    {
+        // Buffer vide au reset : rien n'était en vol, le mot suivant est légitime.
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "mot ");
+        t.NotifyFocusChanged();
+
+        Assert.Equal(new[] { false }, rec.DroppedPartials.ToArray());
     }
 
     [Fact]

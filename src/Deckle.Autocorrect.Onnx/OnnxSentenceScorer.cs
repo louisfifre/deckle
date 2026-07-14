@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Deckle.Autocorrect;
@@ -48,16 +49,7 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
         {
             ogaHandle = new OgaHandle();
 
-            // The provider is chosen in code, not read from the export's
-            // genai_config.json, so one CPU int4 export can be driven onto the GPU
-            // (DirectML) without a re-export: clear the config's providers and append
-            // the chosen one. "cpu" leaves the list empty → the built-in CPU EP.
-            config = new Config(modelDir);
-            config.ClearProviders();
-            if (!string.Equals(_executionProvider, "cpu", StringComparison.OrdinalIgnoreCase))
-                config.AppendProvider(_executionProvider);
-
-            model = new Model(config);
+            (config, model) = CreateModel(modelDir, _executionProvider);
             tokenizer = new Tokenizer(model);
 
             _ogaHandle = ogaHandle;
@@ -73,6 +65,44 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
             config?.Dispose();
             ogaHandle?.Dispose();
             throw;
+        }
+    }
+
+    // Builds the config and the model, with one bounded retry. The provider is
+    // chosen in code, not read from the export's genai_config.json, so one CPU
+    // int4 export can be driven onto the GPU (DirectML) without a re-export:
+    // clear the config's providers and append the chosen one. "cpu" leaves the
+    // list empty → the built-in CPU EP. Model construction enumerates the DML
+    // devices, and that enumeration fails transiently — measured on the test
+    // host (2026-07-14): "Specified provider is not supported" on one run,
+    // clean on the next, same binary and machine. One retry absorbs the flake
+    // for every consumer (live composition, probe, replay); a second failure
+    // is a real one and propagates. The config is rebuilt per attempt rather
+    // than reused across a failed native construction.
+    private static (Config Config, Model Model) CreateModel(string modelDir, string executionProvider)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            Config? config = null;
+            try
+            {
+                config = new Config(modelDir);
+                config.ClearProviders();
+                if (!string.Equals(executionProvider, "cpu", StringComparison.OrdinalIgnoreCase))
+                    config.AppendProvider(executionProvider);
+
+                return (config, new Model(config));
+            }
+            catch (OnnxRuntimeGenAIException) when (attempt == 0)
+            {
+                config?.Dispose();
+                Thread.Sleep(250);
+            }
+            catch
+            {
+                config?.Dispose();
+                throw;
+            }
         }
     }
 
@@ -197,13 +227,28 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
             plan.EndExclusive > completionTokens.Length)
             return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.TooFewTokens);
 
+        // One forward over prompt + the scored completion span, reading the
+        // teacher-forced logits at every scored position from a single pass.
+        // DirectML rejects continuous decoding (a second AppendTokens on a live
+        // generator), so the earlier incremental per-token loop cannot run there;
+        // feeding the whole span at once is also one forward instead of N, and
+        // causal masking makes each scored row identical to the incremental read.
+        int promptLen = promptTokens.Length;
+        var input = new int[promptLen + plan.EndExclusive];
+        Array.Copy(promptTokens, 0, input, 0, promptLen);
+        Array.Copy(completionTokens, 0, input, promptLen, plan.EndExclusive);
+
         using var generatorParams = new GeneratorParams(_model);
-        generatorParams.SetSearchOption("max_length", promptTokens.Length + plan.EndExclusive + 1);
+        generatorParams.SetSearchOption("max_length", input.Length + 1);
 
         using var generator = new Generator(_model, generatorParams);
-        generator.AppendTokens(promptTokens);
-        if (plan.Start > 0)
-            generator.AppendTokens(completionTokens.AsSpan(0, plan.Start));
+        generator.AppendTokens(input);
+
+        using Tensor logits = generator.GetOutput(LogitsOutputName);
+        long numElements = logits.NumElements();
+        if (numElements % _vocabSize != 0)
+            return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.LogitsUnavailable);
+        int rows = (int)(numElements / _vocabSize);
 
         double logProbability = 0.0;
         int scored = 0;
@@ -213,16 +258,22 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
             if (tokenId < 0 || tokenId >= _vocabSize)
                 return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.TokenOutOfVocab);
 
-            using Tensor logits = generator.GetOutput(LogitsOutputName);
-            ReadOnlySpan<float> row = LastLogitsRow(logits);
+            // The logits at position p score the token at position p + 1, so the
+            // distribution for completion token `next` is read at promptLen+next-1.
+            int predictPos = promptLen + next - 1;
+            if (predictPos < 0 || predictPos >= rows)
+                return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.LogitsUnavailable);
+
+            float[] row = LogitsRow(logits, predictPos);
             if (row.Length <= tokenId)
                 return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.LogitsUnavailable);
 
             logProbability += LogProbability(row, tokenId);
             scored++;
-
-            generator.AppendTokens(completionTokens.AsSpan(next, 1));
         }
+
+        if (scored == 0)
+            return CandidateScore.Abstained(SentenceScoringOutcome.AbstainReasons.TooFewTokens);
 
         return new CandidateScore(
             Score: logProbability / scored,
@@ -305,13 +356,40 @@ public sealed class OnnxSentenceScorer : ISentenceScorer, IDisposable
         return tokens[1..];
     }
 
-    private ReadOnlySpan<float> LastLogitsRow(Tensor logits)
+    // Reads one vocabulary-wide logits row, upcast to float. The judge's logits come
+    // back float32 from the CPU int4 export but float16 from the DirectML export — a
+    // `-e dml` build forces a FLOAT16 io dtype (there is no FP32 DML path) — so the
+    // row is read in its own element type. The per-row allocation is dwarfed by the
+    // forward pass it follows.
+    private float[] LogitsRow(Tensor logits, int position)
     {
-        ReadOnlySpan<float> data = logits.GetData<float>();
-        if (data.Length < _vocabSize || data.Length % _vocabSize != 0)
-            return ReadOnlySpan<float>.Empty;
+        int offset = position * _vocabSize;
+        switch (logits.Type())
+        {
+            case ElementType.float32:
+            {
+                ReadOnlySpan<float> data = logits.GetData<float>();
+                if ((long)offset + _vocabSize > data.Length)
+                    return Array.Empty<float>();
 
-        return data.Slice(data.Length - _vocabSize, _vocabSize);
+                return data.Slice(offset, _vocabSize).ToArray();
+            }
+            case ElementType.float16:
+            {
+                ReadOnlySpan<Half> data = logits.GetData<Half>();
+                if ((long)offset + _vocabSize > data.Length)
+                    return Array.Empty<float>();
+
+                ReadOnlySpan<Half> row = data.Slice(offset, _vocabSize);
+                var upcast = new float[_vocabSize];
+                for (int i = 0; i < _vocabSize; i++)
+                    upcast[i] = (float)row[i];
+
+                return upcast;
+            }
+            default:
+                return Array.Empty<float>();
+        }
     }
 
     private static double LogProbability(ReadOnlySpan<float> logits, int tokenId)

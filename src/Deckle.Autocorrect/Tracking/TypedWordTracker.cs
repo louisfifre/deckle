@@ -49,7 +49,13 @@ public sealed class TypedWordTracker
 
     public Action<WordCommit>? WordCommitted;
     public Action<WordEdit>? WordEdited;
-    public Action<ResetReason>? TrackerReset;
+
+    // The second argument says whether the reset threw away a word in flight
+    // (non-empty buffer). When it did, the discarded prefix's tail can commit
+    // as the next "word" — a fragment, not something the user typed as a word
+    // — so a consumer building a corpus can hold the next commit suspect. The
+    // tracker itself cannot tell tail from fresh word; it only reports the drop.
+    public Action<ResetReason, bool>? TrackerReset;
 
     /// <summary>The live buffer, for the CLI watch display.</summary>
     public string CurrentWord => _buffer.ToString();
@@ -269,10 +275,11 @@ public sealed class TypedWordTracker
 
     private void Reset(ResetReason reason)
     {
+        bool droppedPartialWord = _buffer.Length > 0;
         _buffer.Clear();
         _previousWord = null;
         _previousPreviousWord = null;
         CloseEditWindow();
-        TrackerReset?.Invoke(reason);
+        TrackerReset?.Invoke(reason, droppedPartialWord);
     }
 }
