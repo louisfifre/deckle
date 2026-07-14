@@ -4,7 +4,6 @@ using System.Text;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
@@ -17,6 +16,7 @@ public sealed partial class LogFilterBar : UserControl
     private readonly SortedDictionary<string, string> _modules = new(StringComparer.Ordinal);
     private LogFilterSelection? _selection;
     private bool _isSubscribed;
+    private bool _isSynchronizingOptions;
 
     public event EventHandler? FilterChanged;
 
@@ -66,58 +66,53 @@ public sealed partial class LogFilterBar : UserControl
     }
 
     private void RebuildOptions(
-        StackPanel host,
+        ListView host,
         LogFilterDimension dimension,
         IEnumerable<LogFilterOption> options)
     {
-        host.Children.Clear();
-        foreach (LogFilterOption option in options)
+        bool wasSynchronizing = _isSynchronizingOptions;
+        _isSynchronizingOptions = true;
+        try
         {
-            var token = new LogFilterToken(dimension, option.Value);
-            bool added = _selection?.Contains(token) == true;
-            var button = new Button
+            host.Items.Clear();
+            foreach (LogFilterOption option in options)
             {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                IsEnabled = !added,
-                Padding = new Thickness(10, 7, 10, 7),
-                Tag = token,
-            };
-
-            var row = new Grid { ColumnSpacing = 16 };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.Children.Add(new TextBlock
-            {
-                Text = option.Label,
-                VerticalAlignment = VerticalAlignment.Center,
-            });
-
-            if (added)
-            {
-                var status = new TextBlock
+                var token = new LogFilterToken(dimension, option.Value);
+                var item = new ListViewItem
                 {
-                    Text = Localize("LogFilter_Added"),
-                    VerticalAlignment = VerticalAlignment.Center,
+                    Content = option.Label,
+                    Style = (Style)Resources["LogFilterListViewItemStyle"],
+                    Tag = token,
                 };
-                Grid.SetColumn(status, 1);
-                row.Children.Add(status);
-                AutomationProperties.SetHelpText(button, Localize("LogFilter_Added"));
+                host.Items.Add(item);
+                item.IsSelected = _selection?.Contains(token) == true;
             }
-
-            button.Content = row;
-            AutomationProperties.SetName(button, option.Label);
-            button.Click += OnOptionClick;
-            host.Children.Add(button);
+        }
+        finally
+        {
+            _isSynchronizingOptions = wasSynchronizing;
         }
     }
 
-    private void OnOptionClick(object sender, RoutedEventArgs e)
+    private void OnOptionSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is Button { Tag: LogFilterToken token })
-            Selection.Add(token);
-        // A regular Button inside a Flyout deliberately does not dismiss it:
-        // the user can add several values before light-dismiss or Escape.
+        if (_isSynchronizingOptions) return;
+
+        _isSynchronizingOptions = true;
+        try
+        {
+            foreach (ListViewItem item in e.RemovedItems.OfType<ListViewItem>())
+                if (item.Tag is LogFilterToken token)
+                    Selection.Remove(token);
+
+            foreach (ListViewItem item in e.AddedItems.OfType<ListViewItem>())
+                if (item.Tag is LogFilterToken token)
+                    Selection.Add(token);
+        }
+        finally
+        {
+            _isSynchronizingOptions = false;
+        }
     }
 
     private void OnResetClick(object sender, RoutedEventArgs e) => Selection.Clear();
@@ -166,7 +161,7 @@ public sealed partial class LogFilterBar : UserControl
                     Localize("LogFilter_Remove_Format"), label)));
         }
 
-        ActiveFilters.Visibility = _activeFilters.Count > 0
+        ActiveFiltersScroller.Visibility = _activeFilters.Count > 0
             ? Visibility.Visible
             : Visibility.Collapsed;
         ResetButton.IsEnabled = _activeFilters.Count > 0;
@@ -174,9 +169,25 @@ public sealed partial class LogFilterBar : UserControl
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        BuildFixedOptions();
-        RebuildOptions(ModuleOptions, LogFilterDimension.Module,
-            OrderedModules());
+        SynchronizeOptions(SeverityOptions);
+        SynchronizeOptions(ModuleOptions);
+        SynchronizeOptions(CategoryOptions);
+    }
+
+    private void SynchronizeOptions(ListView host)
+    {
+        bool wasSynchronizing = _isSynchronizingOptions;
+        _isSynchronizingOptions = true;
+        try
+        {
+            foreach (ListViewItem item in host.Items.OfType<ListViewItem>())
+                if (item.Tag is LogFilterToken token)
+                    item.IsSelected = Selection.Contains(token);
+        }
+        finally
+        {
+            _isSynchronizingOptions = wasSynchronizing;
+        }
     }
 
     private string GetTokenLabel(LogFilterToken token) => token.Dimension switch

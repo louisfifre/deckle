@@ -91,6 +91,40 @@ public sealed class LogFilterSelectionTests
             "Deckle-App", EventLevel.LogAlways, Keywords.Lifecycle)));
     }
 
+    [Fact]
+    public void ChangedIsRaisedOnlyForEffectiveMutations()
+    {
+        var selection = new LogFilterSelection();
+        LogFilterToken token = Severity(EventLevel.Warning);
+        int changes = 0;
+        selection.Changed += (_, _) => changes++;
+
+        selection.Add(token);
+        selection.Add(token);
+        selection.Remove(Severity(EventLevel.Error));
+        selection.Remove(token);
+        selection.Clear();
+
+        Assert.Equal(2, changes);
+    }
+
+    [Fact]
+    public void ClearRemovesEveryDimensionWithOneNotification()
+    {
+        var selection = new LogFilterSelection();
+        selection.Add(Severity(EventLevel.Warning));
+        selection.Add(new LogFilterToken(LogFilterDimension.Module, "Deckle-Vision"));
+        selection.Add(Category(Keywords.Capture));
+        int changes = 0;
+        selection.Changed += (_, _) => changes++;
+
+        selection.Clear();
+
+        Assert.True(selection.IsEmpty);
+        Assert.Empty(selection.GetTokens());
+        Assert.Equal(1, changes);
+    }
+
     private static LogFilterToken Severity(EventLevel level)
         => new(LogFilterDimension.Severity, level.ToString());
 

@@ -141,29 +141,14 @@
   <data name="LogFilterBarSeverityButton.Content" xml:space="preserve">
     <value>Severity</value>
   </data>
-  <data name="LogFilterBarSeverityButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Filter by severity</value>
-  </data>
   <data name="LogFilterBarModuleButton.Content" xml:space="preserve">
     <value>Module</value>
-  </data>
-  <data name="LogFilterBarModuleButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Filter by Deckle module</value>
   </data>
   <data name="LogFilterBarCategoryButton.Content" xml:space="preserve">
     <value>Category</value>
   </data>
-  <data name="LogFilterBarCategoryButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Filter by diagnostic category</value>
-  </data>
   <data name="LogFilterBarResetButton.Content" xml:space="preserve">
     <value>Reset filters</value>
-  </data>
-  <data name="LogFilterBarResetButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Show all log entries</value>
-  </data>
-  <data name="LogFilter_Added" xml:space="preserve">
-    <value>Added</value>
   </data>
   <data name="LogFilter_Chip_Format" xml:space="preserve">
     <value>{0}: {1}</value>
