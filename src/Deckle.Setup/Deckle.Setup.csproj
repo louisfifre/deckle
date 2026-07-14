@@ -17,6 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Setup.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Versions aligned on Deckle.App.csproj. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />

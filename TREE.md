@@ -831,6 +831,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Engine/
 │   │   │   ├── PromptTemplates.cs
 │   │   │   └── RewriteService.cs
+│   │   ├── Settings/
+│   │   │   └── RewriteAvailability.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -977,6 +979,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SettingsWindow.xaml.cs
 │   │   └── TelemetryConsentWiring.cs
 │   ├── Deckle.Setup/
+│   │   ├── Relocation/
+│   │   │   ├── DataRootRelocator.cs
+│   │   │   ├── DataRootTree.cs
+│   │   │   └── WindowsDataRootRelocation.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1019,6 +1025,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleShellSource.cs
 │   │   ├── DispatcherQueueExtensions.cs
 │   │   ├── ElevatedStartupService.cs
+│   │   ├── GlobalHotkeyBindings.cs
 │   │   ├── HotkeyManager.cs
 │   │   ├── IconAssets.cs
 │   │   ├── MessageOnlyHost.cs
@@ -1134,6 +1141,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── WhisperStructs.cs
 │   │   ├── Setup/
 │   │   │   ├── NativeRuntime.cs
+│   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
 │   │   ├── AGENTS.md  — [agent-instructions] whisper.cpp ASR backend (IAsrBackend) — native log compaction, the whisper repe…
 │   │   ├── CLAUDE.md
@@ -1330,12 +1338,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
+│   ├── Deckle.Setup.Tests/
+│   │   ├── DataRootRelocatorTests.cs
+│   │   ├── DataRootTreeTests.cs
+│   │   └── Deckle.Setup.Tests.csproj
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   └── Deckle.Shell.TaskbarCover.Tests.csproj
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
+│   │   ├── GlobalHotkeyBindingsTests.cs
+│   │   ├── HotkeySelectionTests.cs
 │   │   └── ResizeGestureTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
@@ -1350,6 +1364,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
@@ -1358,7 +1373,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs
-│   │   └── RepetitionDetectorTests.cs
+│   │   ├── RepetitionDetectorTests.cs
+│   │   ├── SpeechModelFilesTests.cs
+│   │   └── SpeechModelResolverTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs

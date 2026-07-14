@@ -93,18 +93,25 @@ public static class SpeechModels
     {
         try
         {
-            return WhisperModels
-                .OrderByDescending(m => m.SizeBytes)
-                .Select(m => m.FileName)
-                .FirstOrDefault(f =>
-                {
-                    string path = Path.Combine(modelsDirectory, f);
-                    return File.Exists(path) && new FileInfo(path).Length > 0;
-                });
+            return BestInstalledFileName(modelsDirectory, IsUsableModelFile);
         }
         catch
         {
             return null;
         }
+    }
+
+    internal static string? BestInstalledFileName(
+        string modelsDirectory,
+        Func<string, bool> isUsable)
+        => WhisperModels
+            .OrderByDescending(m => m.SizeBytes)
+            .Select(m => m.FileName)
+            .FirstOrDefault(file => isUsable(Path.Combine(modelsDirectory, file)));
+
+    internal static bool IsUsableModelFile(string path)
+    {
+        try { return File.Exists(path) && new FileInfo(path).Length > 0; }
+        catch { return false; }
     }
 }

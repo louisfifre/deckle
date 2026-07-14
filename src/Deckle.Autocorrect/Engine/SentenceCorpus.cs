@@ -173,6 +173,14 @@ public sealed class SentenceCorpus
         Flush(reason == ResetReason.Enter ? "enter" : "interrupted");
     }
 
+    // Privacy boundary: discard an in-flight run without invoking Completed.
+    // Used when text collection consent is withdrawn or the engine stops.
+    public void Discard()
+    {
+        _nextWordSuspect = false;
+        _slots.Clear();
+    }
+
     private void Flush(string closure)
     {
         if (_slots.Count == 0) return;

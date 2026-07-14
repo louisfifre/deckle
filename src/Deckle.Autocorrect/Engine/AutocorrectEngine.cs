@@ -47,6 +47,7 @@ public sealed class AutocorrectEngine : IDisposable
     // record of typed input, so it stands behind its own dedicated consent toggle.
     private readonly Func<bool>? _textTelemetry;
     private readonly SentenceCorpus? _corpus;
+    private int _discardCorpusRequested;
 
     // The post-sentence contextual stage. Null only when no sentence reranker is
     // wired; the reranker may be deterministic rules alone or rules delegating to
@@ -149,6 +150,7 @@ public sealed class AutocorrectEngine : IDisposable
         _host.KeyReceived += OnKey;
         _host.PointerInteraction += OnPointerInteraction;
         _host.FocusChanged += OnFocusChanged;
+        _host.DrainRequested += OnDrainRequested;
         _tracker.WordCommitted += OnWordCommitted;
         _tracker.WordEdited += OnWordEdited;
         _tracker.TrackerReset += OnTrackerReset;
@@ -168,6 +170,7 @@ public sealed class AutocorrectEngine : IDisposable
     {
         _host.Stop();
         Unsubscribe();
+        _corpus?.Discard();
         _coordinator?.Invalidate(ResetReason.FocusChanged); // drop the sentence model
         _dictionary?.Flush();
         DeckleAutocorrectSource.Log.EngineStopped();
@@ -187,12 +190,28 @@ public sealed class AutocorrectEngine : IDisposable
         _host.KeyReceived -= OnKey;
         _host.PointerInteraction -= OnPointerInteraction;
         _host.FocusChanged -= OnFocusChanged;
+        _host.DrainRequested -= OnDrainRequested;
         _tracker.WordCommitted -= OnWordCommitted;
         _tracker.WordEdited -= OnWordEdited;
         _tracker.TrackerReset -= OnTrackerReset;
     }
 
     // ── Input thread handlers ────────────────────────────────────────────
+
+    // Called by the host when telemetry settings change. RequestDrain is the
+    // cross-thread marshalling point; the corpus itself remains input-thread-owned.
+    public void ReconcileTextTelemetry()
+    {
+        if (_textTelemetry?.Invoke() == true) return;
+        Interlocked.Exchange(ref _discardCorpusRequested, 1);
+        _host.RequestDrain();
+    }
+
+    private void OnDrainRequested()
+    {
+        if (Interlocked.Exchange(ref _discardCorpusRequested, 0) != 0)
+            _corpus?.Discard();
+    }
 
     private void OnKey(KeyboardKeyEvent e)
     {
@@ -251,8 +270,11 @@ public sealed class AutocorrectEngine : IDisposable
     private void OnFocusChanged()
     {
         var surface = _prober.Probe();
-        _surface = surface;
+        // The reset synchronously closes the corpus run. Keep the producing
+        // surface live until that run has been emitted; only then publish the
+        // newly focused surface.
         _tracker.NotifyFocusChanged();
+        _surface = surface;
 
         bool enabled = IsEnabledFor(_settings(), surface.ProcessName);
         DeckleAutocorrectSource.Log.SurfaceChanged(
@@ -410,6 +432,12 @@ public sealed class AutocorrectEngine : IDisposable
     // surface that produced the sentence.
     private void EmitText(SentenceCorpus.SentenceRecord rec)
     {
+        // Consent is live, not captured when the sentence starts. A reset can
+        // close an accumulated run after the user has switched collection off;
+        // do not expose that verbatim text to any EventSource listener.
+        if (_textTelemetry?.Invoke() != true)
+            return;
+
         DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
             _surface.ProcessName, rec.Typed, rec.Final, rec.History, rec.Closure, rec.Timing);
     }
@@ -436,8 +464,16 @@ public sealed class AutocorrectEngine : IDisposable
     {
         var surface = _surface;
         var settings = _settings();
-        if (!settings.Enabled || !IsEnabledFor(settings, surface.ProcessName)
-            || !surface.IsTextEditable || surface.IsPassword)
+        if (!settings.Enabled || !surface.IsTextEditable || surface.IsPassword)
+            return;
+
+        // Corpus collection spans every consented editable surface. Enrollment
+        // gates correction and learning, not reconstruction of the text already
+        // fed by OnWordCommitted.
+        if (_textTelemetry?.Invoke() == true)
+            _corpus?.Edit(edit.Original, edit.Replacement);
+
+        if (!IsEnabledFor(settings, surface.ProcessName))
             return;
 
         // A committed word the user reopened and retyped — the WMR signal, counted
@@ -461,10 +497,6 @@ public sealed class AutocorrectEngine : IDisposable
             DeckleAutocorrectSource.Log.LearningSignal("manual_accent_fix");
         }
 
-        // Fold the hand-fix into the corpus sentence: the typed side keeps the
-        // first attempt, the final side takes the retype.
-        if (_textTelemetry?.Invoke() == true)
-            _corpus?.Edit(edit.Original, edit.Replacement);
     }
 
     // Commits feed adoption only for plain out-of-lexicon words — the base

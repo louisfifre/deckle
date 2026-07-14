@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Deckle.Core;
 
 namespace Deckle.Shell;
@@ -22,7 +21,7 @@ public sealed class HotkeyManager : IDisposable
     private NativeMethods.SubclassProc? _subclassDelegate;
 
     private bool _disposed;
-    private bool _registered;
+    private readonly GlobalHotkeyBindings _bindings;
 
     // Arbitrary identifier to retrieve our subclass at Remove time.
     private static readonly UIntPtr SubclassId = new(0x5748_4B45); // "WHKE"
@@ -30,13 +29,13 @@ public sealed class HotkeyManager : IDisposable
     // (id, modifiers) pairs for RegisterAll / UnregisterAll — the full
     // catalogue of chords the shell knows how to bind. Adding a 4th hotkey
     // is just adding a line here.
-    private static readonly (int Id, uint Modifiers)[] Catalogue =
+    private static readonly GlobalHotkeyBinding[] Catalogue =
     {
-        (NativeMethods.HOTKEY_ID_TRANSCRIBE,
+        new(NativeMethods.HOTKEY_ID_TRANSCRIBE,
             NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-        (NativeMethods.HOTKEY_ID_PRIMARY_REWRITE,
+        new(NativeMethods.HOTKEY_ID_PRIMARY_REWRITE,
             NativeMethods.MOD_SHIFT | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
-        (NativeMethods.HOTKEY_ID_SECONDARY_REWRITE,
+        new(NativeMethods.HOTKEY_ID_SECONDARY_REWRITE,
             NativeMethods.MOD_CONTROL | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
     };
 
@@ -44,21 +43,28 @@ public sealed class HotkeyManager : IDisposable
     // decides which chords exist — an absent module's hotkeys are not
     // registered at all, leaving the chord free for other apps — the shell
     // only knows how to bind them.
-    private readonly (int Id, uint Modifiers)[] _hotkeys;
-
     public HotkeyManager(IntPtr hwnd, Action<int> onHotkey, IReadOnlyCollection<int> hotkeyIds)
     {
         _hwnd = hwnd;
         _onHotkey = onHotkey;
-        _hotkeys = Array.FindAll(Catalogue, h => hotkeyIds.Contains(h.Id));
+        GlobalHotkeyBinding[] selected = Array.FindAll(
+            Catalogue, binding => hotkeyIds.Contains(binding.Id));
+        _bindings = new GlobalHotkeyBindings(hwnd, selected, new Win32GlobalHotkeyApi());
     }
 
     public void Register()
     {
         _subclassDelegate = SubclassCallback;
-        NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero);
+        if (!NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
+            throw new InvalidOperationException("The hotkey window subclass could not be installed.");
 
-        RegisterAll();
+        try { RegisterAll(); }
+        catch
+        {
+            if (NativeMethods.RemoveWindowSubclass(_hwnd, _subclassDelegate, SubclassId))
+                _subclassDelegate = null;
+            throw;
+        }
     }
 
     // Resolves the current VK for the physical "left of 1" key under the
@@ -68,7 +74,7 @@ public sealed class HotkeyManager : IDisposable
     {
         // Always unregister first — no-op if nothing is registered yet, but
         // required when re-registering after a layout change.
-        UnregisterAll();
+        _bindings.Unregister();
 
         IntPtr hkl = NativeMethods.GetKeyboardLayout(0);
         uint vk = NativeMethods.MapVirtualKeyExW(
@@ -85,28 +91,7 @@ public sealed class HotkeyManager : IDisposable
 
         DeckleShellSource.Log.HotkeyRegistered(vk, hkl.ToInt64());
 
-        foreach (var (id, modifiers) in _hotkeys)
-        {
-            bool ok = NativeMethods.RegisterHotKey(_hwnd, id, modifiers, vk);
-            if (!ok)
-            {
-                int err = Marshal.GetLastWin32Error();
-                // err 1409 = ERROR_HOTKEY_ALREADY_REGISTERED — another app
-                // owns the combo (or WhispInteropTest is still running).
-                throw new InvalidOperationException(
-                    $"RegisterHotKey id={id} modifiers=0x{modifiers:X} vk=0x{vk:X2} failed (Win32 err {err}) — is WhispInteropTest still running?");
-            }
-        }
-
-        _registered = true;
-    }
-
-    private void UnregisterAll()
-    {
-        if (!_registered) return;
-        foreach (var (id, _) in _hotkeys)
-            NativeMethods.UnregisterHotKey(_hwnd, id);
-        _registered = false;
+        _bindings.Register(vk);
     }
 
     private IntPtr SubclassCallback(
@@ -142,9 +127,12 @@ public sealed class HotkeyManager : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        UnregisterAll();
+        _bindings.Unregister();
 
         if (_subclassDelegate is not null)
-            NativeMethods.RemoveWindowSubclass(_hwnd, _subclassDelegate, SubclassId);
+        {
+            if (NativeMethods.RemoveWindowSubclass(_hwnd, _subclassDelegate, SubclassId))
+                _subclassDelegate = null;
+        }
     }
 }
