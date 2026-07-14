@@ -9,6 +9,110 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.9.0](https://github.com/louisfifre/deckle/compare/v0.8.1...v0.9.0) — 2026-07-14
+
+### Added
+
+- **scripts:** Add record version workflow
+- **audio:** Decode audio files to pipeline PCM via Media Foundation
+- **transcription:** Add transcript writer and destination-folder setting
+- **transcription:** Run picked audio files through the monolithic pipeline
+- **hud:** Add the saved-transcript success message
+- **traymenu:** Add the transcribe-a-file command item
+- **app:** Wire the file-transcription flow from tray to HUD
+- **anytype:** Add schema admin MCP surface
+- **anytype:** Support project-to-epic links
+- **catalog:** Add an application-log consent slot to the telemetry registry
+- **catalog:** Give settings cards a searchable identity
+- **settings:** Move the Settings nav chrome into the native TitleBar
+- **settings:** Add the cross-page search index
+- **audio:** Declare the Recording page's search entries
+- **transcription:** Declare the Whisper page's search entries
+- **llm:** Declare the rewrite page's search entries
+- **autocorrect:** Declare the Autocorrect page's search entries
+- **lighting:** Declare the Ambient page's search entries
+- **trackpad:** Declare the Trackpad page's search entries
+- **diagnostics:** Declare the Diagnostics page's search entries
+- **settings:** Declare the General page's search entries
+- **settings:** Search every settings page from the TitleBar
+- **app:** Register the settings search contributions at boot
+- **settings:** Rework the TitleBar search presentation and focus exits
+- **settings:** Trace the TitleBar's settled layout geometry
+- **lighting:** Discover Hue bridges over local DNS-SD
+- **vision:** Expose available capture displays
+- **ambient:** Integrate local discovery and display selection
+- **modules:** Add the module presence catalogue
+- **app:** Gate module composition and settings on presence
+- **setup:** Open the wizard on a module selector
+- **mlm:** Pin the CamemBERT reranker asset catalog
+- **anytype:** Pin the backend bundle and install it from a zip
+- **setup:** Drive the install step from the selected modules
+- **setup:** Total the estimate over the whole install plan
+- **setup:** Total the estimate live on the module selector
+- **setup:** Run the wizard as installer with --install / --install-continue
+- **installer:** Make the stub a silent web-installer with a native window
+- **logging:** Add structured log window filters
+
+### Changed
+
+- **diagnostics:** Host the Diagnostics page in Deckle.Diagnostics.Logging
+- **shell:** Share the TitleBar caption-inset correction
+- **install:** Extract the Windows integration primitives
+- **logging:** Streamline live log filtering
+- **transcription:** Avoid redundant PCM copies
+- **logging:** Batch live log dispatch
+- **setup:** Move provisioning into owning backends
+- **setup:** Keep payload measurement off the UI thread
+
+### Fixed
+
+- **anytype:** Align schema admin with live type contract
+- **settings:** Honour display scale in caption reserve and window minimums
+- **settings:** Pack the collapsed search icon against the title
+- **app:** Honour display scale in the log window
+- **playground:** Honour display scale in the playground window
+- **settings:** Scale the initial window size
+- **app:** Scale the log window's initial size
+- **playground:** Scale the playground's initial size
+- **trackpad:** Yield active drag to four-finger gestures
+- **anytype:** Bound schema preview retention
+- **lighting:** Surface Hue discovery failures
+- **installer:** Keep cancellation aligned with setup state
+- **anytype:** Make preview lookup null-safe
+
+## [0.8.1](https://github.com/louisfifre/deckle/compare/v0.8.0...v0.8.1) — 2026-07-04
+
+### Added
+
+- **autocorrect:** Exempt reopened-retyped words from the commit stage
+- **autocorrect:** Adapt the ONNX judge to a slot reranker
+- **autocorrect:** Add the offline sentence-replay core
+- **autocorrect:** Read and align the typed-text corpus for replay
+- **autocorrect:** Calibrate the sentence margin from a corpus replay
+- **settings:** Let modules own their settings nav identity
+- **lighting:** Add Hue Entertainment streaming output
+- **catalog:** Add a telemetry consent registry for module settings pages
+- **autocorrect:** Select the sentence judge's execution provider
+- **lighting:** Add ambient Bezier brightness response
+- **anytype:** Expose document creation tool
+
+### Changed
+
+- **diagnostics:** Extract the shared settings-UX log source
+- **audio:** Host the Recording settings page in its module
+- **transcription:** Host the HUD overlay and auto-paste settings on the Dictation page
+- **lighting:** Host the ambient capture-log toggle on the Ambient page
+- **audio:** Host the microphone-telemetry opt-in on the Recording page
+- **transcription:** Host the dictation observability opt-ins on the Dictation page
+- **autocorrect:** Host the autocorrect observability opt-ins on the Autocorrect page
+
+### Fixed
+
+- **lighting:** Label ambient heartbeat push latency
+- **vision:** Reduce capture recovery warning noise
+- **lighting:** Prepare hue entertainment startup
+- **lighting:** Keep Hue Entertainment stream alive
+
 ## [0.8.0](https://github.com/louisfifre/deckle/compare/v0.7.2...v0.8.0) — 2026-07-03
 
 ### Added
@@ -133,7 +237,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Split the menu launch entry into Release and Debug
 - **scripts:** Add a version bump-and-tag menu command
 - **scripts:** Rework the dev menu as a 2D navigable grid
-- **anytype:** Management layer ÔÇö lifecycle verbs and reversible delete
+- **anytype:** Management layer — lifecycle verbs and reversible delete
 - **diagnostics:** Add windowing activity log toggle
 - **scripts:** Summarize workflow outcomes
 - **scripts:** Configure Anytype MCP management
@@ -158,9 +262,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Confirm-on-enable gate for consent toggles
 - **settings:** Reusable confirmation service for destructive commands
 - **autocorrect:** Derive the verb-morphology artifact and its loader
-- **autocorrect:** Add the grammar stage with subjectÔÇôverb agreement
+- **autocorrect:** Add the grammar stage with subject–verb agreement
 - **shell:** Unify both logon vehicles behind a StartupService facade
-- **anytype:** Backend lifecycle mechanism ÔÇö triggerless on-demand task + supervisor
+- **anytype:** Backend lifecycle mechanism — triggerless on-demand task + supervisor
 - **app:** Launch without the speech setup gate
 - **setup:** Recover a failed first-run download with a link and local import
 - **transcription:** Surface a set-up call-to-action when speech is unprovisioned
@@ -237,7 +341,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Compose the trackpad module
 - **trackpad:** Settings page and navigation entry
 - **trackpad:** Freeze calibrated values, retire the tuning expander
-- **anytype:** Core library over the live PM space ÔÇö client, frozen schema, gestures
+- **anytype:** Core library over the live PM space — client, frozen schema, gestures
 - **mcp:** Stdio JSON-RPC host exposing the 13 PM tools
 - **transcription:** Paragraph break on silence-cut utterances
 - **notifications:** Notification catalogue, dispatcher, and interactive toast channel
@@ -264,7 +368,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Persist the setup narrative and critical errors locally
 - **settings:** Link to the local diagnostics folder
 - **setup:** Offer the diagnostics folder on a failed first run
-- **anytype:** Replace_section ÔÇö heading-located body edit, verified
+- **anytype:** Replace_section — heading-located body edit, verified
 - **anytype:** Add dialogue chat tools
 - **autocorrect:** N-gram left-context disambiguation and precision-first eval
 - **autocorrect:** CamemBERT MLM reranker probe (offline)
@@ -338,7 +442,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Detach and flush taskbar cover settings at shutdown
 - **taskbar-cover:** Hold the provider to the Verbose/Info separation
 - **input:** Guard the parser-failure detail behind its braces
-- **anytype:** Invert the rapportÔåötask link, derive the project through tasks
+- **anytype:** Invert the rapport↔task link, derive the project through tasks
 - **app:** Always surface the streaming transcript in the log
 - **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
 - **app:** Register always-on local sinks before settings migration
