@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — Replay audit verdict: the 25% was a measurement artifact; the judge is rehabilitated
+
+The contested replay agreement (~25%) that had condemned the Qwen judge was audited and reversed. Three measurement faults, found and repaired: the corpus final string was scored as if it were ground truth (it is what landed on screen, not what was meant); 290 legacy records carried no keystroke history and were unrepairable as recorded; elision fusion misaligned slots. Measured cascade after repair: 23% → 58% (measurement fixed) → 80.7% changes-only against the maintainer-filled truth sheet (241 truths). The margin curve, flat-to-noisy before the repair, is monotonic after it (87.6% @0.25 · 90.8% @0.5 · 100% @3.0 on the 979-slot pass). Known sheet limit, accepted: a filled truth on a slot where the judge stops contradicting the final disappears at regeneration.
+
 ## 2026-07-04 (later) — The sentence judge runs on the GPU (DirectML), measured against CPU int4
 
 The Qwen3 closed-candidate judge now runs on the RX 7900 XT through a genai `-e dml` int4 export on the DmlExecutionProvider. CPU int4 and DirectML exports coexist under each model dir (`onnxruntime/cpu_and_mobile/…` and `onnxruntime/directml/directml-int4-block-32`); the provider is chosen in code and, for the bench, by `Deckle.Autocorrect.Probe --provider <cpu|dml>`.
