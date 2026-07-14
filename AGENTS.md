@@ -17,6 +17,8 @@ Quality target: a Windows app at Microsoft first-party level. Sensory reference:
 
 Local validation is compile-only `dotnet build`, Debug x64 by default, without stopping or relaunching Deckle. Agent builds must avoid persistent .NET build servers: pass `/nr:false /p:UseSharedCompilation=false`, or run `dotnet build-server shutdown` after any build command that did not. `publish` stays the maintainer's act, never triggered by agents.
 
+Every completed workstream advances the version. Before closing it, the agent proposes the appropriate bump and local version record.
+
 The commit ships under the maintainer's sole identity — no `Co-Authored-By: Claude` trailer, no `🤖 Generated with Claude Code` line.
 
 ## Name the hat
