@@ -9,6 +9,37 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.9.1](https://github.com/louisfifre/deckle/compare/v0.9.0...v0.9.1) — 2026-07-14
+
+### Added
+
+- **autocorrect-probe:** Select execution provider and stream batch progress
+- **autocorrect:** Collect the typed corpus on every editable surface
+- **autocorrect-lab:** Guard replay intake and overlay maintainer ground truth
+- **autocorrect:** Gate rare forms out of the sentence candidate set
+- **autocorrect-onnx:** Abstain below a four-word context floor
+- **transcription:** Default to ggml-base with installed-model fallback
+- **setup:** Update pipeline — silent check, download page, deploy update mode
+- **settings:** Update opt-out and version row on the General page
+- **app:** Wire the in-app updater end to end
+- **setup:** Data-root relocation page
+- **settings:** Move action on the data-folder card
+- **app:** Wire the data-root relocation end to end
+- **autocorrect:** Fall back the rarity gate to the slot's best variant
+- **autocorrect:** Wire the sentence judge into the live stage, margin 1.0
+
+### Changed
+
+- **install:** Move the release resolver into Deckle.Install
+
+### Fixed
+
+- **autocorrect-onnx:** Score in one forward and read fp16 logits for DirectML
+- **autocorrect:** Keep fragment tails out of corpus sentence starts
+- **setup:** Persist the chosen speech model into engine settings
+- **autocorrect-onnx:** Absorb the transient DML flake at model construction
+- **input:** Coalesce duplicate focus events
+
 ## [0.9.0](https://github.com/louisfifre/deckle/compare/v0.8.1...v0.9.0) — 2026-07-14
 
 ### Added

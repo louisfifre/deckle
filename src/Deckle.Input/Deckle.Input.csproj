@@ -8,6 +8,10 @@
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Input.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output. Convention
