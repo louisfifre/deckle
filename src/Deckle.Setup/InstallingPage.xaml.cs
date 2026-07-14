@@ -9,6 +9,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Modules;
+using Deckle.Transcription;
+using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
@@ -156,6 +159,20 @@ public sealed partial class InstallingPage : Page
         }
 
         UpdateGlobalStep(plan.Count, Loc.Get("Setup_Install_Done"));
+
+        // The wizard is the only surface where the model choice is an explicit
+        // act, and its plan skips a model already on disk — so the choice is
+        // persisted here, once the file is present, not inside the install
+        // item. Without this write a swap to an already-installed model would
+        // change nothing, and the engine would stay on the settings default.
+        if (_context.SelectedModules.Contains(ModuleIds.Transcription)
+            && _context.SelectedModel is { } chosenModel
+            && SpeechModels.IsInstalled(chosenModel)
+            && TranscriptionSettingsService.Instance.Current.Engine.Model != chosenModel.FileName)
+        {
+            TranscriptionSettingsService.Instance.Current.Engine.Model = chosenModel.FileName;
+            TranscriptionSettingsService.Instance.Save();
+        }
 
         // Hand off to the summary page. Frame.Navigate is UI-thread-safe when
         // invoked from an awaited continuation that resumed on the UI thread.
