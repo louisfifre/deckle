@@ -3,7 +3,7 @@ using Deckle.Core;
 
 namespace Deckle.Shell;
 
-// Registers the 3 global hotkeys and intercepts WM_HOTKEY via SetWindowSubclass.
+// Registers the host-selected global hotkeys and intercepts WM_HOTKEY via SetWindowSubclass.
 // SetWindowSubclass chains into the existing message pump of the host window
 // (message-only window in our case) without replacing its WndProc — the only
 // safe approach.
@@ -27,9 +27,10 @@ public sealed class HotkeyManager : IDisposable
     // Arbitrary identifier to retrieve our subclass at Remove time.
     private static readonly UIntPtr SubclassId = new(0x5748_4B45); // "WHKE"
 
-    // (id, modifiers) pairs for RegisterAll / UnregisterAll. Adding a 4th
-    // hotkey is just adding a line here.
-    private static readonly (int Id, uint Modifiers)[] Hotkeys =
+    // (id, modifiers) pairs for RegisterAll / UnregisterAll — the full
+    // catalogue of chords the shell knows how to bind. Adding a 4th hotkey
+    // is just adding a line here.
+    private static readonly (int Id, uint Modifiers)[] Catalogue =
     {
         (NativeMethods.HOTKEY_ID_TRANSCRIBE,
             NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
@@ -39,10 +40,17 @@ public sealed class HotkeyManager : IDisposable
             NativeMethods.MOD_CONTROL | NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT),
     };
 
-    public HotkeyManager(IntPtr hwnd, Action<int> onHotkey)
+    // The subset of the catalogue this instance actually binds. The host
+    // decides which chords exist — an absent module's hotkeys are not
+    // registered at all, leaving the chord free for other apps — the shell
+    // only knows how to bind them.
+    private readonly (int Id, uint Modifiers)[] _hotkeys;
+
+    public HotkeyManager(IntPtr hwnd, Action<int> onHotkey, IReadOnlyCollection<int> hotkeyIds)
     {
         _hwnd = hwnd;
         _onHotkey = onHotkey;
+        _hotkeys = Array.FindAll(Catalogue, h => hotkeyIds.Contains(h.Id));
     }
 
     public void Register()
@@ -55,7 +63,7 @@ public sealed class HotkeyManager : IDisposable
 
     // Resolves the current VK for the physical "left of 1" key under the
     // active keyboard layout, unregisters any previous bindings, and
-    // registers the 3 chords. Called at startup and on every WM_INPUTLANGCHANGE.
+    // registers the selected chords. Called at startup and on every WM_INPUTLANGCHANGE.
     private void RegisterAll()
     {
         // Always unregister first — no-op if nothing is registered yet, but
@@ -77,7 +85,7 @@ public sealed class HotkeyManager : IDisposable
 
         DeckleShellSource.Log.HotkeyRegistered(vk, hkl.ToInt64());
 
-        foreach (var (id, modifiers) in Hotkeys)
+        foreach (var (id, modifiers) in _hotkeys)
         {
             bool ok = NativeMethods.RegisterHotKey(_hwnd, id, modifiers, vk);
             if (!ok)
@@ -96,7 +104,7 @@ public sealed class HotkeyManager : IDisposable
     private void UnregisterAll()
     {
         if (!_registered) return;
-        foreach (var (id, _) in Hotkeys)
+        foreach (var (id, _) in _hotkeys)
             NativeMethods.UnregisterHotKey(_hwnd, id);
         _registered = false;
     }

@@ -29,23 +29,27 @@ public partial class App
             _                                         => $"id={hotkeyId}",
         };
 
-        var llm = Llm.Rewrite.LlmSettingsService.Instance.Current;
-        string? ResolveSlotName(string? id, string? nameFallback) =>
-            (!string.IsNullOrEmpty(id)
-                ? llm.Profiles.Find(p => p.Id == id)?.Name
-                : null)
-            ?? nameFallback;
-        string? manualProfile = hotkeyId switch
-        {
-            NativeMethods.HOTKEY_ID_PRIMARY_REWRITE   =>
-                ResolveSlotName(llm.PrimaryRewriteProfileId, llm.PrimaryRewriteProfileName),
-            NativeMethods.HOTKEY_ID_SECONDARY_REWRITE =>
-                ResolveSlotName(llm.SecondaryRewriteProfileId, llm.SecondaryRewriteProfileName),
-            _                                         => null,
-        };
-
         bool isRewriteHotkey = hotkeyId == NativeMethods.HOTKEY_ID_PRIMARY_REWRITE
                             || hotkeyId == NativeMethods.HOTKEY_ID_SECONDARY_REWRITE;
+
+        // Profile slots are read only when a rewrite chord fired. Guarding
+        // the read keeps the plain transcribe path from ever touching the
+        // Rewrite module's settings service — with the module absent its
+        // chords are not even registered (see hotkeyIds in OnLaunched), so
+        // this branch cannot run and the service is never instantiated.
+        string? manualProfile = null;
+        if (isRewriteHotkey)
+        {
+            var llm = Llm.Rewrite.LlmSettingsService.Instance.Current;
+            string? ResolveSlotName(string? id, string? nameFallback) =>
+                (!string.IsNullOrEmpty(id)
+                    ? llm.Profiles.Find(p => p.Id == id)?.Name
+                    : null)
+                ?? nameFallback;
+            manualProfile = hotkeyId == NativeMethods.HOTKEY_ID_PRIMARY_REWRITE
+                ? ResolveSlotName(llm.PrimaryRewriteProfileId, llm.PrimaryRewriteProfileName)
+                : ResolveSlotName(llm.SecondaryRewriteProfileId, llm.SecondaryRewriteProfileName);
+        }
 
         var result = _engine.RequestToggle(
             manualProfileName: manualProfile,

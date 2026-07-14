@@ -846,7 +846,16 @@ public partial class App : Microsoft.UI.Xaml.Application
         _tray.RightClickRequested += () => _trayMenu.Show();
 
         _tray.Register(_messageHost.Hwnd);
-        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey);
+        // Presence gates the chords themselves: an absent Rewrite module has
+        // no hotkeys registered at all — the OS-wide combos stay free for
+        // other apps, symmetric with its settings page never registering.
+        var hotkeyIds = new List<int> { NativeMethods.HOTKEY_ID_TRANSCRIBE };
+        if (rewritePresent)
+        {
+            hotkeyIds.Add(NativeMethods.HOTKEY_ID_PRIMARY_REWRITE);
+            hotkeyIds.Add(NativeMethods.HOTKEY_ID_SECONDARY_REWRITE);
+        }
+        _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyIds);
         // Try/catch required: RegisterHotKey can fail with err 1409
         // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns
         // the chord; typically WhispInteropTest still running through the

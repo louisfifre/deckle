@@ -1,6 +1,7 @@
 using Deckle.Audio;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Llm.Rewrite;
+using Deckle.Modules;
 using Deckle.Transcription;
 
 namespace Deckle.App;
@@ -21,7 +22,17 @@ internal sealed class AppTranscriptionEngineHost : ITranscriptionEngineHost
     public TranscriptionSettings Transcription => TranscriptionSettingsService.Instance.Current;
     public CaptureSettings       Audio         => CaptureSettingsService.Instance.Current;
     public TelemetrySettings     Telemetry     => TelemetrySettingsService.Instance.Current;
-    public LlmSettings           Llm           => LlmSettingsService.Instance.Current;
+
+    // Presence sits above the module's own Enabled toggle: with Rewrite
+    // absent the engine sees a disabled, profile-less LlmSettings, so neither
+    // the manual-hotkey branch nor the auto-rewrite rules can fire — and the
+    // absent module's LlmSettingsService is never instantiated (its ctor
+    // would create modules/llm/settings.json on disk).
+    public LlmSettings Llm =>
+        ModulePresence.IsPresent(ModuleIds.Rewrite)
+            ? LlmSettingsService.Instance.Current
+            : _rewriteAbsent;
+    private static readonly LlmSettings _rewriteAbsent = new() { Enabled = false, Profiles = new() };
 
     public string ResolveModelsDirectory() => TranscriptionSettingsService.Instance.ResolveModelsDirectory();
 
