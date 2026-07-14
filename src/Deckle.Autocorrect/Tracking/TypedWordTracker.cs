@@ -47,6 +47,15 @@ public sealed class TypedWordTracker
     private string? _word2BeforeLast;   // previousPreviousWord as it stood before _lastCommittedWord
     private string? _originalForEdit;   // compared against the re-commit to emit a WordEdit
 
+    // ── Separator-run state ──
+    // The on-screen chars between the last commit and the live word, surfaced
+    // as WordCommit.PrecedingSeparators. Valid from a commit until anything
+    // makes the run unfaithful to the screen (a backspace into it, a reset, a
+    // re-open); invalid renders as "" and the boundary families abstain.
+    private const int SeparatorRunCap = 8;
+    private readonly StringBuilder _separators = new();
+    private bool _separatorsValid;
+
     public Action<WordCommit>? WordCommitted;
     public Action<WordEdit>? WordEdited;
 
@@ -165,7 +174,9 @@ public sealed class TypedWordTracker
         }
 
         // Empty buffer: boundary noise — commits nothing, clears nothing, but
-        // closes the edit window like any other empty-buffer boundary.
+        // closes the edit window like any other empty-buffer boundary. It IS a
+        // char on screen, so the separator run keeps it.
+        AppendSeparator('\'');
         if (_editWindowOpen)
             CloseEditWindow();
     }
@@ -177,7 +188,9 @@ public sealed class TypedWordTracker
             // Consecutive boundaries are noise; a boundary never clears the
             // previousWord context. It DOES push the committed word away from
             // the caret, so the re-open gesture no longer concerns it — a
-            // Backspace here eats this extra boundary, not the commit's.
+            // Backspace here eats this extra boundary, not the commit's. The
+            // separator run keeps it: it is a char on screen (", " builds here).
+            AppendSeparator(boundary);
             if (_editWindowOpen)
                 CloseEditWindow();
             return;
@@ -194,7 +207,10 @@ public sealed class TypedWordTracker
             return;
         }
 
-        // Empty buffer.
+        // Empty buffer: whatever this backspace eats (the boundary it re-opens,
+        // a noise separator, unknown territory), the separator run no longer
+        // matches the screen.
+        InvalidateSeparators();
         if (_editWindowOpen && !_reopened && _lastCommittedWord is not null)
         {
             // First backspace after a commit: eat the boundary, re-open the
@@ -239,6 +255,16 @@ public sealed class TypedWordTracker
         bool wasReopened = _reopened;
         string? original = _originalForEdit;
 
+        // The run that stood between the previous word and this one — faithful
+        // only when nothing disturbed it, and never for a re-opened word (its
+        // original run was not re-tracked). The commit's own boundary seeds the
+        // next word's run, in its on-screen rendering (elision apostrophes live
+        // inside the word and render empty).
+        string precedingSeparators = _separatorsValid && !wasReopened ? _separators.ToString() : string.Empty;
+        _separators.Clear();
+        _separators.Append(WordBoundaries.DisplaySeparator(boundary));
+        _separatorsValid = true;
+
         // Chain slides by one: this word becomes the previous, the previous slides
         // to two-back; the old two-back drops off (the next word's context is
         // [previous, this]).
@@ -257,7 +283,8 @@ public sealed class TypedWordTracker
         _reopened = false;
 
         WordCommitted?.Invoke(
-            new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs, wasReopened));
+            new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs, wasReopened,
+                precedingSeparators));
 
         if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
             WordEdited?.Invoke(new WordEdit(original, word, timestampMs));
@@ -279,7 +306,27 @@ public sealed class TypedWordTracker
         _buffer.Clear();
         _previousWord = null;
         _previousPreviousWord = null;
+        InvalidateSeparators();
         CloseEditWindow();
         TrackerReset?.Invoke(reason, droppedPartialWord);
+    }
+
+    // Grows the separator run with one on-screen char; a run past the cap is
+    // punctuation art, not a word gap — invalid rather than truncated.
+    private void AppendSeparator(char c)
+    {
+        if (!_separatorsValid) return;
+        if (_separators.Length >= SeparatorRunCap)
+        {
+            InvalidateSeparators();
+            return;
+        }
+        _separators.Append(c);
+    }
+
+    private void InvalidateSeparators()
+    {
+        _separators.Clear();
+        _separatorsValid = false;
     }
 }

@@ -44,7 +44,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         IFrequencyLexicon? french = null,
         IFrequencyLexicon? english = null,
         Func<bool>? decisionTelemetry = null,
-        Func<bool>? textTelemetry = null)
+        Func<bool>? textTelemetry = null,
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
     {
         Policy = policy ?? NeverCorrects;
 
@@ -62,7 +63,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Engine = new AutocorrectEngine(
             Host, _decoder, Tracker, Prober, Policy, Injector,
             () => Settings, dictionary, french, english,
-            decisionTelemetry: decisionTelemetry, textTelemetry: textTelemetry);
+            decisionTelemetry: decisionTelemetry, textTelemetry: textTelemetry,
+            mistouchFamilies: mistouchFamilies);
 
         Engine.SurfaceChanged += (s, e) => SurfaceChanges.Add((s, e));
         Engine.CorrectionApplied += d => Applied.Add(d);
@@ -123,6 +125,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         '-' => 0xBD,  // VK_OEM_MINUS
         '.' => 0xBE,  // VK_OEM_PERIOD
         ',' => 0xBC,  // VK_OEM_COMMA
+        ';' => 0xBA,  // VK_OEM_1
         _ => (ushort)c,
     };
 

@@ -32,6 +32,11 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly IFrequencyLexicon? _french;
     private readonly IFrequencyLexicon? _english;
 
+    // The approved mistouch families' detector-generator (CONTEXT.md § Mistouch
+    // family) — null when no family is approved, and the engine runs untouched.
+    // Kinds are code, the records are the user's own data.
+    private readonly MistouchFamilyCorrector? _mistouch;
+
     // Opt-in per-word decision telemetry. When this returns true, each evaluated
     // word on an enrolled surface emits a structured trace (candidates, scores,
     // margins, the guard that left it literal) to the autocorrect.decisions dataset.
@@ -119,7 +124,8 @@ public sealed class AutocorrectEngine : IDisposable
         ISentenceReranker? reranker = null,
         IAmbiguityProbe? probe = null,
         Func<bool>? decisionTelemetry = null,
-        Func<bool>? textTelemetry = null)
+        Func<bool>? textTelemetry = null,
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
     {
         _host = host;
         _decoder = decoder;
@@ -135,6 +141,9 @@ public sealed class AutocorrectEngine : IDisposable
         _textTelemetry = textTelemetry;
         _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
         _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
+        _mistouch = mistouchFamilies is { Count: > 0 }
+            ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
+            : null;
 
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
@@ -378,6 +387,12 @@ public sealed class AutocorrectEngine : IDisposable
             else
                 ApplyCorrection(commit, decision);
 
+            // Boundary mistouch families act on the span BEHIND the word — a
+            // territory no word-level policy sees. Only when the commit itself
+            // was left alone: never two injections off one keystroke.
+            if (decision is null)
+                TryApplyMistouchRepair(commit);
+
             if (trace is not null)
                 EmitDecision(wordId, commit.Word, leftContext, trace);
 
@@ -434,6 +449,54 @@ public sealed class AutocorrectEngine : IDisposable
             InjectionFailed?.Invoke(decision.Original, decision.Replacement);
         }
     }
+
+    // Applies an approved mistouch family's span repair — the separator run
+    // between the previous word and the one just committed, rewritten on screen
+    // (« qu;il » → « qu'il »). A learned suppression vetoes it like any
+    // correction; the corpus records the separator change on the final side so
+    // the emitted sentence stays glued to the screen (the typed side keeps the
+    // faulty run — the mining pair). Known accepted drift: the tracker's
+    // two-back context and the sentence coordinator keep the pre-repair
+    // separator — advisory context, one char off, never re-injected.
+    private void TryApplyMistouchRepair(WordCommit commit)
+    {
+        if (_mistouch is null) return;
+        MistouchFamilyCorrector.SpanRepair? repair = _mistouch.Evaluate(commit);
+        if (repair is null) return;
+        if (_dictionary?.IsSuppressed(repair.Original, repair.Replacement) == true) return;
+
+        string boundary = WordBoundaries.DisplaySeparator(commit.Boundary);
+        string current = repair.Original + boundary;
+        string target = repair.Replacement + boundary;
+        var plan = InjectionPlan.Compute(current, target);
+        var decision = new CorrectionDecision(
+            repair.Original, repair.Replacement, CorrectionReason.MistouchFamily);
+
+        if (_injector.Replace(current, target))
+        {
+            _rollupCorrections++;
+            DeckleAutocorrectSource.Log.CorrectionApplied();
+            DeckleAutocorrectSource.Log.CorrectionDetail(
+                decision.Reason.ToString(), repair.Original.Length,
+                repair.Replacement.Length, plan.Backspaces);
+            if (_textTelemetry?.Invoke() == true)
+                _corpus?.SeparatorEdit(repair.Previous, repair.OldSeparators, repair.NewSeparators);
+            CorrectionApplied?.Invoke(decision);
+        }
+        else
+        {
+            DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
+            InjectionFailed?.Invoke(repair.Original, repair.Replacement);
+        }
+    }
+
+    // A word is protected when any tier the engine sees knows it — the French
+    // lexicon, the restricted global-English seed, or the user's own adopted
+    // vocabulary. The mistouch corrector's validity oracle.
+    private bool IsProtectedWord(string lowerForm) =>
+        _french?.Contains(lowerForm) == true
+        || _english?.Contains(lowerForm) == true
+        || _dictionary?.IsAdopted(lowerForm) == true;
 
     // Feed the typed-sentence corpus one word: the verbatim typed form paired with
     // the form the engine left on screen (onScreen). Collection reaches here only for

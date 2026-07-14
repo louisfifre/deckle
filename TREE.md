@@ -426,6 +426,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
 │   │   │   ├── ISentenceScorer.cs
+│   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
 │   │   │   ├── SentenceCorpus.cs
@@ -441,6 +442,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── KeyboardStateInterop.cs
 │   │   ├── Learning/
 │   │   │   ├── IPersonalLexicon.cs
+│   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
 │   │   │   └── PersonalDictionaryData.cs
 │   │   ├── Lexicon/
@@ -1242,6 +1244,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineHarness.cs
 │   │   ├── AutocorrectEngineLearningTests.cs
 │   │   ├── AutocorrectEngineLifecycleTests.cs
+│   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
@@ -1265,6 +1268,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MarginCalibrationTests.cs
+│   │   ├── MistouchFamilyCorrectorTests.cs
+│   │   ├── MistouchFamilyStoreTests.cs
 │   │   ├── MistouchMinerTests.cs
 │   │   ├── MistouchMiningGestureTests.cs
 │   │   ├── MorphalouReaderTests.cs

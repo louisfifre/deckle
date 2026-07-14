@@ -123,6 +123,26 @@ public sealed class SentenceCorpus
             Flush("sentence");
     }
 
+    // A mistouch boundary repair changed the separator BETWEEN two committed
+    // words (« qu;il » → « qu'il ») — a form-preserving edit no transition can
+    // carry, recorded on the slot's final rendering so the final string stays
+    // glued to the screen. The typed side keeps the faulty run: that pair is
+    // exactly what mining feeds on. Scans from the end, newest slot first;
+    // after a flush there is nothing to fix and the edit is dropped, like a
+    // post-close SentenceEdit.
+    public void SeparatorEdit(string finalForm, string oldSeparator, string newSeparator)
+    {
+        for (int i = _slots.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(_slots[i].Final, finalForm, StringComparison.Ordinal)
+                && string.Equals(_slots[i].FinalSeparator, oldSeparator, StringComparison.Ordinal))
+            {
+                _slots[i].FinalSeparator = newSeparator;
+                return;
+            }
+        }
+    }
+
     // The sentence stage rewrote a committed word from behind (original → new) while
     // the sentence was still open. Record it as a Sentence transition on the matching
     // still-open slot; a rewrite after flush finds none and is dropped (post-close,
