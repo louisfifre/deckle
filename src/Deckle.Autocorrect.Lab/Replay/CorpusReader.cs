@@ -10,8 +10,11 @@ namespace Deckle.Autocorrect.Lab;
 // that predates the history field (pre-2026-07-02) carries NO property, and the
 // alignment must treat it differently from a modern record that simply had nothing
 // to correct (property present, value ""). Only the reader can tell the two apart,
-// so it surfaces the fact rather than folding it into an empty string.
-public readonly record struct CorpusEntry(SentenceCorpus.SentenceRecord Record, bool HistoryPresent);
+// so it surfaces the fact rather than folding it into an empty string. Process is
+// the producing application (payload "process", "" when absent) — the replay never
+// reads it, the surface profiler ventilates on it.
+public readonly record struct CorpusEntry(
+    SentenceCorpus.SentenceRecord Record, bool HistoryPresent, string Process = "");
 
 // Reads the typed-text corpus back off disk: one autocorrect.text.jsonl line per
 // completed sentence, the shape the JsonlSink writes —
@@ -20,8 +23,8 @@ public readonly record struct CorpusEntry(SentenceCorpus.SentenceRecord Record, 
 //                  "closure": …, "timing": … } }
 // — into the same SentenceCorpus.SentenceRecord the accumulator emitted, so the
 // offline replay reads exactly what the live engine collected. Only the payload
-// matters here; the envelope (timestamp, session, process) is provenance the
-// calibration pass does not need.
+// matters here; the envelope (timestamp, session) is provenance the offline
+// passes do not need.
 //
 // Tolerant by design, like the ASR CorpusLoader: a blank line, a truncated tail
 // line from a crash mid-write, or a line missing its payload is skipped rather
@@ -71,7 +74,7 @@ public static class CorpusReader
 
             var record = new SentenceCorpus.SentenceRecord(
                 typed, final, String(payload, "history"), closure, String(payload, "timing"));
-            entry = new CorpusEntry(record, historyPresent);
+            entry = new CorpusEntry(record, historyPresent, String(payload, "process"));
             return true;
         }
         catch (JsonException)

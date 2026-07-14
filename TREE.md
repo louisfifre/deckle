@@ -482,6 +482,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
+│   │   ├── Profiling/
+│   │   │   ├── SurfaceProfiler.cs
+│   │   │   └── SurfaceProfileReport.cs
 │   │   ├── Replay/
 │   │   │   ├── CorpusReader.cs
 │   │   │   ├── MarginCalibration.cs
@@ -1272,6 +1275,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceReplayGestureTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── SurfaceProfileGestureTests.cs
+│   │   ├── SurfaceProfilerTests.cs
 │   │   ├── TruthOverlayTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── TypingStreamTests.cs
