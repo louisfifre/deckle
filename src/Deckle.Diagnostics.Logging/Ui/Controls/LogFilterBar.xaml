@@ -5,16 +5,26 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Deckle.Diagnostics.Logging.Ui.Controls">
 
+    <UserControl.Resources>
+        <Style x:Key="LogFilterFlyoutPresenterStyle"
+               TargetType="FlyoutPresenter"
+               BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+            <Setter Property="Padding"
+                    Value="{StaticResource MenuFlyoutPresenterThemePadding}" />
+        </Style>
+        <Style x:Key="LogFilterListViewItemStyle"
+               TargetType="ListViewItem"
+               BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="Padding"
+                    Value="16,0,16,0" />
+        </Style>
+    </UserControl.Resources>
+
     <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
             BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
             BorderThickness="0,1,0,0"
             Padding="12,8">
-        <Grid RowSpacing="8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
+        <StackPanel Spacing="8">
             <Grid x:Name="FilterCommands" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -28,13 +38,11 @@
                                 x:Uid="LogFilterBarSeverityButton"
                                 Grid.Column="0">
                     <DropDownButton.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedLeft">
-                            <ScrollViewer MaxHeight="360"
-                                          VerticalScrollBarVisibility="Auto">
-                                <StackPanel x:Name="SeverityOptions"
-                                            MinWidth="200"
-                                            Spacing="2" />
-                            </ScrollViewer>
+                        <Flyout FlyoutPresenterStyle="{StaticResource LogFilterFlyoutPresenterStyle}">
+                            <ListView x:Name="SeverityOptions"
+                                      SelectionMode="Multiple"
+                                      IsMultiSelectCheckBoxEnabled="False"
+                                      SelectionChanged="OnOptionSelectionChanged" />
                         </Flyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
@@ -43,13 +51,11 @@
                                 x:Uid="LogFilterBarModuleButton"
                                 Grid.Column="1">
                     <DropDownButton.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedLeft">
-                            <ScrollViewer MaxHeight="360"
-                                          VerticalScrollBarVisibility="Auto">
-                                <StackPanel x:Name="ModuleOptions"
-                                            MinWidth="220"
-                                            Spacing="2" />
-                            </ScrollViewer>
+                        <Flyout FlyoutPresenterStyle="{StaticResource LogFilterFlyoutPresenterStyle}">
+                            <ListView x:Name="ModuleOptions"
+                                      SelectionMode="Multiple"
+                                      IsMultiSelectCheckBoxEnabled="False"
+                                      SelectionChanged="OnOptionSelectionChanged" />
                         </Flyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
@@ -58,13 +64,11 @@
                                 x:Uid="LogFilterBarCategoryButton"
                                 Grid.Column="2">
                     <DropDownButton.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedLeft">
-                            <ScrollViewer MaxHeight="360"
-                                          VerticalScrollBarVisibility="Auto">
-                                <StackPanel x:Name="CategoryOptions"
-                                            MinWidth="200"
-                                            Spacing="2" />
-                            </ScrollViewer>
+                        <Flyout FlyoutPresenterStyle="{StaticResource LogFilterFlyoutPresenterStyle}">
+                            <ListView x:Name="CategoryOptions"
+                                      SelectionMode="Multiple"
+                                      IsMultiSelectCheckBoxEnabled="False"
+                                      SelectionChanged="OnOptionSelectionChanged" />
                         </Flyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
@@ -78,17 +82,21 @@
                         Click="OnResetClick" />
             </Grid>
 
-            <ItemsControl x:Name="ActiveFilters"
-                          Grid.Row="1"
-                          Visibility="Collapsed">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapGrid Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="local:ActiveLogFilterChip">
-                        <Button Margin="0,0,6,6"
+            <ScrollViewer x:Name="ActiveFiltersScroller"
+                          Visibility="Collapsed"
+                          HorizontalScrollMode="Auto"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollMode="Disabled"
+                          VerticalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="ActiveFilters">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:ActiveLogFilterChip">
+                            <Button Margin="0,0,6,0"
                                 Padding="10,4"
                                 MinHeight="28"
                                 CornerRadius="14"
@@ -97,7 +105,6 @@
                                 BorderThickness="1"
                                 Tag="{x:Bind}"
                                 AutomationProperties.Name="{x:Bind AccessibleName}"
-                                ToolTipService.ToolTip="{x:Bind AccessibleName}"
                                 Click="OnRemoveFilterClick"
                                 PointerEntered="OnChipPointerEntered"
                                 PointerExited="OnChipPointerExited"
@@ -113,10 +120,11 @@
                                           Width="12"
                                           Opacity="0" />
                             </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </StackPanel>
     </Border>
 </UserControl>

@@ -1452,16 +1452,13 @@
   <data name="LogWindow_FiltersButton_Default" xml:space="preserve">
     <value>Filters</value>
   </data>
-  <data name="LogWindowFiltersToggle.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Show or hide filters</value>
-  </data>
   <data name="LogWindow_FiltersButton_Format" xml:space="preserve">
     <value>Filters ({0})</value>
   </data>
-  <data name="LogWindowAutoScrollToggle.Label" xml:space="preserve">
+  <data name="LogWindowAutoScrollToggle.Content" xml:space="preserve">
     <value>Auto-scroll</value>
   </data>
-  <data name="LogWindowWrapToggle.Label" xml:space="preserve">
+  <data name="LogWindowWrapToggle.Content" xml:space="preserve">
     <value>Word wrap</value>
   </data>
   <data name="LogWindowCopyBadgeText.Text" xml:space="preserve">
@@ -1478,6 +1475,9 @@
   </data>
   <data name="LogWindow_CopyBadge_Failed" xml:space="preserve">
     <value>Copy failed</value>
+  </data>
+  <data name="LogWindowCopyMenuItem.Text" xml:space="preserve">
+    <value>Copy</value>
   </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────

@@ -21,12 +21,19 @@ public sealed class LogEntry
 {
     public EventEntry Entry { get; }
     public string Text { get; }
+    public string TimestampText { get; }
+    public string SourceText { get; }
+    public string MessageText { get; }
     public string EventName => Entry.EventName;
     public EventLevel Level => Entry.Level;
 
     public LogEntry(EventEntry entry)
     {
         Entry = entry;
-        Text = LogLineFormatter.Format(entry);
+        LogLineParts parts = LogLineFormatter.GetParts(entry);
+        Text = parts.Text;
+        TimestampText = parts.Timestamp;
+        SourceText = $" [{parts.Source}] ";
+        MessageText = parts.Message;
     }
 }

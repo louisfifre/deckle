@@ -82,7 +82,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         while (_pendingEntries.TryDequeue(out _)) { }
         _entries.Clear();
         _visible.Clear();
-        _itemsPanel = null;
     }
 
     // ── Implementation ─────────────────────────────────────────────────────────
