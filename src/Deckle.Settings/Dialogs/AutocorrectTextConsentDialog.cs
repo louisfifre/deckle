@@ -23,7 +23,12 @@ internal static class AutocorrectTextConsentDialog
 {
     public static async Task<bool> ShowAsync(XamlRoot root)
     {
-        string where = Path.Combine(CorpusPaths.GetDirectoryPath(), "autocorrect.text.jsonl");
+        // One consent envelope, two files: the typed-sentence corpus and, on
+        // enrolled apps only, the typing stream (runs segmented at backward
+        // repairs). Both paths shown so the where stays the actual files.
+        string directory = CorpusPaths.GetDirectoryPath();
+        string where = Path.Combine(directory, "autocorrect.text.jsonl")
+            + "\n" + Path.Combine(directory, "autocorrect.stream.jsonl");
 
         var body = new StackPanel { Spacing = 12 };
 

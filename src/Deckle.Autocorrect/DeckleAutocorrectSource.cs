@@ -37,6 +37,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtAutocorrectDecision = 17;
     public const int EvtAutocorrectRerank   = 18;
     public const int EvtAutocorrectText     = 19;
+    public const int EvtAutocorrectStream   = 21;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -272,6 +273,33 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtAutocorrectText, process, typed, final, history, closure, timing);
+    }
+
+    // ── Typing stream ─────────────────────────────────────────────────────
+    //
+    // One closed run of the typing stream (CONTEXT.md § Typing stream): the
+    // verbatim forward flow typed on an ENROLLED correctable surface, segmented
+    // at backward repairs. `text` is the run as it landed on screen; `erased`
+    // the backspaces that preceded it inside the span; `closure` why it ended
+    // ("repair" and "cap" continue the span, "enter"/"navigation"/"escape"/
+    // "shortcut"/"delete"/"deadkey"/"pointer"/"focus" end it); `timing` the
+    // per-char keystroke gaps in ms. Replaying the runs in order restores the
+    // faulty forms as they stood, what was erased, what was retyped — the
+    // substrate of mistouch-family mining and of the natural-language corpus.
+    // Verbatim typed input: routed solely to the opt-in autocorrect.stream.jsonl
+    // sink under the SAME consent envelope as the typed-sentence corpus (gated
+    // by AutocorrectText, off by default) and excluded from app.jsonl. Password
+    // surfaces never reach the stream — the engine gates them before decoding.
+
+    [Event(EvtAutocorrectStream,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "stream | {0} | {1} | erased={2} | {3}")]
+    public void AutocorrectStreamRecorded(
+        string process, string text, int erased, string closure, string timing)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtAutocorrectStream, process, text, erased, closure, timing);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

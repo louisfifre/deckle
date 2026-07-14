@@ -55,9 +55,10 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     [ObservableProperty]
     public partial bool AutocorrectDecisions { get; set; }
 
-    // Autocorrect text — the verbatim typed-sentence corpus
-    // (autocorrect.text.jsonl). The heaviest text capture; consent-gated,
-    // independent of Decisions, off by default.
+    // Autocorrect text — one consent envelope over the two verbatim captures:
+    // the typed-sentence corpus (autocorrect.text.jsonl) and, on enrolled
+    // surfaces only, the typing stream (autocorrect.stream.jsonl). The heaviest
+    // text capture; consent-gated, independent of Decisions, off by default.
     [ObservableProperty]
     public partial bool AutocorrectText { get; set; }
 

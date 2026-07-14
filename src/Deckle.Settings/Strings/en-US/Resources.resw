@@ -223,13 +223,13 @@
     <value>Keep a record of the text you type</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save each sentence you type at the keyboard to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. This covers every editable field on any app — not only the ones you have enrolled — because the point is a record of your own writing. It builds a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
+    <value>Deckle will save each sentence you type at the keyboard to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. This covers every editable field on any app — not only the ones you have enrolled — because the point is a record of your own writing. On enrolled apps it also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
-    <value>The full text you type at the keyboard, verbatim — in every editable field on any app, including errors the corrector did not catch. Password fields are never seen, and text you paste or dictate is not recorded — only what you physically type. Nothing is sent over the network.</value>
+    <value>The full text you type at the keyboard, verbatim — in every editable field on any app, including errors the corrector did not catch. On apps you have enrolled, the typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded — only what you physically type. Nothing is sent over the network.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
-    <value>This is the most complete text capture in Deckle — a verbatim record of what you type. It stays on this device. Turn it off when you have gathered enough, and delete the file when you no longer need it — it is not rotated.</value>
+    <value>This is the most complete text capture in Deckle — a verbatim record of what you type. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them — they are not rotated.</value>
   </data>
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->

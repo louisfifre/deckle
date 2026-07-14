@@ -462,6 +462,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyDecoder.cs
 │   │   │   ├── Keystroke.cs
 │   │   │   ├── TypedWordTracker.cs
+│   │   │   ├── TypingStream.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
 │   │   ├── Ui/
@@ -1273,6 +1274,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── TruthOverlayTests.cs
 │   │   ├── TypedWordTrackerTests.cs
+│   │   ├── TypingStreamTests.cs
 │   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/

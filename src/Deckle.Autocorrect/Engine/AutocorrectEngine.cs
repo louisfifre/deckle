@@ -49,6 +49,12 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly SentenceCorpus? _corpus;
     private int _discardCorpusRequested;
 
+    // The typing stream (CONTEXT.md § Typing stream) rides the same consent
+    // envelope as the corpus but a TIGHTER surface gate: enrolled surfaces only,
+    // where the corpus spans every editable one. Fed the same decoded keystrokes
+    // the tracker consumes — a parallel verbatim capture, not a word model.
+    private readonly TypingStream? _stream;
+
     // The post-sentence contextual stage. Null only when no sentence reranker is
     // wired; the reranker may be deterministic rules alone or rules delegating to
     // an ONNX model. The lane owns the background inference thread; the
@@ -128,6 +134,7 @@ public sealed class AutocorrectEngine : IDisposable
         _decisionTelemetry = decisionTelemetry;
         _textTelemetry = textTelemetry;
         _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
+        _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
 
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
@@ -171,6 +178,7 @@ public sealed class AutocorrectEngine : IDisposable
         _host.Stop();
         Unsubscribe();
         _corpus?.Discard();
+        _stream?.Discard();
         _coordinator?.Invalidate(ResetReason.FocusChanged); // drop the sentence model
         _dictionary?.Flush();
         DeckleAutocorrectSource.Log.EngineStopped();
@@ -210,7 +218,10 @@ public sealed class AutocorrectEngine : IDisposable
     private void OnDrainRequested()
     {
         if (Interlocked.Exchange(ref _discardCorpusRequested, 0) != 0)
+        {
             _corpus?.Discard();
+            _stream?.Discard();
+        }
     }
 
     private void OnKey(KeyboardKeyEvent e)
@@ -227,12 +238,21 @@ public sealed class AutocorrectEngine : IDisposable
         // model. Resets proper arrive via OnTrackerReset.
         _coordinator?.NotePhysicalKey(k, _tracker.CurrentWord);
 
+        // The typing stream captures the verbatim stroke before the tracker
+        // interprets it. Gated per stroke — enrolled surfaces only, consent live;
+        // the password gate already cut above, before decoding.
+        if (ShouldFeedStream())
+            _stream?.OnKeystroke(k);
+
         _tracker.OnKeystroke(k);
     }
 
     private void OnPointerInteraction()
     {
         _tracker.NotifyPointerInteraction();
+        // Ungated: a span must close on every caret move, or a stale run would
+        // leak into whatever surface is typed next.
+        _stream?.NotifyPointerInteraction();
     }
 
     // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
@@ -270,10 +290,11 @@ public sealed class AutocorrectEngine : IDisposable
     private void OnFocusChanged()
     {
         var surface = _prober.Probe();
-        // The reset synchronously closes the corpus run. Keep the producing
-        // surface live until that run has been emitted; only then publish the
-        // newly focused surface.
+        // The reset synchronously closes the corpus run and the typing-stream
+        // span. Keep the producing surface live until both have been emitted;
+        // only then publish the newly focused surface.
         _tracker.NotifyFocusChanged();
+        _stream?.NotifyFocusChanged();
         _surface = surface;
 
         bool enabled = IsEnabledFor(_settings(), surface.ProcessName);
@@ -440,6 +461,33 @@ public sealed class AutocorrectEngine : IDisposable
 
         DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
             _surface.ProcessName, rec.Typed, rec.Final, rec.History, rec.Closure, rec.Timing);
+    }
+
+    // The typing stream records only where correction is live: an editable,
+    // non-password (cut upstream), master-on, ENROLLED surface with the text
+    // consent on — tighter than the corpus, which spans every editable surface.
+    // Checked per stroke so a settings flip takes effect immediately; resets
+    // (pointer, focus) bypass this gate so a span can never straddle surfaces.
+    private bool ShouldFeedStream()
+    {
+        if (_stream is null || !_surface.IsTextEditable) return false;
+        var settings = _settings();
+        return settings.Enabled
+            && IsEnabledFor(settings, _surface.ProcessName)
+            && _textTelemetry?.Invoke() == true;
+    }
+
+    // Emits one closed typing-stream run on the dedicated dataset, tagged with
+    // the producing process. Runs on the input thread; consent is re-checked at
+    // emission for the same reason as EmitText — a reset can close a span after
+    // the user switched collection off.
+    private void EmitStreamRun(TypingStream.RunRecord rec)
+    {
+        if (_textTelemetry?.Invoke() != true)
+            return;
+
+        DeckleAutocorrectSource.Log.AutocorrectStreamRecorded(
+            _surface.ProcessName, rec.Text, rec.Erased, rec.Closure, rec.Timing);
     }
 
     // The synchronous decision line of the per-word telemetry: the word, its left
