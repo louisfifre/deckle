@@ -752,6 +752,27 @@
   <data name="GeneralUpdateAvailableLabel_Format" xml:space="preserve">
     <value>Version {0} is available</value>
   </data>
+  <data name="GeneralDataFolderMoveButton.Content" xml:space="preserve">
+    <value>Move…</value>
+  </data>
+  <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
+    <value>Move app data?</value>
+  </data>
+  <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
+    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
+  </data>
+  <data name="Settings_MoveDataDialog_PrimaryButton" xml:space="preserve">
+    <value>Move and restart</value>
+  </data>
+  <data name="Settings_MoveDataSameTarget" xml:space="preserve">
+    <value>The app data is already in this folder.</value>
+  </data>
+  <data name="Settings_MoveDataInvalidTarget" xml:space="preserve">
+    <value>Pick an empty folder outside the current data folder.</value>
+  </data>
+  <data name="Settings_MoveDataInsufficientSpace_Format" xml:space="preserve">
+    <value>Not enough space on {0}: {1} needed, {2} free.</value>
+  </data>
   <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
     <value>Microphone</value>
   </data>

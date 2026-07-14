@@ -65,4 +65,11 @@ public static class SettingsHost
     public static Func<string>? GetAppVersion;
     public static Func<string?>? GetAvailableUpdateVersion;
     public static Action? StartUpdate;
+
+    // Starts the data-root move to the given target folder: the App restarts
+    // the process in its dedicated --relocate-data mode, since the live app
+    // cannot copy the root its own sinks and engines hold open. The General
+    // page validates (space, nesting, emptiness) and confirms before calling;
+    // unwired (null) hides the Move affordance entirely.
+    public static Action<string>? RelocateDataRoot;
 }
