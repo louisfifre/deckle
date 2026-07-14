@@ -8,15 +8,16 @@ namespace Deckle.Diagnostics;
 // carried an opaque payload blob.
 public static class LogLineFormatter
 {
-    public static string Format(EventEntry entry)
+    public static LogLineParts GetParts(EventEntry entry)
     {
-        string source = MapSource(entry.Provider);
-        string message = entry.FormattedMessage ?? entry.EventName;
-        return string.Format(
-            CultureInfo.InvariantCulture,
-            "{0:HH:mm:ss.fff} [{1}] {2}",
-            entry.Timestamp, source, message);
+        ArgumentNullException.ThrowIfNull(entry);
+        return new LogLineParts(
+            entry.Timestamp.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture),
+            MapSource(entry.Provider),
+            entry.FormattedMessage ?? entry.EventName);
     }
+
+    public static string Format(EventEntry entry) => GetParts(entry).Text;
 
     public static string MapSource(string providerName)
     {
@@ -35,4 +36,12 @@ public static class LogLineFormatter
 
         return providerName.ToUpperInvariant();
     }
+}
+
+public readonly record struct LogLineParts(
+    string Timestamp,
+    string Source,
+    string Message)
+{
+    public string Text => string.Concat(Timestamp, " [", Source, "] ", Message);
 }

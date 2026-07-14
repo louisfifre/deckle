@@ -64,7 +64,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     {
         _entries.Clear();
         _visible.Clear();
-        _itemsPanel = null;
     }
 
     // ── Implementation ─────────────────────────────────────────────────────────

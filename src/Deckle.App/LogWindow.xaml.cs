@@ -52,7 +52,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private string? _iconRecordingPath;
 
     private ScrollViewer? _listScrollViewer;
-    private ItemsStackPanel? _itemsPanel;
     private bool _autoScrollPending;
 
     private readonly LogFilterSelection _filterSelection = LogWindowFilterSession.Selection;
@@ -80,18 +79,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         LogItems.ItemsSource = _visible;
         FilterBar.Selection = _filterSelection;
         UpdateFiltersToggleLabel();
-
-        // Click-to-copy + drag-to-select: PointerPressed/Released are marked
-        // handled by the ListView for its own selection management, so
-        // AddHandler with handledEventsToo=true.
-        LogItems.AddHandler(
-            UIElement.PointerPressedEvent,
-            new PointerEventHandler(OnLogPointerPressed),
-            handledEventsToo: true);
-        LogItems.AddHandler(
-            UIElement.PointerReleasedEvent,
-            new PointerEventHandler(OnLogPointerReleased),
-            handledEventsToo: true);
 
         // App icons: resolved once, shared with tray.
         LoadAppIcons();

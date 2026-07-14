@@ -10,69 +10,106 @@
     <Grid x:Name="RootGrid">
         <Grid.Resources>
             <ResourceDictionary>
-                <ResourceDictionary.ThemeDictionaries>
-                    <!-- Semantic Fluent blue for Info — not the system accent
-                         which may be grey / non-blue on the user's machine. -->
-                    <ResourceDictionary x:Key="Light">
-                        <SolidColorBrush x:Key="LogInfoBrush" Color="#005FB7" />
-                    </ResourceDictionary>
-                    <ResourceDictionary x:Key="Dark">
-                        <SolidColorBrush x:Key="LogInfoBrush" Color="#60CDFF" />
-                    </ResourceDictionary>
-                </ResourceDictionary.ThemeDictionaries>
-
                 <!-- 4 semantic levels per wrap dimension, swapped through
                      DataTemplateSelector on Word-wrap toggle. Each template
                      binds its Foreground to a ThemeResource: WinUI re-resolves
                      on theme switch without needing to recreate rows. -->
                 <DataTemplate x:Key="NoWrap_Verbose">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Info">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource LogInfoBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Warning">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource SystemFillColorCautionBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Error">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
 
                 <DataTemplate x:Key="Wrap_Verbose">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Info">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource LogInfoBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Warning">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource SystemFillColorCautionBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Error">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
 
                 <!-- Telemetry rows (latency / corpus / microphone): rendered
@@ -81,40 +118,76 @@
                      drowning in the Verbose firehose. Text is precomputed by
                      LogEntry when wrapping EventEntry. -->
                 <DataTemplate x:Key="NoWrap_Latency">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Corpus">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Microphone">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="NoWrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Latency">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Corpus">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Microphone">
-                    <TextBlock Text="{Binding Text}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding TimestampText}"
+                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <Run Text="{Binding SourceText}" />
+                        <Run Text="{Binding MessageText}" />
+                    </TextBlock>
                 </DataTemplate>
 
                 <diag:LogEntryTemplateSelector x:Key="NoWrapSelector"
@@ -237,23 +310,25 @@
                     <FontIcon Glyph="&#xE71C;" />
                 </AppBarToggleButton.Icon>
             </AppBarToggleButton>
-            <AppBarToggleButton x:Name="WrapToggle"
-                                x:Uid="LogWindowWrapToggle"
-                                DynamicOverflowOrder="2"
-                                IsChecked="False"
-                                Click="OnWrapToggleClick">
-                <AppBarToggleButton.Icon>
-                    <FontIcon Glyph="{StaticResource Icon.Close}" />
-                </AppBarToggleButton.Icon>
-            </AppBarToggleButton>
-            <AppBarToggleButton x:Name="AutoScrollToggle"
-                                x:Uid="LogWindowAutoScrollToggle"
-                                DynamicOverflowOrder="1"
-                                IsChecked="True">
-                <AppBarToggleButton.Icon>
-                    <FontIcon Glyph="{StaticResource Icon.Export}" />
-                </AppBarToggleButton.Icon>
-            </AppBarToggleButton>
+            <AppBarElementContainer DynamicOverflowOrder="2"
+                                    Padding="{StaticResource AppBarButtonInnerBorderOverflowMargin}"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Center">
+                <ToggleButton x:Name="WrapToggle"
+                              x:Uid="LogWindowWrapToggle"
+                              FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                              IsChecked="False"
+                              Click="OnWrapToggleClick" />
+            </AppBarElementContainer>
+            <AppBarElementContainer DynamicOverflowOrder="1"
+                                    Padding="{StaticResource AppBarButtonInnerBorderOverflowMargin}"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Center">
+                <ToggleButton x:Name="AutoScrollToggle"
+                              x:Uid="LogWindowAutoScrollToggle"
+                              FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                              IsChecked="True" />
+            </AppBarElementContainer>
         </CommandBar>
 
         <!-- The editor can collapse without changing the active lens. Its
@@ -264,9 +339,9 @@
                                       FilterChanged="OnFilterChanged" />
 
         <!-- ── Log surface ────────────────────────────────────────────────── -->
-        <!-- Native ListView: virtualization, built-in scroll, ItemTemplateSelector
-             honored. Left click = copy line, right click = native MenuFlyout.
-             Floating "Copy" badge positioned to the right of the hovered item. -->
+        <!-- ListView owns selection, virtualization and scrolling. Extended
+             selection supplies the standard Ctrl/Shift gestures; every copy
+             entry point uses the same selection-or-visible rule. -->
         <Grid Grid.Row="3" x:Name="LogSurface">
             <!-- Bottom padding 24 keeps the last line above the horizontal
                  scrollbar (which floats over the content in WinUI 3). Without
@@ -282,37 +357,23 @@
                       ItemTemplateSelector="{StaticResource NoWrapSelector}"
                       SelectionMode="Extended"
                       IsItemClickEnabled="False"
-                      PointerMoved="OnLogPointerMoved"
-                      PointerExited="OnLogPointerExited"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.HorizontalScrollMode="Enabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto" />
-
-            <!-- Floating "Copy" / "Copy selection" badge — positioned by code
-                 to the right of the hovered item. Fully opaque background
-                 (SolidBackgroundFillBase) to completely mask the text and
-                 selection highlight underneath. IsHitTestVisible=False to
-                 let clicks pass through to the ListView. -->
-            <Border x:Name="CopyBadge"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Visibility="Collapsed"
-                    IsHitTestVisible="False"
-                    Canvas.ZIndex="1"
-                    Padding="8,2"
-                    Margin="0,0,18,0"
-                    Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
-                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{ThemeResource ControlCornerRadius}">
-                <Border.RenderTransform>
-                    <TranslateTransform x:Name="CopyBadgeTransform" />
-                </Border.RenderTransform>
-                <TextBlock x:Name="CopyBadgeText"
-                           x:Uid="LogWindowCopyBadgeText"
-                           FontSize="11"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            </Border>
+                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.ItemContainerTransitions />
+                <ListView.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="C"
+                                         Modifiers="Control"
+                                         Invoked="OnCopyKeyboardAcceleratorInvoked" />
+                </ListView.KeyboardAccelerators>
+                <ListView.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem x:Uid="LogWindowCopyMenuItem"
+                                        Icon="Copy"
+                                        Click="OnCopyClick" />
+                    </MenuFlyout>
+                </ListView.ContextFlyout>
+            </ListView>
         </Grid>
     </Grid>
 </Window>
