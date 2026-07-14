@@ -977,6 +977,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SettingsWindow.xaml.cs
 │   │   └── TelemetryConsentWiring.cs
 │   ├── Deckle.Setup/
+│   │   ├── Relocation/
+│   │   │   ├── DataRootRelocator.cs
+│   │   │   ├── DataRootTree.cs
+│   │   │   └── WindowsDataRootRelocation.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1330,6 +1334,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Security.Tests/
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
+│   ├── Deckle.Setup.Tests/
+│   │   ├── DataRootRelocatorTests.cs
+│   │   ├── DataRootTreeTests.cs
+│   │   └── Deckle.Setup.Tests.csproj
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   └── Deckle.Shell.TaskbarCover.Tests.csproj

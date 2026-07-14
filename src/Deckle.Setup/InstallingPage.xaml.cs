@@ -165,14 +165,12 @@ public sealed partial class InstallingPage : Page
         // persisted here, once the file is present, not inside the install
         // item. Without this write a swap to an already-installed model would
         // change nothing, and the engine would stay on the settings default.
-        if (_context.SelectedModules.Contains(ModuleIds.Transcription)
-            && _context.SelectedModel is { } chosenModel
-            && SpeechModels.IsInstalled(chosenModel)
-            && TranscriptionSettingsService.Instance.Current.Engine.Model != chosenModel.FileName)
-        {
-            TranscriptionSettingsService.Instance.Current.Engine.Model = chosenModel.FileName;
-            TranscriptionSettingsService.Instance.Save();
-        }
+        SpeechModelResolver.TryPersistSelection(
+            _context.SelectedModel,
+            _context.SelectedModules.Contains(ModuleIds.Transcription),
+            SpeechModels.IsInstalled,
+            TranscriptionSettingsService.Instance.Current,
+            TranscriptionSettingsService.Instance.Save);
 
         // Hand off to the summary page. Frame.Navigate is UI-thread-safe when
         // invoked from an awaited continuation that resumed on the UI thread.

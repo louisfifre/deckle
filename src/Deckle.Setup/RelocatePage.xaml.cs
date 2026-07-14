@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -86,10 +85,11 @@ public sealed partial class RelocatePage : Page
         string target = Path.GetFullPath(_context.DataDirectory);
 
         string step = "check";
+        bool committed = false;
         try
         {
             SetMarquee(Loc.Get("Setup_Relocate_Checking"));
-            long required = await Task.Run(() => DirectorySizeBytes(source), ct);
+            long required = await Task.Run(() => DataRootTree.MeasureBytes(source), ct);
 
             DeckleSetupSource.Log.RelocateStarted();
             DeckleSetupSource.Log.RelocateStartedDetail(source, target, required);
@@ -126,34 +126,34 @@ public sealed partial class RelocatePage : Page
 
             step = "copy";
             long startTicks = Environment.TickCount64;
-            var progress = new Progress<(long copied, long total)>(p => OnCopyProgress(p.copied, p.total));
-            (long copied, int files, int skipped) =
-                await Task.Run(() => CopyTree(source, target, required, progress, ct), ct);
+            var relocator = new DataRootRelocator(
+                new DataRootTree(),
+                new UserDataRootSelection(),
+                new DeckleDataRootLauncher());
+            var progress = new Progress<DataRootCopyProgress>(
+                p => OnCopyProgress(p.CopiedBytes, p.TotalBytes));
 
-            step = "switch";
-            SetMarquee(Loc.Get("Setup_Relocate_Switching"));
-            if (PathsEqual(target, InstallPaths.DefaultDataDir)) UserEnvironment.ClearDataRoot();
-            else UserEnvironment.SetDataRoot(target);
-
-            step = "relaunch";
-            SetMarquee(Loc.Get("Setup_Relocate_Restarting"));
-            LaunchOnNewRoot(target, source);
+            step = "relocate";
+            DataRootCopyResult result = await Task.Run(
+                () => relocator.Relocate(source, target, required, progress, ct), ct);
+            committed = true;
 
             DeckleSetupSource.Log.RelocateCompleted();
             DeckleSetupSource.Log.RelocateCompletedDetail(
-                copied, files, skipped, Environment.TickCount64 - startTicks);
+                result.CopiedBytes, result.Files, result.SkippedFiles,
+                Environment.TickCount64 - startTicks);
 
             _setup.Complete(true);
         }
         catch (OperationCanceledException)
         {
-            // Cancelled through the window teardown — undo the partial copy;
-            // the old root never stopped being the live one.
-            TryDeleteTree(target, sparing: source);
+            // DataRootRelocator already rolled back every pre-handoff change.
         }
         catch (Exception ex)
         {
-            TryDeleteTree(target, sparing: source);
+            // The child owns the target after a successful handoff. A local UI
+            // or logging failure must not report the committed move as failed.
+            if (committed) return;
             Fail(step, $"{ex.GetType().Name}: {ex.Message}", ex.Message);
         }
     }
@@ -171,95 +171,6 @@ public sealed partial class RelocatePage : Page
     }
 
     // ── Steps (background thread) ─────────────────────────────────────────────
-
-    internal static long DirectorySizeBytes(string root)
-    {
-        long total = 0;
-        foreach (string file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
-        {
-            try { total += new FileInfo(file).Length; }
-            catch { /* a vanished temp file must not fail the estimate */ }
-        }
-        return total;
-    }
-
-    // Copies the tree file by file. A file that refuses to copy after one
-    // retry is skipped and counted — in practice only this process's own live
-    // log sinks under diagnostics/; user data (models, settings, modules) has
-    // no writer left once the normal app exited to spawn us.
-    private static (long copied, int files, int skipped) CopyTree(
-        string source, string target, long totalBytes,
-        IProgress<(long, long)> progress, CancellationToken ct)
-    {
-        long copied = 0;
-        int files = 0, skipped = 0;
-        long lastReport = 0;
-
-        foreach (string file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            ct.ThrowIfCancellationRequested();
-
-            string relative = Path.GetRelativePath(source, file);
-            string dest = Path.Combine(target, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-
-            bool ok = TryCopy(file, dest) || TryCopy(file, dest);
-            if (!ok) { skipped++; continue; }
-
-            files++;
-            try { copied += new FileInfo(dest).Length; } catch { }
-
-            long now = Environment.TickCount64;
-            if (now - lastReport >= 200)
-            {
-                progress.Report((copied, totalBytes));
-                lastReport = now;
-            }
-        }
-
-        progress.Report((copied, totalBytes));
-        return (copied, files, skipped);
-    }
-
-    private static bool TryCopy(string file, string dest)
-    {
-        try { File.Copy(file, dest, overwrite: true); return true; }
-        catch { return false; }
-    }
-
-    private void LaunchOnNewRoot(string target, string oldRoot)
-    {
-        string exe = Environment.ProcessPath!;
-        // UseShellExecute=false so the child's environment block carries the
-        // new root immediately — the HKCU write above only reaches processes
-        // launched after a WM_SETTINGCHANGE round-trip (same reasoning as
-        // DeployPage.LaunchInstalled).
-        var psi = new ProcessStartInfo(exe)
-        {
-            UseShellExecute  = false,
-            WorkingDirectory = Path.GetDirectoryName(exe) ?? "",
-        };
-        psi.Environment[UserEnvironment.DataRootVariable] = target;
-        psi.ArgumentList.Add("--cleanup-data");
-        psi.ArgumentList.Add(oldRoot);
-        Process.Start(psi);
-    }
-
-    // Removes the partial copy after a failure or a cancel. `sparing` is a
-    // belt-and-braces guard: never touch the live source, whatever state the
-    // context is in.
-    private static void TryDeleteTree(string dir, string sparing)
-    {
-        if (PathsEqual(dir, sparing)) return;
-        try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
-        catch { /* best-effort — a leftover partial copy is visible, not harmful */ }
-    }
-
-    private static bool PathsEqual(string a, string b) =>
-        string.Equals(
-            Path.GetFullPath(a).TrimEnd('\\'),
-            Path.GetFullPath(b).TrimEnd('\\'),
-            StringComparison.OrdinalIgnoreCase);
 
     // ── UI helpers ────────────────────────────────────────────────────────────
 
