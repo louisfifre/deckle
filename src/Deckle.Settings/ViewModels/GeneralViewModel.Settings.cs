@@ -64,6 +64,19 @@ public partial class GeneralViewModel
             defaultValue: () => StartupService.DefaultEnabled),
     ];
 
+    // Updates section — the silent-check opt-out. A plain TwoWay toggle over the
+    // AppSettings POCO; the check itself runs App-side (UpdateService), which
+    // reads the persisted value on each tick, so flipping the toggle needs no
+    // side effect here beyond PushToSettings.
+    public IReadOnlyList<SettingDescriptor> UpdatesSettings =>
+    [
+        Setting.Toggle("GeneralUpdateAutoCheckCard",
+            () => UpdateAutoCheckEnabled,
+            value => UpdateAutoCheckEnabled = value,
+            glyph: Glyphs.Refresh,
+            defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
+    ];
+
     // Application data section — the backup-location folder picker. A Path
     // descriptor (FolderPickerMode.Configure: read-only readout with Change + Open)
     // over the BackupDirectory string the VM already owns; its OnBackupDirectoryChanged

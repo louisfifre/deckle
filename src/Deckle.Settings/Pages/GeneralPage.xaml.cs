@@ -24,12 +24,13 @@ public sealed partial class GeneralPage : Page
 
         ComposeAppearanceSection();
         ComposeStartupSection();
+        ComposeUpdatesSection();
         ComposeApplicationDataSection();
 
-        // The page-level "Reset all" gate spans all three section composers; re-gate it
+        // The page-level "Reset all" gate spans every section composer; re-gate it
         // whenever any goes dirty (each section link keeps its own gating too).
         foreach (var composer in new[]
-                 { _appearanceComposer, _startupComposer, _applicationDataComposer })
+                 { _appearanceComposer, _startupComposer, _updatesComposer, _applicationDataComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
@@ -74,6 +75,21 @@ public sealed partial class GeneralPage : Page
         _startupComposer.Compose(ViewModel.StartupSettings);
     }
 
+    // ── Composed Updates section ──────────────────────────────────────────────
+    //
+    // Same host-only pattern: the silent-check opt-out toggle. The version
+    // readout below it stays hand-authored (a status projection plus an
+    // action button, refreshed by LoadAndSync through the SettingsHost hooks).
+    private SettingsComposer? _updatesComposer;
+
+    private void ComposeUpdatesSection()
+    {
+        _updatesComposer = new SettingsComposer(UpdatesHost, ViewModel);
+        _updatesComposer.DirtyChanged += (_, _) =>
+            UpdatesResetLink.IsEnabled = _updatesComposer.IsDirty();
+        _updatesComposer.Compose(ViewModel.UpdatesSettings);
+    }
+
     // ── Composed backup-location card ─────────────────────────────────────────
     //
     // Same host-only pattern for the one settable value under "Application data":
@@ -110,9 +126,32 @@ public sealed partial class GeneralPage : Page
     {
         ViewModel.Load();
         DataFolderPathText.Text = AppPaths.UserDataRoot;
+        RefreshVersionCard();
         // Settle the page-reset gate off the freshly-loaded values — Load() may raise
         // no PropertyChanged on a clean profile, so no composer DirtyChanged would fire.
         GateResetAll();
+    }
+
+    // The version row reads through the SettingsHost hooks: the running build's
+    // version as the card description, and — when the silent check has parked a
+    // newer release — the offer text plus the "Install now" action. Unwired
+    // hooks (tests, partial hosts) leave a bare version row.
+    private void RefreshVersionCard()
+    {
+        VersionCard.Description = SettingsHost.GetAppVersion?.Invoke() ?? "";
+
+        string? available = SettingsHost.GetAvailableUpdateVersion?.Invoke();
+        bool hasUpdate = available is not null && SettingsHost.StartUpdate is not null;
+        UpdateAvailableText.Text = hasUpdate
+            ? Loc.Format("GeneralUpdateAvailableLabel_Format", available!)
+            : "";
+        UpdateAvailableText.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        InstallUpdateButton.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void InstallUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsHost.StartUpdate?.Invoke();
     }
 
     // ── Whole-page "Reset all" ────────────────────────────────────────────────
@@ -129,6 +168,7 @@ public sealed partial class GeneralPage : Page
         ResetAllButton.IsEnabled =
             (_appearanceComposer?.IsDirty() ?? false) ||
             (_startupComposer?.IsDirty() ?? false) ||
+            (_updatesComposer?.IsDirty() ?? false) ||
             (_applicationDataComposer?.IsDirty() ?? false);
     }
 
@@ -136,6 +176,7 @@ public sealed partial class GeneralPage : Page
     {
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
+        _updatesComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("General (all)");
@@ -166,6 +207,13 @@ public sealed partial class GeneralPage : Page
         _startupComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Startup");
+    }
+
+    private void ResetUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        _updatesComposer?.ResetAll();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Updates");
     }
 
     // Opens the UserDataRoot in File Explorer — entry point for users who

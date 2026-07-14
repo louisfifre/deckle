@@ -734,6 +734,24 @@
   <data name="GeneralAutostartCard.Description" xml:space="preserve">
     <value>Launch Deckle automatically when you sign in.</value>
   </data>
+  <data name="GeneralPageUpdatesHeaderLabel.Text" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
+    <value>Check for updates automatically</value>
+  </data>
+  <data name="GeneralUpdateAutoCheckCard.Description" xml:space="preserve">
+    <value>Look for a new Deckle release at launch, then once a day.</value>
+  </data>
+  <data name="GeneralVersionCard.Header" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="GeneralInstallUpdateButton.Content" xml:space="preserve">
+    <value>Install now</value>
+  </data>
+  <data name="GeneralUpdateAvailableLabel_Format" xml:space="preserve">
+    <value>Version {0} is available</value>
+  </data>
   <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
     <value>Microphone</value>
   </data>
