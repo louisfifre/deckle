@@ -32,6 +32,25 @@ public static class SurfaceProfiler
             .ToList();
     }
 
+    // The pause bar a surface earns from its own measurements — PROVISIONAL
+    // FORMULA, pending the calibration pass on real closure/timing data (the
+    // chantier's rule: thresholds are calibrated, never guessed; this is the
+    // one quarantined guess, in one place, so recalibration touches nothing
+    // else). A surface qualifies when Enter dominates its true closures and
+    // enough timed sentences back the statistics; its bar is the p99 of its
+    // own inter-commit gaps — "a pause unusual for the way I type there".
+    // 0 = not qualified, the pause pass stays disarmed on that surface.
+    public static int ProvisionalPauseThresholdMs(SurfaceProfile profile)
+    {
+        const int minTimedSentences = 30;
+        int closed = profile.EnterClosed + profile.SentenceClosed;
+        if (profile.TimedSentences < minTimedSentences || closed == 0)
+            return 0;
+        if (profile.EnterClosed * 2 < closed)
+            return 0; // Enter does not dominate — the true closure arrives in time
+        return profile.Gaps.P99;
+    }
+
     // The whole-corpus row: every entry folded into one profile, so the reader
     // can weigh a surface against the global behaviour.
     public static SurfaceProfile Overall(IEnumerable<CorpusEntry> entries)

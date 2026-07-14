@@ -444,7 +444,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IPersonalLexicon.cs
 │   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
-│   │   │   └── PersonalDictionaryData.cs
+│   │   │   ├── PersonalDictionaryData.cs
+│   │   │   └── SurfaceProfileStore.cs
 │   │   ├── Lexicon/
 │   │   │   ├── AccentFolding.cs
 │   │   │   ├── AccentIndex.cs
@@ -1287,6 +1288,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── SurfaceProfileGestureTests.cs
 │   │   ├── SurfaceProfilerTests.cs
+│   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TruthOverlayTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── TypingStreamTests.cs

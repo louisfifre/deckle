@@ -388,6 +388,75 @@ public class SentenceRerankCoordinatorTests
         Assert.Empty(inj.Calls);
     }
 
+    // ── The pause pass (CONTEXT.md § Pause pass) ────────────────────────────
+
+    [Fact]
+    public void FlushOnPauseDecidesTheOpenSlotBeforeItsDeferralBar()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("la", ' ', true);   // ambiguous, 0 right context
+        coord.OnWordCommitted("suite", ' ', true); // right-context 1 — under the bar
+
+        Assert.Empty(inj.Calls);               // nothing fires on its own
+        Assert.Equal(1, coord.FlushOnPause()); // the one open slot is put in motion
+
+        Assert.Single(inj.Calls);
+        Assert.Equal("la suite ", inj.Calls[0].Current);
+        Assert.Equal("là suite ", inj.Calls[0].Target);
+    }
+
+    [Fact]
+    public void FlushOnPauseWithNothingOpenIsSilent()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), new RecordingInjector(), () => "");
+
+        coord.OnWordCommitted("bonjour", ' ', true); // no ambiguity anywhere
+
+        Assert.Equal(0, coord.FlushOnPause());
+        Assert.Empty(lane.Submitted);
+    }
+
+    [Fact]
+    public void TheTrueClosureReviewsAPauseVerdictAndCanTakeItBack()
+    {
+        // The pause pass chose « là » early; the full sentence says « la ». The
+        // closure re-opens the pause-flushed slot — the typed original is still
+        // among the candidates — and the premature verdict is silently undone.
+        int calls = 0;
+        var lane = new TestRerankLane { Reranker = _ => ++calls == 1 ? "là" : "la" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("la", ' ', true);
+        coord.FlushOnPause();                       // premature verdict: « là »
+        coord.OnWordCommitted("vie", '.', true);    // true closure → re-review: « la »
+
+        Assert.Equal(2, lane.Submitted.Count);
+        Assert.Equal(2, inj.Calls.Count);
+        Assert.Equal("là ", inj.Calls[0].Target);   // the pause wrote it…
+        Assert.Equal("la vie.", inj.Calls[1].Target); // …the closure took it back
+    }
+
+    [Fact]
+    public void ANaturallyResolvedSlotIsNotReReviewedAtClosure()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("la", ' ', true);
+        coord.OnWordCommitted("mer", ' ', true);
+        coord.OnWordCommitted("est", ' ', true);
+        coord.OnWordCommitted("belle", ' ', true);  // deferral met — resolves naturally
+        coord.OnWordCommitted("ici", '.', true);    // closure: nothing to re-open
+
+        Assert.Single(lane.Submitted);
+    }
+
     // ── Fakes ───────────────────────────────────────────────────────────────
 
     private sealed class FakeProbe : IAmbiguityProbe

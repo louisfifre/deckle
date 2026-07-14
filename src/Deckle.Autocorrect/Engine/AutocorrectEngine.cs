@@ -37,6 +37,19 @@ public sealed class AutocorrectEngine : IDisposable
     // Kinds are code, the records are the user's own data.
     private readonly MistouchFamilyCorrector? _mistouch;
 
+    // ── Pause pass (CONTEXT.md § Pause pass) ──
+    // Measured surface profiles by process; _pauseThresholdMs is the current
+    // surface's calibrated bar (0 = not armed, the common case). The one-shot
+    // timer re-arms on every physical key and fires on the threadpool — it only
+    // raises the pending flag and requests a drain, so the decision itself
+    // (compare against the last key's clock, flush the coordinator) runs on the
+    // input thread like everything else. Event-driven: no polling, one timer.
+    private readonly Dictionary<string, SurfaceProfileRecord>? _profiles;
+    private readonly Timer? _pauseTimer;
+    private volatile int _pauseThresholdMs;
+    private long _lastKeyTickMs;         // input thread only
+    private int _pausePassRequested;     // threadpool → input thread flag
+
     // Opt-in per-word decision telemetry. When this returns true, each evaluated
     // word on an enrolled surface emits a structured trace (candidates, scores,
     // margins, the guard that left it literal) to the autocorrect.decisions dataset.
@@ -125,7 +138,8 @@ public sealed class AutocorrectEngine : IDisposable
         IAmbiguityProbe? probe = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        IReadOnlyList<SurfaceProfileRecord>? surfaceProfiles = null)
     {
         _host = host;
         _decoder = decoder;
@@ -145,6 +159,13 @@ public sealed class AutocorrectEngine : IDisposable
             ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
             : null;
 
+        if (surfaceProfiles is { Count: > 0 })
+        {
+            _profiles = new Dictionary<string, SurfaceProfileRecord>(StringComparer.OrdinalIgnoreCase);
+            foreach (SurfaceProfileRecord p in surfaceProfiles)
+                _profiles[p.Process] = p;
+        }
+
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
         if (reranker is not null && probe is not null)
@@ -159,6 +180,11 @@ public sealed class AutocorrectEngine : IDisposable
                 onApplied: OnCoordinatorApplied,
                 decisionTelemetry: decisionTelemetry);
         }
+
+        // The pause pass exists only with both a sentence stage to flush and at
+        // least one profiled surface to arm it on.
+        if (_profiles is not null && _coordinator is not null)
+            _pauseTimer = new Timer(OnPauseTimerElapsed);
     }
 
     public bool Start()
@@ -184,6 +210,7 @@ public sealed class AutocorrectEngine : IDisposable
 
     public void Stop()
     {
+        _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _host.Stop();
         Unsubscribe();
         _corpus?.Discard();
@@ -198,6 +225,7 @@ public sealed class AutocorrectEngine : IDisposable
     public void Dispose()
     {
         Stop();
+        _pauseTimer?.Dispose();
         _coordinator?.Dispose();
         _lane?.Dispose();
     }
@@ -231,6 +259,32 @@ public sealed class AutocorrectEngine : IDisposable
             _corpus?.Discard();
             _stream?.Discard();
         }
+        if (Interlocked.Exchange(ref _pausePassRequested, 0) != 0)
+            MaybeRunPausePass();
+    }
+
+    // The timer's threadpool callback: raise the flag and marshal to the input
+    // thread — never touch the coordinator from here.
+    private void OnPauseTimerElapsed(object? _)
+    {
+        if (_pauseThresholdMs <= 0) return;
+        Interlocked.Exchange(ref _pausePassRequested, 1);
+        _host.RequestDrain();
+    }
+
+    // Input thread. The timer races the keyboard: a key landing after the arm
+    // re-arms it, but a fire may already be in flight — re-check the clock so a
+    // pause is only declared when nothing was typed for the threshold (small
+    // slack for timer granularity).
+    private void MaybeRunPausePass()
+    {
+        int threshold = _pauseThresholdMs;
+        if (threshold <= 0 || _coordinator is null) return;
+        if (Environment.TickCount64 - _lastKeyTickMs < threshold - 50) return;
+
+        int slots = _coordinator.FlushOnPause();
+        if (slots > 0)
+            DeckleAutocorrectSource.Log.PausePassTriggered(threshold, slots);
     }
 
     private void OnKey(KeyboardKeyEvent e)
@@ -254,6 +308,13 @@ public sealed class AutocorrectEngine : IDisposable
             _stream?.OnKeystroke(k);
 
         _tracker.OnKeystroke(k);
+
+        // Re-arm the pause clock on every physical key. Armed only where the
+        // surface's profile set a bar — everywhere else the timer never runs.
+        _lastKeyTickMs = Environment.TickCount64;
+        int pauseMs = _pauseThresholdMs;
+        if (pauseMs > 0)
+            _pauseTimer?.Change(pauseMs, Timeout.Infinite);
     }
 
     private void OnPointerInteraction()
@@ -305,6 +366,15 @@ public sealed class AutocorrectEngine : IDisposable
         _tracker.NotifyFocusChanged();
         _stream?.NotifyFocusChanged();
         _surface = surface;
+
+        // The pause pass follows the surface: armed at its measured bar where
+        // the profile qualifies, disarmed (threshold 0) everywhere else.
+        _pauseThresholdMs = _profiles is not null
+            && _profiles.TryGetValue(surface.ProcessName, out SurfaceProfileRecord? profile)
+            ? profile.PauseThresholdMs
+            : 0;
+        if (_pauseThresholdMs == 0)
+            _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
         bool enabled = IsEnabledFor(_settings(), surface.ProcessName);
         DeckleAutocorrectSource.Log.SurfaceChanged(

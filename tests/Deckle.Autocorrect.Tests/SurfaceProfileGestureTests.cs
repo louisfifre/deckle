@@ -7,9 +7,11 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The maintainer's ventilation gesture: fold the collected typed-sentence corpus
-// into per-surface profiles and write the markdown report next to it. Read-only
-// over the corpus, no model, seconds — a silent skip when no corpus is collected
-// yet (CI, a fresh clone).
+// into per-surface profiles, write the markdown report next to it, and refresh
+// the live artifact the pause pass consumes (surface-profiles.json under the
+// module root — qualified surfaces only, measured, never edited by hand).
+// Read-only over the corpus, no model, seconds — a silent skip when no corpus
+// is collected yet (CI, a fresh clone).
 [Trait("Category", "gesture")]
 public sealed class SurfaceProfileGestureTests
 {
@@ -41,8 +43,16 @@ public sealed class SurfaceProfileGestureTests
             Path.GetDirectoryName(corpusPath!)!, "autocorrect.surface-profiles.md");
         File.WriteAllText(reportPath, SurfaceProfileReport.Render(overall, profiles));
 
+        // The live artifact: the engine arms the pause pass off this file at
+        // the next start. Rewritten whole on every ventilation — measured,
+        // qualified surfaces only, possibly empty (an empty set disarms).
+        string livePath = Path.Combine(
+            AppPaths.GetModuleDirectory("autocorrect"), SurfaceProfileStore.FileName);
+        File.WriteAllText(livePath, SurfaceProfileReport.RenderLiveJson(profiles));
+
         _out.WriteLine($"{entries.Count} records over {profiles.Count} surfaces.");
         _out.WriteLine($"Surface-profile report → {reportPath}");
+        _out.WriteLine($"Live pause-pass artifact → {livePath}");
 
         Assert.NotEmpty(profiles);
     }
