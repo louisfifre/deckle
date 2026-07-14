@@ -1,7 +1,5 @@
-using Deckle.Anytype;
 using Deckle.Catalog;
 using Deckle.Modules;
-using Deckle.Transcription.Whisper;
 
 namespace Deckle.App;
 
@@ -28,9 +26,6 @@ internal static class AppModules
             Id = ModuleIds.Transcription,
             Glyph = Glyphs.Speech,
             Order = 100,
-            // The engine ctor loads the model and faults without the native
-            // runtime — the same probe that has always gated its composition.
-            IsProvisioned = () => NativeRuntime.IsInstalled() && SpeechModels.IsDefaultInstalled(),
         });
 
         ModuleRegistry.Register(new ModuleDescriptor
@@ -69,7 +64,6 @@ internal static class AppModules
             Id = ModuleIds.Anytype,
             Glyph = Glyphs.List,
             Order = 600,
-            IsProvisioned = BackendInstallation.IsInstalled,
         });
     }
 }

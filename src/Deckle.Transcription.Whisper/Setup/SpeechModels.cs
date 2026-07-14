@@ -63,4 +63,17 @@ public static class SpeechModels
     }
 
     public static bool IsDefaultInstalled() => IsInstalled(DefaultWhisperModel);
+
+    public static async Task<ProvisioningResult> ProvisionAsync(
+        ModelEntry model,
+        IProgress<Downloader.DownloadProgress> progress,
+        CancellationToken ct)
+    {
+        string destination = Path.Combine(AppPaths.ModelsDirectory, model.FileName);
+        Downloader.DownloadResult download = await Downloader.DownloadAsync(
+            model.Url, destination, model.Sha256, progress, ct);
+        return download.Success
+            ? ProvisioningResult.Ok(new FileInfo(destination).Length, download.ActualSha256)
+            : ProvisioningResult.Fail(download.ErrorMessage ?? "download failed");
+    }
 }

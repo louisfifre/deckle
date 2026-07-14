@@ -86,6 +86,9 @@ internal static class InstallFlow
             string payloadDir = Path.Combine(tempDir, "app");
             Directory.CreateDirectory(payloadDir);
             ZipFile.ExtractToDirectory(zipPath, payloadDir, overwriteFiles: true);
+            // Extraction itself is synchronous, but a close request received while
+            // it runs must still stop the hand-off instead of launching the wizard.
+            ct.ThrowIfCancellationRequested();
             TryDelete(zipPath); // dead weight now — the wizard runs from the extracted tree
 
             string? appExe = FindDeckleExe(payloadDir);
@@ -95,6 +98,8 @@ internal static class InstallFlow
                 MessageDialog.Error(window.Handle, "The downloaded package did not contain Deckle.exe.");
                 return 1;
             }
+
+            ct.ThrowIfCancellationRequested();
 
             // Hand off to the wizard living inside the payload. It runs from the
             // extracted folder; --stub lets it register this exe as the uninstaller,

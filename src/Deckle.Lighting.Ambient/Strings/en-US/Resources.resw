@@ -291,6 +291,9 @@
   <data name="AmbientHue_Discovery_OnlineEmpty" xml:space="preserve">
     <value>No bridge found online. Enter its IP address manually.</value>
   </data>
+  <data name="AmbientHue_Discovery_Failed" xml:space="preserve">
+    <value>Discovery failed. Try again or enter the bridge IP address manually.</value>
+  </data>
   <data name="AmbientHue_PairStatus_PressLink" xml:space="preserve">
     <value>Press the link button on the bridge within 30 seconds.</value>
   </data>

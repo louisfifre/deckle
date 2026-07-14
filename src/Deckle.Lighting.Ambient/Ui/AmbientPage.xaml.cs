@@ -354,56 +354,59 @@ public sealed partial class AmbientPage : Page
     }
 
     private async void OnHueDiscoverClick(object sender, RoutedEventArgs e)
+        => await DiscoverHueAsync(useCloud: false);
+
+    private async void OnHueCloudDiscoverClick(object sender, RoutedEventArgs e)
+        => await DiscoverHueAsync(useCloud: true);
+
+    private async Task DiscoverHueAsync(bool useCloud)
     {
-        HueDiscoverButton.IsEnabled = false;
-        HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
+        Control activeButton = useCloud ? HueCloudDiscoverButton : HueDiscoverButton;
+        activeButton.IsEnabled = false;
+        if (!useCloud)
+            HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
         SetHuePairStatus(string.Empty);
         try
         {
-            var bridges = await HuePairingService.Instance
-                .DiscoverAsync()
-                .ConfigureAwait(true);
+            IReadOnlyList<HueBridge> bridges = useCloud
+                ? await HuePairingService.Instance.DiscoverViaCloudAsync().ConfigureAwait(true)
+                : await HuePairingService.Instance.DiscoverAsync().ConfigureAwait(true);
             if (bridges.Count > 0)
             {
                 _hueDiscoveredBridge = bridges[0];
                 HueBridgeIpTextBox.Text = _hueDiscoveredBridge.InternalIpAddress;
-                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_LocalFound"));
+                SetHuePairStatus(Loc.Get(useCloud
+                    ? "AmbientHue_Discovery_OnlineFound"
+                    : "AmbientHue_Discovery_LocalFound"));
+                if (useCloud)
+                    HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
             }
             else
             {
-                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_LocalEmpty"));
-                HueCloudDiscoverButton.Visibility = Visibility.Visible;
+                SetHuePairStatus(Loc.Get(useCloud
+                    ? "AmbientHue_Discovery_OnlineEmpty"
+                    : "AmbientHue_Discovery_LocalEmpty"));
+                if (!useCloud)
+                    HueCloudDiscoverButton.Visibility = Visibility.Visible;
             }
         }
-        finally
+        catch (Exception ex)
         {
-            HueDiscoverButton.IsEnabled = true;
-        }
-    }
-
-    private async void OnHueCloudDiscoverClick(object sender, RoutedEventArgs e)
-    {
-        HueCloudDiscoverButton.IsEnabled = false;
-        try
-        {
-            var bridges = await HuePairingService.Instance
-                .DiscoverViaCloudAsync()
-                .ConfigureAwait(true);
-            if (bridges.Count > 0)
+            if (useCloud)
             {
-                _hueDiscoveredBridge = bridges[0];
-                HueBridgeIpTextBox.Text = _hueDiscoveredBridge.InternalIpAddress;
-                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_OnlineFound"));
-                HueCloudDiscoverButton.Visibility = Visibility.Collapsed;
+                DeckleLightingSource.Log.DiscoveryFailed();
+                DeckleLightingSource.Log.DiscoveryFailedDetail(ex.GetType().Name, ex.Message);
             }
             else
             {
-                SetHuePairStatus(Loc.Get("AmbientHue_Discovery_OnlineEmpty"));
+                DeckleLightingSource.Log.LocalDiscoveryFailed();
+                DeckleLightingSource.Log.LocalDiscoveryFailedDetail(ex.GetType().Name, ex.Message);
             }
+            SetHuePairStatus(Loc.Get("AmbientHue_Discovery_Failed"));
         }
         finally
         {
-            HueCloudDiscoverButton.IsEnabled = true;
+            activeButton.IsEnabled = true;
         }
     }
 

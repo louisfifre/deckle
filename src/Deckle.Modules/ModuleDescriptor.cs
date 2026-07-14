@@ -33,13 +33,6 @@ public sealed record ModuleDescriptor
     // assemblies compiled into the app are not modules and never appear here.
     public IReadOnlyList<string> DependsOn { get; init; } = [];
 
-    // Whether the module's heavy assets (native runtimes, model weights, pinned
-    // binaries) are on disk. Null when the module has nothing to provision —
-    // its DLLs compiled into the app are all it needs. Distinct from presence:
-    // a module can be chosen (present) and not yet provisioned; the wizard's
-    // install step is what closes that gap.
-    public Func<bool>? IsProvisioned { get; init; }
-
     // Sort key for the selector. Ascending; leaves gaps between values so a
     // later module can land between two existing ones.
     public int Order { get; init; }

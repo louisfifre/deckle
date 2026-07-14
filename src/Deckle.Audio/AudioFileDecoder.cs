@@ -38,8 +38,8 @@ public sealed class AudioFileDecoder
     /// <returns>
     /// An <see cref="AudioFileDecodeResult"/> whose <see cref="AudioFileDecodeResult.Status"/>
     /// tells the caller what happened: <see cref="AudioFileDecodeStatus.Decoded"/>
-    /// carries the PCM in <see cref="AudioFileDecodeResult.Pcm"/> (non-null only
-    /// then); every other value carries a null buffer and names why the file
+    /// carries the PCM in <see cref="AudioFileDecodeResult.Pcm"/>; every other
+    /// value carries an empty buffer and names why the file
     /// could not be decoded. The method never throws for a bad file.
     /// </returns>
     /// <remarks>
@@ -55,7 +55,7 @@ public sealed class AudioFileDecoder
         if (!File.Exists(path))
         {
             LogFailure(AudioFileDecodeStatus.FileNotFound, MediaFoundationInterop.S_OK);
-            return new AudioFileDecodeResult(AudioFileDecodeStatus.FileNotFound, null, 0);
+            return new AudioFileDecodeResult(AudioFileDecodeStatus.FileNotFound, ReadOnlyMemory<float>.Empty, 0);
         }
 
         var sw = Stopwatch.StartNew();
@@ -128,7 +128,7 @@ public sealed class AudioFileDecoder
             if (hr < 0)
                 return Fail(MapSetTypeError(hr), hr, sw);
 
-            (int readHr, float[] pcm) = ReadAllSamples(reader);
+            (int readHr, ReadOnlyMemory<float> pcm) = ReadAllSamples(reader);
             if (readHr < 0)
                 return Fail(MapGenericError(readHr), readHr, sw);
 
@@ -194,12 +194,9 @@ public sealed class AudioFileDecoder
     // buffer. Returns the accumulated PCM on a clean end-of-stream, or a failing
     // HRESULT (empty buffer) on any read error — after which no further reader
     // call is made.
-    private static (int hr, float[] pcm) ReadAllSamples(nint reader)
+    private static (int hr, ReadOnlyMemory<float> pcm) ReadAllSamples(nint reader)
     {
-        // ~8 s of headroom before the first doubling; the List grows past that on
-        // its own for longer files.
-        var samples = new List<float>(capacity: TargetSampleRate * 8);
-        float[] scratch = System.Array.Empty<float>();
+        var samples = new PcmBuffer(initialCapacity: TargetSampleRate * 8);
 
         while (true)
         {
@@ -210,14 +207,14 @@ public sealed class AudioFileDecoder
             if (hr < 0)
             {
                 if (sample != 0) Marshal.Release(sample);
-                return (hr, System.Array.Empty<float>());
+                return (hr, ReadOnlyMemory<float>.Empty);
             }
 
             // A hard stream error: stop at once and make no further reader call.
             if ((flags & MediaFoundationInterop.MF_SOURCE_READERF_ERROR) != 0)
             {
                 if (sample != 0) Marshal.Release(sample);
-                return (MediaFoundationInterop.E_FAIL, System.Array.Empty<float>());
+                return (MediaFoundationInterop.E_FAIL, ReadOnlyMemory<float>.Empty);
             }
 
             if ((flags & MediaFoundationInterop.MF_SOURCE_READERF_ENDOFSTREAM) != 0)
@@ -244,24 +241,18 @@ public sealed class AudioFileDecoder
             {
                 int convHr = MediaFoundationInterop.SampleConvertToContiguousBuffer(sample, out nint buffer);
                 if (convHr < 0)
-                    return (convHr, System.Array.Empty<float>());
+                    return (convHr, ReadOnlyMemory<float>.Empty);
 
                 try
                 {
                     int lockHr = MediaFoundationInterop.BufferLock(buffer, out nint data, out uint byteLength);
                     if (lockHr < 0)
-                        return (lockHr, System.Array.Empty<float>());
+                        return (lockHr, ReadOnlyMemory<float>.Empty);
 
                     try
                     {
                         int floatCount = (int)(byteLength / sizeof(float));
-                        if (floatCount > 0)
-                        {
-                            if (scratch.Length < floatCount)
-                                scratch = new float[floatCount];
-                            Marshal.Copy(data, scratch, 0, floatCount);
-                            samples.AddRange(new System.ReadOnlySpan<float>(scratch, 0, floatCount));
-                        }
+                        samples.Append(data, floatCount);
                     }
                     finally
                     {
@@ -279,7 +270,7 @@ public sealed class AudioFileDecoder
             }
         }
 
-        return (MediaFoundationInterop.S_OK, samples.ToArray());
+        return (MediaFoundationInterop.S_OK, samples.WrittenMemory);
     }
 
     // ── HRESULT → status mapping ─────────────────────────────────────────────
@@ -322,7 +313,7 @@ public sealed class AudioFileDecoder
     {
         sw.Stop();
         LogFailure(status, hr);
-        return new AudioFileDecodeResult(status, null, 0);
+        return new AudioFileDecodeResult(status, ReadOnlyMemory<float>.Empty, 0);
     }
 
     private static void LogFailure(AudioFileDecodeStatus status, int hr)

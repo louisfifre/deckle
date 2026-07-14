@@ -113,20 +113,20 @@ public sealed partial class InstallingPage : Page
             var progress = new Progress<Downloader.DownloadProgress>(p => OnDownloadProgress(p, row));
 
             long startTicks = Environment.TickCount64;
-            InstallItemOutcome outcome;
+            ProvisioningResult outcome;
             try
             {
                 outcome = await item.RunAsync(progress, ct);
             }
             catch (OperationCanceledException)
             {
-                outcome = InstallItemOutcome.Fail("cancelled");
+                outcome = ProvisioningResult.Fail("cancelled");
             }
             catch (Exception ex)
             {
                 // An item must never take the run down — the failure lands in
                 // its row and the next item still gets its chance.
-                outcome = InstallItemOutcome.Fail($"{ex.GetType().Name}: {ex.Message}");
+                outcome = ProvisioningResult.Fail($"{ex.GetType().Name}: {ex.Message}");
             }
 
             _context.Results.Add(new InstallResult(
@@ -138,7 +138,7 @@ public sealed partial class InstallingPage : Page
                 DeckleSetupSource.Log.ItemInstalledDetail(
                     item.Id, outcome.Bytes ?? 0, Environment.TickCount64 - startTicks, outcome.Sha256 ?? "");
                 SetItemDone(row, outcome.Bytes is { } b
-                    ? Loc.Format("Setup_Install_Done_Format", FormatBytes(b))
+                    ? Loc.Format("Setup_Install_Done_Format", ByteSizeFormatter.Format(b))
                     : Loc.Get("Setup_Install_Done"));
             }
             else if (outcome.ErrorMessage == "cancelled")
@@ -236,14 +236,14 @@ public sealed partial class InstallingPage : Page
                 row.Bar.Value   = pct;
                 row.Status.Text = Loc.Format(
                     "Setup_Install_Progress_WithTotal_Format",
-                    FormatBytes(p.BytesDownloaded),
-                    FormatBytes(p.TotalBytes ?? 0),
+                    ByteSizeFormatter.Format(p.BytesDownloaded),
+                    ByteSizeFormatter.Format(p.TotalBytes ?? 0),
                     pct.ToString("P0", CultureInfo.CurrentCulture));
             }
             else
             {
                 row.Bar.IsIndeterminate = true;
-                row.Status.Text = Loc.Format("Setup_Install_Progress_NoTotal_Format", FormatBytes(p.BytesDownloaded));
+                row.Status.Text = Loc.Format("Setup_Install_Progress_NoTotal_Format", ByteSizeFormatter.Format(p.BytesDownloaded));
             }
         });
     }
@@ -279,11 +279,4 @@ public sealed partial class InstallingPage : Page
         row.Status.Text = text;
     }
 
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)               return $"{bytes} B";
-        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
-        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
-    }
 }

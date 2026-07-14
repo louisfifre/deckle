@@ -360,6 +360,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── MediaFoundationInterop.cs
+│   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
@@ -566,7 +567,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Win32Clipboard.cs
 │   │   │   └── Win32Util.cs
 │   │   ├── Io/
-│   │   │   └── Downloader.cs
+│   │   │   ├── Downloader.cs
+│   │   │   └── ProvisioningResult.cs
 │   │   ├── Paths/
 │   │   │   └── AppPaths.cs
 │   │   ├── CorpusPaths.cs
@@ -976,6 +978,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── AGENTS.md  — [agent-instructions] First-run wizard — module selection then ASR provisioning; owns the flow, deleg…
+│   │   ├── ByteSizeFormatter.cs
 │   │   ├── ChoicesPage.xaml
 │   │   ├── ChoicesPage.xaml.cs
 │   │   ├── CLAUDE.md
@@ -1198,6 +1201,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs
 │   ├── Deckle.Autocorrect.Tests/

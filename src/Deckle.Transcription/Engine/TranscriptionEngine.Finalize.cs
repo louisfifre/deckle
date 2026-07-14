@@ -45,8 +45,8 @@ public sealed partial class TranscriptionEngine
     private void FinalizeTranscription(PipelineProduction prod)
     {
         string  fullText          = prod.RawText;
-        float[] audio             = prod.RawAudio;
-        float[] backendAudio      = prod.BackendAudio;
+        ReadOnlyMemory<float> audio        = prod.RawAudio;
+        ReadOnlyMemory<float> backendAudio = prod.BackendAudio;
         float   audioSec          = (float)audio.Length / 16_000f;
         long    transcribeMsTotal = prod.TotalTranscribeMs;
         int     nSeg              = prod.NSegments;
@@ -334,7 +334,7 @@ public sealed partial class TranscriptionEngine
             // received (backendAudio: processed when DSP ran, raw otherwise);
             // AlwaysRaw forces the untouched capture to keep a re-derivable
             // baseline.
-            float[] corpusAudio =
+            ReadOnlyMemory<float> corpusAudioMemory =
                 telemetrySettings.AudioCorpusContent == AudioCorpusContent.AlwaysRaw
                     ? audio
                     : backendAudio;
@@ -342,7 +342,12 @@ public sealed partial class TranscriptionEngine
             // when MatchTranscription kept the DSP output — i.e. corpusAudio is a
             // buffer distinct from raw. AlwaysRaw, or the DSP off (backendAudio ==
             // audio), both leave corpusAudio referencing the untouched capture.
-            string corpusContent = !ReferenceEquals(corpusAudio, audio) ? "processed" : "raw";
+            string corpusContent = !corpusAudioMemory.Equals(audio) ? "processed" : "raw";
+            float[] corpusAudio = MemoryMarshal.TryGetArray(corpusAudioMemory, out ArraySegment<float> segment)
+                && segment.Offset == 0
+                && segment.Count == segment.Array!.Length
+                    ? segment.Array
+                    : corpusAudioMemory.ToArray();
             string audioFileName = telemetrySettings.RecordAudioCorpus
                 ? (WavCorpusWriter.Write(_transcriptionId, corpusAudio) ?? "")
                 : "";

@@ -112,7 +112,7 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        float[] audio = decoded.Pcm!;
+        ReadOnlyMemory<float> audio = decoded.Pcm;
 
         // CAS Starting → Transcribing DIRECTLY — a file run has no Recording or
         // Stopping phase (no capture, no chrono). Losing this CAS means Dispose

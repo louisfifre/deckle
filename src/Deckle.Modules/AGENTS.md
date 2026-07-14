@@ -5,9 +5,9 @@ type: agent-instructions
 
 # AGENTS.md — Deckle.Modules
 
-The presence catalogue: `ModuleDescriptor` names a user-facing module (id, glyph, dependency edges, provisioning probe), `ModuleRegistry` holds the set the composition root declares at boot, `ModulePresence` answers « did the user choose to have this module installed? » from `modules/presence.json`, and `ModuleGraph` carries the selector's cascade rules as pure set arithmetic. Non-UI support: the checkbox page rendering this model lives in `Deckle.Setup`.
+The presence catalogue: `ModuleDescriptor` names a user-facing module (id, glyph, dependency edges), `ModuleRegistry` holds the set the composition root declares at boot, `ModulePresence` answers « did the user choose to have this module installed? » from `modules/presence.json`, and `ModuleGraph` carries the selector's cascade rules as pure set arithmetic. Non-UI support: the checkbox page rendering this model lives in `Deckle.Setup`.
 
-Two axes, never merged: **presence** (chosen at install — unchecked means the module's engine is not composed and its settings pages never register) sits above **runtime activation** (a module's own `Enabled` toggle — a disabled module is still installed). A third state falls out of the descriptor: chosen but not provisioned (`IsProvisioned` false) — present, visible, not runnable yet.
+Two axes, never merged: **presence** (chosen at install — unchecked means the module's engine is not composed and its settings pages never register) sits above **runtime activation** (a module's own `Enabled` toggle — a disabled module is still installed). Provisioning belongs to the backend that owns each artifact and is evaluated by the setup plan, not by this catalogue.
 
 Non-obvious decisions:
 

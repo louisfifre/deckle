@@ -13,9 +13,9 @@ namespace Deckle.Transcription;
 // reported on its own, raising Finished itself. A non-null value means "produce
 // the user-facing output".
 internal readonly record struct PipelineProduction(
-    string  RawText,
-    float[] RawAudio,
-    float[] BackendAudio,
-    long    TotalTranscribeMs,
-    long    InitMs,
-    int     NSegments);
+    string RawText,
+    ReadOnlyMemory<float> RawAudio,
+    ReadOnlyMemory<float> BackendAudio,
+    long TotalTranscribeMs,
+    long InitMs,
+    int NSegments);

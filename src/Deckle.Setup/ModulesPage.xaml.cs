@@ -137,16 +137,8 @@ public sealed partial class ModulesPage : Page
 
         long pendingBytes = InstallPlan.PendingBytes(_setup.Context);
         TotalEstimateBar.Message = pendingBytes > 0
-            ? Loc.Format("Setup_TotalEstimate_Pending_Format", FormatBytes(pendingBytes))
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pendingBytes))
             : Loc.Get("Setup_TotalEstimate_NothingPending");
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)               return $"{bytes} B";
-        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
-        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
     }
 
     // ── Next ──────────────────────────────────────────────────────────────────

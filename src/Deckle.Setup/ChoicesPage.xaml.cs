@@ -128,7 +128,7 @@ public sealed partial class ChoicesPage : Page
             // locally already" affordance.
             NativeStatusText.Text = Loc.Format(
                 "Setup_Native_WillDownload_Format",
-                FormatBytes(NativeRuntime.CurrentBundle.SizeBytes));
+                ByteSizeFormatter.Format(NativeRuntime.CurrentBundle.SizeBytes));
             BrowseNativeButton.Content = Loc.Get("Setup_Native_BrowseLocal");
         }
     }
@@ -137,17 +137,12 @@ public sealed partial class ChoicesPage : Page
 
     private void PopulateModelRadio()
     {
-        ModelRadio.Items.Clear();
+        ModelRadio.ItemsSource = SpeechModels.WhisperModels;
 
         int defaultIndex = 0;
         for (int i = 0; i < SpeechModels.WhisperModels.Count; i++)
         {
-            var entry = SpeechModels.WhisperModels[i];
-            ModelRadio.Items.Add(new RadioButton
-            {
-                Content = entry.DisplayName,
-                Tag     = entry.Id,
-            });
+            ModelEntry entry = SpeechModels.WhisperModels[i];
             if (entry.FileName == SpeechModels.DefaultModelFileName) defaultIndex = i;
         }
 
@@ -158,17 +153,8 @@ public sealed partial class ChoicesPage : Page
     {
         if (_context is null) return;
 
-        if (ModelRadio.SelectedItem is RadioButton rb && rb.Tag is string id)
-        {
-            foreach (var entry in SpeechModels.WhisperModels)
-            {
-                if (entry.Id == id)
-                {
-                    _context.SelectedModel = entry;
-                    break;
-                }
-            }
-        }
+        if (ModelRadio.SelectedItem is ModelEntry entry)
+            _context.SelectedModel = entry;
 
         UpdateTotalEstimate();
         UpdateNextEnabled();
@@ -187,7 +173,7 @@ public sealed partial class ChoicesPage : Page
         long pendingBytes = InstallPlan.PendingBytes(_context);
 
         TotalEstimateBar.Message = pendingBytes > 0
-            ? Loc.Format("Setup_TotalEstimate_Pending_Format", FormatBytes(pendingBytes))
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pendingBytes))
             : Loc.Get("Setup_TotalEstimate_NothingPending");
     }
 
@@ -201,14 +187,6 @@ public sealed partial class ChoicesPage : Page
         bool nativeReady = NativeRuntime.IsInstalled() || !NativeRuntime.BundleUrlIsPlaceholder;
         bool ready = nativeReady && ModelRadio.SelectedIndex >= 0;
         _setup.SetNextEnabled(ready);
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)               return $"{bytes} B";
-        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
-        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F1} GB";
     }
 
     // ── Next ──────────────────────────────────────────────────────────────────

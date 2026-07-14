@@ -99,9 +99,9 @@ public sealed class VadService : IDisposable
             // so a bad file is never published. CancellationToken.None is deliberate
             // — this fire-and-forget transfer (a couple of MB) outlives Dispose
             // rather than being torn down mid-flight; the OS reclaims it at exit.
-            Downloader.DownloadResult result = await Downloader.DownloadAsync(
-                SileroVadModel.Url, modelPath, expectedSha256: SileroVadModel.Sha256,
-                progress: null, CancellationToken.None).ConfigureAwait(false);
+            ProvisioningResult result = await SileroVadModel.ProvisionAsync(
+                Path.GetDirectoryName(modelPath)!, progress: null, CancellationToken.None)
+                .ConfigureAwait(false);
 
             if (result.Success)
             {

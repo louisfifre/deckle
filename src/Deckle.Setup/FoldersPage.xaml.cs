@@ -56,10 +56,9 @@ public sealed partial class FoldersPage : Page
         BrowseAppButton.Content  = Loc.Get("Common_Browse");
         BrowseDataButton.Content = Loc.Get("Common_Browse");
 
-        _payloadBytes = DirectorySize(_context.SourceDirectory);
-
         RefreshPaths();
-        RefreshSpace();
+        setup.SetNextEnabled(false);
+        _ = MeasurePayloadAndRefreshAsync(_context.SourceDirectory);
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -117,6 +116,16 @@ public sealed partial class FoldersPage : Page
 
     // ── Space recap + Next gate ───────────────────────────────────────────────
 
+    private async Task MeasurePayloadAndRefreshAsync(string sourceDirectory)
+    {
+        long payloadBytes = await Task.Run(() => DirectorySize(sourceDirectory));
+        if (!ReferenceEquals(_setup?.Body.Content, this))
+            return;
+
+        _payloadBytes = payloadBytes;
+        RefreshSpace();
+    }
+
     private void RefreshSpace()
     {
         if (_setup is null || _context is null) return;
@@ -143,8 +152,8 @@ public sealed partial class FoldersPage : Page
             bool fits = free >= bytes;
             allFit &= fits;
             lines.Add(Loc.Format("Setup_Folders_DriveLine_Format",
-                root, FormatBytes(bytes),
-                free >= 0 ? FormatBytes(free) : Loc.Get("Setup_Folders_DriveUnknown")));
+                root, ByteSizeFormatter.Format(bytes),
+                free >= 0 ? ByteSizeFormatter.Format(free) : Loc.Get("Setup_Folders_DriveUnknown")));
         }
 
         SpaceBar.Message  = string.Join("\n", lines);
@@ -162,14 +171,6 @@ public sealed partial class FoldersPage : Page
         }
         catch (Exception) { /* a partial walk still beats no estimate */ }
         return total;
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)               return $"{bytes} B";
-        if (bytes < 1024L * 1024)       return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024L * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F0} MB";
-        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F1} GB";
     }
 
     // ── Next ──────────────────────────────────────────────────────────────────
