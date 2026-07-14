@@ -60,6 +60,7 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private IntPtr _foregroundHook;
     private IntPtr _focusHook;
     private IntPtr _mouseHook;
+    private readonly FocusEventCoalescer _focusEvents = new();
 
     private IntPtr _rawBuffer;
     private int _rawBufferSize;
@@ -375,6 +376,9 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
     {
+        if (!_focusEvents.ShouldPublish(eventType, hwnd, idObject, idChild, dwmsEventTime))
+            return;
+
         _rollupFocusChanges++;
         FocusChanged?.Invoke();
         TrackRollup(RawInputHost.NowMs);

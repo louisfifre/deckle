@@ -685,6 +685,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SendInputInterop.cs
 │   │   │   └── WinEventInterop.cs
 │   │   ├── Keyboard/
+│   │   │   ├── FocusEventCoalescer.cs
 │   │   │   ├── IKeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardKeyEvent.cs
@@ -1297,6 +1298,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
+│   │   ├── FocusEventCoalescerTests.cs
 │   │   └── LowLevelMouseHookInteropTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
