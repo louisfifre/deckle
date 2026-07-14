@@ -28,11 +28,9 @@ internal sealed class AppTranscriptionEngineHost : ITranscriptionEngineHost
     // the manual-hotkey branch nor the auto-rewrite rules can fire — and the
     // absent module's LlmSettingsService is never instantiated (its ctor
     // would create modules/llm/settings.json on disk).
-    public LlmSettings Llm =>
-        ModulePresence.IsPresent(ModuleIds.Rewrite)
-            ? LlmSettingsService.Instance.Current
-            : _rewriteAbsent;
-    private static readonly LlmSettings _rewriteAbsent = new() { Enabled = false, Profiles = new() };
+    public LlmSettings Llm => RewriteAvailability.Settings(
+        ModulePresence.IsPresent(ModuleIds.Rewrite),
+        () => LlmSettingsService.Instance.Current);
 
     public string ResolveModelsDirectory() => TranscriptionSettingsService.Instance.ResolveModelsDirectory();
 
