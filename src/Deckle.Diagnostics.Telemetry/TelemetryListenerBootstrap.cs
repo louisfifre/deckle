@@ -51,6 +51,8 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    Rerank}Recorded events
 //   autocorrect.text.jsonl                         ← AutocorrectTextRecorded
 //                                                    events (typed corpus)
+//   autocorrect.stream.jsonl                       ← AutocorrectStreamRecorded
+//                                                    events (typing stream)
 //
 // User gate semantics:
 //   app.jsonl                  ← ApplicationLogToDisk == true
@@ -60,7 +62,8 @@ namespace Deckle.Diagnostics.Telemetry;
 //   corpus/raw/…,
 //   corpus/rewrite-…/      ← CorpusEnabled == true
 //   autocorrect.decisions.jsonl ← AutocorrectDecisions == true
-//   autocorrect.text.jsonl      ← AutocorrectText == true
+//   autocorrect.text.jsonl,
+//   autocorrect.stream.jsonl    ← AutocorrectText == true (one consent envelope)
 //
 // Default posture: gates closed (false). Until ConfigureGates has been called,
 // no line touches disk: fail-safe behaviour reproducing the old posture when
@@ -113,6 +116,7 @@ public static class TelemetryListenerBootstrap
                 && e.EventName != "AutocorrectDecisionRecorded"
                 && e.EventName != "AutocorrectRerankRecorded"
                 && e.EventName != "AutocorrectTextRecorded"
+                && e.EventName != "AutocorrectStreamRecorded"
                 && !ShouldDropApplicationLog(e)
                 && ReadGate("ApplicationLogToDisk"),
             // app.jsonl is the persistent mirror of the live log:
@@ -172,6 +176,18 @@ public static class TelemetryListenerBootstrap
             filePath:  Path.Combine(rootDirectory, "autocorrect.text.jsonl"),
             kindLabel: "autocorrect_text",
             predicate: e => e.EventName == "AutocorrectTextRecorded"
+                         && ReadGate("AutocorrectText")));
+
+        // Typing stream: the verbatim forward flow on enrolled surfaces, one run
+        // per line, segmented at backward repairs — replaying the runs restores
+        // what was typed, erased and retyped (the mistouch-mining substrate).
+        // Same consent envelope as the typed-sentence corpus above (one toggle
+        // covers both files), its own kind so the datasets load apart. PayloadOnly,
+        // append-only — the text is the record.
+        Register(new JsonlSink(
+            filePath:  Path.Combine(rootDirectory, "autocorrect.stream.jsonl"),
+            kindLabel: "autocorrect_stream",
+            predicate: e => e.EventName == "AutocorrectStreamRecorded"
                          && ReadGate("AutocorrectText")));
 
         // Normalized corpus: see ADR-0006. Two routed sinks spray

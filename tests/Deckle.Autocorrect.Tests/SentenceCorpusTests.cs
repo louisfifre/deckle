@@ -36,6 +36,22 @@ public class SentenceCorpusTests
     }
 
     [Fact]
+    public void SeparatorEditRewritesTheFinalSideOnly()
+    {
+        // A mistouch boundary repair (« qu;il » → « qu'il ») changes the run
+        // BETWEEN two slots: the final rendering follows the screen, the typed
+        // side keeps the faulty run — that pair is what mining feeds on.
+        var (c, done) = New();
+        c.Word("qu", "qu", ';');
+        c.Word("il", "il", ' ');
+        c.SeparatorEdit("qu", ";", "'");
+        c.Word("dort", "dort", '.');
+
+        Assert.Equal("qu;il dort.", done[0].Typed);
+        Assert.Equal("qu'il dort.", done[0].Final);
+    }
+
+    [Fact]
     public void PreservesTheSemicolonForApostropheSubstitution()
     {
         // « l;ecole » — the ';' is a boundary the corrector never repairs (it

@@ -183,11 +183,24 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (entry.NeedsCap && !entry.IsAmbiguous)
             _pendingCapSlot = _buffer.Count - 1;
 
-        // A sentence-ender decides every still-open slot "from the sentence so far".
+        // A sentence-ender decides every still-open slot "from the sentence so
+        // far" — and re-reviews the slots a pause pass decided early (CONTEXT.md
+        // § Pause pass): the typed original is still among their candidates, so
+        // a premature verdict can be silently taken back from full context. A
+        // pause verdict still in flight at this instant resolves after the
+        // closure and is not re-reviewed — the Enter-race residue's cousin,
+        // accepted and rare.
         if (SentenceBreaks.Contains(boundary))
             foreach (SlotEntry s in _buffer)
+            {
+                if (s.IsAmbiguous && s.Resolved && s.PauseFlushed)
+                {
+                    s.Resolved = false;
+                    s.PauseFlushed = false;
+                }
                 if (s.IsAmbiguous && !s.Resolved)
                     s.RightContextCount = Math.Max(s.RightContextCount, DeferralWords);
+            }
 
         if (CapitalizingEnders.Contains(boundary))
             _nextWordIsSentenceInitial = true;
@@ -239,6 +252,28 @@ public sealed class SentenceRerankCoordinator : IDisposable
             }
             empty = true; // the boundary commits (or joins) the word the tracker holds
         }
+    }
+
+    // The pause pass (CONTEXT.md § Pause pass): a typing pause on a surface
+    // whose profile says Enter usually closes — decide every still-open slot
+    // NOW, so corrections land before the Enter that sends the text. Same
+    // gesture as a sentence-ender, triggered by time; the flushed slots are
+    // marked so the true-closure pass can re-review them later. Returns how
+    // many slots the pause put in motion — zero is a silent no-op.
+    public int FlushOnPause()
+    {
+        if (_disposed) return 0;
+        int flushed = 0;
+        foreach (SlotEntry s in _buffer)
+            if (s.IsAmbiguous && !s.Resolved)
+            {
+                s.PauseFlushed = true;
+                s.RightContextCount = Math.Max(s.RightContextCount, DeferralWords);
+                flushed++;
+            }
+        if (flushed > 0)
+            TrySubmitNext();
+        return flushed;
     }
 
     // Drop the sentence model: the caret left the span we model (or a backspace is
@@ -476,6 +511,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public IReadOnlyList<AccentVariant> Candidates = Array.Empty<AccentVariant>();
         public bool IsAmbiguous;
         public bool Resolved;
+        // Set when a pause pass flushed this slot early: its verdict is
+        // provisional, and the true-closure pass re-opens it for re-review.
+        public bool PauseFlushed;
         public int RightContextCount;
         public bool NeedsCap;
         public bool IsSentenceInitial;

@@ -22,6 +22,8 @@ public enum CorrectionReason
     SubjectVerbAgreement,
     /// <summary>The étape-2 toy hotstring — dev only.</summary>
     ToyHotstring,
+    /// <summary>An approved mistouch family repaired the span behind the caret (qu;il → qu'il).</summary>
+    MistouchFamily,
 }
 
 // A rewrite the engine wants applied to a just-committed word.

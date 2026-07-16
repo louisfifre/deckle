@@ -579,4 +579,88 @@ public class TypedWordTrackerTests
         var tokenized = WordBoundaries.Tokenize(sentence).ToArray();
         Assert.Equal(tokenized, committed);
     }
+
+    // ── Le rail de séparateurs (PrecedingSeparators) ──
+    // La suite de caractères à l'écran entre le mot précédent et celui qui
+    // valide — la matière des familles mistouch de frontière. Fidèle tant que
+    // rien ne l'a perturbée ; vide (inconnue) sinon, et les familles s'abstiennent.
+
+    [Fact]
+    public void PrecedingSeparatorsCarryTheGluedBoundary()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "qu;il ");
+
+        Assert.Equal("", rec.Commits[0].PrecedingSeparators);   // début de piste : inconnu
+        Assert.Equal(";", rec.Commits[1].PrecedingSeparators);  // le ';' qui a validé « qu »
+    }
+
+    [Fact]
+    public void PrecedingSeparatorsAccumulateNoiseBoundaries()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "fait, beau ");
+
+        Assert.Equal(", ", rec.Commits[1].PrecedingSeparators); // virgule PUIS espace
+    }
+
+    [Fact]
+    public void PrecedingSeparatorsRenderTheElisionBoundaryEmpty()
+    {
+        // L'apostrophe d'élision vit DANS le mot (« l' ») — rien à l'écran
+        // entre elle et le mot suivant, le rail doit le refléter.
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "l'école ");
+
+        Assert.Equal("", rec.Commits[1].PrecedingSeparators);
+    }
+
+    [Fact]
+    public void PrecedingSeparatorsGoUnknownWhenBackspaceEatsTheRun()
+    {
+        // Backspace sur tampon vide mange un séparateur : le rail ne reflète
+        // plus l'écran, il s'invalide plutôt que de mentir.
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "fait, ");
+        Backspace(t); // mange l'espace — et rouvre la fenêtre d'édition
+        Type(t, " beau ");
+
+        Assert.Equal("", rec.Commits[^1].PrecedingSeparators);
+    }
+
+    [Fact]
+    public void PrecedingSeparatorsGoUnknownOnReopenedWords()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "un mot ");
+        Backspace(t, 4); // rouvre « mot » et l'efface
+        Type(t, "sot ");
+
+        WordCommit recommit = rec.Commits[^1];
+        Assert.True(recommit.Reopened);
+        Assert.Equal("", recommit.PrecedingSeparators);
+    }
+
+    [Fact]
+    public void PrecedingSeparatorsResetWithTheTracker()
+    {
+        var t = new TypedWordTracker();
+        var rec = new Recorder(t);
+
+        Type(t, "mot,");
+        Press(t, KeystrokeKind.Enter);
+        Type(t, "suite ");
+
+        Assert.Equal("", rec.Commits[^1].PrecedingSeparators);
+    }
 }

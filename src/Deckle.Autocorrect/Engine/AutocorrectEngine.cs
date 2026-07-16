@@ -32,6 +32,24 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly IFrequencyLexicon? _french;
     private readonly IFrequencyLexicon? _english;
 
+    // The approved mistouch families' detector-generator (CONTEXT.md § Mistouch
+    // family) — null when no family is approved, and the engine runs untouched.
+    // Kinds are code, the records are the user's own data.
+    private readonly MistouchFamilyCorrector? _mistouch;
+
+    // ── Pause pass (CONTEXT.md § Pause pass) ──
+    // Measured surface profiles by process; _pauseThresholdMs is the current
+    // surface's calibrated bar (0 = not armed, the common case). The one-shot
+    // timer re-arms on every physical key and fires on the threadpool — it only
+    // raises the pending flag and requests a drain, so the decision itself
+    // (compare against the last key's clock, flush the coordinator) runs on the
+    // input thread like everything else. Event-driven: no polling, one timer.
+    private readonly Dictionary<string, SurfaceProfileRecord>? _profiles;
+    private readonly Timer? _pauseTimer;
+    private volatile int _pauseThresholdMs;
+    private long _lastKeyTickMs;         // input thread only
+    private int _pausePassRequested;     // threadpool → input thread flag
+
     // Opt-in per-word decision telemetry. When this returns true, each evaluated
     // word on an enrolled surface emits a structured trace (candidates, scores,
     // margins, the guard that left it literal) to the autocorrect.decisions dataset.
@@ -48,6 +66,12 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly Func<bool>? _textTelemetry;
     private readonly SentenceCorpus? _corpus;
     private int _discardCorpusRequested;
+
+    // The typing stream (CONTEXT.md § Typing stream) rides the same consent
+    // envelope as the corpus but a TIGHTER surface gate: enrolled surfaces only,
+    // where the corpus spans every editable one. Fed the same decoded keystrokes
+    // the tracker consumes — a parallel verbatim capture, not a word model.
+    private readonly TypingStream? _stream;
 
     // The post-sentence contextual stage. Null only when no sentence reranker is
     // wired; the reranker may be deterministic rules alone or rules delegating to
@@ -113,7 +137,9 @@ public sealed class AutocorrectEngine : IDisposable
         ISentenceReranker? reranker = null,
         IAmbiguityProbe? probe = null,
         Func<bool>? decisionTelemetry = null,
-        Func<bool>? textTelemetry = null)
+        Func<bool>? textTelemetry = null,
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        IReadOnlyList<SurfaceProfileRecord>? surfaceProfiles = null)
     {
         _host = host;
         _decoder = decoder;
@@ -128,6 +154,17 @@ public sealed class AutocorrectEngine : IDisposable
         _decisionTelemetry = decisionTelemetry;
         _textTelemetry = textTelemetry;
         _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
+        _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
+        _mistouch = mistouchFamilies is { Count: > 0 }
+            ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
+            : null;
+
+        if (surfaceProfiles is { Count: > 0 })
+        {
+            _profiles = new Dictionary<string, SurfaceProfileRecord>(StringComparer.OrdinalIgnoreCase);
+            foreach (SurfaceProfileRecord p in surfaceProfiles)
+                _profiles[p.Process] = p;
+        }
 
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
@@ -143,6 +180,11 @@ public sealed class AutocorrectEngine : IDisposable
                 onApplied: OnCoordinatorApplied,
                 decisionTelemetry: decisionTelemetry);
         }
+
+        // The pause pass exists only with both a sentence stage to flush and at
+        // least one profiled surface to arm it on.
+        if (_profiles is not null && _coordinator is not null)
+            _pauseTimer = new Timer(OnPauseTimerElapsed);
     }
 
     public bool Start()
@@ -168,9 +210,11 @@ public sealed class AutocorrectEngine : IDisposable
 
     public void Stop()
     {
+        _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _host.Stop();
         Unsubscribe();
         _corpus?.Discard();
+        _stream?.Discard();
         _coordinator?.Invalidate(ResetReason.FocusChanged); // drop the sentence model
         _dictionary?.Flush();
         DeckleAutocorrectSource.Log.EngineStopped();
@@ -181,6 +225,7 @@ public sealed class AutocorrectEngine : IDisposable
     public void Dispose()
     {
         Stop();
+        _pauseTimer?.Dispose();
         _coordinator?.Dispose();
         _lane?.Dispose();
     }
@@ -210,7 +255,36 @@ public sealed class AutocorrectEngine : IDisposable
     private void OnDrainRequested()
     {
         if (Interlocked.Exchange(ref _discardCorpusRequested, 0) != 0)
+        {
             _corpus?.Discard();
+            _stream?.Discard();
+        }
+        if (Interlocked.Exchange(ref _pausePassRequested, 0) != 0)
+            MaybeRunPausePass();
+    }
+
+    // The timer's threadpool callback: raise the flag and marshal to the input
+    // thread — never touch the coordinator from here.
+    private void OnPauseTimerElapsed(object? _)
+    {
+        if (_pauseThresholdMs <= 0) return;
+        Interlocked.Exchange(ref _pausePassRequested, 1);
+        _host.RequestDrain();
+    }
+
+    // Input thread. The timer races the keyboard: a key landing after the arm
+    // re-arms it, but a fire may already be in flight — re-check the clock so a
+    // pause is only declared when nothing was typed for the threshold (small
+    // slack for timer granularity).
+    private void MaybeRunPausePass()
+    {
+        int threshold = _pauseThresholdMs;
+        if (threshold <= 0 || _coordinator is null) return;
+        if (Environment.TickCount64 - _lastKeyTickMs < threshold - 50) return;
+
+        int slots = _coordinator.FlushOnPause();
+        if (slots > 0)
+            DeckleAutocorrectSource.Log.PausePassTriggered(threshold, slots);
     }
 
     private void OnKey(KeyboardKeyEvent e)
@@ -227,12 +301,28 @@ public sealed class AutocorrectEngine : IDisposable
         // model. Resets proper arrive via OnTrackerReset.
         _coordinator?.NotePhysicalKey(k, _tracker.CurrentWord);
 
+        // The typing stream captures the verbatim stroke before the tracker
+        // interprets it. Gated per stroke — enrolled surfaces only, consent live;
+        // the password gate already cut above, before decoding.
+        if (ShouldFeedStream())
+            _stream?.OnKeystroke(k);
+
         _tracker.OnKeystroke(k);
+
+        // Re-arm the pause clock on every physical key. Armed only where the
+        // surface's profile set a bar — everywhere else the timer never runs.
+        _lastKeyTickMs = Environment.TickCount64;
+        int pauseMs = _pauseThresholdMs;
+        if (pauseMs > 0)
+            _pauseTimer?.Change(pauseMs, Timeout.Infinite);
     }
 
     private void OnPointerInteraction()
     {
         _tracker.NotifyPointerInteraction();
+        // Ungated: a span must close on every caret move, or a stale run would
+        // leak into whatever surface is typed next.
+        _stream?.NotifyPointerInteraction();
     }
 
     // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
@@ -270,11 +360,21 @@ public sealed class AutocorrectEngine : IDisposable
     private void OnFocusChanged()
     {
         var surface = _prober.Probe();
-        // The reset synchronously closes the corpus run. Keep the producing
-        // surface live until that run has been emitted; only then publish the
-        // newly focused surface.
+        // The reset synchronously closes the corpus run and the typing-stream
+        // span. Keep the producing surface live until both have been emitted;
+        // only then publish the newly focused surface.
         _tracker.NotifyFocusChanged();
+        _stream?.NotifyFocusChanged();
         _surface = surface;
+
+        // The pause pass follows the surface: armed at its measured bar where
+        // the profile qualifies, disarmed (threshold 0) everywhere else.
+        _pauseThresholdMs = _profiles is not null
+            && _profiles.TryGetValue(surface.ProcessName, out SurfaceProfileRecord? profile)
+            ? profile.PauseThresholdMs
+            : 0;
+        if (_pauseThresholdMs == 0)
+            _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
         bool enabled = IsEnabledFor(_settings(), surface.ProcessName);
         DeckleAutocorrectSource.Log.SurfaceChanged(
@@ -357,6 +457,12 @@ public sealed class AutocorrectEngine : IDisposable
             else
                 ApplyCorrection(commit, decision);
 
+            // Boundary mistouch families act on the span BEHIND the word — a
+            // territory no word-level policy sees. Only when the commit itself
+            // was left alone: never two injections off one keystroke.
+            if (decision is null)
+                TryApplyMistouchRepair(commit);
+
             if (trace is not null)
                 EmitDecision(wordId, commit.Word, leftContext, trace);
 
@@ -414,6 +520,54 @@ public sealed class AutocorrectEngine : IDisposable
         }
     }
 
+    // Applies an approved mistouch family's span repair — the separator run
+    // between the previous word and the one just committed, rewritten on screen
+    // (« qu;il » → « qu'il »). A learned suppression vetoes it like any
+    // correction; the corpus records the separator change on the final side so
+    // the emitted sentence stays glued to the screen (the typed side keeps the
+    // faulty run — the mining pair). Known accepted drift: the tracker's
+    // two-back context and the sentence coordinator keep the pre-repair
+    // separator — advisory context, one char off, never re-injected.
+    private void TryApplyMistouchRepair(WordCommit commit)
+    {
+        if (_mistouch is null) return;
+        MistouchFamilyCorrector.SpanRepair? repair = _mistouch.Evaluate(commit);
+        if (repair is null) return;
+        if (_dictionary?.IsSuppressed(repair.Original, repair.Replacement) == true) return;
+
+        string boundary = WordBoundaries.DisplaySeparator(commit.Boundary);
+        string current = repair.Original + boundary;
+        string target = repair.Replacement + boundary;
+        var plan = InjectionPlan.Compute(current, target);
+        var decision = new CorrectionDecision(
+            repair.Original, repair.Replacement, CorrectionReason.MistouchFamily);
+
+        if (_injector.Replace(current, target))
+        {
+            _rollupCorrections++;
+            DeckleAutocorrectSource.Log.CorrectionApplied();
+            DeckleAutocorrectSource.Log.CorrectionDetail(
+                decision.Reason.ToString(), repair.Original.Length,
+                repair.Replacement.Length, plan.Backspaces);
+            if (_textTelemetry?.Invoke() == true)
+                _corpus?.SeparatorEdit(repair.Previous, repair.OldSeparators, repair.NewSeparators);
+            CorrectionApplied?.Invoke(decision);
+        }
+        else
+        {
+            DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
+            InjectionFailed?.Invoke(repair.Original, repair.Replacement);
+        }
+    }
+
+    // A word is protected when any tier the engine sees knows it — the French
+    // lexicon, the restricted global-English seed, or the user's own adopted
+    // vocabulary. The mistouch corrector's validity oracle.
+    private bool IsProtectedWord(string lowerForm) =>
+        _french?.Contains(lowerForm) == true
+        || _english?.Contains(lowerForm) == true
+        || _dictionary?.IsAdopted(lowerForm) == true;
+
     // Feed the typed-sentence corpus one word: the verbatim typed form paired with
     // the form the engine left on screen (onScreen). Collection reaches here only for
     // editable, non-password, master-on commits — the two early gates already withheld
@@ -440,6 +594,33 @@ public sealed class AutocorrectEngine : IDisposable
 
         DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
             _surface.ProcessName, rec.Typed, rec.Final, rec.History, rec.Closure, rec.Timing);
+    }
+
+    // The typing stream records only where correction is live: an editable,
+    // non-password (cut upstream), master-on, ENROLLED surface with the text
+    // consent on — tighter than the corpus, which spans every editable surface.
+    // Checked per stroke so a settings flip takes effect immediately; resets
+    // (pointer, focus) bypass this gate so a span can never straddle surfaces.
+    private bool ShouldFeedStream()
+    {
+        if (_stream is null || !_surface.IsTextEditable) return false;
+        var settings = _settings();
+        return settings.Enabled
+            && IsEnabledFor(settings, _surface.ProcessName)
+            && _textTelemetry?.Invoke() == true;
+    }
+
+    // Emits one closed typing-stream run on the dedicated dataset, tagged with
+    // the producing process. Runs on the input thread; consent is re-checked at
+    // emission for the same reason as EmitText — a reset can close a span after
+    // the user switched collection off.
+    private void EmitStreamRun(TypingStream.RunRecord rec)
+    {
+        if (_textTelemetry?.Invoke() != true)
+            return;
+
+        DeckleAutocorrectSource.Log.AutocorrectStreamRecorded(
+            _surface.ProcessName, rec.Text, rec.Erased, rec.Closure, rec.Timing);
     }
 
     // The synchronous decision line of the per-word telemetry: the word, its left

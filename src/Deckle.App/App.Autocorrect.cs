@@ -123,6 +123,17 @@ public partial class App
                 AppPaths.GetModuleDirectory("autocorrect"), "personal-dictionary.json");
             _autocorrectDictionary = new PersonalDictionary(dictPath);
 
+            // Approved mistouch families — per-user data beside the dictionary,
+            // same discipline (inspectable, editable, removable). The kinds are
+            // code; these records are the user's own mined-and-reviewed slips.
+            var mistouchFamilies = MistouchFamilyStore.Load(Path.Combine(
+                AppPaths.GetModuleDirectory("autocorrect"), MistouchFamilyStore.FileName));
+
+            // Measured surface profiles — written by the ventilation gesture,
+            // arm the pause pass per surface. Empty until a ventilation ran.
+            var surfaceProfiles = SurfaceProfileStore.Load(Path.Combine(
+                AppPaths.GetModuleDirectory("autocorrect"), SurfaceProfileStore.FileName));
+
             // The global-English tier is deliberately restricted: only the
             // globish seed artifact activates it. The historical full English
             // list is never loaded into the live protected-literal chain.
@@ -189,7 +200,9 @@ public partial class App
                 // Opt-in typed-sentence corpus, same live read. Off by default; the
                 // heaviest text capture, behind its own consent toggle.
                 textTelemetry: () =>
-                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText);
+                    Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText,
+                mistouchFamilies: mistouchFamilies,
+                surfaceProfiles: surfaceProfiles);
 
             // Reactive enrollment: a would-be correction on an undecided app
             // raises this on the engine's input thread. Detach the prompt so we

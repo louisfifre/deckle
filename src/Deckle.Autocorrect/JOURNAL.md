@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — Mining chantier: routing and pause pass landed
+
+Approved families are per-user records interpreted by code kinds (boundary_apostrophe, boundary_missing_space) — nothing personal frozen in code; the tracker surfaces the inter-commit separator run, invalidated whenever a backspace or reset makes it unfaithful, and span repairs inject at commit, honor suppressions, and edit the corpus final-side separator (typed keeps the fault). The pause pass flushes open slots on a typing pause (one re-armed one-shot timer through the drain marshal); pause verdicts are re-reviewed at true closure, Enter cannot re-review — the measured residue. Per-surface bars ride surface-profiles.json from the ventilation gesture; the provisional qualification formula (Enter-dominant, ≥30 timed sentences, gap p99) is quarantined in SurfaceProfiler pending calibration. First mined batch reviewed: two families approved (sub ;→', dropped space after ,).
+
+## 2026-07-14 — Typing stream capture landed
+
+Runs emitted per closure with the erase count on the following record (a dangling repair flushes text-less); closure vocabulary: repair/cap continue a span, enter/navigation/escape/shortcut/delete/deadkey/pointer/focus end it. Feed gate is editable + enrolled + consent, tighter than the sentence corpus; same AutocorrectText envelope, new `autocorrect_stream` kind, run cap 512 chars. Per-char keystroke gaps ride each run — the first gap after a repair includes the repair pause.
+
 ## 2026-07-14 — Mining chantier framed (grill session)
 
 Decisions, normative vocabulary in `CONTEXT.md` § Autocorrect: mistouch families are mined offline from the typed-sentence corpus and expressed as deterministic detector-generators — the judge only ever scores bounded candidates, never proposes. Routing follows ambiguity; commit-stage eligibility takes three cumulative conditions (impossible non-word trigger, unique repair, left context suffices), everything else feeds the sentence-stage judge. Families adopt automatically past a corpus-calibrated evidence threshold under the personal dictionary's discipline (inspectable, removable, undo writes suppression); the first mined batch alone is maintainer-reviewed. The typing stream captures everything typed on enrolled surfaces — runs segmented at backward repairs — serving both the error corpus and a natural-language corpus; same consent envelope, one JSONL kind among the autocorrect datasets; password surfaces stay outside, as everywhere. Surface profiles (closure/timing per application) calibrate the pause pass — an anticipated sentence-stage pass on a typing pause, so corrections land before the Enter that sends. Chantier order: typing stream first (corpus accrues while the rest is built), profile ventilation, miner, routing wiring, pause pass last. Evidence and pause thresholds are calibrated on the data, never guessed. ADR deferred until tested.

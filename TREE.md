@@ -426,6 +426,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── ISentenceReranker.cs
 │   │   │   ├── ISentenceScorer.cs
+│   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
 │   │   │   ├── SentenceCorpus.cs
@@ -441,8 +442,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── KeyboardStateInterop.cs
 │   │   ├── Learning/
 │   │   │   ├── IPersonalLexicon.cs
+│   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
-│   │   │   └── PersonalDictionaryData.cs
+│   │   │   ├── PersonalDictionaryData.cs
+│   │   │   └── SurfaceProfileStore.cs
 │   │   ├── Lexicon/
 │   │   │   ├── AccentFolding.cs
 │   │   │   ├── AccentIndex.cs
@@ -462,6 +465,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyDecoder.cs
 │   │   │   ├── Keystroke.cs
 │   │   │   ├── TypedWordTracker.cs
+│   │   │   ├── TypingStream.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
 │   │   ├── Ui/
@@ -481,6 +485,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Autocorrect.Lab/
+│   │   ├── Mining/
+│   │   │   ├── MistouchFamilyReport.cs
+│   │   │   └── MistouchMiner.cs
+│   │   ├── Profiling/
+│   │   │   ├── SurfaceProfiler.cs
+│   │   │   └── SurfaceProfileReport.cs
 │   │   ├── Replay/
 │   │   │   ├── CorpusReader.cs
 │   │   │   ├── MarginCalibration.cs
@@ -1235,6 +1245,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineHarness.cs
 │   │   ├── AutocorrectEngineLearningTests.cs
 │   │   ├── AutocorrectEngineLifecycleTests.cs
+│   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
@@ -1258,6 +1269,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MarginCalibrationTests.cs
+│   │   ├── MistouchFamilyCorrectorTests.cs
+│   │   ├── MistouchFamilyStoreTests.cs
+│   │   ├── MistouchMinerTests.cs
+│   │   ├── MistouchMiningGestureTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── OnnxJudgeSerialCollection.cs
 │   │   ├── OnnxSentenceScorerTests.cs
@@ -1271,8 +1286,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceReplayGestureTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── SurfaceProfileGestureTests.cs
+│   │   ├── SurfaceProfilerTests.cs
+│   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TruthOverlayTests.cs
 │   │   ├── TypedWordTrackerTests.cs
+│   │   ├── TypingStreamTests.cs
 │   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
