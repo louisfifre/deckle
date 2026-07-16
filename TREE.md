@@ -1323,6 +1323,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
+│   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   └── LowLevelMouseHookInteropTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/

@@ -55,6 +55,8 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtWheelDeviceObserved        = 31;
     public const int EvtMouseWheelHookFailed       = 32;
     public const int EvtMouseWheelHookFailedDetail = 33;
+    // Verbose mirror for the keyboard-host start failure's technical details.
+    public const int EvtKeyboardHostStartFailedDetail = 34;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -277,10 +279,20 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardHostStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "keyboard input host start failed | error={0}: {1}")]
-    public void KeyboardHostStartFailed(string ex_type, string message)
+           Message = "Keyboard input host failed to start")]
+    public void KeyboardHostStartFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed);
+    }
+
+    [Event(EvtKeyboardHostStartFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "keyboard input host start failed | error={0}: {1}")]
+    public void KeyboardHostStartFailedDetail(string ex_type, string message)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtKeyboardHostStartFailedDetail, ex_type, message);
     }
 
     // ── Keyboard activity rollup (30 s aggregate while input flows) ──────
