@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-14 — Mining chantier: routing and pause pass landed
+
+Approved families are per-user records interpreted by code kinds (boundary_apostrophe, boundary_missing_space) — nothing personal frozen in code; the tracker surfaces the inter-commit separator run, invalidated whenever a backspace or reset makes it unfaithful, and span repairs inject at commit, honor suppressions, and edit the corpus final-side separator (typed keeps the fault). The pause pass flushes open slots on a typing pause (one re-armed one-shot timer through the drain marshal); pause verdicts are re-reviewed at true closure, Enter cannot re-review — the measured residue. Per-surface bars ride surface-profiles.json from the ventilation gesture; the provisional qualification formula (Enter-dominant, ≥30 timed sentences, gap p99) is quarantined in SurfaceProfiler pending calibration. First mined batch reviewed: two families approved (sub ;→', dropped space after ,).
+
 ## 2026-07-14 — Typing stream capture landed
 
 Runs emitted per closure with the erase count on the following record (a dangling repair flushes text-less); closure vocabulary: repair/cap continue a span, enter/navigation/escape/shortcut/delete/deadkey/pointer/focus end it. Feed gate is editable + enrolled + consent, tighter than the sentence corpus; same AutocorrectText envelope, new `autocorrect_stream` kind, run cap 512 chars. Per-char keystroke gaps ride each run — the first gap after a repair includes the repair pause.
