@@ -23,6 +23,7 @@ public sealed class EventEntry
     public string EventName { get; }
     public EventLevel Level { get; }
     public EventKeywords Keywords { get; }
+    public ObservationKind Kind { get; }
     public string? FormattedMessage { get; }
     public IReadOnlyDictionary<string, object?> Payload { get; }
 
@@ -32,6 +33,7 @@ public sealed class EventEntry
         string eventName,
         EventLevel level,
         EventKeywords keywords,
+        ObservationKind kind,
         string? formattedMessage,
         IReadOnlyDictionary<string, object?> payload)
     {
@@ -40,6 +42,7 @@ public sealed class EventEntry
         EventName = eventName;
         Level = level;
         Keywords = keywords;
+        Kind = kind;
         FormattedMessage = formattedMessage;
         Payload = payload;
     }

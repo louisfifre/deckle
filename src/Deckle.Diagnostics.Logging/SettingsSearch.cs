@@ -32,15 +32,30 @@ public static class SettingsSearch
         // "Logging" section — composed card (LoggingSettings).
         new SettingSearchEntry
         {
+            LabelKey = "LoggingAmbientCard",
+            Keywords = ["lighting", "capture", "hue"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "LoggingTranscriptionCard",
+            Keywords = ["dictation", "speech", "file"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "LoggingAutocorrectCard",
+            Keywords = ["typing", "correction", "learning"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "LoggingWindowingCard",
             Keywords = ["monitor", "display", "placement"],
         },
 
-        // "Telemetry" section — composed card (TelemetrySettings).
+        // "Application log" section.
         new SettingSearchEntry
         {
             LabelKey = "GeneralAppLogCard",
-            Keywords = ["telemetry", "debug", "troubleshoot"],
+            Keywords = ["journal", "debug", "troubleshoot"],
         },
 
         // Storage folder — composed Path card (StorageFolderSettings).

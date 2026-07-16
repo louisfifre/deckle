@@ -468,8 +468,8 @@ public sealed partial class AmbientEngine
             pushStats = $" | push_avg_ms={avg:F1} | push_p95_ms={p95:F1} | push_max_ms={max:F1}";
         }
 
-        // Per-tick Verbose : filtered by the LogWindow drop filter
-        // (capture gate + user toggle). Counters are reset whether
+        // Per-tick Verbose: admitted by the producer from activity scope plus
+        // user toggle. Counters are reset whether
         // the line was emitted or not, so the next heartbeat window
         // starts from zero — the metric stays correct when the
         // toggle flips mid-session.

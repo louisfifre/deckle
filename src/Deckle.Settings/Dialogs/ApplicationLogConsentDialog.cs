@@ -23,7 +23,7 @@ internal static class ApplicationLogConsentDialog
 {
     public static async Task<bool> ShowAsync(XamlRoot root)
     {
-        string where = CorpusPaths.GetDirectoryPath();
+        string where = Path.Combine(AppPaths.DiagnosticsDirectory, "app.jsonl");
 
         var body = new StackPanel { Spacing = 12 };
 

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
-    <ProjectReference Include="..\..\src\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
   </ItemGroup>
 </Project>

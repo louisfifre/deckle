@@ -1,3 +1,5 @@
+using Deckle.Diagnostics;
+
 namespace Deckle.Diagnostics.Logging;
 
 // ── StreamingCaptureGate ───────────────────────────────────────────────────
@@ -7,7 +9,7 @@ namespace Deckle.Diagnostics.Logging;
 //
 // Consumption. The gate is consulted by the LogWindow / app.jsonl Verbose drop
 // filter wired in App. The filter combines this gate with the user toggle
-// LoggingSettings.LogStreamingTranscriptionActivity to decide whether a Verbose
+// LoggingSettings.LogTranscriptionActivity to decide whether a Verbose
 // emission from the Deckle.Whisp provider should land in the live or persistent
 // journal. While the gate is open (streaming pipeline active) AND the toggle is
 // off, Whisp Verbose events are silenced — the 1 Hz heartbeat and the per-
@@ -23,11 +25,11 @@ namespace Deckle.Diagnostics.Logging;
 // each emission reads the value without synchronization. Races are benign.
 public static class StreamingCaptureGate
 {
-    private static volatile bool _active;
+    public static bool IsActive
+        => OperationalLogAdmission.IsActive(OperationalLogActivity.Transcription);
 
-    public static bool IsActive => _active;
-
-    public static void SetActive(bool active) => _active = active;
+    public static void SetActive(bool active)
+        => OperationalLogAdmission.SetActive(OperationalLogActivity.Transcription, active);
 }
 
 // `using var _ = StreamingCaptureScope.Open();` opens the gate on construction

@@ -30,6 +30,7 @@ public sealed partial class DeckleWhispSource
 
     [Event(EvtLatencyRecorded,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "audio={0:F1}s hotkey={2}ms whisper={6}ms llm={7}ms outcome={21}")]
     public void LatencyRecorded(
@@ -56,7 +57,7 @@ public sealed partial class DeckleWhispSource
         bool   pasted,
         string outcome)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtLatencyRecorded,
             audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms,
             stop_to_pipeline_ms, whisper_init_ms,
@@ -67,6 +68,7 @@ public sealed partial class DeckleWhispSource
 
     [Event(EvtCorpusAsrRecorded,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "asr | bucket={2} | tier={3} | words={9} | wps={12:F1} | audio={14}")]
     public void CorpusAsrRecorded(
@@ -86,7 +88,7 @@ public sealed partial class DeckleWhispSource
         long   elapsed_ms,
         string audio_content)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtCorpusAsrRecorded,
             transcription_id, audio_file, bucket, tier,
             backend, model, language, prompt_or_instruction,
@@ -96,6 +98,7 @@ public sealed partial class DeckleWhispSource
 
     [Event(EvtCorpusRewriteRecorded,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "rewrite | bucket={2} | profile={4} | words={9} | elapsed_ms={11}")]
     public void CorpusRewriteRecorded(
@@ -112,7 +115,7 @@ public sealed partial class DeckleWhispSource
         int    text_chars,
         long   elapsed_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtCorpusRewriteRecorded,
             transcription_id, audio_file, bucket,
             rewrite_profile_id, rewrite_profile_name,

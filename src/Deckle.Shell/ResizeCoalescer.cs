@@ -117,7 +117,9 @@ public sealed class ResizeCoalescer : IDisposable
                 {
                     ResizeSettlement? settlement = _gesture.Size();
                     if (settlement is null)
-                        traceFrame = true;   // coalesced gesture frame — traced below
+                        traceFrame = OperationalLogAdmission.IsEnabled(
+                            OperationalLogActivity.Windowing)
+                            && DeckleWindowingSource.Log.IsEnabled();
                     else
                         Settle(settlement);  // direct settle (maximize / snap / programmatic)
                 }

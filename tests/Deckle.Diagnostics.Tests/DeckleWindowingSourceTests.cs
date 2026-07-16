@@ -14,6 +14,32 @@ namespace Deckle.Diagnostics.Tests;
 [Trait("Category", "observability")]
 public class DeckleWindowingSourceTests
 {
+    public DeckleWindowingSourceTests()
+    {
+        OperationalLogAdmission.Configure(
+            activity => activity == OperationalLogActivity.Windowing);
+    }
+
+    [Fact]
+    public void DisabledWindowingAdmissionPreventsProducerEmission()
+    {
+        OperationalLogAdmission.Configure(static _ => false);
+        try
+        {
+            using var listener = new TestEventListener("Deckle-Windowing");
+
+            DeckleWindowingSource.Log.WindowResizeFrame(
+                "settings", 1, 800, 600, 16, 2);
+
+            Assert.Empty(listener.Events);
+        }
+        finally
+        {
+            OperationalLogAdmission.Configure(
+                activity => activity == OperationalLogActivity.Windowing);
+        }
+    }
+
     [Fact]
     public void WindowPositionedEmitsVerboseOnWindowingKeyword()
     {

@@ -28,13 +28,13 @@ public sealed partial class DiagnosticsPage : Page
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
-        ComposeTelemetrySection();
+        ComposeApplicationLogSection();
         ComposeStorageFolderSection();
 
         // The page-level "Reset all" gate spans every composed section; re-gate on
         // any composer's DirtyChanged.
         foreach (var composer in new[]
-                 { _loggingComposer, _telemetryComposer, _storageFolderComposer })
+                 { _loggingComposer, _applicationLogComposer, _storageFolderComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
@@ -65,12 +65,12 @@ public sealed partial class DiagnosticsPage : Page
     // pages; the storage-folder path composes into its own host below. Composed before
     // LoadAndSync so the composer's PropertyChanged subscription catches Load(); held
     // in a field so the subscription lives as long as the (cached) page.
-    private SettingsComposer? _telemetryComposer;
+    private SettingsComposer? _applicationLogComposer;
 
-    private void ComposeTelemetrySection()
+    private void ComposeApplicationLogSection()
     {
-        _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
-        _telemetryComposer.Compose(ViewModel.TelemetrySettings);
+        _applicationLogComposer = new SettingsComposer(ApplicationLogHost, ViewModel);
+        _applicationLogComposer.Compose(ViewModel.ApplicationLogSettings);
     }
 
     // ── Composed Storage-folder card ──────────────────────────────────────────
@@ -105,28 +105,19 @@ public sealed partial class DiagnosticsPage : Page
         GateResetAll();
     }
 
-    // Telemetry reset turns every opt-in off and clears the recorded consent —
-    // user-created state, so it goes through the shared destructive-confirm gate
-    // (Close is the default button). Logging's reset stays a direct action: it
-    // only restores log toggles to defaults, nothing the user authored is lost.
-    private async void ResetTelemetry_Click(object sender, RoutedEventArgs e)
-    {
-        bool confirmed = await ConfirmationService.RequestAsync(
-            this.XamlRoot,
-            new ConfirmationRequest(
-                Loc.Get("Settings_ResetTelemetryDialog_Title"),
-                Loc.Get("Settings_ResetTelemetryDialog_Content"),
-                Loc.Get("Common_Reset"),
-                IsDestructive: true));
-        if (!confirmed)
-            return;
-
-        ViewModel.ResetTelemetryDefaults();
-    }
+    // Telemetry now owns only the dataset storage path on this page. Resetting
+    // it is reversible; dataset consent remains on each producing module's page.
+    private void ResetTelemetry_Click(object sender, RoutedEventArgs e)
+        => ViewModel.ResetTelemetryDefaults();
 
     private void ResetLogging_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.ResetLoggingDefaults();
+    }
+
+    private void ResetApplicationLog_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ResetApplicationLogDefaults();
     }
 
     // ── Whole-page "Reset all" ────────────────────────────────────────────────
@@ -138,7 +129,7 @@ public sealed partial class DiagnosticsPage : Page
     {
         ResetAllButton.IsEnabled =
             (_loggingComposer?.IsDirty() ?? false) ||
-            (_telemetryComposer?.IsDirty() ?? false) ||
+            (_applicationLogComposer?.IsDirty() ?? false) ||
             (_storageFolderComposer?.IsDirty() ?? false);
     }
 
@@ -159,6 +150,7 @@ public sealed partial class DiagnosticsPage : Page
         if (!confirmed) return;
 
         ViewModel.ResetLoggingDefaults();
+        ViewModel.ResetApplicationLogDefaults();
         ViewModel.ResetTelemetryDefaults();
     }
 

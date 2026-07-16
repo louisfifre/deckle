@@ -32,6 +32,7 @@ public sealed partial class DeckleWhispSource
 
     [Event(EvtPreprocessedTelemetryRecorded,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "Post-DSP telemetry over {0:F1}s ({1} samples @20Hz): min={2:F1} p10={3:F1} p25={4:F1} p50={5:F1} p75={6:F1} p90={7:F1} max={8:F1} dBFS | mean RMS={9:F4} ({10:F1} dBFS)")]
     public void PreprocessedTelemetryRecorded(
@@ -50,7 +51,7 @@ public sealed partial class DeckleWhispSource
         double tail_dbfs,
         string tail_state)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtPreprocessedTelemetryRecorded,
             duration_seconds, samples,
             min_dbfs, p10_dbfs, p25_dbfs, p50_dbfs, p75_dbfs, p90_dbfs, max_dbfs,

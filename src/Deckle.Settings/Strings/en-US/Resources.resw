@@ -1315,30 +1315,6 @@
     <value>Back up &amp; restore</value>
   </data>
 
-  <!-- ─── Residual logging-card keys ──────────────────────────────────
-       The DiagnosticsPage that once hosted these moved to
-       Deckle.Diagnostics.Logging. LoggingAmbient / LoggingStreaming /
-       LoggingAutocorrect are composed by their own module pages now (each
-       carries its own copy in its module .resw), so these shell copies are
-       unreferenced — left in place, cleanup out of this move's scope. -->
-  <data name="LoggingAmbientCard.Header" xml:space="preserve">
-    <value>Log ambient capture activity</value>
-  </data>
-  <data name="LoggingAmbientCard.Description" xml:space="preserve">
-    <value>Per-tick Verbose lines from the ambient pipeline — engine pushes, heartbeats, Hue calls, screen capture diagnostics.</value>
-  </data>
-  <data name="LoggingStreamingCard.Header" xml:space="preserve">
-    <value>Log streaming transcription activity</value>
-  </data>
-  <data name="LoggingStreamingCard.Description" xml:space="preserve">
-    <value>Per-second heartbeat and per-utterance Verbose lines from the streaming transcription pipeline. The milestones (started, drained) always pass.</value>
-  </data>
-  <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
-    <value>Log autocorrect activity</value>
-  </data>
-  <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
-    <value>Per-focus surface checks, learning signals and the periodic activity summary from the autocorrect engine. With this off, only applied corrections are logged — what changed (reason and lengths), never the word itself.</value>
-  </data>
   <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
     <value>Application data</value>
   </data>

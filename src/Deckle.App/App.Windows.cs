@@ -12,7 +12,8 @@ public partial class App
     {
         if (_logWindow is null)
         {
-            bool measure = DeckleWindowingSource.Log.IsEnabled(
+            bool measure = OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
+                && DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
             var sw = measure ? Stopwatch.StartNew() : null;
             var window = new LogWindow();
@@ -39,7 +40,8 @@ public partial class App
     {
         if (_settingsWindow is null)
         {
-            bool measure = DeckleWindowingSource.Log.IsEnabled(
+            bool measure = OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
+                && DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
             var sw = measure ? Stopwatch.StartNew() : null;
             var window = new Settings.SettingsWindow
@@ -66,7 +68,8 @@ public partial class App
     {
         if (_playgroundWindow is null)
         {
-            bool measure = DeckleWindowingSource.Log.IsEnabled(
+            bool measure = OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
+                && DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
             var sw = measure ? Stopwatch.StartNew() : null;
             var window = new PlaygroundWindow();

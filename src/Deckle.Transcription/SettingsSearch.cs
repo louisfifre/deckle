@@ -169,13 +169,6 @@ public static class SettingsSearch
             Keywords = ["realtime", "live", "segmenter", "hangover", "utterance"],
         },
 
-        // Streaming-transcription log filter (composed toggle).
-        new SettingSearchEntry
-        {
-            LabelKey = "LoggingStreamingCard",
-            Keywords = ["debug", "diagnostics"],
-        },
-
         // Latency telemetry (composed toggle).
         new SettingSearchEntry
         {

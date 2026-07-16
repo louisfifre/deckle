@@ -44,7 +44,7 @@ public sealed partial class TranscriptionEngine
         // Streaming-activity gate: held open for the lifetime of this method
         // through `using`, so any early return / throw / cancellation still
         // closes it on the way out. The listener-side drop filter (App)
-        // combines this gate with the LogStreamingTranscriptionActivity
+        // combines this gate with the LogTranscriptionActivity
         // toggle to silence Whisp Verbose events during streaming.
         using var _ = StreamingCaptureScope.Open();
 

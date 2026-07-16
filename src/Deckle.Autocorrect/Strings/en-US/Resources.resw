@@ -100,19 +100,12 @@
     <value>Forget this app</value>
   </data>
 
-  <!-- Diagnostics — the module's observability opt-ins, relocated from the
-       shared Diagnostics page. Log activity is a runtime emission filter (no
-       consent); decisions and text are consent-gated disk-persistence opt-ins.
+  <!-- Diagnostics — the module's purpose-specific dataset consents.
+       Decisions and text are independent disk-persistence opt-ins.
        Keys are flat SettingsCards composed by the SettingsComposer, so they bind
        .Header / .Description. -->
   <data name="AutocorrectPageDiagnosticsHeader.Text" xml:space="preserve">
     <value>Diagnostics</value>
-  </data>
-  <data name="AutocorrectLogActivityCard.Header" xml:space="preserve">
-    <value>Log autocorrect activity</value>
-  </data>
-  <data name="AutocorrectLogActivityCard.Description" xml:space="preserve">
-    <value>Record the autocorrect engine's per-focus probe, learning signals and activity rollup to the log window and app.jsonl. Off by default; applied corrections and injection failures always show regardless.</value>
   </data>
   <data name="AutocorrectDecisionsCard.Header" xml:space="preserve">
     <value>Autocorrect decisions</value>

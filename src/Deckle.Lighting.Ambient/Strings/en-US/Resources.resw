@@ -332,16 +332,6 @@
     <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
   </data>
 
-  <!-- ── Diagnostics ───────────────────────────────────────── -->
-  <data name="AmbientPageDiagnosticsHeader.Text" xml:space="preserve">
-    <value>Diagnostics</value>
-  </data>
-  <data name="AmbientLogActivityCard.Header" xml:space="preserve">
-    <value>Log capture activity</value>
-  </data>
-  <data name="AmbientLogActivityCard.Description" xml:space="preserve">
-    <value>Record this module's capture-loop detail (frame sampling, Hue pushes) to the log window and app.jsonl while it runs. Off by default — the routine per-frame cadence is noisy. Milestones and errors always show regardless.</value>
-  </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

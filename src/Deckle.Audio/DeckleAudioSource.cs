@@ -322,6 +322,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     [Event(EvtMicrophoneTelemetryRecorded,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "Mic telemetry over {0:F1}s ({1} samples @20Hz): min={2:F1} p10={3:F1} p25={4:F1} p50={5:F1} p75={6:F1} p90={7:F1} max={8:F1} dBFS | mean RMS={9:F4} ({10:F1} dBFS)")]
     public void MicrophoneTelemetryRecorded(

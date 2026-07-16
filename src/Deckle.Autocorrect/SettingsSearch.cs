@@ -49,15 +49,10 @@ public static class SettingsSearch
             Keywords = ["application", "program", "per-app", "forget"],
         },
 
-        // Diagnostics — the three composed observability toggles. Each resolves from
+        // Diagnostics — the two purpose-specific dataset toggles. Each resolves from
         // its SettingsCard header; the keywords carry the words ("diagnostics",
         // "telemetry", "corpus") a user searches for the category rather than the
         // individual toggle wording.
-        new SettingSearchEntry
-        {
-            LabelKey = "AutocorrectLogActivityCard",
-            Keywords = ["diagnostics", "logging", "debug"],
-        },
         new SettingSearchEntry
         {
             LabelKey = "AutocorrectDecisionsCard",

@@ -22,6 +22,15 @@ public partial class DiagnosticsViewModel : ObservableObject
 {
     private bool _isSyncing;
 
+    [ObservableProperty]
+    public partial bool LogAmbientCaptureActivity { get; set; }
+
+    [ObservableProperty]
+    public partial bool LogTranscriptionActivity { get; set; }
+
+    [ObservableProperty]
+    public partial bool LogAutocorrectActivity { get; set; }
+
     // ── Logging — runtime emission filters ──────────────────────────────────
 
     // Windowing Verbose toggle: when off (default), the whole Deckle-Windowing
@@ -47,6 +56,27 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial string TelemetryStorageDirectory { get; set; }
 
+    partial void OnLogAmbientCaptureActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
+        PushLoggingToSettings();
+    }
+
+    partial void OnLogTranscriptionActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogTranscriptionActivity", value.ToString());
+        PushLoggingToSettings();
+    }
+
+    partial void OnLogAutocorrectActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAutocorrectActivity", value.ToString());
+        PushLoggingToSettings();
+    }
+
     partial void OnLogWindowingActivityChanged(bool value)
     {
         if (_isSyncing) return;
@@ -57,8 +87,8 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnApplicationLogToDiskChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.ApplicationLogToDisk", value.ToString());
-        PushTelemetryToSettings();
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.ApplicationLogToDisk", value.ToString());
+        PushLoggingToSettings();
     }
 
     partial void OnTelemetryStorageDirectoryChanged(string value)
@@ -84,6 +114,9 @@ public partial class DiagnosticsViewModel : ObservableObject
         // but for a different reason : disk-persistence streams stay
         // off until the user explicitly opts in to where their data
         // lands.
+        LogAmbientCaptureActivity = false;
+        LogTranscriptionActivity = false;
+        LogAutocorrectActivity = false;
         LogWindowingActivity = false;
         ApplicationLogToDisk = false;
         TelemetryStorageDirectory = "";
@@ -97,10 +130,13 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             var l = LoggingSettingsService.Instance.Current;
+            LogAmbientCaptureActivity = l.LogAmbientCaptureActivity;
+            LogTranscriptionActivity = l.LogTranscriptionActivity;
+            LogAutocorrectActivity = l.LogAutocorrectActivity;
             LogWindowingActivity = l.LogWindowingActivity;
+            ApplicationLogToDisk = l.ApplicationLogToDisk;
 
             var t = TelemetrySettingsService.Instance.Current;
-            ApplicationLogToDisk = t.ApplicationLogToDisk;
             TelemetryStorageDirectory = t.StorageDirectory;
         }
         finally
@@ -112,14 +148,17 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushLoggingToSettings()
     {
         var l = LoggingSettingsService.Instance.Current;
+        l.LogAmbientCaptureActivity = LogAmbientCaptureActivity;
+        l.LogTranscriptionActivity = LogTranscriptionActivity;
+        l.LogAutocorrectActivity = LogAutocorrectActivity;
         l.LogWindowingActivity = LogWindowingActivity;
+        l.ApplicationLogToDisk = ApplicationLogToDisk;
         LoggingSettingsService.Instance.Save();
     }
 
     private void PushTelemetryToSettings()
     {
         var t = TelemetrySettingsService.Instance.Current;
-        t.ApplicationLogToDisk = ApplicationLogToDisk;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
         TelemetrySettingsService.Instance.Save();
     }
@@ -131,6 +170,9 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
+            LogAmbientCaptureActivity = false;
+            LogTranscriptionActivity = false;
+            LogAutocorrectActivity = false;
             LogWindowingActivity = false;
         }
         finally { _isSyncing = false; }
@@ -144,12 +186,24 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            ApplicationLogToDisk = false;
             TelemetryStorageDirectory = "";
         }
         finally { _isSyncing = false; }
         PushTelemetryToSettings();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Telemetry");
+    }
+
+    public void ResetApplicationLogDefaults()
+    {
+        _isSyncing = true;
+        try
+        {
+            ApplicationLogToDisk = false;
+        }
+        finally { _isSyncing = false; }
+        PushLoggingToSettings();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("ApplicationLog");
     }
 }

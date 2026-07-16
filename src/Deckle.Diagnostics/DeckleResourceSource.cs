@@ -48,6 +48,11 @@ public sealed class DeckleResourceSource : DeckleEventSource
 
     private DeckleResourceSource() { }
 
+    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
+        => (level != EventLevel.Verbose
+            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Ambient))
+        && base.IsEnabled(level, keywords);
+
     // ── EventIds ────────────────────────────────────────────────────────
     // The milestone keeps its original id; the Verbose mirror added for the
     // Verbose/Info separation takes a fresh id 4 at the end of the sequence.

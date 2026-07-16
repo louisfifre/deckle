@@ -8,25 +8,12 @@ namespace Deckle.Diagnostics;
 // that subscribes to the Deckle-* EventSource family; every consumer is a
 // passive ILogSink registered here. For each emission the dispatcher:
 //
-//   1. applies the central capture gate (provider + level + keywords),
-//      BEFORE building anything, so a silenced firehose costs no allocation;
-//   2. builds the EventEntry ONCE;
-//   3. fans it out to every sink whose Wants accepted it.
+//   1. builds the EventEntry ONCE, including its Operational/Dataset kind;
+//   2. fans it out to every sink whose Wants accepted it.
 //
-// This is the dispatch refonte: a single subscription, one gate, one build.
-// The invariant earned is that the live LogWindow and the on-disk app.jsonl
-// see exactly the same gated, identically-built stream — they cannot diverge —
-// and a freshly added sink cannot forget the gate, because the gate is no
-// longer a per-sink concern. See ILogSink for the sink contract.
-//
-// Central gate vs sink routing. The gate is the ONE transverse drop applied to
-// the whole stream (capture-Verbose silencing during ambient / streaming /
-// autocorrect activity). It is provider-level on purpose — provider + level +
-// keywords decide it, so it runs before EventEntry exists and spares the build
-// for the high-frequency families. Everything else stays per-sink and lives in
-// each sink's Wants: the routing-by-event-name and the user consent gates
-// (ApplicationLogToDisk, microphone, corpus). Those are a per-destination
-// authority, never a transverse filter, so they do not belong here.
+// Admission is deliberately absent here. Activity policies are evaluated by
+// producers before log-only work; the dispatcher is only the shared fan-out
+// boundary. Stream routing remains per-sink through EventEntry.Kind.
 //
 // Lifetime. Constructed once at App boot and kept alive for the whole process;
 // the EventListener registration is dropped implicitly at process exit. Sinks
@@ -43,13 +30,6 @@ public sealed class DispatchEventListener : EventListener
 {
     private readonly List<ILogSink> _sinks = new();
     private readonly object _sinksLock = new();
-
-    // The single transverse drop. Provider + level + keywords → true to drop the
-    // event for ALL sinks, before any EventEntry is built. Null = nothing
-    // dropped. Wired once by the host (ShouldDropCaptureVerbose); read unlocked,
-    // a race during a re-wire passes at worst one event too many or too few,
-    // never corruption.
-    private Func<string, EventLevel, EventKeywords, bool>? _centralGate;
 
     // EventListener's base constructor invokes OnEventSourceCreated for every
     // already-existing provider; that callback can fire before this derived
@@ -85,13 +65,6 @@ public sealed class DispatchEventListener : EventListener
         lock (_sinksLock) _sinks.Remove(sink);
     }
 
-    // Wires the single transverse capture gate. Null uninstalls. Consulted in
-    // OnEventWritten before BuildEntry, so a dropped event allocates nothing.
-    public void ConfigureCentralGate(Func<string, EventLevel, EventKeywords, bool> gate)
-    {
-        _centralGate = gate;
-    }
-
     protected override void OnEventSourceCreated(EventSource eventSource)
     {
         if (eventSource.Name is null) return;
@@ -110,15 +83,7 @@ public sealed class DispatchEventListener : EventListener
 
     protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
-        string? provider = eventData.EventSource.Name;
-        if (provider is null) return;
-
-        var gate = _centralGate;
-        if (gate is not null)
-        {
-            try { if (gate(provider, eventData.Level, eventData.Keywords)) return; }
-            catch { /* The gate must never crash the dispatcher. */ }
-        }
+        if (eventData.EventSource.Name is null) return;
 
         var entry = BuildEntry(eventData);
 
@@ -171,6 +136,7 @@ public sealed class DispatchEventListener : EventListener
             eventName: e.EventName ?? "(unnamed)",
             level: e.Level,
             keywords: e.Keywords,
+            kind: ObservationTags.GetKind(e.Tags),
             formattedMessage: formatted,
             payload: dict);
     }

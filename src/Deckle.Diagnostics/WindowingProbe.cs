@@ -129,6 +129,7 @@ public static class WindowingProbe
     // the code-side placement intent.
     public static void EmitWindowPositioned(IntPtr hwnd, string window, string anchor)
     {
+        if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)) return;
         if (!DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         if (hwnd == IntPtr.Zero) return;
@@ -150,6 +151,7 @@ public static class WindowingProbe
     // N-1 = farthest away.
     public static void EmitOverlaySlotAssigned(IntPtr hwnd, int slot)
     {
+        if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)) return;
         if (!DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         if (hwnd == IntPtr.Zero) return;
@@ -176,6 +178,7 @@ public static class WindowingProbe
         int parent_rect_x, int parent_rect_y,
         int parent_rect_w, int parent_rect_h)
     {
+        if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)) return;
         if (!DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
 
@@ -200,6 +203,7 @@ public static class WindowingProbe
         IntPtr hwnd, string window, string stage,
         bool setposOk = true, int lastError = 0)
     {
+        if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)) return;
         if (!DeckleWindowingSource.Log.IsEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         if (hwnd == IntPtr.Zero) return;

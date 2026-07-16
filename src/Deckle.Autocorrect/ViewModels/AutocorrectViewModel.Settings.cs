@@ -47,10 +47,6 @@ public partial class AutocorrectViewModel
     // leaves, never a masking Group.
     public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
     [
-        Setting.Toggle("AutocorrectLogActivityCard",
-            () => LogAutocorrectActivity,
-            value => LogAutocorrectActivity = value,
-            glyph: Glyphs.Language),
         Setting.Toggle("AutocorrectDecisionsCard",
             () => AutocorrectDecisions,
             value => AutocorrectDecisions = value,

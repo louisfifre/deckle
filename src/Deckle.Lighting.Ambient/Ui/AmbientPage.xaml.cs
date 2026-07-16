@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using Deckle.Lighting;
 using Deckle.Catalog;
-using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
 using Deckle.Vision;
 using Microsoft.UI.Xaml;
@@ -109,7 +108,6 @@ public sealed partial class AmbientPage : Page
             var s = AmbientSettingsService.Instance.Current;
 
             EnabledToggle.IsOn = s.Enabled;
-            LogActivityToggle.IsOn = LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity;
 
             ComboBoxItem? toSelect = null;
             foreach (var item in ModeCombo.Items)
@@ -177,13 +175,6 @@ public sealed partial class AmbientPage : Page
         if (_loading) return;
         AmbientSettingsService.Instance.Current.Enabled = EnabledToggle.IsOn;
         AmbientSettingsService.Instance.Save();
-    }
-
-    private void LogActivityToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity = LogActivityToggle.IsOn;
-        LoggingSettingsService.Instance.Save();
     }
 
     private void ModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

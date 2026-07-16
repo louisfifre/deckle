@@ -13,30 +13,19 @@ namespace Deckle.Diagnostics.Telemetry;
 //
 // Entry points :
 //
-//   - Configure(dispatch, …) builds the canonical JSONL sinks (app, latency,
-//     microphone, processed, then two corpus routes) and registers them on the
+//   - Configure(dispatch, …) builds the canonical dataset JSONL sinks (latency,
+//     microphone, processed, then the corpus routes) and registers them on the
 //     passed-in dispatcher. Must be called only once at boot.
 //   - ConfigureGates(...) wires the delegate that reads user toggles on the
 //     host side. May be called before or after Configure; predicates read the
 //     last known value at each emission, so a delegate update propagates
 //     without rebuilding sinks.
-//   - ConfigureApplicationLogDropFilter(...) wires the app.jsonl-specific
-//     entry-level projection filter supplied by the host.
-//     The capture-Verbose silencing is NOT here — that is the dispatcher's
-//     central gate, applied once for every sink. This module keeps only the
-//     app.jsonl-specific entry-level filter, and stays independent from
-//     Deckle.Diagnostics.Logging: the host supplies the predicate.
-//
 // Why separate Configure from the gate/filter wiring? Configure builds sinks
 // with their routing predicates frozen; those predicates must consult mutable
 // variables (consent toggles, the optional projection filter) that can change
 // after construction.
 //
 // Canonical destinations:
-//   app.jsonl                                      ← rendered application log
-//                                                    (readable line + payload),
-//                                                    excluding dedicated
-//                                                    structured telemetry
 //   latency.jsonl                                  ← LatencyRecorded events
 //   microphone.jsonl                               ← MicrophoneTelemetryRecorded
 //                                                    events (raw)
@@ -55,7 +44,6 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    events (typing stream)
 //
 // User gate semantics:
-//   app.jsonl                  ← ApplicationLogToDisk == true
 //   latency.jsonl              ← LatencyEnabled == true
 //   microphone.jsonl,
 //   microphone.processed.jsonl ← MicrophoneTelemetry == true
@@ -86,7 +74,6 @@ public static class TelemetryListenerBootstrap
     // gate returns false). Wired by the App through ConfigureGates; read at
     // every emission so toggle flips in Settings take effect immediately.
     private static Func<string, bool>? _gateReader;
-    private static Func<EventEntry, bool>? _applicationLogDropFilter;
 
     public static void Configure(
         DispatchEventListener dispatch,
@@ -105,39 +92,17 @@ public static class TelemetryListenerBootstrap
         Directory.CreateDirectory(rootDirectory);
 
         Register(new JsonlSink(
-            filePath:  Path.Combine(rootDirectory, "app.jsonl"),
-            kindLabel: "log",
-            predicate: e =>
-                   e.EventName != "LatencyRecorded"
-                && e.EventName != "MicrophoneTelemetryRecorded"
-                && e.EventName != "PreprocessedTelemetryRecorded"
-                && e.EventName != "CorpusAsrRecorded"
-                && e.EventName != "CorpusRewriteRecorded"
-                && e.EventName != "AutocorrectDecisionRecorded"
-                && e.EventName != "AutocorrectRerankRecorded"
-                && e.EventName != "AutocorrectTextRecorded"
-                && e.EventName != "AutocorrectStreamRecorded"
-                && !ShouldDropApplicationLog(e)
-                && ReadGate("ApplicationLogToDisk"),
-            // app.jsonl is the persistent mirror of the live log:
-            // self-describing envelope (provider/event/level/source/message/
-            // line), rotated by line chunks into numbered generations in
-            // archive/ (never renamed or deleted; the user prunes). Datasets
-            // stay PayloadOnly without rotation. Rolled-log /
-            // untouched-datasets principle: ADR-0007.
-            schema:   JsonlSchema.SelfDescribing,
-            rotation: new JsonlRotationPolicy(maxLines: 8000)));
-
-        Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "latency.jsonl"),
             kindLabel: "latency",
-            predicate: e => e.EventName == "LatencyRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "LatencyRecorded"
                          && ReadGate("LatencyEnabled")));
 
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.jsonl"),
             kindLabel: "microphone",
-            predicate: e => e.EventName == "MicrophoneTelemetryRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "MicrophoneTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
         // Post-DSP mirror of microphone.jsonl: the processed signal
@@ -149,7 +114,8 @@ public static class TelemetryListenerBootstrap
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.processed.jsonl"),
             kindLabel: "microphone_processed",
-            predicate: e => e.EventName == "PreprocessedTelemetryRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "PreprocessedTelemetryRecorded"
                          && ReadGate("MicrophoneTelemetry")));
 
         // Per-word autocorrect decision dataset: every corrected or left-literal
@@ -163,7 +129,8 @@ public static class TelemetryListenerBootstrap
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "autocorrect.decisions.jsonl"),
             kindLabel: "autocorrect_decision",
-            predicate: e => (e.EventName == "AutocorrectDecisionRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && (e.EventName == "AutocorrectDecisionRecorded"
                           || e.EventName == "AutocorrectRerankRecorded")
                          && ReadGate("AutocorrectDecisions")));
 
@@ -175,7 +142,8 @@ public static class TelemetryListenerBootstrap
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "autocorrect.text.jsonl"),
             kindLabel: "autocorrect_text",
-            predicate: e => e.EventName == "AutocorrectTextRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "AutocorrectTextRecorded"
                          && ReadGate("AutocorrectText")));
 
         // Typing stream: the verbatim forward flow on enrolled surfaces, one run
@@ -187,7 +155,8 @@ public static class TelemetryListenerBootstrap
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "autocorrect.stream.jsonl"),
             kindLabel: "autocorrect_stream",
-            predicate: e => e.EventName == "AutocorrectStreamRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "AutocorrectStreamRecorded"
                          && ReadGate("AutocorrectText")));
 
         // Normalized corpus: see ADR-0006. Two routed sinks spray
@@ -208,7 +177,8 @@ public static class TelemetryListenerBootstrap
                 return Path.Combine(corpusRoot, bucket, tier, "corpus.jsonl");
             },
             kindLabel: "corpus_asr",
-            predicate: e => e.EventName == "CorpusAsrRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "CorpusAsrRecorded"
                          && ReadGate("CorpusEnabled")));
 
         Register(new RoutedJsonlSink(
@@ -219,7 +189,8 @@ public static class TelemetryListenerBootstrap
                 return Path.Combine(corpusRoot, bucket, "corpus.jsonl");
             },
             kindLabel: "corpus_rewrite",
-            predicate: e => e.EventName == "CorpusRewriteRecorded"
+            predicate: e => e.Kind == ObservationKind.Dataset
+                         && e.EventName == "CorpusRewriteRecorded"
                          && ReadGate("CorpusEnabled")));
     }
 
@@ -231,8 +202,8 @@ public static class TelemetryListenerBootstrap
     }
 
     // Wires the user gate reader delegate. Accepts a symbolic name
-    // ("ApplicationLogToDisk", "LatencyEnabled", "MicrophoneTelemetry",
-    // "CorpusEnabled", "AutocorrectDecisions", "AutocorrectText") and returns the
+    // ("LatencyEnabled", "MicrophoneTelemetry", "CorpusEnabled",
+    // "AutocorrectDecisions", "AutocorrectText") and returns the
     // current bool. An unknown name must return false on the caller side.
     //
     // Idempotent: calling ConfigureGates again replaces the delegate.
@@ -242,29 +213,11 @@ public static class TelemetryListenerBootstrap
         _gateReader = gateReader;
     }
 
-    // Wires the entry-level projection filter that removes events from app.jsonl.
-    // Its state is deliberately independent from the live LogWindow lens. The
-    // host supplies the predicate, so Telemetry does not depend on Logging; the
-    // transverse capture gate remains on the dispatcher.
-    public static void ConfigureApplicationLogDropFilter(Func<EventEntry, bool> filter)
-    {
-        if (filter is null) throw new ArgumentNullException(nameof(filter));
-        _applicationLogDropFilter = filter;
-    }
-
     private static bool ReadGate(string gateName)
     {
         var reader = _gateReader;
         if (reader is null) return false;
         try { return reader(gateName); }
-        catch { return false; }
-    }
-
-    private static bool ShouldDropApplicationLog(EventEntry entry)
-    {
-        var filter = _applicationLogDropFilter;
-        if (filter is null) return false;
-        try { return filter(entry); }
         catch { return false; }
     }
 
@@ -280,6 +233,5 @@ public static class TelemetryListenerBootstrap
         _dispatch = null;
         _configured = false;
         _gateReader = null;
-        _applicationLogDropFilter = null;
     }
 }

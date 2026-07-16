@@ -37,6 +37,11 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
 
     private DeckleWhispSource() { }
 
+    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
+        => (level != EventLevel.Verbose
+            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Transcription))
+        && base.IsEnabled(level, keywords);
+
     // ── EventIds: sequential from 1, never reused ───────────────────────
     public const int EvtWarmupClipMissing                = 1;
     public const int EvtWarmupClipHeaderInvalid          = 2;

@@ -24,6 +24,18 @@ public partial class DiagnosticsViewModel
     // persistence are unchanged, the composer only drives the UI.
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
     [
+        Setting.Toggle("LoggingAmbientCard",
+            () => LogAmbientCaptureActivity,
+            value => LogAmbientCaptureActivity = value,
+            glyph: Glyphs.Lightbulb),
+        Setting.Toggle("LoggingTranscriptionCard",
+            () => LogTranscriptionActivity,
+            value => LogTranscriptionActivity = value,
+            glyph: Glyphs.Speech),
+        Setting.Toggle("LoggingAutocorrectCard",
+            () => LogAutocorrectActivity,
+            value => LogAutocorrectActivity = value,
+            glyph: Glyphs.Language),
         Setting.Toggle("LoggingWindowingCard",
             () => LogWindowingActivity,
             value => LogWindowingActivity = value,
@@ -43,7 +55,7 @@ public partial class DiagnosticsViewModel
     // No defaultValue on the consent toggle: a privacy opt-in has no "resettable
     // default" affordance per row (the section "Reset" clears it), so the composer
     // renders no per-card reset wheel for it — which is correct.
-    public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
+    public IReadOnlyList<SettingDescriptor> ApplicationLogSettings =>
     [
         Setting.Toggle("GeneralAppLogCard",
             () => ApplicationLogToDisk,

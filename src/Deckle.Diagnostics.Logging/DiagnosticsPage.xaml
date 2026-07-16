@@ -85,12 +85,35 @@
                                      Click="ResetLogging_Click" />
                 </Grid>
 
-                <!-- Composed Windowing gate. Other noisy modules expose their
-                     gates beside the feature they control. -->
+                <!-- Composed admission controls for operational detail. -->
                 <StackPanel x:Name="LoggingHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Telemetry ───────────────────────────────────────────── -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Uid="DiagnosticsPageApplicationLogHeaderLabel"
+                               Grid.Column="0"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+                    <HyperlinkButton x:Uid="Settings_SectionResetLink"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,0,2"
+                                     Click="ResetApplicationLog_Click" />
+                </Grid>
+
+                <!-- Composed region — the application-log opt-in. It carries
+                     an off→on consent dialog, declared in DiagnosticsViewModel.ApplicationLogSettings
+                     via a confirmOnEnable gate the composer runs before persisting the
+                     enable. ComposeApplicationLogSection() hands it to the composer, which
+                     builds the SettingsCard into this host. Dataset-specific opt-ins
+                     remain on the pages of the modules they observe. -->
+                <StackPanel x:Name="ApplicationLogHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -106,15 +129,6 @@
                                      Click="ResetTelemetry_Click" />
                 </Grid>
 
-                <!-- Composed region — the Application log telemetry opt-in. It carries
-                     an off→on consent dialog, declared in DiagnosticsViewModel.TelemetrySettings
-                     via a confirmOnEnable gate the composer runs before persisting the
-                     enable. ComposeTelemetrySection() hands it to the composer, which
-                     builds the SettingsCard into this host. Dataset-specific opt-ins
-                     remain on the pages of the modules they observe. -->
-                <StackPanel x:Name="TelemetryHost"
-                            Spacing="{StaticResource SettingsCardSpacing}" />
-
                 <!-- Composed region — the telemetry storage-folder path. A Path
                      descriptor in DiagnosticsViewModel.StorageFolderSettings, built
                      by ComposeStorageFolderSection() into this host through the
@@ -124,7 +138,7 @@
 
                 <!-- ── Diagnostic files ──────────────────────────────────────
                      Always-on local logs (setup, errors), distinct from the
-                     opt-in telemetry above: recorded unconditionally and kept
+                     optional application log above: recorded unconditionally and kept
                      on this device, never transmitted. No toggle — they exist
                      so a first-run or crash always leaves a trace; the only
                      affordance is opening the folder. -->
