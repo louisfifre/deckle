@@ -2,6 +2,7 @@ using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Diagnostics.Logging;
 using Deckle.Transcription;
 
 namespace Deckle.Transcription;
@@ -30,6 +31,8 @@ public sealed partial class TranscriptionEngine
     // Media Foundation, called inside ProduceFileAsync, requires a non-STA thread.
     private void FileWorkerRun()
     {
+        using var activity = TranscriptionActivityScope.Open();
+
         // Same two channels as WorkerRun. _recordCts is the abort signal for the
         // single backend call; a file run has no capture producer to Stop, so it
         // is only ever cancelled by Dispose. _drainCts rides the concurrent prime.
@@ -96,9 +99,6 @@ public sealed partial class TranscriptionEngine
         // Media Foundation decode runs synchronously on THIS worker thread — MTA
         // by construction (a background Thread is never STA), which MF requires.
         // Off the UI thread, so the (potentially long) decode never blocks it.
-        DeckleWhispSource.Log.FileTranscriptionStarted();
-        DeckleWhispSource.Log.FileTranscriptionStartedDetail(path, SafeFileLength(path));
-
         AudioFileDecodeResult decoded = AudioFileDecoder.Decode(path);
         if (decoded.Status != AudioFileDecodeStatus.Decoded)
         {
@@ -198,8 +198,6 @@ public sealed partial class TranscriptionEngine
         // result without an abort is a real failure.
         if (result.ResultCode != 0 && !result.Aborted)
         {
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(result.ResultCode);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),

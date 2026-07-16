@@ -70,6 +70,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtAudioFileDecodedDetail     = 27;
     public const int EvtAudioFileDecodeFailed      = 28;
     public const int EvtAudioFileDecodeFailedDetail = 29;
+    public const int EvtEmptyBufferRecovered       = 30;
+    public const int EvtEmptyBufferEpisodeDetail   = 31;
+    public const int EvtCaptureLagRecovered        = 32;
+    public const int EvtCaptureLagEpisodeDetail    = 33;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
@@ -88,7 +92,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "capture start | sample_rate=16 kHz | channels=mono")]
     public void CaptureStarted()
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureStarted);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtCaptureStarted);
     }
 
     [Event(EvtRecordingCompleted,
@@ -106,7 +113,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "recording complete | total_sec={0:F1}")]
     public void RecordingCompletedDetail(double total_sec)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingCompletedDetail, total_sec);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtRecordingCompletedDetail, total_sec);
     }
 
     [Event(EvtCaptureCompleted,
@@ -115,20 +125,24 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "capture complete | audio_sec={0:F1} | buffers={1} | bytes={2} | rms_avg={3:F4} | rms_peak={4:F4} | dbfs_avg={5:F1}")]
     public void CaptureCompleted(double audio_sec, int buffers, int bytes, double rms_avg, double rms_peak, double dbfs_avg)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureCompleted, audio_sec, buffers, bytes, rms_avg, rms_peak, dbfs_avg);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtCaptureCompleted, audio_sec, buffers, bytes, rms_avg, rms_peak, dbfs_avg);
     }
 
-    // User-facing guidance: tail_headline is itself a complete Capital sentence
-    // ("You stopped after a silence — capture ends cleanly."), surfaced in the
-    // Activity selector. The milestone forwards that human content verbatim; the
-    // tail measurements move to the Verbose mirror below.
+    // Optional per-take diagnosis. Both the sentence and its measurements are
+    // admitted detail; neither belongs to the permanent workflow timeline.
     [Event(EvtRecordingTailSummary,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
            Message = "{0}")]
     public void RecordingTailSummary(string tail_headline)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingTailSummary, tail_headline);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtRecordingTailSummary, tail_headline);
     }
 
     [Event(EvtRecordingTailSummaryDetail,
@@ -137,7 +151,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "recording tail | tail_ms={0} | tail_dbfs={1:F1}")]
     public void RecordingTailSummaryDetail(int tail_ms, double tail_dbfs)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingTailSummaryDetail, tail_ms, tail_dbfs);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtRecordingTailSummaryDetail, tail_ms, tail_dbfs);
     }
 
     // ── Anomalies Captured In The waveIn Loop ───────────────────────────
@@ -157,7 +174,31 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "empty buffer | index={0}")]
     public void EmptyBufferReceivedDetail(int index)
     {
-        if (IsEnabled()) WriteEvent(EvtEmptyBufferReceivedDetail, index);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtEmptyBufferReceivedDetail, index);
+    }
+
+    [Event(EvtEmptyBufferRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Capture buffers recovered")]
+    public void EmptyBufferRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtEmptyBufferRecovered);
+    }
+
+    [Event(EvtEmptyBufferEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "empty buffer episode | occurrences={0} | recovered={1}")]
+    public void EmptyBufferEpisodeDetail(int occurrences, bool recovered)
+    {
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtEmptyBufferEpisodeDetail, occurrences, recovered);
     }
 
     [Event(EvtLowAudioDetected,
@@ -175,7 +216,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "low audio detected | recording_ms={0} | min_sustained_ms={1} | dbfs_threshold={2}")]
     public void LowAudioDetectedDetail(int recording_ms, int min_sustained_ms, double dbfs_threshold)
     {
-        if (IsEnabled()) WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, dbfs_threshold);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, dbfs_threshold);
     }
 
     // gc0/gc1/gc2 are the collections that happened DURING the lagging
@@ -196,7 +240,31 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "capture lag | buffers_ready={0} | iter={1} | wait_ms={2} | prev_iter_ms={3} | gc0={4} | gc1={5} | gc2={6}")]
     public void CaptureLagDetectedDetail(int buffers_ready, long iter, long wait_ms, long prev_iter_ms, int gc0, int gc1, int gc2)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureLagDetectedDetail, buffers_ready, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtCaptureLagDetectedDetail, buffers_ready, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
+    }
+
+    [Event(EvtCaptureLagRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The capture loop recovered")]
+    public void CaptureLagRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureLagRecovered);
+    }
+
+    [Event(EvtCaptureLagEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "capture lag episode | occurrences={0} | recovered={1}")]
+    public void CaptureLagEpisodeDetail(int occurrences, bool recovered)
+    {
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtCaptureLagEpisodeDetail, occurrences, recovered);
     }
 
     [Event(EvtDurationCapReached,
@@ -214,7 +282,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "duration cap reached | audio_sec={0:F1} | cap_sec={1}")]
     public void DurationCapReachedDetail(double audio_sec, int cap_sec)
     {
-        if (IsEnabled()) WriteEvent(EvtDurationCapReachedDetail, audio_sec, cap_sec);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
+            WriteEvent(EvtDurationCapReachedDetail, audio_sec, cap_sec);
     }
 
     [Event(EvtMicrophoneOpenFailed,
@@ -232,7 +303,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "microphone open failed | mmsys_err={0}")]
     public void MicrophoneOpenFailedDetail(uint mmsys_err)
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailedDetail, mmsys_err);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
+            WriteEvent(EvtMicrophoneOpenFailedDetail, mmsys_err);
     }
 
     // Speaker render — the waveOut device could not be opened (no render device,
@@ -280,7 +354,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "audio file decoded | source={0} | duration_sec={1:F1} | decoded_samples={2} | elapsed_ms={3}")]
     public void AudioFileDecodedDetail(string source, double duration_sec, int decoded_samples, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtAudioFileDecodedDetail, source, duration_sec, decoded_samples, elapsed_ms);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtAudioFileDecodedDetail, source, duration_sec, decoded_samples, elapsed_ms);
     }
 
     [Event(EvtAudioFileDecodeFailed,
@@ -298,19 +375,24 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Message = "audio file decode failed | status={0} | hr=0x{1:X8}")]
     public void AudioFileDecodeFailedDetail(string status, int hr)
     {
-        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeFailedDetail, status, hr);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
+            WriteEvent(EvtAudioFileDecodeFailedDetail, status, hr);
     }
 
-    // In-place clean (no params, no placeholders): the milestone is entirely a
-    // human sentence; only the label prefix and implementation aside were
-    // dropped. No Verbose mirror.
+    // A short take with no complete RMS window is ordinary per-take detail, not
+    // a durable microphone incident.
     [Event(EvtMicrophoneTelemetryEmpty,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "The recording was too short to measure microphone levels")]
     public void MicrophoneTelemetryEmpty()
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneTelemetryEmpty);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtMicrophoneTelemetryEmpty);
     }
 
     // ── Structured Heartbeat: Microphone Telemetry Payload ──────────────

@@ -69,6 +69,36 @@ public sealed class DeckleAppSource : DeckleEventSource
     // Install mode (the wizard as installer).
     public const int EvtInstallModeEntered          = 41;
     public const int EvtInstallModeEnteredDetail    = 42;
+    public const int EvtAppStarting                 = 43;
+    public const int EvtAppReady                    = 44;
+    public const int EvtShutdownCompleted           = 45;
+
+    [Event(EvtAppStarting,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Deckle starting")]
+    public void AppStarting()
+    {
+        if (IsEnabled()) WriteEvent(EvtAppStarting);
+    }
+
+    [Event(EvtAppReady,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Deckle ready")]
+    public void AppReady()
+    {
+        if (IsEnabled()) WriteEvent(EvtAppReady);
+    }
+
+    [Event(EvtShutdownCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Shutdown completed")]
+    public void ShutdownCompleted()
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownCompleted);
+    }
 
     // ── Crash safety net ────────────────────────────────────────────────
 
@@ -381,7 +411,7 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtHotkeyStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording started")]
+           Message = "Dictation started")]
     public void HotkeyStart()
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyStart);
@@ -390,16 +420,19 @@ public sealed class DeckleAppSource : DeckleEventSource
     [Event(EvtHotkeyStartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "recording started | hotkey={0}")]
+           Message = "dictation started | hotkey={0}")]
     public void HotkeyStartDetail(string hotkey_label)
     {
-        if (IsEnabled()) WriteEvent(EvtHotkeyStartDetail, hotkey_label);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture)) return;
+        WriteEvent(EvtHotkeyStartDetail, hotkey_label);
     }
 
     [Event(EvtHotkeyStop,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Stop")]
+           Message = "Recording stop requested")]
     public void HotkeyStop()
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyStop);

@@ -32,6 +32,7 @@ public sealed partial class TranscriptionEngine
     private bool LoadModel(bool silentStatus = false)
     {
         if (!silentStatus) RaiseStatus(Loc.Get("Status_LoadingModel"));
+        DeckleWhispSource.Log.ModelLoading();
 
         ModelLoadResult result;
         try
@@ -47,8 +48,7 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.ModelLoadFailed();
-            DeckleWhispSource.Log.ModelLoadFailedDetail(ex.Message);
+            OpenModelIncident(ex.GetType().Name);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Get("Engine_ModelLoadFailed_Body"),
@@ -59,6 +59,7 @@ public sealed partial class TranscriptionEngine
 
         if (!result.Success)
         {
+            OpenModelIncident(result.ErrorReason ?? "load_failed");
             // Map the backend's stable reason string to the appropriate
             // localized user feedback. "file_not_found" → model-missing
             // dialog; anything else → generic load-failed.
@@ -83,6 +84,11 @@ public sealed partial class TranscriptionEngine
         // Captured for the next LatencyPayload. Non-zero means the run paid
         // the cold-load cost; warm runs report 0.
         _modelLoadMs = result.LoadDurationMs;
+
+        if (CloseModelIncident())
+            DeckleWhispSource.Log.ModelRecovered();
+        else
+            DeckleWhispSource.Log.ModelLoaded();
 
         // Mirror the symmetric "Ready" emitted on the failure paths above so
         // the tray tooltip transitions Loading model… → Ready as soon as the
@@ -328,7 +334,11 @@ public sealed partial class TranscriptionEngine
         // bypass, not the thread it runs on, is what makes that true.
         try
         {
-            _backend.TranscribeAsync(warmupBuffer, static _ => { }, ct)
+            _backend.TranscribeAsync(
+                    warmupBuffer,
+                    static _ => { },
+                    ct,
+                    new TranscriptionContext(PrimingText: null, EmitPreamble: false))
                 .GetAwaiter().GetResult();
         }
         catch (OperationCanceledException)

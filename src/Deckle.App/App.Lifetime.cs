@@ -7,24 +7,44 @@ public partial class App
     private void QuitApp()
     {
         DeckleAppSource.Log.ShutdownRequested();
-        try { Settings.SettingsService.Instance.Flush(); } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("settings flush: " + ex.Message); }
-        try { _hotkeyManager?.Dispose();   } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("hotkeys dispose: " + ex.Message); }
-        try { _tray?.Dispose();            } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("tray dispose: " + ex.Message); }
-        try { _trayMenu?.Dispose();        } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("tray menu dispose: " + ex.Message); }
+        var failures = new List<string>();
+        void TryShutdown(string operation, Action action)
+        {
+            try { action(); }
+            catch (Exception ex) { failures.Add($"{operation}: {ex.GetType().Name}: {ex.Message}"); }
+        }
+
+        TryShutdown("settings flush", () => Settings.SettingsService.Instance.Flush());
+        TryShutdown("hotkeys dispose", () => _hotkeyManager?.Dispose());
+        TryShutdown("tray dispose", () => _tray?.Dispose());
+        TryShutdown("tray menu dispose", () => _trayMenu?.Dispose());
         // Before _messageHost: the signal's subclass + Raw Input sink sit on the
         // host's HWND, which _messageHost.Dispose destroys.
-        try { _cursorSignal?.Dispose();    } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("cursor signal dispose: " + ex.Message); }
-        try { _messageHost?.Dispose();     } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("message host dispose: " + ex.Message); }
-        try { _overlayManager?.Dispose();  } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("overlay manager dispose: " + ex.Message); }
-        try { _engine?.Dispose();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("engine dispose: " + ex.Message); }
-        try { _speechEngine?.Dispose();    } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("speech engine dispose: " + ex.Message); }
-        try { ShutdownTrackpad();          } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("trackpad shutdown: " + ex.Message); }
-        try { ShutdownTaskbarCover();      } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("taskbar cover shutdown: " + ex.Message); }
-        try { ShutdownMouseWheel();        } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("mouse wheel shutdown: " + ex.Message); }
-        try { ShutdownAutocorrect();       } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("autocorrect shutdown: " + ex.Message); }
-        try { ShutdownAnytypeMcp();        } catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("anytype mcp shutdown: " + ex.Message); }
-        try { _ambientEngine?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)); }
-        catch (Exception ex) { DeckleAppSource.Log.ShutdownWarning(); DeckleAppSource.Log.ShutdownWarningDetail("ambient engine dispose: " + ex.Message); }
+        TryShutdown("cursor signal dispose", () => _cursorSignal?.Dispose());
+        TryShutdown("message host dispose", () => _messageHost?.Dispose());
+        TryShutdown("overlay manager dispose", () => _overlayManager?.Dispose());
+        TryShutdown("engine dispose", () => _engine?.Dispose());
+        TryShutdown("speech engine dispose", () => _speechEngine?.Dispose());
+        TryShutdown("trackpad shutdown", ShutdownTrackpad);
+        TryShutdown("taskbar cover shutdown", ShutdownTaskbarCover);
+        TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
+        TryShutdown("autocorrect shutdown", ShutdownAutocorrect);
+        TryShutdown("anytype mcp shutdown", ShutdownAnytypeMcp);
+        TryShutdown("ambient engine dispose", () =>
+        {
+            if (_ambientEngine is not null
+                && !_ambientEngine.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)))
+            {
+                throw new TimeoutException("Ambient engine teardown exceeded five seconds.");
+            }
+        });
+
+        if (failures.Count > 0)
+        {
+            DeckleAppSource.Log.ShutdownWarning();
+            DeckleAppSource.Log.ShutdownWarningDetail(string.Join(" | ", failures));
+        }
+        DeckleAppSource.Log.ShutdownCompleted();
         Environment.Exit(0);
     }
 

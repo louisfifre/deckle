@@ -1,3 +1,4 @@
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
@@ -66,5 +67,20 @@ public sealed class AutocorrectEngineLifecycleTests
         // After Stop the handlers are gone: a committed word triggers no correction.
         h.Type("ca ");
         Assert.Empty(h.Injector.Calls);
+    }
+
+    [Fact]
+    public void DisposeAfterStopDoesNotEmitASecondStop()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        var h = new AutocorrectEngineHarness();
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Start();
+
+        h.Engine.Stop();
+        h.Dispose();
+
+        Assert.Single(listener.Events,
+            e => e.EventId == DeckleAutocorrectSource.EvtEngineStopped);
     }
 }

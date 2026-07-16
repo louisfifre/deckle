@@ -43,7 +43,8 @@ public sealed class TrackpadEngine : IDisposable
     private bool _running;
     private double _dragStartedMs;
     private int _dragMoves;
-    private bool _injectionFailureLogged;
+    private bool _traceDrag;
+    private bool _injectionIncidentOpen;
 
     public TrackpadEngine(RawInputHost host)
     {
@@ -54,7 +55,7 @@ public sealed class TrackpadEngine : IDisposable
         _recognizer.DragStarted += OnDragStarted;
         _recognizer.DragMoved   += OnDragMoved;
         _recognizer.DragEnded   += OnDragEnded;
-        _recognizer.TapIgnored  += () => DeckleTrackpadSource.Log.TapIgnored();
+        _recognizer.TapIgnored  += OnTapIgnored;
     }
 
     public void Start()
@@ -63,6 +64,7 @@ public sealed class TrackpadEngine : IDisposable
         {
             if (_running) return;
             _running = true;
+            _injectionIncidentOpen = false;
 
             ApplyThresholds();
             _host.FrameAssembled      += OnFrame;
@@ -136,13 +138,21 @@ public sealed class TrackpadEngine : IDisposable
 
     private void OnDragStarted()
     {
-        _dragStartedMs = RawInputHost.NowMs;
-        _dragMoves = 0;
-        _injectionFailureLogged = false;
+        _traceDrag = DeckleTrackpadSource.Log.IsEnabled(
+            System.Diagnostics.Tracing.EventLevel.Verbose,
+            (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture);
+        if (_traceDrag)
+        {
+            _dragStartedMs = RawInputHost.NowMs;
+            _dragMoves = 0;
+        }
 
-        if (!_injector.PressPrimary())
+        if (_injector.PressPrimary())
+            CloseInjectionIncident();
+        else
             LogInjectionFailure("press");
-        DeckleTrackpadSource.Log.DragStarted();
+        if (_traceDrag)
+            DeckleTrackpadSource.Log.DragStarted();
     }
 
     private void OnDragMoved(double dx, double dy)
@@ -150,28 +160,55 @@ public sealed class TrackpadEngine : IDisposable
         var settings = TrackpadSettingsService.Instance.Current;
         double scale = BaseScale * settings.DragSpeed;
 
-        if (!_injector.MoveRelative(dx * scale, dy * scale))
+        if (_injector.MoveRelative(dx * scale, dy * scale))
+            CloseInjectionIncident();
+        else
             LogInjectionFailure("move");
-        _dragMoves++;
+        if (_traceDrag)
+            _dragMoves++;
     }
 
     private void OnDragEnded(string reason)
     {
-        if (!_injector.ReleasePrimary())
+        if (_injector.ReleasePrimary())
+            CloseInjectionIncident();
+        else
             LogInjectionFailure("release");
-        DeckleTrackpadSource.Log.DragEnded(
-            reason, Math.Round(RawInputHost.NowMs - _dragStartedMs, 0), _dragMoves);
+        if (_traceDrag)
+        {
+            DeckleTrackpadSource.Log.DragEnded(
+                reason, Math.Round(RawInputHost.NowMs - _dragStartedMs, 0), _dragMoves);
+            _traceDrag = false;
+        }
     }
 
-    // First failure of a drag is a Warning; the rest of the drag stays
-    // quiet (a refused SendInput repeats at frame cadence — typically
-    // UIPI against an elevated foreground window).
+    // One Warning opens an engine-wide incident. A refused SendInput can
+    // repeat at frame cadence (typically UIPI against an elevated foreground
+    // window), so subsequent failures stay quiet until a successful injection
+    // proves that the path recovered.
     private void LogInjectionFailure(string action)
     {
-        if (_injectionFailureLogged) return;
-        _injectionFailureLogged = true;
+        if (_injectionIncidentOpen) return;
+        _injectionIncidentOpen = true;
         DeckleTrackpadSource.Log.InjectionFailed();
         DeckleTrackpadSource.Log.InjectionFailedDetail(action, _injector.LastError);
+    }
+
+    private void CloseInjectionIncident()
+    {
+        if (!_injectionIncidentOpen) return;
+        _injectionIncidentOpen = false;
+        DeckleTrackpadSource.Log.InjectionRecovered();
+    }
+
+    private static void OnTapIgnored()
+    {
+        if (DeckleTrackpadSource.Log.IsEnabled(
+                System.Diagnostics.Tracing.EventLevel.Verbose,
+                (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture))
+        {
+            DeckleTrackpadSource.Log.TapIgnored();
+        }
     }
 
     // ── Device + settings observers ──────────────────────────────────────

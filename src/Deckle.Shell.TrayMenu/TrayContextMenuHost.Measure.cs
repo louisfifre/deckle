@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -46,7 +47,9 @@ public sealed partial class TrayContextMenuHost
         if (_transcribeFileItem is not null)
             _transcribeFileItem.Visibility = OnTranscribeFile is null ? Visibility.Collapsed : Visibility.Visible;
 
-        var sw = Stopwatch.StartNew();
+        bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
+            EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
+        var sw = traceWindowing ? Stopwatch.StartNew() : null;
         _flyout!.ShowAt(_frame, new FlyoutShowOptions { ShowMode = FlyoutShowMode.Transient });
 
         _frame!.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
@@ -99,9 +102,12 @@ public sealed partial class TrayContextMenuHost
             }
 
             _flyout?.Hide();
-            sw.Stop();
-            DeckleShellTrayMenuSource.Log.PrimeCycleCompleted();
-            DeckleShellTrayMenuSource.Log.PrimeCycleCompletedDetail(sw.Elapsed.TotalMilliseconds);
+            if (sw is not null)
+            {
+                sw.Stop();
+                DeckleShellTrayMenuSource.Log.PrimeCycleCompleted();
+                DeckleShellTrayMenuSource.Log.PrimeCycleCompletedDetail(sw.Elapsed.TotalMilliseconds);
+            }
         });
     }
 
@@ -147,15 +153,10 @@ public sealed partial class TrayContextMenuHost
         double width = 0;
         double height = 0;
         int idx = 0;
+        bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
+            EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
         foreach (var item in _flyout.Items)
         {
-            string itemText = item switch
-            {
-                MenuFlyoutItem mi => mi.Text,
-                MenuFlyoutSeparator => "<separator>",
-                _ => "<unknown>",
-            };
-
             Windows.Foundation.Size desired;
             if (_primedSizes.TryGetValue(item, out var cached))
             {
@@ -173,9 +174,18 @@ public sealed partial class TrayContextMenuHost
             width = Math.Max(width, desired.Width);
             height += desired.Height;
 
-            DeckleShellTrayMenuSource.Log.ItemMeasured(
-                idx, itemText, item.GetType().Name,
-                desired.Width, desired.Height);
+            if (traceWindowing)
+            {
+                string itemText = item switch
+                {
+                    MenuFlyoutItem mi => mi.Text,
+                    MenuFlyoutSeparator => "<separator>",
+                    _ => "<unknown>",
+                };
+                DeckleShellTrayMenuSource.Log.ItemMeasured(
+                    idx, itemText, item.GetType().Name,
+                    desired.Width, desired.Height);
+            }
             idx++;
         }
 
@@ -201,7 +211,8 @@ public sealed partial class TrayContextMenuHost
         int physW = (int)Math.Ceiling(dipW * scale);
         int physH = (int)Math.Ceiling(dipH * scale);
 
-        DeckleShellTrayMenuSource.Log.FlyoutMeasured(dipW, dipH, physW, physH, scale);
+        if (traceWindowing)
+            DeckleShellTrayMenuSource.Log.FlyoutMeasured(dipW, dipH, physW, physH, scale);
 
         return (physW, physH);
     }

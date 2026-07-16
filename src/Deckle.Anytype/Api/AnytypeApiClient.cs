@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Anytype;
 
@@ -191,8 +193,12 @@ public sealed partial class AnytypeApiClient : IDisposable
         {
             for (int attempt = 0; ; attempt++)
             {
-                DeckleAnytypeSource.Log.ApiRequestStarted(method.Method, path);
-                long startTicks = Stopwatch.GetTimestamp();
+                bool traceRequest = DeckleAnytypeSource.Log.IsEnabled(
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Network);
+                long startTicks = traceRequest ? Stopwatch.GetTimestamp() : 0;
+                if (traceRequest)
+                    DeckleAnytypeSource.Log.ApiRequestStarted(method.Method, path);
 
                 using var request = new HttpRequestMessage(method, path);
                 if (body is not null)
@@ -204,12 +210,15 @@ public sealed partial class AnytypeApiClient : IDisposable
                 using HttpResponseMessage response =
                     await _http.SendAsync(request, ct).ConfigureAwait(false);
 
-                double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
+                double elapsedMs = traceRequest
+                    ? Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds
+                    : 0;
                 int status = (int)response.StatusCode;
 
                 if (response.IsSuccessStatusCode)
                 {
-                    DeckleAnytypeSource.Log.ApiRequestCompleted(method.Method, path, status, elapsedMs);
+                    if (traceRequest)
+                        DeckleAnytypeSource.Log.ApiRequestCompleted(method.Method, path, status, elapsedMs);
                     if (!parseBody) return new JsonObject();
                     string json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                     return ParseRoot(json);
@@ -218,9 +227,11 @@ public sealed partial class AnytypeApiClient : IDisposable
                 if (attempt < MaxRetries && IsTransient(response.StatusCode))
                 {
                     TimeSpan backoff = RetryAfter(response) ?? DefaultBackoff;
-                    DeckleAnytypeSource.Log.ApiRequestRetried();
-                    DeckleAnytypeSource.Log.ApiRequestRetriedDetail(
-                        method.Method, path, status, backoff.TotalMilliseconds);
+                    if (traceRequest)
+                    {
+                        DeckleAnytypeSource.Log.ApiRequestRetriedDetail(
+                            method.Method, path, status, backoff.TotalMilliseconds);
+                    }
                     await Task.Delay(backoff, ct).ConfigureAwait(false);
                     continue;
                 }

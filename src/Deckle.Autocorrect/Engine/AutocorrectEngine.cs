@@ -1,6 +1,7 @@
 using Deckle.Autocorrect;
 using Deckle.Diagnostics;
 using Deckle.Input;
+using System.Diagnostics.Tracing;
 
 namespace Deckle.Autocorrect;
 
@@ -107,6 +108,10 @@ public sealed class AutocorrectEngine : IDisposable
     private int _rollupReEdited;
     private int _rollupLearning;
     private int _rollupGated;
+    private bool _injectionIncidentOpen;
+    private int _injectionFailures;
+    private int _lastInjectionBackspaces;
+    private int _lastInjectionTextLength;
 
     /// <summary>Raised on the input thread when the focused surface changes (surface, enrolled).</summary>
     public event Action<FocusedSurface, bool>? SurfaceChanged;
@@ -216,6 +221,7 @@ public sealed class AutocorrectEngine : IDisposable
             }
 
             _started = true;
+            OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, true);
             OnFocusChanged(); // seed the surface before the first focus event
             DeckleAutocorrectSource.Log.EngineStarted();
             return true;
@@ -239,6 +245,7 @@ public sealed class AutocorrectEngine : IDisposable
         _stream?.Discard();
         _coordinator?.Invalidate(ResetReason.FocusChanged); // drop the sentence model
         _dictionary?.Flush();
+        OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, false);
         DeckleAutocorrectSource.Log.EngineStopped();
     }
 
@@ -376,7 +383,7 @@ public sealed class AutocorrectEngine : IDisposable
     // slot if the sentence is still open (a rewrite after flush is invisible).
     private void OnCoordinatorApplied(CorrectionDecision decision)
     {
-        _rollupCorrections++;
+        if (IsActivityRollupEnabled()) _rollupCorrections++;
         DeckleAutocorrectSource.Log.CorrectionApplied();
         LogCorrectionDetail(decision, backspaces: 0);
         if (CanCollectText())
@@ -411,7 +418,8 @@ public sealed class AutocorrectEngine : IDisposable
 
     private void OnWordCommitted(WordCommit commit)
     {
-        _rollupCommits++;
+        bool rollupEnabled = IsActivityRollupEnabled();
+        if (rollupEnabled) _rollupCommits++;
 
         var surface = _surface;
         var settings = _settings();
@@ -420,9 +428,9 @@ public sealed class AutocorrectEngine : IDisposable
         // the policy itself — without stopping observation resets.
         if (!settings.Enabled || !surface.IsTextEditable || surface.IsPassword)
         {
-            _rollupGated++;
+            if (rollupEnabled) _rollupGated++;
             _coordinator?.Invalidate(ResetReason.PasswordSurface);
-            MaybeRollup(commit.TimestampMs);
+            MaybeRollup(commit.TimestampMs, rollupEnabled);
             return;
         }
 
@@ -435,9 +443,9 @@ public sealed class AutocorrectEngine : IDisposable
         if (!enabledHere && !undecided)
         {
             FeedCorpus(commit, commit.Word); // on-screen is the verbatim typed word
-            _rollupGated++;
+            if (rollupEnabled) _rollupGated++;
             _coordinator?.Invalidate(ResetReason.FocusChanged);
-            MaybeRollup(commit.TimestampMs);
+            MaybeRollup(commit.TimestampMs, rollupEnabled);
             return;
         }
 
@@ -512,11 +520,11 @@ public sealed class AutocorrectEngine : IDisposable
                 MaybeSuggestEnrollment(surface.ProcessName);
             // Correction withheld, so the on-screen form is the typed word itself.
             FeedCorpus(commit, commit.Word);
-            _rollupGated++;
+            if (rollupEnabled) _rollupGated++;
             _coordinator?.Invalidate(ResetReason.FocusChanged);
         }
 
-        MaybeRollup(commit.TimestampMs);
+        MaybeRollup(commit.TimestampMs, rollupEnabled);
     }
 
     private void ApplyCorrection(WordCommit commit, CorrectionDecision decision)
@@ -531,15 +539,16 @@ public sealed class AutocorrectEngine : IDisposable
 
         if (_injector.Replace(current, target))
         {
+            OnInjectionSucceeded();
             _tracker.ReplaceLastCommitted(decision.Replacement);
-            _rollupCorrections++;
+            if (IsActivityRollupEnabled()) _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
             LogCorrectionDetail(decision, plan.Backspaces);
             CorrectionApplied?.Invoke(decision);
         }
         else
         {
-            DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
+            OnInjectionFailed(plan.Backspaces, plan.Text.Length);
             InjectionFailed?.Invoke(decision.Original, decision.Replacement);
         }
     }
@@ -568,7 +577,8 @@ public sealed class AutocorrectEngine : IDisposable
 
         if (_injector.Replace(current, target))
         {
-            _rollupCorrections++;
+            OnInjectionSucceeded();
+            if (IsActivityRollupEnabled()) _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
             LogCorrectionDetail(decision, plan.Backspaces);
             if (CanCollectText())
@@ -577,9 +587,36 @@ public sealed class AutocorrectEngine : IDisposable
         }
         else
         {
-            DeckleAutocorrectSource.Log.InjectionFailed(plan.Backspaces, plan.Text.Length);
+            OnInjectionFailed(plan.Backspaces, plan.Text.Length);
             InjectionFailed?.Invoke(repair.Original, repair.Replacement);
         }
+    }
+
+    private void OnInjectionFailed(int backspaces, int textLength)
+    {
+        _injectionFailures++;
+        _lastInjectionBackspaces = backspaces;
+        _lastInjectionTextLength = textLength;
+        if (_injectionIncidentOpen) return;
+
+        _injectionIncidentOpen = true;
+        DeckleAutocorrectSource.Log.InjectionIncident();
+        DeckleAutocorrectSource.Log.InjectionEpisodeDetail(
+            "opened", _injectionFailures, backspaces, textLength);
+    }
+
+    private void OnInjectionSucceeded()
+    {
+        if (!_injectionIncidentOpen) return;
+
+        DeckleAutocorrectSource.Log.InjectionRecovered();
+        DeckleAutocorrectSource.Log.InjectionEpisodeDetail(
+            "recovered", _injectionFailures,
+            _lastInjectionBackspaces, _lastInjectionTextLength);
+        _injectionIncidentOpen = false;
+        _injectionFailures = 0;
+        _lastInjectionBackspaces = 0;
+        _lastInjectionTextLength = 0;
     }
 
     // A word is protected when any tier the engine sees knows it — the French
@@ -672,7 +709,7 @@ public sealed class AutocorrectEngine : IDisposable
 
         // A committed word the user reopened and retyped — the WMR signal, counted
         // whatever the retype was (a hand-fix, a rewording, an undo of a correction).
-        _rollupReEdited++;
+        if (IsActivityRollupEnabled()) _rollupReEdited++;
 
         // The word was reopened after commit: that occurrence is no longer
         // clean enough for personal-vocabulary adoption.
@@ -687,7 +724,7 @@ public sealed class AutocorrectEngine : IDisposable
             && !AccentFolding.HasDiacritics(o))
         {
             _dictionary?.RecordManualAccentFix(o.ToLowerInvariant(), r.ToLowerInvariant());
-            _rollupLearning++;
+            if (IsActivityRollupEnabled()) _rollupLearning++;
             DeckleAutocorrectSource.Log.LearningSignal("manual_accent_fix");
         }
 
@@ -709,7 +746,7 @@ public sealed class AutocorrectEngine : IDisposable
         if (_english?.Contains(lower) == true) return;
 
         _dictionary.RecordCommit(word);
-        _rollupLearning++;
+        if (IsActivityRollupEnabled()) _rollupLearning++;
         DeckleAutocorrectSource.Log.LearningSignal("commit");
     }
 
@@ -748,8 +785,19 @@ public sealed class AutocorrectEngine : IDisposable
         EnrollmentSuggested?.Invoke(processName);
     }
 
-    private void MaybeRollup(double nowMs)
+    private static bool IsActivityRollupEnabled()
+        => DeckleAutocorrectSource.IsActivityDetailEnabled(
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Heartbeat);
+
+    private void MaybeRollup(double nowMs, bool enabled)
     {
+        if (!enabled)
+        {
+            ResetRollup();
+            return;
+        }
+
         if (_rollupStartMs < 0) _rollupStartMs = nowMs;
         if (nowMs - _rollupStartMs < RollupPeriodMs) return;
 
@@ -759,7 +807,12 @@ public sealed class AutocorrectEngine : IDisposable
                 _rollupCommits, _rollupCorrections, _rollupReEdited, _rollupLearning, _rollupGated);
         }
 
-        _rollupStartMs = nowMs;
+        ResetRollup(nowMs);
+    }
+
+    private void ResetRollup(double startMs = -1)
+    {
+        _rollupStartMs = startMs;
         _rollupCommits = 0;
         _rollupCorrections = 0;
         _rollupReEdited = 0;

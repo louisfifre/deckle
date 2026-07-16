@@ -260,7 +260,6 @@ public sealed class TaskbarCoverHost : IDisposable
             IntPtr.Zero, _cursorHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
         if (_cursorHook == IntPtr.Zero)
         {
-            DeckleShellTaskbarCoverSource.Log.CursorHookFailed();
             throw new InvalidOperationException("SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed");
         }
 
@@ -437,6 +436,8 @@ public sealed class TaskbarCoverHost : IDisposable
             // first failure is logged, this path runs at input cadence.
             if (SetTimer(_hwnd, TIMER_RECOVER, RecoverDelayMs, IntPtr.Zero) != UIntPtr.Zero)
             {
+                if (_recoverArmFailureLogged)
+                    DeckleShellTaskbarCoverSource.Log.TimerArmRecovered();
                 _recoverTimerArmed = true;
                 _recoverArmFailureLogged = false;
             }
@@ -499,6 +500,8 @@ public sealed class TaskbarCoverHost : IDisposable
             UpdateCover("layout_unknown");
             return;
         }
+        if (_layoutFailureLogged)
+            DeckleShellTaskbarCoverSource.Log.LayoutQueryRecovered();
         _layoutFailureLogged = false;
 
         var edge = (TaskbarEdge)abd.uEdge;

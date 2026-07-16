@@ -360,6 +360,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SecondaryWindowPlacement.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
+│   │   │   ├── CaptureAnomalyEpisode.cs
 │   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── Pcm16Buffer.cs
 │   │   │   ├── PcmBuffer.cs
@@ -646,7 +647,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilterSession.cs
 │   │   ├── SettingsSearch.cs
-│   │   └── StreamingCaptureGate.cs
+│   │   └── TranscriptionActivityScope.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── AGENTS.md  — [agent-instructions] Purpose-specific telemetry datasets and their consent gates.
 │   │   ├── CLAUDE.md
@@ -790,6 +791,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueEntertainmentFrameBuilder.cs
 │   │   │   ├── HueEntertainmentLightOutput.cs
 │   │   │   ├── HueEntertainmentTransport.cs
+│   │   │   ├── HueEventStreamEpisode.cs
 │   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
@@ -1232,9 +1234,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpaceWriteLockTests.cs
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
+│   │   ├── CaptureAnomalyEpisodeTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
+│   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
@@ -1327,7 +1332,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DispatchEventListenerTests.cs
 │   │   ├── JsonlSinkLifecycleTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
-│   │   └── LogLineFormatterTests.cs
+│   │   ├── LogLineFormatterTests.cs
+│   │   ├── OperationalLogAdmissionCollection.cs
+│   │   └── OperationalLogAdmissionTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
@@ -1340,6 +1347,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LowLevelMouseHookInteropTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
+│   │   ├── DeckleTrackpadSourceTests.cs
 │   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessCurveTests.cs
@@ -1349,11 +1357,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleAmbientSourceTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── Deckle.Lighting.Tests.csproj
+│   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
+│   │   ├── HueEventStreamEpisodeTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
-│   │   └── HueLocalDiscoveryTests.cs
+│   │   ├── HueLocalDiscoveryTests.cs
+│   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs
@@ -1393,7 +1404,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Deckle.Transcription.Tests.csproj
+│   │   ├── DeckleLlmSourceTests.cs
+│   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs

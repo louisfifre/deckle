@@ -1,5 +1,6 @@
 using Deckle.App;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Transcription;
 
 namespace Deckle.App;
@@ -60,8 +61,15 @@ public partial class App
         {
             case ToggleResult.Started:
                 DeckleAppSource.Log.HotkeyStart();
-                DeckleAppSource.Log.HotkeyStartDetail(
-                    $"{hotkeyName}{(manualProfile is null ? "" : $", LLM: {manualProfile}")}");
+                if (OperationalLogAdmission.IsDetailEnabled(
+                        OperationalLogActivity.Transcription,
+                        DeckleAppSource.Log,
+                        System.Diagnostics.Tracing.EventLevel.Verbose,
+                        (System.Diagnostics.Tracing.EventKeywords)Keywords.Capture))
+                {
+                    DeckleAppSource.Log.HotkeyStartDetail(
+                        $"{hotkeyName}{(manualProfile is null ? "" : $", LLM: {manualProfile}")}");
+                }
                 _hudWindow?.ShowPreparing();
                 break;
 

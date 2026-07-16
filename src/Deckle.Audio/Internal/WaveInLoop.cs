@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Deckle.Audio.Internal;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Audio;
 
@@ -103,7 +106,8 @@ internal static class WaveInLoop
         int  recordingMs               = 0;
         bool userVoiceConfirmed        = false;
         bool lowAudioWarned            = false;
-        int  captureLagCount           = 0;
+        CaptureAnomalyEpisode emptyBufferEpisode = default;
+        CaptureAnomalyEpisode captureLagEpisode = default;
 
         // TEMP DIAG (capture-lag investigation) — strip after collecting
         // 5–10 occurrences in the wild. Tells us which of GC pause /
@@ -120,24 +124,36 @@ internal static class WaveInLoop
         int  diagLastIterGc0    = 0;
         int  diagLastIterGc1    = 0;
         int  diagLastIterGc2    = 0;
-        var  diagWaitWatch      = new System.Diagnostics.Stopwatch();
-        var  diagIterWatch      = new System.Diagnostics.Stopwatch();
+        Stopwatch? diagWaitWatch = null;
+        Stopwatch? diagIterWatch = null;
 
         while (!ct.IsCancellationRequested)
         {
-            diagWaitWatch.Restart();
-            NativeMethods.WaitForSingleObject(hEvent, 100);
-            long diagWaitMs = diagWaitWatch.ElapsedMilliseconds;
+            bool captureDetailEnabled = OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription,
+                DeckleAudioSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Capture);
 
-            diagIterWatch.Restart();
-            diagIterationCount++;
+            if (captureDetailEnabled)
+            {
+                (diagWaitWatch ??= new Stopwatch()).Restart();
+            }
+            NativeMethods.WaitForSingleObject(hEvent, 100);
+            long diagWaitMs = captureDetailEnabled ? diagWaitWatch!.ElapsedMilliseconds : 0;
+
+            if (captureDetailEnabled)
+            {
+                (diagIterWatch ??= new Stopwatch()).Restart();
+                diagIterationCount++;
+            }
 
             // Per-iteration GC snapshot — counted over this body only, so the
             // delta stored at the end attributes a GC to the exact iteration
             // that lagged rather than to the whole take.
-            int diagIterGc0 = System.GC.CollectionCount(0);
-            int diagIterGc1 = System.GC.CollectionCount(1);
-            int diagIterGc2 = System.GC.CollectionCount(2);
+            int diagIterGc0 = captureDetailEnabled ? System.GC.CollectionCount(0) : 0;
+            int diagIterGc1 = captureDetailEnabled ? System.GC.CollectionCount(1) : 0;
+            int diagIterGc2 = captureDetailEnabled ? System.GC.CollectionCount(2) : 0;
 
             int bufferDoneCount = 0;
             for (int i = 0; i < nBuffers; i++)
@@ -148,11 +164,18 @@ internal static class WaveInLoop
                     bufferDoneCount++;
                     if (hdr.dwBytesRecorded == 0)
                     {
-                        DeckleAudioSource.Log.EmptyBufferReceived();
-                        DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
+                        if (emptyBufferEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
+                        {
+                            DeckleAudioSource.Log.EmptyBufferReceived();
+                            if (captureDetailEnabled)
+                                DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
+                        }
                     }
                     else
                     {
+                        if (emptyBufferEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
+                            DeckleAudioSource.Log.EmptyBufferRecovered();
+
                         ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
                         double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                         buffersReceived++;
@@ -208,25 +231,33 @@ internal static class WaveInLoop
                 }
             }
 
-            // Capture lag — fire up to 10 times per recording when the ring
-            // buffer is really under pressure. With 4 buffers × 50 ms and a
+            // Capture lag — one incident per recording when the ring buffer is
+            // really under pressure. With 4 buffers × 50 ms and a
             // 100 ms wait, finding 1-2 buffers WHDR_DONE per iteration is
             // normal; 3+ means the consumer fell at least 150 ms behind the
-            // producer. A handful of samples (not one) lets us see whether the
-            // cause recurs and whether it always wears the same signature.
+            // producer. Repetition contributes only to the terminal detail.
             //
             // TEMP DIAG fields decode the cause:
             //   iter         — iteration index when the lag fires (low → cold-start)
             //   wait_ms      — time spent in WaitForSingleObject (high → GC pause / CPU preemption during sleep)
             //   prev_iter_ms — time the previous scan loop took (high → heavy inline work let buffers pile up)
             //   gcN          — collections during that lagging iteration (non-zero, esp. gen2 → a STW pause caused it; all zero → inline work did)
-            if (captureLagCount < 10 && bufferDoneCount >= 3)
+            if (bufferDoneCount >= 3)
             {
-                captureLagCount++;
-                DeckleAudioSource.Log.CaptureLagDetected();
-                DeckleAudioSource.Log.CaptureLagDetectedDetail(
-                    bufferDoneCount, diagIterationCount, diagWaitMs, diagLastIterMs,
-                    diagLastIterGc0, diagLastIterGc1, diagLastIterGc2);
+                if (captureLagEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
+                {
+                    DeckleAudioSource.Log.CaptureLagDetected();
+                    if (captureDetailEnabled)
+                    {
+                        DeckleAudioSource.Log.CaptureLagDetectedDetail(
+                            bufferDoneCount, diagIterationCount, diagWaitMs, diagLastIterMs,
+                            diagLastIterGc0, diagLastIterGc1, diagLastIterGc2);
+                    }
+                }
+            }
+            else if (captureLagEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
+            {
+                DeckleAudioSource.Log.CaptureLagRecovered();
             }
 
             // Duration cap — forces a stop as if the user had pressed the
@@ -245,14 +276,45 @@ internal static class WaveInLoop
                 capHit = true;
                 DeckleAudioSource.Log.DurationCapReached();
                 DeckleAudioSource.Log.DurationCapReachedDetail(curSec, maxDurationSec);
-                diagLastIterMs = diagIterWatch.ElapsedMilliseconds;
+                if (captureDetailEnabled)
+                {
+                    diagLastIterMs = diagIterWatch!.ElapsedMilliseconds;
+                }
                 break;
             }
 
-            diagLastIterMs  = diagIterWatch.ElapsedMilliseconds;
-            diagLastIterGc0 = System.GC.CollectionCount(0) - diagIterGc0;
-            diagLastIterGc1 = System.GC.CollectionCount(1) - diagIterGc1;
-            diagLastIterGc2 = System.GC.CollectionCount(2) - diagIterGc2;
+            if (captureDetailEnabled)
+            {
+                diagLastIterMs  = diagIterWatch!.ElapsedMilliseconds;
+                diagLastIterGc0 = System.GC.CollectionCount(0) - diagIterGc0;
+                diagLastIterGc1 = System.GC.CollectionCount(1) - diagIterGc1;
+                diagLastIterGc2 = System.GC.CollectionCount(2) - diagIterGc2;
+            }
+            else
+            {
+                diagLastIterMs = 0;
+                diagLastIterGc0 = 0;
+                diagLastIterGc1 = 0;
+                diagLastIterGc2 = 0;
+            }
+        }
+
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription,
+                DeckleAudioSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Capture))
+        {
+            if (emptyBufferEpisode.Occurrences > 0)
+            {
+                DeckleAudioSource.Log.EmptyBufferEpisodeDetail(
+                    emptyBufferEpisode.Occurrences, emptyBufferEpisode.Recovered);
+            }
+            if (captureLagEpisode.Occurrences > 0)
+            {
+                DeckleAudioSource.Log.CaptureLagEpisodeDetail(
+                    captureLagEpisode.Occurrences, captureLagEpisode.Recovered);
+            }
         }
 
         // Drain phase starts here — measured separately from the in-loop

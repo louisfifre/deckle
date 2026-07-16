@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics.Tracing;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Input;
@@ -401,8 +402,10 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         if (!_focusEvents.ShouldPublish(eventType, hwnd, idObject, idChild, dwmsEventTime))
             return;
 
+        bool rollupEnabled = IsKeyboardRollupEnabled();
+        if (rollupEnabled) _rollupFocusChanges++;
         FocusChanged?.Invoke();
-        TrackRollup(RawInputHost.NowMs, focusChanges: 1);
+        if (rollupEnabled) TrackRollup(RawInputHost.NowMs);
     }
 
     private IntPtr MouseHookProc(int nCode, IntPtr wParam, IntPtr lParam)
@@ -415,13 +418,15 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             if (vertical || horizontal)
             {
                 var hook = Marshal.PtrToStructure<LowLevelMouseHookInterop.MSLLHOOKSTRUCT>(lParam);
+                bool wheelRollupEnabled = IsKeyboardRollupEnabled();
+                if (wheelRollupEnabled) _rollupWheel++;
                 WheelObserved?.Invoke(new MouseWheelEvent(
                     Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
                     Delta:       LowLevelMouseHookInterop.GetWheelDelta(hook.mouseData),
                     TimestampMs: RawInputHost.NowMs,
                     Device:      IntPtr.Zero,
                     Source:      WheelEventSource.MessageHook));
-                TrackRollup(RawInputHost.NowMs, wheel: 1);
+                if (wheelRollupEnabled) TrackRollup(RawInputHost.NowMs);
             }
         }
 
@@ -485,21 +490,25 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             {
                 short delta = Marshal.ReadInt16(
                     _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
+                bool rawWheelRollupEnabled = IsKeyboardRollupEnabled();
+                if (rawWheelRollupEnabled) _rollupWheel++;
                 WheelObserved?.Invoke(new MouseWheelEvent(
                     Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
                     Delta:       delta,
                     TimestampMs: RawInputHost.NowMs,
                     Device:      header.hDevice,
                     Source:      WheelEventSource.RawInput));
-                TrackRollup(RawInputHost.NowMs, wheel: 1);
+                if (rawWheelRollupEnabled) TrackRollup(RawInputHost.NowMs);
             }
             return;
         }
 
         if ((buttonFlags & RawInputInterop.RI_MOUSE_ANY_BUTTON_DOWN) == 0) return;
 
+        bool rollupEnabled = IsKeyboardRollupEnabled();
+        if (rollupEnabled) _rollupPointerDowns++;
         PointerInteraction?.Invoke();
-        TrackRollup(RawInputHost.NowMs, pointerDowns: 1);
+        if (rollupEnabled) TrackRollup(RawInputHost.NowMs);
     }
 
     private void HandleKeyboard(int dataOffset, RawInputInterop.RAWINPUTHEADER header)
@@ -526,33 +535,32 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             TimestampMs: RawInputHost.NowMs,
             ExtraInfo:   extraInfo);
 
+        bool rollupEnabled = IsKeyboardRollupEnabled();
+        if (rollupEnabled)
+        {
+            _rollupKeys++;
+            if (evt.IsInjected) _rollupInjectedFiltered++;
+        }
         KeyReceived?.Invoke(evt);
-        TrackRollup(evt.TimestampMs, keys: 1, injectedFiltered: evt.IsInjected ? 1 : 0);
+        if (rollupEnabled) TrackRollup(evt.TimestampMs);
     }
 
-    private void TrackRollup(
-        double nowMs,
-        int keys = 0,
-        int injectedFiltered = 0,
-        int pointerDowns = 0,
-        int wheel = 0,
-        int focusChanges = 0)
+    private static bool IsKeyboardRollupEnabled()
+        => DeckleInputSource.IsAutocorrectDetailEnabled(
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Heartbeat);
+
+    private void TrackRollup(double nowMs)
     {
         // This supporting provider belongs to Autocorrect while that activity
         // is running. Refuse the rollup at the producer so its counters and
         // EventSource payload do no work when activity detail is disabled.
-        if (!OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Autocorrect))
+        if (!IsKeyboardRollupEnabled())
         {
             if (_rollupStartMs >= 0)
                 ResetRollup(nowMs: -1);
             return;
         }
-
-        _rollupKeys += keys;
-        _rollupInjectedFiltered += injectedFiltered;
-        _rollupPointerDowns += pointerDowns;
-        _rollupWheel += wheel;
-        _rollupFocusChanges += focusChanges;
 
         if (_rollupStartMs < 0) _rollupStartMs = nowMs;
 

@@ -73,16 +73,17 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtApiRequestCompleted, method, path, status_code, duration_ms);
     }
 
-    // Warning, not Verbose: a single retry on 429/5xx is a degradation a human
-    // would want to notice even though the call recovers on the second attempt
-    // (Diagnostics CLAUDE.md calibration rule).
+    // Retained for manifest compatibility. Runtime retry observations use the
+    // structured detail below: one bounded retry that succeeds is self-healing,
+    // while exhaustion already owns the permanent Error.
     [Event(EvtApiRequestRetried,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "An API request was retried")]
+           Message = "api request retried")]
     public void ApiRequestRetried()
     {
-        if (IsEnabled()) WriteEvent(EvtApiRequestRetried);
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Network))
+            WriteEvent(EvtApiRequestRetried);
     }
 
     [Event(EvtApiRequestRetriedDetail,

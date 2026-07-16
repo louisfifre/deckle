@@ -2,6 +2,9 @@ using System.Runtime.InteropServices;
 using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Diagnostics;
+using Deckle.Diagnostics.Logging;
+using System.Diagnostics.Tracing;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
@@ -177,6 +180,17 @@ public sealed partial class TranscriptionEngine
             };
             _worker.Start();
 
+            DeckleWhispSource.Log.FileTranscriptionStarted();
+            if (OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Pipeline))
+            {
+                DeckleWhispSource.Log.FileTranscriptionStartedDetail(
+                    audioFilePath, SafeFileLength(audioFilePath));
+            }
+
             committed = true;
             return ToggleResult.Started;
         }
@@ -243,8 +257,7 @@ public sealed partial class TranscriptionEngine
             if (!probe.Ok)
             {
                 var (title, body) = LocalizeMicError(probe.Kind, probe.MmsysErr);
-                DeckleWhispSource.Log.RecordingProbeFailed();
-                DeckleWhispSource.Log.RecordingProbeFailedDetail(probe.MmsysErr, title);
+                OpenMicrophoneIncident("probe", probe.MmsysErr);
                 EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 return ToggleResult.IgnoredBusy;
             }
@@ -338,6 +351,8 @@ public sealed partial class TranscriptionEngine
     // also gate on _state == Idle to avoid clobbering this invariant.
     private void WorkerRun()
     {
+        using var activity = TranscriptionActivityScope.Open();
+
         // Cancellation channels for this run, recreated each run so a previous
         // Cancel() doesn't leak into the next session. _recordCts stops the
         // producer (capture) — Stop and Dispose both fire it. _drainCts aborts
@@ -523,6 +538,7 @@ public sealed partial class TranscriptionEngine
     // first backend call, not the chrono, is what waits for the warm model.
     private void OnCaptureStarted()
     {
+        CloseMicrophoneIncident();
         _hotkeySw?.Stop();
         _recordingSw = System.Diagnostics.Stopwatch.StartNew();
         RaiseStatus(Loc.Get("Status_Recording"));

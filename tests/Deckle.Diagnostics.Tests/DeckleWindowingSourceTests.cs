@@ -12,6 +12,7 @@ namespace Deckle.Diagnostics.Tests;
 // pixels, hmon as long to match GetWindowRect/MonitorFromWindow on the call
 // site side.
 [Trait("Category", "observability")]
+[Collection(OperationalLogAdmissionCollection.Name)]
 public class DeckleWindowingSourceTests
 {
     public DeckleWindowingSourceTests()

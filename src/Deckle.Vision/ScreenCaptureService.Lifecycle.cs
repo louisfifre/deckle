@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
@@ -11,8 +12,6 @@ public sealed partial class ScreenCaptureService
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (IsRunning) return;
-
-            DeckleVisionSource.Log.ScreenCaptureStarting();
 
             try
             {
@@ -58,9 +57,17 @@ public sealed partial class ScreenCaptureService
                 // Cross-cutting Resource sub-provider: output duplication
                 // acquire. size_bytes=0 because this is a synchronization
                 // handle, not a measurable memory allocation.
-                _duplicationAcquiredTicks = Stopwatch.GetTimestamp();
-                DeckleResourceSource.Log.ResourceAcquired(
-                    "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
+                bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleResourceSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Resource);
+                _duplicationAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
+                if (resourceDetailOpen)
+                {
+                    DeckleResourceSource.Log.ResourceAcquired(
+                        "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
+                }
 
                 _frameCount = 0;
                 _startTimestamp = Stopwatch.GetTimestamp();
@@ -71,14 +78,19 @@ public sealed partial class ScreenCaptureService
 
                 IsRunning = true;
 
-                DeckleVisionSource.Log.CaptureSessionConfigured(
-                    (long)_hmon, _lastSize.Width, _lastSize.Height, _activeFormat.ToString(),
-                    _isHdrSession ? "on" : "off", _peakLuminance, (int)AcquireTimeoutMs, ThrottleIntervalMs);
-                DeckleVisionSource.Log.ScreenCaptureStarted();
+                if (OperationalLogAdmission.IsScopedDetailEnabled(
+                        OperationalLogActivity.Ambient,
+                        DeckleVisionSource.Log,
+                        EventLevel.Verbose,
+                        (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
+                {
+                    DeckleVisionSource.Log.CaptureSessionConfigured(
+                        (long)_hmon, _lastSize.Width, _lastSize.Height, _activeFormat.ToString(),
+                        _isHdrSession ? "on" : "off", _peakLuminance, (int)AcquireTimeoutMs, ThrottleIntervalMs);
+                }
             }
             catch (Exception ex)
             {
-                DeckleVisionSource.Log.CaptureStartFailed();
                 DeckleVisionSource.Log.CaptureStartFailedDetail(ex.HResult, ex.GetType().Name, ex.Message);
 
                 DisposeInternals();
@@ -138,11 +150,18 @@ public sealed partial class ScreenCaptureService
             // requested the stop, the loop propagated it. `age_ms` reflects the
             // full capture session duration because the worker ran from Start
             // until cancellation time.
-            long ageMs = _startTimestamp != 0
-                ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
-                : -1;
-            DeckleCancellationSource.Log.OperationCancelled(
-                "vision-capture", "upstream", (int)ageMs);
+            if (OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleCancellationSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Lifecycle))
+            {
+                long ageMs = _startTimestamp != 0
+                    ? (Stopwatch.GetTimestamp() - _startTimestamp) * 1000 / Stopwatch.Frequency
+                    : -1;
+                DeckleCancellationSource.Log.OperationCancelled(
+                    "vision-capture", "upstream", (int)ageMs);
+            }
         }
         catch (Exception ex)
         {
@@ -152,16 +171,27 @@ public sealed partial class ScreenCaptureService
 
         lock (_lock)
         {
-            long endTimestamp = Stopwatch.GetTimestamp();
-            long durationMs = (endTimestamp - _startTimestamp) * 1000 / Stopwatch.Frequency;
-            long frames = Interlocked.Read(ref _frameCount);
-            double fpsAvg = durationMs > 0 ? frames * 1000.0 / durationMs : 0.0;
+            bool traceLifecycle = wasRunning
+                && OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleVisionSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)(Keywords.Capture | Keywords.Lifecycle));
+            long durationMs = 0;
+            long frames = 0;
+            double fpsAvg = 0;
+            if (traceLifecycle)
+            {
+                long endTimestamp = Stopwatch.GetTimestamp();
+                durationMs = (endTimestamp - _startTimestamp) * 1000 / Stopwatch.Frequency;
+                frames = Interlocked.Read(ref _frameCount);
+                fpsAvg = durationMs > 0 ? frames * 1000.0 / durationMs : 0.0;
+            }
 
             DisposeInternals();
 
-            if (wasRunning)
+            if (traceLifecycle)
             {
-                DeckleVisionSource.Log.ScreenCaptureStopped();
                 DeckleVisionSource.Log.ScreenCaptureStoppedDetail(frames, durationMs, fpsAvg);
             }
         }

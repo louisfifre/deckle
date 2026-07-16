@@ -70,7 +70,14 @@ public sealed class TrayIconManager : IDisposable
 
         // Subclass the HWND to intercept WM_TRAY.
         _subclassDelegate = SubclassCallback;
-        NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero);
+        if (!NativeMethods.SetWindowSubclass(
+                _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
+        {
+            int error = Marshal.GetLastWin32Error();
+            Dispose();
+            throw new InvalidOperationException(
+                $"SetWindowSubclass failed for the tray icon (Win32 err {error}).");
+        }
     }
 
     // ── Position rect ─────────────────────────────────────────────────────────

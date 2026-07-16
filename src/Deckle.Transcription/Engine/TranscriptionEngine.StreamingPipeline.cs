@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Transcription;
 using Deckle.Vad;
@@ -41,13 +43,6 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt, Task<bool> primeTask)
     {
-        // Streaming-activity gate: held open for the lifetime of this method
-        // through `using`, so any early return / throw / cancellation still
-        // closes it on the way out. The listener-side drop filter (App)
-        // combines this gate with the LogTranscriptionActivity
-        // toggle to silence Whisp Verbose events during streaming.
-        using var _ = StreamingCaptureScope.Open();
-
         // Milestone + verbose snapshot pair: the LogWindow gets a human jalon
         // (StreamingPipelineStarted), then the structured line that says under
         // which segmenter parameters this take ran (so a reread of the log
@@ -105,7 +100,7 @@ public sealed partial class TranscriptionEngine
         // Frame-rate clock for the 1 Hz heartbeat (20 × 50 ms frames per tick)
         // and for the recording_sec field. Stopwatch starts now, OnFrame trips
         // the heartbeat once per second.
-        var recordSw = Stopwatch.StartNew();
+        Stopwatch? recordSw = null;
         int hbFrames = 0;
         // Last per-frame RMS, kept so the heartbeat can report a live mic level
         // without spamming an event for every 50 ms frame.
@@ -121,8 +116,19 @@ public sealed partial class TranscriptionEngine
 
         void OnFrame(CaptureFrame f)
         {
-            lastRmsLinear = f.Rms;
             segmenter.Push(f);
+
+            if (!OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Heartbeat))
+            {
+                return;
+            }
+
+            recordSw ??= Stopwatch.StartNew();
+            lastRmsLinear = f.Rms;
             if (++hbFrames >= 20)
             {
                 hbFrames = 0;
@@ -213,8 +219,7 @@ public sealed partial class TranscriptionEngine
         if (capture.Outcome == CaptureOutcome.MicError)
         {
             var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
-            DeckleWhispSource.Log.RecordingMicError();
-            DeckleWhispSource.Log.RecordingMicErrorDetail(capture.MmsysErr, title);
+            OpenMicrophoneIncident("capture", capture.MmsysErr);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
             RaiseFinished(TranscriptionOutcome.None);
             return null;
@@ -242,14 +247,21 @@ public sealed partial class TranscriptionEngine
         // Streaming-native completion recap, emitted once at Stop: the readable
         // summary of the whole take (utterances the segmenter produced, audio
         // length, cumulative Whisper time, word count, Whisper's own sub-segments).
-        double takeAudioSec = (float)capture.Pcm.Length / 16_000f;
         DeckleWhispSource.Log.StreamingDrained();
-        DeckleWhispSource.Log.StreamingDrainedDetail(
-            consumed.NUtterances,
-            takeAudioSec,
-            consumed.TotalMs,
-            TextMetrics.CountWords(consumed.Text),
-            consumed.NSegments);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription,
+                DeckleWhispSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Pipeline))
+        {
+            double takeAudioSec = (float)capture.Pcm.Length / 16_000f;
+            DeckleWhispSource.Log.StreamingDrainedDetail(
+                consumed.NUtterances,
+                takeAudioSec,
+                consumed.TotalMs,
+                TextMetrics.CountWords(consumed.Text),
+                consumed.NSegments);
+        }
 
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {

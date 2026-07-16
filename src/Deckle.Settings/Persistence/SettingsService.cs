@@ -75,8 +75,6 @@ public sealed class SettingsService
             path:        AppPaths.SettingsFilePath,
             mutexName:   AppPaths.SettingsMutexName,
             jsonOptions: _jsonOptions,
-            logInfo:     msg => DeckleSettingsSource.Log.SettingsLoaded(msg),
-            logVerbose:  msg => DeckleSettingsSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleSettingsSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleSettingsSource.Log.SettingsLoadError(msg));
     }

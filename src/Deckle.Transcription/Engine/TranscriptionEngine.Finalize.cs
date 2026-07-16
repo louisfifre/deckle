@@ -208,7 +208,21 @@ public sealed partial class TranscriptionEngine
         // _strategyLabel for the telemetry surface.
         string strategyLabel = _backend.Name;
 
-        DeckleWhispSource.Log.PipelineCompleted();
+        if (isFileRun)
+        {
+            if (outcome == TranscriptionOutcome.SavedToFile)
+                DeckleWhispSource.Log.FileTranscriptionCompleted();
+            else
+                DeckleWhispSource.Log.FileTranscriptionCopied();
+        }
+        else if (outcome == TranscriptionOutcome.Pasted)
+        {
+            DeckleWhispSource.Log.DictationPasted();
+        }
+        else
+        {
+            DeckleWhispSource.Log.DictationCopied();
+        }
         DeckleWhispSource.Log.PipelineCompletedDetail(outcome.ToString());
         DeckleWhispSource.Log.PipelineTimings(
             recDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
@@ -220,7 +234,6 @@ public sealed partial class TranscriptionEngine
             nSeg, fullText.Length, finalWordCount, strategyLabel,
             profile?.Name ?? "(none)", outcome.ToString());
 
-        RaiseStatus(Loc.Get("Status_Ready"));
         _recordingSw?.Stop();
 
         // LatencyRecorded is the canonical latency.jsonl heartbeat, analysed as a

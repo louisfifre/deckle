@@ -37,8 +37,7 @@ public sealed partial class TranscriptionEngine
         if (capture.Outcome == CaptureOutcome.MicError)
         {
             var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
-            DeckleWhispSource.Log.RecordingMicError();
-            DeckleWhispSource.Log.RecordingMicErrorDetail(capture.MmsysErr, title);
+            OpenMicrophoneIncident("capture", capture.MmsysErr);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
             RaiseFinished(TranscriptionOutcome.None);
             return null;
@@ -159,8 +158,6 @@ public sealed partial class TranscriptionEngine
                 FB_REPLACEMENT);
             RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
             RaiseFinished(TranscriptionOutcome.None);
-            DeckleWhispSource.Log.SegmentCallbackThrew();
-            DeckleWhispSource.Log.SegmentCallbackThrewDetail(ex.GetType().Name, ex.Message);
             return null;
         }
 
@@ -169,8 +166,6 @@ public sealed partial class TranscriptionEngine
         // fall through. A non-zero result without an abort is a real failure.
         if (result.ResultCode != 0 && !result.Aborted)
         {
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(result.ResultCode);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),

@@ -22,8 +22,8 @@ public sealed partial class ScreenCaptureService
         long heartbeatWindowStartTicks = Stopwatch.GetTimestamp();
         int hbAcquired = 0;
         int hbDropped = 0;
-        var hbAcquireDurationsUs = new List<long>(320);
-        var hbSampleDurationsUs = new List<long>(320);
+        List<long>? hbAcquireDurationsUs = null;
+        List<long>? hbSampleDurationsUs = null;
 
         while (!ct.IsCancellationRequested)
         {
@@ -35,9 +35,9 @@ public sealed partial class ScreenCaptureService
             // succeeds or cancellation fires.
             if (_duplicationPtr == 0)
             {
-                TryRecreateDuplication(ct);
+                bool recreated = TryRecreateDuplication(ct);
                 if (ct.IsCancellationRequested) break;
-                if (_duplicationPtr == 0) continue;
+                if (!recreated) break;
             }
 
             // Heartbeat gate evaluated once per iteration. When closed,
@@ -45,8 +45,11 @@ public sealed partial class ScreenCaptureService
             // collection — the only residual cost is the IsEnabled
             // probe itself plus the throttle/timestamp arithmetic that
             // the loop already does.
-            bool heartbeatGateOpen = DeckleVisionSource.Log.IsEnabled(
-                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat);
+            bool heartbeatGateOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient,
+                DeckleVisionSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Heartbeat);
 
             long acquireStartTicks = heartbeatGateOpen ? Stopwatch.GetTimestamp() : 0;
 
@@ -101,7 +104,6 @@ public sealed partial class ScreenCaptureService
                 DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
                 if (invalidCallRecoveryAttempts >= MaxInvalidCallRecoveryAttempts)
                 {
-                    DeckleVisionSource.Log.FrameOwnershipRecoveryAbandoned();
                     DeckleVisionSource.Log.FrameOwnershipRecoveryAbandonedDetail(
                         invalidCallRecoveryAttempts, MaxInvalidCallRecoveryAttempts);
                     break;
@@ -128,7 +130,6 @@ public sealed partial class ScreenCaptureService
                 // Fatal — GPU gone or hung. Surface Stopped so the
                 // engine can clean up ; recovery would need a full
                 // D3D device rebuild that lives outside this loop.
-                DeckleVisionSource.Log.DeviceLost();
                 DeckleVisionSource.Log.DeviceLostDetail(hr);
                 break;
             }
@@ -193,8 +194,16 @@ public sealed partial class ScreenCaptureService
                 }
                 catch (Exception ex)
                 {
-                    DeckleVisionSource.Log.TextureQueryFailed();
-                    DeckleVisionSource.Log.TextureQueryFailedDetail(ex.GetType().Name, ex.Message);
+                    if (OperationalLogAdmission.IsScopedDetailEnabled(
+                            OperationalLogActivity.Ambient,
+                            DeckleVisionSource.Log,
+                            EventLevel.Verbose,
+                            (EventKeywords)Keywords.Capture))
+                    {
+                        DeckleVisionSource.Log.TextureQueryFailedDetail(
+                            ex.GetType().Name, ex.Message);
+                    }
+                    NotifyFrameProcessingFailed();
                     continue;
                 }
 
@@ -206,11 +215,20 @@ public sealed partial class ScreenCaptureService
                 // finally; accept the double gate test (here + in release) to
                 // keep code linear without per-iteration local state.
                 // bytes_per_pixel = 4 (BGRA8) or 8 (FP16).
-                int bytesPerPixel = _activeDxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 4;
-                int textureSizeBytes = _lastSize.Width * _lastSize.Height * bytesPerPixel;
-                long textureAcquiredTicks = Stopwatch.GetTimestamp();
-                DeckleResourceSource.Log.ResourceAcquired(
-                    "d3d11-texture", (long)texturePtr, textureSizeBytes, "capture-loop");
+                bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleResourceSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Resource);
+                long textureAcquiredTicks = 0;
+                if (resourceDetailOpen)
+                {
+                    int bytesPerPixel = _activeDxgiFormat == ScreenCaptureInterop.DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 4;
+                    int textureSizeBytes = _lastSize.Width * _lastSize.Height * bytesPerPixel;
+                    textureAcquiredTicks = Stopwatch.GetTimestamp();
+                    DeckleResourceSource.Log.ResourceAcquired(
+                        "d3d11-texture", (long)texturePtr, textureSizeBytes, "capture-loop");
+                }
 
                 try
                 {
@@ -231,8 +249,16 @@ public sealed partial class ScreenCaptureService
                     }
                     catch (Exception ex)
                     {
-                        DeckleVisionSource.Log.FrameConsumerThrew();
-                        DeckleVisionSource.Log.FrameConsumerThrewDetail(ex.GetType().Name, ex.Message);
+                        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                                OperationalLogActivity.Ambient,
+                                DeckleVisionSource.Log,
+                                EventLevel.Verbose,
+                                (EventKeywords)Keywords.Capture))
+                        {
+                            DeckleVisionSource.Log.FrameConsumerThrewDetail(
+                                ex.GetType().Name, ex.Message);
+                        }
+                        NotifyFrameProcessingFailed();
                     }
                     if (heartbeatGateOpen)
                     {
@@ -244,12 +270,17 @@ public sealed partial class ScreenCaptureService
                 {
                     if (texturePtr != 0)
                     {
-                        long releasedTextureHandle = (long)texturePtr;
-                        int textureAgeMs = (int)((Stopwatch.GetTimestamp() - textureAcquiredTicks)
-                                                  * 1000L / Stopwatch.Frequency);
+                        long releasedTextureHandle = resourceDetailOpen ? (long)texturePtr : 0;
+                        int textureAgeMs = resourceDetailOpen
+                            ? (int)((Stopwatch.GetTimestamp() - textureAcquiredTicks)
+                                * 1000L / Stopwatch.Frequency)
+                            : 0;
                         Marshal.Release(texturePtr);
-                        DeckleResourceSource.Log.ResourceReleased(
-                            "d3d11-texture", releasedTextureHandle, textureAgeMs, "capture-loop");
+                        if (resourceDetailOpen)
+                        {
+                            DeckleResourceSource.Log.ResourceReleased(
+                                "d3d11-texture", releasedTextureHandle, textureAgeMs, "capture-loop");
+                        }
                     }
                 }
             }
@@ -266,28 +297,29 @@ public sealed partial class ScreenCaptureService
                 {
                     long acquireEndTicks = Stopwatch.GetTimestamp();
                     long acquireDurationUs = (acquireEndTicks - acquireStartTicks) * 1_000_000L / Stopwatch.Frequency;
-                    hbAcquireDurationsUs.Add(acquireDurationUs);
+                    (hbAcquireDurationsUs ??= new List<long>(320)).Add(acquireDurationUs);
                     if (delivered)
                     {
-                        hbSampleDurationsUs.Add(sampleDurationUs);
+                        (hbSampleDurationsUs ??= new List<long>(320)).Add(sampleDurationUs);
                     }
                     hbAcquired++;
                     if (!delivered) hbDropped++;
 
                     EmitHeartbeatIfDue(
                         ref heartbeatWindowStartTicks, ref hbAcquired, ref hbDropped,
-                        hbAcquireDurationsUs, hbSampleDurationsUs);
+                        hbAcquireDurationsUs, hbSampleDurationsUs ??= new List<long>(320));
                 }
                 else if (hbAcquired > 0 || hbDropped > 0
-                      || hbAcquireDurationsUs.Count > 0 || hbSampleDurationsUs.Count > 0)
+                      || hbAcquireDurationsUs is { Count: > 0 }
+                      || hbSampleDurationsUs is { Count: > 0 })
                 {
                     // Gate flipped off mid-window — discard the partial
                     // accumulation so we don't emit a stale fragment on
                     // the next time it flips back on.
                     hbAcquired = 0;
                     hbDropped = 0;
-                    hbAcquireDurationsUs.Clear();
-                    hbSampleDurationsUs.Clear();
+                    hbAcquireDurationsUs?.Clear();
+                    hbSampleDurationsUs?.Clear();
                     heartbeatWindowStartTicks = Stopwatch.GetTimestamp();
                 }
             }
@@ -300,6 +332,26 @@ public sealed partial class ScreenCaptureService
         {
             IsRunning = false;
             Stopped?.Invoke();
+        }
+    }
+
+    private void NotifyFrameProcessingFailed()
+    {
+        try
+        {
+            FrameProcessingFailed?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            if (OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleVisionSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Capture))
+            {
+                DeckleVisionSource.Log.FrameConsumerThrewDetail(
+                    ex.GetType().Name, ex.Message);
+            }
         }
     }
 
@@ -355,13 +407,25 @@ public sealed partial class ScreenCaptureService
     {
         if (_duplicationPtr == 0) return;
 
-        long releasedHandle = (long)_duplicationPtr;
-        int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
-                           * 1000L / Stopwatch.Frequency);
+        bool resourceDetailOpen = _duplicationAcquiredTicks != 0
+            && OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient,
+                DeckleResourceSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Resource);
+        long releasedHandle = resourceDetailOpen ? (long)_duplicationPtr : 0;
+        int ageMs = resourceDetailOpen
+            ? (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
+                * 1000L / Stopwatch.Frequency)
+            : 0;
         Marshal.Release(_duplicationPtr);
         _duplicationPtr = 0;
-        DeckleResourceSource.Log.ResourceReleased(
-            "duplication-output", releasedHandle, ageMs, "capture-loop");
+        _duplicationAcquiredTicks = 0;
+        if (resourceDetailOpen)
+        {
+            DeckleResourceSource.Log.ResourceReleased(
+                "duplication-output", releasedHandle, ageMs, "capture-loop");
+        }
     }
 
 }

@@ -16,7 +16,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Transcribing a file")]
+           Message = "File transcription started")]
     public void FileTranscriptionStarted()
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionStarted);
@@ -28,16 +28,22 @@ public sealed partial class DeckleWhispSource
            Message = "file transcription start | path={0} | bytes={1}")]
     public void FileTranscriptionStartedDetail(string path, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionStartedDetail, path, bytes);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileTranscriptionStartedDetail, path, bytes);
     }
 
     [Event(EvtFileTranscriptionSaved,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "Transcript saved to file")]
     public void FileTranscriptionSaved()
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionSaved);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtFileTranscriptionSaved);
     }
 
     [Event(EvtFileTranscriptionSavedDetail,
@@ -46,7 +52,10 @@ public sealed partial class DeckleWhispSource
            Message = "file transcription saved | path={0} | chars={1}")]
     public void FileTranscriptionSavedDetail(string path, int chars)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionSavedDetail, path, chars);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtFileTranscriptionSavedDetail, path, chars);
     }
 
     // Verbose, like HotkeyToggleIgnored: a file request refused because the engine

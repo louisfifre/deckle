@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -26,25 +27,30 @@ public sealed partial class TrayContextMenuHost
         if (_disposed || _window is null || _frame is null || _flyout is null || _appWindow is null)
             return;
 
-        long nowTickMs = Environment.TickCount64;
-        double msSinceLastShow = _showCount == 0 ? 0 : (nowTickMs - _lastShowTickMs);
-        _showCount++;
-        _lastShowTickMs = nowTickMs;
-        DeckleShellTrayMenuSource.Log.ShowRequested();
-        DeckleShellTrayMenuSource.Log.ShowRequestedDetail(msSinceLastShow, _showCount);
+        bool traceWindowing = DeckleShellTrayMenuSource.IsDetailEnabled(
+            EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle);
+        if (traceWindowing)
+        {
+            long nowTickMs = Environment.TickCount64;
+            double msSinceLastShow = _showCount == 0 ? 0 : (nowTickMs - _lastShowTickMs);
+            _showCount++;
+            _lastShowTickMs = nowTickMs;
+            DeckleShellTrayMenuSource.Log.ShowRequested();
+            DeckleShellTrayMenuSource.Log.ShowRequestedDetail(msSinceLastShow, _showCount);
+        }
 
         if (_ambientItem is not null && IsAmbientOn is not null)
         {
             bool ambientOn = IsAmbientOn();
             TraySwitchMenuItem.SetState(_ambientItem, ambientOn);
-            DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
+            if (traceWindowing) DeckleShellTrayMenuSource.Log.AmbientStateRead(ambientOn);
         }
 
         if (_taskbarCoverItem is not null && IsTaskbarCoverOn is not null)
         {
             bool coverOn = IsTaskbarCoverOn();
             TraySwitchMenuItem.SetState(_taskbarCoverItem, coverOn);
-            DeckleShellTrayMenuSource.Log.TaskbarCoverStateRead(coverOn);
+            if (traceWindowing) DeckleShellTrayMenuSource.Log.TaskbarCoverStateRead(coverOn);
         }
 
         // Anchor + exclude: prefer the real tray icon rect
@@ -145,7 +151,7 @@ public sealed partial class TrayContextMenuHost
             ShowMode = FlyoutShowMode.Transient,
             Placement = FlyoutPlacementMode.Full,
         });
-        DeckleShellTrayMenuSource.Log.FlyoutShownAt();
+        if (traceWindowing) DeckleShellTrayMenuSource.Log.FlyoutShownAt();
     }
 
     // ── Hide ──────────────────────────────────────────────────────────────────
@@ -158,8 +164,12 @@ public sealed partial class TrayContextMenuHost
     {
         if (!_isVisible) return;
         _isVisible = false;
-        DeckleShellTrayMenuSource.Log.Hidden();
-        DeckleShellTrayMenuSource.Log.HiddenDetail(reason);
+        if (DeckleShellTrayMenuSource.IsDetailEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+        {
+            DeckleShellTrayMenuSource.Log.Hidden();
+            DeckleShellTrayMenuSource.Log.HiddenDetail(reason);
+        }
         _flyout?.Hide();
         if (_hwnd != IntPtr.Zero)
             NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE);

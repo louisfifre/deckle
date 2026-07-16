@@ -16,20 +16,17 @@ namespace Deckle.Audio;
 public static class MicrophoneTelemetryCalculator
 {
     // Result of the Tail-600 ms diagnostic. The orchestrator consumes the
-    // headline + dBFS to print the user-facing log line; TailRms / TailDbfs
-    // also flow into the MicrophoneTelemetryPayload for the JSONL row.
+    // TailRms / TailDbfs flow into the MicrophoneTelemetryPayload. The optional
+    // operational headline is constructed separately, after admission.
     public readonly record struct TailDiagnostic(
         double TailRms,
         double TailDbfs,
         int    TailMs,
         bool   TailActive,
-        string TailState,
-        string TailHeadline);
+        string TailState);
 
     // Compute the Tail-600 ms diagnostic from the RMS series. Returns null
-    // when the series is empty — the caller should log the "no RMS samples
-    // captured" warning in that case (the message is user-facing in the
-    // Activity selector).
+    // when the series is empty — the caller may emit admitted technical detail.
     public static TailDiagnostic? ComputeTail(System.Collections.Generic.IReadOnlyList<float> rmsLog)
     {
         int n = rmsLog.Count;
@@ -43,12 +40,8 @@ public static class MicrophoneTelemetryCalculator
         // -50 dBFS keeps the active/silent threshold from the previous
         // diagnostic so existing log readers stay calibrated.
         //
-        // The line is user-facing in the Activity selector: it tells you
-        // whether you stopped after a silence (the natural case) or while
-        // still speaking (often a hotkey hit too early — last words may be
-        // clipped). The dBFS measurement stays in the line as a check for
-        // anyone calibrating the gate, but the leading clause speaks plain
-        // English.
+        // The optional operational sentence is built separately so this
+        // functional telemetry calculation never allocates it before admission.
         int tailCount = System.Math.Min(12, n);
         double tailSumSq = 0;
         for (int i = n - tailCount; i < n; i++)
@@ -61,12 +54,13 @@ public static class MicrophoneTelemetryCalculator
         int tailMs = tailCount * 50;
         bool tailActive = tailDbfs > -50;
         string tailState = tailActive ? "active" : "silent";
-        string tailHeadline = tailActive
+        return new TailDiagnostic(tailRms, tailDbfs, tailMs, tailActive, tailState);
+    }
+
+    public static string DescribeTail(TailDiagnostic tail)
+        => tail.TailActive
             ? "You were still speaking at Stop — the last words may be clipped."
             : "You stopped after a silence — capture ends cleanly.";
-
-        return new TailDiagnostic(tailRms, tailDbfs, tailMs, tailActive, tailState, tailHeadline);
-    }
 
     // Build the full distribution payload (percentiles + mean + tail) from
     // the RMS series. Returns null when the series is empty. The caller

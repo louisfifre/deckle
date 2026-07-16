@@ -231,6 +231,35 @@ public sealed partial class TranscriptionEngine : IDisposable
     // from warm and skips the PrimeOverlap measure when there was nothing to hide.
     private long _primeMs;
 
+    // Dependency incidents outlive one take. They close only when the real
+    // dependency succeeds again: waveInStart for the microphone, and a
+    // successful backend load for the model.
+    private int _microphoneIncidentOpen;
+    private int _modelIncidentOpen;
+
+    private void OpenMicrophoneIncident(string phase, uint mmsysErr)
+    {
+        if (Interlocked.Exchange(ref _microphoneIncidentOpen, 1) != 0) return;
+        DeckleWhispSource.Log.MicrophoneUnavailable();
+        DeckleWhispSource.Log.MicrophoneUnavailableDetail(phase, mmsysErr);
+    }
+
+    private void CloseMicrophoneIncident()
+    {
+        if (Interlocked.Exchange(ref _microphoneIncidentOpen, 0) == 0) return;
+        DeckleWhispSource.Log.MicrophoneRecovered();
+    }
+
+    private void OpenModelIncident(string reason)
+    {
+        if (Interlocked.Exchange(ref _modelIncidentOpen, 1) != 0) return;
+        DeckleWhispSource.Log.ModelUnavailable();
+        DeckleWhispSource.Log.ModelUnavailableDetail(reason);
+    }
+
+    private bool CloseModelIncident()
+        => Interlocked.Exchange(ref _modelIncidentOpen, 0) != 0;
+
     // Stopwatch started at the beginning of each recording (used for logs).
     private System.Diagnostics.Stopwatch? _recordingSw;
 

@@ -40,4 +40,16 @@ public class MicrophoneTelemetryCalculatorTests
         var series = MicrophoneTelemetryCalculator.RmsSeries(new float[799], 800);
         Assert.Empty(series);
     }
+
+    [Fact]
+    public void TailHeadlineIsBuiltSeparatelyFromTheDiagnostic()
+    {
+        var active = new MicrophoneTelemetryCalculator.TailDiagnostic(
+            0.1, -20, 600, true, "active");
+        var silent = new MicrophoneTelemetryCalculator.TailDiagnostic(
+            0.001, -60, 600, false, "silent");
+
+        Assert.Contains("still speaking", MicrophoneTelemetryCalculator.DescribeTail(active));
+        Assert.Contains("after a silence", MicrophoneTelemetryCalculator.DescribeTail(silent));
+    }
 }

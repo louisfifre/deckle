@@ -188,19 +188,25 @@ public sealed class DeckleLlmSource : DeckleEventSource
            Message = "ps probe unreachable | http={0}")]
     public void PsProbeUnreachableDetail(int http_status)
     {
-        if (IsEnabled()) WriteEvent(EvtPsProbeUnreachableDetail, http_status);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtPsProbeUnreachableDetail, http_status);
     }
 
     // Constant hint (no resident model, request may be stuck) lived in the old
     // k=v message; the method takes no args, so the milestone carries no detail
     // and no Verbose mirror is needed.
     [Event(EvtPsProbeEmpty,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "The model status probe found no resident model — the request may be stuck")]
+           Message = "ps probe empty | resident_models=0")]
     public void PsProbeEmpty()
     {
-        if (IsEnabled()) WriteEvent(EvtPsProbeEmpty);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtPsProbeEmpty);
     }
 
     [Event(EvtOllamaBusy,
@@ -218,7 +224,10 @@ public sealed class DeckleLlmSource : DeckleEventSource
            Message = "ollama busy | name={0} | vram_gb={1:F1} | unload={2} | waited_sec={3:F0} | cap_min={4:F0}")]
     public void OllamaBusyDetail(string name, double vram_gb, string unload_suffix, double waited_seconds, double cap_minutes)
     {
-        if (IsEnabled()) WriteEvent(EvtOllamaBusyDetail, name, vram_gb, unload_suffix, waited_seconds, cap_minutes);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtOllamaBusyDetail, name, vram_gb, unload_suffix, waited_seconds, cap_minutes);
     }
 
     [Event(EvtPsProbeFailed,
@@ -236,7 +245,10 @@ public sealed class DeckleLlmSource : DeckleEventSource
            Message = "ps probe failed | error={0} | message={1}")]
     public void PsProbeFailedDetail(string ex_type, string message)
     {
-        if (IsEnabled()) WriteEvent(EvtPsProbeFailedDetail, ex_type, message);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtPsProbeFailedDetail, ex_type, message);
     }
 
     // ── UserFeedback (HUD bridge) ───────────────────────────────────────

@@ -102,9 +102,18 @@ public partial class App : Microsoft.UI.Xaml.Application
         // EventSource line at the end of OnLaunched — LogWindow receives
         // it under [APP]. A naive "one event per milestone" approach
         // would make early boot noisier without improving diagnosis.
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var milestones = new List<string>();
-        void Milestone(string name) => milestones.Add($"{name} +{sw.ElapsedMilliseconds}ms");
+        bool traceStartup = DeckleAppSource.Log.IsEnabled(
+            System.Diagnostics.Tracing.EventLevel.Verbose,
+            (System.Diagnostics.Tracing.EventKeywords)Keywords.Lifecycle);
+        System.Diagnostics.Stopwatch? sw = traceStartup
+            ? System.Diagnostics.Stopwatch.StartNew()
+            : null;
+        List<string>? milestones = traceStartup ? [] : null;
+        void Milestone(string name)
+        {
+            if (traceStartup)
+                milestones!.Add($"{name} +{sw!.ElapsedMilliseconds}ms");
+        }
 
         // Always-on local diagnostic sinks (setup.jsonl + errors.jsonl) come
         // FIRST — before settings migration — so an Error in the very first boot
@@ -114,6 +123,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // the riskiest, un-opted-in moment. Optional operational and dataset
         // sinks are wired later, after migration.
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
+        DeckleAppSource.Log.AppStarting();
         Milestone("diagnostics-local");
 
         // Per-module persistence migration runs FIRST — before any module
@@ -192,12 +202,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         // app.jsonl and LogWindow receive the same admitted operational stream.
         // Their recording and display filters remain independent projections.
 
-        // Boot-time sanity marker for the EventSource pipeline. It has no
-        // product behaviour; it simply proves provider discovery, JSONL
-        // routing, and LogWindow listener routing during startup.
-        Deckle.Chrono.DeckleChronoSource.Log.PilotEmitted();
-        Deckle.Chrono.DeckleChronoSource.Log.PilotEmittedDetail("wave 1 boot");
-
         // Cross-cutting Network sub-provider: capture machine network state
         // transitions to correlate business HTTP failures (Hue REST, Ollama)
         // with an OS-level outage or switch. Single idempotent emitter; an
@@ -210,16 +214,19 @@ public partial class App : Microsoft.UI.Xaml.Application
         // telemetry. Touching any AppPaths member triggers the static ctor
         // that resolves <UserDataRoot> and creates the writable directories.
         //
-        // Logging doctrine: Info = short capitalized milestone sentence;
-        // technical details (resolved paths) in mirrored Verbose, readable
-        // under the All filter without polluting Activity.
-        DeckleAppSource.Log.PathsInitialized();
-        DeckleAppSource.Log.PathsDetail(
-            AppPaths.UserDataRoot,
-            AppPaths.SettingsFilePath,
-            AppPaths.TelemetryDirectory,
-            AppPaths.ModelsDirectory,
-            AppPaths.NativeDirectory);
+        // This is technical boot context, not a workflow milestone. Refuse it
+        // before even touching the path payloads when Verbose is not admitted.
+        if (DeckleAppSource.Log.IsEnabled(
+                System.Diagnostics.Tracing.EventLevel.Verbose,
+                (System.Diagnostics.Tracing.EventKeywords)Keywords.Lifecycle))
+        {
+            DeckleAppSource.Log.PathsDetail(
+                AppPaths.UserDataRoot,
+                AppPaths.SettingsFilePath,
+                AppPaths.TelemetryDirectory,
+                AppPaths.ModelsDirectory,
+                AppPaths.NativeDirectory);
+        }
 
         // Notification dispatcher — composition root for user messages. Wired
         // here, right after the diagnostics listeners are live (above), so the
@@ -272,7 +279,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             // dictation module stays dormant. Recorded as a boot milestone
             // (with the three readiness flags) so a support trace shows
             // exactly which part is missing.
-            Milestone($"engine_skipped present={transcriptionPresent} native={NativeRuntime.IsInstalled()} model={SpeechModels.IsAnyModelInstalled()}");
+            if (traceStartup)
+                Milestone($"engine_skipped present={transcriptionPresent} native={NativeRuntime.IsInstalled()} model={SpeechModels.IsAnyModelInstalled()}");
         }
 
         // Read-aloud (TTS) engine with the placeholder Chatterbox backend —
@@ -293,17 +301,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         if (ambientPresent)
         {
             _ambientEngine = new AmbientEngine(new AppAmbientEngineHost());
-            // Surface every state transition in the logs (Info level so it
-            // lands in app.jsonl without requiring the LogAmbientCapture-
-            // Activity toggle). Subscribers in the windows (AmbientPage
-            // ProgressRing, Playground status) hook directly to the engine
-            // event ; we don't relay through tray UpdateStatus to avoid
-            // squatting the Whisp recording tooltip.
-            _ambientEngine.StateChanged += s =>
-            {
-                DeckleAppSource.Log.AmbientPipelineState();
-                DeckleAppSource.Log.AmbientPipelineStateDetail(s.ToString());
-            };
             // AmbientPage's NotPaired InfoBar action button needs to open
             // the Playground (where Hue pairing lives in V0). Lighting.
             // Ambient cannot reference Deckle, so the App fills the slot.
@@ -605,8 +602,6 @@ public partial class App : Microsoft.UI.Xaml.Application
                 // source of truth; the localized status remains display-only.
                 bool isRecording = _engine.IsRecording;
                 _tray.UpdateStatus(status, isRecording);
-                DeckleAppSource.Log.StatusChanged();
-                DeckleAppSource.Log.StatusChangedDetail(status);
                 _lastRecordingState = isRecording;
                 // Both nullable now: LogWindow and PlaygroundWindow are lazy-
                 // created on first user open, so they're absent until then.
@@ -671,8 +666,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         string initialStatus = _engine is not null || !transcriptionPresent
             ? "Ready" : "Dictation not set up";
         _tray.UpdateStatus(initialStatus, isRecording: false);
-        DeckleAppSource.Log.StatusChanged();
-        DeckleAppSource.Log.StatusChangedDetail(initialStatus);
 
         // Force Ambient master toggle OFF at boot; explicit user action via
         // Settings / tray re-enables the pipeline. Louis's explicit
@@ -895,9 +888,13 @@ public partial class App : Microsoft.UI.Xaml.Application
             timer.Start();
         }
 
-        sw.Stop();
-        milestones.Add($"total {sw.ElapsedMilliseconds}ms");
-        DeckleAppSource.Log.StartupMilestones(string.Join(" | ", milestones));
+        if (traceStartup)
+        {
+            sw!.Stop();
+            milestones!.Add($"total {sw.ElapsedMilliseconds}ms");
+            DeckleAppSource.Log.StartupMilestones(string.Join(" | ", milestones));
+        }
+        DeckleAppSource.Log.AppReady();
     }
 
 }

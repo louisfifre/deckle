@@ -63,6 +63,33 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtRecordingMicErrorDetail, mmsys_err, title);
     }
 
+    [Event(EvtMicrophoneUnavailable,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The microphone is unavailable")]
+    public void MicrophoneUnavailable()
+    {
+        if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable);
+    }
+
+    [Event(EvtMicrophoneUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "microphone unavailable | phase={0} | mmsys_err={1}")]
+    public void MicrophoneUnavailableDetail(string phase, uint mmsys_err)
+    {
+        if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailableDetail, phase, mmsys_err);
+    }
+
+    [Event(EvtMicrophoneRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Microphone access recovered")]
+    public void MicrophoneRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtMicrophoneRecovered);
+    }
+
     // In-place clean (no params, no placeholders): lowercase implementation
     // phrasing recapitalized into a human sentence.
     [Event(EvtRecordingLowAudio,
@@ -127,7 +154,10 @@ public sealed partial class DeckleWhispSource
            Message = "start | audio_sec={0:F1} | samples={1} | strategy={2}")]
     public void TranscribeStartDetail(double audio_sec, int samples, string strategy)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeStartDetail, audio_sec, samples, strategy);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtTranscribeStartDetail, audio_sec, samples, strategy);
     }
 
     [Event(EvtTranscriptionCorrelation,
@@ -136,7 +166,12 @@ public sealed partial class DeckleWhispSource
            Message = "correlation | transcription_id={0}")]
     public void TranscriptionCorrelation(string transcription_id)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscriptionCorrelation, transcription_id);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription,
+                this,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtTranscriptionCorrelation, transcription_id);
     }
 
     [Event(EvtTranscribeParams,
@@ -145,16 +180,24 @@ public sealed partial class DeckleWhispSource
            Message = "params | {0}")]
     public void TranscribeParams(string params_text)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeParams, params_text);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtTranscribeParams, params_text);
     }
 
-    [Event(EvtTranscribePrompt,
+    [Event(EvtTranscribePromptConfigured,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "prompt | len={0} | carry={1}")]
-    public void TranscribePrompt(int prompt_len, bool carry)
+           Message = "prompt configured | len={0} | carry={1}")]
+    public void TranscribePromptConfigured(int prompt_len, bool carry)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribePrompt, prompt_len, carry);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription,
+                this,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtTranscribePromptConfigured, prompt_len, carry);
     }
 
     // In-place clean (no params, no placeholders): lowercase phrasing
@@ -216,13 +259,18 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoop);
     }
 
-    [Event(EvtTranscribeRepetitionLoopDetail,
+    [Event(EvtTranscribeRepetitionLoopMetrics,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Message = "repetition loop | streak={0} | period={1}")]
-    public void TranscribeRepetitionLoopDetail(int streak, int period)
+    public void TranscribeRepetitionLoopMetrics(int streak, int period)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoopDetail, streak, period);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription,
+                this,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtTranscribeRepetitionLoopMetrics, streak, period);
     }
 
     [Event(EvtTranscribeHallucinationFiltered,
@@ -232,15 +280,6 @@ public sealed partial class DeckleWhispSource
     public void TranscribeHallucinationFiltered()
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFiltered);
-    }
-
-    [Event(EvtTranscribeHallucinationFilteredDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "hallucination filtered | chars={0}")]
-    public void TranscribeHallucinationFilteredDetail(int chars)
-    {
-        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredDetail, chars);
     }
 
     [Event(EvtTranscribeSkipped,
@@ -269,7 +308,10 @@ public sealed partial class DeckleWhispSource
            Message = "streaming complete | utterances={0} | audio_sec={1:F1} | whisper_ms={2} | words={3} | n_seg={4}")]
     public void StreamingDrainedDetail(int n_utterances, double audio_sec, long whisper_ms, int words, int n_seg)
     {
-        if (IsEnabled()) WriteEvent(EvtStreamingDrainedDetail, n_utterances, audio_sec, whisper_ms, words, n_seg);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtStreamingDrainedDetail, n_utterances, audio_sec, whisper_ms, words, n_seg);
     }
 
     [Event(EvtUtteranceSkipped,
@@ -287,7 +329,10 @@ public sealed partial class DeckleWhispSource
            Message = "utterance skipped | index={0} | ex_type={1} | ex_message={2}")]
     public void UtteranceSkippedDetail(int index, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtUtteranceSkippedDetail, index, ex_type, ex_message);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtUtteranceSkippedDetail, index, ex_type, ex_message);
     }
 
     // Producer side: one event per utterance the segmenter cuts off the live
@@ -300,7 +345,10 @@ public sealed partial class DeckleWhispSource
            Message = "utterance #{0} cut | voiced_frames={1} | kept_frames={2} | start={3:F2}s | end={4:F2}s | hangover_used_ms={5}")]
     public void SegmenterUtteranceEmitted(int index, int voiced_frames, int kept_frames, double start_sec, double end_sec, int hangover_used_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtSegmenterUtteranceEmitted, index, voiced_frames, kept_frames, start_sec, end_sec, hangover_used_ms);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtSegmenterUtteranceEmitted, index, voiced_frames, kept_frames, start_sec, end_sec, hangover_used_ms);
     }
 
     // 1 Hz recap of the streaming socle during capture. Reads the segmenter's
@@ -313,7 +361,10 @@ public sealed partial class DeckleWhispSource
            Message = "heartbeat | state={0,-8} | rms_dbfs={1,6:F1} | utterance_ms={2,6} | hangover_required_ms={3,5} | backlog={4,3} | emitted={5,3} | recording_sec={6,5}")]
     public void StreamingHeartbeat(string state, double rms_dbfs, int utterance_ms, int hangover_required_ms, int backlog, int emitted, int recording_sec)
     {
-        if (IsEnabled()) WriteEvent(EvtStreamingHeartbeat, state, rms_dbfs, utterance_ms, hangover_required_ms, backlog, emitted, recording_sec);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtStreamingHeartbeat, state, rms_dbfs, utterance_ms, hangover_required_ms, backlog, emitted, recording_sec);
     }
 
     // Milestone: human-readable jalon at the start of a streaming take, paired
@@ -349,7 +400,9 @@ public sealed partial class DeckleWhispSource
         int margin_ms,
         int min_utterance_ms)
     {
-        if (IsEnabled())
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
             WriteEvent(
                 EvtSegmenterSettingsSnapshot,
                 threshold_dbfs,
@@ -375,7 +428,10 @@ public sealed partial class DeckleWhispSource
            Message = "blip dropped | voiced_frames={0} | voiced_ms={1}")]
     public void SegmenterBlipDropped(int voiced_frames, int voiced_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtSegmenterBlipDropped, voiced_frames, voiced_ms);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtSegmenterBlipDropped, voiced_frames, voiced_ms);
     }
 
     // Consumer side: one event per utterance transcribed. backlog_after is the
@@ -387,30 +443,47 @@ public sealed partial class DeckleWhispSource
            Message = "utterance #{0} consumed | whisper_ms={1} | words={2} | seg={3} | backlog_after={4} | aborted={5}")]
     public void ConsumerUtterance(int index, long whisper_ms, int words, int segments, int backlog_after, bool aborted)
     {
-        if (IsEnabled()) WriteEvent(EvtConsumerUtterance, index, whisper_ms, words, segments, backlog_after, aborted);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtConsumerUtterance, index, whisper_ms, words, segments, backlog_after, aborted);
     }
 
     // ── Segment callback ────────────────────────────────────────────────
 
-    [Event(EvtSegmentEmitted,
+    [Event(EvtSegmentRecognized,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "segment | index={0} | start_sec={1:F1} | end_sec={2:F1} | duration_sec={3:F1} | no_speech={4:F2} | avg_p={5:F2} | min_p={6:F2} | text_tokens={7} | total_tokens={8}")]
-    public void SegmentEmitted(
+           Message = "segment recognized | index={0} | start_s={1:F1} | end_s={2:F1} | duration_s={3:F1} | no_speech={4:F3} | avg_p={5:F3} | min_p={6:F3} | text_tokens={7} | tokens={8} | chars={9}")]
+    public void SegmentRecognized(
         int index,
-        double start_sec,
-        double end_sec,
-        double duration_sec,
-        float no_speech,
-        float avg_p,
-        float min_p,
+        double start_s,
+        double end_s,
+        double duration_s,
+        double no_speech_probability,
+        double average_probability,
+        double minimum_probability,
         int text_tokens,
-        int total_tokens)
+        int tokens,
+        int characters)
     {
-        if (IsEnabled())
-            WriteEvent(EvtSegmentEmitted,
-                index, start_sec, end_sec, duration_sec,
-                no_speech, avg_p, min_p, text_tokens, total_tokens);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription,
+                this,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(
+            EvtSegmentRecognized,
+            index,
+            start_s,
+            end_s,
+            duration_s,
+            no_speech_probability,
+            average_probability,
+             minimum_probability,
+             text_tokens,
+             tokens,
+             characters);
     }
 
     [Event(EvtSegmentCallbackThrew,

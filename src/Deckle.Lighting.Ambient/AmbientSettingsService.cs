@@ -46,8 +46,6 @@ public sealed class AmbientSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Ambient-Save",
             jsonOptions: _jsonOptions,
-            logInfo:     msg => DeckleAmbientSource.Log.AmbientSettingsPrefixed($"[ambient] {msg}"),
-            logVerbose:  msg => DeckleAmbientSource.Log.SettingsLoadComplete($"[ambient] {msg}"),
             logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning($"[ambient] {msg}"),
             logError:    msg => DeckleAmbientSource.Log.SettingsLoadError($"[ambient] {msg}"));
     }

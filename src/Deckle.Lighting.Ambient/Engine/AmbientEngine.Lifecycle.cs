@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Lighting;
 using Deckle.Vision;
@@ -27,6 +28,7 @@ public sealed partial class AmbientEngine
         if (IsRunning) return;
 
         SetState(AmbientEngineState.Starting);
+        DeckleAmbientSource.Log.PipelineStarting();
 
         // Wait for the deferred cleanup spun by the previous Stop()
         // before we touch the owned deps. The cleanup task awaits the
@@ -76,8 +78,10 @@ public sealed partial class AmbientEngine
                     $"Hue bridge IP '{ambient.HueBridgeIp}' is not on a private LAN range (RFC1918 or 169.254/16) — the bridge is a local device and any other address is rejected to avoid SSRF.");
             }
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleAmbientSource.Log.PipelineStartFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PipelineStartFailed();
             SetState(AmbientEngineState.Error);
             SetState(AmbientEngineState.Off);
             throw;
@@ -130,6 +134,7 @@ public sealed partial class AmbientEngine
             // thread-safe internally (lock + Volatile.Write on
             // _latestSample).
             _capture.FrameArrived += OnFrameArrived;
+            _capture.FrameProcessingFailed += OnFrameProcessingFailed;
 
             // Stopped fires only on fatal capture failure (DEVICE_REMOVED
             // / DEVICE_HUNG) — transient interruptions (secure desktop,
@@ -212,37 +217,35 @@ public sealed partial class AmbientEngine
             }
             ThrowIfStartAbortRequested();
 
-            DeckleAmbientSource.Log.PipelineStarted();
-            DeckleAmbientSource.Log.PipelineStartDetail(
-                _capture!.IsRunning ? "running" : "stopped",
-                _output!.GetType().Name,
-                _multiLightActive ? "multi" : "group",
-                _multiLights?.Count ?? 0,
-                _multiLightActive ? MultiPushHz : GroupPushHz,
-                _sampler!.GridCols,
-                _sampler.GridRows,
-                _sampler.IsHdr ? "on" : "off");
-
             // Per-light config dump — surfaces unmapped lights (LightZone.None)
             // and zero-brightness lights at engine start. Both states cause
             // the push loop to silently skip the light forever. Without
             // this log the user would think "ambient doesn't drive that
             // lamp" when it's actually been opted out by configuration.
-            // Info level so it remains admitted when ambient detail is off.
+            // The per-light dump is governed detail; computing zone and
+            // brightness solely for the log must disappear when it is off.
             if (_multiLightActive && _multiLights is not null)
             {
-                var zoneAssignments = _host.Ambient.LightZones;
-                var lightBrightness = _host.Ambient.LightBrightness;
-                foreach (var light in _multiLights)
+                bool lightConfigDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleAmbientSource.Log,
+                    System.Diagnostics.Tracing.EventLevel.Verbose,
+                    (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Lifecycle);
+                if (lightConfigDetailEnabled)
                 {
-                    LightZone zone = (zoneAssignments is not null && zoneAssignments.TryGetValue(light.Id, out var z))
-                        ? z : LightZone.None;
-                    double bri = 1.0;
-                    if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
-                        bri = Math.Clamp(b, 0.0, 1.0);
-                    bool controlled = zone != LightZone.None && bri > 0.0;
-                    DeckleAmbientSource.Log.PipelinePerLightConfig(
-                        light.Id, light.Name, zone.ToString(), bri, controlled);
+                    var zoneAssignments = _host.Ambient.LightZones;
+                    var lightBrightness = _host.Ambient.LightBrightness;
+                    foreach (var light in _multiLights)
+                    {
+                        LightZone zone = (zoneAssignments is not null && zoneAssignments.TryGetValue(light.Id, out var z))
+                            ? z : LightZone.None;
+                        double bri = 1.0;
+                        if (lightBrightness is not null && lightBrightness.TryGetValue(light.Id, out var b))
+                            bri = Math.Clamp(b, 0.0, 1.0);
+                        bool controlled = zone != LightZone.None && bri > 0.0;
+                        DeckleAmbientSource.Log.PipelinePerLightConfig(
+                            light.Id, light.Name, zone.ToString(), bri, controlled);
+                    }
                 }
             }
 
@@ -251,8 +254,9 @@ public sealed partial class AmbientEngine
             _hbTimestamp    = _startTimestamp;
             _pushedCount = 0;
             _droppedCount = 0;
+            ResetPushFailureEpisode();
             _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
-            _hbPushDurationsMs.Clear();
+            _hbPushDurationsMs?.Clear();
             _lastR = _lastG = _lastB = -1;
             _smoothedR = _smoothedG = _smoothedB = -1f;
             _multiSmoothed.Clear();
@@ -287,11 +291,21 @@ public sealed partial class AmbientEngine
             ThrowIfStartAbortRequested();
             IsRunning = true;
             SetState(AmbientEngineState.Running);
+            DeckleAmbientSource.Log.PipelineStartDetail(
+                _capture!.IsRunning ? "running" : "stopped",
+                _output!.GetType().Name,
+                _multiLightActive ? "multi" : "group",
+                _multiLights?.Count ?? 0,
+                _multiLightActive ? MultiPushHz : GroupPushHz,
+                _sampler!.GridCols,
+                _sampler.GridRows,
+                _sampler.IsHdr ? "on" : "off");
+            DeckleAmbientSource.Log.PipelineStarted();
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PipelineStartFailed();
             DeckleAmbientSource.Log.PipelineStartFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PipelineStartFailed();
             try { _cts?.Cancel(); } catch { /* best effort */ }
             AmbientCaptureGate.SetActive(false);
             IsRunning = false;
@@ -317,6 +331,7 @@ public sealed partial class AmbientEngine
         if (_capture is not null)
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
+            try { _capture.FrameProcessingFailed -= OnFrameProcessingFailed; } catch { }
             try { _capture.Stopped -= OnCaptureStopped; } catch { }
             try { _capture.FormatChanged -= OnCaptureFormatChanged; } catch { }
             try { _capture.Dispose(); } catch { }
@@ -377,28 +392,10 @@ public sealed partial class AmbientEngine
         if (Interlocked.Exchange(ref _stopRequested, 1) == 1) return;
 
         SetState(AmbientEngineState.Stopping);
-
-        // Close the capture-active window FIRST so the stopped
-        // milestones (Info + Verbose mirror below) remain admitted even with
-        // LogAmbientCaptureActivity off. The
-        // push loop may still emit a final tick before cancellation
-        // propagates ; those late Verbose lines also pass since the
-        // activity scope is already closed.
-        AmbientCaptureGate.SetActive(false);
-
-        long endTimestamp = Stopwatch.GetTimestamp();
-        double durationSec = (endTimestamp - _startTimestamp) / (double)Stopwatch.Frequency;
+        DeckleAmbientSource.Log.PipelineStopping();
 
         try { _cts?.Cancel(); } catch { /* best effort */ }
         IsRunning = false;
-
-        DeckleAmbientSource.Log.PipelineStopped();
-        DeckleAmbientSource.Log.PipelineStopDetail(
-            _stopReason,
-            _multiLightActive ? "multi" : "group",
-            durationSec,
-            _pushedCount,
-            _droppedCount);
 
         // Disconnect the FrameArrived subscription synchronously so
         // no further frames queue against the still-mapped sampler
@@ -406,6 +403,7 @@ public sealed partial class AmbientEngine
         if (_capture is not null)
         {
             try { _capture.FrameArrived -= OnFrameArrived; } catch { }
+            try { _capture.FrameProcessingFailed -= OnFrameProcessingFailed; } catch { }
             try { _capture.Stopped -= OnCaptureStopped; } catch { }
             try { _capture.FormatChanged -= OnCaptureFormatChanged; } catch { }
         }
@@ -426,9 +424,19 @@ public sealed partial class AmbientEngine
                 catch { /* logged inside the loop */ }
             }
             await DisposeOwnedDepsAsync().ConfigureAwait(false);
-        });
+            AmbientCaptureGate.SetActive(false);
 
-        SetState(AmbientEngineState.Off);
+            long endTimestamp = Stopwatch.GetTimestamp();
+            double durationSec = (endTimestamp - _startTimestamp) / (double)Stopwatch.Frequency;
+            DeckleAmbientSource.Log.PipelineStopDetail(
+                _stopReason,
+                _multiLightActive ? "multi" : "group",
+                durationSec,
+                _pushedCount,
+                _droppedCount);
+            DeckleAmbientSource.Log.PipelineStopped();
+            SetState(AmbientEngineState.Off);
+        });
     }
 
     public static LightColor SampleZone(SampledFrame sample, LightZone zone, int bandCells)

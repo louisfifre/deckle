@@ -19,6 +19,10 @@ public sealed class DeckleInputSource : DeckleEventSource
 
     private DeckleInputSource() { }
 
+    internal static bool IsAutocorrectDetailEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsScopedDetailEnabled(
+            OperationalLogActivity.Autocorrect, Log, level, keywords);
+
     public const int EvtHostStarted              = 1;
     public const int EvtHostStopped              = 2;
     public const int EvtHostStartFailed          = 3;
@@ -306,7 +310,8 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
     public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {
-        if (IsEnabled()) WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
+        if (!IsAutocorrectDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
     }
 
     [Event(EvtMouseWheelHookFailed,

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using Deckle.Diagnostics;
 
@@ -89,6 +90,12 @@ public sealed partial class FrameSampler
         {
             _disposed = true;
 
+            bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient,
+                DeckleResourceSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Resource);
+
             // Cross-cutting Resource sub-provider: release the three
             // persistent textures. The context and device are not traced here
             // because they are borrowed (AddRef'd from outside through
@@ -96,33 +103,40 @@ public sealed partial class FrameSampler
             // lifecycle is not specific to the sampler.
             if (_intermediateSrv != 0)
             {
-                long h = (long)_intermediateSrv;
+                long h = resourceDetailOpen ? (long)_intermediateSrv : 0;
                 Marshal.Release(_intermediateSrv);
                 _intermediateSrv = 0;
                 // SRV: no separately tracked timestamp, ageMs=0 (acquire and
                 // release effectively simultaneous at dispose trace scale).
-                DeckleResourceSource.Log.ResourceReleased(
-                    "dxgi-resource", h, 0, "frame-sampler");
+                if (resourceDetailOpen && _intermediateTexAcquiredTicks != 0)
+                    DeckleResourceSource.Log.ResourceReleased(
+                        "dxgi-resource", h, 0, "frame-sampler");
             }
             if (_intermediateTex != 0)
             {
-                long h = (long)_intermediateTex;
-                int ageMs = (int)((Stopwatch.GetTimestamp() - _intermediateTexAcquiredTicks)
-                                   * 1000L / Stopwatch.Frequency);
+                long h = resourceDetailOpen ? (long)_intermediateTex : 0;
+                int ageMs = resourceDetailOpen && _intermediateTexAcquiredTicks != 0
+                    ? (int)((Stopwatch.GetTimestamp() - _intermediateTexAcquiredTicks)
+                        * 1000L / Stopwatch.Frequency)
+                    : 0;
                 Marshal.Release(_intermediateTex);
                 _intermediateTex = 0;
-                DeckleResourceSource.Log.ResourceReleased(
-                    "d3d11-texture", h, ageMs, "frame-sampler");
+                if (resourceDetailOpen && _intermediateTexAcquiredTicks != 0)
+                    DeckleResourceSource.Log.ResourceReleased(
+                        "d3d11-texture", h, ageMs, "frame-sampler");
             }
             if (_stagingTex != 0)
             {
-                long h = (long)_stagingTex;
-                int ageMs = (int)((Stopwatch.GetTimestamp() - _stagingTexAcquiredTicks)
-                                   * 1000L / Stopwatch.Frequency);
+                long h = resourceDetailOpen ? (long)_stagingTex : 0;
+                int ageMs = resourceDetailOpen && _stagingTexAcquiredTicks != 0
+                    ? (int)((Stopwatch.GetTimestamp() - _stagingTexAcquiredTicks)
+                        * 1000L / Stopwatch.Frequency)
+                    : 0;
                 Marshal.Release(_stagingTex);
                 _stagingTex = 0;
-                DeckleResourceSource.Log.ResourceReleased(
-                    "d3d11-texture", h, ageMs, "frame-sampler");
+                if (resourceDetailOpen && _stagingTexAcquiredTicks != 0)
+                    DeckleResourceSource.Log.ResourceReleased(
+                        "d3d11-texture", h, ageMs, "frame-sampler");
             }
             if (_d3dContext != 0)      { Marshal.Release(_d3dContext);      _d3dContext = 0; }
             if (_d3dDevice != 0)       { Marshal.Release(_d3dDevice);       _d3dDevice = 0; }

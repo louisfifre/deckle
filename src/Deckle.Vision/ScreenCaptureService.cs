@@ -44,12 +44,11 @@ namespace Deckle.Vision;
 // change, or fullscreen exclusive swap ; DXGI_ERROR_ACCESS_DENIED
 // and DXGI_ERROR_SESSION_DISCONNECTED fire on secure-desktop transitions
 // (UAC, Win+L, password screensaver) and RDP disconnects. All four
-// invalidate the IDXGIOutputDuplication. We release it, sleep 2 s,
-// re-call DuplicateOutput1, and resume — for as long as the user
-// has the engine running. The loop only exits on a fatal device
-// error (DEVICE_REMOVED, DEVICE_HUNG) or on cancellation. This is
-// the Hyperion.NG DDA grabber pattern : retry forever on transient,
-// surface Stopped only on truly fatal.
+// invalidate the IDXGIOutputDuplication. We release it and retry
+// DuplicateOutput1 every 2 s through attempt five, then every 5 s.
+// Expected Windows unavailability retries for as long as the user has the
+// engine running; unexpected failures stop on attempt five and dead devices
+// stop immediately. The workflow consumer owns the human terminal error.
 public sealed partial class ScreenCaptureService : IDisposable
 {
     // ~15 Hz target. Matches the AmbientEngine push cadence so we
@@ -73,14 +72,12 @@ public sealed partial class ScreenCaptureService : IDisposable
     // long-lived Verbose storm while never pushing colors.
     private const int MaxInvalidCallRecoveryAttempts = 10;
 
-    // Sleep between recreate attempts after the duplication has been
-    // invalidated (ACCESS_LOST, ACCESS_DENIED, SESSION_DISCONNECTED).
-    // Each cause is transient — secure desktop (UAC, Win+L, password
-    // screensaver), display mode change, fullscreen exclusive swap,
-    // RDP disconnect — and resolves when the user returns. We retry
-    // for as long as the engine is running, exiting only on a fatal
-    // device error or cancellation. Mirrors Hyperion.NG DDA grabber.
-    private const int RecreateBackoffMs = 2_000;
+    // Recreate backoff and terminal threshold. Expected Windows
+    // unavailability retries indefinitely; unexpected failures stop after the
+    // fifth attempt. The longer interval keeps a locked session quiet.
+    private const int RecreateInitialBackoffMs = 2_000;
+    private const int RecreateExtendedBackoffMs = 5_000;
+    private const int MaxUnexpectedRecreateAttempts = 5;
 
     // Heartbeat rollup cadence — one DeckleVisionSource.Log.Heartbeat
     // emission per window summarising throughput + latency percentiles.
@@ -179,6 +176,13 @@ public sealed partial class ScreenCaptureService : IDisposable
     /// duration of the handler — do not retain it past return.
     /// </summary>
     public event Action<CapturedFrame>? FrameArrived;
+
+    /// <summary>
+    /// Raised when a captured frame cannot reach or complete consumer
+    /// processing. Consumers aggregate these per-frame causes into their own
+    /// workflow incident instead of turning each dropped frame into a warning.
+    /// </summary>
+    public event Action? FrameProcessingFailed;
 
     /// <summary>Raised on the worker thread when the capture stops
     /// after a sustained failure to recreate the duplication (display

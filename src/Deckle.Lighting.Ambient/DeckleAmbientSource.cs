@@ -19,10 +19,10 @@ public sealed class DeckleAmbientSource : DeckleEventSource
 
     private DeckleAmbientSource() { }
 
-    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
-        => (level != EventLevel.Verbose
-            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Ambient))
-        && base.IsEnabled(level, keywords);
+    [NonEvent]
+    private bool IsAmbientDetailEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Ambient, this, level, keywords);
 
     // IDs are public in the ETW manifest; never reuse an id after deleting an
     // event. Milestones keep their original id; the Verbose mirrors added for the
@@ -82,13 +82,32 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public const int EvtSamplerRebuiltDetail            = 47;
     public const int EvtSamplerRebuildFailedDetail      = 48;
     public const int EvtExternalChangeDecisionDetail    = 49;
+    public const int EvtPipelineStarting                = 50;
+    public const int EvtPipelineStopping                = 51;
+    public const int EvtPushIncidentOpened              = 52;
+    public const int EvtPushRecovered                   = 53;
+    public const int EvtPushEpisodeDetail               = 54;
+    public const int EvtPushRejected                    = 55;
+    public const int EvtFrameProcessingIncidentOpened   = 56;
+    public const int EvtFrameProcessingRecovered        = 57;
+    public const int EvtFrameProcessingFailed           = 58;
+    public const int EvtFrameProcessingEpisodeDetail    = 59;
 
     // ── AmbientEngine — lifecycle ───────────────────────────────────────
+
+    [Event(EvtPipelineStarting,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Ambient lighting starting")]
+    public void PipelineStarting()
+    {
+        if (IsEnabled()) WriteEvent(EvtPipelineStarting);
+    }
 
     [Event(EvtPipelineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pipeline started")]
+           Message = "Ambient lighting started")]
     public void PipelineStarted()
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStarted);
@@ -118,7 +137,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "start failed | ex_type={0} | ex_message={1}")]
     public void PipelineStartFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtPipelineStartFailedDetail, ex_type, ex_message);
     }
 
@@ -127,10 +146,19 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     [Event(EvtPipelineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pipeline stopped")]
+           Message = "Ambient lighting stopped")]
     public void PipelineStopped()
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStopped);
+    }
+
+    [Event(EvtPipelineStopping,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Ambient lighting stopping")]
+    public void PipelineStopping()
+    {
+        if (IsEnabled()) WriteEvent(EvtPipelineStopping);
     }
 
     [Event(EvtPipelineStopDetail,
@@ -152,6 +180,45 @@ public sealed class DeckleAmbientSource : DeckleEventSource
     public void CaptureLost()
     {
         if (IsEnabled()) WriteEvent(EvtCaptureLost);
+    }
+
+    [Event(EvtFrameProcessingIncidentOpened,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Frame processing is failing — Ambient lighting is waiting to recover")]
+    public void FrameProcessingIncidentOpened()
+    {
+        if (IsEnabled()) WriteEvent(EvtFrameProcessingIncidentOpened);
+    }
+
+    [Event(EvtFrameProcessingRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Frame processing recovered")]
+    public void FrameProcessingRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtFrameProcessingRecovered);
+    }
+
+    [Event(EvtFrameProcessingFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
+           Message = "Frame processing did not recover — Ambient lighting is stopping")]
+    public void FrameProcessingFailed()
+    {
+        if (IsEnabled()) WriteEvent(EvtFrameProcessingFailed);
+    }
+
+    [Event(EvtFrameProcessingEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "frame processing episode | outcome={0} | failures={1} | active_failure_ms={2}")]
+    public void FrameProcessingEpisodeDetail(string outcome, int failures, long active_failure_ms)
+    {
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFrameProcessingEpisodeDetail, outcome, failures, active_failure_ms);
     }
 
     [Event(EvtExternalChangeStopped,
@@ -178,7 +245,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "event stream setup failed | ex_type={0} | ex_message={1}")]
     public void EventStreamSetupFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtEventStreamSetupFailedDetail, ex_type, ex_message);
     }
 
@@ -188,7 +255,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "external change | v1_id={0} | resource_type={1} | age_ms={2} | on={3} | bri={4} | xy={5}")]
     public void ExternalChangeStoppedDetail(string v1_id, string resource_type, int age_ms, string on, string bri, string xy)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtExternalChangeStoppedDetail, v1_id, resource_type, age_ms, on, bri, xy);
     }
 
@@ -209,7 +276,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
         string delta_xy,
         string mismatch)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(
             EvtExternalChangeDecisionDetail,
             v1_id,
@@ -231,7 +298,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "echo ignored | v1_id={0} | resource_type={1} | age_ms={2} | match=state")]
     public void EchoIgnored(string v1_id, string resource_type, int age_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtEchoIgnored, v1_id, resource_type, age_ms);
     }
 
@@ -247,7 +314,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "light cfg | id={0} | name={1} | zone={2} | brightness={3:F2} | controlled={4}")]
     public void PipelinePerLightConfig(string id, string name, string zone, double brightness, bool controlled)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtPipelinePerLightConfig, id, name, zone, brightness, controlled);
     }
 
@@ -271,7 +338,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "sampler rebuilt | mode={0}")]
     public void SamplerRebuiltDetail(string mode)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtSamplerRebuiltDetail, mode);
     }
 
@@ -290,7 +357,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "sampler rebuild failed | ex_type={0} | ex_message={1}")]
     public void SamplerRebuildFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtSamplerRebuildFailedDetail, ex_type, ex_message);
     }
 
@@ -309,7 +376,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "push loop crashed | ex_type={0} | ex_message={1}")]
     public void PushLoopCrashedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtPushLoopCrashedDetail, ex_type, ex_message);
     }
 
@@ -328,7 +395,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "state change subscriber threw | ex_type={0} | ex_message={1}")]
     public void StateChangedSubscriberThrewDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtStateChangedSubscriberThrewDetail, ex_type, ex_message);
     }
 
@@ -356,7 +423,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "multi-light driver incompatible | driver_type={0}")]
     public void MultiLightDriverIncompatDetail(string driver_type)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtMultiLightDriverIncompatDetail, driver_type);
     }
 
@@ -368,7 +435,9 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "push | mode=group | rgb={0},{1},{2} | off={3} | http_ms={4:F1}")]
     public void PushGroup(int r, int g, int b, bool off, double http_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtPushGroup, r, g, b, off, http_ms);
     }
 
@@ -387,7 +456,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "group push failed | ex_type={0} | ex_message={1}")]
     public void PushGroupFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtPushGroupFailedDetail, ex_type, ex_message);
     }
 
@@ -397,7 +466,9 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "push | mode=multi | lights={0}/{1} | colors={2} | http_ms={3:F1}")]
     public void PushMulti(int pushed_lights, int total_lights, string colors, double http_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtPushMulti, pushed_lights, total_lights, colors, http_ms);
     }
 
@@ -416,8 +487,46 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "multi-light push failed | ex_type={0} | ex_message={1}")]
     public void PushMultiFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtPushMultiFailedDetail, ex_type, ex_message);
+    }
+
+    [Event(EvtPushIncidentOpened,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Hue bridge pushes are failing — Ambient lighting is retrying")]
+    public void PushIncidentOpened()
+    {
+        if (IsEnabled()) WriteEvent(EvtPushIncidentOpened);
+    }
+
+    [Event(EvtPushRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Hue bridge pushes recovered")]
+    public void PushRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtPushRecovered);
+    }
+
+    [Event(EvtPushRejected,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Hue rejected Ambient lighting — the pipeline is stopping")]
+    public void PushRejected()
+    {
+        if (IsEnabled()) WriteEvent(EvtPushRejected);
+    }
+
+    [Event(EvtPushEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "push episode | outcome={0} | failures={1} | duration_ms={2} | ex_type={3} | ex_message={4}")]
+    public void PushEpisodeDetail(
+        string outcome, int failures, long duration_ms, string ex_type, string ex_message)
+    {
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtPushEpisodeDetail, outcome, failures, duration_ms, ex_type, ex_message);
     }
 
     [Event(EvtHeartbeat,
@@ -426,7 +535,9 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "heartbeat | mode={0} | period_sec={1:F1} | ticks={2} | pushed={3} | dropped={4} | unmapped_lights={5}{6}")]
     public void Heartbeat(string mode, double period_sec, int ticks, int pushed, int dropped, int unmapped_lights, string push_stats_suffix)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtHeartbeat, mode, period_sec, ticks, pushed, dropped, unmapped_lights, push_stats_suffix);
     }
 
@@ -447,7 +558,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "bridge auto-restore failed | ex_type={0} | ex_message={1}")]
     public void BridgeAutoRestoreFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtBridgeAutoRestoreFailedDetail, ex_type, ex_message);
     }
 
@@ -466,7 +577,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "bridge pairing stored | bridge_id={0} | username_head={1}")]
     public void BridgePairingStoredDetail(string bridge_id, string username_head)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtBridgePairingStoredDetail, bridge_id, username_head);
     }
 
@@ -494,7 +605,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "bridge restored from settings | bridge_id={0} | bridge_ip={1}")]
     public void BridgeRestoredFromSettingsDetail(string bridge_id, string bridge_ip)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtBridgeRestoredFromSettingsDetail, bridge_id, bridge_ip);
     }
 
@@ -524,7 +635,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "pair from settings failed | ex_type={0} | ex_message={1}")]
     public void AmbientPagePairFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtAmbientPagePairFailedDetail, ex_type, ex_message);
     }
 
@@ -543,7 +654,7 @@ public sealed class DeckleAmbientSource : DeckleEventSource
            Message = "list groups from settings failed | ex_type={0} | ex_message={1}")]
     public void AmbientPageListGroupsFailedDetail(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtAmbientPageListGroupsFailedDetail, ex_type, ex_message);
     }
 

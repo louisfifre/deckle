@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Windows.Graphics.DirectX;
 using Deckle.Diagnostics;
 
@@ -16,17 +17,14 @@ public sealed partial class ScreenCaptureService
             ? DirectXPixelFormat.R16G16B16A16Float
             : DirectXPixelFormat.B8G8R8A8UIntNormalized;
 
-    // Reopen the duplication after it was invalidated (ACCESS_LOST,
-    // ACCESS_DENIED, SESSION_DISCONNECTED). Retry forever with a 2 s
-    // backoff until either DuplicateOutput1 succeeds — meaning the
-    // user has returned from the secure desktop / unplugged the
-    // headset / cleared the UAC prompt / etc. — or the engine is
-    // cancelled. Never returns false ; the only exits are "succeeded"
-    // (with _duplicationPtr set) and "cancelled" (with _duplicationPtr
-    // still 0 and the caller seeing ct.IsCancellationRequested).
-    private void TryRecreateDuplication(CancellationToken ct)
+    // Reopen the duplication after it was invalidated. Expected Windows
+    // unavailability retries indefinitely; unexpected failures stop after five
+    // attempts so the workflow owner can surface one terminal error.
+    private bool TryRecreateDuplication(CancellationToken ct)
     {
         int attempt = 0;
+        long incidentStartedTicks = 0;
+        bool incidentOpen = false;
         while (!ct.IsCancellationRequested && _duplicationPtr == 0)
         {
             attempt++;
@@ -87,22 +85,53 @@ public sealed partial class ScreenCaptureService
                 // the old value; the matching ResourceReleased event was
                 // emitted in CaptureLoop's ACCESS_LOST / SECURE_DESKTOP branch
                 // or by the failed previous attempt finalizer).
-                _duplicationAcquiredTicks = Stopwatch.GetTimestamp();
-                DeckleResourceSource.Log.ResourceAcquired(
-                    "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
+                bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleResourceSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Resource);
+                _duplicationAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
+                if (resourceDetailOpen)
+                {
+                    DeckleResourceSource.Log.ResourceAcquired(
+                        "duplication-output", (long)_duplicationPtr, 0, "capture-loop");
+                }
 
                 DeckleVisionSource.Log.DuplicationRecreated(
                     attempt, _lastSize.Width, _lastSize.Height);
 
+                if (incidentOpen)
+                {
+                    DeckleVisionSource.Log.DuplicationRecreateRecovered();
+                    if (incidentStartedTicks != 0
+                        && OperationalLogAdmission.IsScopedDetailEnabled(
+                            OperationalLogActivity.Ambient,
+                            DeckleVisionSource.Log,
+                            EventLevel.Verbose,
+                            (EventKeywords)Keywords.Capture))
+                    {
+                        long durationMs = (Stopwatch.GetTimestamp() - incidentStartedTicks)
+                            * 1000L / Stopwatch.Frequency;
+                        DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
+                            "recovered", attempt - 1, durationMs);
+                    }
+                }
+
                 if (formatChanged)
                 {
-                    DeckleVisionSource.Log.CaptureFormatRenegotiated();
-                    DeckleVisionSource.Log.CaptureFormatRenegotiatedDetail(
-                        MapDxgiFormat(oldDxgiFormat).ToString(),
-                        _activeFormat.ToString(),
-                        _isHdrSession ? "on" : "off",
-                        _peakLuminance,
-                        _lastSize.Width, _lastSize.Height, attempt);
+                    if (OperationalLogAdmission.IsScopedDetailEnabled(
+                            OperationalLogActivity.Ambient,
+                            DeckleVisionSource.Log,
+                            EventLevel.Verbose,
+                            (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
+                    {
+                        DeckleVisionSource.Log.CaptureFormatRenegotiatedDetail(
+                            MapDxgiFormat(oldDxgiFormat).ToString(),
+                            _activeFormat.ToString(),
+                            _isHdrSession ? "on" : "off",
+                            _peakLuminance,
+                            _lastSize.Width, _lastSize.Height, attempt);
+                    }
                 }
 
                 // Raise after the duplication is fully live and the active
@@ -112,16 +141,51 @@ public sealed partial class ScreenCaptureService
                 {
                     FormatChanged?.Invoke();
                 }
-                return;
+                return true;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                if (attempt == 1)
-                    DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+                if (_duplicationPtr != 0)
+                {
+                    ReleaseDuplicationForRecreate();
+                }
 
-                DeckleVisionSource.Log.DuplicationRecreateAttemptFailedDetail(
-                    attempt, ex.GetType().Name, ex.Message);
-                try { Task.Delay(RecreateBackoffMs, ct).Wait(ct); }
+                bool detailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleVisionSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Capture);
+                if (detailOpen && incidentStartedTicks == 0)
+                {
+                    incidentStartedTicks = Stopwatch.GetTimestamp();
+                }
+
+                bool fatalDevice = IsFatalDeviceFailure(ex.HResult);
+                bool expected = IsExpectedRecreateFailure(ex.HResult);
+
+                if (!fatalDevice && attempt == 2)
+                {
+                    DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+                    incidentOpen = true;
+                }
+
+                if (detailOpen)
+                {
+                    DeckleVisionSource.Log.DuplicationRecreateAttemptFailedDetail(
+                        attempt, ex.GetType().Name, ex.Message);
+                }
+
+                if (fatalDevice || (!expected && attempt >= MaxUnexpectedRecreateAttempts))
+                {
+                    DeckleVisionSource.Log.DuplicationRecreateAbandonedDetail(
+                        attempt, ex.HResult, ex.GetType().Name, ex.Message);
+                    return false;
+                }
+
+                int backoffMs = attempt < MaxUnexpectedRecreateAttempts
+                    ? RecreateInitialBackoffMs
+                    : RecreateExtendedBackoffMs;
+                try { Task.Delay(backoffMs, ct).Wait(ct); }
                 catch (OperationCanceledException)
                 {
                     // Stop() cancelled while waiting for the next recreate
@@ -132,10 +196,25 @@ public sealed partial class ScreenCaptureService
                         : -1;
                     DeckleCancellationSource.Log.OperationCancelled(
                         "vision-capture", "upstream", (int)ageMs);
-                    return;
+                    return false;
                 }
             }
         }
+
+        return _duplicationPtr != 0;
     }
+
+    private static bool IsFatalDeviceFailure(int hr)
+        => hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_REMOVED
+        || hr == ScreenCaptureInterop.DXGI_ERROR_DEVICE_HUNG;
+
+    private static bool IsExpectedRecreateFailure(int hr)
+        => hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_LOST
+        || hr == ScreenCaptureInterop.DXGI_ERROR_ACCESS_DENIED
+        || hr == ScreenCaptureInterop.DXGI_ERROR_SESSION_DISCONNECTED
+        || hr == ScreenCaptureInterop.DXGI_ERROR_NOT_CURRENTLY_AVAILABLE
+        || hr == ScreenCaptureInterop.DXGI_ERROR_INVALID_CALL
+        || hr == ScreenCaptureInterop.DXGI_ERROR_UNSUPPORTED
+        || hr == ScreenCaptureInterop.E_ACCESSDENIED;
 
 }

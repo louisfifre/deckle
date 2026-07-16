@@ -85,6 +85,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribeStarted                = 42;
     public const int EvtTranscribeStartDetail            = 43;
     public const int EvtTranscribeParams                 = 44;
+    // 45 — TranscribePrompt retired: its payload contained user content.
     public const int EvtTranscribePrompt                 = 45;
     public const int EvtTranscribeEmpty                  = 46;
     public const int EvtTranscribeFailed                 = 47;
@@ -92,6 +93,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribeCompleteDetail         = 49;
     public const int EvtTranscribeRepetitionLoop         = 50;
     public const int EvtTranscribeSkipped                = 51;
+    // 52 — SegmentEmitted retired: its payload contained transcript text.
     public const int EvtSegmentEmitted                   = 52;
     public const int EvtSegmentCallbackThrew             = 53;
     public const int EvtClipboardGlobalAlloc             = 54;
@@ -184,6 +186,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtAutoCalibratedDetail             = 137;
     public const int EvtPipelineCrashedDetail            = 138;
     public const int EvtTranscribeFailedDetail           = 139;
+    // 140 — retired: its payload contained transcript text.
     public const int EvtTranscribeRepetitionLoopDetail   = 140;
     public const int EvtSegmentCallbackThrewDetail       = 141;
     public const int EvtStreamingDrainedDetail           = 142;
@@ -198,6 +201,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPageLoadedFailedDetail           = 151;
     public const int EvtPageModelScanFailedDetail        = 152;
     public const int EvtTranscribeHallucinationFiltered  = 153;
+    // 154 — retired: its payload contained transcript text.
     public const int EvtTranscribeHallucinationFilteredDetail = 154;
     public const int EvtPrimeOverlap                     = 155;
     // File transcription (tray → decode → monolithic backend → .txt on disk).
@@ -214,6 +218,21 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtModelFallback                    = 165;
     public const int EvtModelFallbackDetail              = 166;
     public const int EvtTranscriptionCorrelation         = 167;
+
+    // Content-free replacements for retired operational transcript events.
+    public const int EvtTranscribePromptConfigured       = 168;
+    public const int EvtTranscribeRepetitionLoopMetrics  = 169;
+    public const int EvtSegmentRecognized                = 170;
+    public const int EvtDictationPasted                  = 171;
+    public const int EvtDictationCopied                  = 172;
+    public const int EvtFileTranscriptionCompleted       = 173;
+    public const int EvtFileTranscriptionCopied          = 174;
+    public const int EvtMicrophoneUnavailable            = 175;
+    public const int EvtMicrophoneUnavailableDetail      = 176;
+    public const int EvtMicrophoneRecovered              = 177;
+    public const int EvtModelUnavailable                 = 178;
+    public const int EvtModelUnavailableDetail           = 179;
+    public const int EvtModelRecovered                   = 180;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits

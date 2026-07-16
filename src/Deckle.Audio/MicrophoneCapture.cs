@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Deckle.Audio;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Audio;
 
@@ -270,28 +272,35 @@ public sealed class MicrophoneCapture : System.IDisposable
         byte[] allBytes = pump.Pcm ?? System.Array.Empty<byte>();
         double totalSec = allBytes.Length / 32000.0;
 
-        // Full-buffer aggregate: mean RMS + peak amplitude over the entire
-        // recording. Single pass over allBytes, cost is negligible vs the
-        // upcoming whisper_full call (~1 ms for a minute of audio at 16 kHz).
-        // dbfs_avg = 20*log10(rms_avg), floored at -120 dBFS when the buffer
-        // is pure zero to avoid −∞ in the log.
-        double aggSumSq = 0;
-        double aggPeak  = 0;
-        int nAggSamples = allBytes.Length / 2;
-        for (int i = 0; i < nAggSamples; i++)
-        {
-            short s = (short)(allBytes[i * 2] | (allBytes[i * 2 + 1] << 8));
-            double v = s / 32768.0;
-            aggSumSq += v * v;
-            double av = v < 0 ? -v : v;
-            if (av > aggPeak) aggPeak = av;
-        }
-        double rmsAvg  = nAggSamples > 0 ? System.Math.Sqrt(aggSumSq / nAggSamples) : 0;
-        double dbfsAvg = rmsAvg > 0 ? 20.0 * System.Math.Log10(rmsAvg) : -120.0;
-
         DeckleAudioSource.Log.RecordingCompleted();
         DeckleAudioSource.Log.RecordingCompletedDetail(totalSec);
-        DeckleAudioSource.Log.CaptureCompleted(totalSec, pump.BuffersReceived, allBytes.Length, rmsAvg, aggPeak, dbfsAvg);
+
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription,
+                DeckleAudioSource.Log,
+                EventLevel.Verbose,
+                (EventKeywords)Keywords.Capture))
+        {
+            // Full-buffer aggregate exists only for the operational detail.
+            // Refuse it before the O(n) PCM pass when details are disabled.
+            double aggSumSq = 0;
+            double aggPeak  = 0;
+            int nAggSamples = allBytes.Length / 2;
+            for (int i = 0; i < nAggSamples; i++)
+            {
+                short s = (short)(allBytes[i * 2] | (allBytes[i * 2 + 1] << 8));
+                double v = s / 32768.0;
+                aggSumSq += v * v;
+                double av = v < 0 ? -v : v;
+                if (av > aggPeak) aggPeak = av;
+            }
+            double rmsAvg  = nAggSamples > 0 ? System.Math.Sqrt(aggSumSq / nAggSamples) : 0;
+            double dbfsAvg = rmsAvg > 0 ? 20.0 * System.Math.Log10(rmsAvg) : -120.0;
+
+            DeckleAudioSource.Log.CaptureCompleted(
+                totalSec, pump.BuffersReceived, allBytes.Length,
+                rmsAvg, aggPeak, dbfsAvg);
+        }
 
         // Mic telemetry — distribution + tail summary derived from _rmsLog.
         // Replaces the previous Tail-on-allBytes computation, which was
@@ -312,13 +321,20 @@ public sealed class MicrophoneCapture : System.IDisposable
         }
         else
         {
-            // User-facing tail headline — the line is read in the Activity
-            // selector to tell whether you stopped after a silence (the
-            // natural case) or while still speaking (often a hotkey hit
-            // too early — last words may be clipped).
-            DeckleAudioSource.Log.RecordingTailSummary(tail.Value.TailHeadline);
-            DeckleAudioSource.Log.RecordingTailSummaryDetail(
-                tail.Value.TailMs, tail.Value.TailDbfs);
+            if (OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleAudioSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Capture))
+            {
+                // The sentence and its payload exist only for admitted detail.
+                // The tail measurements themselves remain functional input to
+                // telemetry and auto-calibration below.
+                string headline = MicrophoneTelemetryCalculator.DescribeTail(tail.Value);
+                DeckleAudioSource.Log.RecordingTailSummary(headline);
+                DeckleAudioSource.Log.RecordingTailSummaryDetail(
+                    tail.Value.TailMs, tail.Value.TailDbfs);
+            }
 
             telemetry = MicrophoneTelemetryCalculator.Compute(_rmsLog, tail.Value);
         }

@@ -6,34 +6,42 @@ using Xunit;
 namespace Deckle.Transcription.Tests;
 
 [Trait("Category", "observability")]
-public sealed class TranscriptionObservabilityContractTests
+[Collection(OperationalObservabilityCollection.Name)]
+public sealed class TranscriptionObservabilityContractTests : IDisposable
 {
+    public TranscriptionObservabilityContractTests()
+        => OperationalLogAdmission.Configure(
+            static activity => activity == OperationalLogActivity.Transcription);
+
+    public void Dispose()
+        => OperationalLogAdmission.Configure(static _ => false);
+
     [Fact]
     public void OperationalDiagnosticsCarryMeasurementsButNoSpokenContent()
     {
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.TranscribePrompt(42, carry: true);
-        DeckleWhispSource.Log.TranscribeRepetitionLoopDetail(streak: 3, period: 1);
-        DeckleWhispSource.Log.TranscribeHallucinationFilteredDetail(chars: 24);
-        DeckleWhispSource.Log.SegmentEmitted(
+        DeckleWhispSource.Log.TranscribePromptConfigured(42, carry: true);
+        DeckleWhispSource.Log.TranscribeRepetitionLoopMetrics(streak: 3, period: 1);
+        DeckleWhispSource.Log.SegmentRecognized(
             index: 1,
-            start_sec: 0,
-            end_sec: 1.2,
-            duration_sec: 1.2,
-            no_speech: 0.1f,
-            avg_p: 0.9f,
-            min_p: 0.8f,
+            start_s: 0,
+            end_s: 1.2,
+            duration_s: 1.2,
+            no_speech_probability: 0.1f,
+            average_probability: 0.9f,
+            minimum_probability: 0.8f,
             text_tokens: 4,
-            total_tokens: 6);
+            tokens: 6,
+            characters: 24);
 
         Assert.Collection(listener.Events,
             prompt => AssertPayloadNames(prompt, "prompt_len", "carry"),
             repetition => AssertPayloadNames(repetition, "streak", "period"),
-            hallucination => AssertPayloadNames(hallucination, "chars"),
             segment => AssertPayloadNames(segment,
-                "index", "start_sec", "end_sec", "duration_sec", "no_speech",
-                "avg_p", "min_p", "text_tokens", "total_tokens"));
+                "index", "start_s", "end_s", "duration_s", "no_speech_probability",
+                "average_probability", "minimum_probability", "text_tokens", "tokens",
+                "characters"));
     }
 
     [Fact]

@@ -13,6 +13,10 @@ namespace Deckle.Autocorrect.Tests;
 [Trait("Category", "observability")]
 public sealed class AutocorrectEngineObservabilityTests
 {
+    public AutocorrectEngineObservabilityTests()
+        => OperationalLogAdmission.Configure(
+            activity => activity == OperationalLogActivity.Autocorrect);
+
     [Fact]
     public void StartEmitsEngineStarted()
     {
@@ -54,6 +58,25 @@ public sealed class AutocorrectEngineObservabilityTests
         {
             OperationalLogAdmission.Configure(static _ => false);
         }
+    }
+
+    [Fact]
+    public void InjectionFailuresFormOneIncidentUntilASuccessRecoversIt()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Injector.Result = false;
+        h.Start();
+
+        h.Type("ca ca ");
+        h.Injector.Result = true;
+        h.Type("ca ");
+
+        Assert.Single(listener.Events,
+            e => e.EventId == DeckleAutocorrectSource.EvtInjectionIncident);
+        Assert.Single(listener.Events,
+            e => e.EventId == DeckleAutocorrectSource.EvtInjectionRecovered);
     }
 
     // The hard rule, asserted directly: no string payload on any captured event
