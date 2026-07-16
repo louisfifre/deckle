@@ -1319,7 +1319,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
-│   │   └── LogLineFormatterTests.cs
+│   │   ├── LogLineFormatterTests.cs
+│   │   ├── OperationalLogAdmissionCollection.cs
+│   │   └── OperationalLogAdmissionTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
