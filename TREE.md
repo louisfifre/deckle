@@ -1339,6 +1339,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LowLevelMouseHookInteropTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
+│   │   ├── DeckleTrackpadSourceTests.cs
 │   │   └── ThreeFingerDragRecognizerTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessCurveTests.cs

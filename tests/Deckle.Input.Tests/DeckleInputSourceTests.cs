@@ -34,4 +34,23 @@ public class DeckleInputSourceTests
                 Assert.Equal("Access is denied.", detail.Payload?[1]);
             });
     }
+
+    [Fact]
+    public void KeyboardRollupIsRejectedWhileAutocorrectDetailIsDisabled()
+    {
+        OperationalLogAdmission.Configure(_ => false);
+        OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, true);
+        try
+        {
+            using var listener = new TestEventListener("Deckle-Input");
+
+            DeckleInputSource.Log.KeyboardRollup(20, 1, 2, 3, 4);
+
+            Assert.Empty(listener.Events);
+        }
+        finally
+        {
+            OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, false);
+        }
+    }
 }

@@ -17,8 +17,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     private DeckleAutocorrectSource() { }
 
-    private static bool AllowsActivityDetail()
-        => OperationalLogAdmission.IsEnabled(OperationalLogActivity.Autocorrect);
+    internal static bool IsActivityDetailEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Autocorrect, Log, level, keywords);
 
     // Ids 6 (CorrectionReverted) and 20 (AutocorrectRevertRecorded) are retired
     // with the implicit-Backspace revert — never reuse them, old logs carry them.
@@ -42,6 +43,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtAutocorrectText     = 19;
     public const int EvtAutocorrectStream   = 21;
     public const int EvtPausePassTriggered  = 22;
+    public const int EvtInjectionIncident   = 23;
+    public const int EvtInjectionRecovered  = 24;
+    public const int EvtInjectionEpisodeDetail = 25;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -119,19 +123,20 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "surface | process={0} | editable={1} | password={2} | enrolled={3} | {4}")]
     public void SurfaceChanged(string process, bool editable, bool password, bool enrolled, string probe)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled, probe);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture)) return;
+        WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled, probe);
     }
 
     // ── Corrections ──────────────────────────────────────────────────────
 
     [Event(EvtCorrectionApplied,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "Corrected a word")]
     public void CorrectionApplied()
     {
-        if (IsEnabled()) WriteEvent(EvtCorrectionApplied);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtCorrectionApplied);
     }
 
     [Event(EvtCorrectionDetail,
@@ -140,7 +145,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "correction | reason={0} | original_len={1} | replacement_len={2} | backspaces={3}")]
     public void CorrectionDetail(string reason, int original_len, int replacement_len, int backspaces)
     {
-        if (IsEnabled()) WriteEvent(EvtCorrectionDetail, reason, original_len, replacement_len, backspaces);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtCorrectionDetail, reason, original_len, replacement_len, backspaces);
     }
 
     [Event(EvtInjectionFailed,
@@ -150,6 +156,35 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void InjectionFailed(int backspaces, int text_len)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailed, backspaces, text_len);
+    }
+
+    [Event(EvtInjectionIncident,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Text injection is failing — corrections may not reach this app")]
+    public void InjectionIncident()
+    {
+        if (IsEnabled()) WriteEvent(EvtInjectionIncident);
+    }
+
+    [Event(EvtInjectionRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Text injection recovered")]
+    public void InjectionRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtInjectionRecovered);
+    }
+
+    [Event(EvtInjectionEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "injection episode | outcome={0} | failures={1} | backspaces={2} | text_len={3}")]
+    public void InjectionEpisodeDetail(
+        string outcome, int failures, int backspaces, int text_len)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtInjectionEpisodeDetail, outcome, failures, backspaces, text_len);
     }
 
     // ── Contextual reranker decisions ─────────────────────────────────────
@@ -170,8 +205,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "rerank slot pending | candidates={0} | word_len={1}")]
     public void RerankSlotPending(int candidates, int word_len)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtRerankSlotPending, candidates, word_len);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtRerankSlotPending, candidates, word_len);
     }
 
     // The slot crossed the deferral threshold (or a sentence-ender flushed it)
@@ -183,8 +218,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "rerank submitted | slot={0} | context_words={1}")]
     public void RerankSubmitted(int slot, int context_words)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtRerankSubmitted, slot, context_words);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtRerankSubmitted, slot, context_words);
     }
 
     // The reranker verdict landed. outcome is a closed vocabulary: applied (slot
@@ -198,8 +233,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "rerank verdict | outcome={0}")]
     public void RerankVerdict(string outcome)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtRerankVerdict, outcome);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtRerankVerdict, outcome);
     }
 
     // ── Correction decision dataset ──────────────────────────────────────
@@ -327,8 +362,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "pause pass | threshold_ms={0} | slots={1}")]
     public void PausePassTriggered(int threshold_ms, int slots)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtPausePassTriggered, threshold_ms, slots);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtPausePassTriggered, threshold_ms, slots);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────
@@ -339,8 +374,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "learning | signal={0}")]
     public void LearningSignal(string signal)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtLearningSignal, signal);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtLearningSignal, signal);
     }
 
     // ── Activity rollup (30 s aggregate while words commit) ──────────────
@@ -351,8 +386,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "autocorrect activity | commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
     public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, re_edited, learning_signals, gated_surfaces);
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtActivityRollup, commits, corrections, re_edited, learning_signals, gated_surfaces);
     }
 
     // ── Enrollment ───────────────────────────────────────────────────────
@@ -363,7 +398,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "enrollment suggested | process={0}")]
     public void EnrollmentSuggested(string process)
     {
-        if (!AllowsActivityDetail()) return;
-        if (IsEnabled()) WriteEvent(EvtEnrollmentSuggested, process);
+        if (!IsActivityDetailEnabled(EventLevel.Informational, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtEnrollmentSuggested, process);
     }
 }

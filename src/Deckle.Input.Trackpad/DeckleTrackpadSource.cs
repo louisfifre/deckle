@@ -37,6 +37,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtInjectionFailedDetail    = 14;
     public const int EvtGestureWriteFailedDetail = 15;
     public const int EvtRepairLaunchFailedDetail = 16;
+    public const int EvtInjectionRecovered       = 17;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -103,6 +104,15 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public void InjectionFailedDetail(string action, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailedDetail, action, win32_error);
+    }
+
+    [Event(EvtInjectionRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Mouse injection recovered")]
+    public void InjectionRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtInjectionRecovered);
     }
 
     // ── Acts ─────────────────────────────────────────────────────────────
