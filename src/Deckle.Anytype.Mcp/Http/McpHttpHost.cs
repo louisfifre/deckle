@@ -8,7 +8,7 @@ using Deckle.Anytype;
 namespace Deckle.Anytype.Mcp;
 
 // The resident streamable-HTTP MCP host (spec 2025-11-25). One HttpListener bound on
-// loopback replaces the per-client stdio exes the old design spawned (ADR-0001): both
+// loopback replaces the per-client stdio exes the old design spawned (ADR-0002): both
 // callers now reach the same in-process server, told apart by their bearer. This is
 // the single-JSON-response flavour of the transport — no SSE, no server-initiated
 // stream — because every tool answers synchronously and a resident host has no reason

@@ -1,4 +1,5 @@
 using System.Diagnostics.Tracing;
+using Deckle.Diagnostics;
 using Deckle.TestSupport;
 using Xunit;
 
@@ -27,23 +28,32 @@ public sealed class AutocorrectEngineObservabilityTests
     [Fact]
     public void ACorrectionEmitsAppliedAndDetailWithoutLeakingTheWords()
     {
-        using var listener = new TestEventListener("Deckle-Autocorrect");
-        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
-        h.Prober.Surface = AutocorrectEngineHarness.Editable();
-        h.Start();
+        OperationalLogAdmission.Configure(
+            static activity => activity == OperationalLogActivity.Autocorrect);
+        try
+        {
+            using var listener = new TestEventListener("Deckle-Autocorrect");
+            using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
+            h.Prober.Surface = AutocorrectEngineHarness.Editable();
+            h.Start();
 
-        h.Type("ca ");
+            h.Type("ca ");
 
-        var events = listener.Events;
-        Assert.Contains(events, e => e.EventId == DeckleAutocorrectSource.EvtCorrectionApplied);
-        // The detail carries the correction reason and the form lengths — counts,
-        // never the words themselves (2 = len "ca" = len "ça").
-        Assert.Contains(events, e =>
-            e.EventId == DeckleAutocorrectSource.EvtCorrectionDetail
-            && PayloadValue(e, "reason") is "LexicalGate"
-            && PayloadValue(e, "original_len") is 2
-            && PayloadValue(e, "replacement_len") is 2);
-        AssertNoTypedWordLeaked(events, "ca", "ça");
+            var events = listener.Events;
+            Assert.Contains(events, e => e.EventId == DeckleAutocorrectSource.EvtCorrectionApplied);
+            // The detail carries the correction reason and the form lengths — counts,
+            // never the words themselves (2 = len "ca" = len "ça").
+            Assert.Contains(events, e =>
+                e.EventId == DeckleAutocorrectSource.EvtCorrectionDetail
+                && PayloadValue(e, "reason") is "LexicalGate"
+                && PayloadValue(e, "original_len") is 2
+                && PayloadValue(e, "replacement_len") is 2);
+            AssertNoTypedWordLeaked(events, "ca", "ça");
+        }
+        finally
+        {
+            OperationalLogAdmission.Configure(static _ => false);
+        }
     }
 
     // The hard rule, asserted directly: no string payload on any captured event

@@ -83,8 +83,7 @@ public static class UIAutomation
     }
 
     // Describes the system-focused element for the autocorrect surface gate:
-    // IsPassword (UIA's own flag — defaults to FALSE on unmarked fields, so a
-    // false here is "not known to be a password", never a guarantee),
+    // IsPassword (UIA's own flag — required before the surface is trusted),
     // text-editability, and the owning process. `diagnostic` carries the raw
     // editability signature (ControlType + pattern availability) so the gate's
     // verdict is auditable in the logs. Returns false when UIA cannot answer at
@@ -115,8 +114,13 @@ public static class UIAutomation
                 return false;
             }
 
-            if (el.GetCurrentPropertyValue(UIA_IsPasswordPropertyId, out var pw) == 0 && pw is bool b)
-                isPassword = b;
+            int passwordHr = el.GetCurrentPropertyValue(UIA_IsPasswordPropertyId, out var pw);
+            if (passwordHr != 0 || pw is not bool password)
+            {
+                diagnostic = $"IsPassword unavailable hr=0x{passwordHr:X} type={pw?.GetType().Name ?? "null"}";
+                return false;
+            }
+            isPassword = password;
 
             int controlType = 0;
             if (el.GetCurrentPropertyValue(UIA_ControlTypePropertyId, out var ct) == 0 && ct is not null)

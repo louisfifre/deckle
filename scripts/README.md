@@ -99,5 +99,5 @@ The Whisper models are pulled from HuggingFace; the Silero VAD model is pulled f
 ## What is *not* here
 
 - **MSIX / packaged installer.** No MSIX or Store package — Deckle ships *unpackaged*. The GitHub Release (a pre-release while on 0.x), cut by `lib/publish-app.ps1 -Publish`, carries two assets: the headline `Deckle-Setup-vX.Y.Z-win-x64.exe` — the installer stub the end user downloads and runs — and the self-contained app payload it fetches (`Deckle-vX.Y.Z.zip` + `.sha256`). The `Deckle.Installer` stub resolves the latest release via the GitHub API, downloads the payload, sha256-verifies it, and installs per-user (GitHub auto-attaches the source-code archives too). Building from source via `lib/build-run.ps1` (or the launcher) stays the dev path.
-- **CI / GitHub Actions.** None for now — personal project. Both publish flows — the app ZIP and the native runtime — are cut manually by the maintainer.
+- **Automated builds and releases.** There is no CI build or automated publishing. The only GitHub Action refreshes the generated README development pulse monthly; both release flows — the app ZIP and the native runtime — remain manual maintainer actions.
 - **Source mirror of whisper.cpp.** The repo no longer carries a `whisper.cpp/` clone. Rebuilders clone it themselves alongside the Deckle repo, build it locally, and point `-WhisperRepo` at it.

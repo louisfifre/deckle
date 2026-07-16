@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Deckle.Audio.Internal;
 using Deckle.Core;
 
 namespace Deckle.Audio;
@@ -61,9 +62,10 @@ internal static class WaveInLoop
         System.Action?    onLowAudioDetected, // fires once when first 5 s lacked sustained voice
         CancellationToken ct)
     {
-        // Single buffer, grows throughout the recording.
-        // 1 sample = 2 bytes PCM16. At 16 kHz, 1 minute = 1.92M bytes.
-        var allBytes = new List<byte>(capacity: 16000 * 2 * 60); // pre-reserve ~1 min
+        // Start with one second and grow with the actual recording. The former
+        // one-minute reservation allocated 1.92 MB on the LOH for every take,
+        // including short commands.
+        var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2);
 
         DeckleAudioSource.Log.RecordingStarted();
         DeckleAudioSource.Log.CaptureStarted();
@@ -151,9 +153,7 @@ internal static class WaveInLoop
                     }
                     else
                     {
-                        var data = new byte[hdr.dwBytesRecorded];
-                        Marshal.Copy(hdr.lpData, data, 0, (int)hdr.dwBytesRecorded);
-                        allBytes.AddRange(data);
+                        ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
                         double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                         buffersReceived++;
 
@@ -269,9 +269,7 @@ internal static class WaveInLoop
             WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
             if ((hdr.dwFlags & WHDR_DONE) != 0 && hdr.dwBytesRecorded > 0)
             {
-                var data = new byte[hdr.dwBytesRecorded];
-                Marshal.Copy(hdr.lpData, data, 0, (int)hdr.dwBytesRecorded);
-                allBytes.AddRange(data);
+                ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
                 // Push the drained tail through the same sub-window mill so
                 // _rmsLog covers the full session (the in-loop EmitSubWindows
                 // path stops as soon as the cancellation token fires, leaving
@@ -314,7 +312,7 @@ internal static class WaveInLoop
     // at -120, mirroring ComputeBufferDbfs's empty-buffer floor; that path has
     // no low-audio tracker, so the coarseness is harmless.
     private static double EmitSubWindows(
-        byte[]                pcm16,
+        ReadOnlySpan<byte>    pcm16,
         List<float>           rmsLog,
         System.Action<float>? audioLevelCallback,
         System.Action<CaptureFrame>? frameCallback)

@@ -32,9 +32,9 @@ namespace Deckle.App;
 //   InitializeTelemetry(telemetryDirectory) — registers only purpose-specific,
 //     consented datasets under telemetry/.
 //
-// The dispatcher and the LogWindowSink are process-lifetime singletons, held in
-// static fields. They are never explicitly disposed — the EventListener
-// registration is dropped implicitly at process exit.
+// The dispatcher and LogWindowSink are process-lifetime singletons. JSONL sinks
+// hand accepted entries to bounded writer queues, so the central ProcessExit
+// handler crosses the Flush barrier before termination.
 internal static class AppDiagnosticsBootstrap
 {
     private static DispatchEventListener? _dispatch;
@@ -67,8 +67,9 @@ internal static class AppDiagnosticsBootstrap
     // Always-on local sinks (setup.jsonl + errors.jsonl). Registered as the
     // FIRST boot step so the riskiest, un-opted-in moments leave a local trace
     // the user owns — see the class header for why ordering is load-bearing.
-    // JsonlSink flushes each line synchronously, so a crash keeps its record on
-    // disk.
+    // JsonlSink's writer flushes each accepted line before advancing. Explicit
+    // exits additionally cross the Flush barrier below; a hard crash can still
+    // lose work that had not yet left the bounded queue.
     public static void InitializeLocalSinks(string diagnosticsDirectory)
     {
         // Idempotent: a second call is a no-op. The sinks are process-lifetime
@@ -162,5 +163,10 @@ internal static class AppDiagnosticsBootstrap
     {
         _logWindowSink?.DetachSink(sink);
     }
+
+    // Final observability barrier. Every background JSONL writer drains entries
+    // accepted before this call. ProcessExit invokes it after emitting the final
+    // marker, which also covers install/update/relocation exits.
+    public static bool Flush() => _dispatch?.FlushSinks() ?? true;
 
 }

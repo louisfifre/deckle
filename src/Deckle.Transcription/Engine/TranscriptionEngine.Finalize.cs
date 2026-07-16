@@ -41,7 +41,7 @@ public sealed partial class TranscriptionEngine
     // The producing strategy owns capture, the backend call(s), and the state
     // transitions up to Transcribing; here we only consume the result it hands
     // back. _transcriptionId is generated once per recording by WorkerRun before
-    // the strategy runs (corpus join key, ADR-0006).
+    // the strategy runs under the corpus join contract.
     private void FinalizeTranscription(PipelineProduction prod)
     {
         string  fullText          = prod.RawText;
@@ -99,67 +99,19 @@ public sealed partial class TranscriptionEngine
         double recDurationSec = (_recordingSw?.Elapsed.TotalSeconds) ?? 0;
         int rawWordCount = TextMetrics.CountWords(fullText);
 
-        // Rewrite profile resolution:
-        // - file run → NONE. File transcription is verbatim in V1: force-skip the
-        //   whole resolution. A null _manualProfileName alone would NOT skip it —
-        //   the auto-rule branch fires on duration/word rules whenever LLM is
-        //   enabled — so the skip has to be explicit.
-        // - manual rewrite hotkey → the profile name passed to StartRecording
-        // - plain transcribe hotkey → first matching AutoRewriteRule (duration-based)
-        RewriteProfile? profile = null;
-        if (isFileRun)
+        // File transcription and the plain transcription hotkey are verbatim.
+        // Only a dedicated rewrite hotkey supplies _manualProfileName and can
+        // replace the raw result; legacy auto-rule settings are not consulted.
+        RewriteProfile? profile = isFileRun
+            ? null
+            : RewriteProfileSelection.ForHotkey(llmSettings, _manualProfileName);
+        if (!isFileRun
+            && llmSettings.Enabled
+            && !string.IsNullOrWhiteSpace(_manualProfileName)
+            && profile is null)
         {
-            // No rewrite for file runs (V1). profile stays null.
-        }
-        else if (!string.IsNullOrWhiteSpace(_manualProfileName) && llmSettings.Enabled)
-        {
-            profile = llmSettings.Profiles.Find(p =>
-                string.Equals(p.Name, _manualProfileName, StringComparison.OrdinalIgnoreCase));
-            if (profile is null)
-            {
-                DeckleWhispSource.Log.ManualProfileNotFound();
-                DeckleWhispSource.Log.ManualProfileNotFoundDetail(_manualProfileName);
-            }
-        }
-        else if (llmSettings.Enabled)
-        {
-            // Pivot between the two auto-rule lists. "Words" is the default —
-            // word count is a truer proxy for LLM context load than wall-clock
-            // duration. "Duration" keeps the legacy behaviour.
-            RewriteProfile? ResolveRuleProfile(string? id, string? name)
-            {
-                var byId = !string.IsNullOrEmpty(id)
-                    ? llmSettings.Profiles.Find(p => p.Id == id)
-                    : null;
-                return byId ?? llmSettings.Profiles.Find(p =>
-                    string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
-            }
-
-            bool byWords = !string.Equals(llmSettings.RuleMetric, "Duration", StringComparison.OrdinalIgnoreCase);
-            if (byWords && llmSettings.AutoRewriteRulesByWords.Count > 0)
-            {
-                foreach (var rule in llmSettings.AutoRewriteRulesByWords
-                    .OrderByDescending(r => r.MinWordCount))
-                {
-                    if (rawWordCount >= rule.MinWordCount)
-                    {
-                        profile = ResolveRuleProfile(rule.ProfileId, rule.ProfileName);
-                        break;
-                    }
-                }
-            }
-            else if (!byWords && llmSettings.AutoRewriteRules.Count > 0)
-            {
-                foreach (var rule in llmSettings.AutoRewriteRules
-                    .OrderByDescending(r => r.MinDurationSeconds))
-                {
-                    if (recDurationSec >= rule.MinDurationSeconds)
-                    {
-                        profile = ResolveRuleProfile(rule.ProfileId, rule.ProfileName);
-                        break;
-                    }
-                }
-            }
+            DeckleWhispSource.Log.ManualProfileNotFound();
+            DeckleWhispSource.Log.ManualProfileNotFoundDetail(_manualProfileName);
         }
 
         // Preserve the raw text before any rewrite replaces fullText — the
@@ -281,6 +233,7 @@ public sealed partial class TranscriptionEngine
         if (!isFileRun)
         {
             DeckleWhispSource.Log.LatencyRecorded(
+                transcription_id:     _transcriptionId,
                 audio_sec:            audioSec,
                 model_load_ms:        _modelLoadMs,
                 hotkey_to_capture_ms: hotkeyToCaptureMs,
@@ -305,13 +258,13 @@ public sealed partial class TranscriptionEngine
                 outcome:              outcome.ToString());
         }
 
-        // Normalized corpus: see ADR-0006. Two distinct events joined by
+        // Normalized corpus: two distinct events joined by
         // _transcriptionId: CorpusAsrRecorded always captures ASR output,
         // CorpusRewriteRecorded is only emitted if a rewrite profile ran. The
         // flat WAV audio under audio/<id>.wav is shared between both sides
         // through audioFileName.
         // File runs are excluded from the voice corpus: the corpus is a dataset of
-        // the user's own captured dictation (ADR-0006), and an arbitrary imported
+        // the user's own captured dictation, and an arbitrary imported
         // file is not that — it would pollute the training distribution.
         var telemetrySettings = _host.Telemetry;
         if (telemetrySettings.CorpusEnabled && !isFileRun)
@@ -329,8 +282,8 @@ public sealed partial class TranscriptionEngine
             // not enabled RecordAudioCorpus; the JSONL line remains useful
             // without a WAV.
             //
-            // Which buffer lands in the WAV: user choice (ADR-0006, 2026-06-02
-            // amendment). MatchTranscription stores what the backend actually
+            // Which buffer lands in the WAV follows the normalized corpus
+            // contract. MatchTranscription stores what the backend actually
             // received (backendAudio: processed when DSP ran, raw otherwise);
             // AlwaysRaw forces the untouched capture to keep a re-derivable
             // baseline.

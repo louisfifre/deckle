@@ -17,7 +17,7 @@ namespace Deckle.Llm.Rewrite;
 //  - Click handlers (Delete/Add) via Tag={x:Bind}
 //  - Model AutoSuggestBox handlers → push to VM + filter the list
 //  - ProfilesChanged event (fired on Name changes via PropertyChanged) to
-//    notify Rules and ManualShortcut to refresh their lists
+//    notify the shortcut slots so they refresh their lists
 
 public sealed partial class LlmProfilesSection : UserControl
 {
@@ -55,8 +55,8 @@ public sealed partial class LlmProfilesSection : UserControl
         }
     }
 
-    // Fire ProfilesChanged when a profile's Name changes so Rules and
-    // ManualShortcut refresh their dropdowns live. Auto-save on every
+    // Fire ProfilesChanged when a profile's Name changes so shortcut slots
+    // refresh their dropdowns live. Auto-save on every
     // property change would be overkill — only Name is surfaced elsewhere.
     // No unsubscribe: VMs live as long as this section, and Reload() starts
     // from an empty collection.
@@ -76,13 +76,9 @@ public sealed partial class LlmProfilesSection : UserControl
         if (sender is not FrameworkElement fe || fe.Tag is not ProfileViewModel vm)
             return;
 
-        // Profiles and rules are independent: removing a profile leaves any
-        // rule that referenced it intact, with a now-orphan ProfileName the
-        // user can re-point or delete manually. Same for shortcut slots —
-        // they keep their stale name until the user reassigns. This trade
-        // protects rule thresholds (which are real work to redefine) at the
-        // cost of a temporarily blank ComboBox SelectedItem until the user
-        // notices and picks a replacement.
+        // Removing a profile keeps shortcut-slot references intact until the
+        // user reassigns them. Retained legacy auto-rule data is also preserved
+        // for lossless deserialization, although it has no runtime or UI consumer.
         bool confirmed = await ConfirmationService.RequestAsync(
             this.XamlRoot,
             new ConfirmationRequest(
@@ -97,10 +93,8 @@ public sealed partial class LlmProfilesSection : UserControl
         if (vm.ProfileIndex < profiles.Count)
         {
             profiles.RemoveAt(vm.ProfileIndex);
-            // Surviving rules whose ids drifted (e.g. the deleted
-            // profile shared a name with another one — unlikely, but
-            // harmless to re-pair) get reconciled against the remaining
-            // Profiles list. Migrate never deletes a rule on its own.
+            // Reconcile shortcut slots and retained legacy references against
+            // the remaining profile list. The migration never deletes data.
             LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
             LlmSettingsService.Instance.Save();
         }
@@ -215,10 +209,9 @@ public sealed partial class LlmProfilesSection : UserControl
     // Scope: the Profiles list only. Replaces user-authored profiles with
     // the three defaults (Lissage / Affinage / Arrangement) — pre-written
     // prompts tuned via autoresearch, Temperature 0.30, NumCtxK 8/16/16.
-    // MigrateProfileIds re-pairs slot and rule references so anything
-    // still pointing at "Lissage" / "Affinage" / "Arrangement" by name
-    // picks up the fresh ids. ProfilesChanged triggers the host to
-    // reload Rules + ShortcutSlots.
+    // MigrateProfileIds re-pairs shortcut slots and retained legacy settings
+    // so references to the default profiles pick up their fresh ids.
+    // ProfilesChanged then reloads the shortcut slots.
     private async void ResetSection_Click(object sender, RoutedEventArgs e)
     {
         bool confirmed = await ConfirmationService.RequestAsync(

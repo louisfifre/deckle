@@ -13,6 +13,11 @@ Side-effect appréciable : process isolé → si Voxtral plante (OOM,
 segfault Vulkan), le bench survit avec un row ``ok=False`` au lieu de
 mourir.
 
+Le GGUF par défaut est le Q4_K_M réellement présent sur la machine. Il
+sert uniquement aux smoke tests de la stack llama.cpp/Vulkan : Q4 n'est
+pas une validation qualité ni un candidat de livraison. Un modèle non-Q4
+fourni explicitement reprend l'identité normale de la source.
+
 Le contrat ``Source`` est respecté. La méthode ``transcribe()`` accepte
 deux prompts via kwargs :
   - ``prompt`` : l'instruction utilisateur transmise via ``--prompt``.
@@ -102,6 +107,11 @@ class VoxtralLlamacppSource(Source):
             "DECKLE_VOXTRAL_MMPROJ",
             str(VOXTRAL_DIR / "mmproj-Voxtral-Small-24B-2507.gguf")))
 
+        self.smoke_only = _is_q4_model(self._model)
+        if self.smoke_only:
+            self.name = "voxtral-llamacpp-q4-smoke"
+            self.label = "Voxtral via llama-mtmd-cli (Vulkan, Q4 smoke only)"
+
         for label, p in (("binary", self._binary), ("model", self._model),
                          ("mmproj", self._mmproj)):
             if not p.exists():
@@ -189,6 +199,7 @@ class VoxtralLlamacppSource(Source):
                 "binary":          str(self._binary),
                 "model":           str(self._model),
                 "mmproj":          str(self._mmproj),
+                "evaluation_scope": "smoke" if self.smoke_only else "model-defined",
                 "n_gpu_layers":    self.n_gpu_layers,
                 "ctx_size":        self.ctx_size,
                 "n_predict":       n_predict,
@@ -203,6 +214,12 @@ class VoxtralLlamacppSource(Source):
 # ── Helpers libres ────────────────────────────────────────────────────
 
 _ANSI_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+
+_Q4_MODEL_RE = re.compile(r"(?:^|[-_.])(?:Q4|Q4F16|INT4)(?:[-_.]|$)", re.IGNORECASE)
+
+
+def _is_q4_model(path: Path) -> bool:
+    return _Q4_MODEL_RE.search(path.stem) is not None
 
 
 def _strip_ansi(s: str) -> str:

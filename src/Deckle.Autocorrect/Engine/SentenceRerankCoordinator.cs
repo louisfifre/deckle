@@ -214,14 +214,14 @@ public sealed class SentenceRerankCoordinator : IDisposable
         TrySubmitNext();
     }
 
-    // Every physical keystroke, with the live word as it stood BEFORE the tracker
-    // consumed it. A Backspace on an empty live buffer re-opens a committed word
+    // Every physical keystroke, with whether the live word had content BEFORE the
+    // tracker consumed it. A Backspace on an empty live buffer re-opens a committed word
     // for editing — our append-only model can no longer mirror the screen, so we
     // start fresh. (Resets proper arrive via Invalidate.)
-    public void NotePhysicalKey(Keystroke k, string preBuffer)
+    public void NotePhysicalKey(Keystroke k, bool hasPartialWord)
     {
         if (_disposed) return;
-        if (k.Kind == KeystrokeKind.Backspace && preBuffer.Length == 0)
+        if (k.Kind == KeystrokeKind.Backspace && !hasPartialWord)
         {
             Invalidate(ResetReason.Navigation);
             return;
@@ -235,7 +235,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // eaten-letter corruption class). The sentence-initial vouch survives:
         // punctuation noise does not move the sentence boundary.
         if (k.Kind != KeystrokeKind.Text) return;
-        bool empty = preBuffer.Length == 0;
+        bool empty = !hasPartialWord;
         foreach (char c in k.Text)
         {
             if (WordBoundaries.IsWordChar(c))

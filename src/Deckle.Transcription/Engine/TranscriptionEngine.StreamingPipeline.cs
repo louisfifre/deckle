@@ -258,7 +258,7 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        // RawAudio is the untouched capture — the corpus baseline (ADR-0006). When
+        // RawAudio is the untouched capture — the normalized corpus baseline. When
         // the opt-in DSP ran, the consumer handed back the concatenation of the
         // processed utterances: that is exactly what the backend received (the kept
         // utterances, not the continuous take), so it becomes BackendAudio. With the
@@ -334,9 +334,9 @@ public sealed partial class TranscriptionEngine
         // The segmenter emits only voiced spans, so the makeup guardrail (boosting
         // silence lifts the noise floor) is already defused upstream. Processed
         // chunks are accumulated so BackendAudio is exactly what the backend
-        // received — the kept utterances, not the continuous take (ADR-0006).
+        // received — the kept utterances, not the continuous take.
         var pp = _host.Audio.Preprocessing;
-        // Capture the backend audio (ADR-0006) whenever a stage transforms it — the
+        // Capture the backend audio whenever a stage transforms it — the
         // DSP or the VAD trim — so BackendAudio mirrors exactly what the backend
         // received.
         List<float[]>? backendChunks = (pp.Enabled || vad is not null) ? new List<float[]>() : null;
@@ -369,7 +369,7 @@ public sealed partial class TranscriptionEngine
 
             // Resolve the buffer the backend will see: optional DSP, then the
             // optional external VAD trim. Accumulate the final buffer so
-            // BackendAudio mirrors exactly what was sent (ADR-0006).
+            // BackendAudio mirrors exactly what was sent.
             float[] samples = u.Samples;
             if (pp.Enabled)
             {
@@ -469,7 +469,7 @@ public sealed partial class TranscriptionEngine
     // single exact-sized allocation rather than a growing List<float> — the chunks
     // are known and immutable by the time we drain, so there is nothing to double.
     // internal: the ordered-concat invariant it guards is what makes BackendAudio
-    // a faithful corpus record (ADR-0006), exercised directly by Deckle.Transcription.Tests.
+    // a faithful normalized corpus record, exercised directly by Deckle.Transcription.Tests.
     internal static float[] ConcatSamples(List<float[]> chunks)
     {
         int total = 0;

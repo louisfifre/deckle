@@ -35,7 +35,7 @@ namespace Deckle.Diagnostics.Telemetry;
 //                                                    (routed)
 //   corpus/<bucket>/corpus.jsonl                   ← CorpusRewriteRecorded
 //                                                    events (routed, no tier;
-//                                                    see ADR-0006)
+//                                                    normalized corpus contract)
 //   autocorrect.decisions.jsonl                    ← Autocorrect{Decision,
 //                                                    Rerank}Recorded events
 //   autocorrect.text.jsonl                         ← AutocorrectTextRecorded
@@ -159,7 +159,7 @@ public static class TelemetryListenerBootstrap
                          && e.EventName == "AutocorrectStreamRecorded"
                          && ReadGate("AutocorrectText")));
 
-        // Normalized corpus: see ADR-0006. Two routed sinks spray
+        // Normalized corpus contract. Two routed sinks spray
         // CorpusAsr/RewriteRecorded over a bucketed tree. Both predicates gate
         // on CorpusEnabled and the resolver composes the path from the event
         // payload.
@@ -221,14 +221,23 @@ public static class TelemetryListenerBootstrap
         catch { return false; }
     }
 
-    // Unregisters every sink Configure added from the dispatcher. Optional —
-    // process exit drops the dispatcher anyway — but exposed for tests and an
-    // eventual host shutdown sequence.
+    // Unregisters every sink Configure added, then drains and closes its writer.
+    // The application-wide ProcessExit barrier handles normal host shutdown;
+    // this explicit path keeps tests and future telemetry reconfiguration safe.
     public static void ShutDown()
     {
         var dispatch = _dispatch;
         if (dispatch is not null)
             foreach (var sink in _sinks) dispatch.RemoveSink(sink);
+
+        // Remove first so no new dispatch can enter a completing queue, then
+        // deterministically drain everything accepted before the boundary.
+        foreach (var sink in _sinks)
+        {
+            if (sink is not IDisposable disposable) continue;
+            try { disposable.Dispose(); }
+            catch { /* Dataset I/O failure must not break host shutdown. */ }
+        }
         _sinks.Clear();
         _dispatch = null;
         _configured = false;

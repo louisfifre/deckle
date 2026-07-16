@@ -52,14 +52,12 @@
 
                 <llm:LlmGeneralSection x:Name="GeneralSection" />
 
-                <!-- Mask-not-grey: the four dependent sections collapse out of
+                <!-- Mask-not-grey: the three dependent sections collapse out of
                      layout when rewriting is off, driven by the General master
                      toggle. The Enabled toggle itself (in GeneralSection) stays
                      always visible. -->
                 <llm:LlmShortcutSlotsSection x:Name="ShortcutSlotsSection"
                                              Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                <llm:LlmRulesSection x:Name="RulesSection"
-                                     Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmProfilesSection x:Name="ProfilesSection"
                                         Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmModelsSection x:Name="ModelsSection"

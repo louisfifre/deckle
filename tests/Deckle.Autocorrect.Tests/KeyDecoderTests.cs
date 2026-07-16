@@ -136,6 +136,20 @@ public class KeyDecoderTests
     }
 
     [Fact]
+    public void ReleasedAltGrDoesNotLeakIntoTheNextTranslation()
+    {
+        var d = DecoderWithFakeLayout();
+        d.Decode(Key(VkControl, down: true));
+        d.Decode(Key(VkMenu, down: true));
+        Assert.Equal("€", d.Decode(Key(VkE, down: true))!.Value.Text);
+
+        d.Decode(Key(VkControl, down: false));
+        d.Decode(Key(VkMenu, down: false));
+
+        Assert.Equal("e", d.Decode(Key(VkE, down: true))!.Value.Text);
+    }
+
+    [Fact]
     public void WinChordIsShortcut()
     {
         var d = DecoderWithFakeLayout();

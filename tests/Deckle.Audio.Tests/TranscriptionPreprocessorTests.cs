@@ -160,7 +160,7 @@ public class TranscriptionPreprocessorTests
     [Fact]
     public void ProcessDoesNotMutateInputBuffer()
     {
-        // The raw capture must stay intact — it feeds the corpus (ADR-0006).
+        // The raw capture must stay intact — it feeds the normalized corpus.
         var input = Sine(440, 0.3);
         var copy = (float[])input.Clone();
 

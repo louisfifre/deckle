@@ -33,8 +33,8 @@ namespace Deckle.Audio;
 // clean silence fix is the upstream VAD, not this stage.
 //
 // Pure: Process clones its input and never mutates the caller's buffer — the
-// raw capture must stay intact for the corpus (ADR-0006), which stores the
-// unprocessed signal so a processed variant can always be re-derived.
+// raw capture must stay intact under the raw corpus contract: the corpus stores
+// the unprocessed signal so a processed variant can always be re-derived.
 public static class TranscriptionPreprocessor
 {
     // The module captures at a single fixed format (16 kHz mono PCM16,

@@ -11,10 +11,8 @@ namespace Deckle.Llm.Rewrite;
 //   Primary rewrite   (Shift+Win+`)  — optional, "(None)" leaves the shortcut unbound
 //   Secondary rewrite (Ctrl+Win+`)   — optional, "(None)" leaves the shortcut unbound
 //
-// Both slots are symmetric: opt-in by default. The three bracket profiles
-// (Lissage/Affinage/Arrangement) are picked automatically by
-// AutoRewriteRules on the plain transcribe shortcut, so the manual slots
-// only matter when the user wants a specific override on a dedicated hotkey.
+// Both slots are symmetric and opt-in. They are the only runtime route to a
+// rewrite profile: plain transcription always keeps the verbatim ASR result.
 //
 // The list depends on the defined profiles — Reload() must be called by the
 // host after any mutation of the Profiles section so newly-added / renamed

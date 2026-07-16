@@ -67,13 +67,21 @@ internal sealed class Win32GlobalHotkeyApi : IGlobalHotkeyApi
 
 public static class HotkeySelection
 {
-    public static IReadOnlyList<int> ForRewritePresence(bool rewritePresent) =>
-        rewritePresent
-            ?
-            [
-                NativeMethods.HOTKEY_ID_TRANSCRIBE,
-                NativeMethods.HOTKEY_ID_PRIMARY_REWRITE,
-                NativeMethods.HOTKEY_ID_SECONDARY_REWRITE,
-            ]
-            : [NativeMethods.HOTKEY_ID_TRANSCRIBE];
+    public static IReadOnlyList<int> ForModulePresence(
+        bool transcriptionPresent,
+        bool rewritePresent)
+    {
+        if (!transcriptionPresent)
+            return [];
+
+        if (!rewritePresent)
+            return [NativeMethods.HOTKEY_ID_TRANSCRIBE];
+
+        return
+        [
+            NativeMethods.HOTKEY_ID_TRANSCRIBE,
+            NativeMethods.HOTKEY_ID_PRIMARY_REWRITE,
+            NativeMethods.HOTKEY_ID_SECONDARY_REWRITE,
+        ];
+    }
 }

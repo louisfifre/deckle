@@ -262,7 +262,14 @@ public sealed class WhisperBackend : IAsrBackend
         WhisperFullParams wparams = Marshal.PtrToStructure<WhisperFullParams>(fullParamsPtr);
         WhisperPInvoke.whisper_free_params(fullParamsPtr);
 
+        // Native stdout-style output can contain recognized text. Keep every
+        // print channel closed explicitly; Deckle emits its own content-free
+        // operational measurements and routes text only through consented
+        // dataset events.
+        wparams.print_special = 0;
         wparams.print_progress = 0;
+        wparams.print_realtime = 0;
+        wparams.print_timestamps = 0;
 
         var TranscriptionSettings = _host.Transcription;
         WhisperParamsMapper.NativeAllocations nativeAllocs =
@@ -305,8 +312,7 @@ public sealed class WhisperBackend : IAsrBackend
             bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
             if (!string.IsNullOrEmpty(prompt))
             {
-                string truncated = prompt.Length > 60 ? prompt[..60] + "…" : prompt;
-                DeckleWhispSource.Log.TranscribePrompt(prompt.Length, carry, truncated);
+                DeckleWhispSource.Log.TranscribePrompt(prompt.Length, carry);
             }
         }
 
@@ -367,9 +373,8 @@ public sealed class WhisperBackend : IAsrBackend
         // text" by both the streaming consumer and the monolithic finalize.
         if (KnownHallucinations.Matches(fullText))
         {
-            string preview = fullText.Length > 60 ? fullText[..60] + "…" : fullText;
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
-            DeckleWhispSource.Log.TranscribeHallucinationFilteredDetail(preview);
+            DeckleWhispSource.Log.TranscribeHallucinationFilteredDetail(fullText.Length);
             fullText = "";
         }
 
@@ -419,10 +424,8 @@ public sealed class WhisperBackend : IAsrBackend
                     _repetitionDetector.ObserveAndShouldAbort(segText, out int streak, out int period))
                 {
                     _abortRequested = true;
-                    string preview = segText.Trim();
-                    if (preview.Length > 60) preview = preview[..60] + "…";
                     DeckleWhispSource.Log.TranscribeRepetitionLoop();
-                    DeckleWhispSource.Log.TranscribeRepetitionLoopDetail(streak, period, preview);
+                    DeckleWhispSource.Log.TranscribeRepetitionLoopDetail(streak, period);
                 }
 
                 _segmentSink?.Invoke(segment);
@@ -435,11 +438,9 @@ public sealed class WhisperBackend : IAsrBackend
                 double t0Sec = _timelineOffsetSec + t0 / 100.0;
                 double t1Sec = _timelineOffsetSec + t1 / 100.0;
                 double dur = (t1 - t0) / 100.0;
-                string trimmed = segText.Trim();
                 DeckleWhispSource.Log.SegmentEmitted(
-                    $"seg #{i + 1,2} | {t0Sec,7:F1}→{t1Sec,7:F1}s | dur {dur,5:F1}s" +
-                    $" | nsp {nsp,4:P0} | p̄ {avgP:F2} | min {minP:F2} | tok {textTok,2}/{nTok,2}" +
-                    $" | \"{trimmed}\"");
+                    i + 1, t0Sec, t1Sec, dur,
+                    nsp, avgP, minP, textTok, nTok);
             }
         }
         catch (Exception ex)

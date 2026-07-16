@@ -2,7 +2,7 @@ using System;
 
 namespace Deckle.Diagnostics;
 
-// Line-count rolling policy for a JsonlEventListener destination. When the
+// Line-count rolling policy for a JsonlSink destination. When the
 // active file reaches MaxLines, it is rolled into a monotonically-numbered
 // generation under an `archive/` subfolder (app.jsonl → archive/app.jsonl.0001
 // → archive/app.jsonl.0002 → …) and writing resumes on a fresh active file.
@@ -19,7 +19,7 @@ namespace Deckle.Diagnostics;
 // channels (latency, microphone, corpus) are append-only datasets with a
 // stable cross-session contract and are never given a rotation policy —
 // losing their tail would corrupt the dataset. The principle (journal rolled,
-// datasets untouched) is recorded in ADR-0007.
+// datasets untouched) is part of the application JSONL contract.
 public sealed class JsonlRotationPolicy
 {
     public int MaxLines { get; }

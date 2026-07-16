@@ -130,6 +130,15 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTranscribeStartDetail, audio_sec, samples, strategy);
     }
 
+    [Event(EvtTranscriptionCorrelation,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "correlation | transcription_id={0}")]
+    public void TranscriptionCorrelation(string transcription_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscriptionCorrelation, transcription_id);
+    }
+
     [Event(EvtTranscribeParams,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -142,10 +151,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribePrompt,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "prompt | len={0} | carry={1} | text=\"{2}\"")]
-    public void TranscribePrompt(int prompt_len, bool carry, string preview)
+           Message = "prompt | len={0} | carry={1}")]
+    public void TranscribePrompt(int prompt_len, bool carry)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribePrompt, prompt_len, carry, preview);
+        if (IsEnabled()) WriteEvent(EvtTranscribePrompt, prompt_len, carry);
     }
 
     // In-place clean (no params, no placeholders): lowercase phrasing
@@ -210,10 +219,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeRepetitionLoopDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "repetition loop | streak={0} | period={1} | text=\"{2}\"")]
-    public void TranscribeRepetitionLoopDetail(int streak, int period, string preview)
+           Message = "repetition loop | streak={0} | period={1}")]
+    public void TranscribeRepetitionLoopDetail(int streak, int period)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoopDetail, streak, period, preview);
+        if (IsEnabled()) WriteEvent(EvtTranscribeRepetitionLoopDetail, streak, period);
     }
 
     [Event(EvtTranscribeHallucinationFiltered,
@@ -228,10 +237,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeHallucinationFilteredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "hallucination filtered | text=\"{0}\"")]
-    public void TranscribeHallucinationFilteredDetail(string preview)
+           Message = "hallucination filtered | chars={0}")]
+    public void TranscribeHallucinationFilteredDetail(int chars)
     {
-        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredDetail, preview);
+        if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredDetail, chars);
     }
 
     [Event(EvtTranscribeSkipped,
@@ -385,11 +394,23 @@ public sealed partial class DeckleWhispSource
 
     [Event(EvtSegmentEmitted,
            Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline | KwTranscript,
-           Message = "{0}")]
-    public void SegmentEmitted(string segment_line)
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "segment | index={0} | start_sec={1:F1} | end_sec={2:F1} | duration_sec={3:F1} | no_speech={4:F2} | avg_p={5:F2} | min_p={6:F2} | text_tokens={7} | total_tokens={8}")]
+    public void SegmentEmitted(
+        int index,
+        double start_sec,
+        double end_sec,
+        double duration_sec,
+        float no_speech,
+        float avg_p,
+        float min_p,
+        int text_tokens,
+        int total_tokens)
     {
-        if (IsEnabled()) WriteEvent(EvtSegmentEmitted, segment_line);
+        if (IsEnabled())
+            WriteEvent(EvtSegmentEmitted,
+                index, start_sec, end_sec, duration_sec,
+                no_speech, avg_p, min_p, text_tokens, total_tokens);
     }
 
     [Event(EvtSegmentCallbackThrew,

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// BackendAudio reconstruction in the streaming path (ADR-0006): when the opt-in
+// BackendAudio reconstruction in the normalized corpus contract: when the opt-in
 // DSP runs, the per-utterance processed buffers are concatenated into the exact
 // signal the backend received. TranscriptionEngine.ConcatSamples is the pure core
 // of that reconstruction — these pin the ordering and length invariants the corpus

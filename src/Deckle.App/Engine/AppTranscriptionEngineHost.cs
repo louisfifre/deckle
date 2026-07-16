@@ -24,9 +24,9 @@ internal sealed class AppTranscriptionEngineHost : ITranscriptionEngineHost
     public TelemetrySettings     Telemetry     => TelemetrySettingsService.Instance.Current;
 
     // Presence sits above the module's own Enabled toggle: with Rewrite
-    // absent the engine sees a disabled, profile-less LlmSettings, so neither
-    // the manual-hotkey branch nor the auto-rewrite rules can fire — and the
-    // absent module's LlmSettingsService is never instantiated (its ctor
+    // absent the engine sees a disabled, profile-less LlmSettings, so no
+    // explicit rewrite hotkey can apply a profile — and the absent module's
+    // LlmSettingsService is never instantiated (its ctor
     // would create modules/llm/settings.json on disk).
     public LlmSettings Llm => RewriteAvailability.Settings(
         ModulePresence.IsPresent(ModuleIds.Rewrite),

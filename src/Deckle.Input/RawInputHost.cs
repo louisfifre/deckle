@@ -414,8 +414,8 @@ public sealed class RawInputHost : IDisposable
         Marshal.Copy(_rawBuffer + payloadOffset, _hidPayload, 0, payloadBytes);
 
         double now = NowMs;
-        var reports = device.Parser.Parse(_hidPayload, 0, sizeHid, reportCount);
-        foreach (var report in reports)
+        ReadOnlySpan<TouchpadReport> reports = device.Parser.Parse(_hidPayload, 0, sizeHid, reportCount);
+        foreach (TouchpadReport report in reports)
         {
             var frame = device.Assembler.Add(report, now);
             if (frame is null) continue;

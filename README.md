@@ -8,7 +8,7 @@
 
 Dictate into any app. Restore the accents you skipped. Add three-finger drag to your trackpad. Let your Hue lights follow the screen. Deckle gathers these small Windows tools behind one native shell and one tray icon.
 
-**[Get the latest release](https://github.com/louisfifre/deckle/releases/latest)** · [Explore the modules](#available-modules)
+**[Get the newest release](https://github.com/louisfifre/deckle/releases)** · [Explore the modules](#available-modules)
 
 > **Personal project, early public release.** Windows 11 x64, unpackaged, and installed per user without administrator privileges.
 
@@ -67,7 +67,7 @@ Whisper runs locally with the model you choose, accelerated through Vulkan with 
 
 ### Autocorrect
 
-**Type without slowing down for every accent.** Deckle observes text only in apps you enroll, never in password fields, terminals, or code editors.
+**Type without slowing down for every accent.** Deckle observes text only in apps you enroll and only while UI Automation confirms an editable, non-password field.
 
 Corrections are deliberately conservative and reversible. The correction inlay lets you reject a change explicitly, while the personal vocabulary remains readable, editable, and removable.
 
@@ -95,7 +95,7 @@ The color pipeline handles gamut limits and HDR displays; captured frames stay i
 
 ## Try Deckle
 
-1. Download **Deckle-Setup** from the [latest release](https://github.com/louisfifre/deckle/releases/latest).
+1. Download **Deckle-Setup** from the newest entry on the [releases page](https://github.com/louisfifre/deckle/releases).
 2. Run it and choose the capabilities you want.
 3. Deckle installs per user, fetches any missing assets those capabilities require, and starts in the tray.
 

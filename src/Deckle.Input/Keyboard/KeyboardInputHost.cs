@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Input;
 
 namespace Deckle.Input;
@@ -64,6 +65,7 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
     private IntPtr _rawBuffer;
     private int _rawBufferSize;
+    private bool _rawInputRegistered;
 
     // Rollup accumulators — input thread only.
     private double _rollupStartMs = -1;
@@ -126,6 +128,7 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
                 }
                 catch (Exception ex)
                 {
+                    TearDownInputThread();
                     startError = ex;
                 }
                 finally
@@ -232,7 +235,6 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         if (_hwnd == IntPtr.Zero)
         {
             int err = Marshal.GetLastWin32Error();
-            NativeMethods.UnregisterClass(ClassName, _hInstance);
             throw new InvalidOperationException(
                 $"CreateWindowEx(HWND_MESSAGE) failed (Win32 err {err})");
         }
@@ -260,21 +262,28 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             int err = Marshal.GetLastWin32Error();
             DeckleInputSource.Log.RegistrationFailed();
             DeckleInputSource.Log.RegistrationFailedDetail(err);
-            TearDownWindow();
             throw new InvalidOperationException($"RegisterRawInputDevices failed (Win32 err {err})");
         }
+        _rawInputRegistered = true;
 
-        // Both hooks installed from this thread so their out-of-context
-        // callbacks arrive on this pump. Best-effort: a failed hook leaves
-        // the host running on raw input alone.
+        // Both hooks are required: without either one the focused surface can
+        // go stale and the password gate is no longer trustworthy.
         _winEventDelegate = WinEventProc;
         uint flags = WinEventInterop.WINEVENT_OUTOFCONTEXT | WinEventInterop.WINEVENT_SKIPOWNPROCESS;
         _foregroundHook = WinEventInterop.SetWinEventHook(
             WinEventInterop.EVENT_SYSTEM_FOREGROUND, WinEventInterop.EVENT_SYSTEM_FOREGROUND,
             IntPtr.Zero, _winEventDelegate, 0, 0, flags);
+        int foregroundError = _foregroundHook == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
         _focusHook = WinEventInterop.SetWinEventHook(
             WinEventInterop.EVENT_OBJECT_FOCUS, WinEventInterop.EVENT_OBJECT_FOCUS,
             IntPtr.Zero, _winEventDelegate, 0, 0, flags);
+        int focusError = _focusHook == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
+        if (_foregroundHook == IntPtr.Zero || _focusHook == IntPtr.Zero)
+        {
+            throw new InvalidOperationException(
+                $"SetWinEventHook failed (foreground_error={foregroundError}, "
+                + $"focus_error={focusError})");
+        }
 
         _mouseHookDelegate = MouseHookProc;
         _mouseHook = LowLevelMouseHookInterop.SetWindowsHookEx(
@@ -307,24 +316,34 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         }
 
         // WM_QUIT — unwind everything this thread owns.
-        var unregister = new[]
+        TearDownInputThread();
+    }
+
+    private void TearDownInputThread()
+    {
+        if (_rawInputRegistered)
         {
-            new RAWINPUTDEVICE
+            var unregister = new[]
             {
-                usUsagePage = RawInputInterop.UsagePageGeneric,
-                usUsage     = RawInputInterop.UsageKeyboard,
-                dwFlags     = RawInputInterop.RIDEV_REMOVE,
-                hwndTarget  = IntPtr.Zero,
-            },
-            new RAWINPUTDEVICE
-            {
-                usUsagePage = RawInputInterop.UsagePageGeneric,
-                usUsage     = RawInputInterop.UsageMouse,
-                dwFlags     = RawInputInterop.RIDEV_REMOVE,
-                hwndTarget  = IntPtr.Zero,
-            },
-        };
-        NativeMethods.RegisterRawInputDevices(unregister, 2, (uint)Marshal.SizeOf<RAWINPUTDEVICE>());
+                new RAWINPUTDEVICE
+                {
+                    usUsagePage = RawInputInterop.UsagePageGeneric,
+                    usUsage     = RawInputInterop.UsageKeyboard,
+                    dwFlags     = RawInputInterop.RIDEV_REMOVE,
+                    hwndTarget  = IntPtr.Zero,
+                },
+                new RAWINPUTDEVICE
+                {
+                    usUsagePage = RawInputInterop.UsagePageGeneric,
+                    usUsage     = RawInputInterop.UsageMouse,
+                    dwFlags     = RawInputInterop.RIDEV_REMOVE,
+                    hwndTarget  = IntPtr.Zero,
+                },
+            };
+            NativeMethods.RegisterRawInputDevices(
+                unregister, 2, (uint)Marshal.SizeOf<RAWINPUTDEVICE>());
+            _rawInputRegistered = false;
+        }
 
         if (_foregroundHook != IntPtr.Zero)
         {
@@ -350,6 +369,8 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             _rawBuffer = IntPtr.Zero;
             _rawBufferSize = 0;
         }
+
+        _threadId = 0;
     }
 
     private void TearDownWindow()
@@ -380,9 +401,8 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         if (!_focusEvents.ShouldPublish(eventType, hwnd, idObject, idChild, dwmsEventTime))
             return;
 
-        _rollupFocusChanges++;
         FocusChanged?.Invoke();
-        TrackRollup(RawInputHost.NowMs);
+        TrackRollup(RawInputHost.NowMs, focusChanges: 1);
     }
 
     private IntPtr MouseHookProc(int nCode, IntPtr wParam, IntPtr lParam)
@@ -395,14 +415,13 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             if (vertical || horizontal)
             {
                 var hook = Marshal.PtrToStructure<LowLevelMouseHookInterop.MSLLHOOKSTRUCT>(lParam);
-                _rollupWheel++;
                 WheelObserved?.Invoke(new MouseWheelEvent(
                     Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
                     Delta:       LowLevelMouseHookInterop.GetWheelDelta(hook.mouseData),
                     TimestampMs: RawInputHost.NowMs,
                     Device:      IntPtr.Zero,
                     Source:      WheelEventSource.MessageHook));
-                TrackRollup(RawInputHost.NowMs);
+                TrackRollup(RawInputHost.NowMs, wheel: 1);
             }
         }
 
@@ -466,23 +485,21 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             {
                 short delta = Marshal.ReadInt16(
                     _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
-                _rollupWheel++;
                 WheelObserved?.Invoke(new MouseWheelEvent(
                     Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
                     Delta:       delta,
                     TimestampMs: RawInputHost.NowMs,
                     Device:      header.hDevice,
                     Source:      WheelEventSource.RawInput));
-                TrackRollup(RawInputHost.NowMs);
+                TrackRollup(RawInputHost.NowMs, wheel: 1);
             }
             return;
         }
 
         if ((buttonFlags & RawInputInterop.RI_MOUSE_ANY_BUTTON_DOWN) == 0) return;
 
-        _rollupPointerDowns++;
         PointerInteraction?.Invoke();
-        TrackRollup(RawInputHost.NowMs);
+        TrackRollup(RawInputHost.NowMs, pointerDowns: 1);
     }
 
     private void HandleKeyboard(int dataOffset, RawInputInterop.RAWINPUTHEADER header)
@@ -509,14 +526,34 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
             TimestampMs: RawInputHost.NowMs,
             ExtraInfo:   extraInfo);
 
-        _rollupKeys++;
-        if (evt.IsInjected) _rollupInjectedFiltered++;
         KeyReceived?.Invoke(evt);
-        TrackRollup(evt.TimestampMs);
+        TrackRollup(evt.TimestampMs, keys: 1, injectedFiltered: evt.IsInjected ? 1 : 0);
     }
 
-    private void TrackRollup(double nowMs)
+    private void TrackRollup(
+        double nowMs,
+        int keys = 0,
+        int injectedFiltered = 0,
+        int pointerDowns = 0,
+        int wheel = 0,
+        int focusChanges = 0)
     {
+        // This supporting provider belongs to Autocorrect while that activity
+        // is running. Refuse the rollup at the producer so its counters and
+        // EventSource payload do no work when activity detail is disabled.
+        if (!OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Autocorrect))
+        {
+            if (_rollupStartMs >= 0)
+                ResetRollup(nowMs: -1);
+            return;
+        }
+
+        _rollupKeys += keys;
+        _rollupInjectedFiltered += injectedFiltered;
+        _rollupPointerDowns += pointerDowns;
+        _rollupWheel += wheel;
+        _rollupFocusChanges += focusChanges;
+
         if (_rollupStartMs < 0) _rollupStartMs = nowMs;
 
         if (nowMs - _rollupStartMs < RollupPeriodMs) return;
@@ -524,6 +561,11 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
         DeckleInputSource.Log.KeyboardRollup(
             _rollupKeys, _rollupInjectedFiltered, _rollupPointerDowns, _rollupWheel, _rollupFocusChanges);
 
+        ResetRollup(nowMs);
+    }
+
+    private void ResetRollup(double nowMs)
+    {
         _rollupStartMs = nowMs;
         _rollupKeys = 0;
         _rollupInjectedFiltered = 0;

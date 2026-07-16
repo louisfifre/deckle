@@ -374,9 +374,10 @@ public sealed partial class TranscriptionEngine
             // invariant shifted: "Recording" MAY precede a warm model now, but the
             // first BACKEND CALL may not — the gate holds it until the prime is done.
 
-            // One id per recording (corpus join key, ADR-0006), shared by
+            // One id per recording under the corpus join contract, shared by
             // whichever strategy runs and consumed only in FinalizeTranscription.
             _transcriptionId = System.Guid.NewGuid().ToString("N");
+            DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
 
             // The selected strategy owns capture, the backend call(s), and every
             // state transition through to Transcribing (cap-hit CAS, auto-

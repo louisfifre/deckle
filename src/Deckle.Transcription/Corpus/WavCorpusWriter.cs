@@ -5,7 +5,7 @@ namespace Deckle.Transcription;
 
 // ── WavCorpusWriter ─────────────────────────────────────────────────────────
 //
-// Pure audio passthrough for the normalized corpus (ADR-0006). Writes the
+// Pure audio passthrough for the normalized corpus. Writes the
 // 16 kHz mono PCM provided to whisper_full as signed 16-bit WAV, one file per
 // transcription, under `<telemetry-root>/audio/<transcription_id>.wav`. Flat:
 // no slug, no per-profile subfolder. Audio is universal and deduplicated; ASR

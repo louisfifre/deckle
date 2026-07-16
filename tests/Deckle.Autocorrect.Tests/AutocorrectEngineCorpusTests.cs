@@ -4,9 +4,8 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The widened typed-sentence corpus feed. Two things matter: collection now spans
-// every editable, non-password surface — enrollment no longer bounds it — and the
-// only things that can withhold it are the password / editability gates and the
+// The typed-sentence corpus feed. Collection stays within the same enrolled,
+// editable, non-password surface scope as correction and also requires its
 // dedicated consent toggle. Observed through AutocorrectTextRecorded, the single
 // point where the corpus reaches the provider. Distinct word forms ("bonjour") keep
 // these clear of the leak-assertion words the observability suite uses.
@@ -14,7 +13,7 @@ namespace Deckle.Autocorrect.Tests;
 public sealed class AutocorrectEngineCorpusTests
 {
     [Fact]
-    public void FeedsTheCorpusOnAnUndecidedEditableSurface()
+    public void NeverFeedsTheCorpusOnAnUndecidedEditableSurface()
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
@@ -23,14 +22,12 @@ public sealed class AutocorrectEngineCorpusTests
 
         h.Type("bonjour.");
 
-        Assert.Contains(listener.Events, e =>
-            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
-            && PayloadValue(e, "process") is "chrome"
-            && PayloadValue(e, "closure") is "sentence");
+        Assert.DoesNotContain(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText);
     }
 
     [Fact]
-    public void FeedsTheCorpusOnADeclinedEditableSurface()
+    public void NeverFeedsTheCorpusOnADeclinedEditableSurface()
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
@@ -40,10 +37,8 @@ public sealed class AutocorrectEngineCorpusTests
 
         h.Type("bonjour.");
 
-        // Enrollment no longer bounds collection: even a declined app is recorded.
-        Assert.Contains(listener.Events, e =>
-            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
-            && PayloadValue(e, "process") is "chrome");
+        Assert.DoesNotContain(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText);
     }
 
     [Fact]
@@ -55,6 +50,7 @@ public sealed class AutocorrectEngineCorpusTests
         // the dropped partial and the corpus drops that suspect first word.
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
+        h.Settings.Apps["chrome"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
@@ -75,6 +71,7 @@ public sealed class AutocorrectEngineCorpusTests
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
+        h.Settings.Apps["chrome"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.PasswordBox("chrome");
         h.Start();
 
@@ -89,6 +86,7 @@ public sealed class AutocorrectEngineCorpusTests
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => false);
+        h.Settings.Apps["chrome"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
@@ -104,6 +102,7 @@ public sealed class AutocorrectEngineCorpusTests
         bool consent = true;
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => consent);
+        h.Settings.Apps["chrome"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 
@@ -140,11 +139,11 @@ public sealed class AutocorrectEngineCorpusTests
     }
 
     [Fact]
-    public void FoldsAReEditOnADeclinedSurfaceIntoTheOriginalSlot()
+    public void FoldsAReEditOnAnEnrolledSurfaceIntoTheOriginalSlot()
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
         using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
-        h.Settings.Apps["chrome"] = false;
+        h.Settings.Apps["chrome"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
         h.Start();
 

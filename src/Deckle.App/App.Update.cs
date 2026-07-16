@@ -130,7 +130,9 @@ public partial class App
         // No live install to update over — a bare exit; this process was
         // spawned programmatically, there is no user journey to land on.
         if (target is null || !File.Exists(Path.Combine(target, "Deckle.exe")))
+        {
             Environment.Exit(1);
+        }
 
         // The registered uninstaller already lives in the install folder;
         // pointing StubPath at it makes DeployPage.Integrate refresh the

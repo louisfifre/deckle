@@ -27,9 +27,8 @@ public sealed class RewriteProfile
     public double? RepeatPenalty { get; set; }
 }
 
-// Auto-rewrite rule (duration): when recording duration exceeds
-// MinDurationSeconds, ProfileName is used. Rules are evaluated in descending
-// MinDurationSeconds order (the longest match wins).
+// Legacy duration-rule shape, retained so existing settings deserialize without
+// loss. Runtime rewriting is now selected only by dedicated hotkeys.
 public sealed class AutoRewriteRule
 {
     public int MinDurationSeconds { get; set; } = 0;
@@ -41,10 +40,8 @@ public sealed class AutoRewriteRule
     public string ProfileName { get; set; } = "";
 }
 
-// Mirror of AutoRewriteRule keyed on word count instead of duration. Words
-// reflect LLM context load more faithfully than recording time (a slow 10-min
-// dictation does not cost the same as a rapid-fire one). Evaluated descending
-// by MinWordCount, same rule as the duration list.
+// Legacy word-rule shape, retained so existing settings deserialize without
+// loss. Runtime rewriting is now selected only by dedicated hotkeys.
 public sealed class AutoRewriteRuleByWords
 {
     public int MinWordCount { get; set; } = 0;
@@ -59,9 +56,8 @@ public sealed class LlmSettings
 
     // Profile used by the Primary Rewrite shortcut (Shift+Win+`).
     // null = primary rewrite disabled (hotkey fires but rewriting is skipped).
-    // Symmetric with Secondary — both slots are opt-in by default; the three
-    // bracket profiles (Lissage/Affinage/Arrangement) are picked by
-    // AutoRewriteRules on the plain transcribe shortcut.
+    // Symmetric with Secondary — both slots are opt-in by default. Plain
+    // transcription never picks a profile implicitly.
     public string? PrimaryRewriteProfileName { get; set; }
 
     // Profile used by the Secondary Rewrite shortcut (Ctrl+Win+`).
@@ -241,12 +237,9 @@ public sealed class LlmSettings
         }
     };
 
-    // Auto-rules aligned with cleanup bracket boundaries. Evaluated by
-    // TranscriptionEngine in descending threshold order; the highest match
-    // wins. Floor at 60 s: below that, no rule matches, profile stays null, and
-    // LLM rewriting is skipped (no-op behavior; raw Whisper text goes to the
-    // clipboard as-is. Whisper already outputs clean text on short dictations,
-    // so an Ollama cycle would be wasteful).
+    // Legacy auto-rule settings are retained for settings-file compatibility.
+    // They are no longer evaluated: rewriting requires a dedicated hotkey and
+    // an explicitly assigned profile.
     public List<AutoRewriteRule> AutoRewriteRules { get; set; } = new()
     {
         new() { MinDurationSeconds = 600, ProfileName = "Arrangement" },
@@ -254,18 +247,10 @@ public sealed class LlmSettings
         new() { MinDurationSeconds = 60,  ProfileName = "Lissage"     }
     };
 
-    // Which metric drives auto-rule selection. Default "Duration" — the
-    // rule thresholds the user reasons about are in minutes (60s / 300s /
-    // 600s, mapped to the cleanup brackets). Switch to "Words" to index on
-    // LLM context load instead.
+    // Legacy auto-rule metric, retained for settings-file compatibility.
     public string RuleMetric { get; set; } = "Duration";
 
-    // Word-based equivalents — calibrated on 88 corpus samples (median
-    // 115 wpm globally, range 47–205). The bracket boundaries 1/5/10 min
-    // map to ~115/575/1150 words at that median, rounded to multiples of
-    // 50: 150/600/1200. Floor at 150 words, symmetric with the 60 s duration
-    // rule: below that, no rule matches, no wasteful Ollama cycle on a short
-    // dictation.
+    // Legacy word-based auto-rules, retained for settings-file compatibility.
     public List<AutoRewriteRuleByWords> AutoRewriteRulesByWords { get; set; } = new()
     {
         new() { MinWordCount = 1200, ProfileName = "Arrangement" },

@@ -14,20 +14,19 @@ namespace Deckle.Llm.Rewrite;
 //   1. Fill missing stable ids — each RewriteProfile gets a 12-char Guid
 //      suffix on first encounter (legacy configs, freshly-instantiated
 //      defaults).
-//   2. Re-pair ProfileId/ProfileName on rules and slots when the live
-//      Profiles list still contains a match. Three legitimate cases:
+//   2. Re-pair ProfileId/ProfileName on shortcut slots and legacy automatic
+//      rules when the live Profiles list still contains a match. The legacy
+//      lists are no longer executed or exposed, but remain deserializable so
+//      older settings files can be loaded without data loss. Three cases:
 //        - id resolves → sync the cached name in case the profile was
 //          renamed since the rule was last saved
 //        - id is empty but name resolves → fill id from name (post-
 //          migration of an older config that never had ids)
 //        - id is stale but name resolves → rewire id from name
 //
-// **Never deletes a rule and never clears a slot.** Orphan references
-// (id+name both unresolvable) are left untouched: the UI surfaces them
-// as a blank ComboBox SelectedItem, and the user picks a replacement
-// or deletes the rule manually. This is intentional — Reset Rules with
-// no Profiles in the list still shows three placeholder rules to fill
-// in, which would silently disappear if we swept orphans here.
+// **Never deletes a legacy rule and never clears a slot.** Orphan references
+// (id+name both unresolvable) stay untouched. Slots remain user-repairable in
+// the UI; legacy rules are preserved only for backward-compatible round trips.
 //
 // The delete-cascade for "remove a profile, drop its dependants" lives
 // in LlmProfilesSection.DeleteProfile_Click, which clears references
@@ -85,8 +84,8 @@ public static class LlmSettingsMigrations
                 return true;
             }
 
-            // Neither resolves — orphan, leave both alone for the UI to
-            // surface and the user to fix.
+            // Neither resolves — keep the orphan for a lossless settings
+            // round trip. Live slots can still be repaired in the UI.
             return false;
         }
 

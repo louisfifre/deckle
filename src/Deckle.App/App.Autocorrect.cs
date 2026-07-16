@@ -43,24 +43,23 @@ public partial class App
     // path loads, and must be recalibrated if the export changes.
     private const double SentenceJudgeMargin = 1.0;
 
-    private AutocorrectEngine? _autocorrectEngine;
-    private PersonalDictionary? _autocorrectDictionary;
-    private bool _autocorrectStarted;
-
-    // Builds the autocorrect engine off the UI thread. The lexicon load (gzip
-    // decode + dictionary/index build of the multi-MB FR frequency data) is the
-    // heavy part and runs on the thread pool; the cheap composition + settings
-    // reconciliation resume on the UI thread. Boot never blocks on this —
-    // OnLaunched fires it and moves on, and nothing else reads the engine
-    // synchronously, so the deferral is race-free at startup.
-    private async Task InitializeAutocorrectAsync()
+    // Builds the autocorrect runtime off the UI thread. This method is reached
+    // only after the module switch turns on; a disabled module never opens the
+    // lexicons and, crucially, never maps the optional GPU reranker.
+    private async Task<AutocorrectRuntime?> BuildAutocorrectRuntimeAsync()
     {
+        AutocorrectEngine? engine = null;
+        PersonalDictionary? dictionary = null;
+        FrenchSentenceReranker? sentenceReranker = null;
+        ISentenceReranker? loadedReranker = null;
+
         try
         {
             // The keyboard/mouse Raw Input host is the process-shared one,
             // created by InitializeInputHost ahead of this. Without it there
             // is no input source to drive the engine.
-            if (_keyboardMouseHost is null) return;
+            var host = _keyboardMouseHost;
+            if (host is null) return null;
 
             string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
             string frenchPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.FrenchFileName);
@@ -70,7 +69,7 @@ public partial class App
             // The French lexicon is the gate; without it there is nothing to do,
             // so leave autocorrect unbuilt rather than start a no-op engine.
             if (!File.Exists(frenchPath))
-                return;
+                return null;
 
             // The heavy step: gzip decode + build of the FR frequency lexicon,
             // its accent index, and the pair bigram model. Pure CPU/IO, no UI
@@ -112,7 +111,8 @@ public partial class App
                 }
                 rerankerStopwatch.Stop();
                 return (fr, en, idx, ctx, rr, engine, rerankerStopwatch.ElapsedMilliseconds, vb);
-            }).ConfigureAwait(true);
+            }).ConfigureAwait(false);
+            loadedReranker = reranker;
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(
                 loadStopwatch.ElapsedMilliseconds - rerankerLoadMs, french.Count);
@@ -121,7 +121,7 @@ public partial class App
             // inspectable and removable through the CLI `dict` command.
             string dictPath = Path.Combine(
                 AppPaths.GetModuleDirectory("autocorrect"), "personal-dictionary.json");
-            _autocorrectDictionary = new PersonalDictionary(dictPath);
+            dictionary = new PersonalDictionary(dictPath);
 
             // Approved mistouch families — per-user data beside the dictionary,
             // same discipline (inspectable, editable, removable). The kinds are
@@ -143,8 +143,8 @@ public partial class App
                 index: index,
                 options: new RestorerOptions(),
                 context: context,
-                personal: _autocorrectDictionary,
-                personalVariants: BuildAutocorrectPersonalVariants(_autocorrectDictionary));
+                personal: dictionary,
+                personalVariants: BuildAutocorrectPersonalVariants(dictionary));
 
             // Stage two: Android-style spell-fix for true non-words the gate
             // leaves untouched ("bonjuor" → "bonjour"). Disjoint from diacritics
@@ -152,21 +152,21 @@ public partial class App
             var typo = new ConservativeTypoCorrector(
                 french: french,
                 english: english,
-                personal: _autocorrectDictionary,
+                personal: dictionary,
                 options: new TypoOptions());
 
             // Stage two-bis, ahead of the typo corrector: restore a dropped elision
             // apostrophe in a glued proclitic ("cest" → "c'est", "jai" → "j'ai").
             // It must precede the typo corrector, which would otherwise rewrite
             // "cest" to "est" by a plain edit before the apostrophe is considered.
-            var elision = new ElisionCorrector(french, english, _autocorrectDictionary);
+            var elision = new ElisionCorrector(french, english, dictionary);
 
             // Stage three: subject–verb agreement on a valid-but-misconjugated
             // word the stages above leave alone ("tu mange" → "tu manges").
             // Present only when the verb-morphology artifact loaded; last in the
             // chain, since it acts on the forms the earlier stages pass through.
             var grammar = verbs is not null
-                ? new GrammarCorrector(verbs, _autocorrectDictionary)
+                ? new GrammarCorrector(verbs, dictionary)
                 : null;
 
             var policies = new List<ICorrectionPolicy> { diacritics, elision, typo };
@@ -174,17 +174,18 @@ public partial class App
                 policies.Add(grammar);
             var policy = new CompositeCorrectionPolicy(policies.ToArray());
 
-            var sentenceReranker = new FrenchSentenceReranker(reranker);
+            sentenceReranker = new FrenchSentenceReranker(loadedReranker);
+            loadedReranker = null; // ownership moved into the wrapper
 
-            _autocorrectEngine = new AutocorrectEngine(
-                host: _keyboardMouseHost,
+            engine = new AutocorrectEngine(
+                host: host,
                 decoder: new KeyDecoder(),
                 tracker: new TypedWordTracker(),
                 prober: new SurfaceProber(),
                 policy: policy,
                 injector: new TextInjector(),
                 settings: () => AutocorrectSettingsService.Instance.Current,
-                dictionary: _autocorrectDictionary,
+                dictionary: dictionary,
                 french: french,
                 english: english,
                 // The post-sentence stage: deterministic French sentence rules,
@@ -203,59 +204,35 @@ public partial class App
                     Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText,
                 mistouchFamilies: mistouchFamilies,
                 surfaceProfiles: surfaceProfiles);
+            sentenceReranker = null; // ownership moved into the engine's lane
 
             // Reactive enrollment: a would-be correction on an undecided app
             // raises this on the engine's input thread. Detach the prompt so we
             // never block that thread; the user's answer writes the decision back.
-            _autocorrectEngine.EnrollmentSuggested += p => _ = PromptAutocorrectEnrollmentAsync(p);
+            engine.EnrollmentSuggested += p => _ = PromptAutocorrectEnrollmentAsync(p);
 
-            AutocorrectSettingsService.Instance.Changed += ReconcileAutocorrect;
-            Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Changed +=
-                ReconcileAutocorrectTelemetry;
-            ReconcileAutocorrect();
-
-            DeckleAutocorrectSource.Log.RerankerStatus(rerankerEngine, rerankerLoadMs);
-
-            // Readiness edge: engine built, wired and reconciled. Concise
-            // milestone, no number — the timing is on LexiconLoadComplete above.
-            DeckleAutocorrectSource.Log.EngineReady();
+            var runtime = new AutocorrectRuntime(
+                engine, dictionary, rerankerEngine, rerankerLoadMs);
+            engine = null;
+            dictionary = null;
+            return runtime;
         }
         catch
         {
-            // Data missing or malformed: the app boots without autocorrect rather
-            // than failing. Nothing else in the app depends on it.
-            _autocorrectEngine = null;
+            // Data missing or malformed: the app continues without autocorrect
+            // rather than failing. Nothing else in the app depends on it.
+            try
+            {
+                engine?.Dispose();
+                sentenceReranker?.Dispose();
+                (loadedReranker as IDisposable)?.Dispose();
+            }
+            finally
+            {
+                dictionary?.Dispose();
+            }
+            return null;
         }
-    }
-
-    // Idempotent settings → runtime reconciliation, called at boot and on every
-    // settings flush. Tracks the started state so repeated reconciles (from an
-    // unrelated module settings change) never re-Start the keyboard host.
-    private void ReconcileAutocorrect()
-    {
-        if (_autocorrectEngine is null) return;
-
-        bool shouldRun = AutocorrectSettingsService.Instance.Current.Enabled;
-        if (shouldRun && !_autocorrectStarted)
-        {
-            _autocorrectStarted = _autocorrectEngine.Start();
-        }
-        else if (!shouldRun && _autocorrectStarted)
-        {
-            _autocorrectEngine.Stop();
-            _autocorrectStarted = false;
-        }
-    }
-
-    private void ReconcileAutocorrectTelemetry() =>
-        _autocorrectEngine?.ReconcileTextTelemetry();
-
-    // Called from QuitApp. Dispose stops the keyboard host (an injected burst
-    // must never outlive the process), then the dictionary flushes its state.
-    private void ShutdownAutocorrect()
-    {
-        _autocorrectEngine?.Dispose();
-        _autocorrectDictionary?.Dispose();
     }
 
     // Turns an enrollment suggestion into a toast and writes the user's answer.

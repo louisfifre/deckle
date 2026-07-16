@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using System;
+using System.Threading;
 
 namespace Deckle.Diagnostics;
 
@@ -22,9 +23,11 @@ public sealed class LogWindowSink : ILogSink
 {
     private const int BufferCapacity = 5000;
 
-    private readonly List<ILogWindowSink> _sinks = new();
-    private readonly List<EventEntry> _buffer = new(capacity: BufferCapacity);
+    private readonly EventEntry?[] _buffer = new EventEntry?[BufferCapacity];
     private readonly object _lock = new();
+    private ILogWindowSink[] _sinkSnapshot = Array.Empty<ILogWindowSink>();
+    private int _bufferStart;
+    private int _bufferCount;
 
     public bool Wants(EventEntry entry)
         => entry.Kind == ObservationKind.Operational;
@@ -34,14 +37,25 @@ public sealed class LogWindowSink : ILogSink
         ILogWindowSink[] snapshot;
         lock (_lock)
         {
-            // Ring: bound the buffer so it does not grow indefinitely on long
-            // sessions. When the cap is exceeded, discard the oldest entry —
-            // same posture as `LogWindow` on the UI side (cap 5000 in
-            // `_entries`). Capacity matches so opening replay fills exactly the
-            // window the user will see.
-            _buffer.Add(entry);
-            if (_buffer.Count > BufferCapacity) _buffer.RemoveAt(0);
-            snapshot = _sinks.ToArray();
+            int writeIndex = (_bufferStart + _bufferCount) % BufferCapacity;
+            _buffer[writeIndex] = entry;
+
+            if (_bufferCount < BufferCapacity)
+            {
+                _bufferCount++;
+            }
+            else
+            {
+                // The write replaced the oldest slot; advance the logical
+                // start so replay remains chronological.
+                _bufferStart = (_bufferStart + 1) % BufferCapacity;
+            }
+
+            // Capture the already-published array while the replay boundary is
+            // closed. Reading it after releasing the lock would let AttachSink
+            // replay this entry and publish itself before the live snapshot,
+            // delivering the same event twice.
+            snapshot = Volatile.Read(ref _sinkSnapshot);
         }
 
         foreach (var sink in snapshot)
@@ -51,27 +65,50 @@ public sealed class LogWindowSink : ILogSink
         }
     }
 
-    // Attaches a UI sink and replays the buffered history since boot. Replay is
-    // done under the buffer lock so no event can slip between snapshot copy and
-    // sink registration; an event arriving during replay is captured in the
-    // live path, never lost or duplicated.
+    // Attaches a UI sink and replays the buffered history since boot. Replay and
+    // snapshot publication share the buffer lock: an event arriving during the
+    // handoff waits, then follows the replay through the live path. History is
+    // therefore chronological, with no lost or duplicated boundary event.
     public void AttachSink(ILogWindowSink sink)
     {
-        EventEntry[] replay;
+        if (sink is null) throw new ArgumentNullException(nameof(sink));
+
         lock (_lock)
         {
-            replay = _buffer.ToArray();
-            _sinks.Add(sink);
-        }
-        foreach (var entry in replay)
-        {
-            try { sink.Write(entry); }
-            catch { /* A UI sink must never crash the sink. */ }
+            for (int i = 0; i < _bufferCount; i++)
+            {
+                EventEntry entry = _buffer[(_bufferStart + i) % BufferCapacity]!;
+                try { sink.Write(entry); }
+                catch { /* A UI sink must never crash the sink. */ }
+            }
+
+            ILogWindowSink[] current = Volatile.Read(ref _sinkSnapshot);
+            var next = new ILogWindowSink[current.Length + 1];
+            Array.Copy(current, next, current.Length);
+            next[^1] = sink;
+            Volatile.Write(ref _sinkSnapshot, next);
         }
     }
 
     public void DetachSink(ILogWindowSink sink)
     {
-        lock (_lock) _sinks.Remove(sink);
+        lock (_lock)
+        {
+            ILogWindowSink[] current = Volatile.Read(ref _sinkSnapshot);
+            int index = Array.IndexOf(current, sink);
+            if (index < 0) return;
+
+            if (current.Length == 1)
+            {
+                Volatile.Write(ref _sinkSnapshot, Array.Empty<ILogWindowSink>());
+                return;
+            }
+
+            var next = new ILogWindowSink[current.Length - 1];
+            if (index > 0) Array.Copy(current, 0, next, 0, index);
+            if (index < current.Length - 1)
+                Array.Copy(current, index + 1, next, index, current.Length - index - 1);
+            Volatile.Write(ref _sinkSnapshot, next);
+        }
     }
 }

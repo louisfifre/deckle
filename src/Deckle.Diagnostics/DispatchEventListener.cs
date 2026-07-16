@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
+using System.Threading;
 
 namespace Deckle.Diagnostics;
 
@@ -22,14 +24,19 @@ namespace Deckle.Diagnostics;
 // subscription exists from the first AddSink-bearing boot step, so coverage
 // starts as early as the earliest sink.
 //
-// Threading. OnEventWritten fires on the emitting thread. The dispatcher takes
-// a snapshot of the sink list under a short lock, then calls each sink outside
-// the lock; a sink marshals to its own thread if it needs to. A sink that
-// throws is contained — its failure never reaches the emitter.
+// Threading. OnEventWritten fires on the emitting thread. Sink mutations build
+// and publish an immutable array under a short lock; event dispatch only reads
+// that snapshot, with no lock or per-event array allocation. A sink marshals to
+// its own thread if it needs to. A sink that throws is contained — its failure
+// never reaches the emitter.
 public sealed class DispatchEventListener : EventListener
 {
     private readonly List<ILogSink> _sinks = new();
     private readonly object _sinksLock = new();
+    private ILogSink[] _sinkSnapshot = Array.Empty<ILogSink>();
+
+    private static readonly IReadOnlyDictionary<string, object?> EmptyPayload =
+        new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
 
     // EventListener's base constructor invokes OnEventSourceCreated for every
     // already-existing provider; that callback can fire before this derived
@@ -57,12 +64,20 @@ public sealed class DispatchEventListener : EventListener
     public void AddSink(ILogSink sink)
     {
         if (sink is null) throw new ArgumentNullException(nameof(sink));
-        lock (_sinksLock) _sinks.Add(sink);
+        lock (_sinksLock)
+        {
+            _sinks.Add(sink);
+            Volatile.Write(ref _sinkSnapshot, _sinks.ToArray());
+        }
     }
 
     public void RemoveSink(ILogSink sink)
     {
-        lock (_sinksLock) _sinks.Remove(sink);
+        lock (_sinksLock)
+        {
+            if (_sinks.Remove(sink))
+                Volatile.Write(ref _sinkSnapshot, _sinks.ToArray());
+        }
     }
 
     protected override void OnEventSourceCreated(EventSource eventSource)
@@ -85,11 +100,13 @@ public sealed class DispatchEventListener : EventListener
     {
         if (eventData.EventSource.Name is null) return;
 
+        // No sink means no observable consumer: avoid materialising the
+        // payload dictionary and formatted message while the listener is
+        // subscribed early during boot.
+        ILogSink[] snapshot = Volatile.Read(ref _sinkSnapshot);
+        if (snapshot.Length == 0) return;
+
         var entry = BuildEntry(eventData);
-
-        ILogSink[] snapshot;
-        lock (_sinksLock) snapshot = _sinks.ToArray();
-
         foreach (var sink in snapshot)
         {
             try { if (sink.Wants(entry)) sink.Write(entry); }
@@ -103,15 +120,20 @@ public sealed class DispatchEventListener : EventListener
     // the payload, null when the provider declared no template.
     private static EventEntry BuildEntry(EventWrittenEventArgs e)
     {
-        var dict = new Dictionary<string, object?>(StringComparer.Ordinal);
         var names = e.PayloadNames;
         var values = e.Payload;
         int count = names is null ? 0 : names.Count;
-        for (int i = 0; i < count; i++)
+        IReadOnlyDictionary<string, object?> payload = EmptyPayload;
+        if (count > 0)
         {
-            string key = names![i];
-            object? value = (values is not null && i < values.Count) ? values[i] : null;
-            dict[key] = value;
+            var dict = new Dictionary<string, object?>(count, StringComparer.Ordinal);
+            for (int i = 0; i < count; i++)
+            {
+                string key = names![i];
+                object? value = (values is not null && i < values.Count) ? values[i] : null;
+                dict[key] = value;
+            }
+            payload = dict;
         }
 
         string? formatted = null;
@@ -138,6 +160,24 @@ public sealed class DispatchEventListener : EventListener
             keywords: e.Keywords,
             kind: ObservationTags.GetKind(e.Tags),
             formattedMessage: formatted,
-            payload: dict);
+            payload: payload);
+    }
+
+    // Clean-shutdown barrier for sinks that hand work to a background writer.
+    // Call only after runtime producers have stopped and after the final event
+    // worth retaining. Each sink drains entries accepted before this snapshot;
+    // ordinary passive sinks require no action. False reports that at least one
+    // destination could not persist its accepted tail.
+    public bool FlushSinks()
+    {
+        bool succeeded = true;
+        ILogSink[] snapshot = Volatile.Read(ref _sinkSnapshot);
+        foreach (ILogSink sink in snapshot)
+        {
+            if (sink is not IFlushableLogSink flushable) continue;
+            try { flushable.Flush(); }
+            catch { succeeded = false; }
+        }
+        return succeeded;
     }
 }

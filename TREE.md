@@ -150,7 +150,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── voxtral-validation/
 │   │   │   │   ├── aggregate_verdicts.py
 │   │   │   │   ├── bench.py
-│   │   │   │   ├── README.md  — bench-voxtral-validation [bench-scenario] Bench de validation Voxtral 24B Q4_K_M comme remplacement de Whisper, ground tr…
+│   │   │   │   ├── README.md  — bench-voxtral-validation [bench-scenario] Étude Q4 archivée : smoke fonctionnel et comparaison historique, impropre à une…
 │   │   │   │   └── validate_judge_prompt.py
 │   │   │   └── README.md  — readme-studies [module-readme] Index of frozen benchmark studies — completed or abandoned ASR/TTS spikes kept…
 │   │   ├── __init__.py
@@ -193,7 +193,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — [adr] Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
-│   │   ├── 0001-anytype-headless-service-single-http-mcp-host.md  — [adr] Anytype runs as a Deckle-orchestrated headless backend behind one HTTP MCP host…
+│   │   ├── 0001-anytype-headless-service-single-http-mcp-host.md  — [adr] Anytype runs as a Deckle-orchestrated headless service behind one HTTP MCP host…
+│   │   ├── 0002-anytype-app-supervised-headless-backend.md  — [adr] Deckle supervises Anytype's headless backend from the resident app, in the inte…
 │   │   ├── AGENTS.md  — [agent-instructions] Why Deckle keeps ADRs and the questions that gate one. Read before writing or p…
 │   │   └── CLAUDE.md
 │   ├── research/
@@ -330,6 +331,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
+│   │   ├── App.Autocorrect.Lifecycle.cs
 │   │   ├── App.FileTranscription.cs
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
@@ -359,6 +361,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── MediaFoundationInterop.cs
+│   │   │   ├── Pcm16Buffer.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
 │   │   │   └── WaveInLoop.cs
@@ -586,7 +589,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── JsonSettingsStore.cs
 │   ├── Deckle.Diagnostics/
 │   │   ├── Sinks/
+│   │   │   ├── BoundedWriteQueue.cs
 │   │   │   ├── HudFeedbackSink.cs
+│   │   │   ├── JsonlLineSerializer.cs
 │   │   │   ├── JsonlRotationPolicy.cs
 │   │   │   ├── JsonlSchema.cs
 │   │   │   ├── JsonlSink.cs
@@ -605,6 +610,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWindowingSource.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
+│   │   ├── IFlushableLogSink.cs
 │   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogSink.cs
 │   │   ├── ILogWindowSink.cs
@@ -857,8 +863,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmPage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
-│   │   │   ├── LlmRulesSection.xaml
-│   │   │   ├── LlmRulesSection.xaml.cs
 │   │   │   ├── LlmShortcutSlotsSection.xaml
 │   │   │   ├── LlmShortcutSlotsSection.xaml.cs
 │   │   │   └── ProfileViewModel.cs
@@ -1096,6 +1100,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Engine/
 │   │   │   ├── IAsrBackend.cs
 │   │   │   ├── PipelineProduction.cs
+│   │   │   ├── RewriteProfileSelection.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionEngine.cs
@@ -1230,6 +1235,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs
@@ -1318,6 +1324,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
+│   │   ├── DispatchEventListenerTests.cs
+│   │   ├── JsonlSinkLifecycleTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   └── LogLineFormatterTests.cs
 │   ├── Deckle.Hud.Tests/
@@ -1387,9 +1395,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
+│   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
+│   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   └── UnitBezierTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
