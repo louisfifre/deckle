@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 
@@ -106,15 +108,19 @@ public sealed class WhisperBackend : IAsrBackend
 
             if (!File.Exists(modelPath))
             {
-                DeckleWhispSource.Log.ModelLoadAborted();
-                DeckleWhispSource.Log.ModelLoadAbortedDetail("file_not_found", modelPath);
                 return new ModelLoadResult(false, 0, null, "file_not_found");
             }
 
-            double fileMb = new FileInfo(modelPath).Length / 1024.0 / 1024.0;
-            string basename = Path.GetFileName(modelPath);
-            DeckleWhispSource.Log.ModelLoading();
-            DeckleWhispSource.Log.ModelLoadStart(basename, fileMb);
+            if (OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Lifecycle))
+            {
+                double fileMb = new FileInfo(modelPath).Length / 1024.0 / 1024.0;
+                string basename = Path.GetFileName(modelPath);
+                DeckleWhispSource.Log.ModelLoadStart(basename, fileMb);
+            }
 
             // Reset the backend detection before init so a re-load picks up
             // the current backend rather than the one detected on a previous
@@ -135,13 +141,9 @@ public sealed class WhisperBackend : IAsrBackend
 
             if (_ctx == IntPtr.Zero)
             {
-                DeckleWhispSource.Log.ModelLoadFailed();
-                DeckleWhispSource.Log.ModelLoadFailedDetail(modelPath);
                 return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed");
             }
 
-            DeckleWhispSource.Log.ModelLoaded();
-            DeckleWhispSource.Log.ModelLoadedDetail(_detectedBackend);
             DeckleWhispSource.Log.ModelLoadComplete(sw.ElapsedMilliseconds, _detectedBackend);
 
             return new ModelLoadResult(true, sw.ElapsedMilliseconds, _detectedBackend, null);
@@ -225,7 +227,6 @@ public sealed class WhisperBackend : IAsrBackend
     private volatile bool _abortRequested;
     private int _tokenBeg;
     private Stopwatch? _transcribeSw;
-    private string _strategyLabel = "";
     // Where the current call's audio sits on the whole recording's timeline,
     // from TranscriptionContext.TimelineOffsetSec. Added to the per-segment
     // t0/t1 we log so a streaming segment reads its true position in the take.
@@ -279,8 +280,6 @@ public sealed class WhisperBackend : IAsrBackend
         wparams.abort_callback = Marshal.GetFunctionPointerForDelegate(_abortCallback);
         wparams.abort_callback_user_data = IntPtr.Zero;
 
-        float audioSec = (float)pcmSamples.Length / 16_000f;
-        _strategyLabel = wparams.strategy == 1 ? $"beam{wparams.beam_search_beam_size}" : "greedy";
         _timelineOffsetSec = context?.TimelineOffsetSec ?? 0;
 
         // One-time configuration preamble. A standalone call (monolithic) and the
@@ -291,22 +290,34 @@ public sealed class WhisperBackend : IAsrBackend
         if (context?.EmitPreamble ?? true)
         {
             DeckleWhispSource.Log.TranscribeStarted();
-            DeckleWhispSource.Log.TranscribeStartDetail(audioSec, pcmSamples.Length, _strategyLabel);
-            string strategyVerbose = wparams.strategy == 1
-                ? $"beam(size={wparams.beam_search_beam_size})"
-                : "greedy";
-            DeckleWhispSource.Log.TranscribeParams(
-                $"strategy={strategyVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2}" +
-                $" | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2}" +
-                $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
-                $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
-
-            string prompt = context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt;
-            bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
-            if (!string.IsNullOrEmpty(prompt))
+            if (OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Pipeline))
             {
-                string truncated = prompt.Length > 60 ? prompt[..60] + "…" : prompt;
-                DeckleWhispSource.Log.TranscribePrompt(prompt.Length, carry, truncated);
+                string strategyLabel = wparams.strategy == 1
+                    ? $"beam{wparams.beam_search_beam_size}"
+                    : "greedy";
+                float audioSec = (float)pcmSamples.Length / 16_000f;
+                DeckleWhispSource.Log.TranscribeStartDetail(
+                    audioSec, pcmSamples.Length, strategyLabel);
+
+                string strategyVerbose = wparams.strategy == 1
+                    ? $"beam(size={wparams.beam_search_beam_size})"
+                    : "greedy";
+                DeckleWhispSource.Log.TranscribeParams(
+                    $"strategy={strategyVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2}" +
+                    $" | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2}" +
+                    $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
+                    $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
+
+                string prompt = context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt;
+                bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
+                if (!string.IsNullOrEmpty(prompt))
+                {
+                    DeckleWhispSource.Log.TranscribePromptConfigured(prompt.Length, carry);
+                }
             }
         }
 
@@ -367,9 +378,7 @@ public sealed class WhisperBackend : IAsrBackend
         // text" by both the streaming consumer and the monolithic finalize.
         if (KnownHallucinations.Matches(fullText))
         {
-            string preview = fullText.Length > 60 ? fullText[..60] + "…" : fullText;
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
-            DeckleWhispSource.Log.TranscribeHallucinationFilteredDetail(preview);
             fullText = "";
         }
 
@@ -394,6 +403,11 @@ public sealed class WhisperBackend : IAsrBackend
                 // Per-segment confidence over text tokens only — timestamp
                 // tokens (id >= tokenBeg) are excluded from the average.
                 int nTok = WhisperPInvoke.whisper_full_n_tokens(ctx, i);
+                bool detailEnabled = OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Transcription,
+                    DeckleWhispSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Pipeline);
                 float sumP = 0f, minP = 1f;
                 int textTok = 0;
                 for (int k = 0; k < nTok; k++)
@@ -402,7 +416,7 @@ public sealed class WhisperBackend : IAsrBackend
                     if (id >= tokenBeg) continue;
                     float p = WhisperPInvoke.whisper_full_get_token_p(ctx, i, k);
                     sumP += p;
-                    if (p < minP) minP = p;
+                    if (detailEnabled && p < minP) minP = p;
                     textTok++;
                 }
                 float avgP = textTok > 0 ? sumP / textTok : 0f;
@@ -419,27 +433,30 @@ public sealed class WhisperBackend : IAsrBackend
                     _repetitionDetector.ObserveAndShouldAbort(segText, out int streak, out int period))
                 {
                     _abortRequested = true;
-                    string preview = segText.Trim();
-                    if (preview.Length > 60) preview = preview[..60] + "…";
                     DeckleWhispSource.Log.TranscribeRepetitionLoop();
-                    DeckleWhispSource.Log.TranscribeRepetitionLoopDetail(streak, period, preview);
+                    DeckleWhispSource.Log.TranscribeRepetitionLoopMetrics(streak, period);
                 }
 
                 _segmentSink?.Invoke(segment);
 
-                // Fixed-width columns so the text column lines up vertically and a
-                // take reads top-to-bottom at a glance. t0/t1 are offset onto the
-                // whole recording's timeline (_timelineOffsetSec) so each segment
-                // shows its true position in the take, not a per-call zero; in
-                // monolithic the offset is 0 → absolute-from-start as before.
-                double t0Sec = _timelineOffsetSec + t0 / 100.0;
-                double t1Sec = _timelineOffsetSec + t1 / 100.0;
-                double dur = (t1 - t0) / 100.0;
-                string trimmed = segText.Trim();
-                DeckleWhispSource.Log.SegmentEmitted(
-                    $"seg #{i + 1,2} | {t0Sec,7:F1}→{t1Sec,7:F1}s | dur {dur,5:F1}s" +
-                    $" | nsp {nsp,4:P0} | p̄ {avgP:F2} | min {minP:F2} | tok {textTok,2}/{nTok,2}" +
-                    $" | \"{trimmed}\"");
+                if (detailEnabled)
+                {
+                    double t0Sec = _timelineOffsetSec + t0 / 100.0;
+                    double t1Sec = _timelineOffsetSec + t1 / 100.0;
+                    double dur = (t1 - t0) / 100.0;
+                    int characters = segText.Trim().Length;
+                    DeckleWhispSource.Log.SegmentRecognized(
+                        i + 1,
+                        t0Sec,
+                        t1Sec,
+                        dur,
+                        nsp,
+                        avgP,
+                        minP,
+                        textTok,
+                        nTok,
+                        characters);
+                }
             }
         }
         catch (Exception ex)

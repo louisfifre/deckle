@@ -180,6 +180,33 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelLoadFailedDetail, path);
     }
 
+    [Event(EvtModelUnavailable,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The transcription model is unavailable")]
+    public void ModelUnavailable()
+    {
+        if (IsEnabled()) WriteEvent(EvtModelUnavailable);
+    }
+
+    [Event(EvtModelUnavailableDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "model unavailable | reason={0}")]
+    public void ModelUnavailableDetail(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelUnavailableDetail, reason);
+    }
+
+    [Event(EvtModelRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Transcription model availability recovered")]
+    public void ModelRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtModelRecovered);
+    }
+
     [Event(EvtModelLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

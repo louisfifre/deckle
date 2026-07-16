@@ -95,12 +95,15 @@ public sealed partial class DeckleWhispSource
     }
 
     [Event(EvtClipboardCopied,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "Copied to clipboard")]
     public void ClipboardCopied()
     {
-        if (IsEnabled()) WriteEvent(EvtClipboardCopied);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtClipboardCopied);
     }
 
     [Event(EvtClipboardCopyComplete,

@@ -2,10 +2,11 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
 
-// ── StreamingCaptureGate ───────────────────────────────────────────────────
+// ── TranscriptionActivityScope ─────────────────────────────────────────────
 //
-// Volatile boolean remembering whether a streaming transcription pipeline is
-// active. Sister to AmbientCaptureGate, same shape, same rationale.
+// Process-wide activity state for a complete transcription workflow: dictation
+// (monolithic or streaming) and file transcription, including final delivery.
+// Sister to AmbientCaptureGate, same shape, same rationale.
 //
 // Consumption. The gate is consulted by the LogWindow / app.jsonl Verbose drop
 // filter wired in App. The filter combines this gate with the user toggle
@@ -23,7 +24,7 @@ namespace Deckle.Diagnostics.Logging;
 // Threading. `volatile` for cross-thread visibility without a lock — the
 // streaming pipeline flips the gate from the producer's task scheduling, and
 // each emission reads the value without synchronization. Races are benign.
-public static class StreamingCaptureGate
+public static class TranscriptionActivityGate
 {
     public static bool IsActive
         => OperationalLogAdmission.IsActive(OperationalLogActivity.Transcription);
@@ -32,17 +33,15 @@ public static class StreamingCaptureGate
         => OperationalLogAdmission.SetActive(OperationalLogActivity.Transcription, active);
 }
 
-// `using var _ = StreamingCaptureScope.Open();` opens the gate on construction
-// and closes it on disposal, so an early return or a thrown exception in the
-// streaming pipeline can never leave the gate stuck open. Cheap struct, no
-// allocation beyond the boolean flip.
-public readonly struct StreamingCaptureScope : System.IDisposable
+// `using var _ = TranscriptionActivityScope.Open();` encloses the whole worker,
+// so an early return or exception can never leave the activity stuck open.
+public readonly struct TranscriptionActivityScope : System.IDisposable
 {
-    public static StreamingCaptureScope Open()
+    public static TranscriptionActivityScope Open()
     {
-        StreamingCaptureGate.SetActive(true);
+        TranscriptionActivityGate.SetActive(true);
         return default;
     }
 
-    public void Dispose() => StreamingCaptureGate.SetActive(false);
+    public void Dispose() => TranscriptionActivityGate.SetActive(false);
 }

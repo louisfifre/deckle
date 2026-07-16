@@ -640,7 +640,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogWindowFilterSession.cs
 │   │   ├── SettingsSearch.cs
-│   │   └── StreamingCaptureGate.cs
+│   │   └── TranscriptionActivityScope.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── AGENTS.md  — [agent-instructions] Purpose-specific telemetry datasets and their consent gates.
 │   │   ├── CLAUDE.md
@@ -1387,7 +1387,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Deckle.Transcription.Tests.csproj
+│   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── EnergySegmenterTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs

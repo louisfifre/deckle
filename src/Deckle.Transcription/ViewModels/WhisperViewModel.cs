@@ -31,7 +31,6 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnModelsDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Paths.ModelsDirectory", $"\"{value}\"");
         PushToSettings();
     }
 
@@ -41,7 +40,6 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnFileTranscriptionOutputDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("FileTranscription.OutputDirectory", $"\"{value}\"");
         PushToSettings();
     }
 
@@ -62,28 +60,24 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnModelChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Transcription.Model", $"\"{value}\"");
         PushToSettings();
     }
 
     partial void OnUseGpuChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Transcription.UseGpu", value.ToString());
         PushToSettings();
     }
 
     partial void OnLanguageChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Transcription.Language", $"\"{value}\"");
         PushToSettings();
     }
 
     partial void OnInitialPromptChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Transcription.InitialPrompt", $"({value?.Length ?? 0} chars)");
         PushToSettings();
     }
 
@@ -111,35 +105,30 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnVadEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Enabled", value.ToString());
         PushToSettings();
     }
 
     partial void OnVadThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.Threshold", value.ToString("0.00"));
         PushToSettings();
     }
 
     partial void OnVadMinSpeechDurationMsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.MinSpeechDurationMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadMinSilenceDurationMsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.MinSilenceDurationMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnVadSpeechPadMsChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.SpeechTrim.SpeechPadMs", ((int)value).ToString());
         PushToSettings();
     }
 
@@ -160,28 +149,24 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnUseBeamSearchChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Decoding.UseBeamSearch", value.ToString());
         PushToSettings();
     }
 
     partial void OnBeamSizeChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Decoding.BeamSize", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnTemperatureChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Decoding.Temperature", value.ToString("0.0"));
         PushToSettings();
     }
 
     partial void OnTemperatureIncrementChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Decoding.TemperatureIncrement", value.ToString("0.0"));
         PushToSettings();
     }
 
@@ -199,21 +184,18 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnEntropyThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Confidence.EntropyThreshold", value.ToString("0.0"));
         PushToSettings();
     }
 
     partial void OnLogprobThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Confidence.LogprobThreshold", value.ToString("0.00"));
         PushToSettings();
     }
 
     partial void OnNoSpeechThresholdChanged(double value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Confidence.NoSpeechThreshold", value.ToString("0.00"));
         PushToSettings();
     }
 
@@ -231,21 +213,18 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnSuppressNonSpeechTokensChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("OutputFilters.SuppressNonSpeechTokens", value.ToString());
         PushToSettings();
     }
 
     partial void OnSuppressBlankChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("OutputFilters.SuppressBlank", value.ToString());
         PushToSettings();
     }
 
     partial void OnSuppressRegexChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("OutputFilters.SuppressRegex", $"\"{value}\"");
         PushToSettings();
     }
 
@@ -260,14 +239,12 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnUseContextChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Context.UseContext", value.ToString());
         PushToSettings();
     }
 
     partial void OnMaxTokensChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Context.MaxTokens", ((int)value).ToString());
         PushToSettings();
     }
 
@@ -307,56 +284,48 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnStreamingEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Strategy", value ? "Streaming" : "Monolithic");
         PushToSettings();
     }
 
     partial void OnSegThresholdDbfsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.ThresholdDbfs", value.ToString("0.0"));
         PushToSettings();
     }
 
     partial void OnSegHangoverMaxMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverMaxMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnSegHangoverMinMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverMinMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnSegHangoverRampStartMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverRampStartMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnSegHangoverRampEndMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.HangoverRampEndMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnSegMarginMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.MarginMs", ((int)value).ToString());
         PushToSettings();
     }
 
     partial void OnSegMinUtteranceMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleWhispSource.Log.SettingChanged("Streaming.Segmenter.MinUtteranceMs", ((int)value).ToString());
         PushToSettings();
     }
 
@@ -392,35 +361,30 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnAutoPasteEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Auto-paste", value.ToString());
         PushBehaviourToSettings();
     }
 
     partial void OnOverlayEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Overlay enabled", value.ToString());
         PushBehaviourToSettings();
     }
 
     partial void OnOverlayFadeOnProximityChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Overlay fade", value.ToString());
         PushBehaviourToSettings();
     }
 
     partial void OnOverlayAnimationsChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Overlay animations", value.ToString());
         PushBehaviourToSettings();
     }
 
     partial void OnOverlayPositionChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Overlay position", value);
         PushBehaviourToSettings();
     }
 
@@ -463,21 +427,18 @@ public partial class WhisperViewModel : ObservableObject
     partial void OnTelemetryLatencyEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnTelemetryCorpusEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Telemetry.CorpusEnabled", value.ToString());
         PushTelemetryToSettings();
     }
 
     partial void OnRecordAudioCorpusChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Telemetry.RecordAudioCorpus", value.ToString());
         PushTelemetryToSettings();
     }
 
@@ -486,8 +447,6 @@ public partial class WhisperViewModel : ObservableObject
         // RadioButtons emits -1 transiently while it realises its items —
         // ignore it so we never cast a bogus index onto the enum.
         if (_isSyncing || value < 0) return;
-        DeckleWhispSource.Log.SettingChanged(
-            "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
         PushTelemetryToSettings();
     }
 

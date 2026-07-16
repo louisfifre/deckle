@@ -45,10 +45,10 @@ public sealed class TranscriptionSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Transcription-Save",
             jsonOptions: _jsonOptions,
-            logInfo:     msg => DeckleWhispSource.Log.WhispSettingsPrefixed($"[transcription] {msg}"),
-            logVerbose:  msg => DeckleWhispSource.Log.SettingsLoadComplete($"[transcription] {msg}"),
-            logWarning:  msg => DeckleWhispSource.Log.SettingsLoadWarning($"[transcription] {msg}"),
-            logError:    msg => DeckleWhispSource.Log.SettingsLoadError($"[transcription] {msg}"),
+            // Normal initialization/load/save callbacks describe persistence
+            // internals, not a user workflow step. Keep only anomalies.
+            logWarning:  DeckleWhispSource.Log.SettingsLoadWarning,
+            logError:    DeckleWhispSource.Log.SettingsLoadError,
             postLoadMigration: ApplyPostLoadMigrations);
     }
 
