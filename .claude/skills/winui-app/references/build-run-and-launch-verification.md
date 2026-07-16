@@ -12,6 +12,8 @@ sources:
 
 Use this file when the task involves building, running, launch failures, startup crashes, or final verification that a WinUI app actually opens on the current machine.
 
+Repository instructions own the validation contract. If they require compile-only validation or forbid stopping and relaunching the app, apply the build portions below and treat runtime checks as maintainer-owned instead of overriding that boundary.
+
 ## Required Workflow
 
 1. Identify the real build target:

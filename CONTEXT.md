@@ -10,7 +10,7 @@ Glossary of Deckle project terms. Defines the shared vocabulary between Louis an
 
 ## Testing — layers and categories
 
-Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Two categories are outside the automatic scope: they exist and are useful, but are executed by hand via the `verify` skill.
+Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Two categories are outside the automatic scope: they exist and are useful, but Louis executes them manually on an interactive workstation via the `verify` skill in the Claude harness.
 
 ### In the automatic scope
 
@@ -34,7 +34,7 @@ Test added in reaction to a specific bug already fixed. Reproduces the condition
 Test that exercises a heavy native runtime in a realistic condition — loading a 1 GB Whisper model, transcribing a reference audio file stored in the test repo, reading a Hue Entertainment payload on a real bridge. Possible to automate locally, but slow, demanding, and conditional on the availability of native artifacts and hardware. Stays in the hands of Louis or a dedicated workstation.
 
 **interactive** :
-Test that requires an interactive Windows workstation and a human or a fake human capable of presenting real conditions to the system — a real mic that picks up sound, a global hotkey that does not conflict with another app, a UIAutomation target window to validate the paste, a physical display for DXGI Output Duplication. Not automatable by an agent. Validated via the `verify` skill.
+Test that requires an interactive Windows workstation and a human or a fake human capable of presenting real conditions to the system — a real mic that picks up sound, a global hotkey that does not conflict with another app, a UIAutomation target window to validate the paste, a physical display for DXGI Output Duplication. Not automatable by an agent; Louis validates it manually via the `verify` skill in the Claude harness.
 
 ### Key distinction between integration and system
 
@@ -165,7 +165,7 @@ _Avoid_ : learning store (the internal mechanism; this term names the visible su
 Two devices carry the word "VAD" and are constantly conflated, yet they are different in kind: one is a model that finds speech in a finished buffer, the other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
 
 **Neural VAD** :
-A neural-network voice-activity detector (today Silero) that runs over a whole captured buffer to find speech regions and trim silence before decoding. Model-based and post-hoc — it needs the full buffer in hand. Wired inside `whisper_full` via `vad_model_path`.
+A neural-network voice-activity detector (today Silero) that runs over a whole captured buffer to find speech regions and trim silence before decoding. Model-based and post-hoc — it needs the full buffer in hand. Implemented by `Deckle.Vad` upstream of the ASR backend; Whisper's internal VAD stays disabled.
 _Avoid_ : VAD (bare — ambiguous), Silero (vendor-specific; the term should outlive the model).
 
 **Energy segmenter** :

@@ -22,4 +22,4 @@ The dated session/debug capture scripts were removed — their numbers are in th
 
 ## Layout note
 
-These scripts predate the code/data split and write to worktree-local `..\models-cache\` and `..\runs\perf-cap\` — paths now relative to `studies/perf-cap/`, not the ASR root, and therefore **stale**. The folder is a frozen capture; if the characterization ever resumes, port it onto [`../../lib/paths.py`](../../lib/paths.py) first.
+These scripts predate the code/data split and write to worktree-local `..\models-cache\` and `..\runs\perf-cap\` — paths now relative to `studies/perf-cap/`, not the ASR root, and therefore **stale**. The folder is a frozen capture; if the characterization ever resumes, port it onto [`benchmark/lib/paths.py`](../../../lib/paths.py) first.

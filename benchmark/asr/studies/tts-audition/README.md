@@ -5,7 +5,7 @@ type: bench-scenario
 module: benchmark/asr/studies/tts-audition
 ---
 
-# `benches/tts-audition/` — local French TTS audition
+# `studies/tts-audition/` — local French TTS audition
 
 A by-ear comparison of **ONNX-local** French text-to-speech engines, all speaking the same sentence set so timbre and prosody can be judged side by side. On-doctrine throughout: no online inference, no `transformers` at inference, weights pulled once and run on plain ONNX Runtime.
 

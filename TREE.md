@@ -9,7 +9,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── deckle-interface/
 │       │   └── SKILL.md  — deckle-interface [skill] Render the visual interface at Microsoft first-party level — native primitives,…
 │       ├── deckle-journal/
-│       │   ├── examples.md
 │       │   └── SKILL.md  — deckle-journal [skill] How to write the JOURNAL.md. Invoke when recording a finding, or a small decisi…
 │       ├── deckle-logging/
 │       │   └── SKILL.md  — deckle-logging [skill] What to observe in code, and how to write it readable and actionable. Invoke be…
@@ -26,9 +25,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── deckle-versioning/
 │       │   └── SKILL.md  — deckle-versioning [skill] How versions are numbered and the changelog written. Invoke before cutting a ve…
 │       ├── microsoft-docs/
-│       │   └── SKILL.md  — microsoft-docs Query official Microsoft documentation to find concepts, tutorials, and code ex…
+│       │   └── SKILL.md  — microsoft-docs [skill] Find official Microsoft documentation and code samples. Use for Microsoft techn…
 │       ├── ux-copy/
-│       │   └── SKILL.md  — ux-copy Write or review UX copy — microcopy, error messages, empty states, CTAs. Trigge…
+│       │   └── SKILL.md  — ux-copy [skill] Write or review interface wording — CTAs, errors, empty states, confirmations,…
 │       ├── ux-designer/
 │       │   ├── rules/
 │       │   │   ├── accessibility.md
@@ -37,7 +36,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       │   │   ├── research.md
 │       │   │   └── visual-design.md
 │       │   ├── AGENTS.md
-│       │   └── SKILL.md  — ux-designer Expert UX design assistance for user research, wireframing, prototyping, and de…
+│       │   └── SKILL.md  — ux-designer [skill] Design or review user research, flows, information architecture, wireframes, pr…
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
@@ -62,7 +61,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │           │   └── windows-app-sdk-lifecycle-notifications-and-deployment.md
 │           ├── config.yaml
 │           ├── LICENSE.txt
-│           └── SKILL.md  — winui-app Bootstrap, develop, and design modern WinUI 3 desktop applications with C# and…
+│           └── SKILL.md  — winui-app [skill] Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps…
 ├── .github/
 │   └── workflows/
 │       └── update-readme-stats.yml
@@ -190,7 +189,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── CLAUDE.md
 │   ├── Directory.Build.props
 │   ├── Directory.Packages.props
-│   ├── HANDOFF.md  — handoff-benchmark-reorg [handoff] Session handoff for the benchmark workspace reorganization.
 │   └── README.md  — readme-benchmark [module-readme] Index for Deckle benchmark workspaces — routes ASR evaluation and generic autor…
 ├── docs/
 │   ├── adr/
@@ -274,8 +272,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
 │   │   │   ├── AnytypeSpaceAliases.cs
-│   │   │   ├── DevSpace.cs
-│   │   │   └── SCHEMA.md
+│   │   │   └── DevSpace.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Anytype core module — headless backend supervision, REST transport, frozen Dev-…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Anytype.csproj
@@ -1317,7 +1314,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
-│   │   └── JsonlSinkRotationTests.cs
+│   │   ├── JsonlSinkRotationTests.cs
+│   │   └── LogLineFormatterTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs

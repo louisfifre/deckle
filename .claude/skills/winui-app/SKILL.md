@@ -1,6 +1,7 @@
 ---
 name: winui-app
-description: Bootstrap, develop, and design modern WinUI 3 desktop applications with C# and the Windows App SDK using official Microsoft guidance, WinUI Gallery patterns, Windows App SDK samples, and CommunityToolkit components. Use when creating a brand new app, preparing a machine for WinUI, reviewing, refactoring, planning, troubleshooting, environment-checking, or setting up WinUI 3 XAML, controls, navigation, windowing, theming, accessibility, responsiveness, performance, deployment, or related Windows app design and development work.
+description: Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps. Use for XAML, controls, navigation, windowing, theming, accessibility, responsiveness, performance, or deployment.
+type: skill
 ---
 
 # WinUI App
@@ -37,7 +38,7 @@ dotnet new list winui
 3. Read `references/_sections.md`, then load only the reference files that match the task.
 4. Make the packaging model explicit before creating or refactoring the app. Default to packaged for Store-like product workflows and Visual Studio deploy/F5 flows. Default to unpackaged when the user expects repeatable CLI build-and-run loops or direct `.exe` launches after each change.
 5. When the task is an opaque XAML compiler failure such as `MSB3073` or `XamlCompiler.exe`, read `references/foundation-template-first-recovery.md` and simplify back toward the current `dotnet new winui` scaffold for the chosen packaging model before inventing custom recovery structure.
-6. For any work that creates or changes a WinUI app, make a complete but minimal edit set, then build the app and run it before responding to the user. Do this by default even when the user did not explicitly ask for verification. If a running app instance locks the output while more work remains, stop it, rebuild, relaunch, and continue verification. When the work is complete and launch verification succeeds, leave the final verified app instance running for the user unless they explicitly asked you not to.
+6. Follow the repository's validation and process-lifecycle rules. When they allow runtime verification, make a complete but minimal edit set, build the app, run it, and confirm objective success before responding. When they require compile-only validation or forbid stopping and relaunching an existing app, that narrower project rule is the verification contract.
 7. Treat launch verification as incomplete until the app shows objective success signals such as a responsive top-level window, expected window title, or other clear startup behavior. A spawned process by itself is not enough.
 8. Prefer Microsoft Learn for requirements, API expectations, and platform guidance.
 9. Prefer WinUI Gallery for concrete control usage, shell composition, and design details.
@@ -82,7 +83,7 @@ dotnet new list winui
 - If `config.yaml` is missing, say so clearly and fall back to the official Microsoft workflow instead of pretending the bundled path exists.
 - Keep environment readiness, packaging choice, and application startup verification as separate checks. Passing one does not prove the others.
 - Fail closed on ambiguous launch results. If the app did not clearly open, keep debugging.
-- After creating or editing a WinUI app, do not stop at a successful build. Launch the app, confirm objective startup behavior, and leave the final verified app instance running before returning control to the user unless they explicitly say not to run it.
+- When project instructions allow runtime verification, launch the app, confirm objective startup behavior, and leave the final verified instance running unless the user says not to. Under a compile-only project contract, stop at the required build and report that runtime behavior was not exercised.
 
 ## Reference Rules
 
