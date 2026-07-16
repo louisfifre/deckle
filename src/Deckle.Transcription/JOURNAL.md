@@ -7,6 +7,10 @@ type: module-journal
 
 Not read by default. Come here when you need the *why* behind a choice that the code no longer shows.
 
+## 2026-07-16 — Operational logs are content-free; telemetry joins by transcription id
+
+Spoken text, prompt previews and segment text never enter operational events. Purpose-specific datasets remain the only content-bearing route and stay consent-gated. `transcription_id` joins the content-free operational correlation event with latency and corpus rows. Whole-output DPAPI encryption was not chosen: it would replace the inspectable JSONL/WAV contracts rather than repair the boundary between logs and datasets.
+
 ## 2026-06-13 — Hallucination filter is output-side; paragraph append unimplemented; ASR spike closed
 
 - The "Sous-titrage Radio-Canada" near-silence hallucination is to be handled by an **output denylist** that strips known hallucination phrases before the text reaches the clipboard/paste — not by the adaptive-segmenter-threshold root fix once planned. The phrase may still be transcribed; it must never leave the pipeline into the clipboard.

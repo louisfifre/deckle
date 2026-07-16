@@ -57,6 +57,22 @@ def _resolve_data_dir() -> Path:
 BENCHMARK_DATA_DIR = _resolve_data_dir()
 """Racine des données persistantes du bench. Survit aux worktrees."""
 
+def _resolve_deckle_data_dir() -> Path:
+    localappdata = os.environ.get("LOCALAPPDATA")
+    if localappdata:
+        return Path(localappdata) / "Deckle"
+    # Keep the fallback coherent with _resolve_data_dir without making a
+    # DECKLE_BENCHMARK_DIR override silently relocate app telemetry.
+    return BENCHMARK_CODE_DIR
+
+
+DECKLE_DATA_DIR = _resolve_deckle_data_dir()
+"""Racine locale de Deckle (``%LOCALAPPDATA%/Deckle`` par défaut).
+Les benchmarks la lisent pour importer la télémétrie produite par l'app."""
+
+DECKLE_TELEMETRY_DIR = DECKLE_DATA_DIR / "telemetry"
+"""Télémétrie locale produite par Deckle, source des corpus de benchmark."""
+
 CORPORA_DIR = BENCHMARK_DATA_DIR / "corpora"
 """Corpora curated avec leur ``corpus.jsonl`` enrichi. Un sous-dossier par slug."""
 

@@ -18,11 +18,12 @@ namespace Deckle.Diagnostics;
 // dispatcher leaves admission with producers and projection with sinks.
 //
 // Threading. The dispatcher invokes Wants/Write on the emitting thread,
-// possibly concurrently for different events. A sink that touches shared state
-// (a file, a ring buffer, a UI surface) guards it itself, exactly as the former
-// listeners did. A sink must never throw out of Wants or Write — the dispatcher
-// swallows exceptions defensively, but the contract is that a sink failure is
-// contained, never propagated to the emitter.
+// possibly concurrently for different events. A purely in-memory sink guards
+// its own shared state. A destination doing blocking I/O implements
+// IFlushableLogSink and hands the entry to its bounded writer instead. A sink
+// must never throw out of Wants or Write — the dispatcher swallows exceptions
+// defensively, but the contract is that a sink failure is contained, never
+// propagated to the emitter.
 public interface ILogSink
 {
     // True when this sink wants the entry written. Pure decision, no side

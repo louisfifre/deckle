@@ -21,7 +21,7 @@ public sealed class TelemetrySettings
     // transcription pre-processing is enabled, the raw capture otherwise —
     // so the corpus mirrors the engine's real input. AlwaysRaw forces the
     // untouched microphone signal regardless of the DSP, preserving a
-    // re-derivable baseline (the original ADR-0006 posture). See ADR-0006.
+    // re-derivable baseline required by the normalized corpus contract.
     public AudioCorpusContent AudioCorpusContent { get; set; } = AudioCorpusContent.MatchTranscription;
 
     // Optional override for the purpose-specific dataset root. The application

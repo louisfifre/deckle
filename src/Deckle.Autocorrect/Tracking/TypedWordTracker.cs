@@ -69,6 +69,11 @@ public sealed class TypedWordTracker
     /// <summary>The live buffer, for the CLI watch display.</summary>
     public string CurrentWord => _buffer.ToString();
 
+    // The engine's per-key path normally needs only presence, not the text.
+    // Keep that query allocation-free; CurrentWord remains the deliberate
+    // snapshot API for diagnostics and the eventual sentence rewrite.
+    internal bool HasCurrentWord => _buffer.Length > 0;
+
     public void OnKeystroke(Keystroke k)
     {
         switch (k.Kind)

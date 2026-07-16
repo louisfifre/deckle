@@ -117,9 +117,9 @@
 | Ollama endpoint | setting | hand-authored | LlmSettings.OllamaEndpoint (string) | LlmSettings ctor: 'http://localhost:11434/api/generate' |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:58 |
 | Primary rewrite profile | setting | hand-authored | LlmSettings.PrimaryRewriteProfileName (string?) + PrimaryRewriteProfileId (string?) | LlmSettings ctor: null (not set by default) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:65,74 |
 | Secondary rewrite profile | setting | hand-authored | LlmSettings.SecondaryRewriteProfileName (string?) + SecondaryRewriteProfileId (string?) | LlmSettings ctor: null (not set by default) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:69,75 |
-| Auto-rewrite rule metric | setting | hand-authored | LlmSettings.RuleMetric (string) | LlmSettings ctor: 'Duration' |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:261 |
-| Auto-rewrite rules by duration | setting | hand-authored | LlmSettings.AutoRewriteRules (List<AutoRewriteRule>) | LlmSettings ctor: [60s→Lissage, 300s→Affinage, 600s→Arrangement] |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:250-255 |
-| Auto-rewrite rules by word count | setting | hand-authored | LlmSettings.AutoRewriteRulesByWords (List<AutoRewriteRuleByWords>) | LlmSettings ctor: [150 words→Lissage, 600 words→Affinage, 1200 words→Arrangement] |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:269-274 |
+| Legacy auto-rewrite rule metric | legacy setting | retained for deserialization | LlmSettings.RuleMetric (string) | No runtime or UI consumer |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs |
+| Legacy auto-rewrite rules by duration | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRules (List<AutoRewriteRule>) | No runtime or UI consumer |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs |
+| Legacy auto-rewrite rules by word count | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRulesByWords (List<AutoRewriteRuleByWords>) | No runtime or UI consumer |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs |
 | Rewrite profile: Name | setting | hand-authored | RewriteProfile.Name (string) | LlmSettings ctor: 'Lissage', 'Affinage', 'Arrangement' (three defaults) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:19,88-242 |
 | Rewrite profile: Model | setting | hand-authored | RewriteProfile.Model (string) | LlmSettings ctor: '' (empty, user must choose) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:20,88-242 |
 | Rewrite profile: System prompt | setting | hand-authored | RewriteProfile.SystemPrompt (string) | LlmSettings ctor: Three shipped prompts for Lissage/Affinage/Arrangement (tuned via autoresearch on Ministral 14B Q4) |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:21,100-240 |
@@ -129,7 +129,7 @@
 | Rewrite profile: Repeat penalty (advanced) | setting | hand-authored | RewriteProfile.RepeatPenalty (double?) | LlmSettings ctor: null (not sent to Ollama, uses Modelfile default) | • | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:27 |
 | Rewrite profile: Stable ID | diagnostic | n/a | RewriteProfile.Id (string, 12-char Guid suffix N format) | Generated on new profile or legacy load via LlmSettingsMigrations.RepairProfileReferences |  | D:\projects\ai\deckle\src\Deckle.Llm.Rewrite\LlmSettings.cs:17; LlmSettingsMigrations.cs:48-52 |
 
-**Gestes destructifs :** Reset General section _(adhoc-dialog)_ · Reset Shortcuts section _(adhoc-dialog)_ · Reset Rules section _(adhoc-dialog)_ · Reset Profiles section _(adhoc-dialog)_ · Reset all LLM settings _(adhoc-dialog)_ · Delete profile _(adhoc-dialog)_ · Delete auto-rewrite rule (Duration) _(none)_ · Delete auto-rewrite rule (Word count) _(none)_ · Delete model from Ollama _(adhoc-dialog)_
+**Gestes destructifs :** Reset General section _(adhoc-dialog)_ · Reset Shortcuts section _(adhoc-dialog)_ · Reset Profiles section _(adhoc-dialog)_ · Reset all LLM settings _(adhoc-dialog)_ · Delete profile _(adhoc-dialog)_ · Delete model from Ollama _(adhoc-dialog)_
 
 ## Deckle.Autocorrect + Deckle.Lighting.Ambient
 
@@ -221,8 +221,8 @@
 | Primary Rewrite Profile | setting | hand-authored | LlmSettings.PrimaryRewriteProfileName / PrimaryRewriteProfileId | LlmSettings.PrimaryRewriteProfileName initializer (null) |  |  |
 | Secondary Rewrite Profile | setting | hand-authored | LlmSettings.SecondaryRewriteProfileName / SecondaryRewriteProfileId | LlmSettings.SecondaryRewriteProfileName initializer (null) |  |  |
 | Rewrite Profiles (List) | setting | hand-authored | LlmSettings.Profiles (RewriteProfile[]) | LlmSettings.Profiles initializer (Lissage, Affinage, Arrangement presets) |  |  |
-| Auto-Rewrite Rules (Duration) | setting | hand-authored | LlmSettings.AutoRewriteRules (AutoRewriteRule[]) | LlmSettings.AutoRewriteRules initializer (60s/300s/600s brackets) |  |  |
-| Auto-Rewrite Rules (Words) | setting | hand-authored | LlmSettings.AutoRewriteRulesByWords (AutoRewriteRuleByWords[]) | LlmSettings.AutoRewriteRulesByWords initializer (150/600/1200 word brackets) |  |  |
+| Legacy Auto-Rewrite Rules (Duration) | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRules (AutoRewriteRule[]) | No runtime or UI consumer |  |  |
+| Legacy Auto-Rewrite Rules (Words) | legacy setting | retained for deserialization | LlmSettings.AutoRewriteRulesByWords (AutoRewriteRuleByWords[]) | No runtime or UI consumer |  |  |
 | Rule Metric | setting | hand-authored | LlmSettings.RuleMetric | LlmSettings.RuleMetric initializer ("Duration") | • |  |
 | Trackpad Enabled (Three-finger drag) | setting | hand-authored | TrackpadSettings.Enabled | TrackpadSettings.Enabled initializer (false) |  |  |
 | Trackpad Drag Speed | setting | hand-authored | TrackpadSettings.DragSpeed | TrackpadSettings.DragSpeed initializer (1.0) |  |  |
@@ -254,7 +254,7 @@
 | Telemetry Autocorrect Text | setting | migrated | TelemetrySettings.AutocorrectText | TelemetrySettings.AutocorrectText initializer (false) | • |  |
 | Mouse Wheel Record Events (diagnostic) | diagnostic | hand-authored | MouseWheelSettings.RecordEvents | MouseWheelSettings.RecordEvents initializer (false) | • |  |
 
-**Gestes destructifs :** Reset All Whisper Settings _(adhoc-dialog)_ · Reset All LLM Settings _(adhoc-dialog)_ · Reset LLM Profiles Section _(adhoc-dialog)_ · Delete LLM Profile _(adhoc-dialog)_ · Reset LLM Rules Section _(adhoc-dialog)_ · Reset LLM Shortcuts Section _(adhoc-dialog)_ · Neutralize Windows Three-Finger Gestures _(none)_ · Restore Windows Three-Finger Gestures _(none)_ · Repair Trackpad Bluetooth Connection _(none)_ · Forget Autocorrect App _(none)_
+**Gestes destructifs :** Reset All Whisper Settings _(adhoc-dialog)_ · Reset All LLM Settings _(adhoc-dialog)_ · Reset LLM Profiles Section _(adhoc-dialog)_ · Delete LLM Profile _(adhoc-dialog)_ · Reset LLM Shortcuts Section _(adhoc-dialog)_ · Neutralize Windows Three-Finger Gestures _(none)_ · Restore Windows Three-Finger Gestures _(none)_ · Repair Trackpad Bluetooth Connection _(none)_ · Forget Autocorrect App _(none)_
 
 ## Deckle
 
@@ -313,7 +313,7 @@
 | LlmEnabled | setting | hand-authored | Toggle | LlmSettings initializer: true |  | Settings > LLM (custom page) |
 | LlmOllamaEndpoint | setting | hand-authored | Text (URL) | LlmSettings initializer: http://localhost:11434/api/generate |  | Settings > LLM > General |
 | LlmProfiles | setting | n/a | n/a (complex list) | LlmSettings initializer: three default profiles (Lissage/Affinage/Arrangement) |  | Settings > LLM > Profiles |
-| LlmAutoRewriteRules | setting | n/a | n/a (complex list) | LlmSettings initializer: three default rules (60/300/600 s brackets) |  | Settings > LLM > Rules |
+| LlmAutoRewriteRules | legacy setting | retained for deserialization | n/a (complex list) | No runtime or UI consumer |  | No UI |
 | SpeechEnabled | setting | hand-authored | Toggle | SpeechSettings initializer: false |  | Not yet exposed |
 | SpeechVoice | setting | hand-authored | Choice / Radio (Pierre/Jessica) | SpeechSettings initializer: Pierre |  | Not yet exposed (reserved for ONNX backend) |
 | SpeechTemperature | setting | hand-authored | Slider (0.5 to 0.7) | SpeechSettings initializer: 0.6 |  | Not yet exposed (reserved for ONNX backend) |
@@ -584,12 +584,9 @@ Choice already exists and renders as ComboBox; the reports show several small fi
 | Per-card / per-setting reset (Whisper hover-reveal, composed per-row reset) | none | Leave unconfirmed by design — a single-value revert is low-stakes and reversible by re-editing; ConfirmationService is for section/global/irreversible gestures. Confirm this exclusion with the maintainer. | WhisperPage.xaml.cs:411-462 |
 | Reset all LLM settings | adhoc-dialog | Route the existing ContentDialog through ConfirmationService, IsDestructive:true. | LlmPage.xaml.cs:185 (ResetAll_Click) |
 | Reset LLM Profiles section (replaces custom profiles with 3 defaults) | adhoc-dialog | Route through ConfirmationService, IsDestructive:true (custom profiles lost). | LlmProfilesSection.xaml.cs:225 |
-| Reset LLM Rules section | adhoc-dialog | Route through ConfirmationService, IsDestructive:true. | LlmRulesSection.xaml.cs:364 |
 | Reset LLM Shortcuts section | adhoc-dialog | Route through ConfirmationService (clears slot assignments). | LlmShortcutSlotsSection.xaml.cs:108 |
 | Reset LLM General section | adhoc-dialog | Route through ConfirmationService. | LlmGeneralSection.xaml.cs:72 |
 | Delete LLM Profile | adhoc-dialog | Route through ConfirmationService, IsDestructive:true. | LlmProfilesSection.xaml.cs:74 (DeleteProfile_Click) |
-| Delete auto-rewrite rule (Duration) | none | Low-stakes single-row remove; either leave unconfirmed (consistent with list-row deletes) or add a lightweight ConfirmationService gate — maintainer call. Flag, do not silently confirm. | LlmRulesSection.xaml.cs:329 |
-| Delete auto-rewrite rule (Word count) | none | Same posture as the Duration rule delete. | LlmRulesSection.xaml.cs:207 |
 | Delete model from Ollama (DeleteModelAsync — real external delete) | adhoc-dialog | Route through ConfirmationService, IsDestructive:true — this deletes a model on disk via Ollama, the most irreversible of the lot. | LlmModelsSection.xaml.cs:112 |
 | Forget Hue bridge pairing (clears IP/Id/Username) | adhoc-dialog | Route the existing ContentDialog through ConfirmationService, IsDestructive:true. | AmbientPage.xaml.cs:417 (OnHueForgetClick) |
 | Re-pair Hue bridge (silently overwrites pairing state) | none | Add a ConfirmationService gate only when an existing pairing would be overwritten; fresh pairing needs none. | AmbientPage/Playground Pair flow |
@@ -627,7 +624,7 @@ Choice already exists and renders as ComboBox; the reports show several small fi
 - **EngineSettings.Model — Whisper model AutoSuggestBox + restart footer** — Dynamic model discovery from disk .bin files, substring filtering, revert-on-invalid, plus a restart-required footer with discard flow. Bespoke chrome the descriptor model cannot carry.
 - **EngineSettings.Language — editable ComboBox** — Editable combo accepting free-text custom language codes beyond the predefined list, with LostFocus revert validation. Not a closed Choice set.
 - **LlmSettings.Profiles — rewrite profile list editor** — Dynamic multi-field list (Name/Model/SystemPrompt/Temperature/NumCtxK/TopP/RepeatPenalty per profile) in an ItemsRepeater with add/edit/delete and stable-Id reconciliation. Irreducible by decision.
-- **LlmSettings.AutoRewriteRules / AutoRewriteRulesByWords — rule list editors** — Dynamic lists with interdependent fields (threshold + profile reference) and imperative per-row construction to survive metric switches; profile cross-references repaired at runtime.
+- **LlmSettings.AutoRewriteRules / AutoRewriteRulesByWords — legacy storage only** — Kept deserializable for lossless compatibility with existing settings files; no runtime or UI consumer remains.
 - **LlmSettings.PrimaryRewriteProfile / SecondaryRewriteProfile — slot ComboBoxes** — Choice list is the runtime Profiles collection (not static), resolved by stable Id with legacy-Name fallback. Runtime-dependent options.
 - **AutocorrectSettings.Apps — per-app decision map** — Runtime-enumerated process list, on-the-fly enrollment, per-row toggle + Forget action over an ObservableCollection. Dynamic list, not a flat value.
 - **AmbientSettings Hue pairing (HueBridgeId, HueUsername, HueLastGroupId)** — Populated by the link-button pairing dance / device enumeration, not user-edited; HueUsername is a sensitive issued credential never shown. Multi-step orchestration + secret, not a knob. (HueBridgeIp manual-entry field is the only Text-composable part.)

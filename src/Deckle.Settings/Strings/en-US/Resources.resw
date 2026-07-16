@@ -220,16 +220,16 @@
 
   <!-- Autocorrect text consent — the typed-sentence corpus, verbatim input. -->
   <data name="AutocorrectTextConsent_Title" xml:space="preserve">
-    <value>Keep a record of the text you type</value>
+    <value>Keep a record of text typed in enrolled apps</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will save each sentence you type at the keyboard to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. This covers every editable field on any app — not only the ones you have enrolled — because the point is a record of your own writing. On enrolled apps it also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
+    <value>Deckle will save each sentence you physically type on an enrolled editable surface to a local JSONL file (autocorrect.text.jsonl): the text exactly as you typed it, paired with the corrected version. It also keeps the typing stream (autocorrect.stream.jsonl): the raw flow of your typing, including what you erased and retyped. Together they build a corpus of your writing, and your mistakes, to make the corrector better at the way you type.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_What" xml:space="preserve">
-    <value>The full text you type at the keyboard, verbatim — in every editable field on any app, including errors the corrector did not catch. On apps you have enrolled, the typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded — only what you physically type. Nothing is sent over the network.</value>
+    <value>The full text you physically type on enrolled editable surfaces, verbatim — including errors the corrector did not catch. The typing stream additionally records what you erased with Backspace and what you retyped over it. Password fields are never seen, and text you paste or dictate is not recorded. Nothing is sent over the network.</value>
   </data>
   <data name="AutocorrectTextConsent_Body_Remind" xml:space="preserve">
-    <value>This is the most complete text capture in Deckle — a verbatim record of what you type. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them — they are not rotated.</value>
+    <value>This is the most complete text capture in Deckle — a verbatim record of what you type in enrolled apps. It stays on this device. Turn it off when you have gathered enough, and delete the files when you no longer need them — they are not rotated.</value>
   </data>
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
@@ -864,7 +864,7 @@
     <value>Keep the text I type</value>
   </data>
   <data name="DiagnosticsAutocorrectTextCard.Description" xml:space="preserve">
-    <value>Also record each sentence you type at the keyboard — in every editable field, not only enrolled apps — to autocorrect.text.jsonl, verbatim and paired with the corrected form, to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Password fields, paste and dictation are never recorded.</value>
+    <value>Also record each sentence you type in enrolled apps to autocorrect.text.jsonl, verbatim and paired with the corrected form, to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Password fields, paste and dictation are never recorded.</value>
   </data>
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
     <value>Corpus</value>
@@ -1102,7 +1102,7 @@
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
        Third page in the Settings nav. Hosts five sections rendered as
-       UserControls (General, ShortcutSlots, Rules, Profiles, Models).
+       UserControls (General, ShortcutSlots, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
   <data name="LlmPage_Title" xml:space="preserve">
     <value>Rewriting</value>
@@ -1152,79 +1152,59 @@
   <data name="LlmProfilesBody.Text" xml:space="preserve">
     <value>Each profile pairs an Ollama model with a system prompt tailored to a specific rewriting style. Expand a profile to edit its prompt.</value>
   </data>
-  <data name="LlmProfile_NameBox_Header" xml:space="preserve">
+  <data name="LlmProfile_NameBox.Header" xml:space="preserve">
     <value>Name</value>
   </data>
-  <data name="LlmProfile_NameBox_Placeholder" xml:space="preserve">
+  <data name="LlmProfile_NameBox.PlaceholderText" xml:space="preserve">
     <value>Profile name</value>
   </data>
-  <data name="LlmProfile_ModelBox_Header" xml:space="preserve">
+  <data name="LlmProfile_ModelBox.Header" xml:space="preserve">
     <value>Model</value>
   </data>
-  <data name="LlmProfile_ModelBox_Placeholder" xml:space="preserve">
+  <data name="LlmProfile_ModelBox.PlaceholderText" xml:space="preserve">
     <value>Ollama model name</value>
   </data>
-  <data name="LlmProfile_SystemPromptBox_Header" xml:space="preserve">
+  <data name="LlmProfile_SystemPromptBox.Header" xml:space="preserve">
     <value>System prompt</value>
   </data>
-  <data name="LlmProfile_SystemPromptBox_Placeholder" xml:space="preserve">
+  <data name="LlmProfile_SystemPromptBox.PlaceholderText" xml:space="preserve">
     <value>System prompt sent with every rewrite request...</value>
   </data>
-  <data name="LlmProfile_SystemPromptBody" xml:space="preserve">
+  <data name="LlmProfile_SystemPromptBody.Text" xml:space="preserve">
     <value>Instructions sent with every request to define the model's behavior and rewriting style.</value>
   </data>
-  <data name="LlmProfile_TemperatureSlider_Header" xml:space="preserve">
+  <data name="LlmProfile_TemperatureSlider.Header" xml:space="preserve">
     <value>Temperature</value>
   </data>
-  <data name="LlmProfile_TemperatureBody" xml:space="preserve">
+  <data name="LlmProfile_TemperatureBody.Text" xml:space="preserve">
     <value>Controls randomness. Lower values produce more focused, deterministic output. Higher values increase creativity and variation.</value>
   </data>
-  <data name="LlmProfile_ContextSlider_Header" xml:space="preserve">
+  <data name="LlmProfile_ContextSlider.Header" xml:space="preserve">
     <value>Context size</value>
   </data>
-  <data name="LlmProfile_ContextBody" xml:space="preserve">
+  <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
     <value>Maximum tokens the model considers at once. Larger context uses more memory and is slower.</value>
   </data>
-  <data name="LlmProfile_AdvancedExpander_Header" xml:space="preserve">
+  <data name="LlmProfile_AdvancedExpander.Header" xml:space="preserve">
     <value>Advanced parameters</value>
   </data>
-  <data name="LlmProfile_TopP_Header" xml:space="preserve">
+  <data name="LlmProfile_TopP.Header" xml:space="preserve">
     <value>Top P</value>
   </data>
-  <data name="LlmProfile_TopP_Placeholder" xml:space="preserve">
+  <data name="LlmProfile_TopP.PlaceholderText" xml:space="preserve">
     <value>Default (0.9)</value>
   </data>
-  <data name="LlmProfile_RepeatPenalty_Header" xml:space="preserve">
+  <data name="LlmProfile_RepeatPenalty.Header" xml:space="preserve">
     <value>Repeat penalty</value>
   </data>
-  <data name="LlmProfile_RepeatPenalty_Placeholder" xml:space="preserve">
+  <data name="LlmProfile_RepeatPenalty.PlaceholderText" xml:space="preserve">
     <value>Default (1.1)</value>
   </data>
-  <data name="LlmProfile_RemoveLabel" xml:space="preserve">
+  <data name="LlmProfile_RemoveLabel.Text" xml:space="preserve">
     <value>Remove</value>
   </data>
   <data name="LlmAddProfileButton.Content" xml:space="preserve">
     <value>Add profile</value>
-  </data>
-
-  <!-- LlmRulesSection -->
-  <data name="LlmRulesHeader.Text" xml:space="preserve">
-    <value>Auto-rewrite rules</value>
-  </data>
-  <data name="LlmRulesBody.Text" xml:space="preserve">
-    <value>When you use the plain transcription shortcut (Alt+`), long recordings are automatically rewritten. Pick the metric that drives the rule below, then define thresholds.</value>
-  </data>
-  <data name="LlmRulesMetricCard.Header" xml:space="preserve">
-    <value>Rule metric</value>
-  </data>
-  <data name="LlmRulesMetricCard.Description" xml:space="preserve">
-    <value>Word count reflects LLM context load more directly than wall-clock duration.</value>
-  </data>
-  <data name="LlmRules_Metric_WordCount" xml:space="preserve">
-    <value>Word count</value>
-  </data>
-  <data name="LlmRules_Metric_Duration" xml:space="preserve">
-    <value>Duration</value>
   </data>
 
   <!-- LlmShortcutSlotsSection -->
@@ -1421,16 +1401,6 @@
     <value>Both rewrite shortcuts will be unbound. The hotkeys keep working — they'll just trigger a transcription without a rewrite until you assign a profile again.</value>
   </data>
 
-  <!-- LlmRulesSection -->
-  <data name="Settings_AddRuleButton" xml:space="preserve">
-    <value>Add rule</value>
-  </data>
-  <data name="Settings_ResetRulesDialog_Title" xml:space="preserve">
-    <value>Reset rules to defaults?</value>
-  </data>
-  <data name="Settings_ResetRulesDialog_Content" xml:space="preserve">
-    <value>Every auto-rewrite rule will be replaced with the three defaults (60 s / 300 s / 600 s for duration, 150 / 600 / 1200 words for word count). Your custom thresholds will be lost.</value>
-  </data>
   <data name="Settings_RemoveLabel" xml:space="preserve">
     <value>Remove</value>
   </data>
@@ -1461,6 +1431,9 @@
   </data>
   <data name="Settings_ErrorRemovingModel_Title" xml:space="preserve">
     <value>Error removing model</value>
+  </data>
+  <data name="Settings_NoOllamaModels" xml:space="preserve">
+    <value>No models found in Ollama. Pull one from your shell with ollama pull.</value>
   </data>
 
   <!-- ─── LogWindow ──────────────────────────────────────────────────

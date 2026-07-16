@@ -40,7 +40,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import sys
 from dataclasses import dataclass
@@ -55,7 +54,7 @@ from lib import paths
 
 # ── Sources télémétrie ────────────────────────────────────────────────
 
-DECKLE_TELEMETRY_DIR = Path(os.environ["LOCALAPPDATA"]) / "Deckle" / "telemetry"
+DECKLE_TELEMETRY_DIR = paths.DECKLE_TELEMETRY_DIR
 AUDIO_DIR            = DECKLE_TELEMETRY_DIR / "audio"
 CORPUS_RAW_DIR       = DECKLE_TELEMETRY_DIR / "corpus" / "raw"
 

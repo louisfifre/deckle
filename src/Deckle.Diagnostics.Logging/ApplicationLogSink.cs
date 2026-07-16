@@ -6,7 +6,7 @@ namespace Deckle.Diagnostics.Logging;
 // destination is diagnostics/app.jsonl; telemetry datasets have their own
 // roots and sinks. The enabled reader and recording filter are evaluated for
 // every future entry so settings changes apply without rebuilding the sink.
-public sealed class ApplicationLogSink : ILogSink
+public sealed class ApplicationLogSink : IFlushableLogSink
 {
     private readonly JsonlSink _sink;
     private readonly Func<bool> _isEnabled;
@@ -46,4 +46,8 @@ public sealed class ApplicationLogSink : ILogSink
     }
 
     public void Write(EventEntry entry) => _sink.Write(entry);
+
+    public void Flush() => _sink.Flush();
+
+    public void Dispose() => _sink.Dispose();
 }

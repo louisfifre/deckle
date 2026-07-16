@@ -188,10 +188,10 @@ public sealed partial class TranscriptionEngine : IDisposable
     // null when Idle.
     private Thread? _worker;
 
-    // Name of the rewrite profile chosen by the hotkey that started this
-    // recording (null = no manual rewrite; fall back to AutoRewriteRules
-    // based on recording duration). Captured when the hotkey starts the run
-    // (TryStartFromIdle) and consumed in FinalizeTranscription.
+    // Name of the rewrite profile chosen by the explicit rewrite hotkey that
+    // started this recording. null means plain transcription: keep the ASR
+    // result unchanged. Captured in TryStartFromIdle and consumed in
+    // FinalizeTranscription.
     private string?         _manualProfileName = null;
 
     // Path of the audio file being transcribed on a file-transcription run, or
@@ -208,7 +208,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     // per recording in WorkerRun (before the strategy runs); stamped on every
     // corpus event emitted for this transcription and on the WAV file basename
     // so the JSONL lines and the audio file join unambiguously. 32 hex chars
-    // (Guid "N" format): see ADR-0006.
+    // (Guid "N" format), following the corpus join contract.
     private string          _transcriptionId   = "";
 
     // Model lifecycle: lazy load on first hotkey, unload after idle timeout.

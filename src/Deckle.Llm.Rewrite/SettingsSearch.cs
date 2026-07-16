@@ -21,7 +21,7 @@ namespace Deckle.Llm.Rewrite;
 //     "/Description" from .resw. Their runtime Tag is stamped by the composer.
 //   • bespoke cards — LabelKey resolves from .resw the same way; their Tag is
 //     authored by hand in the section XAML (see the Tag="…" attributes).
-//   • runtime lists (profiles, models, auto-rewrite rules) — no per-item card to
+//   • runtime lists (profiles, models) — no per-item card to
 //     index; each is one section-level entry with a LiteralLabel taken from the
 //     section header, targeting the section host element (Tag on its root panel).
 //
@@ -54,21 +54,6 @@ public static class SettingsSearch
         {
             LabelKey = "LlmSecondarySlotCard",
             Keywords = ["shortcut", "hotkey", "keybinding"],
-        },
-
-        // Auto-rewrite rules — one bespoke card, then the dynamic rules panels as a
-        // section entry (their header is localized; LiteralLabel mirrors it since the
-        // index resolves "/Header", not the section header's "/Text").
-        new SettingSearchEntry
-        {
-            LabelKey = "LlmRulesMetricCard",
-            Keywords = ["length", "threshold", "trigger"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "LlmRulesSection",
-            LiteralLabel = "Auto-rewrite rules",
-            Keywords = ["word count", "duration", "threshold", "automatic"],
         },
 
         // Profiles — runtime ItemsRepeater, one section entry.

@@ -140,6 +140,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "correction | reason={0} | original_len={1} | replacement_len={2} | backspaces={3}")]
     public void CorrectionDetail(string reason, int original_len, int replacement_len, int backspaces)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtCorrectionDetail, reason, original_len, replacement_len, backspaces);
     }
 
@@ -258,8 +259,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     // ── Typed-sentence corpus ─────────────────────────────────────────────
     //
-    // One sentence the user typed at the keyboard on any editable, non-password
-    // surface (enrollment does not bound it), as two parallel strings: `typed`
+    // One sentence the user typed at the keyboard on an enrolled, editable,
+    // non-password surface, as two parallel strings: `typed`
     // verbatim (keyboard substitutions and all — the telling ';' for an apostrophe
     // survives) and `final` after the corrector — plus `history`, the ordered path of
     // every slot that changed (first-typed then each stage's transition,

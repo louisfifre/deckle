@@ -80,13 +80,13 @@ public partial class App : Microsoft.UI.Xaml.Application
             e.SetObserved();
         };
 
-        // Explicit trace for process-exit. JSONL listeners flush on every
-        // write, so previous events are already on disk, but distinguishing a
-        // clean shutdown from a raw crash in the logs helps post-mortems. Not
-        // a dump, just a marker that says "we exited through this path".
+        // Explicit trace for process-exit. JSONL writers run off the emitting
+        // thread, so the final marker is followed by one deterministic drain
+        // covering normal, install, update and relocation exits.
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             DeckleAppSource.Log.ProcessExit();
+            _ = AppDiagnosticsBootstrap.Flush();
         };
     }
 
@@ -350,16 +350,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Autocorrect module — keyboard Raw Input + diacritics restorer +
         // injector, reconciled with the persisted module settings (Enabled by
         // default; corrections land only on enrolled processes, Notepad out of
-        // the box). Loads the two small gzip lexicons from Data/ beside the exe;
-        // the live engine never touches the offline-only CamemBERT reranker.
-        // Fire-and-forget: the engine builds itself off the UI thread (the heavy
-        // FR lexicon load) and wires up when ready. Boot does not wait — the
-        // engine has no synchronous consumer in OnLaunched, same posture as
-        // ApplyAmbientEnabledAsync. The milestone marks the dispatch, not load
-        // completion.
+        // the box).
+        // Boot wires the settings edge only. The heavy lexicons and optional
+        // reranker are loaded off-thread when the persisted switch is on, and
+        // remain entirely absent while the module is disabled.
         if (autocorrectPresent)
         {
-            _ = InitializeAutocorrectAsync();
+            InitializeAutocorrect();
             Milestone("autocorrect");
         }
         else
@@ -583,12 +580,14 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Tray icon : only left-click action lives here ; the right-click
         // context menu is rendered by TrayContextMenuHost (created later,
         // after the message-only host HWND is available to serve as owner).
-        _tray = new TrayIconManager
+        _tray = new TrayIconManager();
+        if (transcriptionPresent)
         {
             // Left-click tray = toggle transcription via the same path as the
-            // standard hotkey. Allows starting with the mouse one-handed.
-            OnToggleRecording = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE),
-        };
+            // standard hotkey. An absent Dictation module leaves the click
+            // unbound instead of pointing to a Settings page that is absent too.
+            _tray.OnToggleRecording = () => OnHotkey(NativeMethods.HOTKEY_ID_TRANSCRIBE);
+        }
         Milestone("tray");
 
         // Engine events → UI. StatusChanged, TranscriptionFinished, etc. are
@@ -754,10 +753,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         _tray.RightClickRequested += () => _trayMenu.Show();
 
         _tray.Register(_messageHost.Hwnd);
-        // Presence gates the chords themselves: an absent Rewrite module has
-        // no hotkeys registered at all — the OS-wide combos stay free for
-        // other apps, symmetric with its settings page never registering.
-        IReadOnlyList<int> hotkeyIds = HotkeySelection.ForRewritePresence(rewritePresent);
+        // Presence gates the chords themselves: absent Dictation means no
+        // transcription chord; absent Rewrite leaves only plain transcription.
+        // The unused OS-wide combos stay free for other apps, symmetric with
+        // their settings pages never registering.
+        IReadOnlyList<int> hotkeyIds = HotkeySelection.ForModulePresence(
+            transcriptionPresent,
+            rewritePresent);
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, hotkeyIds);
         // Try/catch required: RegisterHotKey can fail with err 1409
         // (ERROR_HOTKEY_ALREADY_REGISTERED) when another process already owns

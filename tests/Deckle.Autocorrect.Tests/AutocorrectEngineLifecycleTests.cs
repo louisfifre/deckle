@@ -8,6 +8,31 @@ namespace Deckle.Autocorrect.Tests;
 public sealed class AutocorrectEngineLifecycleTests
 {
     [Fact]
+    public void StopAndDisposeBeforeStartDoNotReleaseTheSharedHost()
+    {
+        var h = new AutocorrectEngineHarness();
+
+        h.Engine.Stop();
+        h.Engine.Dispose();
+
+        Assert.Equal(0, h.Host.StopCount);
+    }
+
+    [Fact]
+    public void RepeatedStartAndStopOwnExactlyOneSharedHostReference()
+    {
+        using var h = new AutocorrectEngineHarness();
+
+        Assert.True(h.Start());
+        Assert.True(h.Start());
+        h.Engine.Stop();
+        h.Engine.Stop();
+
+        Assert.Equal(1, h.Host.StartCount);
+        Assert.Equal(1, h.Host.StopCount);
+    }
+
+    [Fact]
     public void AHostThatFailsToStartLeavesTheEngineDetached()
     {
         using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));

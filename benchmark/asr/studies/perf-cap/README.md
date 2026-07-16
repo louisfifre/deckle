@@ -9,7 +9,7 @@ module: benchmark/asr/studies/perf-cap
 
 A dated, **frozen** session that characterized the throughput of Voxtral GGUF variants through `llama-mtmd-cli` on the Vulkan backend (RX 7900 XT), to decide which quantization fit the VRAM/latency budget.
 
-> **Status — frozen study.** Kept for the method and the numbers; not maintained as a live bench. Findings (Voxtral 24B Q4_K_M validated via llama.cpp Vulkan; the Q4 fidelity cost; the Vulkan timing breakdown) are recorded in [`../../JOURNAL.md`](../../JOURNAL.md).
+> **Status — frozen study.** Kept for the method and the numbers; not maintained as a live bench. Findings (Voxtral 24B Q4_K_M profiled via llama.cpp Vulkan; the Q4 fidelity cost; the Vulkan timing breakdown) are recorded in [`../../JOURNAL.md`](../../JOURNAL.md).
 
 ## Pipeline (reusable scripts kept)
 

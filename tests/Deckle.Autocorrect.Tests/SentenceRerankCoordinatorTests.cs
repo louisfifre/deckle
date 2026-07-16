@@ -216,7 +216,7 @@ public class SentenceRerankCoordinatorTests
         coord.OnWordCommitted("belle", ' ', true);
 
         // Backspace with an empty live buffer = re-opening a committed word.
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Backspace, "", 0), preBuffer: "");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Backspace, "", 0), hasPartialWord: false);
         lane.DeliverLast();
 
         Assert.Empty(inj.Calls);
@@ -236,7 +236,7 @@ public class SentenceRerankCoordinatorTests
         coord.OnWordCommitted("belle", ' ', true);
 
         // Backspace while typing a word (non-empty live buffer) just shortens it.
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Backspace, "", 0), preBuffer: "me");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Backspace, "", 0), hasPartialWord: true);
         lane.DeliverLast();
 
         Assert.Single(inj.Calls); // still applied
@@ -256,7 +256,7 @@ public class SentenceRerankCoordinatorTests
 
         coord.OnWordCommitted("la", ' ', gateLeftLiteral: true); // ambiguous slot
         // A quotation apostrophe typed on an empty live buffer: « la 'belle… ».
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, "'", 0), preBuffer: "");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, "'", 0), hasPartialWord: false);
         coord.OnWordCommitted("belle", ' ', true);
         coord.OnWordCommitted("histoire", ' ', true);
         coord.OnWordCommitted("non", ' ', true);
@@ -280,7 +280,7 @@ public class SentenceRerankCoordinatorTests
         Assert.Single(lane.Submitted);
 
         // An extra space typed during the inference: on screen, unmodeled.
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: false);
         lane.DeliverLast();
 
         Assert.Empty(inj.Calls);
@@ -295,13 +295,13 @@ public class SentenceRerankCoordinatorTests
         var inj = new RecordingInjector();
         var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
 
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "la");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: true);
         coord.OnWordCommitted("la", ' ', true);
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "mer");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: true);
         coord.OnWordCommitted("mer", ' ', true);
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "est");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: true);
         coord.OnWordCommitted("est", ' ', true);
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "belle");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: true);
         coord.OnWordCommitted("belle", ' ', true);
 
         Assert.Single(inj.Calls);
@@ -365,7 +365,7 @@ public class SentenceRerankCoordinatorTests
         var coord = new SentenceRerankCoordinator(lane, new FakeProbe(new()), inj, () => "");
 
         coord.OnWordCommitted("fin", '.', true); // '.' vouches the next word
-        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), preBuffer: "");
+        coord.NotePhysicalKey(new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: false);
         coord.OnWordCommitted("bonjour", ' ', true);
         coord.OnWordCommitted("tout", ' ', true); // a beat later → capital applied
 

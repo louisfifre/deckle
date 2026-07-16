@@ -9,6 +9,40 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.12.0](https://github.com/louisfifre/deckle/compare/v0.9.2...v0.12.0) — 2026-07-16
+
+### Added
+
+- **logging:** Refine live log interaction
+- **autocorrect:** Capture the typing stream on enrolled surfaces
+- **autocorrect:** Ventilate surface profiles from the typed corpus
+- **autocorrect:** Mine mistouch families from the typed corpus
+- **autocorrect:** Route approved mistouch families to the commit stage
+- **autocorrect:** Anticipate the sentence stage on a typing pause
+
+### Changed
+
+- **diagnostics:** Separate admission from projections
+
+### Fixed
+
+- **setup:** Make data relocation transactional
+- **autocorrect:** Enforce corpus consent boundaries
+- **whisper:** Centralize speech model resolution
+- **shell:** Harden optional rewrite hotkeys
+- **logging:** Refine structured filter controls
+- **shell:** Accept semantic recording state from the host
+- **hud:** Separate reveal failure details
+- **input:** Separate keyboard host failure details
+- **whisper:** Keep the native log callback rooted
+- Align runtime behavior and observability
+
+## [0.9.2](https://github.com/louisfifre/deckle/compare/v0.9.1...v0.9.2) — 2026-07-14
+
+### Fixed
+
+- **app:** Gate rewrite pipeline and hotkeys on module presence
+
 ## [0.9.1](https://github.com/louisfifre/deckle/compare/v0.9.0...v0.9.1) — 2026-07-14
 
 ### Added

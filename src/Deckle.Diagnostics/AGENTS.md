@@ -39,6 +39,8 @@ Every `[Event]` is gated by `IsEnabled()` (or `IsEnabled(level, keywords)`) befo
 
 A single `DispatchEventListener` is the only `EventListener`: it subscribes to the whole `Deckle-*` family, builds each admitted `EventEntry` once, then offers it to every registered `ILogSink`. A sink decides whether it `Wants` the entry and how to `Write` it — it never subscribes to an EventSource itself. The dispatcher is a fan-out boundary, not the authority for user verbosity: producer-side controls have already prevented the governed operational observations and their log-only work. Per-sink recording and display filters remain sink concerns.
 
+Disk sinks never perform serialization or file I/O on the EventSource emitter thread. They enqueue into a bounded FIFO, apply backpressure rather than dropping when full, and expose a deterministic `Flush` boundary that the composition root calls after producers stop and before clean process exit. Routed JSONL owns one writer and a bounded LRU of open destinations; path diversity can neither grow memory nor handles without bound.
+
 The operational log stream and purpose-specific telemetry datasets are separate authorities. The LogWindow and `app.jsonl` consume only admitted operational observations; dataset-only events are rejected from both even though the shared listener receives them. Telemetry routes consume only events covered by their own explicit consent. A logging verbosity control never disables a telemetry dataset, and telemetry consent never enables an operational observation that its producer gate rejected. A fact needed by both consumers is emitted as two purpose-specific events rather than leaking the dataset event into the journal.
 
 Consumer contracts remain passive sinks:

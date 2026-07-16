@@ -165,7 +165,7 @@ public sealed partial class LlmModelsSection : UserControl
         {
             ModelsContainer.Children.Add(new TextBlock
             {
-                Text = "No models found in Ollama. Pull a model with `ollama pull` from your shell.",
+                Text = Loc.Get("Settings_NoOllamaModels"),
                 Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
                 Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
                 Margin = new Thickness(1, 4, 0, 0)

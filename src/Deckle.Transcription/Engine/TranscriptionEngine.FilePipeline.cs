@@ -49,10 +49,11 @@ public sealed partial class TranscriptionEngine
             // aborts it, nothing else.
             primeTask = BeginPrime(_drainCts.Token);
 
-            // One id per run (corpus join key, ADR-0006). A file run does not feed
+            // One id per run under the corpus join contract. A file run does not feed
             // the corpus, but the id is generated uniformly so any future per-run
             // artefact joins the same way.
             _transcriptionId = System.Guid.NewGuid().ToString("N");
+            DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
 
             PipelineProduction? produced =
                 ProduceFileAsync(_recordCts.Token, primeTask).GetAwaiter().GetResult();

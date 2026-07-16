@@ -50,7 +50,7 @@
                                 Click="DeleteProfile_Click">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="14" />
-                                <TextBlock Text="Remove" />
+                                <TextBlock x:Uid="LlmProfile_RemoveLabel" />
                             </StackPanel>
                         </Button>
 
@@ -59,15 +59,13 @@
                                                    HorizontalContentAlignment="Stretch">
                                 <StackPanel Spacing="12"
                                             HorizontalAlignment="Stretch">
-                                    <TextBox Header="Name"
+                                    <TextBox x:Uid="LlmProfile_NameBox"
                                              Text="{x:Bind Name, Mode=TwoWay}"
                                              Tag="{x:Bind}"
                                              TextChanged="NameBox_TextChanged"
-                                             PlaceholderText="Profile name"
                                              HorizontalAlignment="Stretch" />
 
-                                    <AutoSuggestBox Header="Model"
-                                                    PlaceholderText="Ollama model name"
+                                    <AutoSuggestBox x:Uid="LlmProfile_ModelBox"
                                                     Tag="{x:Bind}"
                                                     Text="{x:Bind Model, Mode=OneWay}"
                                                     GotFocus="ModelSuggest_GotFocus"
@@ -76,7 +74,7 @@
                                                     QuerySubmitted="ModelSuggest_QuerySubmitted"
                                                     HorizontalAlignment="Stretch" />
 
-                                    <TextBox Header="System prompt"
+                                    <TextBox x:Uid="LlmProfile_SystemPromptBox"
                                              Text="{x:Bind SystemPrompt, Mode=TwoWay}"
                                              Tag="{x:Bind}"
                                              TextChanged="SystemPromptBox_TextChanged"
@@ -84,20 +82,19 @@
                                              TextWrapping="Wrap"
                                              MinHeight="100"
                                              MaxHeight="300"
-                                             PlaceholderText="System prompt sent with every rewrite request..."
                                              HorizontalAlignment="Stretch" />
 
-                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                    <TextBlock x:Uid="LlmProfile_SystemPromptBody"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextWrapping="Wrap"
-                                               Margin="0,-4,0,0"
-                                               Text="Instructions sent with every request to define the model's behavior and rewriting style." />
+                                               Margin="0,-4,0,0" />
 
                                     <!-- Temperature -->
                                     <StackPanel Orientation="Horizontal"
                                                 Spacing="12"
                                                 VerticalAlignment="Bottom">
-                                        <Slider Header="Temperature"
+                                        <Slider x:Uid="LlmProfile_TemperatureSlider"
                                                 Minimum="0" Maximum="2"
                                                 StepFrequency="0.05"
                                                 SmallChange="0.05"
@@ -111,17 +108,17 @@
                                                    Style="{StaticResource BodyTextBlockStyle}" />
                                     </StackPanel>
 
-                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                    <TextBlock x:Uid="LlmProfile_TemperatureBody"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextWrapping="Wrap"
-                                               Margin="0,-4,0,0"
-                                               Text="Controls randomness. Lower values produce more focused, deterministic output. Higher values increase creativity and variation." />
+                                               Margin="0,-4,0,0" />
 
                                     <!-- Context size -->
                                     <StackPanel Orientation="Horizontal"
                                                 Spacing="12"
                                                 VerticalAlignment="Bottom">
-                                        <Slider Header="Context size"
+                                        <Slider x:Uid="LlmProfile_ContextSlider"
                                                 Minimum="0" Maximum="8"
                                                 StepFrequency="1"
                                                 SnapsTo="StepValues"
@@ -134,29 +131,27 @@
                                                    Style="{StaticResource BodyTextBlockStyle}" />
                                     </StackPanel>
 
-                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                    <TextBlock x:Uid="LlmProfile_ContextBody"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextWrapping="Wrap"
-                                               Margin="0,-4,0,0"
-                                               Text="Maximum tokens the model considers at once. Larger context uses more memory and is slower." />
+                                               Margin="0,-4,0,0" />
 
                                     <!-- Advanced parameters -->
-                                    <Expander Header="Advanced parameters"
+                                    <Expander x:Uid="LlmProfile_AdvancedExpander"
                                               HorizontalAlignment="Stretch"
                                               HorizontalContentAlignment="Stretch">
                                         <StackPanel Spacing="12">
-                                            <NumberBox Header="Top P"
+                                            <NumberBox x:Uid="LlmProfile_TopP"
                                                        Minimum="0" Maximum="1"
                                                        SmallChange="0.05" LargeChange="0.1"
                                                        SpinButtonPlacementMode="Compact"
-                                                       PlaceholderText="Default (0.9)"
                                                        Value="{x:Bind TopP, Mode=TwoWay}"
                                                        MinWidth="160" />
-                                            <NumberBox Header="Repeat penalty"
+                                            <NumberBox x:Uid="LlmProfile_RepeatPenalty"
                                                        Minimum="0.5" Maximum="2"
                                                        SmallChange="0.05" LargeChange="0.1"
                                                        SpinButtonPlacementMode="Compact"
-                                                       PlaceholderText="Default (1.1)"
                                                        Value="{x:Bind RepeatPenalty, Mode=TwoWay}"
                                                        MinWidth="160" />
                                         </StackPanel>

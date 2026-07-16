@@ -118,7 +118,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtPipelineOutputs                  = 75;
     public const int EvtLatencyRecorded                  = 76;
     // 77: EvtCorpusRecorded removed in favor of CorpusAsr/RewriteRecorded
-    // (ADR-0006). The ID is burned, never reused.
+    // under the normalized corpus contract. The ID is burned, never reused.
     public const int EvtUserFeedbackEmitted              = 78;
     public const int EvtManualProfileNotFound            = 79;
     public const int EvtDisposeWorkerJoinTimeout         = 80;
@@ -213,13 +213,12 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // Installed-model fallback (configured model file absent on disk).
     public const int EvtModelFallback                    = 165;
     public const int EvtModelFallbackDetail              = 166;
+    public const int EvtTranscriptionCorrelation         = 167;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // The global vocabulary (Deckle.Diagnostics.Keywords) reserves bits
-    // 0x400+ for provider-local use. KwTranscript marks the recognized
-    // transcript text itself — the user-facing result, not pipeline
-    // diagnostics — so the LogWindow keeps it visible while the chatty
-    // per-utterance and heartbeat Verbose stay behind the streaming
-    // activity toggle.
+    // 0x400+ for provider-local use. This bit was used by the retired
+    // transcript-bearing operational event. It stays burned because ETW
+    // keyword contracts are never recycled.
     public const EventKeywords KwTranscript = (EventKeywords)0x400;
 }

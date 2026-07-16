@@ -63,6 +63,7 @@ public sealed class JsonlSinkRotationTests
             // roll, so the active file restarts and the first generation lands
             // in the archive subfolder under a padded index.
             for (int i = 0; i < 4; i++) sink.Write(Line(i));
+            sink.Flush();
 
             Assert.True(File.Exists(active));
             Assert.Single(File.ReadAllLines(active));               // line 3 only
@@ -71,6 +72,7 @@ public sealed class JsonlSinkRotationTests
         }
         finally
         {
+            sink.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }
@@ -88,6 +90,7 @@ public sealed class JsonlSinkRotationTests
         try
         {
             for (int i = 0; i < 5; i++) sink.Write(Line(i));
+            sink.Flush();
 
             Assert.True(File.Exists(Generation(dir, 1)));
             Assert.True(File.Exists(Generation(dir, 2)));
@@ -100,6 +103,7 @@ public sealed class JsonlSinkRotationTests
         }
         finally
         {
+            sink.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }
@@ -119,6 +123,7 @@ public sealed class JsonlSinkRotationTests
         try
         {
             sink.Write(Line(99));
+            sink.Flush();
 
             Assert.True(File.Exists(Generation(dir, 1)));
             Assert.Equal(3, File.ReadAllLines(Generation(dir, 1)).Length);
@@ -126,6 +131,7 @@ public sealed class JsonlSinkRotationTests
         }
         finally
         {
+            sink.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }
@@ -140,6 +146,7 @@ public sealed class JsonlSinkRotationTests
         var first = NewSink(active, maxLines: 1);
         first.Write(Line(0));
         first.Write(Line(1));
+        first.Dispose();
 
         // A fresh sink over the same files must scan the archive and roll into
         // .0002, never overwriting .0001 — the numbering continues with no
@@ -148,6 +155,7 @@ public sealed class JsonlSinkRotationTests
         try
         {
             second.Write(Line(2));
+            second.Flush();
 
             Assert.True(File.Exists(Generation(dir, 1)));
             Assert.Contains("n=0", File.ReadAllText(Generation(dir, 1))); // still the first line
@@ -156,6 +164,7 @@ public sealed class JsonlSinkRotationTests
         }
         finally
         {
+            second.Dispose();
             Directory.Delete(dir, recursive: true);
         }
     }

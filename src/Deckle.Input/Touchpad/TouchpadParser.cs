@@ -28,6 +28,7 @@ public sealed class TouchpadParser : IDisposable
     private readonly ushort[] _contactCollections;
     private readonly bool _hasButton;
     private readonly ushort[] _usageScratch = new ushort[16];
+    private TouchpadReport[] _reportScratch = [];
 
     public TouchpadCapabilities Capabilities { get; }
 
@@ -174,22 +175,26 @@ public sealed class TouchpadParser : IDisposable
     /// Decodes the HID payload of one WM_INPUT — <paramref name="count"/>
     /// reports of <paramref name="sizeHid"/> bytes, back to back in
     /// <paramref name="data"/> starting at <paramref name="offset"/>.
-    /// Returns one TouchpadReport per decoded report, in device order.
+    /// Returns one TouchpadReport per decoded report, in device order. The
+    /// returned view is valid only until the next Parse call on this parser;
+    /// consumers must process it synchronously. Contact arrays remain owned by
+    /// each report and may safely survive through a completed ContactFrame.
     /// </summary>
-    public unsafe TouchpadReport[] Parse(byte[] data, int offset, int sizeHid, int count)
+    public unsafe ReadOnlySpan<TouchpadReport> Parse(byte[] data, int offset, int sizeHid, int count)
     {
-        var reports = new TouchpadReport[count];
+        if (_reportScratch.Length < count)
+            _reportScratch = new TouchpadReport[count];
 
         fixed (byte* basePtr = data)
         {
             for (int r = 0; r < count; r++)
             {
                 IntPtr report = (IntPtr)(basePtr + offset + (long)r * sizeHid);
-                reports[r] = ParseSingle(report, (uint)sizeHid);
+                _reportScratch[r] = ParseSingle(report, (uint)sizeHid);
             }
         }
 
-        return reports;
+        return _reportScratch.AsSpan(0, count);
     }
 
     private TouchpadReport ParseSingle(IntPtr report, uint reportLength)
@@ -205,7 +210,8 @@ public sealed class TouchpadParser : IDisposable
 
         bool buttonDown = _hasButton && AnyUsageSet(0x09, 0, report, reportLength);
 
-        var contacts = new List<TouchpadContact>(_contactCollections.Length);
+        var contacts = new TouchpadContact[_contactCollections.Length];
+        int contactLength = 0;
         foreach (ushort collection in _contactCollections)
         {
             bool hasId = HidInterop.HidP_GetUsageValue(
@@ -221,10 +227,12 @@ public sealed class TouchpadParser : IDisposable
             if (!hasId || !hasX || !hasY) continue;
 
             (bool tip, bool confidence) = ReadContactBits(collection, report, reportLength);
-            contacts.Add(new TouchpadContact((int)id, (int)x, (int)y, tip, confidence));
+            contacts[contactLength++] = new TouchpadContact((int)id, (int)x, (int)y, tip, confidence);
         }
 
-        return new TouchpadReport(scanTime, (int)contactCount, buttonDown, contacts.ToArray());
+        if (contactLength != contacts.Length)
+            Array.Resize(ref contacts, contactLength);
+        return new TouchpadReport(scanTime, (int)contactCount, buttonDown, contacts);
     }
 
     private (bool tip, bool confidence) ReadContactBits(ushort collection, IntPtr report, uint reportLength)

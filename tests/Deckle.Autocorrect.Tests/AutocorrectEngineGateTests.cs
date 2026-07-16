@@ -90,7 +90,7 @@ public sealed class AutocorrectEngineGateTests
     }
 
     [Fact]
-    public void ANonEditableSurfaceIsNeverCorrected()
+    public void ANonEditableSurfaceIsNeverDecodedOrTracked()
     {
         var policy = ScriptedPolicy.Maps("ca", "ça");
         using var h = new AutocorrectEngineHarness(policy);
@@ -99,6 +99,8 @@ public sealed class AutocorrectEngineGateTests
 
         h.Type("ca ");
 
+        Assert.Equal(0, h.DecodeCharCount);
+        Assert.Equal("", h.Tracker.CurrentWord);
         Assert.Empty(policy.Calls);
         Assert.Empty(h.Injector.Calls);
     }

@@ -12,7 +12,7 @@ Completed or abandoned evaluation spikes, kept as reference. Each is parked, not
 | Study | What it explored | Outcome |
 |---|---|---|
 | [`voxtral-poc/`](voxtral-poc/) | Voxtral Mini 3B (DirectML) vs Whisper, 5 prompt regimes, LLM judge | Dropped — kept as the bench **template** |
-| [`voxtral-validation/`](voxtral-validation/) | Voxtral 24B Q4_K_M (llama.cpp Vulkan) vs Gemini ground truth, 30 samples | Dropped |
+| [`voxtral-validation/`](voxtral-validation/) | Voxtral 24B Q4_K_M (llama.cpp Vulkan) vs Gemini, 30 samples | Dropped — Q4 smoke/comparison only |
 | [`voxtral-transformers/`](voxtral-transformers/) | Voxtral Mini 3B BF16 (Transformers + torch-ROCm) — the no-Q4 path | Dropped — works, no decisive win |
 | [`voxtral-onnx-poc/`](voxtral-onnx-poc/) | Voxtral 3B via ONNX Runtime + DirectML | Blocked on KV-cache decode — ONNX-local reference |
 | [`tts-audition/`](tts-audition/) | Local French TTS audition (Chatterbox / Supertonic / Orpheus / F5 / sherpa) | Chatterbox kept |

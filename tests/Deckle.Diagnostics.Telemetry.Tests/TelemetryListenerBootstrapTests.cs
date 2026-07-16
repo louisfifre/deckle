@@ -58,6 +58,7 @@ public sealed class TelemetryListenerBootstrapTests
             Assert.False(File.Exists(latency));
 
             TestTelemetrySource.Log.LatencyRecorded("dataset");
+            dispatch.FlushSinks();
 
             Assert.True(File.Exists(latency));
             string jsonl = File.ReadAllText(latency);

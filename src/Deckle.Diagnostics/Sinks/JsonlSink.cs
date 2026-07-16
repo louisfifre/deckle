@@ -1,208 +1,134 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Text.Encodings.Web;
-using System.Text.Json;
+using System.Globalization;
 
 namespace Deckle.Diagnostics;
 
-// Persists Deckle.* events to a JSONL file. A passive ILogSink: it no longer
-// subscribes to any EventSource — the single DispatchEventListener gates and
-// builds each EventEntry, then offers it here. One JsonlSink instance per
-// destination file; the boot wires several — the general app log, latency rows,
-// microphone telemetry, corpus rows — each with its own selection predicate.
+// Persists one selected event stream to a fixed JSONL destination. Write only
+// performs a bounded in-memory hand-off; one dedicated worker serializes and
+// appends entries in acceptance order. When the queue reaches its fixed cap,
+// producers wait instead of losing rows or allowing memory to grow without
+// bound. Flush is the explicit clean-shutdown boundary.
 //
-// The predicate (exposed as Wants) sees the built EventEntry and decides
-// whether the event lands in this file. The former pre-entry drop predicate is
-// gone: the EventEntry is built once by the dispatcher for the whole sink set,
-// so a per-sink pre-build optimization saved nothing, and a sink that wants to
-// exclude an event by provider/name simply expresses it in its predicate.
-//
-// Schema. Two envelope shapes, selected per sink via `JsonlSchema`:
-//   PayloadOnly (datasets) :
-//     { "timestamp", "kind", "session", "payload": {...} }
-//   SelfDescribing (app.jsonl) :
-//     { "timestamp", "kind", "session", "provider", "event", "level",
-//       "source", "message", "line", "payload": {...} }
-// `timestamp` is ISO 8601 with offset to local time. `kind` is the channel
-// label passed at construction. `session` is the process-local
-// DeckleEventSource.SessionId. `payload` is the flat dictionary of [Event]
-// parameters by their snake_case names. The SelfDescribing channel adds the
-// event identity the LogWindow renders, so the file is a faithful, greppable
-// mirror of the live journal rather than an anonymous payload. See ADR-0007.
-//
-// Rotation. An optional `JsonlRotationPolicy` rolls the file once it reaches
-// MaxLines lines into a monotonically-numbered generation under an `archive/`
-// subfolder (app.jsonl → archive/app.jsonl.0001 → …). Generations accumulate;
-// none is renamed or deleted. Datasets pass no policy and stay append-only.
-// See ADR-0007.
-//
-// Threading. Write happens on the dispatcher's emitting thread, guarded by a
-// per-sink lock so concurrent emissions don't tear lines and so a roll never
-// races a write. The file is opened in append mode and flushed at every line,
-// which lets a crash post-write keep the data on disk — process-crash durable,
-// not power-loss durable (no per-line WriteThrough on the hot path).
-public sealed class JsonlSink : ILogSink
+// The worker keeps the active stream open and reuses its JSON buffer. A normal
+// line is still flushed to the OS before the next item, preserving the former
+// process-crash posture without making the EventSource emitter perform disk I/O.
+public sealed class JsonlSink : IFlushableLogSink
 {
+    private const int DefaultQueueCapacity = 1024;
+    private static readonly byte[] NewLine = [(byte)'\n'];
+
     private readonly string _filePath;
-    private readonly System.Func<EventEntry, bool> _predicate;
+    private readonly Func<EventEntry, bool> _predicate;
     private readonly string _kindLabel;
     private readonly JsonlSchema _schema;
     private readonly JsonlRotationPolicy? _rotation;
-    private readonly object _writeLock = new();
+    private readonly JsonlLineSerializer _serializer = new();
+    private readonly BoundedWriteQueue<EventEntry> _queue;
 
-    // Running line count of the active file, maintained under _writeLock so
-    // the rotation check is a counter compare instead of re-reading the file
-    // each line. Seeded by counting the active file's lines at construction
-    // so a restart doesn't forget what was already written. Only meaningful
-    // when _rotation is non-null.
+    // Worker-thread-owned state.
+    private FileStream? _stream;
     private long _linesWritten;
 
-    private static readonly JsonWriterOptions _jsonOptions = new()
-    {
-        // Keep the JSON compact — one line per event.
-        Indented = false,
-        // Don't escape forward slashes / ampersands / unicode unnecessarily.
-        // The encoder defaults are paranoid for HTML contexts; we write to a
-        // file the user inspects directly.
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
-    // `filePath` — absolute path of the target JSONL file. The sink creates the
-    //              parent directory at construction, so it is self-sufficient
-    //              and does not depend on creation order elsewhere.
-    // `kindLabel` — the value written under the "kind" key ("log", "latency",
-    //              "corpus", "microphone", …).
-    // `predicate` — selects which events land in this file. Receives the full
-    //              EventEntry so it can filter on event name, keywords, or
-    //              level. Exposed through Wants.
-    // `schema`    — envelope shape. PayloadOnly (default) for the frozen dataset
-    //              channels; SelfDescribing for the app.jsonl journal.
-    // `rotation`  — optional line-count roll policy. Null (default) leaves the
-    //              file append-only without bound — correct for the datasets,
-    //              never for the application journal.
     public JsonlSink(
         string filePath,
         string kindLabel,
-        System.Func<EventEntry, bool> predicate,
+        Func<EventEntry, bool> predicate,
         JsonlSchema schema = JsonlSchema.PayloadOnly,
-        JsonlRotationPolicy? rotation = null)
+        JsonlRotationPolicy? rotation = null,
+        int queueCapacity = DefaultQueueCapacity)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(kindLabel);
+
         _filePath = filePath;
         _kindLabel = kindLabel;
-        _predicate = predicate;
+        _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
         _schema = schema;
         _rotation = rotation;
 
-        // Self-sufficient sink: ensure the target's parent directory exists at
-        // construction rather than trusting a creation order elsewhere. One
-        // idempotent syscall at boot — and it keeps the always-on diagnostic
-        // sinks from silently losing their first write if the eager directory
-        // creation in AppPaths ever regresses.
-        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+        string? parent = Path.GetDirectoryName(_filePath);
+        if (!string.IsNullOrEmpty(parent))
+            Directory.CreateDirectory(parent);
 
         if (_rotation is not null)
-        {
             _linesWritten = CountLines(_filePath);
-        }
+
+        _queue = new BoundedWriteQueue<EventEntry>(
+            queueCapacity,
+            write: WriteOnWorker,
+            flush: FlushOnWorker,
+            close: CloseOnWorker);
     }
 
     public bool Wants(EventEntry entry) => _predicate(entry);
 
-    public void Write(EventEntry entry)
+    public void Write(EventEntry entry) => _queue.Enqueue(entry);
+
+    public void Flush() => _queue.Flush();
+
+    public void Dispose() => _queue.Dispose();
+
+    private async ValueTask WriteOnWorker(EventEntry entry)
     {
         try
         {
-            WriteLine(entry);
+            if (_rotation is not null && _linesWritten >= _rotation.MaxLines)
+                RollFiles();
+
+            FileStream stream = EnsureStream();
+            ReadOnlyMemory<byte> json = _serializer.Serialize(entry, _kindLabel, _schema);
+            await stream.WriteAsync(json).ConfigureAwait(false);
+            await stream.WriteAsync(NewLine).ConfigureAwait(false);
+            await stream.FlushAsync().ConfigureAwait(false);
+            _linesWritten++;
         }
         catch
         {
-            // I/O error must not crash the dispatcher — surfacing this category
-            // of failure is a future improvement.
+            CloseOnWorker();
+            throw;
         }
     }
 
-    private void WriteLine(EventEntry entry)
+    private FileStream EnsureStream()
     {
-        // Buffer the JSON in memory then append a single line. Using a
-        // Utf8JsonWriter on a MemoryStream avoids partial writes on
-        // serialisation error.
-        byte[] jsonBytes;
-        using (var ms = new MemoryStream(capacity: 256))
-        {
-            using (var writer = new Utf8JsonWriter(ms, _jsonOptions))
-            {
-                writer.WriteStartObject();
-                writer.WriteString("timestamp", entry.Timestamp.ToString("o", System.Globalization.CultureInfo.InvariantCulture));
-                writer.WriteString("kind", _kindLabel);
-                writer.WriteString("session", DeckleEventSource.SessionId);
-                if (_schema == JsonlSchema.SelfDescribing)
-                {
-                    writer.WriteString("provider", entry.Provider);
-                    writer.WriteString("event", entry.EventName);
-                    writer.WriteString("level", entry.Level.ToString());
-                    writer.WriteString("source", LogLineFormatter.MapSource(entry.Provider));
-                    if (entry.FormattedMessage is null) writer.WriteNull("message");
-                    else writer.WriteString("message", entry.FormattedMessage);
-                    writer.WriteString("line", LogLineFormatter.Format(entry));
-                }
-                writer.WritePropertyName("payload");
-                writer.WriteStartObject();
-                foreach (var kv in entry.Payload)
-                    WriteValue(writer, kv.Key, kv.Value);
-                writer.WriteEndObject();
-                writer.WriteEndObject();
-                writer.Flush();
-            }
-            jsonBytes = ms.ToArray();
-        }
-
-        lock (_writeLock)
-        {
-            // Roll before writing once the active file has reached the line
-            // cap, so each generation holds at most MaxLines lines.
-            if (_rotation is not null && _linesWritten >= _rotation.MaxLines)
-            {
-                RollFiles();
-            }
-
-            using (var fs = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.Read))
-            {
-                fs.Write(jsonBytes, 0, jsonBytes.Length);
-                fs.WriteByte((byte)'\n');
-            }
-            _linesWritten++;
-        }
+        return _stream ??= new FileStream(
+            _filePath,
+            FileMode.Append,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: 4096,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
     }
 
-    // Turns the active file into the next archive generation, kept under an
-    // `archive/` subfolder next to it. The generation index is monotonic:
-    // each roll takes the highest existing index + 1, zero-padded so a
-    // directory listing sorts in chronological order (app.jsonl →
-    // archive/app.jsonl.0001 → archive/app.jsonl.0002 → …). Nothing is ever
-    // renamed or deleted — generations accumulate and the user prunes them at
-    // will. Called under _writeLock with no stream open, so the move is safe.
-    // Best-effort: if the move fails (an archive is held open by an external
-    // reader), the active file is left in place and the line counter is
-    // re-synced from disk so the next attempt waits for another MaxLines of
-    // growth instead of retrying on every line.
+    private ValueTask FlushOnWorker() => _stream is null
+        ? ValueTask.CompletedTask
+        : new ValueTask(_stream.FlushAsync());
+
+    private void CloseOnWorker()
+    {
+        _stream?.Dispose();
+        _stream = null;
+    }
+
     private void RollFiles()
     {
-        var rotation = _rotation;
+        JsonlRotationPolicy? rotation = _rotation;
         if (rotation is null) return;
 
+        CloseOnWorker();
         try
         {
-            string dir = Path.GetDirectoryName(_filePath) ?? string.Empty;
-            string archiveDir = Path.Combine(dir, "archive");
-            Directory.CreateDirectory(archiveDir);
+            string directory = Path.GetDirectoryName(_filePath) ?? string.Empty;
+            string archiveDirectory = Path.Combine(directory, "archive");
+            Directory.CreateDirectory(archiveDirectory);
 
-            string fileName = Path.GetFileName(_filePath); // e.g. "app.jsonl"
-            int next = NextGeneration(archiveDir, fileName);
-            string target = Path.Combine(archiveDir, $"{fileName}.{next:D4}");
+            string fileName = Path.GetFileName(_filePath);
+            int next = NextGeneration(archiveDirectory, fileName);
+            string target = Path.Combine(archiveDirectory, $"{fileName}.{next:D4}");
 
-            if (File.Exists(_filePath)) File.Move(_filePath, target, overwrite: true);
+            if (File.Exists(_filePath))
+                File.Move(_filePath, target, overwrite: true);
 
-            _linesWritten = 0L;
+            _linesWritten = 0;
         }
         catch
         {
@@ -210,75 +136,51 @@ public sealed class JsonlSink : ILogSink
         }
     }
 
-    // Highest existing generation index in the archive folder, + 1 (1 when
-    // empty). Recomputed at each roll rather than held in memory, so the
-    // numbering continues correctly after a restart with no persisted state.
-    // Rolls are rare (every MaxLines lines), so the directory scan is cheap.
-    private static int NextGeneration(string archiveDir, string fileName)
+    private static int NextGeneration(string archiveDirectory, string fileName)
     {
         int max = 0;
         string prefix = fileName + ".";
         try
         {
-            foreach (string path in Directory.EnumerateFiles(archiveDir, prefix + "*"))
+            foreach (string path in Directory.EnumerateFiles(archiveDirectory, prefix + "*"))
             {
-                string suffix = Path.GetFileName(path).Substring(prefix.Length);
-                if (int.TryParse(suffix, System.Globalization.NumberStyles.None,
-                        System.Globalization.CultureInfo.InvariantCulture, out int n) && n > max)
-                    max = n;
+                string suffix = Path.GetFileName(path)[prefix.Length..];
+                if (int.TryParse(
+                        suffix,
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out int generation)
+                    && generation > max)
+                {
+                    max = generation;
+                }
             }
         }
-        catch { /* fall back to 1 */ }
+        catch { }
+
         return max + 1;
     }
 
-    // Counts the lines (newline bytes) of a file on disk, streaming so a
-    // large active journal isn't loaded into memory. Returns 0 for a missing
-    // or unreadable file. Used to seed the line counter at construction and
-    // to re-sync it after a failed roll.
     private static long CountLines(string path)
     {
         try
         {
-            if (!File.Exists(path)) return 0L;
-            long count = 0L;
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            if (!File.Exists(path)) return 0;
+
+            long count = 0;
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             var buffer = new byte[64 * 1024];
             int read;
-            while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
+            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
             {
                 for (int i = 0; i < read; i++)
                     if (buffer[i] == (byte)'\n') count++;
             }
             return count;
         }
-        catch { return 0L; }
-    }
-
-    private static void WriteValue(Utf8JsonWriter writer, string name, object? value)
-    {
-        switch (value)
+        catch
         {
-            case null:        writer.WriteNull(name); break;
-            case string s:    writer.WriteString(name, s); break;
-            case bool b:      writer.WriteBoolean(name, b); break;
-            case int i:       writer.WriteNumber(name, i); break;
-            case long l:      writer.WriteNumber(name, l); break;
-            case short sh:    writer.WriteNumber(name, sh); break;
-            case byte by:     writer.WriteNumber(name, by); break;
-            case uint ui:     writer.WriteNumber(name, ui); break;
-            case ulong ul:    writer.WriteNumber(name, ul); break;
-            case ushort us:   writer.WriteNumber(name, us); break;
-            case sbyte sb:    writer.WriteNumber(name, sb); break;
-            case float f:     writer.WriteNumber(name, f); break;
-            case double d:    writer.WriteNumber(name, d); break;
-            case System.Guid g: writer.WriteString(name, g.ToString()); break;
-            case System.DateTime dt: writer.WriteString(name, dt.ToString("o", System.Globalization.CultureInfo.InvariantCulture)); break;
-            case System.DateTimeOffset dto: writer.WriteString(name, dto.ToString("o", System.Globalization.CultureInfo.InvariantCulture)); break;
-            // Fallback for unexpected types: stringify. EventSource only allows
-            // a limited set of primitives in [Event] signatures, so we should
-            // never reach here in practice.
-            default:          writer.WriteString(name, value.ToString() ?? string.Empty); break;
+            return 0;
         }
     }
 }

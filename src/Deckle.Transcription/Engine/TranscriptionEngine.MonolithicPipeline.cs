@@ -118,7 +118,7 @@ public sealed partial class TranscriptionEngine
 
         // Transcription pre-processing DSP — terminal float[]→float[] stage,
         // applied to a separate buffer fed to the backend only: the raw `audio`
-        // stays untouched and is what the corpus stores (ADR-0006). Self-adjusting
+        // stays untouched and is what the normalized corpus stores. Self-adjusting
         // when the user opts in; a near no-op on a mic already at target.
         float[] backendAudio = audio;
         var pp = _host.Audio.Preprocessing;

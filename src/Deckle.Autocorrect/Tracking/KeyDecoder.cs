@@ -36,6 +36,11 @@ public sealed class KeyDecoder
     private const uint TOUNICODE_NOSTATECHANGE = 0x4; // wFlags bit 2 — observer must not touch the dead-key buffer
 
     private readonly ToUnicodeFn _toUnicode;
+    // KeyDecoder is owned by the dedicated input thread. Reusing these two
+    // native-call workspaces removes two managed allocations from every
+    // printable key without introducing cross-thread ownership.
+    private readonly byte[] _keyState = new byte[256];
+    private readonly StringBuilder _translationBuffer = new(8);
 
     // Side-specific modifier latches, driven by down/up of both the generic
     // VK (0x10/0x11/0x12) and the sided VK (0xA0..0xA5). The generic and sided
@@ -120,12 +125,15 @@ public sealed class KeyDecoder
 
     private Keystroke Translate(ushort vk, ushort scanCode, bool altGr, double t)
     {
-        byte[] state = BuildKeyState(altGr);
-        var buffer = new StringBuilder(8);
-        int code = _toUnicode(vk, scanCode, state, buffer);
+        BuildKeyState(altGr);
+        _translationBuffer.Clear();
+        int code = _toUnicode(vk, scanCode, _keyState, _translationBuffer);
 
         if (code > 0)
-            return new Keystroke(KeystrokeKind.Text, buffer.ToString(0, Math.Min(code, buffer.Length)), t);
+            return new Keystroke(
+                KeystrokeKind.Text,
+                _translationBuffer.ToString(0, Math.Min(code, _translationBuffer.Length)),
+                t);
         if (code < 0)
             return Keystroke.Of(KeystrokeKind.DeadKey, t);
         return Keystroke.Of(KeystrokeKind.Other, t);
@@ -135,25 +143,24 @@ public sealed class KeyDecoder
     // low bit (0x01) on VK_CAPITAL = toggle on. Only the keys that influence
     // character production are set. For an AltGr chord, Ctrl+Alt are marked
     // down so the layout's AltGr level is selected.
-    private byte[] BuildKeyState(bool altGr)
+    private void BuildKeyState(bool altGr)
     {
-        var state = new byte[256];
+        Array.Clear(_keyState);
         if (ShiftDown)
         {
-            state[VK_SHIFT] = 0x80;
-            state[VK_LSHIFT] = 0x80;
-            state[VK_RSHIFT] = 0x80;
+            _keyState[VK_SHIFT] = 0x80;
+            _keyState[VK_LSHIFT] = 0x80;
+            _keyState[VK_RSHIFT] = 0x80;
         }
         if (altGr)
         {
-            state[VK_CONTROL] = 0x80;
-            state[VK_LCONTROL] = 0x80;
-            state[VK_MENU] = 0x80;
-            state[VK_RMENU] = 0x80; // AltGr is physically the right Alt
+            _keyState[VK_CONTROL] = 0x80;
+            _keyState[VK_LCONTROL] = 0x80;
+            _keyState[VK_MENU] = 0x80;
+            _keyState[VK_RMENU] = 0x80; // AltGr is physically the right Alt
         }
         if (_capsToggled)
-            state[VK_CAPITAL] = 0x01;
-        return state;
+            _keyState[VK_CAPITAL] = 0x01;
     }
 
     // Updates a modifier latch from a transition. Returns true when the event

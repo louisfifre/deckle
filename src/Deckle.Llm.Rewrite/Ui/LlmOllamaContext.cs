@@ -11,7 +11,7 @@ namespace Deckle.Llm.Rewrite;
 //
 // Sections subscribe to StateChanged to rebuild when model list or availability
 // changes. Sections that do not depend on Ollama (General, ManualShortcut,
-// Rules) do not touch the context.
+// shortcut slots) do not touch the context.
 //
 // This context is NOT a ViewModel: it does not observe properties and does not
 // notify field-by-field. It only shares runtime state (service, models,

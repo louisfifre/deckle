@@ -10,9 +10,9 @@ public sealed partial class DeckleWhispSource
     // LatencyRecorded, CorpusAsrRecorded, and CorpusRewriteRecorded are the
     // events JsonlSink (and RoutedJsonlSink for both corpora)
     // filters to write latency.jsonl and bucketed corpus.jsonl files. The
-    // Message format is a one-line summary for LogWindow; the full payload is
-    // serialized by EtwSelfDescribingEventFormat with snake_case names becoming
-    // JSON keys.
+    // Message format is useful to direct EventListener diagnostics; operational
+    // sinks reject these dataset-tagged events. The full payload is serialized
+    // by EtwSelfDescribingEventFormat with snake_case names becoming JSON keys.
     //
     // CorpusAsrRecorded captures ASR output (Whisper, later Voxtral). Routed
     // to corpus/<bucket>/<tier>/corpus.jsonl (bucket=raw in word-for-word mode,
@@ -22,7 +22,7 @@ public sealed partial class DeckleWhispSource
     //
     // CorpusRewriteRecorded captures LLM rewrite output. Routed to
     // corpus/rewrite-<name>-<id>/corpus.jsonl (flat: no tier on rewrite, see
-    // ADR-0006). rewrite_profile_id joins with the profile; prompt_template_hash
+    // the normalized corpus contract). rewrite_profile_id joins with the profile; prompt_template_hash
     // invalidates analyses if the template changes without ID rename.
     //
     // When a rewrite runs, both events leave with the same transcription_id:
@@ -32,8 +32,9 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "audio={0:F1}s hotkey={2}ms whisper={6}ms llm={7}ms outcome={21}")]
+           Message = "id={0} audio={1:F1}s hotkey={3}ms whisper={7}ms llm={8}ms outcome={22}")]
     public void LatencyRecorded(
+        string transcription_id,
         double audio_sec,
         long   model_load_ms,
         long   hotkey_to_capture_ms,
@@ -59,7 +60,7 @@ public sealed partial class DeckleWhispSource
     {
         if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtLatencyRecorded,
-            audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms,
+            transcription_id, audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms,
             stop_to_pipeline_ms, whisper_init_ms,
             whisper_ms, llm_ms, ollama_load_ms, llm_prompt_eval_ms, llm_eval_ms,
             llm_prompt_tokens, llm_eval_tokens, clipboard_ms, paste_ms,

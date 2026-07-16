@@ -14,8 +14,8 @@ namespace Deckle.Transcription;
 //
 // "Backend" is borrowed from the established ML/AI vocabulary (llama.cpp,
 // whisper.cpp, transformers all call swappable inference implementations
-// "backends"). It extends the Deckle suffix vocabulary by tracked decision —
-// see ADR 0005.
+// "backends"). It names the interchangeable inference boundary described by
+// this module's AGENTS.md; it is not a generic service or provider abstraction.
 //
 // Threading. Every method may be called from a non-UI thread. LoadModelAsync
 // is called once per session (lazy, on first hotkey); UnloadModel can fire

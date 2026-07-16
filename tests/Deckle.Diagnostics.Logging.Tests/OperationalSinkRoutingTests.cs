@@ -30,6 +30,7 @@ public sealed class OperationalSinkRoutingTests
             var admitted = Entry("admitted", ObservationKind.Operational);
             Assert.True(sink.Wants(admitted));
             sink.Write(admitted);
+            sink.Flush();
 
             Assert.True(File.Exists(path));
             string jsonl = File.ReadAllText(path);
@@ -39,6 +40,7 @@ public sealed class OperationalSinkRoutingTests
         }
         finally
         {
+            sink.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
@@ -72,6 +74,7 @@ public sealed class OperationalSinkRoutingTests
         finally
         {
             LogWindowFilterSession.Selection.Clear();
+            sink.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
@@ -90,6 +93,39 @@ public sealed class OperationalSinkRoutingTests
 
         EventEntry received = Assert.Single(receiver.Entries);
         Assert.Equal("operational", received.FormattedMessage);
+    }
+
+    [Fact]
+    public void LogWindowReplaysOnlyTheNewestCapacityInChronologicalOrder()
+    {
+        const int capacity = 5000;
+        const int overflow = 7;
+        var sink = new LogWindowSink();
+
+        for (int i = 0; i < capacity + overflow; i++)
+            sink.Write(Entry(i.ToString(), ObservationKind.Operational));
+
+        var receiver = new CollectingLogWindowSink();
+        sink.AttachSink(receiver);
+
+        Assert.Equal(capacity, receiver.Entries.Count);
+        Assert.Equal(overflow.ToString(), receiver.Entries[0].FormattedMessage);
+        Assert.Equal((capacity + overflow - 1).ToString(), receiver.Entries[^1].FormattedMessage);
+    }
+
+    [Fact]
+    public void LogWindowStopsLiveDeliveryAfterSinkDetaches()
+    {
+        var sink = new LogWindowSink();
+        var receiver = new CollectingLogWindowSink();
+        sink.AttachSink(receiver);
+
+        sink.Write(Entry("attached", ObservationKind.Operational));
+        sink.DetachSink(receiver);
+        sink.Write(Entry("detached", ObservationKind.Operational));
+
+        EventEntry received = Assert.Single(receiver.Entries);
+        Assert.Equal("attached", received.FormattedMessage);
     }
 
     private static EventEntry Entry(

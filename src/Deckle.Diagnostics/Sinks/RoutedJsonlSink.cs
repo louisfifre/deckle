@@ -1,159 +1,148 @@
-using System;
-using System.Collections.Concurrent;
-using System.Globalization;
-using System.IO;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-
 namespace Deckle.Diagnostics;
 
-// Routed variant of JsonlSink. Same posture (one predicate, one kindLabel,
-// line-by-line JSON serialization, file lock to avoid tearing), except the
-// destination is no longer frozen at construction: a `pathResolver` computes it
-// per event from its EventEntry. Allows one sink to spray the same event stream
-// toward a dynamic tree of bucketed `corpus.jsonl` files (for example
-// `corpus/raw/<tier>/corpus.jsonl` or `corpus/rewrite-<name>-<id>/corpus.jsonl`
-// — see ADR-0006). A passive ILogSink: it does not subscribe to any
-// EventSource, the dispatcher feeds it built entries.
+// Routes one dataset stream over a dynamic JSONL tree. A single bounded worker
+// preserves acceptance order and owns every file handle; emitter threads never
+// open, serialize, flush, or lock a destination file.
 //
-// Why not inherit from JsonlSink. The corpus redesign brief decided: no
-// inheritance. The "routed" mode is not extra behavior over the "flat" mode; it
-// is another destination strategy. Exposing a mutable mode on the generic sink
-// would make the API more fragile for zero gain (both types carry a handful of
-// lines in common, and their controlled duplication avoids coupling their
-// evolution cycles).
-//
-// Concurrency. Several simultaneously resolved paths can land on different
-// files; a global lock would serialize writes that have no reason to block each
-// other. The sink keeps a `ConcurrentDictionary<string, object>` indexed by
-// concrete path: each path has its own lock, lazily allocated by the first
-// event that writes to it. Parent directory creation piggybacks on that same
-// `GetOrAdd`: the first event for a path calls `Directory.CreateDirectory`
-// once.
-//
-// Safety. No path component validation here; it is the producer's (or
-// resolver's) responsibility to sanitize dynamic segments before they cross.
-// `CorpusPaths.Sanitize` is the intended producer-side utility for that.
-public sealed class RoutedJsonlSink : ILogSink
+// Dynamic destinations are held in a fixed-size LRU. Eviction flushes and
+// closes the least recently used stream before a new one opens, so an evolving
+// corpus cannot turn path diversity into an unbounded handle cache.
+public sealed class RoutedJsonlSink : IFlushableLogSink
 {
+    private const int DefaultQueueCapacity = 1024;
+    private const int DefaultMaxOpenFiles = 16;
+    private static readonly byte[] NewLine = [(byte)'\n'];
+
     private readonly Func<EventEntry, string> _pathResolver;
     private readonly Func<EventEntry, bool> _predicate;
     private readonly string _kindLabel;
-    private readonly ConcurrentDictionary<string, object> _pathLocks = new();
+    private readonly int _maxOpenFiles;
+    private readonly JsonlLineSerializer _serializer = new();
+    private readonly BoundedWriteQueue<EventEntry> _queue;
 
-    private static readonly JsonWriterOptions _jsonOptions = new()
-    {
-        Indented = false,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
+    // Worker-thread-owned LRU state.
+    private readonly Dictionary<string, OpenFile> _openFiles =
+        new(StringComparer.OrdinalIgnoreCase);
+    private readonly LinkedList<string> _leastRecentlyUsed = new();
 
-    // `pathResolver` — computes the absolute destination from the EventEntry.
-    //                  Called for each event Wants accepted. Must return an
-    //                  absolute, already-sanitized file path; a null/empty
-    //                  return silently skips the event.
-    // `kindLabel`    — value written under the JSONL "kind" key, aligned with
-    //                  classic JsonlSink labels ("log", "latency", …).
-    // `predicate`    — selects which events land in this sink. Receives the full
-    //                  EventEntry to filter on name, level, keywords, or
-    //                  payload. Exposed through Wants.
     public RoutedJsonlSink(
         Func<EventEntry, string> pathResolver,
         string kindLabel,
-        Func<EventEntry, bool> predicate)
+        Func<EventEntry, bool> predicate,
+        int maxOpenFiles = DefaultMaxOpenFiles,
+        int queueCapacity = DefaultQueueCapacity)
     {
+        if (maxOpenFiles <= 0) throw new ArgumentOutOfRangeException(nameof(maxOpenFiles));
+        ArgumentException.ThrowIfNullOrWhiteSpace(kindLabel);
+
         _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
         _kindLabel = kindLabel;
         _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        _maxOpenFiles = maxOpenFiles;
+
+        _queue = new BoundedWriteQueue<EventEntry>(
+            queueCapacity,
+            write: WriteOnWorker,
+            flush: FlushOnWorker,
+            close: CloseOnWorker);
     }
+
+    internal int OpenFileCount => _openFiles.Count;
 
     public bool Wants(EventEntry entry) => _predicate(entry);
 
-    public void Write(EventEntry entry)
+    public void Write(EventEntry entry) => _queue.Enqueue(entry);
+
+    public void Flush() => _queue.Flush();
+
+    public void Dispose() => _queue.Dispose();
+
+    private async ValueTask WriteOnWorker(EventEntry entry)
     {
-        string path;
-        try { path = _pathResolver(entry); }
-        catch { return; }
+        string path = _pathResolver(entry);
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        OpenFile destination = GetOrOpen(path);
         try
         {
-            WriteLine(path, entry);
+            ReadOnlyMemory<byte> json = _serializer.Serialize(
+                entry,
+                _kindLabel,
+                JsonlSchema.PayloadOnly);
+            await destination.Stream.WriteAsync(json).ConfigureAwait(false);
+            await destination.Stream.WriteAsync(NewLine).ConfigureAwait(false);
+            await destination.Stream.FlushAsync().ConfigureAwait(false);
         }
         catch
         {
-            // Same posture as JsonlSink: failed I/O must not crash the
-            // dispatcher. Surfacing this kind of error (counter, dedicated
-            // event) is a future observability task.
+            RemoveAndClose(path, destination);
+            throw;
         }
     }
 
-    private void WriteLine(string path, EventEntry entry)
+    private OpenFile GetOrOpen(string path)
     {
-        byte[] jsonBytes;
-        using (var ms = new MemoryStream(capacity: 256))
+        if (_openFiles.TryGetValue(path, out OpenFile? existing))
         {
-            using (var writer = new Utf8JsonWriter(ms, _jsonOptions))
-            {
-                writer.WriteStartObject();
-                writer.WriteString("timestamp", entry.Timestamp.ToString("o", CultureInfo.InvariantCulture));
-                writer.WriteString("kind", _kindLabel);
-                writer.WriteString("session", DeckleEventSource.SessionId);
-                writer.WritePropertyName("payload");
-                writer.WriteStartObject();
-                foreach (var kv in entry.Payload)
-                    WriteValue(writer, kv.Key, kv.Value);
-                writer.WriteEndObject();
-                writer.WriteEndObject();
-                writer.Flush();
-            }
-            jsonBytes = ms.ToArray();
+            _leastRecentlyUsed.Remove(existing.Node);
+            _leastRecentlyUsed.AddFirst(existing.Node);
+            return existing;
         }
 
-        // Lock by resolved path: lazy allocation through GetOrAdd guarantees
-        // that a given path is always associated with the same object, and
-        // therefore that only one thread writes to that file at a time. The
-        // parent directory creation delta lives in the GetOrAdd factory: the
-        // first event for a path calls Directory.CreateDirectory once, never
-        // re-checked.
-        object lockObj = _pathLocks.GetOrAdd(path, p =>
-        {
-            string? parent = Path.GetDirectoryName(p);
-            if (!string.IsNullOrEmpty(parent))
-                Directory.CreateDirectory(parent);
-            return new object();
-        });
+        if (_openFiles.Count >= _maxOpenFiles)
+            EvictLeastRecentlyUsed();
 
-        lock (lockObj)
-        {
-            using var fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-            fs.Write(jsonBytes, 0, jsonBytes.Length);
-            fs.WriteByte((byte)'\n');
-        }
+        string? parent = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(parent))
+            Directory.CreateDirectory(parent);
+
+        var node = new LinkedListNode<string>(path);
+        var stream = new FileStream(
+            path,
+            FileMode.Append,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: 4096,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var opened = new OpenFile(stream, node);
+        _leastRecentlyUsed.AddFirst(node);
+        _openFiles.Add(path, opened);
+        return opened;
     }
 
-    private static void WriteValue(Utf8JsonWriter writer, string name, object? value)
+    private void EvictLeastRecentlyUsed()
     {
-        switch (value)
+        LinkedListNode<string>? node = _leastRecentlyUsed.Last;
+        if (node is null) return;
+
+        if (_openFiles.Remove(node.Value, out OpenFile? opened))
         {
-            case null:                       writer.WriteNull(name); break;
-            case string s:                   writer.WriteString(name, s); break;
-            case bool b:                     writer.WriteBoolean(name, b); break;
-            case int i:                      writer.WriteNumber(name, i); break;
-            case long l:                     writer.WriteNumber(name, l); break;
-            case short sh:                   writer.WriteNumber(name, sh); break;
-            case byte by:                    writer.WriteNumber(name, by); break;
-            case uint ui:                    writer.WriteNumber(name, ui); break;
-            case ulong ul:                   writer.WriteNumber(name, ul); break;
-            case ushort us:                  writer.WriteNumber(name, us); break;
-            case sbyte sb:                   writer.WriteNumber(name, sb); break;
-            case float f:                    writer.WriteNumber(name, f); break;
-            case double d:                   writer.WriteNumber(name, d); break;
-            case Guid g:                     writer.WriteString(name, g.ToString()); break;
-            case DateTime dt:                writer.WriteString(name, dt.ToString("o", CultureInfo.InvariantCulture)); break;
-            case DateTimeOffset dto:         writer.WriteString(name, dto.ToString("o", CultureInfo.InvariantCulture)); break;
-            // Fallback: EventSource only allows a restricted set of primitives
-            // in [Event] signatures, so this branch should never be reached.
-            default:                         writer.WriteString(name, value.ToString() ?? string.Empty); break;
+            opened.Stream.Flush();
+            opened.Stream.Dispose();
         }
+        _leastRecentlyUsed.Remove(node);
     }
+
+    private void RemoveAndClose(string path, OpenFile opened)
+    {
+        _openFiles.Remove(path);
+        _leastRecentlyUsed.Remove(opened.Node);
+        opened.Stream.Dispose();
+    }
+
+    private async ValueTask FlushOnWorker()
+    {
+        foreach (OpenFile opened in _openFiles.Values)
+            await opened.Stream.FlushAsync().ConfigureAwait(false);
+    }
+
+    private void CloseOnWorker()
+    {
+        foreach (OpenFile opened in _openFiles.Values)
+            opened.Stream.Dispose();
+        _openFiles.Clear();
+        _leastRecentlyUsed.Clear();
+    }
+
+    private sealed record OpenFile(FileStream Stream, LinkedListNode<string> Node);
 }

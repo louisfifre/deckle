@@ -1,4 +1,5 @@
 using Deckle.Autocorrect;
+using Deckle.Diagnostics;
 using Deckle.Input;
 
 namespace Deckle.Autocorrect;
@@ -32,6 +33,13 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly IFrequencyLexicon? _french;
     private readonly IFrequencyLexicon? _english;
 
+    // Start/Stop own one reference on the process-shared input host. Keeping
+    // that ownership explicit is essential: Dispose before Start must not
+    // release a reference held by another consumer (for example wheel capture).
+    private readonly object _lifecycleLock = new();
+    private bool _started;
+    private bool _disposed;
+
     // The approved mistouch families' detector-generator (CONTEXT.md § Mistouch
     // family) — null when no family is approved, and the engine runs untouched.
     // Kinds are code, the records are the user's own data.
@@ -57,9 +65,9 @@ public sealed class AutocorrectEngine : IDisposable
     private readonly Func<bool>? _decisionTelemetry;
 
     // Opt-in typed-sentence corpus. When this returns true, each committed word on
-    // ANY editable, non-password surface feeds the accumulator — enrollment does not
-    // bound it, since the point is the user's own typing reference (auto-corrections,
-    // style, rhythm), not only what the corrector touched. The accumulator emits the
+    // an enrolled, editable, non-password surface feeds the accumulator. The same
+    // surface gate as correction keeps verbatim collection inside the scope the user
+    // explicitly approved. The accumulator emits the
     // (typed, final) sentence pair to the autocorrect.text dataset. Null = no
     // accumulator built. Off by default. The heaviest text capture — a verbatim
     // record of typed input, so it stands behind its own dedicated consent toggle.
@@ -68,8 +76,7 @@ public sealed class AutocorrectEngine : IDisposable
     private int _discardCorpusRequested;
 
     // The typing stream (CONTEXT.md § Typing stream) rides the same consent
-    // envelope as the corpus but a TIGHTER surface gate: enrolled surfaces only,
-    // where the corpus spans every editable one. Fed the same decoded keystrokes
+    // envelope and the same enrolled-surface gate as the corpus. Fed the same decoded keystrokes
     // the tracker consumes — a parallel verbatim capture, not a word model.
     private readonly TypingStream? _stream;
 
@@ -189,27 +196,42 @@ public sealed class AutocorrectEngine : IDisposable
 
     public bool Start()
     {
-        _host.KeyReceived += OnKey;
-        _host.PointerInteraction += OnPointerInteraction;
-        _host.FocusChanged += OnFocusChanged;
-        _host.DrainRequested += OnDrainRequested;
-        _tracker.WordCommitted += OnWordCommitted;
-        _tracker.WordEdited += OnWordEdited;
-        _tracker.TrackerReset += OnTrackerReset;
-
-        if (!_host.Start())
+        lock (_lifecycleLock)
         {
-            Unsubscribe();
-            return false;
-        }
+            if (_disposed) return false;
+            if (_started) return true;
 
-        OnFocusChanged(); // seed the surface before the first focus event
-        DeckleAutocorrectSource.Log.EngineStarted();
-        return true;
+            _host.KeyReceived += OnKey;
+            _host.PointerInteraction += OnPointerInteraction;
+            _host.FocusChanged += OnFocusChanged;
+            _host.DrainRequested += OnDrainRequested;
+            _tracker.WordCommitted += OnWordCommitted;
+            _tracker.WordEdited += OnWordEdited;
+            _tracker.TrackerReset += OnTrackerReset;
+
+            if (!_host.Start())
+            {
+                Unsubscribe();
+                return false;
+            }
+
+            _started = true;
+            OnFocusChanged(); // seed the surface before the first focus event
+            DeckleAutocorrectSource.Log.EngineStarted();
+            return true;
+        }
     }
 
     public void Stop()
     {
+        lock (_lifecycleLock)
+            StopCore();
+    }
+
+    private void StopCore()
+    {
+        if (!_started) return;
+        _started = false;
         _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _host.Stop();
         Unsubscribe();
@@ -224,7 +246,13 @@ public sealed class AutocorrectEngine : IDisposable
     // and releases the model). Stop alone is reused across enable/disable cycles.
     public void Dispose()
     {
-        Stop();
+        lock (_lifecycleLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            StopCore();
+        }
+
         _pauseTimer?.Dispose();
         _coordinator?.Dispose();
         _lane?.Dispose();
@@ -290,7 +318,7 @@ public sealed class AutocorrectEngine : IDisposable
     private void OnKey(KeyboardKeyEvent e)
     {
         if (e.IsInjected) return;            // our own repairs never feed the view
-        if (_surface.IsPassword) return;     // hard gate — before decoding
+        if (!_surface.IsTextEditable || _surface.IsPassword) return; // hard gate — before decoding
 
         var stroke = _decoder.Decode(e);
         if (stroke is null) return;
@@ -299,7 +327,7 @@ public sealed class AutocorrectEngine : IDisposable
         // The coordinator sees the live word as it stood BEFORE the tracker
         // consumes this stroke — so a Backspace into committed text invalidates its
         // model. Resets proper arrive via OnTrackerReset.
-        _coordinator?.NotePhysicalKey(k, _tracker.CurrentWord);
+        _coordinator?.NotePhysicalKey(k, _tracker.HasCurrentWord);
 
         // The typing stream captures the verbatim stroke before the tracker
         // interprets it. Gated per stroke — enrolled surfaces only, consent live;
@@ -350,9 +378,8 @@ public sealed class AutocorrectEngine : IDisposable
     {
         _rollupCorrections++;
         DeckleAutocorrectSource.Log.CorrectionApplied();
-        DeckleAutocorrectSource.Log.CorrectionDetail(
-            decision.Reason.ToString(), decision.Original.Length, decision.Replacement.Length, 0);
-        if (_textTelemetry?.Invoke() == true)
+        LogCorrectionDetail(decision, backspaces: 0);
+        if (CanCollectText())
             _corpus?.SentenceEdit(decision.Original, decision.Replacement);
         CorrectionApplied?.Invoke(decision);
     }
@@ -402,9 +429,8 @@ public sealed class AutocorrectEngine : IDisposable
         bool enabledHere = IsEnabledFor(settings, surface.ProcessName);
         bool undecided = !IsDecided(settings, surface.ProcessName);
 
-        // A declined app (decided, off) is left alone for CORRECTION — no policy
-        // run, no suggestion — but the text corpus still records what was typed:
-        // enrollment no longer bounds collection. Only an enabled or a not-yet-
+        // A declined app (decided, off) is left entirely alone: no policy run,
+        // no suggestion, and no text collection. Only an enabled or a not-yet-
         // decided app is evaluated by the policy below.
         if (!enabledHere && !undecided)
         {
@@ -508,9 +534,7 @@ public sealed class AutocorrectEngine : IDisposable
             _tracker.ReplaceLastCommitted(decision.Replacement);
             _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
-            DeckleAutocorrectSource.Log.CorrectionDetail(
-                decision.Reason.ToString(), decision.Original.Length,
-                decision.Replacement.Length, plan.Backspaces);
+            LogCorrectionDetail(decision, plan.Backspaces);
             CorrectionApplied?.Invoke(decision);
         }
         else
@@ -546,10 +570,8 @@ public sealed class AutocorrectEngine : IDisposable
         {
             _rollupCorrections++;
             DeckleAutocorrectSource.Log.CorrectionApplied();
-            DeckleAutocorrectSource.Log.CorrectionDetail(
-                decision.Reason.ToString(), repair.Original.Length,
-                repair.Replacement.Length, plan.Backspaces);
-            if (_textTelemetry?.Invoke() == true)
+            LogCorrectionDetail(decision, plan.Backspaces);
+            if (CanCollectText())
                 _corpus?.SeparatorEdit(repair.Previous, repair.OldSeparators, repair.NewSeparators);
             CorrectionApplied?.Invoke(decision);
         }
@@ -569,14 +591,13 @@ public sealed class AutocorrectEngine : IDisposable
         || _dictionary?.IsAdopted(lowerForm) == true;
 
     // Feed the typed-sentence corpus one word: the verbatim typed form paired with
-    // the form the engine left on screen (onScreen). Collection reaches here only for
-    // editable, non-password, master-on commits — the two early gates already withheld
-    // the rest — and spans every such surface regardless of enrollment. The dedicated
-    // consent toggle is the sole remaining gate, and exactly one call fires per commit.
+    // the form the engine left on screen (onScreen). Collection is allowed only on
+    // an enrolled, editable, non-password surface while both the module and dedicated
+    // consent are on. Exactly one call fires per eligible commit.
     // commit.TimestampMs feeds the corpus rhythm (cast to whole ms; 0 stays unknown).
     private void FeedCorpus(WordCommit commit, string onScreen)
     {
-        if (_textTelemetry?.Invoke() == true)
+        if (CanCollectText())
             _corpus?.Word(commit.Word, onScreen, commit.Boundary, (long)commit.TimestampMs);
     }
 
@@ -589,7 +610,7 @@ public sealed class AutocorrectEngine : IDisposable
         // Consent is live, not captured when the sentence starts. A reset can
         // close an accumulated run after the user has switched collection off;
         // do not expose that verbatim text to any EventSource listener.
-        if (_textTelemetry?.Invoke() != true)
+        if (!CanCollectText())
             return;
 
         DeckleAutocorrectSource.Log.AutocorrectTextRecorded(
@@ -597,17 +618,12 @@ public sealed class AutocorrectEngine : IDisposable
     }
 
     // The typing stream records only where correction is live: an editable,
-    // non-password (cut upstream), master-on, ENROLLED surface with the text
-    // consent on — tighter than the corpus, which spans every editable surface.
+    // non-password (cut upstream), master-on, enrolled surface with text consent.
     // Checked per stroke so a settings flip takes effect immediately; resets
     // (pointer, focus) bypass this gate so a span can never straddle surfaces.
     private bool ShouldFeedStream()
     {
-        if (_stream is null || !_surface.IsTextEditable) return false;
-        var settings = _settings();
-        return settings.Enabled
-            && IsEnabledFor(settings, _surface.ProcessName)
-            && _textTelemetry?.Invoke() == true;
+        return _stream is not null && CanCollectText();
     }
 
     // Emits one closed typing-stream run on the dedicated dataset, tagged with
@@ -616,7 +632,7 @@ public sealed class AutocorrectEngine : IDisposable
     // the user switched collection off.
     private void EmitStreamRun(TypingStream.RunRecord rec)
     {
-        if (_textTelemetry?.Invoke() != true)
+        if (!CanCollectText())
             return;
 
         DeckleAutocorrectSource.Log.AutocorrectStreamRecorded(
@@ -648,14 +664,11 @@ public sealed class AutocorrectEngine : IDisposable
         if (!settings.Enabled || !surface.IsTextEditable || surface.IsPassword)
             return;
 
-        // Corpus collection spans every consented editable surface. Enrollment
-        // gates correction and learning, not reconstruction of the text already
-        // fed by OnWordCommitted.
-        if (_textTelemetry?.Invoke() == true)
-            _corpus?.Edit(edit.Original, edit.Replacement);
-
         if (!IsEnabledFor(settings, surface.ProcessName))
             return;
+
+        if (CanCollectText())
+            _corpus?.Edit(edit.Original, edit.Replacement);
 
         // A committed word the user reopened and retyped — the WMR signal, counted
         // whatever the retype was (a hand-fix, a rewording, an undo of a correction).
@@ -712,6 +725,16 @@ public sealed class AutocorrectEngine : IDisposable
         => processName.Length > 0
         && settings.Apps.TryGetValue(processName, out bool on) && on;
 
+    private bool CanCollectText()
+    {
+        FocusedSurface surface = _surface;
+        if (!surface.IsTextEditable || surface.IsPassword) return false;
+        AutocorrectSettings settings = _settings();
+        return settings.Enabled
+            && IsEnabledFor(settings, surface.ProcessName)
+            && _textTelemetry?.Invoke() == true;
+    }
+
     // The user has answered for this app (on or off) — absent means never met.
     private static bool IsDecided(AutocorrectSettings settings, string processName)
         => processName.Length > 0 && settings.Apps.ContainsKey(processName);
@@ -730,8 +753,11 @@ public sealed class AutocorrectEngine : IDisposable
         if (_rollupStartMs < 0) _rollupStartMs = nowMs;
         if (nowMs - _rollupStartMs < RollupPeriodMs) return;
 
-        DeckleAutocorrectSource.Log.ActivityRollup(
-            _rollupCommits, _rollupCorrections, _rollupReEdited, _rollupLearning, _rollupGated);
+        if (OperationalLogAdmission.IsEnabled(OperationalLogActivity.Autocorrect))
+        {
+            DeckleAutocorrectSource.Log.ActivityRollup(
+                _rollupCommits, _rollupCorrections, _rollupReEdited, _rollupLearning, _rollupGated);
+        }
 
         _rollupStartMs = nowMs;
         _rollupCommits = 0;
@@ -739,5 +765,15 @@ public sealed class AutocorrectEngine : IDisposable
         _rollupReEdited = 0;
         _rollupLearning = 0;
         _rollupGated = 0;
+    }
+
+    private static void LogCorrectionDetail(CorrectionDecision decision, int backspaces)
+    {
+        if (!OperationalLogAdmission.IsEnabled(OperationalLogActivity.Autocorrect)) return;
+        DeckleAutocorrectSource.Log.CorrectionDetail(
+            decision.Reason.ToString(),
+            decision.Original.Length,
+            decision.Replacement.Length,
+            backspaces);
     }
 }
