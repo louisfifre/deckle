@@ -141,6 +141,7 @@ public sealed class LogFilterSelectionTests
             "TestEvent",
             level,
             (EventKeywords)keywords,
+            ObservationKind.Operational,
             "Test event",
             new Dictionary<string, object?>());
 }

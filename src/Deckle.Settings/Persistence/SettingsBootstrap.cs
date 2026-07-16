@@ -56,6 +56,16 @@ public static class SettingsBootstrap
         // combined file still exists.
         MigrateModuleFolder("capture", "audio");
 
+        // app.jsonl changed authority from Telemetry to Logging. Move the
+        // existing consent before either settings singleton opens its file;
+        // otherwise Logging would load its off-by-default value and silently
+        // forget a user's prior choice.
+        MoveModuleSetting("telemetry", "logging", "applicationLogToDisk");
+        RenameModuleSetting(
+            "logging",
+            "logStreamingTranscriptionActivity",
+            "logTranscriptionActivity");
+
         string legacyPath = AppPaths.SettingsFilePath;
         if (!File.Exists(legacyPath))
         {
@@ -195,6 +205,71 @@ public static class SettingsBootstrap
 
     private static string ModuleSettingsFilePath(string moduleId) =>
         System.IO.Path.Combine(AppPaths.UserDataRoot, "modules", moduleId, "settings.json");
+
+    private static void MoveModuleSetting(
+        string sourceModuleId,
+        string targetModuleId,
+        string key)
+    {
+        string sourcePath = ModuleSettingsFilePath(sourceModuleId);
+        if (!File.Exists(sourcePath)) return;
+
+        try
+        {
+            var source = JsonNode.Parse(File.ReadAllText(sourcePath)) as JsonObject;
+            if (source?[key] is not JsonNode value) return;
+
+            string targetPath = ModuleSettingsFilePath(targetModuleId);
+            var target = File.Exists(targetPath)
+                ? JsonNode.Parse(File.ReadAllText(targetPath)) as JsonObject ?? new JsonObject()
+                : new JsonObject();
+
+            if (target[key] is null)
+                target[key] = value.DeepClone();
+
+            source.Remove(key);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
+            File.WriteAllText(targetPath, target.ToJsonString(_jsonOptions));
+            File.WriteAllText(sourcePath, source.ToJsonString(_jsonOptions));
+            DeckleSettingsSource.Log.MigrationDispatched();
+            DeckleSettingsSource.Log.MigrationDispatchedDetail(key, targetModuleId);
+        }
+        catch (Exception ex)
+        {
+            DeckleSettingsSource.Log.InjectFailed();
+            DeckleSettingsSource.Log.InjectFailedDetail(
+                key, targetModuleId, ex.GetType().Name, ex.Message);
+        }
+    }
+
+    private static void RenameModuleSetting(
+        string moduleId,
+        string oldKey,
+        string newKey)
+    {
+        string path = ModuleSettingsFilePath(moduleId);
+        if (!File.Exists(path)) return;
+
+        try
+        {
+            var root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject;
+            if (root?[oldKey] is not JsonNode value) return;
+
+            if (root[newKey] is null)
+                root[newKey] = value.DeepClone();
+
+            root.Remove(oldKey);
+            File.WriteAllText(path, root.ToJsonString(_jsonOptions));
+            DeckleSettingsSource.Log.MigrationDispatched();
+            DeckleSettingsSource.Log.MigrationDispatchedDetail(newKey, moduleId);
+        }
+        catch (Exception ex)
+        {
+            DeckleSettingsSource.Log.InjectFailed();
+            DeckleSettingsSource.Log.InjectFailedDetail(
+                newKey, moduleId, ex.GetType().Name, ex.Message);
+        }
+    }
 
     // Move <UserDataRoot>/modules/<oldId>/ to <UserDataRoot>/modules/<newId>/
     // for module renames that change the per-module directory id.

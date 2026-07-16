@@ -1508,21 +1508,14 @@
   </data>
 
   <!-- ─── WhisperPage — Diagnostics ───────────────────────────────────
-       Dictation-scoped observability opt-ins relocated from the shared
-       Diagnostics page: the streaming-transcription log filter, latency
-       telemetry, and the audio-corpus consent fold. The latency, corpus
+       Dictation-scoped dataset consents: latency telemetry and the
+       audio-corpus consent fold. The latency, corpus
        and audio-corpus card copy is shared with the Diagnostics PRI (already
        carried above under the Overlay/telemetry keys); only the section
-       header, the streaming-log card, and the audio-corpus content radio
+       header and the audio-corpus content radio
        are added here. -->
   <data name="WhisperPageDiagnosticsHeader.Text" xml:space="preserve">
     <value>Diagnostics</value>
-  </data>
-  <data name="LoggingStreamingCard.Header" xml:space="preserve">
-    <value>Log streaming transcription activity</value>
-  </data>
-  <data name="LoggingStreamingCard.Description" xml:space="preserve">
-    <value>Per-second heartbeat and per-utterance Verbose lines from the streaming transcription pipeline. The milestones (started, drained) always pass.</value>
   </data>
   <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
     <value>Recorded audio</value>

@@ -14,6 +14,11 @@ public sealed class DeckleVadSource : DeckleEventSource
 
     private DeckleVadSource() { }
 
+    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
+        => (level != EventLevel.Verbose
+            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Transcription))
+        && base.IsEnabled(level, keywords);
+
     // ── EventIds: sequential from 1, never reused ───────────────────────
     // Milestones keep their original id; the Verbose mirrors added for the
     // Verbose/Info separation take fresh ids 9-12 at the end of the sequence.

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using Deckle.Diagnostics;
+using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.App;
@@ -9,8 +10,8 @@ namespace Deckle.App;
 // Boot-time wiring of the EventSource-based observability pipeline. Since the
 // dispatch refonte there is exactly ONE EventListener — the
 // DispatchEventListener owned here — and every consumer is a passive ILogSink
-// registered on it. The dispatcher applies the central capture gate once and
-// builds each EventEntry once; sinks only route and write. See
+// registered on it. The dispatcher builds each EventEntry once; sinks only
+// route and write. Admission already happened at the producer. See
 // Deckle.Diagnostics.ILogSink / DispatchEventListener.
 //
 // Two phases, with a deliberate order:
@@ -25,11 +26,11 @@ namespace Deckle.App;
 //     these sinks already exist. Local only, never transmitted — distinct in
 //     purpose and folder from telemetry/.
 //
-//   InitializeTelemetry(telemetryDirectory) — called later, after settings
-//     migration (the telemetry sinks' user gates read the migrated settings).
-//     Registers the opt-in JSONL telemetry sinks (via TelemetryListenerBootstrap,
-//     canonical paths `<TelemetryDirectory>/{app,latency,microphone,corpus}.jsonl`)
-//     and the LogWindowSink ring buffer that LogWindow attaches to lazily.
+//   InitializeOperationalSinks(diagnosticsDirectory) — called after settings
+//     migration. Registers diagnostics/app.jsonl and the LogWindow ring buffer.
+//
+//   InitializeTelemetry(telemetryDirectory) — registers only purpose-specific,
+//     consented datasets under telemetry/.
 //
 // The dispatcher and the LogWindowSink are process-lifetime singletons, held in
 // static fields. They are never explicitly disposed — the EventListener
@@ -87,7 +88,8 @@ internal static class AppDiagnosticsBootstrap
         dispatch.AddSink(new JsonlSink(
             filePath:  Path.Combine(diagnosticsDirectory, "setup.jsonl"),
             kindLabel: "setup",
-            predicate: static e => e.Provider == "Deckle-Setup",
+            predicate: static e => e.Kind == ObservationKind.Operational
+                                && e.Provider == "Deckle-Setup",
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines: 5000)));
 
@@ -103,35 +105,34 @@ internal static class AppDiagnosticsBootstrap
         dispatch.AddSink(new JsonlSink(
             filePath:  Path.Combine(diagnosticsDirectory, "errors.jsonl"),
             kindLabel: "error",
-            predicate: static e =>
-                   e.Level == EventLevel.Error
+            predicate: static e => e.Kind == ObservationKind.Operational
+                && (e.Level == EventLevel.Error
                 || e.Level == EventLevel.Critical
-                || _crashCompanions.Contains(e.EventName),
+                || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
             rotation:  new JsonlRotationPolicy(maxLines: 2000)));
     }
 
-    // Opt-in telemetry JSONL sinks + the in-memory LogWindow ring buffer. Called
-    // later in OnLaunched, after settings migration, because the telemetry
-    // sinks' user gates read the migrated settings. The two always-on local
-    // sinks are wired separately and earlier — see InitializeLocalSinks.
-    public static void InitializeTelemetry(string telemetryDirectory)
+    public static void InitializeOperationalSinks(string diagnosticsDirectory)
     {
-        // Idempotent: the LogWindow sink is the single-call sentinel.
         if (_logWindowSink is not null) return;
 
         var dispatch = Dispatch;
-
-        // JSONL sinks: write to canonical paths (`<TelemetryDir>/
-        // {app,latency,microphone,corpus}.jsonl`). TelemetryListenerBootstrap
-        // builds them and registers them on the dispatcher we pass in.
-        TelemetryListenerBootstrap.Configure(dispatch, telemetryDirectory, validationSubdirectory: false);
+        dispatch.AddSink(new ApplicationLogSink(diagnosticsDirectory));
 
         // LogWindow sink: starts buffering now. No UI sink is attached at this
         // point; lazy LogWindow will attach via `AttachLogWindowSink` on first
         // open, receive the buffered history as a replay, then stay live.
         _logWindowSink = new LogWindowSink();
         dispatch.AddSink(_logWindowSink);
+    }
+
+    public static void InitializeTelemetry(string telemetryDirectory)
+    {
+        TelemetryListenerBootstrap.Configure(
+            Dispatch,
+            telemetryDirectory,
+            validationSubdirectory: false);
     }
 
     // Registers the HUD feedback sink once the HUD surfaces are available.
@@ -162,18 +163,4 @@ internal static class AppDiagnosticsBootstrap
         _logWindowSink?.DetachSink(sink);
     }
 
-    // Wires the single transverse capture gate onto the dispatcher: silence
-    // Verbose events from the capture families when their gate is active AND the
-    // user has not opted into the matching toggle. Applied once, before
-    // EventEntry construction, for the whole sink set — so the live window and
-    // app.jsonl observe the same gated stream and a new sink cannot forget it.
-    // Replaces the two former per-listener wirings (LogWindow + app.jsonl) of
-    // the same predicate.
-    //
-    // No-op if the dispatcher has not been created yet.
-    public static void ConfigureCentralGate(
-        System.Func<string, EventLevel, EventKeywords, bool> gate)
-    {
-        _dispatch?.ConfigureCentralGate(gate);
-    }
 }

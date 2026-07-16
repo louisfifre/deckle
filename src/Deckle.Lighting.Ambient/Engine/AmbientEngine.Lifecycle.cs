@@ -228,7 +228,7 @@ public sealed partial class AmbientEngine
             // the push loop to silently skip the light forever. Without
             // this log the user would think "ambient doesn't drive that
             // lamp" when it's actually been opted out by configuration.
-            // Info level so it shows even with the capture gate off.
+            // Info level so it remains admitted when ambient detail is off.
             if (_multiLightActive && _multiLights is not null)
             {
                 var zoneAssignments = _host.Ambient.LightZones;
@@ -262,12 +262,11 @@ public sealed partial class AmbientEngine
 
             // Open the capture-active window AFTER the started
             // milestones (Info + Verbose mirror above) have flushed,
-            // so they pass the LogWindow drop filter even with
+            // so they remain admitted even with
             // LogAmbientCaptureActivity off. From here on, Verbose
             // AMBIENT / SCREEN / HUE inside the loop are candidates
-            // for filtering: the App wires the central capture gate on the
-            // dispatcher at boot and it combines this gate
-            // with the user toggle to decide. The window closes at the top of
+            // for producer-side admission. The activity scope combines with
+            // the user toggle at each producer. The window closes at the top of
             // Stop() so stop milestones pass too.
             AmbientCaptureGate.SetActive(true);
 
@@ -380,11 +379,11 @@ public sealed partial class AmbientEngine
         SetState(AmbientEngineState.Stopping);
 
         // Close the capture-active window FIRST so the stopped
-        // milestones (Info + Verbose mirror below) pass the LogWindow
-        // drop filter even with LogAmbientCaptureActivity off. The
+        // milestones (Info + Verbose mirror below) remain admitted even with
+        // LogAmbientCaptureActivity off. The
         // push loop may still emit a final tick before cancellation
         // propagates ; those late Verbose lines also pass since the
-        // gate is already off.
+        // activity scope is already closed.
         AmbientCaptureGate.SetActive(false);
 
         long endTimestamp = Stopwatch.GetTimestamp();

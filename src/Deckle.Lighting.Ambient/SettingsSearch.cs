@@ -33,6 +33,5 @@ public static class SettingsSearch
         new() { LabelKey = "HueBridgeGroupCard", Keywords = ["group", "entertainment", "lights"] },
         new() { LabelKey = "HueBridgeForgetCard", Keywords = ["remove", "unpair", "delete"] },
         new() { LabelKey = "AmbientOpenPlaygroundCard", Keywords = ["tuning", "calibrate"] },
-        new() { LabelKey = "AmbientLogActivityCard", Keywords = ["diagnostics", "debug", "logging"] },
     ];
 }

@@ -62,6 +62,10 @@ public sealed class DeckleWindowingSource : DeckleEventSource
 
     private DeckleWindowingSource() { }
 
+    private bool IsWindowingDetailEnabled()
+        => OperationalLogAdmission.IsEnabled(OperationalLogActivity.Windowing)
+        && IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing);
+
     // ── EventIds ────────────────────────────────────────────────────────
     public const int EvtWindowPositioned     = 1;
     public const int EvtOverlaySlotAssigned  = 2;
@@ -85,7 +89,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         string window, long hmon, int dpi, string anchor,
         int pos_x, int pos_y, int size_w, int size_h)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(EvtWindowPositioned, window, hmon, dpi, anchor, pos_x, pos_y, size_w, size_h);
     }
 
@@ -102,7 +106,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         int slot, long hmon,
         int pos_x, int pos_y, int size_w, int size_h)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(EvtOverlaySlotAssigned, slot, hmon, pos_x, pos_y, size_w, size_h);
     }
 
@@ -122,7 +126,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         string popup, string parent_rect,
         int pos_x, int pos_y, int size_w, int size_h)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(EvtPopupAnchored, popup, parent_rect, pos_x, pos_y, size_w, size_h);
     }
 
@@ -154,7 +158,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
         bool first_occluding_above_topmost,
         bool setpos_ok, int last_error)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(
             EvtWindowZOrderState,
             window, stage, visible, topmost,
@@ -187,7 +191,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
            Message = "resize settled | window={0} | trigger={1} | frames={2} | duration_ms={3}")]
     public void WindowResizeSettled(string window, string trigger, int frames, long duration_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(EvtWindowResizeSettled, window, trigger, frames, duration_ms);
     }
 
@@ -207,7 +211,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     public void WindowResizeFrame(
         string window, int frame, int size_w, int size_h, long since_prev_ms, long relayout_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(EvtWindowResizeFrame, window, frame, size_w, size_h, since_prev_ms, relayout_ms);
     }
 
@@ -228,7 +232,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
            Message = "window load complete | window={0} | load_ms={1}")]
     public void WindowLoadComplete(string window, long load_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled()) return;
         WriteEvent(EvtWindowLoadComplete, window, load_ms);
     }
 }

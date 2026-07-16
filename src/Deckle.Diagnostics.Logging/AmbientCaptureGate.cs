@@ -1,3 +1,5 @@
+using Deckle.Diagnostics;
+
 namespace Deckle.Diagnostics.Logging;
 
 // ── AmbientCaptureGate ─────────────────────────────────────────────────────
@@ -7,13 +9,10 @@ namespace Deckle.Diagnostics.Logging;
 // `TelemetryService.SetCaptureActive(bool)` without reintroducing a central
 // telemetry hub.
 //
-// Consumption. The gate is consulted by the dispatcher's central capture gate,
-// wired at App boot. The filter combines this gate with the user toggle
-// `LoggingSettings.LogAmbientCaptureActivity` to decide whether a Verbose
-// emission from Ambient / Vision / Lighting providers should land in the live
-// or persistent journal. While the gate is open (capture loop active) AND the
-// toggle is off, ambient Verbose events are silenced; outside capture,
-// everything passes.
+// Consumption. Ambient producers combine this activity scope with
+// `LoggingSettings.LogAmbientCaptureActivity` before emitting Verbose detail.
+// While capture is active and the toggle is off, routine detail is skipped;
+// outside capture, the supporting providers keep their own diagnostics.
 //
 // Emission. The gate itself emits no EventSource event: it is pure shared
 // state. Transitions are already logged at application level by
@@ -27,9 +26,9 @@ namespace Deckle.Diagnostics.Logging;
 // filtered, never corrupted.
 public static class AmbientCaptureGate
 {
-    private static volatile bool _active;
+    public static bool IsActive
+        => OperationalLogAdmission.IsActive(OperationalLogActivity.Ambient);
 
-    public static bool IsActive => _active;
-
-    public static void SetActive(bool active) => _active = active;
+    public static void SetActive(bool active)
+        => OperationalLogAdmission.SetActive(OperationalLogActivity.Ambient, active);
 }

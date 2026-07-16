@@ -19,6 +19,11 @@ public sealed class DeckleVisionSource : DeckleEventSource
 
     private DeckleVisionSource() { }
 
+    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
+        => (level != EventLevel.Verbose
+            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Ambient))
+        && base.IsEnabled(level, keywords);
+
     public const int EvtScreenCaptureStarting           = 1;
     public const int EvtCaptureSessionConfigured        = 2;
     public const int EvtScreenCaptureStarted            = 3;

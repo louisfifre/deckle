@@ -610,6 +610,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
 │   │   ├── LogLineFormatter.cs
+│   │   ├── ObservationKind.cs
+│   │   ├── OperationalLogAdmission.cs
 │   │   └── WindowingProbe.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── Strings/
@@ -623,6 +625,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── LogFilterBar.xaml.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Live LogWindow filters and runtime logging gates.
 │   │   ├── AmbientCaptureGate.cs
+│   │   ├── ApplicationLogSink.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Logging.csproj
 │   │   ├── DiagnosticsPage.xaml
@@ -1302,6 +1305,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
+│   │   ├── OperationalSinkRoutingTests.cs
 │   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj

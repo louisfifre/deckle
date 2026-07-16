@@ -19,6 +19,11 @@ public sealed class DeckleAmbientSource : DeckleEventSource
 
     private DeckleAmbientSource() { }
 
+    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
+        => (level != EventLevel.Verbose
+            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Ambient))
+        && base.IsEnabled(level, keywords);
+
     // IDs are public in the ETW manifest; never reuse an id after deleting an
     // event. Milestones keep their original id; the Verbose mirrors added for the
     // Verbose/Info separation take fresh ids 35-52 appended after the sequence.

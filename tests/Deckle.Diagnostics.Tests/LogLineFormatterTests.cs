@@ -33,6 +33,7 @@ public sealed class LogLineFormatterTests
             eventName: "CaptureStarted",
             level: EventLevel.Informational,
             keywords: EventKeywords.None,
+            kind: ObservationKind.Operational,
             formattedMessage: formattedMessage,
             payload: new Dictionary<string, object?>());
 }

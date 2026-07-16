@@ -388,10 +388,6 @@ public partial class WhisperViewModel
     // a privacy opt-in carries no per-row reset.
     public IReadOnlyList<SettingDescriptor> DiagnosticsSettings =>
     [
-        Setting.Toggle("LoggingStreamingCard",
-            () => LogStreamingTranscriptionActivity,
-            value => LogStreamingTranscriptionActivity = value,
-            glyph: Glyphs.Speech),
         Setting.Toggle("GeneralLatencyCard",
             () => TelemetryLatencyEnabled,
             value => TelemetryLatencyEnabled = value,

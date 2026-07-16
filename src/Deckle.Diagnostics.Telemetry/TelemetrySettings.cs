@@ -24,11 +24,9 @@ public sealed class TelemetrySettings
     // re-derivable baseline (the original ADR-0006 posture). See ADR-0006.
     public AudioCorpusContent AudioCorpusContent { get; set; } = AudioCorpusContent.MatchTranscription;
 
-    // ApplicationLogToDisk gates writing the application journal to disk
-    // (app.jsonl). StorageDirectory is the optional override for the JSONL root
-    // folder; empty = default resolved by AppPaths.
-    public bool   ApplicationLogToDisk { get; set; } = false;
-    public string StorageDirectory     { get; set; } = "";
+    // Optional override for the purpose-specific dataset root. The application
+    // log is not telemetry and is fixed under the diagnostics directory.
+    public string StorageDirectory { get; set; } = "";
 
     // AutocorrectDecisionsEnabled gates the per-word autocorrect decision dataset
     // (autocorrect.decisions.jsonl): for every corrected or left-literal word on an

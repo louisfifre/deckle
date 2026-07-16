@@ -1,20 +1,11 @@
 using System.Diagnostics.Tracing;
-using System.Text.Json.Nodes;
 using Deckle.Diagnostics;
-using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Xunit;
 
 namespace Deckle.Diagnostics.Telemetry.Tests;
 
-// Since the dispatch refonte the telemetry JSONL sinks are passive ILogSinks
-// registered on a single DispatchEventListener. Each test builds its own
-// dispatcher, hands it to Configure, emits real events through a test
-// EventSource, and disposes the dispatcher in the finally so no subscription
-// leaks across tests. The capture gate is wired on the dispatcher
-// (ConfigureCentralGate), not on the bootstrap — it is the single transverse
-// drop now.
-[Trait("Category", "regression")]
+[Trait("Category", "observability")]
 public sealed class TelemetryListenerBootstrapTests
 {
     [EventSource(Name = "Deckle-TelemetryTests")]
@@ -24,206 +15,84 @@ public sealed class TelemetryListenerBootstrapTests
 
         private TestTelemetrySource() { }
 
-        [Event(4, Level = EventLevel.Informational, Message = "test info | text={0}")]
-        public void InfoLine(string text)
+        [Event(1, Level = EventLevel.Verbose, Tags = ObservationTags.Dataset)]
+        public void LatencyRecorded(string outcome)
         {
-            if (IsEnabled()) WriteEvent(4, text);
+            if (IsEnabled()) WriteEvent(1, outcome);
         }
 
-        [Event(1, Level = EventLevel.Verbose, Message = "verbose detail | text={0}")]
-        public void VerboseDetail(string text)
-        {
-            if (IsEnabled()) WriteEvent(1, text);
-        }
+    }
 
-        [Event(2, Level = EventLevel.Verbose, Message = "asr | text={0}")]
-        public void CorpusAsrRecorded(string text)
-        {
-            if (IsEnabled()) WriteEvent(2, text);
-        }
+    [EventSource(Name = "Deckle-OperationalTelemetryTests")]
+    private sealed class OperationalTelemetrySource : EventSource
+    {
+        public static readonly OperationalTelemetrySource Log = new();
 
-        [Event(3, Level = EventLevel.Verbose, Message = "rewrite | text={0}")]
-        public void CorpusRewriteRecorded(string text)
-        {
-            if (IsEnabled()) WriteEvent(3, text);
-        }
+        private OperationalTelemetrySource() { }
 
-        [Event(5, Level = EventLevel.Verbose, Message = "post-dsp | text={0}")]
-        public void PreprocessedTelemetryRecorded(string text)
+        [Event(1, Level = EventLevel.Verbose)]
+        public void LatencyRecorded(string outcome)
         {
-            if (IsEnabled()) WriteEvent(5, text);
+            if (IsEnabled()) WriteEvent(1, outcome);
         }
     }
 
     [Fact]
-    public void ApplicationLogRespectsCentralGate()
+    public void ConsentedDatasetWritesOnlyExplicitlyTaggedEvents()
     {
         string root = Path.Combine(
             AppContext.BaseDirectory,
-            "telemetry-listener-" + Guid.NewGuid().ToString("N"));
-        string appLog = Path.Combine(root, "app.jsonl");
+            "telemetry-dataset-" + Guid.NewGuid().ToString("N"));
+        string latency = Path.Combine(root, "latency.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
-        var dispatch = new DispatchEventListener();
+        using var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
-            TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
-            dispatch.ConfigureCentralGate((provider, _, _) => provider == "Deckle-TelemetryTests");
-
-            TestTelemetrySource.Log.InfoLine("dropped-by-gate");
-
-            Assert.False(File.Exists(appLog));
-
-            dispatch.ConfigureCentralGate((_, _, _) => false);
-            TestTelemetrySource.Log.InfoLine("written-after-gate");
-
-            Assert.True(File.Exists(appLog));
-            string jsonl = File.ReadAllText(appLog);
-            Assert.Contains("written-after-gate", jsonl);
-            Assert.DoesNotContain("dropped-by-gate", jsonl);
-        }
-        finally
-        {
-            TelemetryListenerBootstrap.ShutDown();
-            dispatch.Dispose();
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void ApplicationLogWritesReadableJournalMetadata()
-    {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-journal-metadata-" + Guid.NewGuid().ToString("N"));
-        string appLog = Path.Combine(root, "app.jsonl");
-
-        TelemetryListenerBootstrap.ShutDown();
-        var dispatch = new DispatchEventListener();
-        try
-        {
-            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
-            TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
-
-            TestTelemetrySource.Log.InfoLine("journal-metadata");
-
-            Assert.True(File.Exists(appLog));
-            JsonObject json = JsonNode.Parse(File.ReadAllText(appLog))!.AsObject();
-            Assert.Equal("Deckle-TelemetryTests", json["provider"]!.GetValue<string>());
-            Assert.Equal("InfoLine", json["event"]!.GetValue<string>());
-            Assert.Equal("Informational", json["level"]!.GetValue<string>());
-            Assert.Equal("TELEMETRYTESTS", json["source"]!.GetValue<string>());
-            Assert.Contains("[TELEMETRYTESTS]", json["line"]!.GetValue<string>());
-            Assert.Contains("journal-metadata", json["line"]!.GetValue<string>());
-        }
-        finally
-        {
-            TelemetryListenerBootstrap.ShutDown();
-            dispatch.Dispose();
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void ApplicationLogExcludesDedicatedCorpusEvents()
-    {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-corpus-exclusion-" + Guid.NewGuid().ToString("N"));
-        string appLog = Path.Combine(root, "app.jsonl");
-
-        TelemetryListenerBootstrap.ShutDown();
-        var dispatch = new DispatchEventListener();
-        try
-        {
-            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
-            TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
-
-            TestTelemetrySource.Log.CorpusAsrRecorded("sensitive-asr-text");
-            TestTelemetrySource.Log.CorpusRewriteRecorded("sensitive-rewrite-text");
-            TestTelemetrySource.Log.InfoLine("ordinary-log-line");
-
-            string jsonl = File.ReadAllText(appLog);
-            Assert.Contains("ordinary-log-line", jsonl);
-            Assert.DoesNotContain("sensitive-asr-text", jsonl);
-            Assert.DoesNotContain("sensitive-rewrite-text", jsonl);
-        }
-        finally
-        {
-            TelemetryListenerBootstrap.ShutDown();
-            dispatch.Dispose();
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void PostDspTelemetryRoutesToProcessedFileNotApplicationLog()
-    {
-        string root = Path.Combine(
-            AppContext.BaseDirectory,
-            "telemetry-postdsp-" + Guid.NewGuid().ToString("N"));
-        string appLog = Path.Combine(root, "app.jsonl");
-        string processed = Path.Combine(root, "microphone.processed.jsonl");
-
-        TelemetryListenerBootstrap.ShutDown();
-        var dispatch = new DispatchEventListener();
-        try
-        {
-            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.Configure(
+                dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(
-                name => name == "ApplicationLogToDisk" || name == "MicrophoneTelemetry");
+                name => name == "LatencyEnabled");
 
-            TestTelemetrySource.Log.PreprocessedTelemetryRecorded("processed-distribution");
-            TestTelemetrySource.Log.InfoLine("ordinary-log-line");
+            OperationalTelemetrySource.Log.LatencyRecorded("operational");
+            Assert.False(File.Exists(latency));
 
-            Assert.True(File.Exists(processed));
-            Assert.Contains("processed-distribution", File.ReadAllText(processed));
+            TestTelemetrySource.Log.LatencyRecorded("dataset");
 
-            string appJsonl = File.ReadAllText(appLog);
-            Assert.Contains("ordinary-log-line", appJsonl);
-            Assert.DoesNotContain("processed-distribution", appJsonl);
+            Assert.True(File.Exists(latency));
+            string jsonl = File.ReadAllText(latency);
+            Assert.Contains("dataset", jsonl);
+            Assert.DoesNotContain("operational", jsonl);
         }
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
-            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
 
     [Fact]
-    public void ApplicationLogCanUseAnIndependentFilterSelection()
+    public void DatasetConsentDefaultsClosed()
     {
         string root = Path.Combine(
             AppContext.BaseDirectory,
-            "telemetry-activity-filter-" + Guid.NewGuid().ToString("N"));
-        string appLog = Path.Combine(root, "app.jsonl");
+            "telemetry-closed-" + Guid.NewGuid().ToString("N"));
+        string latency = Path.Combine(root, "latency.jsonl");
 
         TelemetryListenerBootstrap.ShutDown();
-        var dispatch = new DispatchEventListener();
+        using var dispatch = new DispatchEventListener();
         try
         {
-            TelemetryListenerBootstrap.Configure(dispatch, root, validationSubdirectory: false);
-            TelemetryListenerBootstrap.ConfigureGates(name => name == "ApplicationLogToDisk");
-            var selection = new LogFilterSelection();
-            selection.Add(new LogFilterToken(
-                LogFilterDimension.Severity,
-                EventLevel.Informational.ToString()));
-            TelemetryListenerBootstrap.ConfigureApplicationLogDropFilter(
-                entry => !selection.Matches(entry));
+            TelemetryListenerBootstrap.Configure(
+                dispatch, root, validationSubdirectory: false);
 
-            TestTelemetrySource.Log.VerboseDetail("hidden-verbose");
-            TestTelemetrySource.Log.InfoLine("visible-activity");
+            TestTelemetrySource.Log.LatencyRecorded("closed");
 
-            string jsonl = File.ReadAllText(appLog);
-            Assert.Contains("visible-activity", jsonl);
-            Assert.DoesNotContain("hidden-verbose", jsonl);
+            Assert.False(File.Exists(latency));
         }
         finally
         {
             TelemetryListenerBootstrap.ShutDown();
-            dispatch.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }

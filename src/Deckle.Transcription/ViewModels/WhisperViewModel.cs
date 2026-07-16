@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Settings;
 
@@ -441,21 +440,8 @@ public partial class WhisperViewModel : ObservableObject
 
     // ── Observability (dictation logging + telemetry opt-ins) ────────────────
     //
-    // The dictation-scoped diagnostics opt-ins relocated from the shared
-    // Diagnostics page: the streaming-transcription Verbose log toggle (a Logging
-    // filter) and the four telemetry opt-ins (latency + the audio-corpus fold).
-    // They observe the dictation pipeline, so they live beside the engine that
-    // produces them.
-    //
-    // Persistence stays central: the log toggle in LoggingSettings (via
-    // LoggingSettingsService) and the four telemetry fields in TelemetrySettings
-    // (via TelemetrySettingsService) — the same POCOs the App's log/telemetry gates
-    // read directly. This VM only surfaces them. Pushed through two dedicated methods
-    // (PushDiagnosticsLoggingToSettings / PushTelemetryToSettings) so a single toggle
-    // touches only its own store, exactly as DiagnosticsViewModel split them.
-
-    [ObservableProperty]
-    public partial bool LogStreamingTranscriptionActivity { get; set; }
+    // Purpose-specific dataset consents stay beside the workflow that produces
+    // them. Operational-detail admission is edited centrally on DiagnosticsPage.
 
     [ObservableProperty]
     public partial bool TelemetryLatencyEnabled { get; set; }
@@ -473,13 +459,6 @@ public partial class WhisperViewModel : ObservableObject
     // items, so the handler and the push both guard against a negative index.
     [ObservableProperty]
     public partial int AudioCorpusContentIndex { get; set; }
-
-    partial void OnLogStreamingTranscriptionActivityChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleWhispSource.Log.SettingChanged("Logging.LogStreamingTranscriptionActivity", value.ToString());
-        PushDiagnosticsLoggingToSettings();
-    }
 
     partial void OnTelemetryLatencyEnabledChanged(bool value)
     {
@@ -510,16 +489,6 @@ public partial class WhisperViewModel : ObservableObject
         DeckleWhispSource.Log.SettingChanged(
             "Telemetry.AudioCorpusContent", ((AudioCorpusContent)value).ToString());
         PushTelemetryToSettings();
-    }
-
-    // Writes the streaming-transcription log opt-in back to LoggingSettings — kept
-    // separate from the telemetry push because the two share neither schema nor
-    // lifecycle (same reason DiagnosticsViewModel splits PushLogging / PushTelemetry).
-    private void PushDiagnosticsLoggingToSettings()
-    {
-        var l = LoggingSettingsService.Instance.Current;
-        l.LogStreamingTranscriptionActivity = LogStreamingTranscriptionActivity;
-        LoggingSettingsService.Instance.Save();
     }
 
     // Writes the four dictation telemetry opt-ins back to TelemetrySettings. The
@@ -584,9 +553,7 @@ public partial class WhisperViewModel : ObservableObject
         OverlayAnimations = overlay.Animations;
         OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
 
-        // Observability opt-ins seed closed — the log filter and the telemetry
-        // streams both start OFF until the user opts in. Overwritten by Load().
-        LogStreamingTranscriptionActivity = false;
+        // Dataset opt-ins seed closed until the user consents. Overwritten by Load().
         TelemetryLatencyEnabled = false;
         TelemetryCorpusEnabled = false;
         RecordAudioCorpus = false;
@@ -647,11 +614,7 @@ public partial class WhisperViewModel : ObservableObject
             OverlayAnimations = shell.Overlay.Animations;
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
 
-            // Observability — the log filter from LoggingSettings, the four telemetry
-            // opt-ins from TelemetrySettings (the same central POCOs the App's gates
-            // read). Read here so the composed cards reflect the persisted state.
-            LogStreamingTranscriptionActivity =
-                LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity;
+            // Dataset consents are read here so composed cards reflect persisted state.
             var t = TelemetrySettingsService.Instance.Current;
             TelemetryLatencyEnabled = t.LatencyEnabled;
             TelemetryCorpusEnabled = t.CorpusEnabled;

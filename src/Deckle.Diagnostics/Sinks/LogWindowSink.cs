@@ -3,17 +3,10 @@ using System.Collections.Generic;
 namespace Deckle.Diagnostics;
 
 // Feeds the live LogWindow surface. A passive ILogSink: the single
-// DispatchEventListener gates and builds each EventEntry, then offers it here.
+// DispatchEventListener builds each admitted EventEntry, then offers it here.
 // This sink owns the boot-history buffer and the lazy attach of the actual UI
-// surface; it does not itself decide what is silenced — that is the
-// dispatcher's central gate, applied before this sink is ever called.
-//
-// Wants is unconditional. The LogWindow takes the whole Deckle-* family with no
-// masking at this layer; user filtering (All / Activity / Alerts) happens on
-// the UI sink side, over the live window. The only events this sink never sees
-// are the ones the central capture gate already dropped upstream — which is
-// exactly the invariant: the window and app.jsonl observe the same gated
-// stream.
+// surface. Wants rejects datasets at the projection boundary; user filtering
+// then happens on the UI side, over the operational stream only.
 //
 // Buffer for lazy LogWindow. The LogWindow is created lazily on first user
 // open; events emitted during boot must be visible as soon as it opens. The
@@ -33,7 +26,8 @@ public sealed class LogWindowSink : ILogSink
     private readonly List<EventEntry> _buffer = new(capacity: BufferCapacity);
     private readonly object _lock = new();
 
-    public bool Wants(EventEntry entry) => true;
+    public bool Wants(EventEntry entry)
+        => entry.Kind == ObservationKind.Operational;
 
     public void Write(EventEntry entry)
     {

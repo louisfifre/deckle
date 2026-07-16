@@ -86,7 +86,7 @@
     <value>Diagnostics</value>
   </data>
   <data name="DiagnosticsPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Configure how Deckle reports its runtime activity — in-app log verbosity and the telemetry streams Deckle can persist to disk for offline troubleshooting. Everything is opt-in and stored locally.</value>
+    <value>Choose which operational details Deckle admits, whether to keep an application log, and where purpose-specific telemetry datasets are stored.</value>
   </data>
   <data name="DiagnosticsPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
     <value>Reset this page to defaults</value>
@@ -97,10 +97,28 @@
 
   <!-- Logging section (x:Uid header + composed card label key) -->
   <data name="DiagnosticsPageLoggingHeaderLabel.Text" xml:space="preserve">
-    <value>Logging</value>
+    <value>Logging details</value>
+  </data>
+  <data name="LoggingAmbientCard.Header" xml:space="preserve">
+    <value>Ambient details</value>
+  </data>
+  <data name="LoggingAmbientCard.Description" xml:space="preserve">
+    <value>Admit frame analysis, calculated colours, individual light pushes, heartbeats, and related technical probes. Lifecycle events, incidents, and recoveries remain available.</value>
+  </data>
+  <data name="LoggingTranscriptionCard.Header" xml:space="preserve">
+    <value>Transcription details</value>
+  </data>
+  <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
+    <value>Admit technical detail across dictation and file transcription. Raw transcript text remains exclusive to the separately consented corpus dataset.</value>
+  </data>
+  <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
+    <value>Autocorrect details</value>
+  </data>
+  <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
+    <value>Admit focus probes, decisions, reranking, learning, and activity summaries. Typed text remains exclusive to separately consented datasets.</value>
   </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
-    <value>Log windowing activity</value>
+    <value>Windowing details</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
     <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
@@ -112,17 +130,20 @@
   <data name="DiagnosticsPageTelemetryHeaderLabel.Text" xml:space="preserve">
     <value>Telemetry</value>
   </data>
+  <data name="DiagnosticsPageApplicationLogHeaderLabel.Text" xml:space="preserve">
+    <value>Application log</value>
+  </data>
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
     <value>Application log</value>
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>Mirror every in-app log line to app.jsonl to diagnose a specific issue across restarts. Verbose — around 2 MB per 30 min of active use. Rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …).</value>
+    <value>Mirror admitted operational observations to diagnostics\app.jsonl. The file rotates every 8,000 lines into numbered generations under diagnostics\archive\.</value>
   </data>
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
     <value>Storage folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Shared root for every telemetry stream enabled above. Leave empty to use the default %LOCALAPPDATA%\Deckle\telemetry\.</value>
+    <value>Root for purpose-specific telemetry datasets. Leave empty to use %LOCALAPPDATA%\Deckle\telemetry\. This does not move the application log.</value>
   </data>
 
   <!-- Diagnostic files section (x:Uid) -->

@@ -17,6 +17,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     private DeckleAutocorrectSource() { }
 
+    private static bool AllowsActivityDetail()
+        => OperationalLogAdmission.IsEnabled(OperationalLogActivity.Autocorrect);
+
     // Ids 6 (CorrectionReverted) and 20 (AutocorrectRevertRecorded) are retired
     // with the implicit-Backspace revert — never reuse them, old logs carry them.
     public const int EvtEngineStarted      = 1;
@@ -116,6 +119,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "surface | process={0} | editable={1} | password={2} | enrolled={3} | {4}")]
     public void SurfaceChanged(string process, bool editable, bool password, bool enrolled, string probe)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled, probe);
     }
 
@@ -166,6 +170,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "rerank slot pending | candidates={0} | word_len={1}")]
     public void RerankSlotPending(int candidates, int word_len)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtRerankSlotPending, candidates, word_len);
     }
 
@@ -178,6 +183,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "rerank submitted | slot={0} | context_words={1}")]
     public void RerankSubmitted(int slot, int context_words)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtRerankSubmitted, slot, context_words);
     }
 
@@ -192,6 +198,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "rerank verdict | outcome={0}")]
     public void RerankVerdict(string outcome)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtRerankVerdict, outcome);
     }
 
@@ -213,6 +220,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     [Event(EvtAutocorrectDecision,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "decision | {1} → {3} | {4}/{5}")]
     public void AutocorrectDecisionRecorded(
@@ -233,6 +241,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     [Event(EvtAutocorrectRerank,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "rerank | {1} → {3} | {2} | {5}")]
     public void AutocorrectRerankRecorded(
@@ -267,6 +276,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "text | {0} | {1} | {4}")]
     public void AutocorrectTextRecorded(
@@ -294,6 +304,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
 
     [Event(EvtAutocorrectStream,
            Level = EventLevel.Verbose,
+           Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Message = "stream | {0} | {1} | erased={2} | {3}")]
     public void AutocorrectStreamRecorded(
@@ -316,6 +327,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "pause pass | threshold_ms={0} | slots={1}")]
     public void PausePassTriggered(int threshold_ms, int slots)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtPausePassTriggered, threshold_ms, slots);
     }
 
@@ -327,6 +339,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "learning | signal={0}")]
     public void LearningSignal(string signal)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtLearningSignal, signal);
     }
 
@@ -338,6 +351,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "autocorrect activity | commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
     public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtActivityRollup, commits, corrections, re_edited, learning_signals, gated_surfaces);
     }
 
@@ -349,6 +363,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "enrollment suggested | process={0}")]
     public void EnrollmentSuggested(string process)
     {
+        if (!AllowsActivityDetail()) return;
         if (IsEnabled()) WriteEvent(EvtEnrollmentSuggested, process);
     }
 }

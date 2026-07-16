@@ -1,5 +1,6 @@
 using Deckle.App;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
@@ -47,88 +48,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     // reflects the current state without waiting for the next status
     // transition.
     private bool _lastRecordingState;
-
-    private static bool ShouldDropCaptureVerbose(
-        string provider,
-        System.Diagnostics.Tracing.EventLevel level,
-        System.Diagnostics.Tracing.EventKeywords keywords)
-    {
-        // Only Verbose events are affected. Milestones (Info / Warning / Error)
-        // always pass through; they are how we know, even with both toggles off,
-        // that an activity is running and stopping.
-        if (level != System.Diagnostics.Tracing.EventLevel.Verbose) return false;
-
-        // ── Ambient capture family ─────────────────────────────────────────
-        if (AmbientCaptureGate.IsActive)
-        {
-            bool ambientFamily =
-                provider == "Deckle-Ambient"
-                || provider == "Deckle-Vision"
-                || provider == "Deckle-Lighting"
-                // Cross-cutting sub-provider, but during capture it is the
-                // dominant firehose: ResourceAcquired/Released per frame
-                // (capture-loop D3D11 textures + frame-sampler). Outside
-                // capture the gate is closed, so HUD Resource events pass.
-                || provider == "Deckle-Resource";
-            if (ambientFamily)
-            {
-                // Toggle off: capture is silent. No Verbose events, including
-                // the heartbeat; only milestones tell whether it works.
-                if (!LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity) return true;
-
-                // Toggle on: show the 5 s heartbeat and occasional Verbose
-                // events, but never the high-frequency firehose (per-tick push,
-                // per-frame D3D11 acquire/release).
-                if ((keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) != 0) return true;
-                if (provider == "Deckle-Resource") return true;
-                return false;
-            }
-        }
-
-        // ── Streaming transcription family ─────────────────────────────────
-        // Two Verbose streams the streaming pipeline emits per utterance:
-        // Deckle-Whisp (decode firehose) and Deckle-Vad (speech-trim activity,
-        // split out of Whisp when the VAD became its own module). Both ride the
-        // same toggle so the gate stays whole after the split.
-        if (StreamingCaptureGate.IsActive && (provider == "Deckle-Whisp" || provider == "Deckle-Vad"))
-        {
-            // Toggle off: the chatty stream is silent — the 1 Hz heartbeat
-            // and per-utterance details are dropped — but the recognized
-            // transcript text (KwTranscript) always surfaces. It is the
-            // signal, not the firehose. Milestones still pass on their own
-            // (StreamingPipelineStarted, StreamingDrained).
-            if (!LoggingSettingsService.Instance.Current.LogStreamingTranscriptionActivity)
-                return (keywords & DeckleWhispSource.KwTranscript) == 0;
-            return false;
-        }
-
-        // ── Autocorrect ────────────────────────────────────────────────────
-        // No capture gate: the autocorrect engine runs continuously, so the
-        // toggle filters whenever it is off. Off: only the edits survive — an
-        // applied correction's Verbose detail (Push keyword: reason and lengths,
-        // never the word), alongside its Info milestone and any injection
-        // failure (Warning, which passes on its own above). The
-        // per-focus SurfaceChanged probe, the learning signals and the 30 s
-        // activity rollup are dropped: a heartbeat is meaningless for a
-        // keystroke-driven subsystem, only the corrections are. On: everything
-        // passes, SurfaceChanged and rollup included, for a debug deep-dive.
-        if (provider == "Deckle-Autocorrect")
-        {
-            if (LoggingSettingsService.Instance.Current.LogAutocorrectActivity) return false;
-            return (keywords & (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Push) == 0;
-        }
-
-        // ── Windowing ──────────────────────────────────────────────────────
-        // No capture gate and no surviving sub-stream: the cross-cutting
-        // Deckle-Windowing provider emits Verbose only (placement, overlay
-        // slots, popup anchoring, z-order, resize frames, first-open timings).
-        // Off: the whole channel is silent — there are no milestones to spare,
-        // by design. On: everything passes, for a placement / resize-lag dive.
-        if (provider == "Deckle-Windowing")
-            return !LoggingSettingsService.Instance.Current.LogWindowingActivity;
-
-        return false;
-    }
+    // Operational-detail admission is enforced by each producer before work begins.
 
     public App()
     {
@@ -191,8 +111,8 @@ public partial class App : Microsoft.UI.Xaml.Application
         // step still lands in errors.jsonl. An EventListener only captures events
         // emitted after it subscribes; these sinks read no settings and are
         // ungated, so registering them here is what makes the local trace cover
-        // the riskiest, un-opted-in moment. The opt-in telemetry listeners are
-        // wired later, after migration — see InitializeTelemetry below.
+        // the riskiest, un-opted-in moment. Optional operational and dataset
+        // sinks are wired later, after migration.
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         Milestone("diagnostics-local");
 
@@ -209,6 +129,18 @@ public partial class App : Microsoft.UI.Xaml.Application
         // defaults, defeating the migration. Telemetry gate wiring below
         // touches TelemetrySettingsService, so we must dispatch before that.
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
+        OperationalLogAdmission.Configure(activity => activity switch
+        {
+            OperationalLogActivity.Ambient =>
+                LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity,
+            OperationalLogActivity.Transcription =>
+                LoggingSettingsService.Instance.Current.LogTranscriptionActivity,
+            OperationalLogActivity.Autocorrect =>
+                LoggingSettingsService.Instance.Current.LogAutocorrectActivity,
+            OperationalLogActivity.Windowing =>
+                LoggingSettingsService.Instance.Current.LogWindowingActivity,
+            _ => false,
+        });
         Milestone("settings-bootstrap");
 
         // Presence catalogue + the user's module choice, before any module is
@@ -237,11 +169,10 @@ public partial class App : Microsoft.UI.Xaml.Application
             return string.IsNullOrWhiteSpace(s) ? null : s;
         });
 
-        // Opt-in telemetry pipeline + LogWindow ring buffer. JsonlSinks
-        // write directly to canonical paths `<TelemetryDir>/{app,latency,
-        // microphone,corpus}.jsonl`; lazy LogWindow attaches via
-        // `AttachLogWindowSink` on first open. The always-on local sinks were
-        // wired earlier (top of OnLaunched) — see InitializeLocalSinks.
+        // Operational journals and purpose-specific datasets are wired as two
+        // authorities. app.jsonl and the LogWindow consume operational events;
+        // telemetry sinks consume only explicitly tagged dataset events.
+        AppDiagnosticsBootstrap.InitializeOperationalSinks(AppPaths.DiagnosticsDirectory);
         AppDiagnosticsBootstrap.InitializeTelemetry(AppPaths.TelemetryDirectory);
         Milestone("diagnostics");
 
@@ -250,7 +181,6 @@ public partial class App : Microsoft.UI.Xaml.Application
         // TelemetrySettingsService.
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
         {
-            "ApplicationLogToDisk"  => TelemetrySettingsService.Instance.Current.ApplicationLogToDisk,
             "LatencyEnabled"        => TelemetrySettingsService.Instance.Current.LatencyEnabled,
             "MicrophoneTelemetry"   => TelemetrySettingsService.Instance.Current.MicrophoneTelemetry,
             "CorpusEnabled"         => TelemetrySettingsService.Instance.Current.CorpusEnabled,
@@ -259,27 +189,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             _                       => false,
         });
 
-        // Central capture gate: silence Verbose events from the two capture
-        // families when their respective gates are active AND the user has
-        // not opted into the matching toggle. Ambient family (Ambient /
-        // Vision / Lighting / Resource sub-provider) gated by
-        // AmbientCaptureGate + LogAmbientCaptureActivity; streaming
-        // transcription gated by StreamingCaptureGate +
-        // LogStreamingTranscriptionActivity. Both gates live in
-        // Deckle.Diagnostics.Logging; the engines flip them on Start / Stop.
-        // Wired ONCE on the dispatcher, before EventEntry construction, so every
-        // sink (live window and app.jsonl alike) observes the same gated stream
-        // — the former double wiring (LogWindow + app.jsonl) is gone.
-        AppDiagnosticsBootstrap.ConfigureCentralGate(ShouldDropCaptureVerbose);
-
-        // app.jsonl is NOT gated by the LogWindow's All/Activity/Alerts selector.
-        // That selector is a display lens over the live window, not an authority
-        // over what exists: the disk journal must stay a complete machine record,
-        // governed only by the user-authorized Diagnostics gates above and the
-        // ApplicationLogToDisk toggle. Wiring the view selector into the disk
-        // predicate (the former ShouldDropApplicationLogEntry) meant switching the
-        // window to Alerts silently stopped persisting Verbose — a view preference
-        // deciding what gets recorded. Removed.
+        // app.jsonl and LogWindow receive the same admitted operational stream.
+        // Their recording and display filters remain independent projections.
 
         // Boot-time sanity marker for the EventSource pipeline. It has no
         // product behaviour; it simply proves provider discovery, JSONL

@@ -243,14 +243,6 @@
                                        Click="OpenPlaygroundCard_Click" />
 
                 <!-- ── Diagnostics ────────────────────────────────────────── -->
-                <TextBlock x:Uid="AmbientPageDiagnosticsHeader"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
-
-                <controls:SettingsCard x:Uid="AmbientLogActivityCard"
-                                       Tag="AmbientLogActivityCard">
-                    <ToggleSwitch x:Name="LogActivityToggle"
-                                  Toggled="LogActivityToggle_Toggled" />
-                </controls:SettingsCard>
             </StackPanel>
         </Grid>
     </ScrollViewer>

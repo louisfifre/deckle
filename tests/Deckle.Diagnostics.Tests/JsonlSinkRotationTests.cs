@@ -36,6 +36,7 @@ public sealed class JsonlSinkRotationTests
             eventName:        "Line",
             level:            EventLevel.Informational,
             keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
             formattedMessage: $"line | n={n}",
             payload:          new Dictionary<string, object?> { ["n"] = n });
 
