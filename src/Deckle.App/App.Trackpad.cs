@@ -48,12 +48,12 @@ public partial class App
         var settings = TrackpadSettingsService.Instance.Current;
         bool needsFrames = settings.Enabled || settings.RecordFrames;
 
-        if (needsFrames) _inputHost.Start();
+        bool inputAvailable = !needsFrames || _inputHost.Start();
 
-        if (settings.Enabled) _trackpadEngine.Start();
-        else                  _trackpadEngine.Stop();
+        if (settings.Enabled && inputAvailable) _trackpadEngine.Start();
+        else                                    _trackpadEngine.Stop();
 
-        if (settings.RecordFrames)
+        if (settings.RecordFrames && inputAvailable)
         {
             if (!_frameRecorder.IsRecording) _frameRecorder.Start(_inputHost.Touchpad);
         }
