@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Net.Http;
 using System.Text;
@@ -99,16 +100,19 @@ public class RewriteService : IRewriteService
             string json = JsonSerializer.Serialize(body, _jsonOpts);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Polling task: hits /api/ps every 60 s while we wait for
-            // /api/generate to return — turns the silent wait into a visible
-            // warning ("Ollama busy — model X resident...") so the user
-            // knows the engine is still working. Classified Warning (not
-            // Narrative) because the polling only fires at all if /api/generate
-            // hasn't returned after POLL_INTERVAL — by definition an unusually
-            // long wait the user should notice. Cancelled via pollDone in the
-            // finally block as soon as the request settles.
-            using var pollDone = new CancellationTokenSource();
-            var pollingTask = Task.Run(() => PollOllamaWhileBusy(endpoint, sw, pollDone.Token));
+            // /api/ps exists only to enrich the admitted Transcription detail.
+            // Refuse the task itself when that detail is disabled: otherwise a
+            // logging toggle would still buy a worker, HTTP traffic and JSON
+            // parsing every minute while a rewrite is in flight.
+            CancellationTokenSource? pollDone = null;
+            Task? pollingTask = null;
+            if (IsProbeDetailEnabled())
+            {
+                var probeCts = new CancellationTokenSource();
+                pollDone = probeCts;
+                pollingTask = Task.Run(
+                    () => PollOllamaWhileBusy(endpoint, sw, probeCts.Token));
+            }
 
             HttpResponseMessage response;
             try
@@ -117,9 +121,13 @@ public class RewriteService : IRewriteService
             }
             finally
             {
-                pollDone.Cancel();
-                try { pollingTask.GetAwaiter().GetResult(); }
-                catch { /* polling errors are surfaced by their own warnings */ }
+                if (pollDone is not null)
+                {
+                    pollDone.Cancel();
+                    try { pollingTask!.GetAwaiter().GetResult(); }
+                    catch { /* Probe failures are already present in admitted detail. */ }
+                    pollDone.Dispose();
+                }
             }
 
             using (response)
@@ -186,12 +194,10 @@ public class RewriteService : IRewriteService
 
     /// <summary>
     /// Periodically probes Ollama's /api/ps while a /api/generate call is in
-    /// flight. Emits a Warning every POLL_INTERVAL describing the resident
-    /// model and the elapsed wait — gives the user feedback during a long
-    /// wait. Warning (not Narrative) because the polling only starts after
-    /// POLL_INTERVAL has elapsed without a response, which is by definition
-    /// an unusual delay. Stops cleanly when <paramref name="ct"/> is cancelled
-    /// by the caller.
+    /// flight. This is admitted technical detail, not a visible incident: the
+    /// terminal RewriteTimeout / RewriteUnavailable events already carry the
+    /// human outcome. Stops cleanly when the request settles or admission is
+    /// disabled while it is running.
     /// </summary>
     static async Task PollOllamaWhileBusy(string endpoint, System.Diagnostics.Stopwatch requestElapsed, CancellationToken ct)
     {
@@ -201,12 +207,15 @@ public class RewriteService : IRewriteService
         {
             while (await timer.WaitForNextTickAsync(ct))
             {
+                // Admission is live. If the user disables details during a
+                // long rewrite, stop before the next HTTP request and parse.
+                if (!IsProbeDetailEnabled()) return;
+
                 try
                 {
                     using var resp = await _http.GetAsync(psUrl, ct);
                     if (!resp.IsSuccessStatusCode)
                     {
-                        DeckleLlmSource.Log.PsProbeUnreachable();
                         DeckleLlmSource.Log.PsProbeUnreachableDetail((int)resp.StatusCode);
                         continue;
                     }
@@ -247,13 +256,11 @@ public class RewriteService : IRewriteService
 
                     double waitedSeconds = requestElapsed.Elapsed.TotalSeconds;
                     double capMinutes    = REWRITE_HARD_CAP.TotalMinutes;
-                    DeckleLlmSource.Log.OllamaBusy();
                     DeckleLlmSource.Log.OllamaBusyDetail(name, vramGb, unloadSuffix, waitedSeconds, capMinutes);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    DeckleLlmSource.Log.PsProbeFailed();
                     DeckleLlmSource.Log.PsProbeFailedDetail(ex.GetType().Name, ex.Message);
                 }
             }
@@ -268,6 +275,13 @@ public class RewriteService : IRewriteService
                 "llm-warmup", "upstream", (int)requestElapsed.ElapsedMilliseconds);
         }
     }
+
+    private static bool IsProbeDetailEnabled()
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Transcription,
+            DeckleLlmSource.Log,
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Heartbeat);
 
     /// <summary>
     /// Derives the /api/ps URL from a /api/generate or /api/chat endpoint. If

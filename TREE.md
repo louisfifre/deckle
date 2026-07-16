@@ -1391,6 +1391,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
 │   │   ├── Deckle.Transcription.Tests.csproj
+│   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
