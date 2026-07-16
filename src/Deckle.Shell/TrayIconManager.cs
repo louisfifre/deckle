@@ -57,7 +57,7 @@ public sealed class TrayIconManager : IDisposable
         (_hIconRecording, _)           = LoadIconFromFile(active: true);
 
         // Add the icon in the notification area.
-        // Neutral placeholder: UpdateStatus("Ready") from App.OnLaunched
+        // Neutral placeholder: UpdateStatus("Ready", false) from App.OnLaunched
         // replaces this moments later. Keeping the string aligned with
         // UpdateStatus avoids flashing a stale "loading" message since the
         // model is lazy-loaded on first hotkey, not at boot.
@@ -106,12 +106,11 @@ public sealed class TrayIconManager : IDisposable
     // in DeckleAppSource.StatusChanged, so the tooltip stays in sync with
     // the live pipeline state visible in the LogWindow / app.jsonl.
     //
-    // Tip caps at 127 chars (Shell_NotifyIcon szTip limit). Icon swaps to
-    // the recording variant whenever the status starts with "Recording" —
-    // StartsWith covers both the bare and the ellipsis form ("Recording…").
-    public void UpdateStatus(string status)
+    // Tip caps at 127 chars (Shell_NotifyIcon szTip limit). The host supplies
+    // the semantic state separately: this shell primitive never interprets
+    // the localized status text.
+    public void UpdateStatus(string status, bool isRecording)
     {
-        bool isRecording = status.StartsWith("Recording");
         IntPtr icon = isRecording ? _hIconRecording : _hIconIdle;
 
         string tip = Loc.Format("Tray_Tooltip_Format", status);
