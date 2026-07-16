@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using Deckle.Diagnostics;
 
@@ -14,11 +15,20 @@ public sealed partial class ScreenCaptureService
             // Stop / Dispose. Age computed from the last acquire (Start or
             // TryRecreateDuplication). Emitted before Release so the event is
             // not lost if Release throws.
-            long releasedHandle = (long)_duplicationPtr;
-            int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
-                               * 1000L / Stopwatch.Frequency);
-            DeckleResourceSource.Log.ResourceReleased(
-                "duplication-output", releasedHandle, ageMs, "capture-loop");
+            bool resourceDetailOpen = _duplicationAcquiredTicks != 0
+                && OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleResourceSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Resource);
+            if (resourceDetailOpen)
+            {
+                long releasedHandle = (long)_duplicationPtr;
+                int ageMs = (int)((Stopwatch.GetTimestamp() - _duplicationAcquiredTicks)
+                    * 1000L / Stopwatch.Frequency);
+                DeckleResourceSource.Log.ResourceReleased(
+                    "duplication-output", releasedHandle, ageMs, "capture-loop");
+            }
             try { Marshal.Release(_duplicationPtr); } catch { /* best effort */ }
             _duplicationPtr = 0;
         }

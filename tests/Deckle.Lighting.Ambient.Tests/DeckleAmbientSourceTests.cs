@@ -9,6 +9,10 @@ namespace Deckle.Lighting.Ambient.Tests;
 [Trait("Category", "observability")]
 public class DeckleAmbientSourceTests
 {
+    public DeckleAmbientSourceTests()
+        => OperationalLogAdmission.Configure(
+            activity => activity == OperationalLogActivity.Ambient);
+
     [Fact]
     public void ExternalChangeStoppedSeparatesInfoFromTechnicalDetail()
     {
@@ -75,5 +79,44 @@ public class DeckleAmbientSourceTests
         var suffix = Assert.IsType<string>(ev.Payload?[6]);
         Assert.Contains("push_avg_ms", suffix);
         Assert.DoesNotContain("http_avg_ms", suffix);
+    }
+
+    [Fact]
+    public void HeartbeatIsRejectedWhenAmbientDetailIsDisabled()
+    {
+        OperationalLogAdmission.Configure(_ => false);
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.Heartbeat("group", 5, 75, 2, 73, 0, "");
+
+        Assert.Empty(listener.Events);
+    }
+
+    [Fact]
+    public void FrameProcessingEpisodeFormsOneOperationalNarrative()
+    {
+        using var listener = new TestEventListener("Deckle-Ambient");
+
+        DeckleAmbientSource.Log.FrameProcessingIncidentOpened();
+        DeckleAmbientSource.Log.FrameProcessingRecovered();
+        DeckleAmbientSource.Log.FrameProcessingFailed();
+
+        Assert.Collection(
+            listener.Events,
+            incident =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtFrameProcessingIncidentOpened, incident.EventId);
+                Assert.Equal(EventLevel.Warning, incident.Level);
+            },
+            recovery =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtFrameProcessingRecovered, recovery.EventId);
+                Assert.Equal(EventLevel.Informational, recovery.Level);
+            },
+            fatal =>
+            {
+                Assert.Equal(DeckleAmbientSource.EvtFrameProcessingFailed, fatal.EventId);
+                Assert.Equal(EventLevel.Error, fatal.Level);
+            });
     }
 }

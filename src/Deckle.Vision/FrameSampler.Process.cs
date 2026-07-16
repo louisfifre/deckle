@@ -1,13 +1,14 @@
+using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 
 namespace Deckle.Vision;
 
 public sealed partial class FrameSampler
 {
-    public void Process(CapturedFrame frame)
+    public bool Process(CapturedFrame frame)
     {
-        if (_disposed) return;
-        if (frame.TexturePtr == 0) return;
+        if (_disposed) return false;
+        if (frame.TexturePtr == 0) return false;
 
         // The texture pointer is borrowed — the capture service owns
         // it for the duration of this handler and Releases on return.
@@ -18,7 +19,7 @@ public sealed partial class FrameSampler
         {
             lock (_lock)
             {
-                if (_disposed) return;
+                if (_disposed) return false;
 
                 unsafe
                 {
@@ -54,9 +55,8 @@ public sealed partial class FrameSampler
                     int hr = map(_d3dContext, _stagingTex, 0, ScreenCaptureInterop.D3D11_MAP_READ, 0, &mapped);
                     if (hr != 0)
                     {
-                        DeckleVisionSource.Log.SamplerMapFailed();
                         DeckleVisionSource.Log.SamplerMapFailedDetail(hr);
-                        return;
+                        return false;
                     }
 
                     try
@@ -73,11 +73,21 @@ public sealed partial class FrameSampler
                     }
                 }
             }
+
+            return true;
         }
         catch (Exception ex)
         {
-            DeckleVisionSource.Log.SamplerProcessFailed();
-            DeckleVisionSource.Log.SamplerProcessFailedDetail(ex.GetType().Name, ex.Message);
+            if (OperationalLogAdmission.IsScopedDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleVisionSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Pipeline))
+            {
+                DeckleVisionSource.Log.SamplerProcessFailedDetail(
+                    ex.GetType().Name, ex.Message);
+            }
+            return false;
         }
     }
 

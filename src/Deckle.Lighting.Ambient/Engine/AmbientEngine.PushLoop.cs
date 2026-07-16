@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Net;
 using Deckle.Diagnostics;
 using Deckle.Lighting;
 using Deckle.Vision;
@@ -45,19 +47,42 @@ public sealed partial class AmbientEngine
                     continue;
                 }
 
+                bool pushDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleAmbientSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Push);
+                bool heartbeatDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
+                    OperationalLogActivity.Ambient,
+                    DeckleAmbientSource.Log,
+                    EventLevel.Verbose,
+                    (EventKeywords)Keywords.Heartbeat);
+
                 if (_multiLightActive)
                 {
-                    await MultiLightTickAsync(sample, ct).ConfigureAwait(false);
+                    await MultiLightTickAsync(
+                        sample, ct, pushDetailEnabled, heartbeatDetailEnabled)
+                        .ConfigureAwait(false);
                 }
                 else
                 {
-                    await GroupTickAsync(sample, ct).ConfigureAwait(false);
+                    await GroupTickAsync(
+                        sample, ct, pushDetailEnabled, heartbeatDetailEnabled)
+                        .ConfigureAwait(false);
                 }
 
-                _hbTicks++;
-                MaybeEmitHeartbeat();
+                if (heartbeatDetailEnabled)
+                {
+                    _hbTicks++;
+                    MaybeEmitHeartbeat();
+                }
+                else if (_hbTicks != 0 || _hbPushed != 0 || _hbDropped != 0
+                      || _hbUnmappedLights != 0 || _hbPushDurationsMs is { Count: > 0 })
+                {
+                    ResetHeartbeatWindow();
+                }
 
-                await Task.Delay(_pushIntervalMs, ct).ConfigureAwait(false);
+                await Task.Delay(GetPushDelayMs(), ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -88,7 +113,11 @@ public sealed partial class AmbientEngine
         }
     }
 
-    private async Task GroupTickAsync(SampledFrame sample, CancellationToken ct)
+    private async Task GroupTickAsync(
+        SampledFrame sample,
+        CancellationToken ct,
+        bool pushDetailEnabled,
+        bool heartbeatDetailEnabled)
     {
         var avg = sample.Average;
 
@@ -131,16 +160,21 @@ public sealed partial class AmbientEngine
         if (dropped)
         {
             _droppedCount++;
-            _hbDropped++;
+            if (heartbeatDetailEnabled) _hbDropped++;
             return; // Silent : the heartbeat will summarise.
         }
 
         try
         {
-            long pushStart = Stopwatch.GetTimestamp();
+            bool measurePush = pushDetailEnabled || heartbeatDetailEnabled;
+            long pushStart = measurePush ? Stopwatch.GetTimestamp() : 0;
             await _output!.SetColorAsync(color, ct).ConfigureAwait(false);
-            double pushMs = (Stopwatch.GetTimestamp() - pushStart) * 1000.0 / Stopwatch.Frequency;
-            _hbPushDurationsMs.Add(pushMs);
+            OnPushSucceeded();
+            double pushMs = measurePush
+                ? (Stopwatch.GetTimestamp() - pushStart) * 1000.0 / Stopwatch.Frequency
+                : 0;
+            if (heartbeatDetailEnabled)
+                (_hbPushDurationsMs ??= new List<double>(128)).Add(pushMs);
 
             _lastR = targetR; _lastG = targetG; _lastB = targetB;
             // Stamp the pushed Hue state for echo discrimination — the
@@ -149,25 +183,22 @@ public sealed partial class AmbientEngine
             if (_managedGroupId is not null)
                 RecordHuePush("group:" + _managedGroupId, color, DateTimeOffset.UtcNow);
             _pushedCount++;
-            _hbPushed++;
-            // Verbose gating is handled by the LogWindow drop filter
-            // (App.OnLaunched) : provider=Deckle.Ambient + capture
-            // gate open + user toggle off ⇒ this Verbose is filtered
-            // before buffer insertion. No call-site check needed.
-            DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, pushMs);
+            if (heartbeatDetailEnabled) _hbPushed++;
+            if (pushDetailEnabled)
+                DeckleAmbientSource.Log.PushGroup(targetR, targetG, targetB, isDark, pushMs);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            // Warning unconditional — capture-activity gating never
-            // suppresses faults, the user needs to see when the bridge
-            // throws even with the toggle off.
-            DeckleAmbientSource.Log.PushGroupFailed();
-            DeckleAmbientSource.Log.PushGroupFailedDetail(ex.GetType().Name, ex.Message);
+            OnPushFailed(ex);
         }
     }
 
-    private async Task MultiLightTickAsync(SampledFrame sample, CancellationToken ct)
+    private async Task MultiLightTickAsync(
+        SampledFrame sample,
+        CancellationToken ct,
+        bool pushDetailEnabled,
+        bool heartbeatDetailEnabled)
     {
         if (_multiLights is null || _multiLights.Count == 0 || _multiLastPushed is null)
             return;
@@ -285,13 +316,12 @@ public sealed partial class AmbientEngine
             }
 
             toPush[light.Id] = targetColor;
-            _multiLastPushed[light.Id] = (targetR, targetG, targetB);
         }
 
         // Track per-tick lights-with-no-zone count so the heartbeat
         // surfaces the user's "lights assigned to None" backlog
         // without us logging it every tick.
-        _hbUnmappedLights += unmappedThisTick;
+        if (heartbeatDetailEnabled) _hbUnmappedLights += unmappedThisTick;
 
         // Fire the observable event once per tick. Even when toPush is
         // empty (every light dropped by the delta gate) the intent map
@@ -302,17 +332,22 @@ public sealed partial class AmbientEngine
         if (toPush.Count == 0)
         {
             _droppedCount++;
-            _hbDropped++;
+            if (heartbeatDetailEnabled) _hbDropped++;
             return; // Silent : the heartbeat will summarise.
         }
 
         try
         {
             var multi = (IMultiLightOutput)_output!;
-            long pushStart = Stopwatch.GetTimestamp();
+            bool measurePush = pushDetailEnabled || heartbeatDetailEnabled;
+            long pushStart = measurePush ? Stopwatch.GetTimestamp() : 0;
             await multi.SetLightColorsAsync(toPush, ct).ConfigureAwait(false);
-            double pushMs = (Stopwatch.GetTimestamp() - pushStart) * 1000.0 / Stopwatch.Frequency;
-            _hbPushDurationsMs.Add(pushMs);
+            OnPushSucceeded();
+            double pushMs = measurePush
+                ? (Stopwatch.GetTimestamp() - pushStart) * 1000.0 / Stopwatch.Frequency
+                : 0;
+            if (heartbeatDetailEnabled)
+                (_hbPushDurationsMs ??= new List<double>(128)).Add(pushMs);
 
             // Stamp pushed Hue states for echo discrimination — the
             // bridge emits a light EventStream update for each PUT,
@@ -320,18 +355,102 @@ public sealed partial class AmbientEngine
             var nowUtc = DateTimeOffset.UtcNow;
             foreach (var (id, pushedColor) in toPush)
             {
+                _multiLastPushed[id] = (pushedColor.R, pushedColor.G, pushedColor.B);
                 RecordHuePush("light:" + id, pushedColor, nowUtc);
             }
             _pushedCount++;
-            _hbPushed++;
-            DeckleAmbientSource.Log.PushMulti(toPush.Count, _multiLights.Count, FormatPushedColors(toPush), pushMs);
+            if (heartbeatDetailEnabled) _hbPushed++;
+            if (pushDetailEnabled)
+            {
+                DeckleAmbientSource.Log.PushMulti(
+                    toPush.Count, _multiLights.Count, FormatPushedColors(toPush), pushMs);
+            }
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PushMultiFailed();
-            DeckleAmbientSource.Log.PushMultiFailedDetail(ex.GetType().Name, ex.Message);
+            OnPushFailed(ex);
         }
+    }
+
+    private int GetPushDelayMs()
+    {
+        if (_pushConsecutiveFailures == 0) return _pushIntervalMs;
+        if (_pushFailureStartTimestamp == 0) return 1000;
+
+        long elapsedMs = (Stopwatch.GetTimestamp() - _pushFailureStartTimestamp)
+            * 1000 / Stopwatch.Frequency;
+        return elapsedMs >= 30_000 ? 5000 : 1000;
+    }
+
+    private void OnPushFailed(Exception ex)
+    {
+        _pushConsecutiveFailures++;
+        if (_pushFailureStartTimestamp == 0)
+            _pushFailureStartTimestamp = Stopwatch.GetTimestamp();
+        _pushFailureType = ex.GetType().Name;
+        _pushFailureMessage = ex.Message;
+
+        if (IsTerminalPushFailure(ex))
+        {
+            long durationMs = PushFailureDurationMs();
+            DeckleAmbientSource.Log.PushRejected();
+            DeckleAmbientSource.Log.PushEpisodeDetail(
+                "terminal", _pushConsecutiveFailures, durationMs,
+                _pushFailureType, _pushFailureMessage);
+            _stopReason = "push_rejected";
+            _ = Task.Run(Stop);
+            return;
+        }
+
+        if (_pushConsecutiveFailures == 3)
+        {
+            _pushIncidentOpen = true;
+            DeckleAmbientSource.Log.PushIncidentOpened();
+            DeckleAmbientSource.Log.PushEpisodeDetail(
+                "opened", _pushConsecutiveFailures, PushFailureDurationMs(),
+                _pushFailureType, _pushFailureMessage);
+        }
+    }
+
+    private void OnPushSucceeded()
+    {
+        if (_pushConsecutiveFailures == 0) return;
+
+        if (_pushIncidentOpen)
+        {
+            int failures = _pushConsecutiveFailures;
+            long durationMs = PushFailureDurationMs();
+            string failureType = _pushFailureType;
+            string failureMessage = _pushFailureMessage;
+            DeckleAmbientSource.Log.PushRecovered();
+            DeckleAmbientSource.Log.PushEpisodeDetail(
+                "recovered", failures, durationMs, failureType, failureMessage);
+        }
+
+        ResetPushFailureEpisode();
+    }
+
+    private long PushFailureDurationMs()
+        => _pushFailureStartTimestamp == 0
+            ? 0
+            : (Stopwatch.GetTimestamp() - _pushFailureStartTimestamp)
+                * 1000 / Stopwatch.Frequency;
+
+    private static bool IsTerminalPushFailure(Exception ex)
+        => ex is InvalidOperationException
+            or HttpRequestException
+            {
+                StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
+            };
+
+    private void ResetPushFailureEpisode()
+    {
+        _pushConsecutiveFailures = 0;
+        _pushFailureStartTimestamp = 0;
+        _pushIncidentOpen = false;
+        _pushFailureType = "none";
+        _pushFailureMessage = "none";
     }
 
     // Format the per-light colour set as "id=R,G,B id=R,G,B …" for
@@ -451,7 +570,7 @@ public sealed partial class AmbientEngine
         // ticks=N pushed=0 prefix already says "loop alive, nothing
         // to push", a "push_avg_ms=0.0" suffix would be misleading.
         string pushStats = "";
-        if (_hbPushDurationsMs.Count > 0)
+        if (_hbPushDurationsMs is { Count: > 0 })
         {
             double min = double.MaxValue, max = 0, sum = 0;
             foreach (var v in _hbPushDurationsMs)
@@ -482,8 +601,13 @@ public sealed partial class AmbientEngine
             _multiLightActive ? _hbUnmappedLights : 0,
             pushStats);
 
-        _hbTimestamp = now;
+        ResetHeartbeatWindow(now);
+    }
+
+    private void ResetHeartbeatWindow(long? timestamp = null)
+    {
+        _hbTimestamp = timestamp ?? Stopwatch.GetTimestamp();
         _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
-        _hbPushDurationsMs.Clear();
+        _hbPushDurationsMs?.Clear();
     }
 }

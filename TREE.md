@@ -785,6 +785,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HueEntertainmentFrameBuilder.cs
 │   │   │   ├── HueEntertainmentLightOutput.cs
 │   │   │   ├── HueEntertainmentTransport.cs
+│   │   │   ├── HueEventStreamEpisode.cs
 │   │   │   ├── HueEventStreamModels.cs
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
@@ -1347,11 +1348,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── DeckleAmbientSourceTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── Deckle.Lighting.Tests.csproj
+│   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
+│   │   ├── HueEventStreamEpisodeTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
-│   │   └── HueLocalDiscoveryTests.cs
+│   │   ├── HueLocalDiscoveryTests.cs
+│   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs

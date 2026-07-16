@@ -50,7 +50,7 @@ public class DeckleVisionSourceTests
     }
 
     [Fact]
-    public void FrameOwnershipRecoveryAbandonedEmitsWarningAndDetail()
+    public void TerminalCaptureCauseStaysTechnicalForWorkflowOwner()
     {
         using var listener = new TestEventListener("Deckle-Vision");
 
@@ -62,7 +62,7 @@ public class DeckleVisionSourceTests
             milestone =>
             {
                 Assert.Equal(DeckleVisionSource.EvtFrameOwnershipRecoveryAbandoned, milestone.EventId);
-                Assert.Equal(EventLevel.Warning, milestone.Level);
+                Assert.Equal(EventLevel.Verbose, milestone.Level);
             },
             detail =>
             {
@@ -70,6 +70,38 @@ public class DeckleVisionSourceTests
                 Assert.Equal(EventLevel.Verbose, detail.Level);
                 Assert.Equal(10, detail.Payload?[0]);
                 Assert.Equal(10, detail.Payload?[1]);
+            });
+    }
+
+    [Fact]
+    public void DuplicationRecreateIncidentSeparatesWarningRecoveryAndDetail()
+    {
+        using var listener = new TestEventListener("Deckle-Vision");
+
+        DeckleVisionSource.Log.DuplicationRecreateAttemptFailed();
+        DeckleVisionSource.Log.DuplicationRecreateRecovered();
+        DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
+            "recovered", failures: 2, duration_ms: 4100);
+
+        Assert.Collection(
+            listener.Events,
+            incident =>
+            {
+                Assert.Equal(DeckleVisionSource.EvtDuplicationRecreateAttemptFailed, incident.EventId);
+                Assert.Equal(EventLevel.Warning, incident.Level);
+            },
+            recovery =>
+            {
+                Assert.Equal(DeckleVisionSource.EvtDuplicationRecreateRecovered, recovery.EventId);
+                Assert.Equal(EventLevel.Informational, recovery.Level);
+            },
+            detail =>
+            {
+                Assert.Equal(DeckleVisionSource.EvtDuplicationRecreateEpisodeDetail, detail.EventId);
+                Assert.Equal(EventLevel.Verbose, detail.Level);
+                Assert.Equal("recovered", detail.Payload?[0]);
+                Assert.Equal(2, detail.Payload?[1]);
+                Assert.Equal(4100L, detail.Payload?[2]);
             });
     }
 }

@@ -19,11 +19,6 @@ public sealed class DeckleLightingSource : DeckleEventSource
 
     private DeckleLightingSource() { }
 
-    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
-        => (level != EventLevel.Verbose
-            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Ambient))
-        && base.IsEnabled(level, keywords);
-
     // IDs are public in the ETW manifest; never reuse an id after deleting an
     // event. Milestones keep their original id; the Verbose mirrors added for the
     // Verbose/Info separation take fresh ids 41-51 appended after the sequence.
@@ -115,6 +110,10 @@ public sealed class DeckleLightingSource : DeckleEventSource
     public const int EvtLocalDiscoveryCompletedDetail = 66;
     public const int EvtLocalDiscoveryFailed = 67;
     public const int EvtLocalDiscoveryFailedDetail = 68;
+    public const int EvtEventStreamIncident = 69;
+    public const int EvtEventStreamIncidentDetail = 70;
+    public const int EvtEventStreamRecovered = 71;
+    public const int EvtEventStreamRecoveryDetail = 72;
 
     // ── Discovery ───────────────────────────────────────────────────────
 
@@ -397,12 +396,15 @@ public sealed class DeckleLightingSource : DeckleEventSource
     // ── Color push ──────────────────────────────────────────────────────
 
     [Event(EvtSetColorFailed,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "Setting a colour failed")]
     public void SetColorFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtSetColorFailed);
+        if (!OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtSetColorFailed);
     }
 
     [Event(EvtSetColorFailedDetail,
@@ -411,7 +413,10 @@ public sealed class DeckleLightingSource : DeckleEventSource
            Message = "set colour failed | target={0} | http_status={1}")]
     public void SetColorFailedDetail(string target, int http_status)
     {
-        if (IsEnabled()) WriteEvent(EvtSetColorFailedDetail, target, http_status);
+        if (!OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        WriteEvent(EvtSetColorFailedDetail, target, http_status);
     }
 
     [Event(EvtPushColorOff,
@@ -724,12 +729,13 @@ public sealed class DeckleLightingSource : DeckleEventSource
     }
 
     [Event(EvtEventStreamStarting,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "Hue EventStream subscriber starting")]
+           Message = "event stream subscriber starting")]
     public void EventStreamStarting()
     {
-        if (IsEnabled()) WriteEvent(EvtEventStreamStarting);
+        if (!IsEventStreamDetailEnabled()) return;
+        WriteEvent(EvtEventStreamStarting);
     }
 
     [Event(EvtEventStreamReconnecting,
@@ -738,15 +744,74 @@ public sealed class DeckleLightingSource : DeckleEventSource
            Message = "EventStream reconnect — reason={0}")]
     public void EventStreamReconnecting(string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtEventStreamReconnecting, reason);
+        if (!IsEventStreamDetailEnabled()) return;
+        WriteEvent(EvtEventStreamReconnecting, reason);
     }
 
     [Event(EvtEventStreamStopped,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "Hue EventStream subscriber stopped")]
+           Message = "event stream subscriber stopped")]
     public void EventStreamStopped()
     {
-        if (IsEnabled()) WriteEvent(EvtEventStreamStopped);
+        if (!IsEventStreamDetailEnabled()) return;
+        WriteEvent(EvtEventStreamStopped);
     }
+
+    [Event(EvtEventStreamIncident,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Hue event monitoring unavailable — external changes may be overwritten")]
+    public void EventStreamIncident()
+    {
+        if (IsEnabled()) WriteEvent(EvtEventStreamIncident);
+    }
+
+    [Event(EvtEventStreamIncidentDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "event stream unavailable | duration_ms={0} | failures={1} | reason={2} | ex_type={3} | ex_message={4}")]
+    public void EventStreamIncidentDetail(
+        long duration_ms,
+        int failures,
+        string reason,
+        string ex_type,
+        string ex_message)
+    {
+        if (!IsEventStreamDetailEnabled()) return;
+        WriteEvent(
+            EvtEventStreamIncidentDetail,
+            duration_ms,
+            failures,
+            reason,
+            ex_type,
+            ex_message);
+    }
+
+    [Event(EvtEventStreamRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Hue event monitoring restored")]
+    public void EventStreamRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtEventStreamRecovered);
+    }
+
+    [Event(EvtEventStreamRecoveryDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "event stream restored | duration_ms={0} | failures={1}")]
+    public void EventStreamRecoveryDetail(long duration_ms, int failures)
+    {
+        if (!IsEventStreamDetailEnabled()) return;
+        WriteEvent(EvtEventStreamRecoveryDetail, duration_ms, failures);
+    }
+
+    [NonEvent]
+    internal bool IsEventStreamDetailEnabled()
+        => OperationalLogAdmission.IsScopedDetailEnabled(
+            OperationalLogActivity.Ambient,
+            this,
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Pipeline);
 }

@@ -19,11 +19,6 @@ public sealed class DeckleVisionSource : DeckleEventSource
 
     private DeckleVisionSource() { }
 
-    private new bool IsEnabled(EventLevel level, EventKeywords keywords)
-        => (level != EventLevel.Verbose
-            || OperationalLogAdmission.AllowsScopedDetail(OperationalLogActivity.Ambient))
-        && base.IsEnabled(level, keywords);
-
     public const int EvtScreenCaptureStarting           = 1;
     public const int EvtCaptureSessionConfigured        = 2;
     public const int EvtScreenCaptureStarted            = 3;
@@ -65,6 +60,9 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtSamplerProcessFailedDetail      = 34;
     public const int EvtFrameOwnershipRecoveryAbandoned = 35;
     public const int EvtFrameOwnershipRecoveryAbandonedDetail = 36;
+    public const int EvtDuplicationRecreateRecovered     = 37;
+    public const int EvtDuplicationRecreateEpisodeDetail = 38;
+    public const int EvtDuplicationRecreateAbandonedDetail = 39;
 
     // ── Capture session lifecycle ───────────────────────────────────────
 
@@ -83,7 +81,11 @@ public sealed class DeckleVisionSource : DeckleEventSource
            Message = "start | hmon=0x{0:X} | size={1}x{2} | format={3} | hdr={4} | peak_lum={5:F0} | timeout_ms={6} | throttle_ms={7}")]
     public void CaptureSessionConfigured(long hmon, int width, int height, string format, string hdr_state, double peak_lum, int timeout_ms, int throttle_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureSessionConfigured, hmon, width, height, format, hdr_state, peak_lum, timeout_ms, throttle_ms);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose,
+                (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
+            WriteEvent(EvtCaptureSessionConfigured, hmon, width, height, format, hdr_state, peak_lum, timeout_ms, throttle_ms);
     }
 
     [Event(EvtScreenCaptureStarted,
@@ -220,7 +222,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
            Message = "texture query failed | ex_type={0} | message={1}")]
     public void TextureQueryFailedDetail(string ex_type, string message)
     {
-        if (IsEnabled()) WriteEvent(EvtTextureQueryFailedDetail, ex_type, message);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtTextureQueryFailedDetail, ex_type, message);
     }
 
     [Event(EvtFrameConsumerThrew,
@@ -238,7 +243,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
            Message = "frame consumer threw | ex_type={0} | message={1}")]
     public void FrameConsumerThrewDetail(string ex_type, string message)
     {
-        if (IsEnabled()) WriteEvent(EvtFrameConsumerThrewDetail, ex_type, message);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtFrameConsumerThrewDetail, ex_type, message);
     }
 
     [Event(EvtReleaseFrameNonZero,
@@ -251,9 +259,9 @@ public sealed class DeckleVisionSource : DeckleEventSource
     }
 
     [Event(EvtFrameOwnershipRecoveryAbandoned,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Screen capture could not recover frame ownership and is stopping")]
+           Message = "frame ownership recovery abandoned")]
     public void FrameOwnershipRecoveryAbandoned()
     {
         if (IsEnabled()) WriteEvent(EvtFrameOwnershipRecoveryAbandoned);
@@ -312,7 +320,41 @@ public sealed class DeckleVisionSource : DeckleEventSource
            Message = "duplication recreate failed | attempt={0} | ex_type={1} | message={2}")]
     public void DuplicationRecreateAttemptFailedDetail(int attempt, string ex_type, string message)
     {
-        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateAttemptFailedDetail, attempt, ex_type, message);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtDuplicationRecreateAttemptFailedDetail, attempt, ex_type, message);
+    }
+
+    [Event(EvtDuplicationRecreateRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Screen capture recovered")]
+    public void DuplicationRecreateRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtDuplicationRecreateRecovered);
+    }
+
+    [Event(EvtDuplicationRecreateEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "duplication recreate episode | outcome={0} | failures={1} | duration_ms={2}")]
+    public void DuplicationRecreateEpisodeDetail(string outcome, int failures, long duration_ms)
+    {
+        if (!OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture)) return;
+        WriteEvent(EvtDuplicationRecreateEpisodeDetail, outcome, failures, duration_ms);
+    }
+
+    [Event(EvtDuplicationRecreateAbandonedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "duplication recreate abandoned | attempts={0} | hr=0x{1:X8} | ex_type={2} | message={3}")]
+    public void DuplicationRecreateAbandonedDetail(int attempts, int hr, string ex_type, string message)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtDuplicationRecreateAbandonedDetail, attempts, hr, ex_type, message);
     }
 
     // Milestone — ungated by AmbientCaptureGate (Info always passes) so the
@@ -364,7 +406,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
            Message = "sampler map failed | hr=0x{0:X8}")]
     public void SamplerMapFailedDetail(int hr)
     {
-        if (IsEnabled()) WriteEvent(EvtSamplerMapFailedDetail, hr);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtSamplerMapFailedDetail, hr);
     }
 
     [Event(EvtSamplerProcessFailed,
@@ -382,7 +427,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
            Message = "sampler process failed | ex_type={0} | message={1}")]
     public void SamplerProcessFailedDetail(string ex_type, string message)
     {
-        if (IsEnabled()) WriteEvent(EvtSamplerProcessFailedDetail, ex_type, message);
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
+            WriteEvent(EvtSamplerProcessFailedDetail, ex_type, message);
     }
 
     // ── Heartbeat — rolling capture telemetry ──────────────────────────
@@ -409,7 +457,9 @@ public sealed class DeckleVisionSource : DeckleEventSource
         long p50_acquire_us, long p95_acquire_us,
         long p50_sample_us, long p95_sample_us)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Ambient, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtHeartbeat, period_ms, frames_acquired, frames_dropped,
             p50_acquire_us, p95_acquire_us, p50_sample_us, p95_sample_us);
     }

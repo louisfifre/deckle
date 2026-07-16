@@ -31,9 +31,12 @@ internal static partial class ScreenCaptureInterop
     public const int DXGI_ERROR_WAIT_TIMEOUT          = unchecked((int)0x887A0027);
     public const int DXGI_ERROR_SESSION_DISCONNECTED  = unchecked((int)0x887A0028);
     public const int DXGI_ERROR_ACCESS_DENIED         = unchecked((int)0x887A002B);
+    public const int DXGI_ERROR_NOT_CURRENTLY_AVAILABLE = unchecked((int)0x887A0022);
     public const int DXGI_ERROR_INVALID_CALL          = unchecked((int)0x887A0001);
+    public const int DXGI_ERROR_UNSUPPORTED           = unchecked((int)0x887A0004);
     public const int DXGI_ERROR_DEVICE_REMOVED        = unchecked((int)0x887A0005);
     public const int DXGI_ERROR_DEVICE_HUNG           = unchecked((int)0x887A0006);
+    public const int E_ACCESSDENIED                   = unchecked((int)0x80070005);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct DXGI_RATIONAL

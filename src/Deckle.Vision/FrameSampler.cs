@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
 using Windows.Graphics.DirectX;
@@ -174,31 +175,45 @@ public sealed partial class FrameSampler : IAsyncDisposable
             _d3dContext = ctxPtr;
         }
 
-        int bytesPerPixel = _isHdr ? 8 : 4;
-
         _intermediateTex = CreateIntermediateTexture();
-        _intermediateTexAcquiredTicks = Stopwatch.GetTimestamp();
+        bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+            OperationalLogActivity.Ambient,
+            DeckleResourceSource.Log,
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Resource);
+        _intermediateTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
         // Cross-cutting Resource sub-provider: acquire the sampler's three
         // persistent textures. owner="frame-sampler" to distinguish them from
         // per-frame textures of "capture-loop". size_bytes approximates memory
         // allocation (full mip chain for the intermediate ≈ 4/3 of mip 0; we
         // simplify to mip 0 to stay readable).
-        DeckleResourceSource.Log.ResourceAcquired(
-            "d3d11-texture", (long)_intermediateTex,
-            _sourceWidth * _sourceHeight * bytesPerPixel, "frame-sampler");
+        if (resourceDetailOpen)
+        {
+            int bytesPerPixel = _isHdr ? 8 : 4;
+            DeckleResourceSource.Log.ResourceAcquired(
+                "d3d11-texture", (long)_intermediateTex,
+                _sourceWidth * _sourceHeight * bytesPerPixel, "frame-sampler");
+        }
 
         _intermediateSrv = CreateIntermediateSrv();
         // SRV: no own memory, it is a view. Trace it as generic
         // "dxgi-resource" with size_bytes=0 to make the handle visible in the
         // trace.
-        DeckleResourceSource.Log.ResourceAcquired(
-            "dxgi-resource", (long)_intermediateSrv, 0, "frame-sampler");
+        if (resourceDetailOpen)
+        {
+            DeckleResourceSource.Log.ResourceAcquired(
+                "dxgi-resource", (long)_intermediateSrv, 0, "frame-sampler");
+        }
 
         _stagingTex = CreateStagingTexture();
-        _stagingTexAcquiredTicks = Stopwatch.GetTimestamp();
-        DeckleResourceSource.Log.ResourceAcquired(
-            "d3d11-texture", (long)_stagingTex,
-            _gridCols * _gridRows * bytesPerPixel, "frame-sampler");
+        _stagingTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
+        if (resourceDetailOpen)
+        {
+            int bytesPerPixel = _isHdr ? 8 : 4;
+            DeckleResourceSource.Log.ResourceAcquired(
+                "d3d11-texture", (long)_stagingTex,
+                _gridCols * _gridRows * bytesPerPixel, "frame-sampler");
+        }
 
         DeckleVisionSource.Log.SamplerInitialized(
             _gridCols, _gridRows, _targetMip,

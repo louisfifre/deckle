@@ -151,6 +151,16 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private ILightOutput? _output;
     private FrameSampler? _sampler;
 
+    // Per-frame Vision causes are folded into one workflow incident. The
+    // accumulated clock caps gaps at AcquireNextFrame's normal wait window so
+    // a static desktop does not count as sustained failed processing.
+    private ScreenCaptureService? _frameProcessingEpisodeCapture;
+    private long _frameProcessingLastFailureTicks;
+    private long _frameProcessingActiveFailureTicks;
+    private int _frameProcessingFailures;
+    private bool _frameProcessingIncidentOpen;
+    private int _frameProcessingStopRequested;
+
     // Resolved at StartAsync from _host.Ambient.UseMultiLight. The
     // multi-light pipeline shape is locked for the session : changing
     // UseMultiLight live mid-run would force a Stop + Start to reshape
@@ -222,6 +232,11 @@ public sealed partial class AmbientEngine : IAsyncDisposable
 
     private long _pushedCount;
     private long _droppedCount;
+    private int _pushConsecutiveFailures;
+    private long _pushFailureStartTimestamp;
+    private bool _pushIncidentOpen;
+    private string _pushFailureType = "none";
+    private string _pushFailureMessage = "none";
 
     // Heartbeat accumulators — counted by the push loop between log
     // emissions and reset every HeartbeatIntervalMs. Distinct from
@@ -240,7 +255,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     // ColorsAsync — REST includes the bridge HTTP round-trip,
     // Entertainment covers the DTLS/UDP send path plus any local
     // back-pressure. One pushed value per tick — drops are not counted.
-    private readonly List<double> _hbPushDurationsMs = new(128);
+    private List<double>? _hbPushDurationsMs;
 
     // HDR tuning snapshot, refreshed at the top of each tick from
     // _host.Ambient. Live-reload — settings changes apply on the next
