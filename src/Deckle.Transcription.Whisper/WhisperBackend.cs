@@ -55,11 +55,15 @@ public sealed class WhisperBackend : IAsrBackend
     private volatile string _detectedBackend = "CPU";
     private bool _disposed;
 
-    // Callback storage — keeps the managed delegate rooted while whisper.cpp
-    // holds its function pointer. Setting to null would let the GC reclaim
-    // the underlying thunk on the next collection, producing a native crash
-    // the next time whisper invokes the callback.
-    private WhisperPInvoke.WhisperLogCallback? _logCallback;
+    // whisper_log_set is process-global and retains the function pointer for
+    // the process lifetime. Root one static thunk permanently, install it once,
+    // and route it weakly to the latest live backend instance.
+    private static readonly object s_logHookLock = new();
+    private static readonly WhisperPInvoke.WhisperLogCallback s_logCallback = DispatchWhisperLog;
+    private static WeakReference<WhisperBackend>? s_logOwner;
+    private static int s_logHookInstalled;
+
+    // Per-call callbacks only need to stay rooted for whisper_full.
     private WhisperNewSegmentCallback? _segmentCallback;
     private WhisperAbortCallback? _abortCallback;
 
@@ -461,75 +465,93 @@ public sealed class WhisperBackend : IAsrBackend
     // with any other libwhisper consumer in the process.
     private void InstallWhisperLogHook()
     {
-        _logCallback = (level, textPtr, _) =>
+        Volatile.Write(ref s_logOwner, new WeakReference<WhisperBackend>(this));
+
+        if (Volatile.Read(ref s_logHookInstalled) != 0) return;
+
+        lock (s_logHookLock)
         {
+            if (s_logHookInstalled != 0) return;
+
             try
             {
-                string msg = Marshal.PtrToStringUTF8(textPtr)?.TrimEnd('\r', '\n', ' ') ?? "";
-                if (string.IsNullOrEmpty(msg)) return;
-
-                // ── Backend detection (first hit wins, sticks) ───────────
-                if (_detectedBackend == "CPU")
-                {
-                    if (msg.StartsWith("ggml_vulkan:", StringComparison.Ordinal))
-                        _detectedBackend = "Vulkan";
-                    else if (msg.StartsWith("ggml_cuda_init:", StringComparison.Ordinal) ||
-                             msg.StartsWith("ggml_cuda:", StringComparison.Ordinal))
-                        _detectedBackend = "CUDA";
-                    else if (msg.StartsWith("ggml_metal_init:", StringComparison.Ordinal) ||
-                             msg.StartsWith("ggml_metal:", StringComparison.Ordinal))
-                        _detectedBackend = "Metal";
-                }
-
-                // ── Init-phase compaction ────────────────────────────────
-                // Each phase prefix accumulates its own values; the moment a
-                // different prefix is seen, the accumulated phase is flushed
-                // as a single event before the new phase starts. Lines that
-                // are not from a tracked phase flush any pending phase first,
-                // then fall through to the level switch below.
-                if (_logCompactor.TryAccumulatePhaseLine(msg)) return;
-
-                // ── "no GPU found" downgrade for the second backend init ─
-                // The VAD context creation triggers a second whisper_backend
-                // _init_gpu that always reports "no GPU found" (whisper.cpp
-                // hardcodes use_gpu=false in whisper_vad_init_context). Benign
-                // but alarming at Warn — keep it Verbose. Targeted match so a
-                // real GPU failure phrased differently still surfaces.
-                if (msg.StartsWith("whisper_backend_init_gpu", StringComparison.Ordinal) &&
-                    msg.IndexOf("no GPU found", StringComparison.Ordinal) >= 0)
-                {
-                    DeckleWhispSource.Log.WhisperLogVerbose(msg);
-                    return;
-                }
-
-                // ggml levels: 0=None, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Cont.
-                switch (level)
-                {
-                    case 4:
-                        DeckleWhispSource.Log.WhisperLogError();
-                        DeckleWhispSource.Log.WhisperLogErrorDetail(msg);
-                        break;
-                    case 3:
-                        DeckleWhispSource.Log.WhisperLogWarning();
-                        DeckleWhispSource.Log.WhisperLogWarningDetail(msg);
-                        break;
-                    default: DeckleWhispSource.Log.WhisperLogVerbose(msg); break;
-                }
+                WhisperPInvoke.whisper_log_set(s_logCallback, IntPtr.Zero);
+                Volatile.Write(ref s_logHookInstalled, 1);
             }
-            catch
+            catch (Exception ex)
             {
-                // Never let an exception cross the native boundary.
+                DeckleWhispSource.Log.WhisperLogSetUnavailable();
+                DeckleWhispSource.Log.WhisperLogSetUnavailableDetail(ex.Message);
             }
-        };
+        }
+    }
 
+    private static void DispatchWhisperLog(int level, IntPtr textPtr, IntPtr userData)
+    {
         try
         {
-            WhisperPInvoke.whisper_log_set(_logCallback, IntPtr.Zero);
+            WeakReference<WhisperBackend>? ownerReference = Volatile.Read(ref s_logOwner);
+            if (ownerReference is null || !ownerReference.TryGetTarget(out WhisperBackend? owner)) return;
+
+            owner.HandleWhisperLog(level, textPtr);
         }
-        catch (Exception ex)
+        catch
         {
-            DeckleWhispSource.Log.WhisperLogSetUnavailable();
-            DeckleWhispSource.Log.WhisperLogSetUnavailableDetail(ex.Message);
+            // Never let an exception cross the native boundary.
+        }
+    }
+
+    private void HandleWhisperLog(int level, IntPtr textPtr)
+    {
+        string msg = Marshal.PtrToStringUTF8(textPtr)?.TrimEnd('\r', '\n', ' ') ?? "";
+        if (string.IsNullOrEmpty(msg)) return;
+
+        // ── Backend detection (first hit wins, sticks) ───────────
+        if (_detectedBackend == "CPU")
+        {
+            if (msg.StartsWith("ggml_vulkan:", StringComparison.Ordinal))
+                _detectedBackend = "Vulkan";
+            else if (msg.StartsWith("ggml_cuda_init:", StringComparison.Ordinal) ||
+                     msg.StartsWith("ggml_cuda:", StringComparison.Ordinal))
+                _detectedBackend = "CUDA";
+            else if (msg.StartsWith("ggml_metal_init:", StringComparison.Ordinal) ||
+                     msg.StartsWith("ggml_metal:", StringComparison.Ordinal))
+                _detectedBackend = "Metal";
+        }
+
+        // ── Init-phase compaction ────────────────────────────────
+        // Each phase prefix accumulates its own values; the moment a
+        // different prefix is seen, the accumulated phase is flushed
+        // as a single event before the new phase starts. Lines that
+        // are not from a tracked phase flush any pending phase first,
+        // then fall through to the level switch below.
+        if (_logCompactor.TryAccumulatePhaseLine(msg)) return;
+
+        // ── "no GPU found" downgrade for the second backend init ─
+        // The VAD context creation triggers a second whisper_backend
+        // _init_gpu that always reports "no GPU found" (whisper.cpp
+        // hardcodes use_gpu=false in whisper_vad_init_context). Benign
+        // but alarming at Warn — keep it Verbose. Targeted match so a
+        // real GPU failure phrased differently still surfaces.
+        if (msg.StartsWith("whisper_backend_init_gpu", StringComparison.Ordinal) &&
+            msg.IndexOf("no GPU found", StringComparison.Ordinal) >= 0)
+        {
+            DeckleWhispSource.Log.WhisperLogVerbose(msg);
+            return;
+        }
+
+        // ggml levels: 0=None, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Cont.
+        switch (level)
+        {
+            case 4:
+                DeckleWhispSource.Log.WhisperLogError();
+                DeckleWhispSource.Log.WhisperLogErrorDetail(msg);
+                break;
+            case 3:
+                DeckleWhispSource.Log.WhisperLogWarning();
+                DeckleWhispSource.Log.WhisperLogWarningDetail(msg);
+                break;
+            default: DeckleWhispSource.Log.WhisperLogVerbose(msg); break;
         }
     }
 
@@ -546,11 +568,10 @@ public sealed class WhisperBackend : IAsrBackend
         if (_disposed) return;
         _disposed = true;
         UnloadModel();
-        // Drop the rooted callbacks — Dispose implies no further invocations
-        // from native code. The log callback is process-global; clearing the
-        // pointer here is intentional (no other libwhisper consumer expects it).
+        // Per-call callbacks can be released. The process-global log thunk stays
+        // statically rooted; its weak owner disappears naturally once this
+        // backend is no longer referenced.
         _segmentCallback = null;
         _abortCallback = null;
-        _logCallback = null;
     }
 }

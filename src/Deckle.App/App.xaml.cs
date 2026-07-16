@@ -690,15 +690,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         {
             _engine.StatusChanged += status =>
             {
-                _tray.UpdateStatus(status);
+                // Beacon app icon in LogWindow + PlaygroundWindow: red =
+                // recording, grey = idle. The engine state is the semantic
+                // source of truth; the localized status remains display-only.
+                bool isRecording = _engine.IsRecording;
+                _tray.UpdateStatus(status, isRecording);
                 DeckleAppSource.Log.StatusChanged();
                 DeckleAppSource.Log.StatusChangedDetail(status);
-                // Beacon app icon in LogWindow + PlaygroundWindow: red =
-                // recording, grey = idle. Single source of truth driven
-                // from the engine status transition. StartsWith covers the
-                // "Recording…" ellipsis variant emitted by RaiseStatus to
-                // signal a transient state visually in the tray tooltip.
-                bool isRecording = status.StartsWith("Recording");
                 _lastRecordingState = isRecording;
                 // Both nullable now: LogWindow and PlaygroundWindow are lazy-
                 // created on first user open, so they're absent until then.
@@ -706,10 +704,9 @@ public partial class App : Microsoft.UI.Xaml.Application
                 _playgroundWindow?.SetRecordingState(isRecording);
 
                 // HUD: driven by status transition. Background thread → HudWindow
-                // marshals internally via DispatcherQueue. StartsWith on every
-                // branch so transient ellipsis variants ("Transcribing…",
-                // "Rewriting (cleanup)…") all route correctly.
-                if (status.StartsWith("Recording"))
+                // marshals internally via DispatcherQueue. Named transient states
+                // use StartsWith so their ellipsis variants route correctly.
+                if (isRecording)
                     _hudWindow.ShowRecording();
                 else if (status.StartsWith("Transcribing"))
                     _hudWindow.SwitchToTranscribing();
@@ -763,7 +760,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // absent by choice is not a missing setup — the tooltip stays quiet.
         string initialStatus = _engine is not null || !transcriptionPresent
             ? "Ready" : "Dictation not set up";
-        _tray.UpdateStatus(initialStatus);
+        _tray.UpdateStatus(initialStatus, isRecording: false);
         DeckleAppSource.Log.StatusChanged();
         DeckleAppSource.Log.StatusChangedDetail(initialStatus);
 

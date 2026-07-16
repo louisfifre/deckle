@@ -144,7 +144,8 @@ public sealed class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
             if (!started)
             {
-                DeckleInputSource.Log.KeyboardHostStartFailed(
+                DeckleInputSource.Log.KeyboardHostStartFailed();
+                DeckleInputSource.Log.KeyboardHostStartFailedDetail(
                     startError?.GetType().Name ?? "(unknown)", startError?.Message ?? "(no message)");
                 _thread = null;
                 return false;

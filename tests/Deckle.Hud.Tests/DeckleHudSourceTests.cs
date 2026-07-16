@@ -6,12 +6,8 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
-// Observability coverage of the Deckle.Hud provider: restricted here to
-// ProximityRollup parce que c'est l'event qui vient de basculer de
-// signature (period_ms → duration_ms) and semantics (1 s periodic
-// → per-session). Les autres axes (StateChanged, FadeInStarted, etc.)
-// are not covered in this pass; they will be added as the work touching them
-// lands.
+// Observability coverage grows with the workstream touching each event family:
+// rollup semantics and the Warning/Verbose split are pinned here.
 [Trait("Category", "observability")]
 public class DeckleHudSourceTests
 {
@@ -35,5 +31,31 @@ public class DeckleHudSourceTests
         Assert.Equal((byte)240, ev.Payload?[3]);
         Assert.Equal(64, ev.Payload?[4]);
         Assert.Equal(12, ev.Payload?[5]);
+    }
+
+    [Fact]
+    public void RevealMaskFailureSeparatesWarningFromVerboseDetail()
+    {
+        using var listener = new TestEventListener("Deckle-Hud");
+
+        DeckleHudSource.Log.RevealMaskFailed();
+        DeckleHudSource.Log.RevealMaskFailedDetail("COMException", "The parameter is incorrect.");
+
+        Assert.Collection(listener.Events,
+            warning =>
+            {
+                Assert.Equal(DeckleHudSource.EvtRevealMaskFailed, warning.EventId);
+                Assert.Equal(EventLevel.Warning, warning.Level);
+                Assert.True(warning.HasKeyword(Keywords.Lifecycle));
+                Assert.Equal(0, warning.Payload?.Count ?? 0);
+            },
+            detail =>
+            {
+                Assert.Equal(DeckleHudSource.EvtRevealMaskFailedDetail, detail.EventId);
+                Assert.Equal(EventLevel.Verbose, detail.Level);
+                Assert.True(detail.HasKeyword(Keywords.Lifecycle));
+                Assert.Equal("COMException", detail.Payload?[0]);
+                Assert.Equal("The parameter is incorrect.", detail.Payload?[1]);
+            });
     }
 }

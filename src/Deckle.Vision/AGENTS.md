@@ -5,15 +5,15 @@ type: agent-instructions
 
 # AGENTS.md — Deckle.Vision
 
-Deckle's screen-side module: capturing the screen (DXGI Output Duplication) and sampling/analyzing frames (`FrameSampler` produces a grid of averages; `IFrameAnalyzer` for richer analysis). Today the ambient lighting consumes the grid, but this is the screen-capture home — capture and analysis together, the visual counterpart to `Deckle.Audio`. The module is the sole owner of the `IDXGIOutputDuplication` object: opened at `Start()`, silently re-opened on every transient interruption, released only at `Stop()` or on a fatal device error.
+Deckle's screen-side module: capturing the screen (DXGI Output Duplication) and sampling/analyzing frames (`FrameSampler` produces a grid of averages; `IFrameAnalyzer` for richer analysis). Today the ambient lighting consumes the grid, but this is the screen-capture home — capture and analysis together, the visual counterpart to `Deckle.Audio`. The module is the sole owner of the `IDXGIOutputDuplication` object: opened at `Start()`, released and recreated during recovery, and finally released at `Stop()` or loop termination.
 
 ## Why DXGI Output Duplication, not WGC
 
 `Windows.Graphics.Capture` is the modern API but draws a system notification border around the captured surface. Removing it isn't a flag: it needs `IsBorderRequired=false` **plus** a runtime consent (`RequestAccessAsync(Borderless)`) gated by the `graphicsCaptureWithoutBorder` capability — which requires a **package identity** an unpackaged app doesn't have. DXGI Output Duplication runs under the compositor, isn't subject to that border, and is the historical path for full-screen capture tools (OBS, HyperHDR, ShadowPlay). Its one constraint: capture must run on the GPU that drives the display (a multi-GPU / Optimus caveat) — fine for a local single screen.
 
-## Recovery — retry forever on transient, Stopped only on fatal
+## Recovery — persistent for desktop transitions, bounded for broken ownership
 
-Any long DXGI session hits transient interruptions (static screen, desktop switch, mode change, DWM toggle, secure desktop for UAC / lock / screensaver, RDP). The doctrine (Hyperion.NG pattern): absorb them silently — release and recreate the duplication, retrying indefinitely (2 s between attempts) while `Stop()`'s token hasn't fired. That's what holds ambient through a screensaver, a multi-minute Win+L, or an open UAC prompt. `Stopped` reaches the consumer only on cancel or a truly fatal device error (`DEVICE_REMOVED` / `DEVICE_HUNG` — a dead D3D11 device); rebuilding the device is the consumer's call, not the service's. The full HRESULT taxonomy lives in the recovery code.
+Any long DXGI session hits transient interruptions (static screen, desktop switch, mode change, DWM toggle, secure desktop for UAC / lock / screensaver, RDP). Access loss, denial, and session disconnect are absorbed by releasing and recreating the duplication for as long as `Stop()` has not cancelled the loop. Repeated `DXGI_ERROR_INVALID_CALL` is different: it signals broken frame ownership, so recovery is bounded to ten attempts before the loop raises `Stopped`. A lost or hung D3D11 device also raises `Stopped`; rebuilding the device is the consumer's call. The full HRESULT taxonomy lives in the recovery code.
 
 ## HDR format renegotiation
 

@@ -43,6 +43,8 @@ public sealed class DeckleHudSource : DeckleEventSource
     // 10: reveal mask geometry — cell + host extents and the cell offset used to
     // place the shared conic under the digit (F1 placement diagnostics).
     public const int EvtRevealGeometry      = 10;
+    // 11: Verbose mirror for the reveal-mask failure's technical details.
+    public const int EvtRevealMaskFailedDetail = 11;
 
     [Event(EvtHudWarning,
            Level = EventLevel.Warning,
@@ -71,10 +73,20 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealMaskFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "digit reveal mask failed | error={0} | message={1}")]
-    public void RevealMaskFailed(string error, string message)
+           Message = "Digit reveal mask failed")]
+    public void RevealMaskFailed()
     {
-        if (IsEnabled()) WriteEvent(EvtRevealMaskFailed, error, message);
+        if (IsEnabled()) WriteEvent(EvtRevealMaskFailed);
+    }
+
+    [Event(EvtRevealMaskFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "digit reveal mask failed | error={0} | message={1}")]
+    public void RevealMaskFailedDetail(string error, string message)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtRevealMaskFailedDetail, error, message);
     }
 
     // Geometry captured when a digit reveal is built: the cell extents, the

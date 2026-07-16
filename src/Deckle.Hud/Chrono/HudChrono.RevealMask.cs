@@ -161,7 +161,8 @@ public sealed partial class HudChrono
             if (++_revealBuildAttempts >= MaxRevealBuildAttempts)
             {
                 _revealsFailed = true;
-                DeckleHudSource.Log.RevealMaskFailed(ex.GetType().Name, ex.Message);
+                DeckleHudSource.Log.RevealMaskFailed();
+                DeckleHudSource.Log.RevealMaskFailedDetail(ex.GetType().Name, ex.Message);
             }
         }
     }

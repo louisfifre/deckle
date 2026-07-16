@@ -10,10 +10,12 @@ Not read by default. Come here when you need the *why* behind a choice that the 
 ## 2026-06-13 — Hallucination filter is output-side; paragraph append unimplemented; ASR spike closed
 
 - The "Sous-titrage Radio-Canada" near-silence hallucination is to be handled by an **output denylist** that strips known hallucination phrases before the text reaches the clipboard/paste — not by the adaptive-segmenter-threshold root fix once planned. The phrase may still be transcribed; it must never leave the pipeline into the clipboard.
-- Paragraph mode starts a new paragraph on **every** silence cut regardless of utterance duration (`StreamingPipeline.cs`). The "< 30 s → append to the previous paragraph" rule is not implemented; its trigger criterion (utterance length? silence length?) is an open product choice.
+- Paragraph mode starts a new paragraph on **every** silence cut regardless of utterance duration (`Engine/TranscriptionEngine.StreamingPipeline.cs`). The "< 30 s → append to the previous paragraph" rule is not implemented; its trigger criterion (utterance length? silence length?) is an open product choice.
 - ASR backend alternatives (Voxtral / Phi-4) and the home-grown large-window streaming spike are set aside: whisper.cpp is sufficient at the current latency, and streaming is the working main mode.
 
 ## 2026-06-05 — Why the model prime is synchronous on the worker thread
+
+Superseded on 2026-06-15 by `bacbda82`: capture and prime now start concurrently, with the first backend call joining the prime through a shared gate. The original boot-time detached warmup described below remains retired.
 
 The earlier model warmup ran at boot on its own detached thread. It raced a real hotkey transcription: when the user dictated while the warmup inference was still running, priming text occasionally leaked to the clipboard. A `t_isWarmup` `ThreadStatic` flag was used to gate the warmup's user-facing tail (clipboard, rewrite, paste, status events) so it wouldn't surface — fragile, and it didn't close the race.
 

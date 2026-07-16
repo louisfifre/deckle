@@ -1,0 +1,37 @@
+using System.Diagnostics.Tracing;
+using Deckle.Diagnostics;
+using Deckle.Input;
+using Deckle.TestSupport;
+using Xunit;
+
+namespace Deckle.Input.Tests;
+
+[Trait("Category", "observability")]
+public class DeckleInputSourceTests
+{
+    [Fact]
+    public void KeyboardHostStartFailureSeparatesWarningFromVerboseDetail()
+    {
+        using var listener = new TestEventListener("Deckle-Input");
+
+        DeckleInputSource.Log.KeyboardHostStartFailed();
+        DeckleInputSource.Log.KeyboardHostStartFailedDetail("Win32Exception", "Access is denied.");
+
+        Assert.Collection(listener.Events,
+            warning =>
+            {
+                Assert.Equal(DeckleInputSource.EvtKeyboardHostStartFailed, warning.EventId);
+                Assert.Equal(EventLevel.Warning, warning.Level);
+                Assert.True(warning.HasKeyword(Keywords.Lifecycle));
+                Assert.Equal(0, warning.Payload?.Count ?? 0);
+            },
+            detail =>
+            {
+                Assert.Equal(DeckleInputSource.EvtKeyboardHostStartFailedDetail, detail.EventId);
+                Assert.Equal(EventLevel.Verbose, detail.Level);
+                Assert.True(detail.HasKeyword(Keywords.Lifecycle));
+                Assert.Equal("Win32Exception", detail.Payload?[0]);
+                Assert.Equal("Access is denied.", detail.Payload?[1]);
+            });
+    }
+}

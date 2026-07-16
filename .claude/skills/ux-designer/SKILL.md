@@ -1,11 +1,7 @@
 ---
 name: ux-designer
-description: |
-  Expert UX design assistance for user research, wireframing, prototyping, and design strategy.
-  Use when: creating wireframes, conducting user research, building prototypes, designing user flows,
-  writing UX copy, reviewing designs for usability, creating personas, planning usability tests,
-  or when user mentions UX design, user experience, wireframes, prototypes, user research,
-  information architecture, or design systems.
+description: Design or review user research, flows, information architecture, wireframes, prototypes, personas, accessibility, and usability tests. Use ux-copy for interface wording.
+type: skill
 license: MIT
 metadata:
   author: awesome-llm-apps

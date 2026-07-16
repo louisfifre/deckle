@@ -142,7 +142,7 @@ public static class WhisperPInvoke
     // lost. By wiring a callback, redirect all of it to the LogWindow.
     //
     // C signature: void (*)(enum ggml_log_level level, const char *text, void *user_data)
-    // ggml_log_level levels: 0=None, 1=Info, 2=Warn, 3=Error, 4=Debug, 5=Cont.
+    // ggml_log_level levels: 0=None, 1=Debug, 2=Info, 3=Warn, 4=Error, 5=Cont.
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void WhisperLogCallback(int level, IntPtr text, IntPtr user_data);

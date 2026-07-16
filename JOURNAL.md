@@ -11,6 +11,8 @@ Project-level dated notes: a finding, a milestone, a usage observation — worth
 
 Measured through the new TitleBar layout probe at 200 % display scale: the native `TitleBar` control stamps its caption padding column with `AppWindowTitleBar.RightInset`'s raw physical pixels (upstream `UpdatePadding` in microsoft-ui-xaml `TitleBar.cpp`, no scale division — their TODO 50724421), so the bar reserves scale× the room the caption buttons take. Same px/DIP confusion on `OverlappedPresenter.PreferredMinimum*`, which are physical pixels. Corrected for the Settings window in `SettingsWindow.CaptionInset.cs` (re-stamps the columns in DIPs; delete when the SDK fixes) and by scaling the presenter minimums; every other window using the `TitleBar` control or presenter minimums (LogWindow, Playground) has the same defect — generalization spun off as its own workstream.
 
+Superseded later that day by `80c7444b`: the correction moved to `src/Deckle.Shell.WindowChrome/CaptionInsetCorrection.cs` and was generalized across the affected windows.
+
 ## 2026-07-01 — Settings-UX composer doctrine graved; composer gaps against it
 
 Graved the settings composer doctrine into `deckle-settings-ux` (rewrote the skill, added `references/controls-and-behaviour.md`).
@@ -24,6 +26,8 @@ Reconciled the Anytype task tree against `main` by a code audit (the tree had dr
 ## 2026-06-13 — Codex dialogue workflow shape
 
 Chose the first workflow split for Claude↔Codex mediation: `codex-start`, `codex-challenge`, and `codex-dialogue` create Anytype chats so Louis can watch and intervene; `codex-review` and `codex-integrate` stay direct Claude-facing calls by default. Anytype CLI/headless remains a later endpoint option, not part of the first integration.
+
+Superseded on 2026-07-02 by ADR-0001: Deckle now supervises the headless Anytype backend and exposes one resident HTTP MCP host.
 
 ## 2026-05-27 — Canonical frontmatter for agent artifacts
 

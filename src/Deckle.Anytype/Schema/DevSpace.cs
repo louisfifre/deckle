@@ -88,7 +88,8 @@ public static class DevSpace
         // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
         // to every object and resists deletion. It is deliberately NOT mapped onto
         // any type table below — unused, left out of every digest — so the key only
-        // survives here to document the residue (see SCHEMA.md § Résidus).
+        // survives here to document the residue (see the 2026-06-16 entry in
+        // the module JOURNAL.md).
         public const string Tag               = "tag";                      // multi_select — auto-transversal, unmapped
         public const string Archive           = "archive";                  // checkbox
         public const string DefinitionDeFini  = "definition_de_fini";       // text

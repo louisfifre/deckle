@@ -284,6 +284,11 @@ public sealed partial class TranscriptionEngine : IDisposable
         }
     }
 
+    // Semantic read for UI bridges that must render the current capture state
+    // without interpreting a localized StatusChanged string.
+    public bool IsRecording =>
+        (PipelineState)Volatile.Read(ref _state) == PipelineState.Recording;
+
     // ── Constructor ──────────────────────────────────────────────────────────
 
     private readonly ITranscriptionEngineHost _host;

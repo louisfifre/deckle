@@ -9,7 +9,7 @@ The whisper.cpp `IAsrBackend` implementation (`WhisperBackend`), wrapping the wh
 
 ## Native log compaction
 
-whisper.cpp emits a flood of native log lines, unrelated to the EventSource pipeline. A `whisper_log_set` hook — installed once, never removed (process-global callback) — intercepts them, compacts each init/load/VAD phase into a single structured event, and sniffs the first `ggml_vulkan:` / `ggml_cuda:` / `ggml_metal:` line to set `DetectedAccelerator` (no match → CPU).
+whisper.cpp emits a flood of native log lines, unrelated to the EventSource pipeline. A process-global `whisper_log_set` hook intercepts them, compacts the four tracked init/model-load/backend/state phases into structured events, and sniffs the first `ggml_vulkan:` / `ggml_cuda:` / `ggml_metal:` line to set `DetectedAccelerator` (no match → CPU). The native hook and its managed delegate stay rooted for the process lifetime; a weak owner routes observations to the latest live backend without retaining a disposed instance.
 
 ## Repetition guard
 
@@ -21,9 +21,9 @@ whisper.cpp emits a flood of native log lines, unrelated to the EventSource pipe
 
 ## Whisper initial prompt
 
-Whisper is not instruction-tuned: `initial_prompt` is a stylistic sample to imitate, not an instruction. Meta phrases ("here is a transcription…") leak into the output. Never put a raw-oral→clean example in it — Whisper emits a single text, so the prompt only shows what a clean output looks like. A mistuned `suppress_tokens` strips French typographic characters (« » — ').
+Whisper is not instruction-tuned: `initial_prompt` is a stylistic sample to imitate, not an instruction. Meta phrases ("here is a transcription…") leak into the output. Never put a raw-oral→clean example in it — Whisper emits a single text, so the prompt only shows what a clean output looks like.
 
 ## Threshold and log-level pitfalls
 
 - **`entropy_thold` is inverted**: the fallback test is `entropy < threshold`, so a HIGH value is STRICT (re-decodes more often), a LOW one permissive. Re-read before retuning.
-- **`ggml_log_level` defies intuition**: `NONE=0, DEBUG=1, INFO=2, WARN=3, ERROR=4, CONT=5`. Whisper's routine lines (model load, `whisper_full`, VAD) all emit at INFO=2 — map ERROR→error, WARN→warning, else→verbose, or every normal line floods as a warning.
+- **`ggml_log_level` defies intuition**: `NONE=0, DEBUG=1, INFO=2, WARN=3, ERROR=4, CONT=5`. Whisper's routine model-load and `whisper_full` lines emit at INFO=2 — map ERROR→error, WARN→warning, else→verbose, or every normal line floods as a warning.

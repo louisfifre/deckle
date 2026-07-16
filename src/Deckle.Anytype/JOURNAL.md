@@ -7,6 +7,10 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-07-16 — Retired the stale schema snapshot without losing its live residues
+
+Removed `Schema/SCHEMA.md`: its type tables had become a second, drifting source beside `DevSpace.cs` and the live Anytype space. The last verified cleanup state remains here: `tag` is Anytype's auto-transversal residue and stays deliberately unmapped; `État` was removed from Idée; `rpport(s)_lie(s)` (the frozen misspelled key for “Rapport(s) lié(s)”) remains orphaned and should be deleted from the space if the live schema still exposes it. The Anytype MCP was offline during this audit, so that final live-space check is deferred rather than claimed.
+
 ## 2026-07-02 — MCP host HTTP en vif ; hébergement remplacé par une supervision in-process
 
 - **Porte HTTP prouvée bout-en-bout.** Host résident sur `127.0.0.1:33255/mcp`, identité par bearer (`mcp-token-claude`/`-codex` scellés au vault, miroités en env vars `DECKLE_MCP_TOKEN_*`). `initialize`/`tools/list`/`tools/call` réels pour les deux clients, surfaces exactes du stdio (claude 16 outils `delete`/pas de dialogues, codex 18 l'inverse), `401` sans bearer, `403` en session croisée. `list_projects` → `isError:false` une fois le bot membre de Dev.

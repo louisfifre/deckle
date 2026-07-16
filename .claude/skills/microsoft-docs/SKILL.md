@@ -1,6 +1,7 @@
 ---
 name: microsoft-docs
-description: 'Query official Microsoft documentation to find concepts, tutorials, and code examples across Azure, .NET, Agent Framework, Aspire, VS Code, GitHub, and more. Uses Microsoft Learn MCP as the default, with Context7 and Aspire MCP for content that lives outside learn.microsoft.com.'
+description: Find official Microsoft documentation and code samples. Use for Microsoft technologies; prefer Microsoft Learn, with official external docs for Aspire, VS Code, GitHub, and Agent Framework.
+type: skill
 ---
 
 # Microsoft Docs
