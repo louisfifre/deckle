@@ -89,9 +89,8 @@ public sealed class HotkeyManager : IDisposable
             return;
         }
 
-        DeckleShellSource.Log.HotkeyRegistered(vk, hkl.ToInt64());
-
         _bindings.Register(vk);
+        DeckleShellSource.Log.HotkeyRegistered(vk, hkl.ToInt64());
     }
 
     private IntPtr SubclassCallback(

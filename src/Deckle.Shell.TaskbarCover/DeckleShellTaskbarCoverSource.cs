@@ -19,6 +19,10 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
 
     private DeckleShellTaskbarCoverSource() { }
 
+    private bool IsWindowingDetailEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Windowing, this, level, keywords);
+
     // ── Event IDs ─────────────────────────────────────────────────────────────
     // Sequential from 1. IDs are public in the ETW manifest; do not reuse an
     // ID after deleting an event.
@@ -45,6 +49,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtTimerArmFailed        = 21;
     public const int EvtTimerArmFailedDetail  = 22;
     public const int EvtForegroundHookFailed  = 23;
+    public const int EvtLayoutQueryRecovered  = 24;
+    public const int EvtTimerArmRecovered     = 25;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -107,12 +113,13 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     // ── Taskbar layout ────────────────────────────────────────────────────────
 
     [Event(EvtLayoutRebuilt,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
            Message = "Layout rebuilt")]
     public void LayoutRebuilt()
     {
-        if (IsEnabled()) WriteEvent(EvtLayoutRebuilt);
+        if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing))
+            WriteEvent(EvtLayoutRebuilt);
     }
 
     [Event(EvtLayoutRebuiltDetail,
@@ -121,7 +128,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "layout | edge={0} | band=({1},{2})-({3},{4}) | reason={5}")]
     public void LayoutRebuiltDetail(string edge, int left, int top, int right, int bottom, string reason)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
         WriteEvent(EvtLayoutRebuiltDetail, edge, left, top, right, bottom, reason);
     }
 
@@ -132,6 +139,15 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void LayoutQueryFailed()
     {
         if (IsEnabled()) WriteEvent(EvtLayoutQueryFailed);
+    }
+
+    [Event(EvtLayoutQueryRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Windowing,
+           Message = "Taskbar location recovered")]
+    public void LayoutQueryRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtLayoutQueryRecovered);
     }
 
     // ── Cover visibility ──────────────────────────────────────────────────────
@@ -146,7 +162,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "cover shown | reason={0}")]
     public void CoverShown(string reason)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtCoverShown, reason);
     }
 
@@ -156,19 +172,20 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "cover hidden | reason={0}")]
     public void CoverHidden(string reason)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtCoverHidden, reason);
     }
 
     // ── Gates ─────────────────────────────────────────────────────────────────
 
     [Event(EvtCoverSuppressed,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "A fullscreen app is foreground — the cover stands down")]
     public void CoverSuppressed()
     {
-        if (IsEnabled()) WriteEvent(EvtCoverSuppressed);
+        if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCoverSuppressed);
     }
 
     [Event(EvtCoverSuppressedDetail,
@@ -177,26 +194,28 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "suppressed | stage={0}")]
     public void CoverSuppressedDetail(string stage)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtCoverSuppressedDetail, stage);
     }
 
     [Event(EvtCoverUnsuppressed,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "The fullscreen app is gone — the cover is back")]
     public void CoverUnsuppressed()
     {
-        if (IsEnabled()) WriteEvent(EvtCoverUnsuppressed);
+        if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCoverUnsuppressed);
     }
 
     [Event(EvtSystemSuspended,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "Parked for sleep or session lock")]
     public void SystemSuspended()
     {
-        if (IsEnabled()) WriteEvent(EvtSystemSuspended);
+        if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtSystemSuspended);
     }
 
     [Event(EvtSystemSuspendedDetail,
@@ -205,17 +224,18 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "suspended | reason={0}")]
     public void SystemSuspendedDetail(string reason)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtSystemSuspendedDetail, reason);
     }
 
     [Event(EvtSystemResumed,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "Resumed from sleep or unlock")]
     public void SystemResumed()
     {
-        if (IsEnabled()) WriteEvent(EvtSystemResumed);
+        if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtSystemResumed);
     }
 
     [Event(EvtSystemResumedDetail,
@@ -224,7 +244,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Message = "resumed | reason={0}")]
     public void SystemResumedDetail(string reason)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtSystemResumedDetail, reason);
     }
 
@@ -274,5 +294,14 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtTimerArmFailedDetail, timer, win32_error);
+    }
+
+    [Event(EvtTimerArmRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar re-cover timer recovered")]
+    public void TimerArmRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtTimerArmRecovered);
     }
 }

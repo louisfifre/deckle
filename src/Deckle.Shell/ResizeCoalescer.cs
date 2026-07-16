@@ -87,7 +87,12 @@ public sealed class ResizeCoalescer : IDisposable
     {
         if (_registered) return;
         _subclassDelegate = SubclassCallback;
-        NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero);
+        if (!NativeMethods.SetWindowSubclass(
+                _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
+        {
+            throw new InvalidOperationException(
+                $"SetWindowSubclass failed for '{_window}' (Win32 err {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}).");
+        }
         _registered = true;
     }
 
@@ -101,7 +106,8 @@ public sealed class ResizeCoalescer : IDisposable
         {
             case NativeMethods.WM_ENTERSIZEMOVE:
                 _gesture.EnterSizeMove();
-                _gestureClock.Restart();
+                if (IsWindowingDetailEnabled()) _gestureClock.Restart();
+                else _gestureClock.Reset();
                 _lastFrameMs = 0;
                 _onResizeStarted?.Invoke();
                 break;
@@ -117,9 +123,7 @@ public sealed class ResizeCoalescer : IDisposable
                 {
                     ResizeSettlement? settlement = _gesture.Size();
                     if (settlement is null)
-                        traceFrame = OperationalLogAdmission.IsEnabled(
-                            OperationalLogActivity.Windowing)
-                            && DeckleWindowingSource.Log.IsEnabled();
+                        traceFrame = IsWindowingDetailEnabled();
                     else
                         Settle(settlement);  // direct settle (maximize / snap / programmatic)
                 }
@@ -160,17 +164,30 @@ public sealed class ResizeCoalescer : IDisposable
         if (settlement is null) return;
         var s = settlement.Value;
 
-        long durationMs = _gestureClock.IsRunning ? _gestureClock.ElapsedMilliseconds : 0;
+        bool detailEnabled = IsWindowingDetailEnabled();
+        long durationMs = detailEnabled && _gestureClock.IsRunning
+            ? _gestureClock.ElapsedMilliseconds
+            : 0;
         _gestureClock.Reset();
 
-        DeckleWindowingSource.Log.WindowResizeSettled(
-            _window,
-            s.Trigger == ResizeTrigger.Gesture ? "gesture" : "direct",
-            s.Frames,
-            durationMs);
+        if (detailEnabled)
+        {
+            DeckleWindowingSource.Log.WindowResizeSettled(
+                _window,
+                s.Trigger == ResizeTrigger.Gesture ? "gesture" : "direct",
+                s.Frames,
+                durationMs);
+        }
 
         _onResizeSettled();
     }
+
+    private static bool IsWindowingDetailEnabled()
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Windowing,
+            DeckleWindowingSource.Log,
+            System.Diagnostics.Tracing.EventLevel.Verbose,
+            (System.Diagnostics.Tracing.EventKeywords)Keywords.Windowing);
 
     public void Dispose()
     {

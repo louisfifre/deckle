@@ -50,7 +50,14 @@ public sealed class CursorMovementSignal : IDisposable
 
         // Subclass first so the sink's WM_INPUT lands in our callback.
         _subclassDelegate = SubclassCallback;
-        NativeMethods.SetWindowSubclass(_hwnd, _subclassDelegate, SubclassId, IntPtr.Zero);
+        if (!NativeMethods.SetWindowSubclass(
+                _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
+        {
+            int error = Marshal.GetLastWin32Error();
+            DeckleShellSource.Log.CursorSignalRegistrationFailed();
+            DeckleShellSource.Log.CursorSignalRegistrationFailedDetail(error);
+            return;
+        }
 
         var rid = new[]
         {
@@ -73,8 +80,9 @@ public sealed class CursorMovementSignal : IDisposable
         {
             // The sink never armed: Moved will never fire and proximity fade
             // stays off. Surface it — the failure is otherwise invisible.
+            int error = Marshal.GetLastWin32Error();
             DeckleShellSource.Log.CursorSignalRegistrationFailed();
-            DeckleShellSource.Log.CursorSignalRegistrationFailedDetail(Marshal.GetLastWin32Error());
+            DeckleShellSource.Log.CursorSignalRegistrationFailedDetail(error);
         }
     }
 
