@@ -21,33 +21,39 @@ Sources are decentralized by design: each emitting module owns its `Deckle<Modul
 
 ## Levels
 
-Five native `EventLevel`, no custom level (legacy `Narrative` dropped — user text goes through `UserFeedbackEmitted` or a `.resw` string). `Informational` is a progress milestone as a short Capital sentence; it carries the old Info *and* Success (success is in the message, not a level). `Verbose` is machine-greppable detail.
+Five native `EventLevel`, no custom level (legacy `Narrative` dropped — user text goes through `UserFeedbackEmitted` or a `.resw` string). `Informational` is a progress milestone as a short Capital sentence; it carries the old Info *and* Success (success is in the message, not a level). `Verbose` is machine-greppable detail. Level and admission are orthogonal: a repetitive `Informational` outcome may still belong to an off-by-default activity stream, while lifecycle milestones and incident/recovery milestones do not.
 
 Calibration trap: a transient a retry loop absorbs on its own (no user-visible effect, attempt count low) is `Verbose`, not `Warning`. `Warning` is for a degradation a human would want to notice even though it recovers. A recurring line that always self-heals on the first retry is a miscalibrated `Warning`.
 
 ## Verbose ↔ Info separation
 
-**IDs and `k=v` are Verbose-only.** An Info/Warning/Error/Critical `Message` is a short Capital sentence readable with no knowledge of the implementation. If it contains an ID (light id, path, hash, index) or `|` separators, it's a Verbose event by definition — an Info with an ID is a level mistake. When an action needs both a user signal and a technical detail, emit **two events**: a Capital Info without IDs, and its Verbose mirror carrying the IDs as `snake_case` parameters. The mirror always follows the Info. Raw text (transcribed segment, clipboard, prompt) keeps its native casing — it's content, not a message.
+**IDs and `k=v` are Verbose-only.** An Info/Warning/Error/Critical `Message` is a short Capital sentence readable with no knowledge of the implementation. If it contains an ID (light id, path, hash, index) or `|` separators, it's a Verbose event by definition — an Info with an ID is a level mistake. When an action needs both a user signal and a technical detail, emit **two events**: a Capital Info without IDs, and its Verbose mirror carrying the IDs as `snake_case` parameters. The mirror always follows the Info. Raw content is not granted admission merely because it keeps native casing: transcript and typed-text content are excluded from the operational log and belong only to their explicitly consented datasets.
 
 ## Performance
 
 Every `[Event]` is gated by `IsEnabled()` (or `IsEnabled(level, keywords)`) before any payload construction — zero allocation when no listener listens. The parameterized gate only earns its keep when it avoids a construction (string, array, computation).
 
+`IsEnabled()` is not the user verbosity policy: Deckle's shared listener may enable a provider even when one chatty activity is disabled. An activity governed by a verbosity control checks that control **at the producer**, before any probe, measurement, payload, string, array, or counter collection whose only consumer is the operational log. Dropping the resulting event in the dispatcher or a sink is too late to satisfy the control's performance purpose.
+
 ## One dispatch, passive sinks
 
-A single `DispatchEventListener` is the only `EventListener`: it subscribes to the whole `Deckle-*` family, applies the one transverse capture gate, builds the `EventEntry` once, then offers it to every registered `ILogSink`. A sink decides whether it `Wants` the entry and how to `Write` it — it never subscribes to an EventSource itself. The invariant this buys: an event is gated and built once, so the live window and the on-disk journal cannot diverge, and a new sink cannot forget the gate because the gate is not a sink concern. The central gate is provider-level (capture-Verbose silencing during ambient/streaming/autocorrect activity); everything else — routing by event name, user consent gates — lives per-sink in `Wants`.
+A single `DispatchEventListener` is the only `EventListener`: it subscribes to the whole `Deckle-*` family, builds each admitted `EventEntry` once, then offers it to every registered `ILogSink`. A sink decides whether it `Wants` the entry and how to `Write` it — it never subscribes to an EventSource itself. The dispatcher is a fan-out boundary, not the authority for user verbosity: producer-side controls have already prevented the governed operational observations and their log-only work. Per-sink recording and display filters remain sink concerns.
 
-Three consumer contracts, all passive sinks:
+The operational log stream and purpose-specific telemetry datasets are separate authorities. The LogWindow and `app.jsonl` consume only admitted operational observations; dataset-only events are rejected from both even though the shared listener receives them. Telemetry routes consume only events covered by their own explicit consent. A logging verbosity control never disables a telemetry dataset, and telemetry consent never enables an operational observation that its producer gate rejected. A fact needed by both consumers is emitted as two purpose-specific events rather than leaking the dataset event into the journal.
 
-- **HUD** — `HudFeedbackSink` watches the canonical `UserFeedbackEmitted(int severity, string title, string body, int role)` event and ignores everything else. `int` because EventSource rejects user enums; the sink re-encodes from the name-keyed payload. A site wanting feedback calls the milestone event **and** `UserFeedbackEmitted` — no substitution.
-- **Live LogWindow** — `LogWindowSink` takes the whole `Deckle-*` family with no masking at this layer (`Wants` is unconditional); user filtering happens on the UI side. It owns the boot-history ring buffer and replays it when the window attaches lazily.
-- **JSONL** — one `JsonlSink`/`RoutedJsonlSink` per destination route, each with a selection predicate + envelope shape. Two envelopes: self-describing `app.jsonl` (rotated) vs frozen payload-only dataset channels. Concrete wiring lives in `Deckle.Diagnostics.Telemetry`.
+Consumer contracts remain passive sinks:
+
+- **HUD** — `HudFeedbackSink` watches the canonical `UserFeedbackEmitted(int severity, string title, string body, int role)` event and ignores everything else. `int` because EventSource rejects user enums; the sink re-encodes from the name-keyed payload. A site wanting transient in-app feedback calls the milestone event **and** `UserFeedbackEmitted` — no substitution. A persistent background alert belongs to `Deckle.Notifications`, never to the HUD alone.
+- **Live LogWindow** — `LogWindowSink` takes admitted operational events, never dataset-only routes. User filtering happens later on the UI side. It owns the boot-history ring buffer and replays it when the window attaches lazily.
+- **Application JSONL** — the rotated, self-describing `app.jsonl` mirrors admitted operational events after its independent persisted recording filter. It lives under the diagnostics directory and belongs to Logging's contract.
+- **Telemetry JSONL** — one routed payload-only sink per purpose-specific dataset, with an explicit consent predicate and frozen envelope. Dataset wiring lives in `Deckle.Diagnostics.Telemetry`; these events never enter the operational sinks.
 
 A single `SessionId` (`YYYY-MM-DD-XXXX`) is generated on the first emission and shared by all providers as a static on `DeckleEventSource`, so sinks group rows by process session without threading a parameter everywhere.
 
 ## Durable rules
 
 - One step = one start Info, one end Info; Verbose in between if needed, never repeated Infos.
+- A repeating degradation is one incident, never one `Warning` or `Error` per attempt. Raw failed attempts stay `Verbose` while the operation is still recovering within its normal tolerance; open the visible incident only when an operation-specific threshold makes the degradation meaningful, count or summarize further repetitions without repeating the high-severity line, then emit one visible recovery. Verbosity controls never silence `Warning` or `Error`.
 - High-frequency heartbeats (< 1 s) are not logged — they feed UI events, not the LogWindow. The window carries steps, not frames.
 - Every measure has a canonical unit/precision/suffix so the same thing greps everywhere (`_ms`/`_sec`/`_us` durations, `rms` 4 decimals, `dbfs` 1 decimal, …). If a unit is missing, fix the convention before using it — no ad-hoc measure.
 - Logs in English, never a multi-line event, never repeat the module in the message (the Source tag already carries it).

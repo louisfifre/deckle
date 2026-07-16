@@ -639,7 +639,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SettingsSearch.cs
 │   │   └── StreamingCaptureGate.cs
 │   ├── Deckle.Diagnostics.Telemetry/
-│   │   ├── AGENTS.md  — [agent-instructions] Structured JSONL persistence and consent gates.
+│   │   ├── AGENTS.md  — [agent-instructions] Purpose-specific telemetry datasets and their consent gates.
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
 │   │   ├── TelemetryListenerBootstrap.cs

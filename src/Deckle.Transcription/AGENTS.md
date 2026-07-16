@@ -7,6 +7,12 @@ type: agent-instructions
 
 Backend-agnostic voice-transcription orchestrator: hotkey → capture → ASR → optional LLM rewrite → clipboard → optional paste. The ASR implementation lives in a child module behind `IAsrBackend` (`Deckle.Transcription.Whisper` today); the orchestrator never touches P/Invoke, native callbacks, or C structs — a new backend is a new child module, not a change here.
 
+## Operational logging boundary
+
+One off-by-default **Transcription details** policy spans both Dictation and File transcription across Audio, VAD, Whisp, LLM, and delivery providers. Its producer-side checks prevent log-only probes, measurements, formatting, and payload construction; provider boundaries never fragment the user workflow. Lifecycle milestones, durable incidents, and recoveries remain visible.
+
+Raw transcript text never enters the operational LogWindow or `app.jsonl`. Content belongs only to the explicitly consented corpus dataset; operational events carry lengths, timings, modes, and content-free outcomes. Dependency incidents such as microphone, model, VAD, or Ollama availability persist across individual takes until genuine recovery or process restart, while a failure specific to one take closes with that take.
+
 ## Model lifecycle
 
 A model is never loaded at boot — nothing sits in VRAM (3 GB+) while idle. It loads and primes on the first hotkey, then unloads after an idle timeout. Capture and the cold prime start concurrently: the HUD enters `"Recording"` with the real audio immediately, while the prime pays model-load and dummy-inference cost in parallel. The first backend call joins that prime through the shared gate; a normal take hides all or most of the cold cost instead of delaying capture.
