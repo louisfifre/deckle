@@ -358,6 +358,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SecondaryWindowPlacement.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
+│   │   │   ├── CaptureAnomalyEpisode.cs
 │   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
@@ -1227,9 +1228,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpaceWriteLockTests.cs
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
+│   │   ├── CaptureAnomalyEpisodeTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
+│   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   └── TranscriptionPreprocessorTests.cs

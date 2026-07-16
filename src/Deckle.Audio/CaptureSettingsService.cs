@@ -55,8 +55,6 @@ public sealed class CaptureSettingsService
             // longer LogSource.Settings. Delegates remain Action<string> to
             // avoid touching the JsonSettingsStore<T> contract before the wave
             // 4 SettingsHost redesign.
-            logInfo:     msg => DeckleAudioSource.Log.SettingsLoaded(msg),
-            logVerbose:  msg => DeckleAudioSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg));
     }
