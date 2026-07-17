@@ -7,6 +7,14 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-07-17 — PII guard model candidates
+
+Found Rampart is the closest reference for a Deckle privacy guard: a small ONNX token-classification model for PII spans, paired with deterministic detectors, default-deny redaction, stable placeholders and local rehydration. The published Space is static/browser-first; native Windows integration would either host its JS/Web runtime or rebuild the pipeline around ONNX Runtime.
+
+Found more permissive ONNX candidates to benchmark before choosing a dependency: `gravitee-io/bert-small-pii-detection` (Apache-2.0, ONNX, English-focused), `onnx-community/multilang-pii-ner-ONNX` (MIT, ONNX, multilingual including French), `Anonym-IA/V2-camembert-ner-pii-onnx-int8` (MIT, ONNX INT8, French), and `okasi/gliner2-privacy-filter-pii-multi-onnx` (Apache-2.0, ONNX, multilingual GLiNER2).
+
+Rampart-style PII protection belongs around inference/rewrite calls, not inside the live autocorrect loop: autocorrect repairs bounded text locally; the privacy guard masks text before it leaves for a model and rehydrates the response locally.
+
 ## 2026-07-13 — WinAppSDK TitleBar control scales its caption reserve wrong
 
 Measured through the new TitleBar layout probe at 200 % display scale: the native `TitleBar` control stamps its caption padding column with `AppWindowTitleBar.RightInset`'s raw physical pixels (upstream `UpdatePadding` in microsoft-ui-xaml `TitleBar.cpp`, no scale division — their TODO 50724421), so the bar reserves scale× the room the caption buttons take. Same px/DIP confusion on `OverlappedPresenter.PreferredMinimum*`, which are physical pixels. Corrected for the Settings window in `SettingsWindow.CaptionInset.cs` (re-stamps the columns in DIPs; delete when the SDK fixes) and by scaling the presenter minimums; every other window using the `TitleBar` control or presenter minimums (LogWindow, Playground) has the same defect — generalization spun off as its own workstream.
