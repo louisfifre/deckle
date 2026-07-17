@@ -276,6 +276,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── DevSpace.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Anytype core module — headless backend supervision, REST transport, frozen Dev-…
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-anytype [agent-instructions] Anytype integration vocabulary (covers Deckle.Anytype.Mcp) — backend vs MCP hos…
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── JOURNAL.md  — [module-journal] Dated decisions and findings for the Anytype MCP server — founding grilling, AP…
@@ -390,6 +391,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-audio [agent-instructions] Audio vocabulary — display level vs transcription pre-processing, the two notio…
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── IAudioRecordingHost.cs
@@ -481,6 +483,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectSettingsModule.cs
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-autocorrect [agent-instructions] Autocorrect vocabulary — where correction may act (surfaces, enrollment), the t…
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Autocorrect — founding choices, measure…
@@ -600,6 +603,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── RoutedJsonlSink.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Observability foundation — EventSource providers, levels, sinks, JSONL contract.
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-diagnostics [agent-instructions] Observability vocabulary for the Diagnostics family (.Logging, .Telemetry inclu…
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleEventSource.cs
@@ -657,7 +661,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TelemetrySettingsService.cs
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
-│   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary and the per-phase colour-state matrix (digits, do…
+│   │   │   ├── AGENTS.md
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── CONTEXT.md  — context-deckle-hud-chrono [agent-instructions] Chrono HUD element vocabulary — the face's eight elements, accent twins, and th…
 │   │   │   ├── HudChrono.Clock.cs
 │   │   │   ├── HudChrono.Reveal.cs
 │   │   │   ├── HudChrono.RevealMask.cs
@@ -719,6 +725,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TouchpadReport.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-input [agent-instructions] Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Input — founding choices, measurements,…
@@ -744,6 +751,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Trackpad domain module — three-finger drag recognizer and engine, module settin…
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-input-trackpad [agent-instructions] Trackpad gesture vocabulary — the recognizer as the state machine that owns ges…
 │   │   ├── Deckle.Input.Trackpad.csproj
 │   │   ├── DeckleTrackpadSource.cs
 │   │   ├── SettingsSearch.cs
@@ -871,6 +879,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ViewModels/
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
+│   │   ├── CONTEXT.md  — context-deckle-llm-rewrite [agent-instructions] Rewrite service vocabulary — the single service every rewrite goes through, who…
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
@@ -1132,6 +1141,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── WhisperViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
 │   │   ├── CLAUDE.md
+│   │   ├── CONTEXT.md  — context-deckle-transcription [agent-instructions] Transcription vocabulary — the two entry points (dictation, file transcription)…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
@@ -1428,6 +1438,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Vision.Tests/
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   └── DeckleVisionSourceTests.cs
+│   ├── CONTEXT.md  — context-deckle-tests [agent-instructions] Test taxonomy — the four categories inside the automatic scope (unit, integrati…
 │   └── Directory.Build.props
 ├── .editorconfig
 ├── .gitattributes
@@ -1435,7 +1446,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── AGENTS.md  — [agent-instructions] Root agent-instructions for Deckle — identity, hard rules, posture, and where t…
 ├── CHANGELOG.md
 ├── CLAUDE.md
-├── CONTEXT.md  — context-deckle [agent-instructions] Project glossary for Deckle — shared vocabulary, term-of-art definitions, namin…
+├── CONTEXT-MAP.md  — context-map-deckle [agent-instructions] Index of Deckle's bounded-context glossaries — where each module's CONTEXT.md l…
+├── CONTEXT.md  — context-deckle [agent-instructions] System-wide Deckle vocabulary — terms that classify across modules and belong t…
 ├── CONTRIBUTING.md
 ├── deckle.code-workspace
 ├── Deckle.Tests.sln
