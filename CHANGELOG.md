@@ -9,6 +9,28 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.13.0](https://github.com/louisfifre/deckle/compare/v0.12.0...v0.13.0) — 2026-07-18
+
+### Added
+
+- **diagnostics:** Gate input activity and relocate wheel capture
+- **hud:** Honor motion preferences across overlay feedback
+- **app:** Make log transfers explicit and rows readable
+
+### Changed
+
+- **diagnostics:** Centralize operational detail admission
+- **transcription:** Align observations with workflow stages
+- **audio:** Aggregate capture anomaly episodes
+- **llm:** Gate diagnostic model polling
+- **ambient:** Model lifecycle recovery episodes
+- **input:** Gate activity diagnostics and recovery
+- **shell:** Gate windowing diagnostics
+- **anytype:** Demote self-healing retry diagnostics
+- **settings:** Silence successful persistence loads
+- **speech:** Silence successful settings loads
+- **app:** Clarify lifecycle milestones
+
 ## [0.12.0](https://github.com/louisfifre/deckle/compare/v0.9.2...v0.12.0) — 2026-07-16
 
 ### Added
