@@ -35,7 +35,8 @@ namespace Deckle.App;
 // Model:
 //   _entries : full buffer (cap 5000) — every LogEntry, any event
 //   _visible : displayed subset (structured filter + search)
-// Copy/Save operate on _visible — the user copies what they see.
+// Copy/Save resolve an explicit All / Filtered / Selection snapshot from the
+// full in-memory buffer. The viewport is never a transfer boundary.
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {

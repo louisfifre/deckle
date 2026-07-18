@@ -325,6 +325,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── LogEntry.cs
+│   │   │   ├── LogEntryRow.xaml
+│   │   │   ├── LogEntryRow.xaml.cs
 │   │   │   ├── LogEntryTemplateSelector.cs
 │   │   │   └── NetworkStatusEmitter.cs
 │   │   ├── Engine/
@@ -652,6 +654,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogFilterToken.cs
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
+│   │   ├── LogTransfer.cs
 │   │   ├── LogWindowFilterSession.cs
 │   │   ├── SettingsSearch.cs
 │   │   └── TranscriptionActivityScope.cs
@@ -1332,6 +1335,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
 │   │   ├── LoggingSettingsTests.cs
+│   │   ├── LogTransferTests.cs
 │   │   ├── OperationalSinkRoutingTests.cs
 │   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/

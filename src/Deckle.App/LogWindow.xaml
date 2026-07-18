@@ -15,101 +15,45 @@
                      binds its Foreground to a ThemeResource: WinUI re-resolves
                      on theme switch without needing to recreate rows. -->
                 <DataTemplate x:Key="NoWrap_Verbose">
-                    <TextBlock Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Info">
-                    <TextBlock Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Warning">
-                    <TextBlock Foreground="{ThemeResource SystemFillColorCautionBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Error">
-                    <TextBlock Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
 
                 <DataTemplate x:Key="Wrap_Verbose">
-                    <TextBlock Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Info">
-                    <TextBlock Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Warning">
-                    <TextBlock Foreground="{ThemeResource SystemFillColorCautionBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Error">
-                    <TextBlock Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
 
                 <!-- Telemetry rows (latency / corpus / microphone): rendered
@@ -118,76 +62,34 @@
                      drowning in the Verbose firehose. Text is precomputed by
                      LogEntry when wrapping EventEntry. -->
                 <DataTemplate x:Key="NoWrap_Latency">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Corpus">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="NoWrap_Microphone">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MessageWrapping="NoWrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Latency">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Corpus">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
                 <DataTemplate x:Key="Wrap_Microphone">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               FontFamily="Consolas"
-                               FontSize="12"
-                               TextWrapping="Wrap">
-                        <Run Text="{Binding TimestampText}"
-                             FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                             Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <Run Text="{Binding SourceText}" />
-                        <Run Text="{Binding MessageText}" />
-                    </TextBlock>
+                    <local:LogEntryRow
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        MessageWrapping="Wrap" />
                 </DataTemplate>
 
                 <diag:LogEntryTemplateSelector x:Key="NoWrapSelector"
@@ -207,13 +109,21 @@
                     Corpus="{StaticResource Wrap_Corpus}"
                     Microphone="{StaticResource Wrap_Microphone}" />
 
+                <MenuFlyout x:Key="LogContextFlyout"
+                            Opening="OnLogContextFlyoutOpening">
+                    <MenuFlyoutItem x:Uid="LogWindowCopyMenuItem"
+                                    Icon="Copy"
+                                    Click="OnContextCopyClick" />
+                </MenuFlyout>
+
                 <!-- Compact container for dense log rendering: reduced padding,
-                     hover highlight preserved (signals click-to-copy). -->
+                     native hover and selection feedback preserved. -->
                 <Style x:Key="LogItemContainerStyle" TargetType="ListViewItem">
                     <Setter Property="MinHeight" Value="0" />
                     <Setter Property="Padding" Value="4,1" />
                     <Setter Property="Margin" Value="0" />
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="ContextFlyout" Value="{StaticResource LogContextFlyout}" />
                 </Style>
             </ResourceDictionary>
         </Grid.Resources>
@@ -272,32 +182,55 @@
             <!-- Content stays anchored left while the primary view controls
                  use CommandBar's native right alignment and dynamic overflow. -->
             <CommandBar.Content>
-                <CommandBar DefaultLabelPosition="Right"
-                            Background="Transparent"
-                            IsDynamicOverflowEnabled="False"
-                            IsOpen="False">
-                    <AppBarButton x:Name="CopyButton"
-                                  x:Uid="LogWindowCopyButton"
-                                  Click="OnCopyClick">
-                        <AppBarButton.Icon>
-                            <FontIcon Glyph="{StaticResource Icon.Copy}" />
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarButton x:Name="SaveButton"
-                                  x:Uid="LogWindowSaveButton"
-                                  Click="OnSaveClick">
-                        <AppBarButton.Icon>
-                            <FontIcon Glyph="{StaticResource Icon.Save}" />
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarButton x:Name="ClearButton"
-                                  x:Uid="LogWindowClearButton"
-                                  Click="OnClearClick">
-                        <AppBarButton.Icon>
-                            <FontIcon Glyph="{StaticResource Icon.Delete}" />
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                </CommandBar>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0">
+                    <SplitButton x:Name="CopyButton"
+                                 Click="OnCopyAllClick">
+                        <SplitButton.Content>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{StaticResource Icon.Copy}" FontSize="16" />
+                                <TextBlock x:Uid="LogWindowCopyAllText" />
+                            </StackPanel>
+                        </SplitButton.Content>
+                        <SplitButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem x:Uid="LogWindowCopySelectionMenuItem"
+                                                Icon="Copy"
+                                                Click="OnCopySelectionClick" />
+                                <MenuFlyoutItem x:Uid="LogWindowCopyFilteredMenuItem"
+                                                Icon="Filter"
+                                                Click="OnCopyFilteredClick" />
+                            </MenuFlyout>
+                        </SplitButton.Flyout>
+                    </SplitButton>
+
+                    <SplitButton x:Name="SaveButton"
+                                 Click="OnSaveAllClick">
+                        <SplitButton.Content>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="{StaticResource Icon.Save}" FontSize="16" />
+                                <TextBlock x:Uid="LogWindowSaveAllText" />
+                            </StackPanel>
+                        </SplitButton.Content>
+                        <SplitButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem x:Uid="LogWindowSaveSelectionMenuItem"
+                                                Icon="Save"
+                                                Click="OnSaveSelectionClick" />
+                                <MenuFlyoutItem x:Uid="LogWindowSaveFilteredMenuItem"
+                                                Icon="Save"
+                                                Click="OnSaveFilteredClick" />
+                            </MenuFlyout>
+                        </SplitButton.Flyout>
+                    </SplitButton>
+
+                    <Button x:Name="ClearButton"
+                            Click="OnClearClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="16" />
+                            <TextBlock x:Uid="LogWindowClearText" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </CommandBar.Content>
 
             <!-- Filters remains the leftmost view control. Word wrap and
@@ -340,39 +273,54 @@
 
         <!-- ── Log surface ────────────────────────────────────────────────── -->
         <!-- ListView owns selection, virtualization and scrolling. Extended
-             selection supplies the standard Ctrl/Shift gestures; every copy
-             entry point uses the same selection-or-visible rule. -->
+             selection supplies the standard Ctrl/Shift gestures. -->
         <Grid Grid.Row="3" x:Name="LogSurface">
-            <!-- Bottom padding 24 keeps the last line above the horizontal
-                 scrollbar (which floats over the content in WinUI 3). Without
-                 it, when scrolled to the bottom, the freshest line is masked
-                 by the scrollbar — and the bottom is exactly where new entries
-                 land. -->
             <ListView x:Name="LogItems"
                       Background="{ThemeResource LayerFillColorDefaultBrush}"
                       BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                       BorderThickness="0,1,0,0"
-                      Padding="12,4,12,24"
+                      Padding="12,4,12,0"
                       ItemContainerStyle="{StaticResource LogItemContainerStyle}"
                       ItemTemplateSelector="{StaticResource NoWrapSelector}"
                       SelectionMode="Extended"
                       IsItemClickEnabled="False"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.HorizontalScrollMode="Enabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ContextFlyout="{StaticResource LogContextFlyout}"
+                      RightTapped="OnLogItemsRightTapped">
+                <ListView.Resources>
+                    <!-- Keep native ScrollBar templates/thumbs and only replace
+                         their transparent rails + separator with the exact log
+                         surface brush. Text may extend beneath them but cannot
+                         bleed through in either theme. -->
+                    <StaticResource x:Key="ScrollBarBackground" ResourceKey="LayerFillColorDefaultBrush" />
+                    <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="LayerFillColorDefaultBrush" />
+                    <StaticResource x:Key="ScrollBarBackgroundDisabled" ResourceKey="LayerFillColorDefaultBrush" />
+                    <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="LayerFillColorDefaultBrush" />
+                    <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="LayerFillColorDefaultBrush" />
+                    <StaticResource x:Key="ScrollBarTrackFillDisabled" ResourceKey="LayerFillColorDefaultBrush" />
+                    <StaticResource x:Key="ScrollViewerScrollBarSeparatorBackground" ResourceKey="LayerFillColorDefaultBrush" />
+                </ListView.Resources>
                 <ListView.ItemContainerTransitions />
                 <ListView.KeyboardAccelerators>
                     <KeyboardAccelerator Key="C"
                                          Modifiers="Control"
                                          Invoked="OnCopyKeyboardAcceleratorInvoked" />
                 </ListView.KeyboardAccelerators>
-                <ListView.ContextFlyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem x:Uid="LogWindowCopyMenuItem"
-                                        Icon="Copy"
-                                        Click="OnCopyClick" />
-                    </MenuFlyout>
-                </ListView.ContextFlyout>
+                <ListView.Footer>
+                    <!-- Five real, measured row heights. This structural tail
+                         never enters ItemsSource, so it cannot be selected,
+                         copied or exported. -->
+                    <StackPanel IsHitTestVisible="False"
+                                AutomationProperties.AccessibilityView="Raw">
+                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
+                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
+                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
+                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
+                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
+                    </StackPanel>
+                </ListView.Footer>
             </ListView>
         </Grid>
     </Grid>

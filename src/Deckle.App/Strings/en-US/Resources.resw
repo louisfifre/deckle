@@ -1441,10 +1441,31 @@
   <data name="LogWindowCopyButton.Label" xml:space="preserve">
     <value>Copy</value>
   </data>
+  <data name="LogWindowCopyAllText.Text" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <data name="LogWindowCopySelectionMenuItem.Text" xml:space="preserve">
+    <value>Copy selection</value>
+  </data>
+  <data name="LogWindowCopyFilteredMenuItem.Text" xml:space="preserve">
+    <value>Copy filtered</value>
+  </data>
   <data name="LogWindowSaveButton.Label" xml:space="preserve">
     <value>Save</value>
   </data>
+  <data name="LogWindowSaveAllText.Text" xml:space="preserve">
+    <value>Save all</value>
+  </data>
+  <data name="LogWindowSaveSelectionMenuItem.Text" xml:space="preserve">
+    <value>Save selection</value>
+  </data>
+  <data name="LogWindowSaveFilteredMenuItem.Text" xml:space="preserve">
+    <value>Save filtered</value>
+  </data>
   <data name="LogWindowClearButton.Label" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="LogWindowClearText.Text" xml:space="preserve">
     <value>Clear</value>
   </data>
   <data name="LogWindowFiltersToggle.Label" xml:space="preserve">
@@ -1479,6 +1500,18 @@
   </data>
   <data name="LogWindowCopyMenuItem.Text" xml:space="preserve">
     <value>Copy</value>
+  </data>
+  <data name="LogWindow_ContextCopy_One" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="LogWindow_ContextCopy_Selection" xml:space="preserve">
+    <value>Copy selection</value>
+  </data>
+  <data name="LogWindow_ContextCopy_Filtered" xml:space="preserve">
+    <value>Copy filtered</value>
+  </data>
+  <data name="LogWindow_ContextCopy_All" xml:space="preserve">
+    <value>Copy all</value>
   </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────

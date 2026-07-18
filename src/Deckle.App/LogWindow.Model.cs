@@ -6,6 +6,7 @@ using Deckle.Diagnostics.Logging;
 using Deckle.Shell;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.App;
 
@@ -79,6 +80,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void ClearAll()
     {
+        AppDiagnosticsBootstrap.ClearLogWindowHistory();
         while (_pendingEntries.TryDequeue(out _)) { }
         _entries.Clear();
         _visible.Clear();
@@ -149,7 +151,17 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (_visible.Count == 0) return;
         try
         {
-            LogItems.ScrollIntoView(_visible[_visible.Count - 1]);
+            // ScrollIntoView(last entry) stops before ListView.Footer. Force a
+            // layout pass, then move to the full extent including the five-line
+            // tail. disableAnimation keeps insertion/autoscroll independent of
+            // both Windows and HUD animation preferences.
+            LogItems.UpdateLayout();
+            ScrollViewer? viewer = GetListViewScrollViewer();
+            viewer?.ChangeView(
+                horizontalOffset: null,
+                verticalOffset: viewer.ScrollableHeight,
+                zoomFactor: null,
+                disableAnimation: true);
         }
         catch (Exception ex)
         {

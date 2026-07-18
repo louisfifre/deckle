@@ -26,6 +26,28 @@ public sealed class LogLineFormatterTests
         Assert.Equal("CaptureStarted", LogLineFormatter.GetParts(entry).Message);
     }
 
+    [Fact]
+    public void Canonical_text_keeps_long_source_and_message_in_full()
+    {
+        string source = "Deckle-Notifications-Provider-With-A-Long-Name";
+        string message = new('m', 20_000);
+        var entry = new EventEntry(
+            timestamp: new DateTimeOffset(2026, 7, 14, 12, 34, 56, 789, TimeSpan.Zero),
+            provider: source,
+            eventName: "LongEntry",
+            level: EventLevel.Informational,
+            keywords: EventKeywords.None,
+            kind: ObservationKind.Operational,
+            formattedMessage: message,
+            payload: new Dictionary<string, object?>());
+
+        LogLineParts parts = LogLineFormatter.GetParts(entry);
+
+        Assert.Equal("NOTIFICATIONS-PROVIDER-WITH-A-LONG-NAME", parts.Source);
+        Assert.Contains(parts.Source, parts.Text);
+        Assert.EndsWith(message, parts.Text);
+    }
+
     private static EventEntry Entry(string? formattedMessage) =>
         new(
             timestamp: new DateTimeOffset(2026, 7, 14, 12, 34, 56, 789, TimeSpan.Zero),

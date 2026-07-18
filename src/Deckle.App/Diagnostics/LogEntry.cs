@@ -33,7 +33,7 @@ public sealed class LogEntry
         LogLineParts parts = LogLineFormatter.GetParts(entry);
         Text = parts.Text;
         TimestampText = parts.Timestamp;
-        SourceText = $" [{parts.Source}] ";
+        SourceText = parts.Source;
         MessageText = parts.Message;
     }
 }

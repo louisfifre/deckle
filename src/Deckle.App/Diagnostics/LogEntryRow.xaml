@@ -1,0 +1,53 @@
+<UserControl
+    x:Class="Deckle.App.LogEntryRow"
+    x:Name="Root"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The invisible probes make the first two columns structural rather than
+         numeric guesses: 12 timestamp glyphs and 13 source glyphs in the same
+         font as the visible row. Only the message receives TextWrapping. -->
+    <Grid HorizontalAlignment="Stretch">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Margin="0,0,12,0">
+            <TextBlock Text="00:00:00.000"
+                       Opacity="0"
+                       IsHitTestVisible="False"
+                       FontFamily="Consolas"
+                       FontSize="12" />
+            <TextBlock Text="{Binding TimestampText}"
+                       FontFamily="Consolas"
+                       FontSize="{ThemeResource CaptionTextBlockFontSize}"
+                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+        </Grid>
+
+        <Grid Grid.Column="1" Margin="0,0,12,0">
+            <TextBlock x:Name="SourceWidthProbe"
+                       Text="0000000000000"
+                       Opacity="0"
+                       IsHitTestVisible="False"
+                       FontFamily="Consolas"
+                       FontSize="12" />
+            <TextBlock Text="{Binding SourceText}"
+                       MaxWidth="{x:Bind SourceWidthProbe.ActualWidth, Mode=OneWay}"
+                       FontFamily="Consolas"
+                       FontSize="12"
+                       Foreground="{x:Bind Root.Foreground, Mode=OneWay}"
+                       TextTrimming="CharacterEllipsis"
+                       TextWrapping="NoWrap"
+                       ToolTipService.ToolTip="{Binding SourceText}" />
+        </Grid>
+
+        <TextBlock Grid.Column="2"
+                   Text="{Binding MessageText}"
+                   FontFamily="Consolas"
+                   FontSize="12"
+                   Foreground="{x:Bind Root.Foreground, Mode=OneWay}"
+                   TextWrapping="{x:Bind MessageWrapping, Mode=OneWay}" />
+    </Grid>
+</UserControl>
