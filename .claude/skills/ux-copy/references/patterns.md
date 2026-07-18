@@ -1,101 +1,89 @@
-# Pattern skeletons
+# Patterns
 
-Each pattern: invariant skeleton, then worked examples. Voice varies per product (see voice-and-tone.md); the skeletons don't.
+One skeleton per surface, invariant; the voice that renders it lives in voice-and-tone.md.
 
-Contents: [Buttons & CTAs](#buttons--ctas) · [Links](#links) · [Errors](#error-messages) · [Empty states](#empty-states) · [Confirmations](#confirmation-dialogs) · [Success & notifications](#success-messages-toasts-notifications) · [Loading & progress](#loading--progress) · [Forms](#forms-labels-placeholders-helper-text-validation) · [Tooltips](#tooltips) · [Settings](#settings-labels--descriptions) · [Onboarding](#onboarding) · [Localization](#string-authoring-for-localization)
+## Buttons
 
-## Buttons & CTAs
+`[Verb] [object]` — the outcome, not the mechanism; show the state the click produces (a playing player offers Pause).
 
-Skeleton: `[Verb] [specific object]` — 1–3 words, the outcome, not the mechanism. Show the state the click *produces* (a playing player shows "Pause").
+| Weak | Strong |
+|---|---|
+| Submit | Create account |
+| OK | Close |
+| Yes / No | Delete file / Keep file |
+| Get started | Take the style quiz |
+| Learn more | See pricing details |
 
-| Weak | Strong | Why |
-|---|---|---|
-| Submit | Create account | Names the outcome |
-| OK (dismissal) | Close | "OK" implies the problem is OK |
-| Get started | Take the style quiz | "Get started" fits any goal, so it informs none |
-| Yes / No | Delete file / Keep file | Users act on the label alone, skipping body text |
-| Learn more | See pricing details | Must stand alone out of context |
-| + Add | + | Let the icon talk when it's unambiguous |
-
-Fixed lexicon stays fixed: Back, Cancel, Done, Next, Skip — same word everywhere it appears. "Create" = new resource; "Add" = existing resource brought in; "Install" = software.
+The fixed lexicon stays fixed — Back, Cancel, Done, Next, Skip — the same word everywhere it appears. Create makes a new resource; Add brings in an existing one; Install is for software.
 
 ## Links
 
-The 4 Ss (NN/g, eyetracking-backed): **Specific** (what's on the other side), **Sincere** (the label is the actual destination), **Substantial** (makes sense read alone — users read link text without surrounding copy), **Succinct** (but the first three win over brevity). Front-load: the first words carry the click decision.
+Front-load: the first words carry the click. A link label is specific (what is on the other side), sincere (the label is the actual destination), and substantial (it reads alone — users read link text without the copy around it). Brevity comes last of the four.
 
-## Error messages
+## Errors
 
-Skeleton: `[What happened] + [why, only if it helps] + [how to fix]` — 12–18 words when possible, next to the source, preserved input, one message per detectable cause.
+`[What happened] + [why, only if it helps] + [how to fix]` — next to its source, in words rather than color or an icon alone, input preserved, one message per detectable cause.
 
-- ✗ "An error occurred." → ✓ "This file is too large (max 10 MB). Try compressing it."
-- ✗ "Invalid email." → ✓ "This doesn't look like an email address. Check for typos?"
-- ✗ "Field is blank." → ✓ "Enter your street address."
-- ✗ "You entered the wrong password." → ✓ "Incorrect password." (passive is *correct* here — active voice would blame the user)
-- ✗ "Error 0x80070005." → ✓ "Deckle can't access the microphone. Allow microphone access in Windows Settings > Privacy." (code goes below, as `Error code: ####`, only if actionable for support)
+- "An error occurred." → "This file is too large (max 10 MB). Try compressing it."
+- "Invalid email." → "This doesn't look like an email address. Check for typos."
+- "Password too short." → "Password must be at least 8 characters."
+- "You entered the wrong password." → "Incorrect password." — name the state, not the actor: a sentence with the user as subject would blame.
+- Guess the fix when you can — "Did you mean gmail.com?" — except where the hint would leak what a secret should look like.
 
-Guess the fix when you can: "Did you mean **gmail.com**?" State the requirement, not the violation: "Password must be at least 8 characters" > "Password too short". No humor — errors repeat, jokes stale.
-
-Hierarchy: **prevent** (constrained controls, good defaults, auto-correction) > **tolerate** (accept flexible formats) > **recover** (a good message). Don't report states the user considers fine.
+Prevent, then tolerate, then recover: a constrained control first, a flexible format accepted next, the message as last resort. A message earns its place only for a state the user would call a problem.
 
 ## Empty states
 
-Three jobs, in order: state the status → teach → give a real pathway (an actual button, not advice).
+Status, then teaching, then a real pathway — the button that fills the surface or, when the filling action lives outside it, the one instruction that triggers it. Open with the status as a plain statement; it stays plain on the hundredth visit.
 
 - First use: "No projects yet. Create your first project to start collaborating." + [Create project]
-- User-cleared: "Your inbox is clear. New messages will appear here." (reassure, don't push)
-- Filtered/no results: "No records for this date range." + [Clear filters]
-- Learning cue pattern: "Star your favorites, and you'll see them here."
+- User-cleared: "Your inbox is clear. New messages will appear here." — reassure, don't push.
+- No results: "No records for this date range." + [Clear filters]
 
-Avoid: "It's lonely in here" (cliché), question-form openers ("Haven't connected a printer?" — pressure, condescension when repeated).
+## Confirmations
 
-## Confirmation dialogs
+Only for the unexpected or irreversible — overuse breeds automatic dismissal, and undo beats asking. The heading states the outcome, as a question or a plain statement, count included; names — files, apps, accounts — go in the body, where truncation can't eat them. The safe button is the default and holds focus — Enter never commits the destructive verb; typed confirmation for the highest stakes.
 
-Only when the outcome is unexpected or irreversible — habituation destroys overused confirmations; prefer undo where feasible.
+- "Are you sure?" [OK] [Cancel] → "Delete 3 recordings?" / "This can't be undone." [Delete] [Cancel]
+- Result before action: "To restart now, select Restart" — the consequence meets the reader before the button does.
 
-Skeleton: heading = the outcome as a question with the count; body = details and the variable (item names — variables never go in headings, they truncate); buttons restate the verb; default focus on the safe option; no default at all for the truly destructive; high-risk → typed confirmation.
+## Success and notifications
 
-- ✗ "Are you sure?" [OK] [Cancel] → ✓ "Delete 3 recordings?" / "This can't be undone." [Delete] [Cancel]
-- Simple action → specific verbs ("Delete all" / "Cancel"). Complex destructive → "Yes" / "No" forces reading the question.
-- Result before action in instructions: "To restart Windows, select OK" — not "Select OK to restart Windows" (prevents reflex clicks).
+Past tense, specific, short: "Changes saved." "Link copied." An operation carries its object through its whole life — "Creating the volume 'Customer data'…", then "Successfully created…" or "Couldn't create…" — so the user knows which operation speaks. A background operation's failure lands in a persistent, actionable notification — its only channel; the fading toast is reserved for news that can afford to be missed.
 
-## Success messages, toasts, notifications
+## Loading
 
-- Success: past tense, specific, short, full-sentence punctuation: "Changes saved." "Link copied."
-- Progression triad (Windows Admin Center pattern): in progress = verb + ellipsis ("Creating the volume 'Customer data'…"); success = "Successfully created the volume 'Customer data'."; failure = "Couldn't create the volume 'Customer data'." Include the object variable so the user knows which operation this is.
-- Channel matches severity: toast/banner for passive info, modal only for must-resolve. **Never put an error in a toast** — it fades before it's seen.
-- Every notification is an interruption costing real recovery time; justify it or batch it.
+Up to a second, nothing. Past that and until ten, a spinner and what's happening: "Generating report…". Past ten, percent done and an honest estimate. The ellipsis marks in-progress.
 
-## Loading & progress
+## Forms
 
-Thresholds (classic HCI, empirical): < 1 s — nothing. 2–10 s — spinner + what's happening ("Generating report…"). > 10 s — percent-done progress and, if possible, a time estimate. Ellipsis marks the in-progress state.
-
-## Forms: labels, placeholders, helper text, validation
-
-- **Label**: persistent, visible, above the field, readable out of context ("Billing phone", not "Phone" under a heading). Placeholder-as-label failed in every large-scale test — input erases the label, users can't verify or recover.
-- **Placeholder**: format example only ("name@example.com"), never instructions, never required info.
-- **Helper text**: states requirements *before* the error ("Use 8+ characters with a number."), outside the field, persistent.
-- **Validation timing is copy too**: validate on leaving the field (or at full length for fixed-length fields); never mid-typing; clear the error on the keystroke that fixes it; confirm success positively.
+"Billing phone", not "Phone" under a heading — the label survives away from its page. Placeholder shows the format: "name@example.com". Helper text states the requirement ahead of the error: "Use 8+ characters with a number." Validate on leaving the field — or the moment a fixed-length field, a card number, is full; clear the error on the keystroke that fixes it, and confirm success positively.
 
 ## Tooltips
 
-Supplementary only — the surface disappears, so nothing task-critical, no requirements, no instructions the user must retain. Never repeat the visible label; add something ("Visible only to your team."). Unlabeled icon → noun phrase ("Highlighting pen"); labeled-but-unclear control → imperative ("Find text in this file"). Shortcut in parentheses: "Print (Ctrl+P)". No terminal period unless multiple sentences.
+Add something, never repeat the label: "Visible only to your team." Unlabeled icon → noun phrase ("Highlighting pen"); unclear control → imperative ("Find text in this file"). Shortcut in parentheses: "Print (Ctrl+P)".
 
-## Settings labels & descriptions
+## Settings
 
-- Label = the thing controlled, noun-first, no verb padding: "Startup sound", not "Enable startup sound" (the toggle already says on/off).
-- Description = the consequence, one sentence, no period-ambiguity with the label above: "Play a sound when Deckle starts."
-- First person marks user ownership in controls: "Remember my password", "Notify me when a transcript is ready".
-- Same term as everywhere else in the product — settings pages are where terminology drift shows first.
+The words live here; what to expose and which control belong to the settings doctrine. Noun-first when the setting names a thing: "Startup sound" — the toggle already says on and off. A short verb phrase when it names a behavior with no natural noun: "Run at startup". First person when it acts on the user's data or attention: "Remember my password", "Notify me when a transcript is ready". What goes is the Enable/Allow prefix, never the verb itself. The description states the consequence in one sentence: "Play a sound when Deckle starts."
 
 ## Onboarding
 
-One concept per surface, dismissible, never blocking. Cap tips at ~4 per session. Teach at the moment of relevance, not upfront. "Show, then get out of the way" — offer just enough to start, then disappear.
+One concept per surface, dismissible, at the moment of relevance — the session stays the user's. Show, then get out of the way.
 
-## String authoring for localization
+## Plain words
 
-- One string = one whole sentence; punctuation inside the translatable unit. Never assemble sentences from fragments — word order, gender, and declension differ per language.
-- Named or positional placeholders the translator can reorder: `Items in the cart: {count}` — never `"text " + var`.
-- Plurals are authored as distinct forms (ICU plural categories), never "{n} item(s)".
-- Don't reuse one string in two grammatical roles (a word valid as a label may be wrong as a button).
-- Budget for expansion: strings ≤10 chars can grow +200–300% in translation; the tightest slots (buttons, tabs, headers) grow the most.
-- Give translators context comments on every string with a placeholder.
+| Instead of | Say |
+|---|---|
+| utilize | use |
+| enable | turn on |
+| assist | help |
+| approximately | about |
+| initiate | start |
+| purchase | buy |
+| terminate | end |
+| sufficient | enough |
+
+## Localization
+
+The unit is the whole sentence — "Items in the cart: {count}" — the translator reorders the placeholders, and the punctuation travels inside. A word valid as a label may be wrong as a button: one string, one grammatical role. Give the translator a context comment wherever a placeholder lives, and budget the tightest slots — buttons, tabs, headers — to double or triple.
