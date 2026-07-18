@@ -131,6 +131,7 @@ public sealed partial class HudOverlayWindow : Window
         // FadeIn / FadeOut; proximity mixes in at runtime via instant FadeTo
         // updates driven by the shared cursor signal (no animation overhead).
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
+        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
 
         // Theme: wires ActualThemeChanged for transient overlays. An overlay
         // lives 2-8 s; a theme change during display is rare but possible (the
@@ -157,6 +158,20 @@ public sealed partial class HudOverlayWindow : Window
     }
 
     public IntPtr Hwnd => _hwnd;
+
+    private void OnSystemAnimationsChanged(bool enabled)
+    {
+        if (DispatcherQueue.HasThreadAccess)
+        {
+            _fade?.SetAnimationsEnabled(enabled);
+            return;
+        }
+
+        DispatcherQueue.TryEnqueueObserved(
+            "ui-update", "hud-overlay-window",
+            () => _fade?.SetAnimationsEnabled(enabled),
+            "HUD", "system animation preference change");
+    }
 
     // Pushes the feedback payload into the embedded HudMessage control. The
     // Duration field of MessagePayload is unused here (HudMessage ignores it);
@@ -317,6 +332,7 @@ public sealed partial class HudOverlayWindow : Window
     // The manager calls this after the fade-out animator completes.
     public void ForceClose()
     {
+        SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
         EndProximityMode();
         _fade?.Cancel();
 

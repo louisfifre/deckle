@@ -252,7 +252,7 @@ public sealed partial class HudWindow : Window
     //   - Other cases (state switch while visible, animations off) →
     //     instant alpha, proximity activated immediately.
     private static bool ShouldFadeIn(bool wasShown) =>
-        !wasShown && AnimationSystemSetting.AreClientAreaAnimationsEnabled();
+        !wasShown && SystemAnimationPreference.Instance.AnimationsEnabled;
 
     private void ApplyShowAlpha(byte targetAlpha, bool shouldFadeIn)
     {

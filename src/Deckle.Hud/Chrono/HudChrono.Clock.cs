@@ -68,7 +68,7 @@ public sealed partial class HudChrono
 
     // Freeze on the final value. UpdateClock latches the elapsed reached between
     // the last vsync tick and the Stop (may light the last-changed digit) — it
-    // must run before the swipe starts, which the caller guarantees by calling
+    // must run before the processing reveal starts, which the caller guarantees by calling
     // StopClock before SetState(Transcribing).
     public void StopClock()
     {
@@ -77,14 +77,13 @@ public sealed partial class HudChrono
     }
 
     // Reset the visible chrono face to a pristine zero: invalidate the
-    // last-rendered cache so UpdateClock repaints every position, drop the
-    // per-digit "ever-changed" flags and accent heat (the accent flash state), and
+    // last-rendered cache so UpdateClock repaints every position, clear the
+    // accent flash state, and
     // write the glyphs straight to "0" via ResetDigitTexts (not WriteDigit,
     // which would treat the change as a tick and flash it).
     private void ClearDigitDisplay()
     {
         _lastMin = _lastSec = _lastCs = -1;
-        ClearDigitChanged();
         ClearDigitHeat();
         ResetDigitTexts();
     }
@@ -104,27 +103,20 @@ public sealed partial class HudChrono
     }
 
     // Writes `newText` onto both the primary and accent TextBlocks at
-    // `index`, flags the digit as "changed" for the downstream swipe,
-    // and bumps its heat to 1 so the accent overlay is visible
+    // `index`, then makes its accent overlay visible
     // immediately — the Recording-time "each change flashes in accent" UX
     // we have been iterating on. Returns early if the text didn't
     // actually change (no-op on every vsync for stationary digits).
-    // Index order matches the swipe animator's per-element arrays:
+    // Index order matches the six digit arrays:
     // 0 Min1, 1 Min2, 2 Sec1, 3 Sec2, 4 Cs1, 5 Cs2.
     private void WriteDigit(int index, string newText, TextBlock primary, TextBlock accent)
     {
         if (primary.Text == newText) return;
         primary.Text = newText;
         accent.Text  = newText;
-        _swipe.SetChanged(index, true);
-        _swipe.SetHeat(index, 1f);
-        // Push the flash directly on the overlay. During Recording the
-        // vsync loop (UpdateClock) runs but UpdateSwipe is dormant
-        // (_swipeRunning=false), so without this line heat=1 never
-        // reaches the overlay and the digit stays primary. During
-        // Transcribing/Rewriting the swipe rewrites Opacity every
-        // vsync — this write is immediately superseded by UpdateSwipe,
-        // so no interference with the wave animation.
+        // Push the flash directly on the overlay. It is an instantaneous data
+        // state, not a temporal animation. Transcribing/Rewriting replace it
+        // with the static processing-material reveal.
         //
         // Invariant primary.Opacity + accent.Opacity = 1 so only one
         // glyph ever contributes ink. Without this, both TextBlocks

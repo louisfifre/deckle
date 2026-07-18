@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Deckle.Composition;
+using Deckle.Settings;
 
 namespace Deckle.Hud;
 
@@ -28,13 +29,15 @@ namespace Deckle.Hud;
 //                                     methods, and the shared vsync hook.
 //   - HudChrono.Clock.cs            — the chronometer face and its lifecycle
 //                                     (ResetClock / StartClock / StopClock).
-//   - HudChrono.Reveal.cs           — the progressive-coloring swipe wave.
+//   - HudChrono.Reveal.cs           — the static processing-state digit reveal.
 //   - HudChrono.Stroke.cs           — the Composition processing stroke.
 public sealed partial class HudChrono : UserControl
 {
     private bool _renderingHooked;
 
     private HudState _state = HudState.Hidden;
+    private bool _animationsEnabled = SettingsService.Instance.Current.Overlay.Animations;
+    private bool _animationPreferenceSubscribed;
 
     public HudChrono()
     {
@@ -46,10 +49,12 @@ public sealed partial class HudChrono : UserControl
         // does not reset opacities, producing a white/empty render instead of
         // "00.00.00" in tertiary color (regression introduced by 7707f09
         // "fix(hud): complementary digit opacities", which adds the accesses
-        // without guaranteeing prior initialization). EnsureSwipeInfra is
-        // idempotent (guard `if (_digitPrimary is null)`), so this call has no
-        // cost when StartSwipe() calls it again.
-        EnsureSwipeInfra();
+        // without guaranteeing prior initialization). The helper is
+        // idempotent, so this has no cost when a reveal starts later.
+        EnsureRevealInfrastructure();
+
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
 
         ChronoRoot.ActualThemeChanged += (_, _) =>
         {
@@ -77,6 +82,56 @@ public sealed partial class HudChrono : UserControl
                 }
             }
         };
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_animationPreferenceSubscribed) return;
+        _animationPreferenceSubscribed = true;
+        _animationsEnabled = SettingsService.Instance.Current.Overlay.Animations;
+        SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (!_animationPreferenceSubscribed) return;
+        _animationPreferenceSubscribed = false;
+        SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
+    }
+
+    private void OnOverlayAnimationsChanged(bool enabled)
+    {
+        if (DispatcherQueue.HasThreadAccess)
+        {
+            ApplyAnimationPreference(enabled);
+            return;
+        }
+
+        DispatcherQueue.TryEnqueue(() => ApplyAnimationPreference(enabled));
+    }
+
+    private void ApplyAnimationPreference(bool enabled)
+    {
+        if (_animationsEnabled == enabled) return;
+        _animationsEnabled = enabled;
+
+        lock (_strokeSync)
+        {
+            if (_processingStroke is not null && _currentVariant is { } variant)
+            {
+                _processingStroke.SetAnimationsEnabled(
+                    enabled,
+                    variant,
+                    ChronoRoot.ActualTheme == ElementTheme.Dark);
+            }
+        }
+
+        if (_revealsActive)
+        {
+            TearDownReveals();
+            EnsureReveals();
+            UpdateReveals();
+        }
     }
 
     // Single state-driven entry point. Called by HudWindow.SetState (which
@@ -108,7 +163,7 @@ public sealed partial class HudChrono : UserControl
     private void ApplyCharging()
     {
         UnhookRendering();
-        StopSwipe();
+        StopReveal();
 
         // Parked look: the whole face recedes to the Disabled tone — nothing has
         // been recorded yet, so digits and dots alike sit at the faintest step of
@@ -123,7 +178,7 @@ public sealed partial class HudChrono : UserControl
 
     private void ApplyRecording()
     {
-        StopSwipe();
+        StopReveal();
 
         AttachProcessingVisual(ProcessingVariant.Recording);
 
@@ -138,16 +193,15 @@ public sealed partial class HudChrono : UserControl
     private void ApplyTranscribing()
     {
         // Stop tone: the whole face drops to Tertiary. The clock is frozen by
-        // StopClock (host-driven around this) and the animator's changed flags
-        // are KEPT, so the swipe re-lights only the digits that were animated,
-        // in accent over the Tertiary background. See Chrono/CONTEXT.md.
+        // StopClock (host-driven around this). The processing material remains
+        // visible in all six digits over the Tertiary background.
         ApplyRestTone(ToneStopped);
 
         AttachProcessingVisual(ProcessingVariant.Transcribing);
-        StartSwipe();
-        // HookRendering drives OnRendering → UpdateSwipe (the clock is stopped,
-        // so UpdateClock is a no-op on the digit values).
         HookRendering();
+        StartReveal();
+        // Rendering retries reveal construction until XAML has produced the
+        // glyph masks; the clock is stopped, so UpdateClock is a no-op.
     }
 
     private void ApplyRewriting()
@@ -158,14 +212,14 @@ public sealed partial class HudChrono : UserControl
         ApplyRestTone(ToneStopped);
 
         AttachProcessingVisual(ProcessingVariant.Rewriting);
-        StartSwipe();
         HookRendering();
+        StartReveal();
     }
 
     private void ApplyHidden()
     {
         UnhookRendering();
-        StopSwipe();
+        StopReveal();
 
         DetachProcessingVisual();
         // The clock is left as-is (stopped after a take); the next session's
@@ -177,12 +231,12 @@ public sealed partial class HudChrono : UserControl
     //
     // The chrono face never uses Primary: every phase overrides it with one of
     // these three system tones, stepping down the scale Disabled → Secondary →
-    // Tertiary. The accent reveal (Recording flash, Stop swipe) layers on top of
+    // Tertiary. The accent/reveal layer (Recording flash, Stop material) sits above
     // this background, never replaces it. The authoritative mapping lives in
     // Chrono/CONTEXT.md; these keys are its code mirror.
     private const string ToneCharging  = "TextFillColorDisabledBrush";   // before any take
     private const string ToneRecording = "TextFillColorSecondaryBrush";  // clock running
-    private const string ToneStopped   = "TextFillColorTertiaryBrush";   // frozen, swipe runs
+    private const string ToneStopped   = "TextFillColorTertiaryBrush";   // frozen, reveal shown
 
     // Paint one background tone across the whole face — the 6 digit primaries
     // and the 2 dots, uniformly. The accent twins are left alone (their Opacity
@@ -228,12 +282,10 @@ public sealed partial class HudChrono : UserControl
         _renderingHooked = false;
     }
 
-    // Single vsync dispatcher for both the clock ticker (Recording) and the
-    // swipe reveal (Transcribing / Rewriting). UpdateClock early-outs via
-    // the stopwatch state when not Recording, so calling both is cheap.
+    // Single vsync dispatcher for the clock and reveal-build retries.
     private void OnRendering(object? sender, object e)
     {
         UpdateClock();
-        UpdateSwipe();
+        UpdateReveals();
     }
 }

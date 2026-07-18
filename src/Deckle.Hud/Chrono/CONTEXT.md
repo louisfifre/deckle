@@ -10,7 +10,7 @@ Shared vocabulary for the chrono face (`HudChrono`). The face is the `MM.SS.cc` 
 
 ## Elements — the chrono face
 
-The face reads `MM.SS.cc` as **8 separate TextBlocks** (each a distinct `UIElement` so it can carry its own Composition visual for the swipe), left to right:
+The face reads `MM.SS.cc` as **8 separate TextBlocks** (each digit cell can carry its own Composition reveal visual), left to right:
 
 - **Min1, Min2** — the two minute digits
 - **DotA** — the minutes / seconds separator (`.`)
@@ -19,10 +19,10 @@ The face reads `MM.SS.cc` as **8 separate TextBlocks** (each a distinct `UIEleme
 - **Cs1, Cs2** — the two centisecond digits (*centiseconds*, hundredths)
 
 **Accent twin** :
-The overlay each digit carries in the same cell (`Min1Accent`, `Sec2Accent`, …), holding the exact Windows accent colour at `Opacity=0` until a reveal lifts it. The swipe animator indexes the six digits `0→5`: Min1, Min2, Sec1, Sec2, Cs1, Cs2.
+The overlay each digit carries in the same cell (`Min1Accent`, `Sec2Accent`, …), holding the exact Windows accent colour at `Opacity=0`. Recording uses it for the instant advance flash; Stop uses it only if the Composition reveal cannot be built. The six-digit index is `0→5`: Min1, Min2, Sec1, Sec2, Cs1, Cs2.
 
 **Animated digit** :
-A digit that *advanced* during the take (Recording). The animated / at-rest distinction is **live only during Recording**. At Stop nothing moves any more, so there is no animated digit: every element is at rest. "Was animated at some point" survives Stop **only as the swipe's filter** — it decides which digits the wave re-lights, never a base colour.
+A digit that *advanced* during the take (Recording). The animated / at-rest distinction is **live only during Recording**. No per-digit history survives Stop; all six digits receive the same static reveal treatment.
 
 **At-rest digit** :
 A digit not currently advancing.

@@ -41,6 +41,8 @@ public sealed class SettingsService
     };
 
     private readonly JsonSettingsStore<AppSettings> _store;
+    private readonly object _animationSync = new();
+    private bool _overlayAnimationsEnabled;
 
     public AppSettings Current => _store.Current;
 
@@ -60,6 +62,13 @@ public sealed class SettingsService
         remove => _store.Changed -= value;
     }
 
+    /// <summary>
+    /// Raised on the in-memory edge of Overlay.Animations. Unlike Changed,
+    /// this does not wait for the debounced disk write: live HUD animations
+    /// must react to the toggle immediately.
+    /// </summary>
+    public event Action<bool>? OverlayAnimationsChanged;
+
     private SettingsService()
     {
         // UserDataRoot is created by AppPaths static ctor; redundant
@@ -77,16 +86,35 @@ public sealed class SettingsService
             jsonOptions: _jsonOptions,
             logWarning:  msg => DeckleSettingsSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleSettingsSource.Log.SettingsLoadError(msg));
+
+        _overlayAnimationsEnabled = Current.Overlay.Animations;
+        _store.Changed += NotifyOverlayAnimationsChanged;
     }
 
     /// <summary>Schedule a debounced disk write (300 ms).</summary>
-    public void Save() => _store.Save();
+    public void Save()
+    {
+        NotifyOverlayAnimationsChanged();
+        _store.Save();
+    }
 
     /// <summary>Synchronous flush. Use before process exit / restart.</summary>
     public void Flush() => _store.Flush();
 
     /// <summary>Re-read from disk and replace the in-memory snapshot.</summary>
     public void Reload() => _store.Reload();
+
+    private void NotifyOverlayAnimationsChanged()
+    {
+        bool current = Current.Overlay.Animations;
+        lock (_animationSync)
+        {
+            if (_overlayAnimationsEnabled == current) return;
+            _overlayAnimationsEnabled = current;
+        }
+
+        OverlayAnimationsChanged?.Invoke(current);
+    }
 
     // Resolves the directory where settings backups (snapshots) live.
     // User override wins, otherwise a `backups/` folder next to settings.json.

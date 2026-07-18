@@ -64,16 +64,13 @@ public static partial class HudComposition
     // CompositionMaskBrush.Source: that rendered transparent (a fully-built
     // effect brush handed back as a MaskBrush source does not composite),
     // which is why the revealed digits came up empty — the primary glyph faded
-    // out under the swipe and the reveal above it drew nothing, leaving the
+    // out under the former swipe and the reveal above it drew nothing, leaving the
     // bare Stop-tone background. Keeping the mask in the graph, as a surface
     // alpha source, is what works.
     //
-    // The reveal is driven managed, exactly like the flat-accent overlay it
-    // sits on top of: SetHeat pushes the swipe wave's per-digit heat onto the
-    // sprite Opacity, so the conic-filled glyph cross-fades in over the
-    // (identically-shaped) primary glyph beneath it. Keeping the existing
-    // driver means the MOTION is unchanged from today — only the revealed
-    // material differs (living conic vs flat accent).
+    // The reveal opacity is driven directly through SetHeat. Shipping keeps it
+    // at 1 for the full processing state; the method remains a bounded opacity
+    // setter for the flat-accent construction fallback and future consumers.
     public sealed class DigitRevealVisual : IDisposable
     {
         public SpriteVisual Visual { get; }
@@ -95,7 +92,7 @@ public static partial class HudComposition
             _effectBrush = effectBrush;
         }
 
-        // Push the swipe wave's heat [0,1] onto the sprite Opacity. Rounded to
+        // Push a bounded reveal amount [0,1] onto the sprite Opacity. Rounded to
         // 3 decimals so floating noise (0.9999997) doesn't re-invalidate the
         // render pass every vsync — same guard the flat-overlay path uses.
         public void SetHeat(float heat)
@@ -113,7 +110,7 @@ public static partial class HudComposition
         // every reveal — never here, or a still-living brush would sample freed
         // memory. The grading EffectProps belong to the ProcessingStroke. The
         // glyph alpha-mask brush belongs to the XAML TextBlock
-        // (TextBlock.GetAlphaMask). Reveal teardown (StopSwipe) always runs
+        // (TextBlock.GetAlphaMask). Reveal teardown (StopReveal) always runs
         // before the stroke's own Dispose (DetachProcessingVisual) and before
         // the material's, so the ordering is safe.
         public void Dispose()
@@ -238,13 +235,13 @@ public static partial class HudComposition
         var sprite = compositor.CreateSpriteVisual();
         sprite.Size    = spriteSize;
         sprite.Brush   = effectBrush;
-        sprite.Opacity = 0f;   // revealed by SetHeat as the swipe head passes
+        sprite.Opacity = 0f;   // the owner pins this to 1 after attachment
 
         return new DigitRevealVisual(sprite, conicBrush, arcBrush, effectBrush);
     }
 
     // The shared "clone cone material" the six digit reveals sample — built ONCE
-    // per swipe, owned by the caller (HudChrono), passed to every CreateDigitReveal.
+    // per processing reveal, owned by HudChrono and shared by every digit.
     //
     // It bundles a DOUBLE-comet's worth of shared state: the auto-scaled conic
     // surface, the auto-scaled arc-mask surface, and the two rotation
@@ -299,7 +296,7 @@ public static partial class HudComposition
         }
     }
 
-    // Build the shared clone-cone material for one swipe: paint both surfaces
+    // Build the shared clone-cone material for one pinned reveal: paint both surfaces
     // (conic + arc mask), auto-scaled (CoverageSquareSide) so their inscribed
     // circle reaches every corner of the host frame from `apex` — a digit
     // anywhere in the row then samples a painted pixel, never off-surface (the
@@ -310,7 +307,11 @@ public static partial class HudComposition
     // arcFill = white: the reveal graph reads only the arc mask's alpha, so its
     // RGB is invisible — same convention as the contour's arc surface.
     public static RevealConeMaterial BuildRevealConeMaterial(
-        Compositor compositor, Vector2 hostSize, Vector2 apex, ConicArcStrokeConfig cfg)
+        Compositor compositor,
+        Vector2 hostSize,
+        Vector2 apex,
+        ConicArcStrokeConfig cfg,
+        bool animationsEnabled = true)
     {
         int pxSquare = CoverageSquareSide(hostSize, apex);
 
@@ -332,10 +333,12 @@ public static partial class HudComposition
         // across the six cells (created once here) so the digits stay in phase.
         var hueProps = CreateRotationPropertySet(
             compositor, cfg.CloneHuePeriodSeconds, cfg.CloneHueDirection, cfg.HuePhaseTurns,
-            cfg.HueEaseP1X, cfg.HueEaseP1Y, cfg.HueEaseP2X, cfg.HueEaseP2Y);
+            cfg.HueEaseP1X, cfg.HueEaseP1Y, cfg.HueEaseP2X, cfg.HueEaseP2Y,
+            animationsEnabled);
         var arcProps = CreateRotationPropertySet(
             compositor, cfg.CloneArcPeriodSeconds, cfg.CloneArcDirection, cfg.ArcPhaseTurns,
-            cfg.ArcEaseP1X, cfg.ArcEaseP1Y, cfg.ArcEaseP2X, cfg.ArcEaseP2Y);
+            cfg.ArcEaseP1X, cfg.ArcEaseP1Y, cfg.ArcEaseP2X, cfg.ArcEaseP2Y,
+            animationsEnabled);
 
         return new RevealConeMaterial(conicSurface, arcSurface, hueProps, arcProps);
     }

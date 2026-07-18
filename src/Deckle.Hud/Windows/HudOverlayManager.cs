@@ -46,6 +46,7 @@ public sealed class HudOverlayManager : IDisposable
         _cursorSignal   = cursorSignal;
         _mainHudVisible = mainHud.IsMainHudShown;
         mainHud.MainHudVisibilityChanged += OnMainHudVisibilityChanged;
+        SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
     }
 
     // Sub-wave 6b: signature in primitives rather than a `UserFeedback`
@@ -93,7 +94,12 @@ public sealed class HudOverlayManager : IDisposable
         // appears/disappears.
         WindowingProbe.EmitOverlaySlotAssigned(hwnd, newSlot);
 
-        var slide = new WindowSlideAnimator(hwnd, _dispatcher, xPx, yPx);
+        var slide = new WindowSlideAnimator(
+            hwnd,
+            _dispatcher,
+            xPx,
+            yPx,
+            SettingsService.Instance.Current.Overlay.Animations);
 
         var lifeTimer = _dispatcher.CreateTimer();
         lifeTimer.Interval = HudWindow.FeedbackDuration(severity);
@@ -135,6 +141,23 @@ public sealed class HudOverlayManager : IDisposable
         if (_mainHudVisible == visible) return;
         _mainHudVisible = visible;
         Recompact();
+    }
+
+    private void OnOverlayAnimationsChanged(bool enabled)
+    {
+        if (_disposed) return;
+
+        if (!_dispatcher.HasThreadAccess)
+        {
+            _dispatcher.TryEnqueueObserved(
+                "ui-update", "overlay-manager",
+                () => OnOverlayAnimationsChanged(enabled),
+                "HUD", "animation preference change");
+            return;
+        }
+
+        foreach (var entry in _entries)
+            entry.Slide.SetAnimationsEnabled(enabled);
     }
 
     private void OnLifeTimerTick(OverlayEntry entry)
@@ -223,6 +246,7 @@ public sealed class HudOverlayManager : IDisposable
         if (_disposed) return;
         _disposed = true;
         _mainHud.MainHudVisibilityChanged -= OnMainHudVisibilityChanged;
+        SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
 
         foreach (var entry in _entries)
         {

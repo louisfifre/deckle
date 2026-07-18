@@ -36,7 +36,6 @@ public enum HudTuningSection
     ConicFade,
     HueRotation,
     ArcRotation,
-    Swipe,
     Recording,
     Transcribing,
     Rewriting,
@@ -168,7 +167,6 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.ConicFade,
                     HudTuningSection.HueRotation,
                     HudTuningSection.ArcRotation,
-                    HudTuningSection.Swipe,
                 },
             HudTarget.Recording =>
                 new[]
@@ -189,7 +187,6 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.ConicFade,
                     HudTuningSection.HueRotation,
                     HudTuningSection.Transcribing,
-                    HudTuningSection.Swipe,
                     HudTuningSection.ClonePlacement,
                 },
             HudTarget.Rewriting =>
@@ -200,7 +197,6 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.ConicFade,
                     HudTuningSection.HueRotation,
                     HudTuningSection.Rewriting,
-                    HudTuningSection.Swipe,
                     HudTuningSection.ClonePlacement,
                 },
             HudTarget.Conic =>
@@ -232,7 +228,6 @@ public partial class HudViewModel : ObservableObject
                     HudTuningSection.ConicFade,
                     HudTuningSection.HueRotation,
                     HudTuningSection.ArcRotation,
-                    HudTuningSection.Swipe,
                 },
         };
 }

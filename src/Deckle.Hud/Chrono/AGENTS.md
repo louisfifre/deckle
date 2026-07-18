@@ -14,15 +14,15 @@ Layered *under* any accent reveal. Identical for digits and dots. The scale step
 | Recording (clock running) | **Secondary** |
 | Stop — Transcribing / Rewriting | **Tertiary** |
 
-### Accent reveal — layered over the background, two triggers
+### Accent and processing reveal — layered over the background
 
 The accent (→ later the living conic) is a *reveal* on top of the background, not a third base colour. Two distinct triggers, same revealed material:
 
 - **During Recording** — a digit flips to **Accent** the instant it advances, and stays Accent until Stop. Trigger = the advance itself (`WriteDigit`).
-- **At Stop** — every element drops to Tertiary, then a **left→right swipe** re-lights, one by one (fade in / out), **each digit that was animated** during the take. Trigger = the swipe wave. At-rest digits and dots stay Tertiary; the wave never touches them.
+- **At Stop** — every element drops to Tertiary, then all six digits expose the **living processing material** at full opacity. Dots stay Tertiary. There is no timed reveal and no remembered per-digit filter.
 
-So at Stop the only differentiator is the wave passing over the formerly-animated digits — the rest of the row is a uniform Tertiary.
+When functional HUD animation is disabled, that material remains fully visible but its rotations park at the canonical phase. The chrono value remains live during Recording regardless of this setting.
 
-### Material revealed by the swipe
+### Material revealed at Stop
 
-Today (step 1) the Stop swipe reveals the **flat accent** (the exact Windows accent colour, `ChronoAccentBrush`). Step 2 will swap that flat accent for the **living conic** the processing stroke samples — same motion, same per-digit filter, the glyph becoming a window onto the shared conic material. The matrix above is unchanged by that swap; only the revealed fill differs.
+Each digit becomes a window onto one shared clone of the contour's living conic/comet material. A flat Windows accent twin remains only as the construction-failure fallback. The reveal opacity is static; only the shared material may rotate.

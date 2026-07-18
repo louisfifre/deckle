@@ -23,12 +23,12 @@
             <!-- Shared style for the 8 clock TextBlocks. A shared style is
                  necessary because the 8 characters are now separate UIElements
                  (not Runs inside a single TextBlock) — each needs its own
-                 Composition.Visual for the swipe reveal animation. The Runs
+                 Composition.Visual for the pinned reveal material. The Runs
                  shared their TextBlock's font metrics through inheritance;
                  the 8 TextBlocks get them here via x:Key to keep them aligned
                  and avoid prop repetition. Foreground is a ThemeResource
                  default — code-behind overrides per TextBlock during the
-                 swipe (disabled → primary / accent). -->
+                 reveal (disabled → primary / accent). -->
             <Style x:Key="ChronoDigitStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="ms-appx:///Assets/Fonts/BitcountSingle.ttf#Bitcount Single" />
                 <Setter Property="FontWeight" Value="ExtraLight" />
@@ -80,7 +80,7 @@
              TextBlocks with identical text. The primary is always at
              full opacity with the theme Foreground brush; the accent
              sibling uses ChronoAccentBrush and is hidden by
-             default (Opacity=0). The swipe animation code in
+             default (Opacity=0). The reveal code in
              HudChrono.xaml.cs modulates each accent's Opacity each
              vsync so the digit cross-fades from primary to the Windows
              accent and back as the wave passes — rather than snapping the

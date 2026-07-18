@@ -6,7 +6,7 @@
   <ItemGroup>
     <!-- WindowsAppSDK : Microsoft.UI.Composition (Visual / Compositor /
          CompositionEffectFactory / animations) consumed by the conic stroke
-         and swipe primitives. Version pinned identical to Deckle.csproj: a
+         and digit-reveal primitives. Version pinned identical to Deckle.csproj: a
          single WinAppSDK runtime loaded per process. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <!-- Win2D: Direct2D-backed CanvasDrawingSession on

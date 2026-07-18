@@ -1,4 +1,3 @@
-using System.Numerics;
 using Deckle.Audio;
 using Deckle.Composition;
 
@@ -16,7 +15,7 @@ namespace Deckle.Playground;
 // Step-frequency convention (kept aligned with HudPage.RowFactories) :
 //   fractional [0..1, ease Y, saturation/opacity/hue]   → 0.05
 //   period seconds [0..60, 0.5..30]                     → 0.5
-//   short period (Swipe / fade curve)                   → 0.1
+//   short period (fade curve)                           → 0.1
 //   exposure [-2..2]                                    → 0.1
 //   blend seconds [0..5]                                → 0.1
 //   dBFS (MinDbfs / MaxDbfs)                            → 1
@@ -151,52 +150,6 @@ public sealed partial class HudPage
         _tuning.ArcEaseP2X       = d.ArcEaseP2X;
         _tuning.ArcEaseP2Y       = d.ArcEaseP2Y;
         RebuildTuningPanel();
-    }
-
-    private void AddSwipeExpander()
-    {
-        var stack = NewExpander("Swipe (Transcribing / Rewriting)", ResetSwipe);
-        // Static mutables on SwipeWaveAnimator (Deckle.Composition) —
-        // read live each vsync by the animator's Tick, no rebuild needed.
-        // Cycle / stagger / envelope / ramp shape the timing and the per-digit
-        // envelope ; the ease shapes only the launch CADENCE (how the digits
-        // follow one another), never a single digit's linear fade.
-        AddFloatRow(stack, "SwipeCycleSeconds", 0.1, 6.0, 0.1,
-            SwipeWaveAnimator.SwipeCycleSeconds,
-            v => SwipeWaveAnimator.SwipeCycleSeconds = (float)v);
-        AddFloatRow(stack, "SwipeStaggerSeconds", 0.05, 1.0, 0.05,
-            SwipeWaveAnimator.SwipeStaggerSeconds,
-            v => SwipeWaveAnimator.SwipeStaggerSeconds = (float)v);
-        AddFloatRow(stack, "SwipeEnvelopeSeconds", 0.05, 2.0, 0.05,
-            SwipeWaveAnimator.SwipeEnvelopeSeconds,
-            v => SwipeWaveAnimator.SwipeEnvelopeSeconds = (float)v);
-        AddFloatRow(stack, "SwipeRampFraction", 0, 0.5, 0.05,
-            SwipeWaveAnimator.SwipeRampFraction,
-            v => SwipeWaveAnimator.SwipeRampFraction = (float)v);
-        AddFloatRow(stack, "SwipeEaseP1.X", 0, 1, 0.05, SwipeWaveAnimator.SwipeEaseP1.X,
-            v => SwipeWaveAnimator.SwipeEaseP1 = new Vector2((float)v, SwipeWaveAnimator.SwipeEaseP1.Y));
-        AddFloatRow(stack, "SwipeEaseP1.Y", -0.5, 1.5, 0.05, SwipeWaveAnimator.SwipeEaseP1.Y,
-            v => SwipeWaveAnimator.SwipeEaseP1 = new Vector2(SwipeWaveAnimator.SwipeEaseP1.X, (float)v));
-        AddFloatRow(stack, "SwipeEaseP2.X", 0, 1, 0.05, SwipeWaveAnimator.SwipeEaseP2.X,
-            v => SwipeWaveAnimator.SwipeEaseP2 = new Vector2((float)v, SwipeWaveAnimator.SwipeEaseP2.Y));
-        AddFloatRow(stack, "SwipeEaseP2.Y", -0.5, 1.5, 0.05, SwipeWaveAnimator.SwipeEaseP2.Y,
-            v => SwipeWaveAnimator.SwipeEaseP2 = new Vector2(SwipeWaveAnimator.SwipeEaseP2.X, (float)v));
-        AddToggleRow(stack, "Simulate changed digits",
-            _simulateChangedDigits,
-            v => { _simulateChangedDigits = v; ApplyTarget(); });
-    }
-
-    private void ResetSwipe()
-    {
-        SwipeWaveAnimator.SwipeCycleSeconds    = 2.4f;
-        SwipeWaveAnimator.SwipeStaggerSeconds  = 0.1f;
-        SwipeWaveAnimator.SwipeEnvelopeSeconds = 1.4f;
-        SwipeWaveAnimator.SwipeRampFraction    = 0.4f;
-        SwipeWaveAnimator.SwipeEaseP1          = new Vector2(0.4f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2          = new Vector2(0.6f, 1f);
-        _simulateChangedDigits = true;
-        RebuildTuningPanel();
-        ApplyTarget();
     }
 
     private void AddRecordingExpander()
@@ -341,7 +294,7 @@ public sealed partial class HudPage
     }
 
     // Conic clone — placement + INDEPENDENT rotation of the cloned double comet
-    // (the material the swipe reveals behind the digits). Placement: where the
+    // (the material the pinned reveal shows behind the digits). Placement: where the
     // cone's apex sits within the 272×78 row frame ((136,39) = centred, (0,0) =
     // top-left). The X/Y sliders read in px against the preview frame but STORE a
     // fraction (CloneCentre*Fraction). Rotation: the clone's own hue + arc speeds

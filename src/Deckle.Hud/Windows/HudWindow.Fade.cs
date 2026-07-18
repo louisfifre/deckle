@@ -71,4 +71,17 @@ public sealed partial class HudWindow : Window
     {
         _fadeInTimer?.Stop();
     }
+
+    private void CompleteFadeInImmediately()
+    {
+        if (_fadeInTimer?.IsRunning != true) return;
+
+        _fadeInTimer.Stop();
+        SetAlphaImmediate(_fadeInTarget);
+        if (_fadeInActivateProximityOnComplete &&
+            Settings.SettingsService.Instance.Current.Overlay.FadeOnProximity)
+        {
+            EnableProximity();
+        }
+    }
 }

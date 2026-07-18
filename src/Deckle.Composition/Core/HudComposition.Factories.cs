@@ -15,13 +15,15 @@ public static partial class HudComposition
     // Tweak the defaults to iterate on the visual.
     public static ProcessingStroke CreateProcessingStroke(
         Compositor compositor, Vector2 hostSize,
-        ConicArcStrokeConfig? configOverride = null)
+        ConicArcStrokeConfig? configOverride = null,
+        bool animationsEnabled = true)
     {
         // Optional override used by HudChrono.RebuildStroke (HudPlayground
         // slider wiring). Null keeps the shipping defaults.
         return CreateConicArcStroke(
             compositor, hostSize,
-            configOverride ?? new ConicArcStrokeConfig());
+            configOverride ?? new ConicArcStrokeConfig(),
+            animationsEnabled: animationsEnabled);
     }
 
     // Recording stroke — the same double-comet pipeline as the processing
@@ -65,7 +67,8 @@ public static partial class HudComposition
     // lobes — requires RecordingSaturation > 0 to be visible.
     public static ProcessingStroke CreateRecordingStroke(
         Compositor compositor, Vector2 hostSize,
-        ConicArcStrokeConfig? configOverride = null)
+        ConicArcStrokeConfig? configOverride = null,
+        bool animationsEnabled = true)
     {
         // `with` copies the caller's (default) config and overrides the
         // generic paint-time slots consumed by CreateConicArcStroke with
@@ -98,8 +101,9 @@ public static partial class HudComposition
             compositor, hostSize, cfg,
             freezeHueRotation: !hueRotates,
             freezeArcRotation: true,
-            initialOpacity:    0f,
-            initialVariant:    ProcessingVariant.Recording);
+            initialOpacity:    animationsEnabled ? 0f : 1f,
+            initialVariant:    ProcessingVariant.Recording,
+            animationsEnabled: animationsEnabled);
     }
 
     // Implementation of the double-comet pipeline driven by
@@ -202,7 +206,8 @@ public static partial class HudComposition
         bool              freezeHueRotation = false,
         bool              freezeArcRotation = false,
         float             initialOpacity = -1f,
-        ProcessingVariant initialVariant = ProcessingVariant.Transcribing)
+        ProcessingVariant initialVariant = ProcessingVariant.Transcribing,
+        bool              animationsEnabled = true)
     {
         var container = compositor.CreateContainerVisual();
         container.Size = hostSize;
@@ -320,7 +325,8 @@ public static partial class HudComposition
                 cfg.HuePhaseTurns,
                 cfg.HueEaseP1X, cfg.HueEaseP1Y,
                 cfg.HueEaseP2X, cfg.HueEaseP2Y,
-                cfg.HueMinSpeedFraction);
+                cfg.HueMinSpeedFraction,
+                animationsEnabled: animationsEnabled);
         }
 
         // Arc rotation — spin or freeze independently of the hue rotation.
@@ -344,7 +350,8 @@ public static partial class HudComposition
                 cfg.ArcPhaseTurns,
                 cfg.ArcEaseP1X, cfg.ArcEaseP1Y,
                 cfg.ArcEaseP2X, cfg.ArcEaseP2Y,
-                cfg.ArcMinSpeedFraction);
+                cfg.ArcMinSpeedFraction,
+                animationsEnabled: animationsEnabled);
         }
 
         // ── Effect graph ─────────────────────────────────────────────────
@@ -468,6 +475,7 @@ public static partial class HudComposition
             container, compositor, effectProps, strokeVisual, cfg,
             conicBrush, arcMaskBrush, strokeMaskBrush, effectBrush,
             conicSurface, arcMaskSurface, strokeMaskSurface,
-            hueRotationProps, arcRotationProps);
+            hueRotationProps, arcRotationProps,
+            animationsEnabled);
     }
 }

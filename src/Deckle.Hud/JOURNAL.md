@@ -9,7 +9,7 @@ Not read by default. Come here for the *why* behind a HUD choice the code no lon
 
 ## 2026-06-15 — Digit reveal: pinned, not swept; RMS-on-digits rejected
 
-The left→right swipe wave over the Stop digits is retired for a static pinned reveal — the six glyphs read as one window onto the rotating clone cone. The SwipeWaveAnimator is kept dormant (`RevealPinnedNoSwipe`) in case the wave is wanted again.
+The left→right swipe wave over the Stop digits is retired for a static pinned reveal — the six glyphs read as one window onto the rotating clone cone. The dormant animator was subsequently deleted on 2026-07-18: restoring the wave is now a product decision, not a hidden constant flip.
 
 Transcribing contrast (comet greyed to ~the Tertiary glyph it sweeps) is fixed by a clone OKLCh palette decoupled from the contour, NOT by exposure — ExposureEffect caps at +2 EV, too low for the grey-on-Tertiary lift.
 

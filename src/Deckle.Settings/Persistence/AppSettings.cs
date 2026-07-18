@@ -63,12 +63,9 @@ public sealed class OverlaySettings
     public bool FadeOnProximity { get; set; } = true;
     public string Position { get; set; } = "BottomCenter";
 
-    // Enables the 150 ms slide + fade transitions on the HUD and overlay
-    // message cards. On by default — unlike chrome animations, message
-    // transitions are critical for the user to track what just replaced what,
-    // so we ignore SPI_GETCLIENTAREAANIMATION and only consult this toggle.
-    // Windows itself does the same for load-bearing motion (Task Manager pane,
-    // Settings NavigationView) when reduced-motion is enabled globally.
+    // Controls Deckle-authored functional HUD feedback: message movement,
+    // processing-material rotations, state blends and microphone response.
+    // Simple fades are excluded and follow the Windows animation preference.
     public bool Animations { get; set; } = true;
 }
 
