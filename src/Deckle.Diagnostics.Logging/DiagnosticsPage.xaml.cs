@@ -29,12 +29,12 @@ public sealed partial class DiagnosticsPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeApplicationLogSection();
-        ComposeStorageFolderSection();
+        ComposeTelemetrySection();
 
         // The page-level "Reset all" gate spans every composed section; re-gate on
         // any composer's DirtyChanged.
         foreach (var composer in new[]
-                 { _loggingComposer, _applicationLogComposer, _storageFolderComposer })
+                 { _loggingComposer, _applicationLogComposer, _telemetryComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         LoadAndSync();
@@ -83,12 +83,12 @@ public sealed partial class DiagnosticsPage : Page
     // PathArgs, so the old SyncFolderPickerDefault code-behind push is gone. Composed
     // before LoadAndSync so its PropertyChanged subscription catches Load(); held in
     // a field so the subscription lives as long as the (cached) page.
-    private SettingsComposer? _storageFolderComposer;
+    private SettingsComposer? _telemetryComposer;
 
-    private void ComposeStorageFolderSection()
+    private void ComposeTelemetrySection()
     {
-        _storageFolderComposer = new SettingsComposer(StorageFolderHost, ViewModel);
-        _storageFolderComposer.Compose(ViewModel.StorageFolderSettings);
+        _telemetryComposer = new SettingsComposer(TelemetryHost, ViewModel);
+        _telemetryComposer.Compose(ViewModel.TelemetrySettings);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -130,7 +130,7 @@ public sealed partial class DiagnosticsPage : Page
         ResetAllButton.IsEnabled =
             (_loggingComposer?.IsDirty() ?? false) ||
             (_applicationLogComposer?.IsDirty() ?? false) ||
-            (_storageFolderComposer?.IsDirty() ?? false);
+            (_telemetryComposer?.IsDirty() ?? false);
     }
 
     // Whole-page reset. Clears the recorded consent (the Application-log opt-in)

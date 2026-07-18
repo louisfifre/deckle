@@ -26,6 +26,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Input owns the persisted mouse-wheel capture preference surfaced by
+         Diagnostics > Telemetry. This UI dependency does not move ownership
+         of the setting or recorder into Logging. -->
+    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <!-- AppPaths resolves the logging settings path and lives in Deckle.Core. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <!-- Catalog: DiagnosticsPage composes via SettingsComposer and reads Glyphs;

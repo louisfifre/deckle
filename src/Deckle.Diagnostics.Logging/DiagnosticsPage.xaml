@@ -129,11 +129,10 @@
                                      Click="ResetTelemetry_Click" />
                 </Grid>
 
-                <!-- Composed region — the telemetry storage-folder path. A Path
-                     descriptor in DiagnosticsViewModel.StorageFolderSettings, built
-                     by ComposeStorageFolderSection() into this host through the
-                     shared FolderPickerCard the composer's PathControlFactory resolves. -->
-                <StackPanel x:Name="StorageFolderHost"
+                <!-- Composed region — the wheel-capture opt-in and telemetry
+                     storage-folder path declared by DiagnosticsViewModel.TelemetrySettings.
+                     The shared composer resolves the toggle and FolderPickerCard. -->
+                <StackPanel x:Name="TelemetryHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Diagnostic files ──────────────────────────────────────

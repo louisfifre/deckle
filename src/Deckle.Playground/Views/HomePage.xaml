@@ -74,19 +74,6 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <!-- Mouse wheel capture. Diagnostic toggle only: the capture
-                     files now land in telemetry\mouse-wheel, and this surface
-                     deliberately does not expose the telemetry root. -->
-                <StackPanel Spacing="8">
-                    <TextBlock x:Uid="PlaygroundHomeMouseWheelHeader"
-                               Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                    <controls:SettingsCard x:Uid="PlaygroundHomeMouseWheelRecordCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Mouse}}">
-                        <ToggleSwitch x:Name="MouseWheelRecordToggle"
-                                      Toggled="OnMouseWheelRecordToggled" />
-                    </controls:SettingsCard>
-                </StackPanel>
-
             </StackPanel>
         </Grid>
     </ScrollViewer>

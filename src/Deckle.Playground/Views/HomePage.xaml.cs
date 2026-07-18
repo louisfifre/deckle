@@ -1,4 +1,3 @@
-using Deckle.Input;
 using Deckle.Notifications;
 using Deckle.Shell;
 using Microsoft.UI.Xaml;
@@ -18,7 +17,6 @@ public sealed partial class HomePage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
-        MouseWheelRecordToggle.IsOn = MouseWheelSettingsService.Instance.Current.RecordEvents;
     }
 
     // Route via the shell's callback registry — the page doesn't reach
@@ -38,17 +36,6 @@ public sealed partial class HomePage : Page
     private void OnSegmentationCardClick(object sender, RoutedEventArgs e)
     {
         PlaygroundShell.NavigateTo?.Invoke("segmentation");
-    }
-
-    // Persist the intent; App.ReconcileMouseWheel turns the setting into a
-    // start/stop on the shared keyboard/mouse input host. The equality guard
-    // skips the constructor's seed assignment.
-    private void OnMouseWheelRecordToggled(object sender, RoutedEventArgs e)
-    {
-        var settings = MouseWheelSettingsService.Instance.Current;
-        if (settings.RecordEvents == MouseWheelRecordToggle.IsOn) return;
-        settings.RecordEvents = MouseWheelRecordToggle.IsOn;
-        MouseWheelSettingsService.Instance.Save();
     }
 
     // Manual probe for the notification toast channel. Fires the Playground

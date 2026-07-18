@@ -138,7 +138,7 @@ public sealed class TrackpadEngine : IDisposable
 
     private void OnDragStarted()
     {
-        _traceDrag = DeckleTrackpadSource.Log.IsEnabled(
+        _traceDrag = DeckleTrackpadSource.IsInputActivityDetailEnabled(
             System.Diagnostics.Tracing.EventLevel.Verbose,
             (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture);
         if (_traceDrag)
@@ -164,7 +164,9 @@ public sealed class TrackpadEngine : IDisposable
             CloseInjectionIncident();
         else
             LogInjectionFailure("move");
-        if (_traceDrag)
+        if (_traceDrag && DeckleTrackpadSource.IsInputActivityDetailEnabled(
+                System.Diagnostics.Tracing.EventLevel.Verbose,
+                (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture))
             _dragMoves++;
     }
 
@@ -174,12 +176,14 @@ public sealed class TrackpadEngine : IDisposable
             CloseInjectionIncident();
         else
             LogInjectionFailure("release");
-        if (_traceDrag)
+        if (_traceDrag && DeckleTrackpadSource.IsInputActivityDetailEnabled(
+                System.Diagnostics.Tracing.EventLevel.Verbose,
+                (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture))
         {
             DeckleTrackpadSource.Log.DragEnded(
                 reason, Math.Round(RawInputHost.NowMs - _dragStartedMs, 0), _dragMoves);
-            _traceDrag = false;
         }
+        _traceDrag = false;
     }
 
     // One Warning opens an engine-wide incident. A refused SendInput can
@@ -203,7 +207,7 @@ public sealed class TrackpadEngine : IDisposable
 
     private static void OnTapIgnored()
     {
-        if (DeckleTrackpadSource.Log.IsEnabled(
+        if (DeckleTrackpadSource.IsInputActivityDetailEnabled(
                 System.Diagnostics.Tracing.EventLevel.Verbose,
                 (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture))
         {

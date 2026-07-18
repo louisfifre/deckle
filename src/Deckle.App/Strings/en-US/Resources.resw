@@ -891,7 +891,7 @@
     <value>Storage folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Shared root for every telemetry stream enabled above. Leave empty to use the default %LOCALAPPDATA%\Deckle\telemetry\.</value>
+    <value>Root for telemetry datasets that support a custom folder. Leave empty to use %LOCALAPPDATA%\Deckle\telemetry\. This does not move the application log or mouse wheel captures.</value>
   </data>
   <data name="GeneralStorageFolderSetLabel.Text" xml:space="preserve">
     <value>Set</value>

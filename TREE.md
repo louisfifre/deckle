@@ -1331,6 +1331,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
+│   │   ├── LoggingSettingsTests.cs
 │   │   ├── OperationalSinkRoutingTests.cs
 │   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/

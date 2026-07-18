@@ -12,7 +12,7 @@ namespace Deckle.Diagnostics.Logging;
 //
 // The list is DECLARED here, not derived from the page or the manifest, on
 // purpose. The composed cards live as instance properties on DiagnosticsViewModel
-// (LoggingSettings, TelemetrySettings, StorageFolderSettings) — reaching them means
+// (LoggingSettings, ApplicationLogSettings, TelemetrySettings) — reaching them means
 // constructing a ViewModel, which the index must never do at boot. So a card's
 // identity travels as its bare LabelKey, the same string the manifest already
 // carries and the composer stamps onto the built card's Tag. Composed and bespoke
@@ -47,6 +47,11 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
+            LabelKey = "LoggingInputCard",
+            Keywords = ["raw input", "trackpad", "gesture", "frames"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "LoggingWindowingCard",
             Keywords = ["monitor", "display", "placement"],
         },
@@ -58,7 +63,12 @@ public static class SettingsSearch
             Keywords = ["journal", "debug", "troubleshoot"],
         },
 
-        // Storage folder — composed Path card (StorageFolderSettings).
+        // "Telemetry" section — composed toggle and Path cards (TelemetrySettings).
+        new SettingSearchEntry
+        {
+            LabelKey = "TelemetryMouseWheelCard",
+            Keywords = ["mouse", "scroll", "wheel", "jsonl", "capture"],
+        },
         new SettingSearchEntry
         {
             LabelKey = "GeneralStorageFolderCard",

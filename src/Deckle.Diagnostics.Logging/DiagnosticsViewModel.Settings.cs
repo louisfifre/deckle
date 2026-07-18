@@ -36,14 +36,18 @@ public partial class DiagnosticsViewModel
             () => LogAutocorrectActivity,
             value => LogAutocorrectActivity = value,
             glyph: Glyphs.Language),
+        Setting.Toggle("LoggingInputCard",
+            () => LogInputActivity,
+            value => LogInputActivity = value,
+            glyph: Glyphs.Mouse,
+            defaultValue: () => new LoggingSettings().LogInputActivity),
         Setting.Toggle("LoggingWindowingCard",
             () => LogWindowingActivity,
             value => LogWindowingActivity = value,
             glyph: Glyphs.Window),
     ];
 
-    // Telemetry opt-ins (the "Telemetry" section). One composable toggle now:
-    // Application log carries a confirmOnEnable gate so the composer holds its
+    // Application-log opt-in. The toggle carries a confirmOnEnable gate so the composer holds its
     // OFF→ON write behind the consent dialog. Now that the page lives in its own
     // module, that dialog is reached through the Catalog registry
     // (TelemetryConsent.RequestApplicationLog, a method group the App wires at boot)
@@ -64,7 +68,8 @@ public partial class DiagnosticsViewModel
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
-    // Storage folder — the shared JSONL root for every telemetry stream. A Path
+    // Telemetry settings — the mouse-wheel dataset opt-in and the shared JSONL
+    // root for every telemetry stream. The Path
     // descriptor (FolderPickerMode.Configure: read-only readout with Change + Open)
     // over the TelemetryStorageDirectory string the VM owns; its
     // OnTelemetryStorageDirectoryChanged (PushTelemetryToSettings) rides the setter
@@ -74,11 +79,15 @@ public partial class DiagnosticsViewModel
     // the manifest carries it. The reset default is the POCO initializer (empty →
     // "empty means AppPaths"), the one source of truth.
     //
-    // Its own manifest composes into a dedicated host because the path is a storage
-    // configuration row, not a consent toggle. The Path card is otherwise wired like
-    // any other composed row.
-    public IReadOnlyList<SettingDescriptor> StorageFolderSettings =>
+    // This manifest composes into a dedicated host because dataset capture and its
+    // storage location belong together, separately from the application-log consent.
+    public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
     [
+        Setting.Toggle("TelemetryMouseWheelCard",
+            () => RecordWheelEvents,
+            value => RecordWheelEvents = value,
+            glyph: Glyphs.Mouse,
+            defaultValue: () => new Deckle.Input.MouseWheelSettings().RecordEvents),
         Setting.Path("GeneralStorageFolderCard",
             () => TelemetryStorageDirectory,
             value => TelemetryStorageDirectory = value,

@@ -9,7 +9,7 @@ Owns the human-facing live journal, the reusable filter model/control, and the p
 
 ## Authority and settings surface
 
-Settings > Diagnostics is the sole editing authority. It presents three distinct groups: **Logging details**, **Application log**, and **Telemetry**. Logging details initially contains four off-by-default activity controls: Ambient, Transcription, Autocorrect, and Windowing. Module pages and the LogWindow never duplicate them. The LogWindow shows a compact read-only indication when details are disabled and routes to Settings.
+Settings > Diagnostics is the sole editing authority. It presents three distinct groups: **Logging details**, **Application log**, and **Telemetry**. Logging details contains five off-by-default activity controls: Ambient, Transcription, Autocorrect, Windowing, and Input. Module pages and the LogWindow never duplicate them. The LogWindow shows a compact read-only indication when details are disabled and routes to Settings.
 
 A verbosity boundary follows a chatty **activity**, not an entire provider by convenience and not merely the `Verbose` level. It may reject repetitive `Informational` outcomes when they belong to the governed activity. Workflow lifecycle milestones, durable incident/recovery milestones and their one-shot technical mirrors, every `Warning`/`Error`, and independently consented telemetry stay outside the gate. The producer evaluates the policy before every probe, computation, allocation, formatting step, payload, or counter collection done only for that log activity.
 
@@ -44,6 +44,10 @@ One **Transcription details** control spans Dictation and File transcription acr
 
 One **Autocorrect activity** control spans focus/surface probes, decisions, reranking, learning, keyboard rollups, and successful-correction observations, including events emitted by supporting providers. Lifecycle and incidents remain. Typed text and raw decisions belong only to their explicitly consented datasets.
 
+### Input
+
+One **Input activity** control governs the five-second Raw Input frame rollup and per-gesture Trackpad detail. Producers gate before counter collection, calculation and formatting. Input/Trackpad lifecycle, device presence, incidents, warnings, errors and recoveries remain admitted. Keyboard detail remains independently governed by Autocorrect activity. Mouse-wheel JSONL capture is an independent telemetry preference owned by Deckle.Input.
+
 ### Windowing and remaining candidates
 
-Windowing is one technical diagnostics control with no human timeline and no sub-toggles. Placement, anchoring, z-order, resize, Win32 enumeration, timing, and payload construction are gated at their producers. Trackpad frame-rollup and HUD proximity-rollup loops are the next candidates to audit; provider existence alone never earns a new setting.
+Windowing is one technical diagnostics control with no human timeline and no sub-toggles. Placement, anchoring, z-order, resize, Win32 enumeration, timing, and payload construction are gated at their producers. The HUD proximity-rollup loop remains a candidate to audit; provider existence alone never earns a new setting.

@@ -15,7 +15,7 @@ Support layer of the input pillar: it reads raw device input and synthesizes poi
 
 **Finger presence is data, not inference.** The parser reads the tip switch and confidence bits per contact (`HidP_GetUsages`), so finger lifts are read, not guessed by timing — the trap the value-caps-only reference implementations fall into.
 
-**Frames are never logged individually** — at report cadence they drown every sink. Lifecycle, presence and a periodic rollup go to the EventSource; raw frames go to the diagnostics JSONL recorder only when the toggle asks.
+**Frames are never logged individually** — at report cadence they drown every sink. Lifecycle and presence always go to the EventSource. The periodic rollup is collected and emitted only while Diagnostics > Input activity admits it. Mouse-wheel JSONL capture is an independent telemetry preference.
 
 ## Attribution
 
