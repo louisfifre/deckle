@@ -27,7 +27,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── microsoft-docs/
 │       │   └── SKILL.md  — microsoft-docs [skill] Find official Microsoft documentation and code samples. Use for Microsoft techn…
 │       ├── ux-copy/
-│       │   └── SKILL.md  — ux-copy [skill] Write or review interface wording — CTAs, errors, empty states, confirmations,…
+│       │   ├── references/
+│       │   │   ├── evidence.md
+│       │   │   ├── patterns.md
+│       │   │   ├── voice-and-tone.md
+│       │   │   └── windows-fluent.md
+│       │   └── SKILL.md  — ux-copy Write or review interface wording — CTAs, errors, empty states, confirmations,…
 │       ├── ux-designer/
 │       │   ├── rules/
 │       │   │   ├── accessibility.md
