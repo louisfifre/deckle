@@ -19,7 +19,6 @@ Use this skill when:
 - Creating wireframes, mockups, or prototypes
 - Designing user flows and task flows
 - Building personas or user journey maps
-- Writing UX microcopy and interface text
 - Reviewing designs for usability and accessibility
 - Structuring information architecture
 - Creating design system components
@@ -41,7 +40,7 @@ This skill contains **detailed rules** in the `rules/` directory, organized by c
 | 🔴 CRITICAL | [User Research](rules/research.md) | Interviews, personas, and synthesis |
 | 🔴 CRITICAL | [Accessibility](rules/accessibility.md) | WCAG compliance and inclusive design |
 | 🟡 HIGH | [Information Architecture](rules/information-architecture.md) | Navigation and content organization |
-| 🟡 HIGH | [Interaction Design](rules/interaction-design.md) | User flows and microcopy |
+| 🟡 HIGH | [Interaction Design](rules/interaction-design.md) | User flows and interaction patterns |
 | 🟢 MEDIUM | [Visual Design](rules/visual-design.md) | Hierarchy, color, typography, and design systems |
 
 ## UX Design Process
