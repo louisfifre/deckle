@@ -7,6 +7,28 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-07-18 — Motion policy and LogWindow decisions
+
+Found that Deckle exposes `SPI_GETCLIENTAREAANIMATION` but never calls it. The HUD helper named `AnimationSystemSetting` reads only the Dictation overlay setting. Chose to gate every Deckle-authored simple animation explicitly on the Windows animation setting while leaving control-internal motion to WinUI.
+
+Chose to observe Windows animation changes at runtime. When Windows disables animations, finite simple transitions cancel and settle immediately in their final state; re-enabling affects only future transitions and never replays one.
+
+Chose to keep LogWindow row insertion, repositioning and auto-scroll instant in every system state. The empty `ListView.ItemContainerTransitions` added by `d7f62dd6` is the existing anti-flash measure and must remain.
+
+Chose one Dictation setting for all functional HUD motion: message recompact, processing-outline and digit-material motion, state blends, and microphone-level response. Turning it off settles finite motion, freezes continuous motion in a stable pose, and keeps the complete visual present. The chrono remains live data and proximity transparency keeps its separate setting. Simple HUD fades follow Windows instead. The existing preference value is preserved when its scope expands. Chose to remove the unreachable legacy swipe/reveal animation path.
+
+Chose an off-by-default `Input activity` operational-log gate in Diagnostics. It stops Raw Input rollups and Trackpad gesture detail at their producers, but not lifecycle, device presence, incidents, warnings, or keyboard detail already owned by Autocorrect.
+
+Found that Playground's `Record wheel events` is a persistent raw JSONL capture, not an operational-log gate. Chose to move it to Settings > Diagnostics > Telemetry, independent from `Input activity`.
+
+Chose a three-column LogWindow row: fixed 12-character time, fixed 13-character source, and remaining-width message. Current source labels fit; any future overflow is visually ellipsized without truncating copy or export. The scroll tail reserves five measured row heights below the final entry. Both scrollbar rails and their shared corner use an opaque window-background mask while preserving native thumbs and behavior.
+
+Chose WinUI `SplitButton`s with primary actions `Copy all` and `Save all`; their menus offer `Copy selection` / `Copy filtered` and `Save selection` / `Save filtered`. `All` ignores filters, while `Filtered` means every matching entry rather than the viewport. `Ctrl+C` copies only a selection and does nothing without one.
+
+Chose contextual copy labels by scope: `Copy` for one selected row, `Copy selection` for several, then `Copy filtered` or `Copy all` with no selection according to whether filtering is active. Right-clicking an unselected row makes it the sole selection; right-clicking empty space preserves an existing selection.
+
+Chose a single immediate `Clear` action for the whole in-memory journal, without confirmation and without touching `app.jsonl`. Save suggestions use `deckle-logs-YYYYMMDD-HHMMSS.txt` regardless of scope.
+
 ## 2026-07-17 — PII guard model candidates
 
 Found Rampart is the closest reference for a Deckle privacy guard: a small ONNX token-classification model for PII spans, paired with deterministic detectors, default-deny redaction, stable placeholders and local rehydration. The published Space is static/browser-first; native Windows integration would either host its JS/Web runtime or rebuild the pipeline around ONNX Runtime.
