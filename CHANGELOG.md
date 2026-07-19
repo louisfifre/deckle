@@ -9,6 +9,23 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [Unreleased]
+
+### Added
+
+- **llm:** Gate the paragraph rewrite behind a mechanical diff validator
+- **llm:** Pose the paragraph retaille prompt in its single home
+- **benchmark:** Measure the retaille service and gate on a prompt sample
+
+### Changed
+
+- **llm:** Put the inference engine behind the rewrite service seam
+
+### Fixed
+
+- **install:** Isolate app releases from native bundles
+- **release:** Stage verified releases before publication
+
 ## [0.13.7](https://github.com/louisfifre/deckle/compare/v0.13.4...v0.13.7) — 2026-07-19
 
 ### Fixed
@@ -77,7 +94,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **installer:** Make the stub a silent web-installer with a native window
 - **logging:** Add structured log window filters
 - **transcription:** Default to ggml-base with installed-model fallback
-- **setup:** Update pipeline ÔÇö silent check, download page, deploy update mode
+- **setup:** Update pipeline — silent check, download page, deploy update mode
 - **settings:** Update opt-out and version row on the General page
 - **app:** Wire the in-app updater end to end
 - **setup:** Data-root relocation page
@@ -304,7 +321,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Split the menu launch entry into Release and Debug
 - **scripts:** Add a version bump-and-tag menu command
 - **scripts:** Rework the dev menu as a 2D navigable grid
-- **anytype:** Management layer ÔÇö lifecycle verbs and reversible delete
+- **anytype:** Management layer — lifecycle verbs and reversible delete
 - **diagnostics:** Add windowing activity log toggle
 - **scripts:** Summarize workflow outcomes
 - **scripts:** Configure Anytype MCP management
@@ -329,9 +346,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Confirm-on-enable gate for consent toggles
 - **settings:** Reusable confirmation service for destructive commands
 - **autocorrect:** Derive the verb-morphology artifact and its loader
-- **autocorrect:** Add the grammar stage with subjectÔÇôverb agreement
+- **autocorrect:** Add the grammar stage with subject–verb agreement
 - **shell:** Unify both logon vehicles behind a StartupService facade
-- **anytype:** Backend lifecycle mechanism ÔÇö triggerless on-demand task + supervisor
+- **anytype:** Backend lifecycle mechanism — triggerless on-demand task + supervisor
 - **app:** Launch without the speech setup gate
 - **setup:** Recover a failed first-run download with a link and local import
 - **transcription:** Surface a set-up call-to-action when speech is unprovisioned
@@ -408,7 +425,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Compose the trackpad module
 - **trackpad:** Settings page and navigation entry
 - **trackpad:** Freeze calibrated values, retire the tuning expander
-- **anytype:** Core library over the live PM space ÔÇö client, frozen schema, gestures
+- **anytype:** Core library over the live PM space — client, frozen schema, gestures
 - **mcp:** Stdio JSON-RPC host exposing the 13 PM tools
 - **transcription:** Paragraph break on silence-cut utterances
 - **notifications:** Notification catalogue, dispatcher, and interactive toast channel
@@ -435,7 +452,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Persist the setup narrative and critical errors locally
 - **settings:** Link to the local diagnostics folder
 - **setup:** Offer the diagnostics folder on a failed first run
-- **anytype:** Replace_section ÔÇö heading-located body edit, verified
+- **anytype:** Replace_section — heading-located body edit, verified
 - **anytype:** Add dialogue chat tools
 - **autocorrect:** N-gram left-context disambiguation and precision-first eval
 - **autocorrect:** CamemBERT MLM reranker probe (offline)
@@ -509,7 +526,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Detach and flush taskbar cover settings at shutdown
 - **taskbar-cover:** Hold the provider to the Verbose/Info separation
 - **input:** Guard the parser-failure detail behind its braces
-- **anytype:** Invert the rapportÔåötask link, derive the project through tasks
+- **anytype:** Invert the rapport↔task link, derive the project through tasks
 - **app:** Always surface the streaming transcript in the log
 - **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
 - **app:** Register always-on local sinks before settings migration
@@ -566,24 +583,24 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Added
 
 - **settings:** Frame+Page navigation + CommunityToolkit SettingsCard
-- **settings:** Persistance JSON + WhisperPage c├óbl├®e (6 sections)
-- **hud:** Click-through natif + fade plancher r├®glable
-- **settings:** Passe contenu EN + r├®ordonnancement pages
-- **settings:** GeneralPage fonctionnelle + descriptions WhisperPage audit├®es + restart cibl├®
-- **settings:** C├óblage complet GeneralPage + th├¿me live + overlay configurable
+- **settings:** Persistance JSON + WhisperPage câblée (6 sections)
+- **hud:** Click-through natif + fade plancher réglable
+- **settings:** Passe contenu EN + réordonnancement pages
+- **settings:** GeneralPage fonctionnelle + descriptions WhisperPage auditées + restart ciblé
+- **settings:** Câblage complet GeneralPage + thème live + overlay configurable
 - **logwindow:** Refonte ListView native + clic-to-copy + UX copy Microsoft
-- **llm:** Syst├¿me de r├®├®criture multi-profils Ollama complet
-- **llm:** Param├¿tres de g├®n├®ration, OllamaService, import GGUF et mod├¿les custom
+- **llm:** Système de réécriture multi-profils Ollama complet
+- **llm:** Paramètres de génération, OllamaService, import GGUF et modèles custom
 - **ui:** Titre LogWindow, restart tray, shortcut rewrite, suppression override caption buttons
-- **llm:** Refonte LlmPage en sections + mode RAW Ollama + d├®tection micro
-- **settings:** ComboBox mod├¿le Ollama dans profils, UX import GGUF, titre Models
-- **benchmark:** Add autoresearch.py ÔÇö autonomous prompt optimization loop
-- **llm:** Prompt Nettoyage optimis├® par autoresearch v2
+- **llm:** Refonte LlmPage en sections + mode RAW Ollama + détection micro
+- **settings:** ComboBox modèle Ollama dans profils, UX import GGUF, titre Models
+- **benchmark:** Add autoresearch.py — autonomous prompt optimization loop
+- **llm:** Prompt Nettoyage optimisé par autoresearch v2
 - **whisper:** Activate beam search, carry_initial_prompt, and richer initial prompt
 - **engine:** Lazy load + idle unload whisper model to free VRAM
-- **benchmark:** Suite restructuration ÔÇö corpus, scripts, boucle 40 it├®rations
-- **llm:** Prompt restructuration optimis├® (benchmark 0.0000), suppression nettoyage
-- **llm:** Restaure Nettoyage, pr├®pare Restructuration pour benchmark
+- **benchmark:** Suite restructuration — corpus, scripts, boucle 40 itérations
+- **llm:** Prompt restructuration optimisé (benchmark 0.0000), suppression nettoyage
+- **llm:** Restaure Nettoyage, prépare Restructuration pour benchmark
 - **engine:** Silent warmup transcription at launch
 - **shell:** Autostart via HKCU\Run registry key
 - **hud:** Audio-level coupled recording outline (WIP, render to validate)
@@ -594,7 +611,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **dev:** Scaffold HudPlayground standalone dev tool
 - **dev:** HudPlayground tuning panel + simulated RMS pump
 - **hud:** Swipe = critical flash on changed digits only (no disabled)
-- **hud:** OKLCh palette, anti-moir├®, RMS window + Recording accent
+- **hud:** OKLCh palette, anti-moiré, RMS window + Recording accent
 - **playground:** Promote HudPlayground to first-party WhispUI window
 - **hud:** Message stack with proximity fade + gated low-audio warning
 - **playground:** Persistence (auto-hydrate + Save + Reset all), responsive layout
@@ -602,8 +619,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **engine,settings:** Microphone.jsonl + level window calibration defaults
 - **settings,engine:** Voice level window UI + auto-calibration heuristic
 - **benchmark:** Whisper initial prompt tuning + folder layout refacto
-- **rewrite:** Aligner les profils par d├®faut sur les 4 brackets de cleanup
-- **robustness:** Hardening sweep ÔÇö Ollama startup race, dispatcher safety, settings mutex, lifecycle guards
+- **rewrite:** Aligner les profils par défaut sur les 4 brackets de cleanup
+- **robustness:** Hardening sweep — Ollama startup race, dispatcher safety, settings mutex, lifecycle guards
 - **settings:** Add SettingsBackupService and BackupDirectory
 - **settings/general:** Add Backup section (snapshot and restore)
 - **telemetry:** Per-stage latency instrumentation + Ollama metrics
@@ -612,7 +629,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings/general:** Add Application data section with Open data folder
 - **setup:** Add SpeechModels catalog, Downloader, SetupContext (B.1)
 - **setup:** Add SetupWindow shell (B.2)
-- **setup:** Add wizard pages ÔÇö Choices, Installing, Summary (B.3-B.5)
+- **setup:** Add wizard pages — Choices, Installing, Summary (B.3-B.5)
 - **setup:** Wire wizard from App.OnLaunched + Re-run button (B.6, B.7)
 - **telemetry:** Rolling history buffer + Replay() for late-registered sinks
 - **localization:** Introduce .resw + Loc helper, migrate CorpusConsentDialog
@@ -621,7 +638,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Unify setup-assets, drop restore-assets and setup-userdata
 - **scripts:** Add interactive launcher with two-step menu
 - **rename:** Migrate %LOCALAPPDATA%\WhispUI\ to %LOCALAPPDATA%\Deckle\
-- **hud:** Fade-in 150ms on HiddenÔåÆvisible transition
+- **hud:** Fade-in 150ms on Hidden→visible transition
 - **native-runtime:** Add publish script + recompile recipe doc
 - **setup:** Auto-download native runtime in the first-run wizard
 - **paths:** Add AppPaths.GetModuleDirectory(moduleId)
@@ -629,15 +646,15 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **lighting:** Hue REST driver scaffolding + Playground Discover/Pair (J2 step 1)
 - **lighting:** Hue group listing + colour push + Playground rotation (J2 step 2)
 - **ambient:** AmbientEngine scaffolding + Playground pipeline card (J3 step 1)
-- **ambient:** J3 step 2 ÔÇö real frame analysis + HDR + Playground polish
-- **ambient:** Persist Hue bridge state ÔÇö no more re-pair per session
+- **ambient:** J3 step 2 — real frame analysis + HDR + Playground polish
+- **ambient:** Persist Hue bridge state — no more re-pair per session
 - **ambient:** Clamp near-black averages to off so dark screens dim the lights
 - **hue:** Force transitiontime=1 (100ms) so the lamp keeps up with the screen
 - **vision:** Wire optional target monitor through ScreenCaptureService.Start
 - **ambient:** J4 multi-light zones with Hue entertainment auto-fill
 - **diagnostics:** Logging section + brightness/ComboBox UX rework
 - **ambient:** Canonical engine ownership + Settings page + tray toggle + HDR tuning
-- **ambient:** Color science pipeline ÔÇö gamut C clip + linear-light averaging + OKLCh saturation
+- **ambient:** Color science pipeline — gamut C clip + linear-light averaging + OKLCh saturation
 - **vision:** Switch capture backend to DXGI Output Duplication (removes Windows yellow capture border)
 - **scripts:** Add bootstrap-dev-env.ps1 + global.json rollForward for multi-machine dev
 - **ambient:** Promote BrightnessCurveGamma to AmbientSettings
@@ -655,22 +672,22 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Minimal Home page with section picker
 - **playground:** Preview follows the canonical engine + free the Pipeline toggle
 - **playground, ambient:** Multi-curve canvas + light-zones toggle
-- **ambient:** Allow inverted gamma (╬│<1) and inverted S-curve (k<0)
+- **ambient:** Allow inverted gamma (γ<1) and inverted S-curve (k<0)
 - **ambient:** Resilient pipeline against transient interruptions
 - **ambient:** Expose zone-sampling thickness as a user setting
 - **agent:** Add tdd skill for red-green-refactor workflow
 - **transcription:** Ajouter CorpusAsr/RewriteRecorded au provider Whisp
-- **diagnostics:** RoutedJsonlEventListener pour paths r├®solus par event
-- **diagnostics:** C├óbler les destinations rout├®es du corpus normalis├®
+- **diagnostics:** RoutedJsonlEventListener pour paths résolus par event
+- **diagnostics:** Câbler les destinations routées du corpus normalisé
 - **bench:** Add Voxtral smoke test script
-- **bench:** Add Voxtral POC bench ÔÇö 6 configs + judge + m├®triques
-- **transcription:** Brancher le pipeline sur le corpus normalis├®
+- **bench:** Add Voxtral POC bench — 6 configs + judge + métriques
+- **transcription:** Brancher le pipeline sur le corpus normalisé
 - **scripts:** Introduire TREE.md auto-update via hook pre-commit
 - **bench:** Versionner les prompts par scope
-- **bench:** Sc├®nario voxtral-poc orchestrateur des r├®gimes
-- **bench:** Joindre events ├ù monitor pour exposer les peaks system par row
-- **bench:** Juge Gemini multimodal ├®coutant le WAV brut
-- **bench:** C├óbler --judge gemini dans le sc├®nario voxtral-poc
+- **bench:** Scénario voxtral-poc orchestrateur des régimes
+- **bench:** Joindre events × monitor pour exposer les peaks system par row
+- **bench:** Juge Gemini multimodal écoutant le WAV brut
+- **bench:** Câbler --judge gemini dans le scénario voxtral-poc
 - **bench:** Retry GeminiJudge sur 429 free tier Gemini
 - **diagnostics:** Ouvrir les sub-providers transverses
 - **diagnostics:** Instrumenter les transitions reseau
@@ -678,27 +695,27 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **vision:** Ajouter heartbeat capture (fps + percentiles)
 - **diagnostics:** Instrumenter cycle de vie ressources natives
 - **diagnostics:** Instrumenter les annulations applicatives
-- **diagnostics:** Instrumenter le positionnement des fen├¬tres
+- **diagnostics:** Instrumenter le positionnement des fenêtres
 - **diagnostics:** Instrumenter le marshalling dispatcher
-- **diagnostics:** Instrumenter les changements de th├¿me
+- **diagnostics:** Instrumenter les changements de thème
 - **skills:** Introduire save-context et spawn-tasks pour la discipline de session
 - **diagnostics:** Instrumenter le positionnement de PlaygroundWindow
 - **diagnostics:** Exposer priority sur les wrappers Threading
-- **settings:** C├óbler les marshallings Settings sur le wrapper Threading
-- **hud:** C├óbler le warm pass tail sur le wrapper Threading
-- **ambient:** C├óbler les marshallings UI d'AmbientPage sur le wrapper Threading
-- **playground:** C├óbler les marshallings UI du Playground sur le wrapper Threading
-- **playground:** Instrumenter les changements de th├¿me de PlaygroundWindow
-- **diagnostics:** ├®tendre Cancellation au pipeline ambient
-- **hud:** ├®mettre le proximity rollup en r├®cap fin de session
-- **bench:** Corpus voxtral-val-30 stratifi├® + script de construction
-- **bench:** Source Voxtral via llama-mtmd-cli (Vulkan) + r├®gimes T1-T6
-- **bench:** Source Gemini audio + pr├®-gen ground truth
-- **bench:** Bench voxtral-validation ÔÇö WER vs Gemini ground truth
-- **bench:** Viewer HTML ÔÇö comparaison Voxtral vs Whisper vs Gemini
-- **bench:** Viewer HTML g├®n├®rique sous viewers/ ÔÇö auto-discovery
+- **settings:** Câbler les marshallings Settings sur le wrapper Threading
+- **hud:** Câbler le warm pass tail sur le wrapper Threading
+- **ambient:** Câbler les marshallings UI d'AmbientPage sur le wrapper Threading
+- **playground:** Câbler les marshallings UI du Playground sur le wrapper Threading
+- **playground:** Instrumenter les changements de thème de PlaygroundWindow
+- **diagnostics:** Étendre Cancellation au pipeline ambient
+- **hud:** Émettre le proximity rollup en récap fin de session
+- **bench:** Corpus voxtral-val-30 stratifié + script de construction
+- **bench:** Source Voxtral via llama-mtmd-cli (Vulkan) + régimes T1-T6
+- **bench:** Source Gemini audio + pré-gen ground truth
+- **bench:** Bench voxtral-validation — WER vs Gemini ground truth
+- **bench:** Viewer HTML — comparaison Voxtral vs Whisper vs Gemini
+- **bench:** Viewer HTML générique sous viewers/ — auto-discovery
 - **bench:** Sanity check Voxtral Mini 3B en BF16 sur Transformers
-- **bench:** Mesure perf RTF Voxtral 3B BF16 sur 3 dur├®es audio
+- **bench:** Mesure perf RTF Voxtral 3B BF16 sur 3 durées audio
 - **bench:** Backend Voxtral Transformers BF16 sur voxtral-validation
 - **bench:** Comparaison BF16 vs Q4_K_M sur T1_baseline
 - **bench:** Router voxtral-transformers vers apply_chat_template pour T2-T5
@@ -706,7 +723,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **shell:** Introduire Deckle.Shell.TrayMenu pour le menu tray WinUI 3
 - **shell:** Bascule l'item Ambient sur un ToggleSwitch via Style custom
 - **bench:** Scaffold PhiBench C# tool for Phi-4 ONNX/DirectML POC
-- **bench:** Smoke test voxtral ONNX DirectML ÔÇö voie 2
+- **bench:** Smoke test voxtral ONNX DirectML — voie 2
 - **whisp:** Warm up the model on first hotkey instead of at boot
 - **vision:** Add capture stall detector with unit tests
 - **observability:** Self-describing, bounded app.jsonl persistence
@@ -738,14 +755,14 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **logs:** Bind log entry colors via ThemeResource
 - **hud:** Nettoyage XAML natif + backdrop transient
 - **settings:** Burger dans TitleBar native + purge styles custom
-- **logs:** Structured LogEntry model, CommandBar cleanup, FRÔåÆEN comments
-- **logs:** Modularise logging ÔÇö LogService singleton, ILogSink, sources typ├®es
-- R├®organisation dossiers ÔÇö Interop/, Llm/, Shell/, DebugLog ÔåÆ Logging/
-- **settings:** WhisperPage MVVM ÔÇö ViewModel + x:Bind TwoWay, suppression handlers manuels
-- **settings:** LlmPage MVVM ÔÇö ProfilesSection et RulesSection en XAML d├®claratif
-- **benchmark:** V2 ÔÇö scoring robuste, designer cibl├®, observabilit├®
+- **logs:** Structured LogEntry model, CommandBar cleanup, FR→EN comments
+- **logs:** Modularise logging — LogService singleton, ILogSink, sources typées
+- Réorganisation dossiers — Interop/, Llm/, Shell/, DebugLog → Logging/
+- **settings:** WhisperPage MVVM — ViewModel + x:Bind TwoWay, suppression handlers manuels
+- **settings:** LlmPage MVVM — ProfilesSection et RulesSection en XAML déclaratif
+- **benchmark:** V2 — scoring robuste, designer ciblé, observabilité
 - **benchmark:** Config.ini + gitignore artefacts
-- Restructure repo ÔÇö flatten layout, decouple native deps, English comments
+- Restructure repo — flatten layout, decouple native deps, English comments
 - **hud:** Unify recording outline into ProcessingStroke pipeline
 - **benchmark:** Extract shared lib/ for ollama, corpus, metrics, judge
 - **hud:** Expose Recording* overrides on ConicArcStrokeConfig
@@ -754,7 +771,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Flat Expander list + resizable sash + rounded steps
 - **telemetry:** Single Microphone event carries text + payload
 - **paths:** Centralize filesystem resolution in AppPaths
-- **settings/general:** Reorder sections ÔÇö Appearance / Startup before Recording
+- **settings/general:** Reorder sections — Appearance / Startup before Recording
 - **settings/general:** Collapse Backup section into a PowerToys-style expander
 - **logwindow:** Drop Narrative tab, default to All, fold narrative into Activity
 - **record:** Rephrase Tail-600 ms log as plain-English signal at Stop
@@ -776,17 +793,17 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **structure:** Scaffold Deckle.Whisp + extract libwhisper P/Invokes
 - **structure:** Move Win32 Interop layer into Deckle.Core
 - **structure:** Extract WhispEngine + Whisp/Recording/Telemetry POCOs
-- **llm:** Align LlmSettings namespace Deckle.Settings ÔåÆ Deckle.Llm
+- **llm:** Align LlmSettings namespace Deckle.Settings → Deckle.Llm
 - **capture:** Scaffold Deckle.Capture project + extract CaptureSettings POCO
 - **capture:** Extract MicrophoneCapture engine into Deckle.Capture
 - **composition:** Scaffold Deckle.Composition + extract pure primitives
 - **composition:** Move HudComposition + extract SwipeWaveAnimator
-- **capture:** Migrate audio level mapping HudChrono ÔåÆ AudioLevelMapper
-- **chrono:** Extract Deckle.Chrono ÔÇö timer + formatter primitives
+- **capture:** Migrate audio level mapping HudChrono → AudioLevelMapper
+- **chrono:** Extract Deckle.Chrono — timer + formatter primitives
 - **chrono:** Extract HudChrono UserControl into Deckle.Chrono.Hud
-- **shell:** Extract Deckle.Shell ÔÇö Hotkey + Tray + Autostart + MessageOnlyHost
-- **settings:** Extract Deckle.Settings ÔÇö slice A (core service)
-- **settings:** Extract Deckle.Settings ÔÇö slice B (UI surface)
+- **shell:** Extract Deckle.Shell — Hotkey + Tray + Autostart + MessageOnlyHost
+- **settings:** Extract Deckle.Settings — slice A (core service)
+- **settings:** Extract Deckle.Settings — slice B (UI surface)
 - **core:** Extract JsonSettingsStore<T> from SettingsService
 - **settings:** Per-module persistence (slice C2b)
 - **settings:** Cross-module page split (slice C1)
@@ -795,7 +812,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Canonical Set/Open text-only buttons (slice S1)
 - **settings:** Extract Diagnostics page from General (slice S2)
 - **settings:** Extract Recording page from General (slice S3)
-- **settings:** Rename Shortcuts ÔåÆ Hotkeys, Transcribe ÔåÆ Principal hotkey (slice S4)
+- **settings:** Rename Shortcuts → Hotkeys, Transcribe → Principal hotkey (slice S4)
 - **whisp:** Wrap Decoding and Confidence sliders in SettingsExpander parents (slice S5)
 - **settings:** Move Behaviour section from Recording to General (pass2)
 - **whisp:** Reorder Transcription section and fold storage into model expander (pass2)
@@ -849,18 +866,18 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Retirer l'event legacy CorpusRecorded
 - **bench:** Pivot Voxtral POC stack de transformers+ROCm vers llama.cpp+Vulkan+GGUF
 - **bench:** Basculer le squelette POC sur le layout modulaire v2
-- **bench:** ├®tendre Judge.score_row avec audio_path optionnel
-- **bench:** D├®sactiver le thinking sur GeminiJudge
-- **bench:** Refondre le monitor syst├¿me
+- **bench:** Étendre Judge.score_row avec audio_path optionnel
+- **bench:** Désactiver le thinking sur GeminiJudge
+- **bench:** Refondre le monitor système
 - **bench:** Durcir les sources Voxtral DML contre l'inflation VRAM
 - **bench:** Externaliser corpora et runs vers AppData via lib/paths.py
-- **bench:** Centraliser les paths mod├¿les GGUF vers paths.VOXTRAL_DIR
+- **bench:** Centraliser les paths modèles GGUF vers paths.VOXTRAL_DIR
 - **agent:** Aplatir la structure du skill ux-designer
 - **shell:** Bascule le menu tray sur TrayContextMenuHost WinUI 3
-- **shell:** R├®ordonner les items du menu tray avec Ambient en t├¬te
-- **shell:** Laisser le rendu natif WinUI 3 d├®cider de la hauteur des items
-- **shell:** WIP ÔÇö polir le rendu du tray menu sur les rails Win11
-- **shell:** WIP ÔÇö pillule custom + helper r├®utilisable pour switch tray menu
+- **shell:** Réordonner les items du menu tray avec Ambient en tête
+- **shell:** Laisser le rendu natif WinUI 3 décider de la hauteur des items
+- **shell:** WIP — polir le rendu du tray menu sur les rails Win11
+- **shell:** WIP — pillule custom + helper réutilisable pour switch tray menu
 - **ambient:** Isolate engine lifecycle and push loop
 - **whisp:** Split transcription event source
 - **settings:** Remove the dead warmup-on-launch toggle
@@ -876,20 +893,20 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Removed
 
 - **llm:** Restore default SystemPrompts as the shipped example
-- **perf:** Re-enable Mica ÔÇö disabling didn't fix the lag
+- **perf:** Re-enable Mica — disabling didn't fix the lag
 
 ### Fixed
 
-- **settings:** WhisperPage nav d├®bloqu├®e + refacto Settings canonique
-- **settings:** Plages sliders confiance align├®es sur rapport whisper.cpp + descriptions corrig├®es
-- **settings:** Persistence cass├®e au restart + refacto GeneralPage MVVM
-- **settings:** Import GGUF sans freeze UI + dirty detection imm├®diate profils
-- **settings:** Defaults profils r├®├®criture ÔÇö temp├®ratures basses, ctx 2K, mod├¿le vide
+- **settings:** WhisperPage nav débloquée + refacto Settings canonique
+- **settings:** Plages sliders confiance alignées sur rapport whisper.cpp + descriptions corrigées
+- **settings:** Persistence cassée au restart + refacto GeneralPage MVVM
+- **settings:** Import GGUF sans freeze UI + dirty detection immédiate profils
+- **settings:** Defaults profils réécriture — températures basses, ctx 2K, modèle vide
 - **paste:** Figer la cible paste au Start, supprimer la re-capture au Stop
 - **benchmark:** Force UTF-8 stdout on Windows to prevent CP1252 crash in redirected output
 - **benchmark:** Sanitize LLM output against terminal escape sequences
 - **settings:** Click-to-unfocus on WhisperPage and LlmPage, fix Language ComboBox initial display
-- **llm:** Augmenter NumCtxK par d├®faut (Restructuration 2ÔåÆ8K, Prompt 2ÔåÆ4K)
+- **llm:** Augmenter NumCtxK par défaut (Restructuration 2→8K, Prompt 2→4K)
 - Route startup milestones through LogService
 - Gate PublishSingleFile on _IsPublishing, add SelfContained
 - **diag:** Surface Silero-missing and LLM-empty-model errors
@@ -899,13 +916,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Sash cursor, display rounding, focus dismiss, RMS step
 - **playground:** SashThumb derives from ContentControl (Thumb is sealed)
 - **hud:** Complementary digit opacities (primary + accent = 1)
-- **playground:** Moir├®, composition freeze, ArcMask in light theme
+- **playground:** Moiré, composition freeze, ArcMask in light theme
 - **hud:** Live low-audio tracker + tighter stack gap + animations override
 - **hud:** Kill DWM Shell dropshadow on overlays + tune low-audio tracker
 - **playground,hud:** Responsive preview + badge semantic/centering
 - **logwindow,hud:** Drop blank Microphone row + bump palette chroma
 - **settings/llm:** Align rewrite rules, drop Prompt profile, recalibrate word thresholds
-- **engine:** Tooltip stuck on "Loading modelÔÇª", warmup pollutes logs
+- **engine:** Tooltip stuck on "Loading model…", warmup pollutes logs
 - **whisper:** Pass UTF-8 to whisper.cpp instead of CP-1252 ANSI
 - **llm:** Keep rules independent of profiles, add UX-copy reset dialogs
 - **llm:** Retry ProfileCombo selection on dispatcher tick after Reset Rules
@@ -924,7 +941,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **build-run:** Launch Deckle via cmd /c start so it gets foreground promotion
 - **core:** Add Microsoft.WindowsAppSDK reference to Deckle.Core
 - **whisp:** Track Pinvoke files (Native/ collided with .gitignore)
-- **whisp:** Align namespace Native ÔåÆ Pinvoke in WhisperPInvoke.cs
+- **whisp:** Align namespace Native → Pinvoke in WhisperPInvoke.cs
 - **llm:** Make Ollama types public for cross-assembly visibility
 - **setup:** DPI-aware wizard sizing + skip whisper re-download
 - **settings:** Add Resources.resw to Deckle.Settings for x:Uid resolution
@@ -936,18 +953,18 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Nav layers + InvalidCastException on pipeline start
 - **vision:** Use MarshalInspectable.FromManaged for the WinRT ABI extract
 - **vision:** Copy mip 0 with CopySubresourceRegion, not CopyResource
-- **vision:** Switch to CPU stride sampling ÔÇö GPU mip path was returning zeros
+- **vision:** Switch to CPU stride sampling — GPU mip path was returning zeros
 - **playground:** Move RestoreHueFromSettings out of the constructor body
 - **playground:** Allocate one SolidColorBrush per preview cell
 - **diagnostics:** Logging toggle is per-module Ambient, not verbose level
 - **playground+diagnostics:** Revert light zones row + flip Log Ambient default off
 - **playground:** Zone ComboBox via static ItemsSource (fixes 3-click bug)
 - **playground:** Zone picker via DropDownButton + MenuFlyout; pane closed; tooltip + width
-- **ui+logging:** Focus stealing, dropdown UX, Verbose├ùsource filter, Info promotions
+- **ui+logging:** Focus stealing, dropdown UX, Verbose×source filter, Info promotions
 - **logging:** Per-loop capture toggle + Verbose/Info doctrine enforcement
 - **logging:** Central filter w/ capture-active flag; default OFF
 - **diagnostics:** Trim Log ambient capture activity description to one factual sentence
-- **ambient:** Audit remediation ÔÇö Critical UI desync + Major transient feedback + IP validation + pre-publication docs
+- **ambient:** Audit remediation — Critical UI desync + Major transient feedback + IP validation + pre-publication docs
 - **ambient:** GammaSlider default Value + Padding warning
 - **ambient:** GammaSlider XAML attribute order Max/Value/Min
 - **ambient:** Move GammaSlider range to code-behind
@@ -962,29 +979,29 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Preview timer runs for the window's lifetime
 - **ambient:** Drop duplicate LatestSample property
 - **playground:** Zones toggle pattern + SCurve range + light names
-- **scripts:** Stats.ps1 path split ÔÇö use -split regex over String.Split overload
+- **scripts:** Stats.ps1 path split — use -split regex over String.Split overload
 - **integration:** Resolve cross-layer EventSource refs post-merge
 - **integration:** Rewrite App.xaml.cs refs after moved Diagnostics namespaces
 - **playground:** Restore capture preview placeholder on ambient stop
 - **ambient:** Release DXGI duplication eagerly on engine stop
-- **bench:** Commentaires .gitignore sur des lignes d├®di├®es
+- **bench:** Commentaires .gitignore sur des lignes dédiées
 - **bench:** Dtype= au lieu de torch_dtype= pour charger Voxtral en fp16
-- **bench:** ├®largir pauses model_load ├á 10 s pour stabilit├® monitor
-- **bench:** Bumper max_output_tokens GeminiJudge ├á 4096
-- **bench:** Aligner la fen├¬tre idle_baseline sur la pause pr├®-load
-- **diagnostics:** Garder TryEnqueueObserved contre la r├®cursion synchrone du listener
-- **bench:** Aligner le prompt judge sur les r├®gimes T1-T6 actuels
-- **bench:** Emp├¬cher l'├®crasement silencieux des runs avec model compos├®
-- **bench:** Relever max_new_tokens Voxtral ├á 8 tokens/s d'audio
-- **shell:** D├®place les strings TrayMenu dans le .resw de Deckle.App
+- **bench:** Élargir pauses model_load à 10 s pour stabilité monitor
+- **bench:** Bumper max_output_tokens GeminiJudge à 4096
+- **bench:** Aligner la fenêtre idle_baseline sur la pause pré-load
+- **diagnostics:** Garder TryEnqueueObserved contre la récursion synchrone du listener
+- **bench:** Aligner le prompt judge sur les régimes T1-T6 actuels
+- **bench:** Empêcher l'écrasement silencieux des runs avec model composé
+- **bench:** Relever max_new_tokens Voxtral à 8 tokens/s d'audio
+- **shell:** Déplace les strings TrayMenu dans le .resw de Deckle.App
 - **shell:** Scaler le menu tray via le DPI du moniteur sous le curseur
-- **shell:** Ancrer le menu tray sur le rect de l'ic├┤ne, pas le curseur
+- **shell:** Ancrer le menu tray sur le rect de l'icône, pas le curseur
 - **shell:** Forcer FlyoutPlacementMode.Full pour aligner le popup
-- **shell:** Aligner le tray menu sur la densit├® Win11 narrow
+- **shell:** Aligner le tray menu sur la densité Win11 narrow
 - **observability:** Drop per-frame capture firehose before buffering
 - **observability:** Stop LogWindow observing its own log-append
 - **ambient:** Classify Hue echoes by pushed state
-- **shell:** Aligner le dimensionnement du tray menu sur le rendu r├®el
+- **shell:** Aligner le dimensionnement du tray menu sur le rendu réel
 - **vision:** Make the duplication recreate format-aware
 - **ambient:** Rebuild the frame sampler on capture format change
 - **app:** Make LogWindow Copy reliable on full selection
