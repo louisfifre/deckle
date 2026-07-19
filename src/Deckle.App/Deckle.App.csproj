@@ -17,6 +17,10 @@
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Deckle owns ONNX Runtime and DirectML through the autocorrect stack.
+         Windows App SDK ML is not used, so its automatic ONNX Runtime
+         initialization must not compete with the host's runtime. -->
+    <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
     <Version>0.13.3</Version>
     <!-- Forces the Publish pipeline to generate/copy Deckle.pri into PublishDir.
          Without this, in unpackaged + WindowsAppSDK 1.8, the .pri doesn't land in
@@ -148,5 +152,18 @@
     <Copy SourceFiles="@(_AutocorrectLexicon)"
           DestinationFiles="@(_AutocorrectLexicon->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Windows App SDK 1.8 self-contained deployment contributes its own
+       DirectML.dll through MsixContent. Deckle already publishes the DirectML
+       version required by ONNX Runtime GenAI, and the two files share the same
+       output path. Keep Deckle's runtime and remove only the unused Windows ML
+       copy before the .NET SDK checks publish conflicts. -->
+  <Target Name="PreferDeckleDirectMLRuntime"
+          BeforeTargets="_HandleFileConflictsForPublish"
+          Condition="'$(_IsPublishing)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="$(IntermediateOutputPath)MsixContent\DirectML.dll" />
+    </ItemGroup>
   </Target>
 </Project>
