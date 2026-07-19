@@ -542,7 +542,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HarvestData.cs
 │   │   ├── HarvestFilter.cs
 │   │   ├── HarvestStore.cs
+│   │   ├── LexiconBuilder.Artifacts.cs
 │   │   ├── LexiconBuilder.cs
+│   │   ├── LexiconBuilder.English.cs
+│   │   ├── LexiconBuilder.French.cs
+│   │   ├── LexiconBuilder.Globish.cs
 │   │   ├── MorphalouReader.cs
 │   │   ├── PairModelTrainer.cs
 │   │   ├── RestorationEvaluator.cs
