@@ -186,6 +186,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── env.py
 │   │   ├── event_log.py
 │   │   └── paths.py
+│   ├── rewrite/
+│   │   └── paragraph-gate/
+│   │       ├── .gitignore
+│   │       ├── ParagraphGate.csproj
+│   │       ├── Program.cs
+│   │       ├── README.md
+│   │       └── samples.jsonl
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py
@@ -938,8 +945,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Engine/
+│   │   │   ├── OllamaEngine.cs
+│   │   │   ├── ParagraphRewrite.cs
 │   │   │   ├── PromptTemplates.cs
+│   │   │   ├── RewriteEngine.cs
 │   │   │   └── RewriteService.cs
+│   │   ├── Gate/
+│   │   │   ├── DiffAlignment.cs
+│   │   │   ├── DiffGateVerdict.cs
+│   │   │   ├── GateLexicon.cs
+│   │   │   ├── GateToken.cs
+│   │   │   └── RewriteDiffGate.cs
 │   │   ├── Settings/
 │   │   │   └── RewriteAvailability.cs
 │   │   ├── Strings/
@@ -964,6 +980,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── CONTEXT.md  — context-deckle-llm-rewrite [agent-instructions] Rewrite service vocabulary — the single service every rewrite goes through, who…
 │   │   ├── Deckle.Llm.Rewrite.csproj
+│   │   ├── JOURNAL.md  — [module-journal] Dated decisions and findings for Deckle.Llm.Rewrite — engine seam, paragraph re…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsModule.cs
@@ -1493,6 +1510,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
 │   │   └── LightingObservabilityCollection.cs
+│   ├── Deckle.Llm.Rewrite.Tests/
+│   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   └── RewriteDiffGateTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs
