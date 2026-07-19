@@ -573,7 +573,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SettingArgs.cs
 │   │   │   ├── SettingDescriptor.cs
 │   │   │   ├── SettingKind.cs
-│   │   │   └── SettingsComposer.cs
+│   │   │   ├── SettingsComposer.Chrome.cs
+│   │   │   ├── SettingsComposer.cs
+│   │   │   ├── SettingsComposer.Folds.cs
+│   │   │   ├── SettingsComposer.Inputs.cs
+│   │   │   └── SettingsComposer.Numeric.cs
 │   │   ├── Themes/
 │   │   │   └── Icons.xaml
 │   │   ├── AGENTS.md  — [agent-instructions] Shared WinUI floor — the UI primitives every module depends on and that depend…

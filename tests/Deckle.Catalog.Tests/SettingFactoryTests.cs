@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Deckle.Catalog;
 using Xunit;
 
@@ -44,6 +45,29 @@ public class SettingFactoryTests
         // Pas de defaultValue → Default null : le composer ne rend alors aucun reset.
         var d = Setting.Toggle("k", () => false, _ => { });
         Assert.Null(d.Default);
+    }
+
+    [Fact]
+    public async Task ToggleAndGroupCarryTheSameLiveEnableConfirmationContract()
+    {
+        bool allow = false;
+        int requests = 0;
+        Task<bool> Confirm(Microsoft.UI.Xaml.XamlRoot _)
+        {
+            requests++;
+            return Task.FromResult(allow);
+        }
+
+        var toggle = Setting.Toggle("toggle", () => false, _ => { }, confirmOnEnable: Confirm);
+        var group = Setting.Group("group", () => false, _ => { }, [], confirmOnEnable: Confirm);
+
+        Assert.NotNull(toggle.ConfirmOnEnable);
+        Assert.NotNull(group.ConfirmOnEnable);
+        Assert.False(await toggle.ConfirmOnEnable!(null!));
+
+        allow = true;
+        Assert.True(await group.ConfirmOnEnable!(null!));
+        Assert.Equal(2, requests);
     }
 
     // ── Text : args par défaut, args fournis, aller-retour ─────────────────────
