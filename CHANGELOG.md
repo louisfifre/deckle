@@ -9,6 +9,8 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [0.13.1](https://github.com/louisfifre/deckle/compare/v0.13.0...v0.13.1) — 2026-07-19
+
 ## [0.13.0](https://github.com/louisfifre/deckle/compare/v0.12.0...v0.13.0) — 2026-07-18
 
 ### Added
