@@ -322,44 +322,36 @@ if ($Publish) {
     # pre-stable, so the release must not claim the repo's "Latest" badge.
     if ($Version -like '0.*') { $ghArgs += '--prerelease' }
     $ghArgs += @('--notes-file', $Notes)
-    & gh release view $tag --repo $OwnerRepo *> $null
+    $remoteReleaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish 2>$null) -join "`n"
     $releaseExists = $LASTEXITCODE -eq 0
-    if ($releaseExists) {
-        throw "$tag already exists on GitHub; published release assets are immutable"
-    } else {
+    if (-not $releaseExists) {
         & gh @ghArgs
         if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
+        Ok "Draft release $tag uploaded"
+
+        $remoteReleaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
+        if ($LASTEXITCODE -ne 0) { throw "GitHub draft $tag could not be read after upload" }
+    } else {
+        Ok "Existing draft release $tag found; validating it for resume"
     }
-    Ok "Draft release $tag uploaded"
 
     # Read the draft back from GitHub before it can become discoverable by the
-    # installer. Names and byte sizes must match all three local artifacts.
-    $remoteRelease = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets) -join "`n" | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0 -or -not $remoteRelease.isDraft) {
-        throw "GitHub release $tag is not a readable draft"
-    }
+    # installer. Its source, names and byte sizes must match the local release.
+    $remoteRelease = $remoteReleaseJson | ConvertFrom-Json
     $expectedAssets = @{
         $SetupName = $SetupBytes
         $ZipName   = $ZipBytes
         $ShaName   = (Get-Item $ShaPath).Length
     }
-    foreach ($expected in $expectedAssets.GetEnumerator()) {
-        $matches = @($remoteRelease.assets | Where-Object { $_.name -ceq $expected.Key })
-        if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.Value) {
-            throw "GitHub draft asset $($expected.Key) is missing or has the wrong size"
-        }
-    }
-    if (@($remoteRelease.assets).Count -ne $expectedAssets.Count) {
-        throw "GitHub draft $tag contains unexpected assets"
-    }
+    Assert-DeckleReleaseDraft `
+        -Release $remoteRelease `
+        -Tag $tag `
+        -HeadSha $headSha `
+        -ExpectedAssets $expectedAssets
     Ok 'GitHub draft assets verified by name and byte size'
 
-    & git -C $RepoRoot fetch origin "refs/tags/$tag`:refs/tags/$tag"
-    if ($LASTEXITCODE -ne 0) { throw "git fetch $tag failed (code $LASTEXITCODE)" }
-    $tagSha = (& git -C $RepoRoot rev-parse "$tag^{commit}").Trim()
-    if ($LASTEXITCODE -ne 0 -or $tagSha -cne $headSha) {
-        throw "GitHub tag $tag does not point to release HEAD $headSha"
-    }
+    Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $headSha
+    Ok "GitHub tag $tag published at release HEAD"
 
     Step 'Freeze the public release into CHANGELOG.md'
     & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
