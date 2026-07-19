@@ -15,13 +15,13 @@ namespace Deckle.Install;
 //
 // Why the REST API and not /releases/latest: every 0.x release is published as a
 // pre-release, and GitHub's "latest" endpoint deliberately skips pre-releases. The
-// /releases list returns everything, newest first, so the first non-draft entry is
-// the true latest during the whole 0.x phase.
+// /releases list also contains the native runtime's independent `native-v*`
+// releases. App releases are therefore selected by their strict vX.Y.Z tag and
+// compared semantically instead of trusting API order.
 //
-// Asset URLs follow the frozen release convention
-// (releases/download/v<X.Y.Z>/Deckle-v<X.Y.Z>.zip + .sha256); we still read them
-// from the assets list when present and fall back to the convention, so a future
-// naming tweak on one side doesn't silently break the other.
+// Asset names are part of the frozen release contract. A published app release
+// missing either exact asset is rejected: synthesizing a plausible URL would
+// hide a partial release precisely when the installer must fail closed.
 public static class ReleaseResolver
 {
     // The stub is distributed standalone, so owner/repo is a constant here
@@ -31,8 +31,7 @@ public static class ReleaseResolver
 
     private static readonly HttpClient s_http = CreateClient();
 
-    // ZipSize is 0 when the asset came from the URL-convention fallback — the
-    // consent recap then simply omits the download size instead of inventing one.
+    // Size is read from the exact ZIP asset and feeds the consent recap.
     public sealed record ResolvedRelease(string Tag, string ZipUrl, string Sha256Url, long ZipSize);
 
     public static async Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct)
@@ -44,18 +43,7 @@ public static class ReleaseResolver
             .DeserializeAsync(stream, ReleaseJsonContext.Default.GitHubReleaseArray, ct)
             .ConfigureAwait(false);
 
-        GitHubRelease? latest = releases?.FirstOrDefault(r => !r.Draft && r.TagName is not null);
-        if (latest?.TagName is not { } tag)
-            throw new InvalidOperationException("No published release found on GitHub.");
-
-        GitHubAsset? zipAsset = FindAsset(latest, name => name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
-        GitHubAsset? shaAsset = FindAsset(latest, name => name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase));
-
-        string zip = zipAsset?.BrowserDownloadUrl
-            ?? $"https://github.com/{Repo}/releases/download/{tag}/Deckle-{tag}.zip";
-        string sha = shaAsset?.BrowserDownloadUrl ?? zip + ".sha256";
-
-        return new ResolvedRelease(tag, zip, sha, zipAsset?.Size ?? 0);
+        return ResolveLatestAppRelease(releases ?? []);
     }
 
     // Fetches and parses the payload's .sha256 sidecar — `<hex> *<filename>`
@@ -70,8 +58,60 @@ public static class ReleaseResolver
     // Installed-apps entry stores and version comparisons parse.
     public static string BareVersion(string tag) => tag.StartsWith('v') ? tag[1..] : tag;
 
-    private static GitHubAsset? FindAsset(GitHubRelease release, Func<string, bool> match) =>
-        release.Assets?.FirstOrDefault(a => a.Name is not null && match(a.Name));
+    internal static ResolvedRelease ResolveLatestAppRelease(IEnumerable<GitHubRelease> releases)
+    {
+        GitHubRelease? latest = releases
+            .Where(r => !r.Draft && TryParseAppVersion(r.TagName, out _))
+            .OrderByDescending(r => ParseAppVersion(r.TagName!))
+            .FirstOrDefault();
+
+        if (latest?.TagName is not { } tag)
+            throw new InvalidOperationException("No published Deckle app release found on GitHub.");
+
+        string zipName = $"Deckle-{tag}.zip";
+        string shaName = $"{zipName}.sha256";
+        GitHubAsset zipAsset = FindRequiredAsset(latest, zipName);
+        GitHubAsset shaAsset = FindRequiredAsset(latest, shaName);
+
+        return new ResolvedRelease(
+            tag,
+            RequireAssetUrl(zipAsset, zipName),
+            RequireAssetUrl(shaAsset, shaName),
+            zipAsset.Size);
+    }
+
+    private static bool TryParseAppVersion(string? tag, out Version version)
+    {
+        version = new Version();
+        if (tag is null || tag.Length < 2 || tag[0] != 'v') return false;
+        string bare = tag[1..];
+        if (!Version.TryParse(bare, out Version? parsed) || parsed is null) return false;
+        if (parsed.Major < 0 || parsed.Minor < 0 || parsed.Build < 0 || parsed.Revision >= 0)
+            return false;
+
+        // Version.TryParse accepts forms such as 01.2.3; the release contract
+        // does not. Round-tripping enforces the canonical vX.Y.Z spelling.
+        if (!string.Equals(bare, parsed.ToString(3), StringComparison.Ordinal)) return false;
+        version = parsed;
+        return true;
+    }
+
+    private static Version ParseAppVersion(string tag)
+    {
+        _ = TryParseAppVersion(tag, out Version version);
+        return version;
+    }
+
+    private static GitHubAsset FindRequiredAsset(GitHubRelease release, string expectedName) =>
+        release.Assets?.SingleOrDefault(a =>
+            string.Equals(a.Name, expectedName, StringComparison.Ordinal))
+        ?? throw new InvalidOperationException(
+            $"Release {release.TagName} is missing required asset {expectedName}.");
+
+    private static string RequireAssetUrl(GitHubAsset asset, string name) =>
+        !string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl)
+            ? asset.BrowserDownloadUrl
+            : throw new InvalidOperationException($"Release asset {name} has no download URL.");
 
     private static HttpClient CreateClient()
     {

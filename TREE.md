@@ -1472,6 +1472,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs
 │   │   └── ThreeFingerDragRecognizerTests.cs
+│   ├── Deckle.Install.Tests/
+│   │   ├── Deckle.Install.Tests.csproj
+│   │   └── ReleaseResolverTests.cs
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessCurveTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs

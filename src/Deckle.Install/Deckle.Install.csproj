@@ -3,6 +3,10 @@
     <RootNamespace>Deckle.Install</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Install.Tests" />
+  </ItemGroup>
+
   <!-- Windows integration of an installed Deckle — the primitives shared by the
        download stub (Deckle.Installer, NativeAOT) and the install-mode wizard
        (Deckle.Setup): install locations, Start Menu shortcut, Installed-apps
