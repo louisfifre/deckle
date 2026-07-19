@@ -752,6 +752,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── FocusEventCoalescer.cs
 │   │   │   ├── IKeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.cs
+│   │   │   ├── KeyboardInputHost.FocusHooks.cs
+│   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
+│   │   │   ├── KeyboardInputHost.RawInput.cs
+│   │   │   ├── KeyboardInputHost.Rollup.cs
+│   │   │   ├── KeyboardInputHost.WheelHook.cs
 │   │   │   ├── KeyboardKeyEvent.cs
 │   │   │   └── MouseWheelEvent.cs
 │   │   ├── Telemetry/
