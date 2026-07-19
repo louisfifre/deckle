@@ -43,6 +43,7 @@ function Show-MaintenanceMenu {
         ) }
         @{ Prefix = 'Inspect'; Cells = @(
             @{ Label = 'Show module stats'; Value = 'stats' }
+            @{ Label = 'Validate resources'; Value = 'resources' }
         ) }
         @{ Prefix = 'Docs'; Cells = @(
             @{ Label = 'Update README pulse'; Value = 'readme-stats' }
@@ -53,6 +54,7 @@ function Show-MaintenanceMenu {
         'clean'         { Invoke-WorktreeScript -Script 'clean.ps1' }
         'build-servers' { Invoke-StopBuildServers }
         'stats'         { Invoke-WorktreeScript -Script 'stats.ps1' }
+        'resources'     { Invoke-WorktreeScript -Script 'validate-resources.ps1' }
         'readme-stats'  { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
         'changelog'     { Invoke-WorktreeScript -Script 'changelog.ps1' }
     }

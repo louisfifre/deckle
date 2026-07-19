@@ -1,0 +1,52 @@
+{
+  "DynamicKeys": [
+    {
+      "Assembly": "Deckle.Setup",
+      "Pattern": "Setup_Module_*",
+      "Reason": "Module catalogue labels are composed from module ids at runtime."
+    },
+    {
+      "Assembly": "Deckle.App",
+      "Pattern": "Setup_Module_*",
+      "Reason": "ModulesPage resolves its runtime-composed catalogue keys through the root resource map."
+    }
+  ],
+  "RequiredKeys": [
+    {
+      "Assembly": "Deckle.Audio",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Transcription",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Llm.Rewrite",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Autocorrect",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Lighting.Ambient",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Input.Trackpad",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Diagnostics.Logging",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    }
+  ],
+  "IntentionalDivergences": []
+}

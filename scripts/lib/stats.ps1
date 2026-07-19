@@ -3,7 +3,7 @@
 # Walks every .csproj under <RepoRoot>\src\, then builds a single file
 # inventory for each module. The console views are derived from that same
 # inventory:
-#   - long-file watch list (500+ lines, 1000+ lines)
+#   - long-file watch list (400/600 effective LOC for C#, 500/1000 raw otherwise)
 #   - module summary, sorted by module name
 #   - dynamic file-type counts found in modules
 #   - detailed per-module file tree
@@ -34,6 +34,12 @@ param(
     # Files at or above this raw-line count are shown as too large.
     [int]$TooLargeThreshold = 1000,
 
+    # C# files are judged on effective source lines rather than formatting and
+    # comments. Raw lines remain visible alongside this measure.
+    [int]$CSharpWatchThreshold = 400,
+
+    [int]$CSharpTooLargeThreshold = 600,
+
     # .resw files at or above this key count are shown as resource inventories.
     [int]$ResourceWatchThreshold = 300,
 
@@ -48,6 +54,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+Import-Module (Join-Path $ScriptDir 'source-metrics.psm1') -Force
 
 $Workflow = 'Show module stats'
 $RepoRoot = $null
@@ -187,21 +194,14 @@ function Get-FileLines {
     $reswKeys = $null
 
     if ($ext -eq '.cs') {
-        $loc = @($lines | Where-Object {
-            $t = $_.Trim()
-            ($t -ne '') -and
-                -not $t.StartsWith('//') -and
-                -not $t.StartsWith('/*') -and
-                -not $t.StartsWith('*') -and
-                -not $t.StartsWith('*/')
-        }).Count
+        $loc = Measure-CSharpEffectiveLines -Lines $lines
     } elseif ($ext -eq '.xaml') {
         $loc = @($lines | Where-Object {
             $t = $_.Trim()
             ($t -ne '') -and -not $t.StartsWith('<!--')
         }).Count
     } elseif ($ext -eq '.resw') {
-        $reswKeys = @($lines | Where-Object { $_ -match '^\s*<data\s+name=' }).Count
+        $reswKeys = Measure-ReswEntries -Lines $lines
     }
 
     return [pscustomobject]@{
@@ -322,7 +322,12 @@ function Write-ThresholdLine {
         $File
     )
 
-    Write-Host ("  {0,5} lines  " -f $File.RawLines) -NoNewline
+    $measure = if ($File.Extension -eq '.cs') {
+        "{0,5} LOC / {1,5} raw" -f $File.Loc, $File.RawLines
+    } else {
+        "{0,5} lines             " -f $File.RawLines
+    }
+    Write-Host ("  {0}  " -f $measure) -NoNewline
     Write-Host ("{0,-8}" -f $Marker) -ForegroundColor $Color -NoNewline
     Write-Host (" {0}" -f $File.RelativeRepo)
 }
@@ -420,6 +425,12 @@ function Write-FileTableRow {
             $marker = '300+ keys'
             $markerColor = [ConsoleColor]::Yellow
         }
+    } elseif ($File.Extension -eq '.cs' -and $null -ne $File.Loc -and $File.Loc -ge $CSharpTooLargeThreshold) {
+            $marker = "$CSharpTooLargeThreshold+ LOC"
+            $markerColor = [ConsoleColor]::Red
+    } elseif ($File.Extension -eq '.cs' -and $null -ne $File.Loc -and $File.Loc -ge $CSharpWatchThreshold) {
+            $marker = "$CSharpWatchThreshold+ LOC"
+            $markerColor = [ConsoleColor]::Yellow
     } elseif ($null -ne $File.RawLines -and $File.RawLines -ge $TooLargeThreshold) {
             $marker = '1000+'
             $markerColor = [ConsoleColor]::Red
@@ -579,13 +590,22 @@ $rows = $rows | Sort-Object Module
 
 # Long file watch list.
 $longFiles = @($moduleFiles |
-    Where-Object { $_.Extension -ne '.resw' -and $null -ne $_.RawLines -and $_.RawLines -ge $WatchThreshold } |
-    Sort-Object -Property @{ Expression = 'RawLines'; Descending = $true }, RelativeRepo)
+    Where-Object {
+        $_.Extension -ne '.resw' -and (
+            ($_.Extension -eq '.cs' -and $null -ne $_.Loc -and $_.Loc -ge $CSharpWatchThreshold) -or
+            ($_.Extension -ne '.cs' -and $null -ne $_.RawLines -and $_.RawLines -ge $WatchThreshold)
+        )
+    } |
+    Sort-Object -Property @{ Expression = { if ($_.Extension -eq '.cs') { $_.Loc } else { $_.RawLines } }; Descending = $true }, RelativeRepo)
 
 if ($longFiles.Count -gt 0) {
     Write-Section "Files over threshold (non-resource text)"
     foreach ($file in $longFiles) {
-        if ($file.RawLines -ge $TooLargeThreshold) {
+        if ($file.Extension -eq '.cs' -and $file.Loc -ge $CSharpTooLargeThreshold) {
+            Write-ThresholdLine -Marker "$CSharpTooLargeThreshold+ LOC" -Color Red -File $file
+        } elseif ($file.Extension -eq '.cs') {
+            Write-ThresholdLine -Marker "$CSharpWatchThreshold+ LOC" -Color Yellow -File $file
+        } elseif ($file.RawLines -ge $TooLargeThreshold) {
             Write-ThresholdLine -Marker '1000+' -Color Red -File $file
         } else {
             Write-ThresholdLine -Marker '500+' -Color Yellow -File $file
@@ -668,8 +688,11 @@ if ($Json) {
     Write-Host "Wrote $Json" -ForegroundColor DarkGray
 }
 
-$tooLargeFiles = @($longFiles | Where-Object { $_.RawLines -ge $TooLargeThreshold })
-$watchFiles = @($longFiles | Where-Object { $_.RawLines -lt $TooLargeThreshold })
+$tooLargeFiles = @($longFiles | Where-Object {
+    ($_.Extension -eq '.cs' -and $_.Loc -ge $CSharpTooLargeThreshold) -or
+    ($_.Extension -ne '.cs' -and $_.RawLines -ge $TooLargeThreshold)
+})
+$watchFiles = @($longFiles | Where-Object { $_ -notin $tooLargeFiles })
 $tooLargeResources = @($resourceFiles | Where-Object { $_.ReswKeys -ge $ResourceTooLargeThreshold })
 $watchResources = @($resourceFiles | Where-Object { $_.ReswKeys -lt $ResourceTooLargeThreshold })
 
