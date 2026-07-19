@@ -884,8 +884,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AmbientColorPipeline.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
 │   │   │   ├── AmbientEngine.cs
+│   │   │   ├── AmbientEngine.GroupPush.cs
+│   │   │   ├── AmbientEngine.Heartbeat.cs
 │   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
+│   │   │   ├── AmbientEngine.MultiLightPush.cs
+│   │   │   ├── AmbientEngine.PushHealth.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
@@ -902,13 +906,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Controls/
 │   │   │   │   ├── BrightnessCurveCanvas.xaml
 │   │   │   │   └── BrightnessCurveCanvas.xaml.cs
+│   │   │   ├── AmbientPage.Hue.cs
 │   │   │   ├── AmbientPage.xaml
 │   │   │   └── AmbientPage.xaml.cs
 │   │   ├── AmbientSettings.cs
 │   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
+│   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
 │   │   ├── DeckleAmbientSource.cs
+│   │   ├── DeckleAmbientSource.Lifecycle.cs
+│   │   ├── DeckleAmbientSource.Pairing.cs
+│   │   ├── DeckleAmbientSource.Push.cs
+│   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
