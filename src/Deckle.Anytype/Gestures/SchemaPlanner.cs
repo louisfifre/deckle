@@ -1,0 +1,238 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json.Nodes;
+
+namespace Deckle.Anytype;
+
+internal static class SchemaPlanner
+{
+    internal static SchemaPreview Build(
+        string spaceAlias,
+        string spaceId,
+        SchemaManifest manifest,
+        SchemaSnapshot snapshot)
+    {
+        var actions = new List<SchemaAction>();
+        var conflicts = new List<string>();
+
+        foreach (PropertySpec prop in manifest.Properties)
+        {
+            if (snapshot.Properties.TryGetValue(prop.Key, out SchemaPropertyInfo? existing))
+            {
+                if (!string.Equals(existing.Format, prop.Format, StringComparison.Ordinal))
+                    conflicts.Add(
+                        $"propriété {prop.Key} : format existant {existing.Format}, demandé {prop.Format}");
+            }
+            else
+            {
+                actions.Add(new SchemaAction("create_property", prop.Key, prop.Name));
+            }
+
+            if (IsTagFormat(prop.Format))
+            {
+                snapshot.TagsByProperty.TryGetValue(prop.Key, out var tags);
+                tags ??= new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
+                foreach (TagSpec tag in prop.Tags)
+                    if (!HasTag(tags, tag))
+                        actions.Add(new SchemaAction("create_tag", $"{prop.Key}:{tag.MatchKey}", tag.Name));
+            }
+        }
+
+        foreach (TypeSpec type in manifest.Types)
+        {
+            if (!snapshot.Types.ContainsKey(type.Key))
+                actions.Add(new SchemaAction("create_type", type.Key, type.Name));
+
+            foreach (string propKey in type.Properties)
+            {
+                if (!manifest.Properties.Any(p => p.Key == propKey) && !snapshot.Properties.ContainsKey(propKey))
+                {
+                    conflicts.Add($"type {type.Key} : propriété demandée inconnue {propKey}");
+                    continue;
+                }
+
+                bool alreadyAttached = snapshot.Types.TryGetValue(type.Key, out SchemaTypeInfo? existing)
+                    && IsPropertyAttached(existing, snapshot, propKey);
+                if (!alreadyAttached)
+                    actions.Add(new SchemaAction("attach_property", $"{type.Key}:{propKey}", propKey));
+            }
+        }
+
+        return new SchemaPreview(
+            Id: PreviewId(),
+            SpaceAlias: spaceAlias,
+            SpaceId: spaceId,
+            Manifest: manifest,
+            Snapshot: snapshot,
+            Actions: actions,
+            Conflicts: conflicts);
+    }
+
+    internal static string Render(SchemaPreview preview)
+    {
+        var sb = new StringBuilder();
+        sb.Append("Preview ").Append(preview.Id)
+            .Append(" · espace ").Append(preview.SpaceAlias)
+            .Append(" · ").Append(preview.SpaceId).Append('\n');
+
+        if (preview.Conflicts.Count > 0)
+        {
+            sb.Append("Conflits :\n");
+            foreach (string conflict in preview.Conflicts)
+                sb.Append("- ").Append(conflict).Append('\n');
+        }
+
+        if (preview.Actions.Count == 0)
+        {
+            sb.Append("Aucune création additive nécessaire.");
+            return sb.ToString().TrimEnd();
+        }
+
+        sb.Append("Actions additives :\n");
+        foreach (SchemaAction action in preview.Actions)
+            sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key).Append('\n');
+
+        sb.Append("Relire puis appeler schema_apply avec confirm:true et preview_id:")
+            .Append(preview.Id).Append('.');
+        return sb.ToString().TrimEnd();
+    }
+
+    internal static bool IsTagFormat(string format) =>
+        string.Equals(format, "select", StringComparison.Ordinal)
+        || string.Equals(format, "multi_select", StringComparison.Ordinal);
+
+    internal static bool HasTag(IReadOnlyDictionary<string, SchemaTagInfo> tags, TagSpec tag) =>
+        tags.ContainsKey(tag.MatchKey)
+        || tags.Values.Any(existing =>
+            string.Equals(existing.Name, tag.Name, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsPropertyAttached(SchemaTypeInfo type, SchemaSnapshot snapshot, string propKey)
+    {
+        return snapshot.Properties.TryGetValue(propKey, out SchemaPropertyInfo? prop)
+            ? type.PropertyLinks.Any(link => LinkMatches(link, prop))
+            : type.PropertyLinks.Any(link => string.Equals(link.Key, propKey, StringComparison.Ordinal));
+    }
+
+    internal static IReadOnlyList<SchemaPropertyLinkInfo> RequestedPropertyLinks(
+        TypeSpec type,
+        IReadOnlyDictionary<string, SchemaPropertyInfo> propertiesByKey)
+    {
+        var links = new List<SchemaPropertyLinkInfo>();
+        foreach (string propKey in type.Properties)
+        {
+            if (!propertiesByKey.TryGetValue(propKey, out SchemaPropertyInfo? property))
+                throw new InvalidOperationException(
+                    $"Propriété « {propKey} » introuvable pour le type « {type.Key} ».");
+            if (!links.Any(link => LinkMatches(link, property)))
+                links.Add(LinkFrom(property));
+        }
+        return links;
+    }
+
+    internal static JsonObject TypeCreatePayload(TypeSpec spec, IReadOnlyList<SchemaPropertyLinkInfo> links)
+    {
+        var payload = new JsonObject
+        {
+            ["key"] = spec.Key,
+            ["name"] = spec.Name,
+            ["plural_name"] = spec.PluralName,
+            ["layout"] = spec.Layout,
+        };
+        if (links.Count > 0)
+            payload["properties"] = PropertyLinkArray(links);
+        return payload;
+    }
+
+    internal static IEnumerable<SchemaPropertyLinkInfo> ResolveTypePropertyLinks(
+        SchemaTypeInfo type,
+        IReadOnlyDictionary<string, SchemaPropertyInfo> propertiesByKey)
+    {
+        foreach (SchemaPropertyLinkInfo link in type.PropertyLinks)
+        {
+            if (TryResolveLink(link, propertiesByKey, out SchemaPropertyInfo? property))
+            {
+                yield return LinkFrom(property!);
+                continue;
+            }
+
+            if (link.HasPayload)
+            {
+                yield return link;
+                continue;
+            }
+
+            throw new InvalidOperationException(
+                $"Type « {type.Key} » : lien de propriété existant impossible à résoudre. " +
+                "schema_apply refuse de réécrire ce type sans key, name et format.");
+        }
+    }
+
+    private static bool TryResolveLink(
+        SchemaPropertyLinkInfo link,
+        IReadOnlyDictionary<string, SchemaPropertyInfo> propertiesByKey,
+        out SchemaPropertyInfo? property)
+    {
+        if (link.Key.Length > 0 && propertiesByKey.TryGetValue(link.Key, out property))
+            return true;
+
+        if (link.Id.Length > 0)
+        {
+            property = propertiesByKey.Values.FirstOrDefault(p =>
+                string.Equals(p.Id, link.Id, StringComparison.Ordinal));
+            return property is not null;
+        }
+
+        property = null;
+        return false;
+    }
+
+    internal static JsonArray PropertyLinkArray(IEnumerable<SchemaPropertyLinkInfo> links)
+    {
+        var properties = new JsonArray();
+        foreach (SchemaPropertyLinkInfo link in links)
+        {
+            if (!link.HasPayload)
+                throw new InvalidOperationException(
+                    "Un lien de propriété Anytype doit porter key, name et format.");
+
+            properties.Add(new JsonObject
+            {
+                ["key"] = link.Key,
+                ["name"] = link.Name,
+                ["format"] = link.Format,
+            });
+        }
+        return properties;
+    }
+
+    internal static SchemaPropertyLinkInfo LinkFrom(SchemaPropertyInfo property) =>
+        new(property.Id, property.Key, property.Name, property.Format);
+
+    internal static bool LinkMatches(SchemaPropertyLinkInfo link, SchemaPropertyInfo property) =>
+        (link.Key.Length > 0 && string.Equals(link.Key, property.Key, StringComparison.Ordinal))
+        || (link.Id.Length > 0 && string.Equals(link.Id, property.Id, StringComparison.Ordinal));
+
+    internal static string OrDefault(string value, string fallback) =>
+        value.Length > 0 ? value : fallback;
+
+    internal static void EnsureNoUnpreviewedActions(SchemaPreview preview, SchemaPreview livePlan)
+    {
+        var previewed = preview.Actions
+            .Select(a => $"{a.Kind}:{a.Key}")
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (SchemaAction action in livePlan.Actions)
+            if (!previewed.Contains($"{action.Kind}:{action.Key}"))
+                throw new InvalidOperationException(
+                    "L'état Anytype a changé depuis le preview. Relance schema_preview avant schema_apply.");
+    }
+
+    private static string PreviewId()
+    {
+        Span<byte> bytes = stackalloc byte[6];
+        RandomNumberGenerator.Fill(bytes);
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+
+}

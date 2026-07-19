@@ -279,6 +279,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
+│   │   │   ├── SchemaApiJson.cs
+│   │   │   ├── SchemaManifest.cs
+│   │   │   ├── SchemaModels.cs
+│   │   │   ├── SchemaPlanner.cs
+│   │   │   ├── SchemaPreviewStore.cs
+│   │   │   ├── SchemaSnapshotReader.cs
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
