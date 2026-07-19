@@ -245,6 +245,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── record-version.ps1
 │   │   ├── release-history.psm1
 │   │   ├── release-history.tests.ps1
+│   │   ├── release-validation.psm1
+│   │   ├── release-validation.tests.ps1
 │   │   ├── resource-inventory.psm1
 │   │   ├── resource-inventory.tests.ps1
 │   │   ├── setup-assets.ps1

@@ -57,6 +57,7 @@ $ScriptDir = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
 . (Join-Path $ScriptDir 'deckle-process.ps1')
 Import-Module (Join-Path $ScriptDir 'release-history.psm1') -Force
+Import-Module (Join-Path $ScriptDir 'release-validation.psm1') -Force
 
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
@@ -65,7 +66,6 @@ function Warn($msg) { Write-Host "           $msg" -ForegroundColor Yellow }
 $Workflow = if ($Publish) { 'Publish app release' } else { 'Prepare app release artifacts' }
 $RepoRoot = $null
 $Version = $null
-$OutDir = $null
 $SetupPath = $null
 $ZipPath = $null
 $ZipSha256 = $null
@@ -105,32 +105,51 @@ $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 
-# Publishing rebuilds the app payload. A running Release instance keeps the
-# current app DLLs locked and makes MSBuild retry for a minute before failing.
-Step 'Stop running Deckle instance'
-Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
-
 # ── Read <Version> — single source of truth is the csproj ────────────────────
 $Version  = $null
 $verMatch = Select-String -Path $Csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
 if ($verMatch) { $Version = $verMatch.Matches[0].Groups[1].Value.Trim() }
 if (-not $Version) { throw "<Version> not found in $Csproj" }
+if ($Version -notmatch '^\d+\.\d+\.\d+$') {
+    throw "Version '$Version' is not canonical MAJOR.MINOR.PATCH"
+}
 Step "Deckle v$Version"
 
-if ($Publish) {
-    $publishedTags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
-    if ($publishedTags -contains "v$Version") {
-        throw "v$Version is already recorded as a public release"
-    }
-}
-
-# ── Resolve owner/repo from the git remote, for the release-URL hint ─────────
-# (the in-code native URL still points at the pre-rename owner; resolving from
-# the live remote keeps this script honest if the owner changes again.)
+# ── Resolve owner/repo from the git remote ───────────────────────────────────
 $OwnerRepo = '<owner>/deckle'
 $remoteUrl = & git -C $RepoRoot remote get-url origin 2>$null
 if ($LASTEXITCODE -eq 0 -and $remoteUrl) {
     if ($remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') { $OwnerRepo = $Matches[1] }
+}
+
+# A public release is immutable input to remote machines. Prove its source
+# before stopping Deckle or spending minutes in NativeAOT: clean main (including
+# untracked files), synchronized origin/main, a strictly newer version, a
+# non-conflicting tag, and working GitHub authentication for the exact repo.
+if ($Publish) {
+    $publishedTags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
+    if (-not $publishedTags.Count) { throw 'release-history.json has no public release' }
+    if ($publishedTags -contains "v$Version") {
+        throw "v$Version is already recorded as a public release"
+    }
+
+    Step 'Fetch and validate release source'
+    & git -C $RepoRoot fetch origin main --tags --prune
+    if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
+    $source = Assert-DeckleReleaseSource `
+        -RepoRoot $RepoRoot `
+        -Version $Version `
+        -LatestPublishedTag $publishedTags[-1]
+    $OwnerRepo = $source.OwnerRepo
+    Ok "clean main at $($source.HeadSha.Substring(0, 12)), synchronized with origin/main"
+
+    & gh auth status --hostname github.com *> $null
+    if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI is not authenticated for github.com' }
+    $resolvedRepo = (& gh repo view $OwnerRepo --json nameWithOwner --jq '.nameWithOwner').Trim()
+    if ($LASTEXITCODE -ne 0 -or $resolvedRepo -cne $OwnerRepo) {
+        throw "GitHub repository preflight failed for $OwnerRepo"
+    }
+    Ok "GitHub access verified for $OwnerRepo"
 }
 
 # ── Output layout ────────────────────────────────────────────────────────────
@@ -158,6 +177,24 @@ $SetupName       = "Deckle-Setup-v$Version-win-x64.exe"
 $SetupPath       = Join-Path $OutDir $SetupName
 $InstallerCsproj = Join-Path $RepoRoot 'src\Deckle.Installer\Deckle.Installer.csproj'
 $InstallerPubDir = Join-Path $OutDir 'installer'
+
+# Generate or validate notes before stopping the running app. A changelog
+# failure is a source failure, not a reason to interrupt Deckle.
+if ($Publish) {
+    if (-not $Notes) {
+        $Notes = Join-Path $OutDir 'release-notes.md'
+        & (Join-Path $ScriptDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
+        if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 notes generation failed (code $LASTEXITCODE)" }
+        Ok "Release notes generated from history: $Notes"
+    } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
+        throw "Release notes file not found: $Notes"
+    }
+}
+
+# Publishing rebuilds the app payload. A running Release instance keeps the
+# current app DLLs locked and makes MSBuild retry for a minute before failing.
+Step 'Stop running Deckle instance'
+Stop-DeckleProcess -WriteOk ${function:Ok} -WriteWarn ${function:Warn}
 
 # ── Publish: self-contained, unpackaged, folder (no PublishSingleFile) ───────
 # win-x64 via RuntimeIdentifierOverride, NOT `-r win-x64`. A plain RID
@@ -201,6 +238,12 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
     $PublishDir, $ZipPath,
     [System.IO.Compression.CompressionLevel]::Optimal, $false)
 
+# Re-open the exact archive the installer will consume. This catches truncated
+# zips, missing root payload files, duplicate paths and archive traversal before
+# a checksum blesses the broken artifact.
+Assert-DeckleReleaseArchive -PublishDir $PublishDir -ZipPath $ZipPath
+Ok 'release archive reopened and its payload contract verified'
+
 $ZipSha256 = (Get-FileHash $ZipPath -Algorithm SHA256).Hash.ToLower()
 $ZipBytes  = (Get-Item $ZipPath).Length
 $ZipSize   = [math]::Round($ZipBytes / 1MB, 2)
@@ -239,13 +282,15 @@ if (-not (Test-Path $InstallerBuilt)) { throw "Installer exe missing from publis
 Copy-Item $InstallerBuilt $SetupPath -Force
 $SetupBytes = (Get-Item $SetupPath).Length
 $SetupSize  = [math]::Round($SetupBytes / 1MB, 2)
-Ok "$SetupName ($SetupSize MB)"
+$SetupSha256 = (Get-FileHash $SetupPath -Algorithm SHA256).Hash.ToLower()
+Ok "$SetupName ($SetupSize MB) sha256=$SetupSha256"
 
 # ── Summary — release convention the installer / future updater consumes ─────
 Step 'Done'
 Write-Host @"
 
   Installer : $SetupPath ($SetupSize MB)   <- the user-facing download
+              sha256=$SetupSha256
   Payload   : $ZipPath ($ZipSize MB)
   SHA256    : $ZipSha256
 
@@ -267,45 +312,68 @@ if ($Publish) {
     # installer exe first (the headline download), then the payload + its sha.
     $headSha = (& git -C $RepoRoot rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw "git rev-parse HEAD failed (code $LASTEXITCODE)" }
-    $ghArgs = @('release', 'create', $tag, $SetupPath, $ZipPath, $ShaPath, '--title', $title, '--target', $headSha)
+    $ghArgs = @(
+        'release', 'create', $tag, $SetupPath, $ZipPath, $ShaPath,
+        '--repo', $OwnerRepo,
+        '--title', $title,
+        '--target', $headSha,
+        '--draft')
     # Every 0.x cut is a pre-release (versioning convention): the phase is
     # pre-stable, so the release must not claim the repo's "Latest" badge.
     if ($Version -like '0.*') { $ghArgs += '--prerelease' }
-    # Release notes come from changelog.ps1 (plain git log, no API). -Notes
-    # overrides with a hand-written file when a release needs special wording.
-    if (-not $Notes) {
-        $Notes = Join-Path $OutDir 'release-notes.md'
-        & (Join-Path $ScriptDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
-        if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 notes generation failed (code $LASTEXITCODE)" }
-        Ok "Release notes generated from history: $Notes"
-    }
     $ghArgs += @('--notes-file', $Notes)
-    & gh release view $tag *> $null
+    & gh release view $tag --repo $OwnerRepo *> $null
     $releaseExists = $LASTEXITCODE -eq 0
     if ($releaseExists) {
-        Warn "$tag already exists on GitHub; repair its notes and assets"
-        $editArgs = @('release', 'edit', $tag, '--title', $title, '--notes-file', $Notes)
-        if ($Version -like '0.*') { $editArgs += '--prerelease' }
-        & gh @editArgs
-        if ($LASTEXITCODE -ne 0) { throw "gh release edit failed (code $LASTEXITCODE)" }
-        & gh release upload $tag $SetupPath $ZipPath $ShaPath --clobber
-        if ($LASTEXITCODE -ne 0) { throw "gh release upload failed (code $LASTEXITCODE)" }
+        throw "$tag already exists on GitHub; published release assets are immutable"
     } else {
         & gh @ghArgs
         if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
     }
-    Ok "Released as $tag"
-    $Published = $true
+    Ok "Draft release $tag uploaded"
 
-    & git -C $RepoRoot rev-parse --verify --quiet "$tag^{commit}" *> $null
-    if ($LASTEXITCODE -ne 0) {
-        & git -C $RepoRoot fetch origin "refs/tags/$tag`:refs/tags/$tag"
-        if ($LASTEXITCODE -ne 0) { throw "git fetch $tag failed (code $LASTEXITCODE)" }
+    # Read the draft back from GitHub before it can become discoverable by the
+    # installer. Names and byte sizes must match all three local artifacts.
+    $remoteRelease = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets) -join "`n" | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0 -or -not $remoteRelease.isDraft) {
+        throw "GitHub release $tag is not a readable draft"
+    }
+    $expectedAssets = @{
+        $SetupName = $SetupBytes
+        $ZipName   = $ZipBytes
+        $ShaName   = (Get-Item $ShaPath).Length
+    }
+    foreach ($expected in $expectedAssets.GetEnumerator()) {
+        $matches = @($remoteRelease.assets | Where-Object { $_.name -ceq $expected.Key })
+        if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.Value) {
+            throw "GitHub draft asset $($expected.Key) is missing or has the wrong size"
+        }
+    }
+    if (@($remoteRelease.assets).Count -ne $expectedAssets.Count) {
+        throw "GitHub draft $tag contains unexpected assets"
+    }
+    Ok 'GitHub draft assets verified by name and byte size'
+
+    & git -C $RepoRoot fetch origin "refs/tags/$tag`:refs/tags/$tag"
+    if ($LASTEXITCODE -ne 0) { throw "git fetch $tag failed (code $LASTEXITCODE)" }
+    $tagSha = (& git -C $RepoRoot rev-parse "$tag^{commit}").Trim()
+    if ($LASTEXITCODE -ne 0 -or $tagSha -cne $headSha) {
+        throw "GitHub tag $tag does not point to release HEAD $headSha"
     }
 
     Step 'Freeze the public release into CHANGELOG.md'
     & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
     if (-not $?) { throw 'record-release.ps1 failed' }
+
+    Step 'Make the verified GitHub release public'
+    $finalizeArgs = @('release', 'edit', $tag, '--repo', $OwnerRepo, '--draft=false')
+    if ($Version -like '0.*') { $finalizeArgs += '--prerelease' }
+    & gh @finalizeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
+    }
+    $Published = $true
+    Ok "Released as $tag"
 }
 
 $releaseTag = if ($Version) { "v$Version" } else { $null }
@@ -327,6 +395,7 @@ Write-DeckleActionSummary `
         Installer     = $SetupPath
         Payload       = $ZipPath
         SHA256        = $ZipSha256
+        'Installer SHA256' = $SetupSha256
         Published     = $(if ($Published) { 'Yes' } else { 'No' })
         'Release URL' = $releaseUrl
     }) `

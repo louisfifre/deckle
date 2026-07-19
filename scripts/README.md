@@ -78,7 +78,7 @@ pwsh scripts/lib/update-readme-stats.ps1
 
 GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manual dispatch. The workflow checks out full history (`fetch-depth: 0`), runs the same script, and commits `README.md` only when the generated section changed.
 
-`CHANGELOG.md` is regenerated from local Git history, not hand-edited. `release-history.json` lists only real public GitHub releases and therefore supplies the changelog boundaries; old internal tags are ignored. `Record version` advances `<Version>` without a tag and refreshes `[Unreleased]` from the latest public release. `Publish app release` builds first, creates the GitHub Release and tag only on success, then freezes `[Unreleased]` into that version section and starts a fresh accumulator. A plain push has no changelog semantics. Regenerate the changelog alone through the menu (`Update changelog`) or directly:
+`CHANGELOG.md` is regenerated from local Git history, not hand-edited. `release-history.json` lists only real public GitHub releases and therefore supplies the changelog boundaries; old internal tags are ignored. `Record version` advances `<Version>` without a tag and refreshes `[Unreleased]` from the latest public release. `Publish app release` first requires a clean, synchronized `main` at a version newer than the ledger; it then builds and reopens the payload archive, uploads a GitHub draft, verifies the three remote assets, freezes and pushes `[Unreleased]`, and only then makes the release discoverable. A plain push has no changelog semantics. Regenerate the changelog alone through the menu (`Update changelog`) or directly:
 
 ```powershell
 pwsh scripts/lib/changelog.ps1

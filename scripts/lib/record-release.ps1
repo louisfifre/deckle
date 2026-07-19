@@ -24,8 +24,26 @@ $RepoRoot = $null
 $Tag = $null
 $Commit = $null
 $Pushed = $false
+$MutationStarted = $false
+$CommitCreated = $false
+$OriginalHistory = $null
+$OriginalChangelog = $null
 
 trap {
+    # Before the release-record commit exists, ledger + changelog are one
+    # transaction. Restore both byte-for-byte on any intermediate failure so a
+    # retry does not trip over state written by the failed attempt itself.
+    if ($MutationStarted -and -not $CommitCreated) {
+        if ($null -ne $OriginalHistory) {
+            [System.IO.File]::WriteAllBytes(
+                (Join-Path $RepoRoot 'release-history.json'), $OriginalHistory)
+        }
+        if ($null -ne $OriginalChangelog) {
+            [System.IO.File]::WriteAllBytes(
+                (Join-Path $RepoRoot 'CHANGELOG.md'), $OriginalChangelog)
+        }
+        & git -C $RepoRoot reset --quiet -- release-history.json CHANGELOG.md 2>$null
+    }
     Write-DeckleActionSummary `
         -Workflow 'Record public release' `
         -Result Failed `
@@ -69,6 +87,9 @@ if ($dirty) { throw "Tracked changes are pending - commit or stash them first:`n
 if ($LASTEXITCODE -ne 0) { throw "Public release tag $Tag is missing locally" }
 
 Step "Record public release $Tag"
+$OriginalHistory = [System.IO.File]::ReadAllBytes((Join-Path $RepoRoot 'release-history.json'))
+$OriginalChangelog = [System.IO.File]::ReadAllBytes((Join-Path $RepoRoot 'CHANGELOG.md'))
+$MutationStarted = $true
 $added = Add-PublishedReleaseTag -RepoRoot $RepoRoot -Tag $Tag
 if ($added) { Ok 'release-history.json updated' } else { Ok 'Release already present in history' }
 
@@ -83,6 +104,7 @@ if ($diffCode -eq 1) {
     $Commit = "docs(changelog): bake the $Tag section"
     & git -C $RepoRoot commit -m $Commit
     if ($LASTEXITCODE -ne 0) { throw "release record commit failed (code $LASTEXITCODE)" }
+    $CommitCreated = $true
     Ok $Commit
 } elseif ($diffCode -eq 0) {
     $Commit = 'Unchanged'

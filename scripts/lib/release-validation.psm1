@@ -1,0 +1,143 @@
+# Release publication invariants shared by publish-app.ps1 and its tests.
+# Every assertion fails closed: a release is cheaper to postpone than repair on
+# machines that may already have discovered it.
+
+$ErrorActionPreference = 'Stop'
+
+function Invoke-ReleaseGit {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string[]]$Arguments
+    )
+
+    # Git may emit ambient warnings from the maintainer's global excludes file;
+    # they are not command output and must not make a clean tree look dirty.
+    $output = @(& git -C $RepoRoot @Arguments 2>$null)
+    $code = $LASTEXITCODE
+    if ($code -ne 0) {
+        throw "git $($Arguments -join ' ') failed (code $code)"
+    }
+    return $output
+}
+
+function ConvertTo-ReleaseVersion {
+    param(
+        [Parameter(Mandatory)][string]$Value,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    $bare = $Value.TrimStart('v')
+    $parsed = $null
+    if (-not [version]::TryParse($bare, [ref]$parsed) -or
+        $parsed.Build -lt 0 -or $parsed.Revision -ge 0 -or
+        $bare -cne $parsed.ToString(3)) {
+        throw "$Label '$Value' is not canonical MAJOR.MINOR.PATCH"
+    }
+    return $parsed
+}
+
+function Assert-DeckleReleaseSource {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Version,
+        [Parameter(Mandatory)][string]$LatestPublishedTag
+    )
+
+    $candidate = ConvertTo-ReleaseVersion -Value $Version -Label 'Version'
+    $latest = ConvertTo-ReleaseVersion -Value $LatestPublishedTag -Label 'Latest published tag'
+    if ($candidate -le $latest) {
+        throw "Version v$Version must be newer than $LatestPublishedTag"
+    }
+
+    $dirty = @(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'status', '--porcelain=v1', '--untracked-files=all'))
+    if ($dirty.Count) {
+        throw "Release source is not clean; commit or remove every tracked and untracked change:`n$($dirty -join "`n")"
+    }
+
+    $branch = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('branch', '--show-current')))[0].Trim()
+    if ($branch -cne 'main') {
+        throw "App releases must be cut from main, not '$branch'"
+    }
+
+    $upstream = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}')))[0].Trim()
+    if ($upstream -cne 'origin/main') {
+        throw "main must track origin/main before release (found '$upstream')"
+    }
+
+    $headSha = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('rev-parse', 'HEAD')))[0].Trim()
+    $upstreamSha = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('rev-parse', '@{upstream}')))[0].Trim()
+    if ($headSha -cne $upstreamSha) {
+        throw "HEAD $headSha is not synchronized with origin/main $upstreamSha"
+    }
+
+    $remoteUrl = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'remote', 'get-url', 'origin')))[0].Trim()
+    if ($remoteUrl -notmatch 'github\.com[:/](?<repo>[^/]+/[^/.]+)(?:\.git)?$') {
+        throw "origin is not a GitHub repository: $remoteUrl"
+    }
+    $ownerRepo = $Matches.repo
+
+    $tag = "v$Version"
+    $tagSha = @(& git -C $RepoRoot rev-parse --verify --quiet "$tag^{commit}" 2>$null)
+    $tagCode = $LASTEXITCODE
+    if ($tagCode -eq 0 -and $tagSha[0].Trim() -cne $headSha) {
+        throw "Existing tag $tag points to $($tagSha[0].Trim()), not release HEAD $headSha"
+    }
+    if ($tagCode -ne 0 -and $tagCode -ne 1) {
+        throw "git rev-parse $tag failed (code $tagCode)"
+    }
+
+    return [pscustomobject]@{
+        HeadSha   = $headSha
+        OwnerRepo = $ownerRepo
+        Tag       = $tag
+    }
+}
+
+function Assert-DeckleReleaseArchive {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$PublishDir,
+        [Parameter(Mandatory)][string]$ZipPath
+    )
+
+    if (-not (Test-Path -LiteralPath $ZipPath -PathType Leaf)) {
+        throw "Release archive is missing: $ZipPath"
+    }
+
+    Add-Type -AssemblyName System.IO.Compression
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+    try {
+        $names = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::OrdinalIgnoreCase)
+        $fileCount = 0
+        foreach ($entry in $archive.Entries) {
+            $name = $entry.FullName.Replace('\', '/')
+            if (-not $name.EndsWith('/')) { $fileCount++ }
+            if ($name.StartsWith('/') -or $name -match '(^|/)\.\.(/|$)') {
+                throw "Release archive contains unsafe path '$name'"
+            }
+            if (-not $names.Add($name)) {
+                throw "Release archive contains duplicate path '$name'"
+            }
+        }
+
+        foreach ($required in @('Deckle.exe', 'Deckle.pri')) {
+            if (-not $names.Contains($required)) {
+                throw "Release archive is missing required root entry $required"
+            }
+        }
+
+        $publishedFileCount = @(Get-ChildItem -LiteralPath $PublishDir -Recurse -File).Count
+        if ($fileCount -ne $publishedFileCount) {
+            throw "Release archive contains $fileCount files; publish folder contains $publishedFileCount"
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
+Export-ModuleMember -Function Assert-DeckleReleaseSource, Assert-DeckleReleaseArchive
