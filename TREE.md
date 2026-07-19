@@ -940,6 +940,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── PromptTemplates.cs
 │   │   │   ├── RewriteEngine.cs
 │   │   │   └── RewriteService.cs
+│   │   ├── Gate/
+│   │   │   ├── DiffAlignment.cs
+│   │   │   ├── DiffGateVerdict.cs
+│   │   │   ├── GateLexicon.cs
+│   │   │   ├── GateToken.cs
+│   │   │   └── RewriteDiffGate.cs
 │   │   ├── Settings/
 │   │   │   └── RewriteAvailability.cs
 │   │   ├── Strings/
@@ -1490,6 +1496,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
 │   │   └── LightingObservabilityCollection.cs
+│   ├── Deckle.Llm.Rewrite.Tests/
+│   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   └── RewriteDiffGateTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs
