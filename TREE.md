@@ -869,6 +869,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Lighting.csproj
 │   │   ├── DeckleLightingSource.cs
+│   │   ├── DeckleLightingSource.Discovery.cs
+│   │   ├── DeckleLightingSource.Entertainment.cs
+│   │   ├── DeckleLightingSource.GroupsAndColor.cs
+│   │   ├── DeckleLightingSource.InventoryAndEventStream.cs
+│   │   ├── DeckleLightingSource.Pairing.cs
 │   │   ├── ILightOutput.cs
 │   │   ├── JOURNAL.md  — [module-journal] Color-science decisions and the Night Owl gamut bug for Deckle.Lighting — read…
 │   │   ├── LightColor.cs
