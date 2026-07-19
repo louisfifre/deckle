@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Matches the src/ libraries' target so Deckle.Llm.Rewrite can be
+         referenced directly — this study exercises the real service code
+         (ParagraphRewrite prompt, OllamaEngine, RewriteDiffGate), not a
+         copy of it. -->
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Deckle.Benchmark.ParagraphGate</RootNamespace>
+    <AssemblyName>ParagraphGate</AssemblyName>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- No WinRT activation on this path (HTTP + pure gate), so no
+         WindowsAppSDK bootstrap is needed despite the WinUI reference. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="samples.jsonl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

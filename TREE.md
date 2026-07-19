@@ -186,6 +186,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── env.py
 │   │   ├── event_log.py
 │   │   └── paths.py
+│   ├── rewrite/
+│   │   └── paragraph-gate/
+│   │       ├── .gitignore
+│   │       ├── ParagraphGate.csproj
+│   │       ├── Program.cs
+│   │       ├── README.md
+│   │       └── samples.jsonl
 │   ├── viewers/
 │   │   ├── __init__.py
 │   │   └── build_html.py
