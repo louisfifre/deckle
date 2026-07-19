@@ -334,7 +334,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Diagnostics/
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
+│   │   │   ├── DeckleAppSource.Ambient.cs
+│   │   │   ├── DeckleAppSource.BootAndStatus.cs
+│   │   │   ├── DeckleAppSource.CommandLine.cs
+│   │   │   ├── DeckleAppSource.Crash.cs
 │   │   │   ├── DeckleAppSource.cs
+│   │   │   ├── DeckleAppSource.Hotkeys.cs
+│   │   │   ├── DeckleAppSource.Lifecycle.cs
+│   │   │   ├── DeckleAppSource.Shutdown.cs
+│   │   │   ├── DeckleAppSource.Surfaces.cs
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogEntryRow.xaml
 │   │   │   ├── LogEntryRow.xaml.cs
@@ -359,6 +367,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.Startup.CommandLine.cs
+│   │   ├── App.Startup.Foundation.cs
+│   │   ├── App.Startup.Modules.cs
+│   │   ├── App.Startup.Settings.cs
+│   │   ├── App.Startup.Shell.cs
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
