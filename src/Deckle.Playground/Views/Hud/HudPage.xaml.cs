@@ -10,6 +10,7 @@ using Deckle.Audio;
 using Deckle.Hud;
 using Deckle.Composition;
 using Deckle.Playground;
+using Deckle.Settings;
 
 namespace Deckle.Playground;
 
@@ -65,12 +66,6 @@ public sealed partial class HudPage : Page
     private float _simRmsPeriodSeconds = 2.0f;
     private bool  _simManualOverride   = false;
     private float _simManualValue      = 0.012f;
-
-    // Simulate "digit changed during Recording" flags for the swipe
-    // reveal preview on Transcribing / Rewriting. ON by default because
-    // observing the swipe wave is the main reason these targets are
-    // selected here.
-    private bool _simulateChangedDigits = true;
 
     // ── Rebuild debounce ────────────────────────────────────────────────
     //
@@ -145,6 +140,7 @@ public sealed partial class HudPage : Page
         // state change → re-mount the preview (Pause / Play visual
         // flips).
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
 
         if (this.Content is FrameworkElement root)
         {
@@ -186,6 +182,7 @@ public sealed partial class HudPage : Page
     // on Closed.
     public void DisposeResources()
     {
+        SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         _rmsTimer.Stop();
         _rmsClock.Stop();
         _rebuildDebounce.Stop();
@@ -194,6 +191,18 @@ public sealed partial class HudPage : Page
         _nakedPreview = null;
         _conicClonePreview?.Dispose();
         _conicClonePreview = null;
+    }
+
+    private void OnOverlayAnimationsChanged(bool enabled)
+    {
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            DispatcherQueue.TryEnqueue(() => OnOverlayAnimationsChanged(enabled));
+            return;
+        }
+
+        if (ViewModel.IsPlaying)
+            ApplyTarget();
     }
 
     // ── VM observer ──────────────────────────────────────────────────────────
@@ -351,19 +360,6 @@ public sealed partial class HudPage : Page
             case HudState.Rewriting:    ChronoPreview.StopClock();  break;
         }
 
-        if (_simulateChangedDigits &&
-            (currentTarget == HudTarget.Transcribing || currentTarget == HudTarget.Rewriting))
-        {
-            // Light ALL SIX digits (minutes included) so the swipe sweeps the
-            // full row — the clearest read while tuning. Shipping flags digits
-            // naturally via WriteDigit (minutes only on long takes); this is a
-            // Playground-only "show me the whole wave" override.
-            ChronoPreview.SimulateChangedDigits(
-                min1: true, min2: true,
-                sec1: true, sec2: true,
-                cs1:  true, cs2:  true);
-        }
-
         if (currentTarget == HudTarget.Recording)
             StartRmsPump();
     }
@@ -391,7 +387,8 @@ public sealed partial class HudPage : Page
 
         _nakedPreview = HudComposition.CreateNakedMaskPreview(
             compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill,
-            ViewModel.PreviewVariant, isDark: !isLightTheme);
+            ViewModel.PreviewVariant, isDark: !isLightTheme,
+            animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
         _nakedPreview.Container.Offset = new Vector3(inset, inset, 0f);
@@ -413,7 +410,8 @@ public sealed partial class HudPage : Page
 
         _conicClonePreview = HudComposition.CreateConicClonePreview(
             compositor, NakedHudSize, _tuning.ToConfig(),
-            ViewModel.PreviewVariant, isDark: !isLightTheme);
+            ViewModel.PreviewVariant, isDark: !isLightTheme,
+            animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
 
         // Centre the 272×78 row frame inside the 300×300 host — same seat as the
         // XAML reference border, so the clone sits where the live row would.
@@ -491,20 +489,10 @@ public sealed partial class HudPage : Page
         _simRmsPeriodSeconds   = 2.0f;
         _simManualOverride     = false;
         _simManualValue        = 0.012f;
-        _simulateChangedDigits = true;
         // Conic clone placement resets with the fresh TuningModel above
         // (CloneCentre*Fraction field initialisers = 0.5, i.e. centred).
 
-        // Swipe + Audio mapping expanders — same values the individual
-        // Reset* methods use. Swipe statics live on SwipeWaveAnimator
-        // since 2026-05-02 (Deckle.Composition) ; audio mapping
-        // statics still belong to AudioLevelMapper (Deckle.Audio).
-        SwipeWaveAnimator.SwipeCycleSeconds    = 2.4f;
-        SwipeWaveAnimator.SwipeStaggerSeconds  = 0.1f;
-        SwipeWaveAnimator.SwipeEnvelopeSeconds = 1.4f;
-        SwipeWaveAnimator.SwipeRampFraction    = 0.4f;
-        SwipeWaveAnimator.SwipeEaseP1          = new Vector2(0.4f, 0f);
-        SwipeWaveAnimator.SwipeEaseP2          = new Vector2(0.6f, 1f);
+        // Audio mapping statics stay aligned with ResetAudioMapping.
         AudioLevelMapper.EmaAlpha          = 0.25f;
         AudioLevelMapper.MinDbfs           = -55f;
         AudioLevelMapper.MaxDbfs           = -32f;
@@ -545,7 +533,6 @@ public sealed partial class HudPage : Page
                 case HudTuningSection.ConicFade:     AddConicFadeExpander();      break;
                 case HudTuningSection.HueRotation:   AddHueRotationExpander();    break;
                 case HudTuningSection.ArcRotation:   AddArcRotationExpander();    break;
-                case HudTuningSection.Swipe:         AddSwipeExpander();          break;
                 case HudTuningSection.Recording:     AddRecordingExpander();      break;
                 case HudTuningSection.Transcribing:  AddTranscribingExpander();   break;
                 case HudTuningSection.Rewriting:     AddRewritingExpander();      break;

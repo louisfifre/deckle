@@ -82,8 +82,8 @@ public static partial class HudComposition
         public ContainerVisual Visual { get; }
         public int CreationId { get; }
 
-        // ── Shared with the swipe digit reveal (read-only accessors) ─────────
-        // The chrono swipe digits are glass onto a CLONE of this stroke's
+        // ── Shared with the pinned digit reveal (read-only accessors) ────────
+        // The chrono reveal digits are glass onto a CLONE of this stroke's
         // visible material. Two things are SHARED with the clone, one is not:
         //
         //   • GRADING is shared — a digit overlay builds its own
@@ -133,6 +133,7 @@ public static partial class HudComposition
         // path) — only the animated paths allocate a PropertySet.
         private readonly CompositionPropertySet? _hueRotationProps;
         private readonly CompositionPropertySet? _arcRotationProps;
+        private volatile bool _animationsEnabled;
 
         private bool _disposed;
 
@@ -156,7 +157,8 @@ public static partial class HudComposition
             CompositionDrawingSurface arcMaskSurface,
             CompositionDrawingSurface strokeMaskSurface,
             CompositionPropertySet? hueRotationProps,
-            CompositionPropertySet? arcRotationProps)
+            CompositionPropertySet? arcRotationProps,
+            bool animationsEnabled)
         {
             Visual       = visual;
             _compositor  = compositor;
@@ -172,6 +174,7 @@ public static partial class HudComposition
             _strokeMaskSurface  = strokeMaskSurface;
             _hueRotationProps   = hueRotationProps;
             _arcRotationProps   = arcRotationProps;
+            _animationsEnabled  = animationsEnabled;
 
             CreationId = System.Threading.Interlocked.Increment(ref _creationCounter);
             System.Threading.Interlocked.Increment(ref _liveStrokeCount);
@@ -232,6 +235,16 @@ public static partial class HudComposition
             var duration = TimeSpan.FromSeconds(Math.Max(0.001, blendSeconds));
             float hueAngleRadians = hueShiftTurns * MathF.Tau;
 
+            if (!_animationsEnabled)
+            {
+                SetScalar(_effectProps, "Saturation", sat);
+                SetScalar(_effectProps, "HueAngle", hueAngleRadians);
+                SetScalar(_effectProps, "Exposure", exposure);
+                if (variant != ProcessingVariant.Recording)
+                    SetScalar(_strokeVisual, "Opacity", opacity);
+                return;
+            }
+
             AnimateScalar(_effectProps,  "Saturation", sat,             duration);
             AnimateScalar(_effectProps,  "HueAngle",   hueAngleRadians, duration);
             AnimateScalar(_effectProps,  "Exposure",   exposure,        duration);
@@ -261,12 +274,60 @@ public static partial class HudComposition
         // animation, so HudChrono gates the call on _currentVariant.
         public void UpdateLevel(float level)
         {
+            if (!_animationsEnabled) return;
+
             float clamped = Math.Clamp(level, 0f, 1f);
             var anim = _compositor.CreateScalarKeyFrameAnimation();
             anim.InsertExpressionKeyFrame(0f, "this.CurrentValue");
             anim.InsertKeyFrame(1f, clamped);
             anim.Duration = TimeSpan.FromMilliseconds(50);
             _strokeVisual.StartAnimation("Opacity", anim);
+        }
+
+        // Applies the functional HUD animation preference live. Disabling
+        // cancels finite blends, parks continuous rotations at their canonical
+        // phase and gives Recording a steady neutral outline. Enabling restarts
+        // only the continuous rotations; no past blend or mic sample is replayed.
+        public void SetAnimationsEnabled(
+            bool enabled,
+            ProcessingVariant variant,
+            bool isDark)
+        {
+            if (_animationsEnabled == enabled) return;
+            _animationsEnabled = enabled;
+
+            if (_hueRotationProps is not null)
+            {
+                StopRotationAtCanonicalPhase(_hueRotationProps, _config.HuePhaseTurns);
+                if (enabled)
+                {
+                    StartRotationPropertySetAnimations(
+                        _compositor, _hueRotationProps,
+                        _config.HuePeriodSeconds, _config.HueDirection, _config.HuePhaseTurns,
+                        _config.HueEaseP1X, _config.HueEaseP1Y,
+                        _config.HueEaseP2X, _config.HueEaseP2Y);
+                }
+            }
+
+            if (_arcRotationProps is not null)
+            {
+                StopRotationAtCanonicalPhase(_arcRotationProps, _config.ArcPhaseTurns);
+                if (enabled)
+                {
+                    StartRotationPropertySetAnimations(
+                        _compositor, _arcRotationProps,
+                        _config.ArcPeriodSeconds, _config.ArcDirection, _config.ArcPhaseTurns,
+                        _config.ArcEaseP1X, _config.ArcEaseP1Y,
+                        _config.ArcEaseP2X, _config.ArcEaseP2Y);
+                }
+            }
+
+            if (!enabled)
+            {
+                ApplyVariant(variant, isDark);
+                if (variant == ProcessingVariant.Recording)
+                    SetScalar(_strokeVisual, "Opacity", 1f);
+            }
         }
 
         // "Start from the current value, reach target at the end of
@@ -281,6 +342,23 @@ public static partial class HudComposition
             anim.InsertKeyFrame(1f, value);
             anim.Duration = duration;
             target.StartAnimation(property, anim);
+        }
+
+        private static void SetScalar(
+            CompositionObject target, string property, float value)
+        {
+            target.StopAnimation(property);
+            switch (target)
+            {
+                case CompositionPropertySet propertySet:
+                    propertySet.InsertScalar(property, value);
+                    break;
+                case SpriteVisual visual when property == "Opacity":
+                    visual.Opacity = value;
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported scalar target.", nameof(target));
+            }
         }
 
         // Two-phase teardown so no dangling animation fires on a freed

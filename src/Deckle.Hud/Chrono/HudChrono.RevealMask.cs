@@ -8,10 +8,9 @@ using Deckle.Composition;
 
 namespace Deckle.Hud;
 
-// HudChrono — digit reveal mask (the swipe's conic material, all six digits).
+// HudChrono — digit reveal mask (the processing material in all six digits).
 //
-// Step 2 of the Stop swipe: instead of cross-fading the flat accent overlay,
-// each animated digit's glyph masks the SAME living conic the processing stroke
+// At Stop, each digit's glyph masks the SAME living conic the processing stroke
 // samples — digit and contour as windows on one material (F1: one conic behind
 // the whole HUD, sampled at each element's HUD position).
 //
@@ -22,7 +21,7 @@ namespace Deckle.Hud;
 //
 // The sprite is parented on the digit's *cell Grid* (sibling of the primary and
 // accent TextBlocks), NOT on the primary TextBlock: UIElement.Opacity propagates
-// to child visuals, so attaching to the primary — whose Opacity the swipe drives
+// to child visuals, so attaching to the primary — whose Opacity changes during
 // to 1-heat — would fade the conic out with it. As a sibling under the cell, the
 // sprite's Opacity is driven independently by SetHeat.
 //
@@ -31,7 +30,7 @@ namespace Deckle.Hud;
 // falls back to the flat-accent path (step 1) for the take.
 public sealed partial class HudChrono
 {
-    // One reveal per digit (index order matches _digitPrimary and the animator:
+    // One reveal per digit (index order matches _digitPrimary:
     // 0 Min1 … 5 Cs2). Null until built, or after a build failure latches.
     private readonly HudComposition.DigitRevealVisual?[] _reveals
         = new HudComposition.DigitRevealVisual?[DigitCount];
@@ -45,16 +44,16 @@ public sealed partial class HudChrono
     private HudComposition.RevealConeMaterial? _revealMaterial;
 
     // The six cell Grids hosting each digit's primary + accent TextBlocks; the
-    // conic sprite is parented here. Assembled in EnsureSwipeInfra.
+    // conic sprite is parented here. Assembled in EnsureRevealInfrastructure.
     private FrameworkElement[]? _cellElements;
 
     // Latched once the reveal build has failed too many times in a row, so
-    // UpdateSwipe's retry stops throwing (and logging) every vsync. NOT latched
-    // on the first failure: in the Playground the swipe can start the very tick a
+    // UpdateReveals' retry stops throwing (and logging) every vsync. NOT latched
+    // on the first failure: in the Playground the reveal can start the very tick a
     // digit's glyph is (re)built, before its alpha mask is rasterised, so
     // GetAlphaMask throws on the first attempt — which used to condemn the whole
     // take to the flat-accent fallback. We now retry for a short window and latch
-    // only if it keeps failing. Both reset by StartSwipe for a fresh take.
+    // only if it keeps failing. Both reset by StartReveal for a fresh take.
     private bool _revealsFailed;
     private int  _revealBuildAttempts;
 
@@ -63,7 +62,7 @@ public sealed partial class HudChrono
     // retries; a genuine type rejection latches after this many and logs once.
     private const int MaxRevealBuildAttempts = 90;
 
-    // True while any cell still lacks its reveal — lets UpdateSwipe skip the
+    // True while any cell still lacks its reveal — lets UpdateReveals skip the
     // host-geometry reads in EnsureReveals once all six are built.
     private bool RevealsPending()
     {
@@ -74,7 +73,7 @@ public sealed partial class HudChrono
 
     // Build the per-digit conic reveals sharing the live stroke's material.
     // Idempotent and retry-safe: skips cells already built, and cells whose
-    // layout hasn't settled (ActualWidth still 0 on the synchronous StartSwipe
+    // layout hasn't settled (ActualWidth still 0 on the synchronous StartReveal
     // call). Skips entirely if the stroke or its rotation material is absent,
     // leaving every digit on the flat-accent path.
     private void EnsureReveals()
@@ -90,7 +89,7 @@ public sealed partial class HudChrono
         // Host frame the reveal cone is placed within. The cone CENTRE (apex)
         // sits at CloneCentre*Fraction · hostSize — (0.5, 0.5) reproduces the
         // contour's centred cone. Same pre-layout fallback the stroke factory
-        // uses; in the shipping HUD the host is laid out before the swipe runs.
+        // uses; in the shipping HUD the host is laid out before the reveal starts.
         float hostW = (float)ProcessingSurfaceHost.ActualWidth;
         float hostH = (float)ProcessingSurfaceHost.ActualHeight;
         if (hostW <= 0f || hostH <= 0f) { hostW = 272f; hostH = 78f; }
@@ -110,7 +109,7 @@ public sealed partial class HudChrono
             // its own hue+arc rotations at the clone periods. Built once per take;
             // rebuilt only after a teardown nulls it.
             _revealMaterial ??= HudComposition.BuildRevealConeMaterial(
-                compositor, hostSize, apex, cfg);
+                compositor, hostSize, apex, cfg, _animationsEnabled);
 
             for (int i = 0; i < DigitCount; i++)
             {
@@ -123,7 +122,7 @@ public sealed partial class HudChrono
 
                 // The mask IS the readout glyph's alpha — the frozen digit's
                 // exact shape, captured once (the clock is stopped during the
-                // swipe, so the glyph won't change underneath it).
+                // reveal, so the glyph won't change underneath it).
                 CompositionBrush glyphAlphaMask = _digitPrimary[i].GetAlphaMask();
 
                 // Offset of this cell's top-left within the host frame;
@@ -153,7 +152,7 @@ public sealed partial class HudChrono
             // Tear down any partial build (one throw fails the same way for every
             // digit) and retry on the next vsync — the most common cause in the
             // Playground is a glyph whose alpha mask isn't rasterised yet on the
-            // tick the swipe starts, which clears itself a frame or two later.
+            // tick the reveal starts, which clears itself a frame or two later.
             // Only after MaxRevealBuildAttempts consecutive failures do we give
             // up: latch the flat-accent fallback and log once, so a genuine type
             // rejection is still recorded and not mistaken for a design choice.
@@ -168,10 +167,10 @@ public sealed partial class HudChrono
     }
 
     // Detach + dispose every built reveal. Always runs before the stroke's own
-    // Dispose (StopSwipe precedes DetachProcessingVisual in every exit path), so
+    // Dispose (StopReveal precedes DetachProcessingVisual in every exit path), so
     // the shared surface / PropertySets the reveals reference are still alive.
     // Latch-free on purpose: the failure latch is owned by EnsureReveals (which
-    // calls this on its own failure path) and cleared by StartSwipe.
+    // calls this on its own failure path) and cleared by StartReveal.
     private void TearDownReveals()
     {
         for (int i = 0; i < _reveals.Length; i++)

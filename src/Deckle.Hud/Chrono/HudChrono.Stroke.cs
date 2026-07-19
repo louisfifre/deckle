@@ -151,8 +151,8 @@ public sealed partial class HudChrono
                 _nextStrokeConfig = null;
 
                 _processingStroke = variant == ProcessingVariant.Recording
-                    ? HudComposition.CreateRecordingStroke(compositor, size, cfg)
-                    : HudComposition.CreateProcessingStroke(compositor, size, cfg);
+                    ? HudComposition.CreateRecordingStroke(compositor, size, cfg, _animationsEnabled)
+                    : HudComposition.CreateProcessingStroke(compositor, size, cfg, _animationsEnabled);
                 ElementCompositionPreview.SetElementChildVisual(
                     ProcessingSurfaceHost, _processingStroke.Visual);
 
@@ -279,8 +279,8 @@ public sealed partial class HudChrono
             log?.Invoke("REBUILD", $"size={w:F1}×{h:F1}{(fallback ? " (fallback)" : "")}");
 
             _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, config)
-                : HudComposition.CreateProcessingStroke(compositor, size, config);
+                ? HudComposition.CreateRecordingStroke(compositor, size, config, _animationsEnabled)
+                : HudComposition.CreateProcessingStroke(compositor, size, config, _animationsEnabled);
             // Log the unique CreationId + live-count alongside the variant
             // so the playground log reads chronologically as "created #N
             // (live=K)" — when K starts climbing beyond 1, the Dispose

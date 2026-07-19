@@ -37,6 +37,12 @@ public sealed class LoggingSettings
     // siblings.
     public bool LogAutocorrectActivity { get; set; } = false;
 
+    // When false (the default), the Raw Input host does not collect its
+    // five-second contact-frame rollup and Trackpad does not emit per-gesture
+    // detail. Device presence, lifecycle, incidents, warnings and recoveries
+    // remain admitted.
+    public bool LogInputActivity { get; set; } = false;
+
     // When false (the default), windowing probes skip their Verbose work — window
     // placement and DPI, overlay stacking, popup anchoring, z-order checks,
     // resize frames and first-open construction timings. Unlike the ambient

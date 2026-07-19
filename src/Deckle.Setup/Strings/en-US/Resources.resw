@@ -665,10 +665,10 @@
     <value>Make the overlay transparent when you move over it, so it never blocks what's underneath.</value>
   </data>
   <data name="GeneralOverlayAnimationsCard.Header" xml:space="preserve">
-    <value>Animate transitions</value>
+    <value>Animate overlay feedback</value>
   </data>
   <data name="GeneralOverlayAnimationsCard.Description" xml:space="preserve">
-    <value>Smoothly slide and fade the overlay and message cards. Stays on even when Windows reduced-motion is enabled, because those transitions help you track which message replaced which.</value>
+    <value>Animate processing, microphone feedback, and message movement. This setting is independent of the Windows animation preference.</value>
   </data>
   <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
     <value>Screen position</value>

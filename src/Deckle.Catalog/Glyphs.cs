@@ -26,6 +26,7 @@ public static class Glyphs
     public const string Sparkle = "";
     public const string Lightbulb = "";
     public const string Trackpad = "";
+    public const string Mouse = "";
     public const string Diagnostics = "";
     public const string Logs = "";
 

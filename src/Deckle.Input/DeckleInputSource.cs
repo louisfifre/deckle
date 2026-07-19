@@ -23,6 +23,10 @@ public sealed class DeckleInputSource : DeckleEventSource
         => OperationalLogAdmission.IsScopedDetailEnabled(
             OperationalLogActivity.Autocorrect, Log, level, keywords);
 
+    internal static bool IsInputActivityDetailEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Input, Log, level, keywords);
+
     public const int EvtHostStarted              = 1;
     public const int EvtHostStopped              = 2;
     public const int EvtHostStartFailed          = 3;
@@ -197,7 +201,9 @@ public sealed class DeckleInputSource : DeckleEventSource
         int count, double rate_hz, double max_gap_ms, int max_tips,
         int fragmented, long orphans, long flushes, long scan_mismatches)
     {
-        if (IsEnabled()) WriteEvent(EvtFrameRollup,
+        if (IsInputActivityDetailEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtFrameRollup,
             count, rate_hz, max_gap_ms, max_tips, fragmented, orphans, flushes, scan_mismatches);
     }
 

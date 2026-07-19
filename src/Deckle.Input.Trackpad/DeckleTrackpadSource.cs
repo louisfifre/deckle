@@ -18,6 +18,10 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
 
     private DeckleTrackpadSource() { }
 
+    internal static bool IsInputActivityDetailEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Input, Log, level, keywords);
+
     public const int EvtEngineStarted            = 1;
     public const int EvtEngineStopped            = 2;
     // 3 retired — TuningApplied, removed at the value freeze (2026-06-12).
@@ -67,7 +71,9 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
            Message = "drag started")]
     public void DragStarted()
     {
-        if (IsEnabled()) WriteEvent(EvtDragStarted);
+        if (IsInputActivityDetailEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtDragStarted);
     }
 
     [Event(EvtDragEnded,
@@ -76,7 +82,9 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
            Message = "drag ended | reason={0} | duration_ms={1} | moves={2}")]
     public void DragEnded(string reason, double duration_ms, int moves)
     {
-        if (IsEnabled()) WriteEvent(EvtDragEnded, reason, duration_ms, moves);
+        if (IsInputActivityDetailEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtDragEnded, reason, duration_ms, moves);
     }
 
     [Event(EvtTapIgnored,
@@ -85,7 +93,9 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
            Message = "three-finger tap ignored")]
     public void TapIgnored()
     {
-        if (IsEnabled()) WriteEvent(EvtTapIgnored);
+        if (IsInputActivityDetailEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtTapIgnored);
     }
 
     [Event(EvtInjectionFailed,

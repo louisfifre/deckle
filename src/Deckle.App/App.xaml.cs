@@ -147,6 +147,8 @@ public partial class App : Microsoft.UI.Xaml.Application
                 LoggingSettingsService.Instance.Current.LogTranscriptionActivity,
             OperationalLogActivity.Autocorrect =>
                 LoggingSettingsService.Instance.Current.LogAutocorrectActivity,
+            OperationalLogActivity.Input =>
+                LoggingSettingsService.Instance.Current.LogInputActivity,
             OperationalLogActivity.Windowing =>
                 LoggingSettingsService.Instance.Current.LogWindowingActivity,
             _ => false,

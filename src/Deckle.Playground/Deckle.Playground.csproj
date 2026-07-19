@@ -34,7 +34,6 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
-    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
     <ProjectReference Include="..\Deckle.Notifications\Deckle.Notifications.csproj" />

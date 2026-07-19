@@ -103,11 +103,13 @@ public static partial class HudComposition
         float easeP1X, float easeP1Y,
         float easeP2X, float easeP2Y,
         float minSpeedFraction,
-        Vector2? placement = null)
+        Vector2? placement = null,
+        bool animationsEnabled = true)
     {
         var props = CreateRotationPropertySet(
             compositor, periodSeconds, direction, phaseTurns,
-            easeP1X, easeP1Y, easeP2X, easeP2Y);
+            easeP1X, easeP1Y, easeP2X, easeP2Y,
+            animationsEnabled);
         BindPlacedRotation(
             compositor, brush, props,
             -visualCentre, placement ?? visualCentre, minSpeedFraction);
@@ -128,13 +130,41 @@ public static partial class HudComposition
         float direction,
         float phaseTurns,
         float easeP1X, float easeP1Y,
+        float easeP2X, float easeP2Y,
+        bool animationsEnabled = true)
+    {
+        float startAngle = MathF.Tau * phaseTurns;
+
+        var props = compositor.CreatePropertySet();
+        props.InsertScalar("Linear", startAngle);
+        props.InsertScalar("Eased",  startAngle);
+
+        if (animationsEnabled)
+        {
+            StartRotationPropertySetAnimations(
+                compositor, props, periodSeconds, direction, phaseTurns,
+                easeP1X, easeP1Y, easeP2X, easeP2Y);
+        }
+
+        return props;
+    }
+
+    // Starts a continuous rotation from its canonical phase. Callers stop both
+    // channels before invoking this helper; re-enabling functional animation
+    // therefore resumes from a stable pose instead of replaying an old phase.
+    private static void StartRotationPropertySetAnimations(
+        Compositor compositor,
+        CompositionPropertySet props,
+        double periodSeconds,
+        float direction,
+        float phaseTurns,
+        float easeP1X, float easeP1Y,
         float easeP2X, float easeP2Y)
     {
         float startAngle = MathF.Tau * phaseTurns;
         float fullAngle  = MathF.Tau * direction;
         float endAngle   = startAngle + fullAngle;
 
-        var props = compositor.CreatePropertySet();
         props.InsertScalar("Linear", startAngle);
         props.InsertScalar("Eased",  startAngle);
 
@@ -170,7 +200,16 @@ public static partial class HudComposition
         easedAnim.IterationBehavior = AnimationIterationBehavior.Forever;
         props.StartAnimation("Eased", easedAnim);
 
-        return props;
+    }
+
+    private static void StopRotationAtCanonicalPhase(
+        CompositionPropertySet props, float phaseTurns)
+    {
+        props.StopAnimation("Linear");
+        props.StopAnimation("Eased");
+        float angle = MathF.Tau * phaseTurns;
+        props.InsertScalar("Linear", angle);
+        props.InsertScalar("Eased", angle);
     }
 
     // Bind a brush's TransformMatrix to a rotation PropertySet: the surface

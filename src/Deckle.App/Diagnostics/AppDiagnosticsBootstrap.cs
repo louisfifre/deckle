@@ -164,6 +164,11 @@ internal static class AppDiagnosticsBootstrap
         _logWindowSink?.DetachSink(sink);
     }
 
+    public static void ClearLogWindowHistory()
+    {
+        _logWindowSink?.ClearBuffer();
+    }
+
     // Final observability barrier. Every background JSONL writer drains entries
     // accepted before this call. ProcessExit invokes it after emitting the final
     // marker, which also covers install/update/relocation exits.

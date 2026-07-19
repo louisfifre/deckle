@@ -157,7 +157,8 @@ public static partial class HudComposition
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg, NakedMaskPart part,
         Color arcFillColor,
-        ProcessingVariant gradeVariant, bool isDark)
+        ProcessingVariant gradeVariant, bool isDark,
+        bool animationsEnabled = true)
     {
         // Reuse the exact pxSquare math from CreateConicArcStroke so the
         // naked preview paints the same brush footprint. Any drift here
@@ -210,7 +211,8 @@ public static partial class HudComposition
             cfg.HuePhaseTurns,
             cfg.HueEaseP1X, cfg.HueEaseP1Y,
             cfg.HueEaseP2X, cfg.HueEaseP2Y,
-            cfg.HueMinSpeedFraction);
+            cfg.HueMinSpeedFraction,
+            animationsEnabled: animationsEnabled);
         var arcRotationProps = StartRotation(
             compositor, arcMaskBrush, centre,
             cfg.ArcPeriodSeconds,
@@ -218,7 +220,8 @@ public static partial class HudComposition
             cfg.ArcPhaseTurns,
             cfg.ArcEaseP1X, cfg.ArcEaseP1Y,
             cfg.ArcEaseP2X, cfg.ArcEaseP2Y,
-            cfg.ArcMinSpeedFraction);
+            cfg.ArcMinSpeedFraction,
+            animationsEnabled: animationsEnabled);
 
         var sprite = compositor.CreateSpriteVisual();
         sprite.Size = new Vector2(pxSquare, pxSquare);
@@ -230,7 +233,7 @@ public static partial class HudComposition
             {
                 // Grade the bare cone like the live stroke in the chosen state
                 // (Transcribing ⇒ grey, Rewriting ⇒ colour) so the toggle reads
-                // the same as the swipe will. Static seed — no state blend here.
+                // the same as the pinned reveal. Static seed — no state blend here.
                 var graded = BuildVariantGrading(
                     new CompositionEffectSourceParameter("Conic"), cfg, gradeVariant, isDark);
                 var ef = compositor.CreateEffectFactory(graded);

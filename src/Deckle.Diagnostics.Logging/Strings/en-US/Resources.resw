@@ -120,6 +120,12 @@
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
     <value>Windowing details</value>
   </data>
+  <data name="LoggingInputCard.Header" xml:space="preserve">
+    <value>Input activity</value>
+  </data>
+  <data name="LoggingInputCard.Description" xml:space="preserve">
+    <value>Admit Raw Input summaries and Trackpad gesture details. Device presence, lifecycle events, incidents, warnings, errors, and recoveries remain available.</value>
+  </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
     <value>Verbose lines from window placement across every Deckle window — positioning and DPI, overlay stacking, popup anchoring, z-order checks, resize frames, and first-open construction timings. Off by default; this provider emits nothing else, so leaving it off keeps these windows silent in the log.</value>
   </data>
@@ -143,7 +149,13 @@
     <value>Storage folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Root for purpose-specific telemetry datasets. Leave empty to use %LOCALAPPDATA%\Deckle\telemetry\. This does not move the application log.</value>
+    <value>Root for telemetry datasets that support a custom folder. Leave empty to use %LOCALAPPDATA%\Deckle\telemetry\. This does not move the application log or mouse wheel captures.</value>
+  </data>
+  <data name="TelemetryMouseWheelCard.Header" xml:space="preserve">
+    <value>Record wheel events</value>
+  </data>
+  <data name="TelemetryMouseWheelCard.Description" xml:space="preserve">
+    <value>Record wheel timing and delta data to JSONL files under telemetry\mouse-wheel. This capture is independent of Input activity.</value>
   </data>
 
   <!-- Diagnostic files section (x:Uid) -->

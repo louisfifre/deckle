@@ -16,7 +16,7 @@ public static partial class HudComposition
     // surfaces, brushes and rotations — painted from the SAME
     // ConicArcStrokeConfig as the contour (same OKLCh palette, same arc shape),
     // but placed freely and spun at the CLONE periods. It is the Playground
-    // preview of EXACTLY what the swipe reveals behind the digits: the contour's
+    // preview of EXACTLY what the pinned reveal shows behind the digits: the contour's
     // visible material (conic ⊗ arc comet), graded per state, posable + timable
     // on its own.
     //
@@ -116,11 +116,12 @@ public static partial class HudComposition
     // digit reveal reads, so a placement slider drives both in lock-step
     // ((0.5,0.5) = centred, reproducing the contour; (0,0) = top-left).
     // `gradeVariant` + `isDark` pick the resting grading (Transcribing ⇒ grey,
-    // Rewriting ⇒ colour) so the preview reads as the swipe would in that state.
+    // Rewriting ⇒ colour) so the preview reads as the digits do in that state.
     public static ConicClonePreview CreateConicClonePreview(
         Compositor compositor, Vector2 hudSize,
         ConicArcStrokeConfig cfg,
-        ProcessingVariant gradeVariant, bool isDark)
+        ProcessingVariant gradeVariant, bool isDark,
+        bool animationsEnabled = true)
     {
         var coneCentre = new Vector2(
             cfg.CloneCentreXFraction * hudSize.X,
@@ -166,7 +167,8 @@ public static partial class HudComposition
             cfg.HueEaseP1X, cfg.HueEaseP1Y,
             cfg.HueEaseP2X, cfg.HueEaseP2Y,
             cfg.HueMinSpeedFraction,
-            placement: coneCentre);
+            placement: coneCentre,
+            animationsEnabled: animationsEnabled);
 
         var arcBrush = compositor.CreateSurfaceBrush(arcSurface);
         arcBrush.Stretch = CompositionStretch.None;
@@ -178,7 +180,8 @@ public static partial class HudComposition
             cfg.ArcEaseP1X, cfg.ArcEaseP1Y,
             cfg.ArcEaseP2X, cfg.ArcEaseP2Y,
             cfg.ArcMinSpeedFraction,
-            placement: coneCentre);
+            placement: coneCentre,
+            animationsEnabled: animationsEnabled);
 
         // Graded cone ⊗ arc comet — output = (graded.RGB, graded.A · Arc.A).
         // Same masking stage as the contour and the live reveal, minus the

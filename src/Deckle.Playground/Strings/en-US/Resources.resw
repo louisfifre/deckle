@@ -131,15 +131,6 @@
   <data name="PlaygroundHomeSendTestPrompt.Content" xml:space="preserve">
     <value>Send test prompt</value>
   </data>
-  <data name="PlaygroundHomeMouseWheelHeader.Text" xml:space="preserve">
-    <value>Mouse wheel capture</value>
-  </data>
-  <data name="PlaygroundHomeMouseWheelRecordCard.Header" xml:space="preserve">
-    <value>Record wheel events</value>
-  </data>
-  <data name="PlaygroundHomeMouseWheelRecordCard.Description" xml:space="preserve">
-    <value>Writes wheel-events-*.jsonl to telemetry\mouse-wheel while on. Turn it off when the capture session is done.</value>
-  </data>
 
   <!-- Playground TestPrompt descriptor strings, resolved by the notification
        channel via Loc (C# direct-lookup convention, Surface_Purpose). The keys

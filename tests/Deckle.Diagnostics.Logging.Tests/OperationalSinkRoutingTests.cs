@@ -128,6 +128,21 @@ public sealed class OperationalSinkRoutingTests
         Assert.Equal("attached", received.FormattedMessage);
     }
 
+    [Fact]
+    public void LogWindowClearBuffer_PreventsClearedHistoryFromReappearing()
+    {
+        var sink = new LogWindowSink();
+        sink.Write(Entry("before-clear", ObservationKind.Operational));
+
+        sink.ClearBuffer();
+        sink.Write(Entry("after-clear", ObservationKind.Operational));
+        var receiver = new CollectingLogWindowSink();
+        sink.AttachSink(receiver);
+
+        EventEntry received = Assert.Single(receiver.Entries);
+        Assert.Equal("after-clear", received.FormattedMessage);
+    }
+
     private static EventEntry Entry(
         string message,
         ObservationKind kind,

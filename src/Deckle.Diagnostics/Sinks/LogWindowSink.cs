@@ -111,4 +111,17 @@ public sealed class LogWindowSink : ILogSink
             Volatile.Write(ref _sinkSnapshot, next);
         }
     }
+
+    // Clears only the process-memory replay ring. Attached sinks keep receiving
+    // future entries, and persistent sinks such as diagnostics/app.jsonl are
+    // intentionally untouched.
+    public void ClearBuffer()
+    {
+        lock (_lock)
+        {
+            Array.Clear(_buffer);
+            _bufferStart = 0;
+            _bufferCount = 0;
+        }
+    }
 }

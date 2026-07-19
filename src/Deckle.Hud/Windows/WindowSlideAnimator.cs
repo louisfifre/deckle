@@ -11,18 +11,9 @@ namespace Deckle.Hud;
 // while an animation is in progress restarts from the current interpolated
 // value so transitions collapse instead of queueing.
 //
-// Animation toggle is driven by Settings.Overlay.Animations, not by
-// SPI_GETCLIENTAREAANIMATION. HUD transitions are load-bearing (the user has
-// to track which message just arrived and which got pushed away) so we treat
-// them like the motion Windows itself keeps under reduced-motion (Task Manager
-// pane, Settings NavigationView). Users who want everything still can flip
-// the setting off manually.
-
-internal static class AnimationSystemSetting
-{
-    public static bool AreClientAreaAnimationsEnabled()
-        => SettingsService.Instance.Current.Overlay.Animations;
-}
+// WindowSlideAnimator is functional HUD motion and follows
+// Settings.Overlay.Animations. LayeredAlphaAnimator is a simple fade and
+// follows UISettings.AnimationsEnabled through SystemAnimationPreference.
 
 // Slides an HWND from its tracked position to a target via SetWindowPos.
 // The animator owns the canonical position — callers should never bypass it
@@ -45,8 +36,15 @@ internal sealed class WindowSlideAnimator
 
     private DateTime _startUtc;
     private Action? _onComplete;
+    private bool _isAnimating;
+    private readonly AnimationGate _gate;
 
-    public WindowSlideAnimator(IntPtr hwnd, DispatcherQueue dispatcherQueue, int initialX, int initialY)
+    public WindowSlideAnimator(
+        IntPtr hwnd,
+        DispatcherQueue dispatcherQueue,
+        int initialX,
+        int initialY,
+        bool animationsEnabled)
     {
         _hwnd = hwnd;
         _currentX = initialX;
@@ -55,6 +53,8 @@ internal sealed class WindowSlideAnimator
         _timer.Interval = TimeSpan.FromMilliseconds(FrameIntervalMs);
         _timer.IsRepeating = true;
         _timer.Tick += OnTick;
+        _gate = new AnimationGate(animationsEnabled);
+        _gate.Disabled += CompleteImmediately;
     }
 
     public int CurrentX => _currentX;
@@ -69,7 +69,7 @@ internal sealed class WindowSlideAnimator
             return;
         }
 
-        if (instant || !AnimationSystemSetting.AreClientAreaAnimationsEnabled())
+        if (instant || !_gate.IsEnabled)
         {
             Cancel();
             ApplyPosition(toX, toY);
@@ -83,6 +83,7 @@ internal sealed class WindowSlideAnimator
         _toY = toY;
         _startUtc = DateTime.UtcNow;
         _onComplete = onComplete;
+        _isAnimating = true;
 
         _timer.Stop();
         _timer.Start();
@@ -91,7 +92,23 @@ internal sealed class WindowSlideAnimator
     public void Cancel()
     {
         _timer.Stop();
+        _isAnimating = false;
         _onComplete = null;
+    }
+
+    public void SetAnimationsEnabled(bool animationsEnabled)
+        => _gate.SetEnabled(animationsEnabled);
+
+    private void CompleteImmediately()
+    {
+        if (!_isAnimating) return;
+
+        _timer.Stop();
+        _isAnimating = false;
+        ApplyPosition(_toX, _toY);
+        var callback = _onComplete;
+        _onComplete = null;
+        callback?.Invoke();
     }
 
     private void ApplyPosition(int x, int y)
@@ -120,6 +137,7 @@ internal sealed class WindowSlideAnimator
         if (t >= 1.0)
         {
             _timer.Stop();
+            _isAnimating = false;
             var cb = _onComplete;
             _onComplete = null;
             cb?.Invoke();
@@ -144,6 +162,8 @@ internal sealed class LayeredAlphaAnimator
 
     private DateTime _startUtc;
     private Action? _onComplete;
+    private bool _isAnimating;
+    private readonly AnimationGate _gate;
 
     public LayeredAlphaAnimator(IntPtr hwnd, DispatcherQueue dispatcherQueue, byte initialAlpha)
     {
@@ -153,6 +173,8 @@ internal sealed class LayeredAlphaAnimator
         _timer.Interval = TimeSpan.FromMilliseconds(FrameIntervalMs);
         _timer.IsRepeating = true;
         _timer.Tick += OnTick;
+        _gate = new AnimationGate(SystemAnimationPreference.Instance.AnimationsEnabled);
+        _gate.Disabled += CompleteImmediately;
     }
 
     public byte CurrentAlpha => _currentAlpha;
@@ -166,7 +188,7 @@ internal sealed class LayeredAlphaAnimator
             return;
         }
 
-        if (instant || !AnimationSystemSetting.AreClientAreaAnimationsEnabled())
+        if (instant || !_gate.IsEnabled)
         {
             Cancel();
             ApplyAlpha(targetAlpha);
@@ -178,6 +200,7 @@ internal sealed class LayeredAlphaAnimator
         _toAlpha = targetAlpha;
         _startUtc = DateTime.UtcNow;
         _onComplete = onComplete;
+        _isAnimating = true;
 
         _timer.Stop();
         _timer.Start();
@@ -186,7 +209,23 @@ internal sealed class LayeredAlphaAnimator
     public void Cancel()
     {
         _timer.Stop();
+        _isAnimating = false;
         _onComplete = null;
+    }
+
+    public void SetAnimationsEnabled(bool animationsEnabled)
+        => _gate.SetEnabled(animationsEnabled);
+
+    private void CompleteImmediately()
+    {
+        if (!_isAnimating) return;
+
+        _timer.Stop();
+        _isAnimating = false;
+        ApplyAlpha(_toAlpha);
+        var callback = _onComplete;
+        _onComplete = null;
+        callback?.Invoke();
     }
 
     private void ApplyAlpha(byte alpha)
@@ -212,6 +251,7 @@ internal sealed class LayeredAlphaAnimator
         if (t >= 1.0)
         {
             _timer.Stop();
+            _isAnimating = false;
             var cb = _onComplete;
             _onComplete = null;
             cb?.Invoke();

@@ -427,10 +427,25 @@ public sealed class RawInputHost : IDisposable
 
     private void TrackRollup(ContactFrame frame, ContactFrameAssembler assembler)
     {
+        if (!DeckleInputSource.IsInputActivityDetailEnabled(
+                System.Diagnostics.Tracing.EventLevel.Verbose,
+                (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Heartbeat))
+        {
+            _rollupStartMs = -1;
+            return;
+        }
+
         if (_rollupStartMs < 0)
         {
             _rollupStartMs = frame.TimestampMs;
             _lastFrameMs = frame.TimestampMs;
+            _rollupFrames = 0;
+            _rollupFragmented = 0;
+            _rollupMaxTips = 0;
+            _rollupMaxGapMs = 0;
+            _rollupOrphans = assembler.OrphanContinuations;
+            _rollupFlushes = assembler.IncompleteFlushes;
+            _rollupMismatches = assembler.ScanTimeMismatches;
         }
 
         _rollupFrames++;

@@ -120,6 +120,7 @@ public sealed partial class HudWindow : Window
 
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
+        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
 
         // Seed the cached scale from the HWND's current monitor; WM_DPICHANGED
         // refreshes it thereafter (see SubclassCallback).
@@ -251,6 +252,15 @@ public sealed partial class HudWindow : Window
     // Safe to call at any state: UpdateAudioLevel is a no-op when the
     // recording outline isn't attached.
     public void OnAudioLevel(float rms) => Chrono.UpdateAudioLevel(rms);
+
+    private void OnSystemAnimationsChanged(bool enabled)
+    {
+        EnqueueUI(() =>
+        {
+            if (!enabled)
+                CompleteFadeInImmediately();
+        });
+    }
 
     // ── Implementation ────────────────────────────────────────────────────────
 

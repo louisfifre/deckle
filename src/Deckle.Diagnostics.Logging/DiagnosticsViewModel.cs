@@ -31,6 +31,9 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LogAutocorrectActivity { get; set; }
 
+    [ObservableProperty]
+    public partial bool LogInputActivity { get; set; }
+
     // ── Logging — runtime emission filters ──────────────────────────────────
 
     // Windowing Verbose toggle: when off (default), the whole Deckle-Windowing
@@ -48,6 +51,9 @@ public partial class DiagnosticsViewModel : ObservableObject
     // troubleshooting an issue across restarts.
     [ObservableProperty]
     public partial bool ApplicationLogToDisk { get; set; }
+
+    [ObservableProperty]
+    public partial bool RecordWheelEvents { get; set; }
 
     // Storage folder override — empty = AppPaths.TelemetryDirectory.
     // FolderPickerCard.DefaultPath is wired to the resolved default in
@@ -77,6 +83,13 @@ public partial class DiagnosticsViewModel : ObservableObject
         PushLoggingToSettings();
     }
 
+    partial void OnLogInputActivityChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogInputActivity", value.ToString());
+        PushLoggingToSettings();
+    }
+
     partial void OnLogWindowingActivityChanged(bool value)
     {
         if (_isSyncing) return;
@@ -89,6 +102,15 @@ public partial class DiagnosticsViewModel : ObservableObject
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("Logging.ApplicationLogToDisk", value.ToString());
         PushLoggingToSettings();
+    }
+
+    partial void OnRecordWheelEventsChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Input.RecordWheelEvents", value.ToString());
+        var settings = Deckle.Input.MouseWheelSettingsService.Instance.Current;
+        settings.RecordEvents = value;
+        Deckle.Input.MouseWheelSettingsService.Instance.Save();
     }
 
     partial void OnTelemetryStorageDirectoryChanged(string value)
@@ -117,8 +139,10 @@ public partial class DiagnosticsViewModel : ObservableObject
         LogAmbientCaptureActivity = false;
         LogTranscriptionActivity = false;
         LogAutocorrectActivity = false;
+        LogInputActivity = false;
         LogWindowingActivity = false;
         ApplicationLogToDisk = false;
+        RecordWheelEvents = false;
         TelemetryStorageDirectory = "";
 
         // _isSyncing stays true — Load() will set it to false.
@@ -133,8 +157,10 @@ public partial class DiagnosticsViewModel : ObservableObject
             LogAmbientCaptureActivity = l.LogAmbientCaptureActivity;
             LogTranscriptionActivity = l.LogTranscriptionActivity;
             LogAutocorrectActivity = l.LogAutocorrectActivity;
+            LogInputActivity = l.LogInputActivity;
             LogWindowingActivity = l.LogWindowingActivity;
             ApplicationLogToDisk = l.ApplicationLogToDisk;
+            RecordWheelEvents = Deckle.Input.MouseWheelSettingsService.Instance.Current.RecordEvents;
 
             var t = TelemetrySettingsService.Instance.Current;
             TelemetryStorageDirectory = t.StorageDirectory;
@@ -151,6 +177,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         l.LogAmbientCaptureActivity = LogAmbientCaptureActivity;
         l.LogTranscriptionActivity = LogTranscriptionActivity;
         l.LogAutocorrectActivity = LogAutocorrectActivity;
+        l.LogInputActivity = LogInputActivity;
         l.LogWindowingActivity = LogWindowingActivity;
         l.ApplicationLogToDisk = ApplicationLogToDisk;
         LoggingSettingsService.Instance.Save();
@@ -173,6 +200,7 @@ public partial class DiagnosticsViewModel : ObservableObject
             LogAmbientCaptureActivity = false;
             LogTranscriptionActivity = false;
             LogAutocorrectActivity = false;
+            LogInputActivity = false;
             LogWindowingActivity = false;
         }
         finally { _isSyncing = false; }
@@ -187,9 +215,13 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             TelemetryStorageDirectory = "";
+            RecordWheelEvents = false;
         }
         finally { _isSyncing = false; }
         PushTelemetryToSettings();
+        var mouseWheel = Deckle.Input.MouseWheelSettingsService.Instance.Current;
+        mouseWheel.RecordEvents = false;
+        Deckle.Input.MouseWheelSettingsService.Instance.Save();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Telemetry");
     }

@@ -10,6 +10,7 @@ public enum OperationalLogActivity
     Ambient,
     Transcription,
     Autocorrect,
+    Input,
     Windowing,
 }
 

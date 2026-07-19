@@ -840,10 +840,10 @@
     <value>Make the overlay transparent when you move over it, so it never blocks what's underneath.</value>
   </data>
   <data name="GeneralOverlayAnimationsCard.Header" xml:space="preserve">
-    <value>Animate transitions</value>
+    <value>Animate overlay feedback</value>
   </data>
   <data name="GeneralOverlayAnimationsCard.Description" xml:space="preserve">
-    <value>Smoothly slide and fade the overlay and message cards. Stays on even when Windows reduced-motion is enabled, because those transitions help you track which message replaced which.</value>
+    <value>Animate processing, microphone feedback, and message movement. This setting is independent of the Windows animation preference.</value>
   </data>
   <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
     <value>Screen position</value>
@@ -891,7 +891,7 @@
     <value>Storage folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>Shared root for every telemetry stream enabled above. Leave empty to use the default %LOCALAPPDATA%\Deckle\telemetry\.</value>
+    <value>Root for telemetry datasets that support a custom folder. Leave empty to use %LOCALAPPDATA%\Deckle\telemetry\. This does not move the application log or mouse wheel captures.</value>
   </data>
   <data name="GeneralStorageFolderSetLabel.Text" xml:space="preserve">
     <value>Set</value>
@@ -1441,10 +1441,31 @@
   <data name="LogWindowCopyButton.Label" xml:space="preserve">
     <value>Copy</value>
   </data>
+  <data name="LogWindowCopyAllText.Text" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <data name="LogWindowCopySelectionMenuItem.Text" xml:space="preserve">
+    <value>Copy selection</value>
+  </data>
+  <data name="LogWindowCopyFilteredMenuItem.Text" xml:space="preserve">
+    <value>Copy filtered</value>
+  </data>
   <data name="LogWindowSaveButton.Label" xml:space="preserve">
     <value>Save</value>
   </data>
+  <data name="LogWindowSaveAllText.Text" xml:space="preserve">
+    <value>Save all</value>
+  </data>
+  <data name="LogWindowSaveSelectionMenuItem.Text" xml:space="preserve">
+    <value>Save selection</value>
+  </data>
+  <data name="LogWindowSaveFilteredMenuItem.Text" xml:space="preserve">
+    <value>Save filtered</value>
+  </data>
   <data name="LogWindowClearButton.Label" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="LogWindowClearText.Text" xml:space="preserve">
     <value>Clear</value>
   </data>
   <data name="LogWindowFiltersToggle.Label" xml:space="preserve">
@@ -1479,6 +1500,18 @@
   </data>
   <data name="LogWindowCopyMenuItem.Text" xml:space="preserve">
     <value>Copy</value>
+  </data>
+  <data name="LogWindow_ContextCopy_One" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="LogWindow_ContextCopy_Selection" xml:space="preserve">
+    <value>Copy selection</value>
+  </data>
+  <data name="LogWindow_ContextCopy_Filtered" xml:space="preserve">
+    <value>Copy filtered</value>
+  </data>
+  <data name="LogWindow_ContextCopy_All" xml:space="preserve">
+    <value>Copy all</value>
   </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────

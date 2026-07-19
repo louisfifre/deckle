@@ -194,7 +194,7 @@ public static partial class HudComposition
         public float  ArcEaseP2Y         { get; init; } = 0.625f;
         public float  ArcMinSpeedFraction { get; init; } = 0f;
 
-        // ── Clone-cone placement (the swipe's digit reveal) ─────────────
+        // ── Clone-cone placement (the pinned digit reveal) ──────────────
         // Where the reveal cone's centre sits within the host frame, as a
         // FRACTION of host size (DPI/size-independent, so one slider drives
         // both the live reveal and the ConicClone preview through the same
