@@ -924,6 +924,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Llm/
 │   │   ├── Deckle.Llm.csproj
 │   │   ├── DeckleLlmSource.cs
+│   │   ├── DeckleLlmSource.FeedbackAndUi.cs
+│   │   ├── DeckleLlmSource.OllamaService.cs
+│   │   ├── DeckleLlmSource.Persistence.cs
+│   │   ├── DeckleLlmSource.Rewrite.cs
+│   │   ├── DeckleLlmSource.RuntimeStatus.cs
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Engine/
