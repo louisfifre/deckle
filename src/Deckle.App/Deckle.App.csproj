@@ -21,7 +21,7 @@
          Windows App SDK ML is not used, so its automatic ONNX Runtime
          initialization must not compete with the host's runtime. -->
     <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
-    <Version>0.13.7</Version>
+    <Version>0.13.8</Version>
     <!-- Forces the Publish pipeline to generate/copy Deckle.pri into PublishDir.
          Without this, in unpackaged + WindowsAppSDK 1.8, the .pri doesn't land in
          publish\ and all compiled XAML resources (.xbf embedded in .pri since 1.8)
