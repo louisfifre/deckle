@@ -241,7 +241,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── launch-app.ps1
 │   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
+│   │   ├── record-release.ps1
 │   │   ├── record-version.ps1
+│   │   ├── release-history.psm1
+│   │   ├── release-history.tests.ps1
 │   │   ├── resource-inventory.psm1
 │   │   ├── resource-inventory.tests.ps1
 │   │   ├── setup-assets.ps1
@@ -250,7 +253,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── stats.ps1
 │   │   ├── stop-build-servers.ps1
 │   │   ├── update-readme-stats.ps1
-│   │   └── validate-resources.ps1
+│   │   ├── validate-resources.ps1
+│   │   └── versioning-workflow.tests.ps1
 │   ├── deckle.ps1
 │   ├── README.md  — readme-scripts [module-readme] Dev workflows entry point for Deckle: the deckle.ps1 menu, the worker scripts u…
 │   └── resource-validation.allowlist.json
@@ -1567,5 +1571,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
+├── release-history.json
 └── TREE.md
 ```

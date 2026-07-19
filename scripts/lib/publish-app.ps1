@@ -43,7 +43,7 @@ param(
     # Also publish the installer exe + the app ZIP (+ its .sha256 sidecar) as a
     # GitHub Release tagged v$Version via gh. Requires gh authenticated against
     # the repo's remote. The version is read from the csproj; gh attaches to the
-    # existing tag (or creates it).
+    # commit only after every artifact has built successfully.
     [switch]$Publish,
 
     # Optional release-notes file passed to `gh release create --notes-file`.
@@ -56,6 +56,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
 . (Join-Path $ScriptDir 'deckle-process.ps1')
+Import-Module (Join-Path $ScriptDir 'release-history.psm1') -Force
 
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
@@ -115,6 +116,13 @@ $verMatch = Select-String -Path $Csproj -Pattern '<Version>([^<]+)</Version>' | 
 if ($verMatch) { $Version = $verMatch.Matches[0].Groups[1].Value.Trim() }
 if (-not $Version) { throw "<Version> not found in $Csproj" }
 Step "Deckle v$Version"
+
+if ($Publish) {
+    $publishedTags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
+    if ($publishedTags -contains "v$Version") {
+        throw "v$Version is already recorded as a public release"
+    }
+}
 
 # ── Resolve owner/repo from the git remote, for the release-URL hint ─────────
 # (the in-code native URL still points at the pre-rename owner; resolving from
@@ -252,12 +260,14 @@ Write-Host @"
 
 # ── Optional: gh release create (maintainer act, never run by tooling) ───────
 if ($Publish) {
-    Step "Publish via gh release create v$Version"
+    Step "Publish GitHub Release v$Version"
     $tag    = "v$Version"
     $title  = "Deckle $tag"
     # Asset order = upload order = display order on the release page: the
     # installer exe first (the headline download), then the payload + its sha.
-    $ghArgs = @('release', 'create', $tag, $SetupPath, $ZipPath, $ShaPath, '--title', $title)
+    $headSha = (& git -C $RepoRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "git rev-parse HEAD failed (code $LASTEXITCODE)" }
+    $ghArgs = @('release', 'create', $tag, $SetupPath, $ZipPath, $ShaPath, '--title', $title, '--target', $headSha)
     # Every 0.x cut is a pre-release (versioning convention): the phase is
     # pre-stable, so the release must not claim the repo's "Latest" badge.
     if ($Version -like '0.*') { $ghArgs += '--prerelease' }
@@ -270,10 +280,32 @@ if ($Publish) {
         Ok "Release notes generated from history: $Notes"
     }
     $ghArgs += @('--notes-file', $Notes)
-    & gh @ghArgs
-    if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
+    & gh release view $tag *> $null
+    $releaseExists = $LASTEXITCODE -eq 0
+    if ($releaseExists) {
+        Warn "$tag already exists on GitHub; repair its notes and assets"
+        $editArgs = @('release', 'edit', $tag, '--title', $title, '--notes-file', $Notes)
+        if ($Version -like '0.*') { $editArgs += '--prerelease' }
+        & gh @editArgs
+        if ($LASTEXITCODE -ne 0) { throw "gh release edit failed (code $LASTEXITCODE)" }
+        & gh release upload $tag $SetupPath $ZipPath $ShaPath --clobber
+        if ($LASTEXITCODE -ne 0) { throw "gh release upload failed (code $LASTEXITCODE)" }
+    } else {
+        & gh @ghArgs
+        if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
+    }
     Ok "Released as $tag"
     $Published = $true
+
+    & git -C $RepoRoot rev-parse --verify --quiet "$tag^{commit}" *> $null
+    if ($LASTEXITCODE -ne 0) {
+        & git -C $RepoRoot fetch origin "refs/tags/$tag`:refs/tags/$tag"
+        if ($LASTEXITCODE -ne 0) { throw "git fetch $tag failed (code $LASTEXITCODE)" }
+    }
+
+    Step 'Freeze the public release into CHANGELOG.md'
+    & (Join-Path $ScriptDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
+    if (-not $?) { throw 'record-release.ps1 failed' }
 }
 
 $releaseTag = if ($Version) { "v$Version" } else { $null }

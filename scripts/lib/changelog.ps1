@@ -40,9 +40,9 @@ param(
 
     # Release-notes mode: emit ONLY this version's section (e.g. "0.4.5"),
     # without the document header, instead of regenerating the whole file. If
-    # the tag v<X.Y.Z> exists, its range and date are used; otherwise the
-    # version is treated as in-progress (commits since the latest tag, dated
-    # today) so notes can be produced before the release tag is cut.
+    # the version is already in release-history.json, its public-release range
+    # and tag date are used; otherwise it is treated as in-progress (commits
+    # since the latest public release, dated today).
     [string]$NotesFor,
 
     # Write the output here instead of the default (CHANGELOG.md in full mode,
@@ -53,6 +53,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'action-summary.ps1')
+Import-Module (Join-Path $ScriptDir 'release-history.psm1') -Force
 
 function Step($msg) { Write-Host "`n[changelog] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
@@ -139,12 +140,18 @@ function Get-FirstUpper([string]$s) {
     return [char]::ToUpper($s[0]) + $s.Substring(1)
 }
 
-# All SemVer release tags (vX.Y.Z), ascending. Excludes the unrelated
-# native-runtime tag (native-v*) — the 'v*' glob already does.
+# Public release tags, ascending. release-history.json is the offline source of
+# truth; git tags alone are ambiguous because older internal version records
+# also created tags.
 function Get-VersionTags {
-    $tags = & git -C $RepoRoot tag --list 'v*' --sort=version:refname
-    if ($LASTEXITCODE -ne 0) { throw "git tag failed (code $LASTEXITCODE)" }
-    return @($tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' })
+    $tags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
+    foreach ($tag in $tags) {
+        & git -C $RepoRoot rev-parse --verify --quiet "$tag^{commit}" *> $null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Published release tag $tag is missing from the local repository"
+        }
+    }
+    return [string[]]$tags
 }
 
 # ISO date (YYYY-MM-DD) of the commit a tag points at.
@@ -225,15 +232,19 @@ if ($NotesFor) {
     $tags    = Get-VersionTags
 
     if ($tags -contains $thisTag) {
-        # Released version: range from the preceding tag, dated at the tag.
+        # Public release: range from the preceding public release.
         $idx     = [array]::IndexOf($tags, $thisTag)
         $prevTag = if ($idx -gt 0) { $tags[$idx - 1] } else { $null }
         $range   = if ($prevTag) { "$prevTag..$thisTag" } else { $thisTag }
         $date    = Get-TagDate $thisTag
     } else {
-        # In-progress version (tag not cut yet): commits since the latest tag.
+        # In-progress release: commits since the latest public release. A
+        # legacy internal tag may already exist; use it as the endpoint without
+        # treating it as a release boundary.
         $prevTag = if ($tags.Count) { $tags[-1] } else { $null }
-        $range   = if ($prevTag) { "$prevTag..HEAD" } else { 'HEAD' }
+        & git -C $RepoRoot rev-parse --verify --quiet "$thisTag^{commit}" *> $null
+        $endRef  = if ($LASTEXITCODE -eq 0) { $thisTag } else { 'HEAD' }
+        $range   = if ($prevTag) { "$prevTag..$endRef" } else { $endRef }
         $date    = (Get-Date -Format 'yyyy-MM-dd')
     }
 
@@ -266,33 +277,33 @@ if ($NotesFor) {
 
 # ── Mode: full regeneration of CHANGELOG.md ──────────────────────────────────
 $tags = Get-VersionTags
-if (-not $tags.Count) { throw "No version tags (v*) found in $RepoRoot" }
+if (-not $tags.Count) { throw "No published release tags found in $RepoRoot" }
 
 $floorIdx = [array]::IndexOf($tags, $FloorTag)
-if ($floorIdx -lt 0) { throw "Floor tag $FloorTag not found among version tags" }
+if ($floorIdx -lt 0) { throw "Floor tag $FloorTag not found in release-history.json" }
 
-Step "Regenerating changelog from $FloorTag (latest: $($tags[-1]))"
+Step "Regenerating changelog from $FloorTag (latest public release: $($tags[-1]))"
 
 # Rendered tags: floor .. latest, emitted newest-first.
 $rendered = $tags[$floorIdx..($tags.Count - 1)]
 $sections = [System.Collections.Generic.List[string]]::new()
 
-# Optional [Unreleased] section: commits beyond the latest tag, only if any of
-# them is user-facing (otherwise an empty Unreleased heading would be noise).
+# Optional [Unreleased] section: commits beyond the latest public release, only
+# if any are user-facing (otherwise an empty heading would be noise).
 $unreleased = Get-RangeCommits "$($tags[-1])..HEAD"
 if ($unreleased.Count) {
     $hasEntry = $false
     foreach ($s in $unreleased) { if (ConvertTo-Entry $s) { $hasEntry = $true; break } }
     if ($hasEntry) {
         $sections.Add((Format-Section '' $null $null '' $unreleased))
-        Ok "Unreleased — $($unreleased.Count) commits since $($tags[-1])"
+        Ok "Unreleased — $($unreleased.Count) commits since public release $($tags[-1])"
     }
 }
 
 for ($i = $rendered.Count - 1; $i -ge 0; $i--) {
     $thisTag = $rendered[$i]
     $version = $thisTag.TrimStart('v')
-    # Previous tag is the neighbour below in the FULL tag list (may be < floor).
+    # Previous boundary is the preceding public release, never an internal tag.
     $globalIdx = [array]::IndexOf($tags, $thisTag)
     $prevTag   = if ($globalIdx -gt 0) { $tags[$globalIdx - 1] } else { $null }
     $range     = if ($prevTag) { "$prevTag..$thisTag" } else { $thisTag }
@@ -312,11 +323,11 @@ Ok "Wrote $dest"
 Write-DeckleActionSummary `
     -Workflow $Workflow `
     -Result Success `
-    -Sentence "CHANGELOG.md was regenerated from $FloorTag through $($tags[-1])." `
+    -Sentence "CHANGELOG.md was regenerated from $FloorTag through public release $($tags[-1])." `
     -Details ([ordered]@{
         Worktree     = $RepoRoot
         Output       = $dest
         'Floor tag'  = $FloorTag
-        'Latest tag' = $tags[-1]
+        'Latest public release' = $tags[-1]
         Sections     = $sections.Count
     })

@@ -1,16 +1,13 @@
-# cut-version.ps1 — Bump the single source-of-truth <Version> and tag it.
+# cut-version.ps1 — Bump the single source-of-truth <Version>.
 #
 # The version lives in exactly one place: <Version> in Deckle.App.csproj. This
 # script increments one SemVer segment, commits ONLY that one-line change as
-# `chore(release): vX.Y.Z`, and lays a lightweight tag vX.Y.Z on that commit —
-# atomically, so the csproj value and the git tag can never drift apart.
+# `chore(version): vX.Y.Z`. A version is an internal progress record; only a
+# successful public release creates the matching git tag.
 #
-# It does NOT push. Pushing — and cutting the public GitHub Release from the
-# tag (publish-app.ps1 -Publish) — stays a deliberate, separate act. Run this
-# on `main` right after a merge, when the tree is clean and the milestone is
-# real. The launcher's "Publish app release" action composes the whole ritual —
-# cut → changelog bake → push → publish — behind a single consent; this script
-# stays the atomic cut it needs.
+# It does NOT push, update the changelog, tag, or publish. record-version.ps1
+# composes the normal internal record; publish-app.ps1 creates the public tag
+# only after release artifacts have built successfully.
 
 [CmdletBinding()]
 param(
@@ -24,7 +21,7 @@ param(
     [string]$Target,
     [switch]$Pick,
 
-    # Write the bumped <Version> WITHOUT committing or tagging — an escape
+    # Write the bumped <Version> WITHOUT committing — an escape
     # hatch to inspect the rewrite. The whole point is the atomic bump, so
     # this is off by default.
     [switch]$NoCommit
@@ -114,7 +111,7 @@ $next = $p -join '.'
 $tag  = "v$next"
 Step "Bump ($Bump): v$current -> $tag"
 
-# ── Guard: the tag must not already exist ────────────────────────────────────
+# ── Guard: the next version must not already be a public tag ─────────────────
 $existing = & git -C $RepoRoot tag --list $tag
 if ($LASTEXITCODE -ne 0) { throw "git tag --list failed (code $LASTEXITCODE)" }
 if ($existing) { throw "Tag $tag already exists — refuse to overwrite." }
@@ -145,41 +142,34 @@ if ($NoCommit) {
     return
 }
 
-# ── Commit the bump and tag it ───────────────────────────────────────────────
-# Stage ONLY the csproj so nothing else can ride along. The tag is lightweight,
-# matching the gh-created release tags; the changelog reads its date from the
-# commit, so annotation would buy nothing.
-Step 'Commit and tag'
+# ── Commit the bump ──────────────────────────────────────────────────────────
+# Stage ONLY the csproj so nothing else can ride along.
+Step 'Commit version record'
 & git -C $RepoRoot add -- $Csproj
 if ($LASTEXITCODE -ne 0) { throw "git add failed (code $LASTEXITCODE)" }
-& git -C $RepoRoot commit -m "chore(release): $tag"
+& git -C $RepoRoot commit -m "chore(version): $tag"
 if ($LASTEXITCODE -ne 0) { throw "git commit failed (code $LASTEXITCODE)" }
-& git -C $RepoRoot tag $tag
-if ($LASTEXITCODE -ne 0) { throw "git tag failed (code $LASTEXITCODE)" }
-Ok "committed chore(release): $tag and tagged $tag"
+Ok "committed chore(version): $tag"
 
 # ── Summary — push and publish stay deliberate, separate acts ────────────────
 Write-Host ''
 Write-Host "Cut v$current -> $tag on $RepoRoot" -ForegroundColor Green
-Write-Host 'Not pushed. To ship this version:' -ForegroundColor DarkGray
-Write-Host "  git -C `"$RepoRoot`" push; git -C `"$RepoRoot`" push origin $tag" -ForegroundColor DarkGray
-Write-Host "  then menu: Release > Publish app release  (gh reuses the existing tag $tag)" -ForegroundColor DarkGray
+Write-Host 'Not pushed. No tag was created; the tag belongs to a successful public release.' -ForegroundColor DarkGray
 
 Write-DeckleActionSummary `
     -Workflow $Workflow `
     -Result Success `
-    -Sentence "Deckle version was bumped from v$current to $tag, committed, and tagged locally." `
+    -Sentence "Deckle version was bumped from v$current to $tag and committed without creating a tag." `
     -Details ([ordered]@{
         Worktree = $RepoRoot
         Bump     = $Bump
         From     = "v$current"
         To       = $tag
-        Commit   = "chore(release): $tag"
-        Tag      = $tag
+        Commit   = "chore(version): $tag"
+        Tag      = 'Not created'
         Pushed   = 'No'
     }) `
     -Next @(
         "git -C `"$RepoRoot`" push"
-        "git -C `"$RepoRoot`" push origin $tag"
         "Menu: Release > Publish app release"
     )
