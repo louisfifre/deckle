@@ -324,6 +324,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── LogEntry.cs
+│   │   │   ├── LogEntryRow.xaml
+│   │   │   ├── LogEntryRow.xaml.cs
 │   │   │   ├── LogEntryTemplateSelector.cs
 │   │   │   └── NetworkStatusEmitter.cs
 │   │   ├── Engine/
@@ -576,9 +578,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   └── ProcessingVariant.cs
 │   │   ├── Primitives/
-│   │   │   ├── ColorSpace.cs
-│   │   │   ├── Easing.cs
-│   │   │   └── SwipeWaveAnimator.cs
+│   │   │   └── ColorSpace.cs
 │   │   └── Deckle.Composition.csproj
 │   ├── Deckle.Core/
 │   │   ├── Interop/
@@ -653,6 +653,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogFilterToken.cs
 │   │   ├── LoggingSettings.cs
 │   │   ├── LoggingSettingsService.cs
+│   │   ├── LogTransfer.cs
 │   │   ├── LogWindowFilterSession.cs
 │   │   ├── SettingsSearch.cs
 │   │   └── TranscriptionActivityScope.cs
@@ -688,8 +689,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── HudWindow.Windowing.cs
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
+│   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AGENTS.md  — [agent-instructions] HUD overlay surface — non-focusable, click-through, always-on-top windows that…
+│   │   ├── AnimationGate.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Hud.csproj
 │   │   ├── DeckleHudSource.cs
@@ -1330,6 +1333,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
+│   │   ├── LoggingSettingsTests.cs
+│   │   ├── LogTransferTests.cs
 │   │   ├── OperationalSinkRoutingTests.cs
 │   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
@@ -1350,6 +1355,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   └── OperationalLogAdmissionTests.cs
 │   ├── Deckle.Hud.Tests/
+│   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
