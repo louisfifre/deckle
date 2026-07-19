@@ -562,6 +562,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CandidateCompletionPlan.cs
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
 │   │   ├── OnnxSentenceScorer.cs
+│   │   ├── OnnxSentenceScorer.Model.cs
+│   │   ├── OnnxSentenceScorer.Prompt.cs
+│   │   ├── OnnxSentenceScorer.Scoring.cs
 │   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Autocorrect.Probe/
 │   │   ├── CorrectionBenchmarkCase.cs
