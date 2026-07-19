@@ -9,7 +9,7 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
-## [Unreleased]
+## [0.13.3](https://github.com/louisfifre/deckle/compare/v0.13.1...v0.13.3) — 2026-07-19
 
 ### Changed
 
@@ -99,7 +99,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Gate rare forms out of the sentence candidate set
 - **autocorrect-onnx:** Abstain below a four-word context floor
 - **transcription:** Default to ggml-base with installed-model fallback
-- **setup:** Update pipeline — silent check, download page, deploy update mode
+- **setup:** Update pipeline ÔÇö silent check, download page, deploy update mode
 - **settings:** Update opt-out and version row on the General page
 - **app:** Wire the in-app updater end to end
 - **setup:** Data-root relocation page
@@ -348,7 +348,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Split the menu launch entry into Release and Debug
 - **scripts:** Add a version bump-and-tag menu command
 - **scripts:** Rework the dev menu as a 2D navigable grid
-- **anytype:** Management layer — lifecycle verbs and reversible delete
+- **anytype:** Management layer ÔÇö lifecycle verbs and reversible delete
 - **diagnostics:** Add windowing activity log toggle
 - **scripts:** Summarize workflow outcomes
 - **scripts:** Configure Anytype MCP management
@@ -373,9 +373,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Confirm-on-enable gate for consent toggles
 - **settings:** Reusable confirmation service for destructive commands
 - **autocorrect:** Derive the verb-morphology artifact and its loader
-- **autocorrect:** Add the grammar stage with subject–verb agreement
+- **autocorrect:** Add the grammar stage with subjectÔÇôverb agreement
 - **shell:** Unify both logon vehicles behind a StartupService facade
-- **anytype:** Backend lifecycle mechanism — triggerless on-demand task + supervisor
+- **anytype:** Backend lifecycle mechanism ÔÇö triggerless on-demand task + supervisor
 - **app:** Launch without the speech setup gate
 - **setup:** Recover a failed first-run download with a link and local import
 - **transcription:** Surface a set-up call-to-action when speech is unprovisioned
@@ -452,7 +452,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Compose the trackpad module
 - **trackpad:** Settings page and navigation entry
 - **trackpad:** Freeze calibrated values, retire the tuning expander
-- **anytype:** Core library over the live PM space — client, frozen schema, gestures
+- **anytype:** Core library over the live PM space ÔÇö client, frozen schema, gestures
 - **mcp:** Stdio JSON-RPC host exposing the 13 PM tools
 - **transcription:** Paragraph break on silence-cut utterances
 - **notifications:** Notification catalogue, dispatcher, and interactive toast channel
@@ -479,7 +479,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Persist the setup narrative and critical errors locally
 - **settings:** Link to the local diagnostics folder
 - **setup:** Offer the diagnostics folder on a failed first run
-- **anytype:** Replace_section — heading-located body edit, verified
+- **anytype:** Replace_section ÔÇö heading-located body edit, verified
 - **anytype:** Add dialogue chat tools
 - **autocorrect:** N-gram left-context disambiguation and precision-first eval
 - **autocorrect:** CamemBERT MLM reranker probe (offline)
@@ -553,7 +553,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Detach and flush taskbar cover settings at shutdown
 - **taskbar-cover:** Hold the provider to the Verbose/Info separation
 - **input:** Guard the parser-failure detail behind its braces
-- **anytype:** Invert the rapport↔task link, derive the project through tasks
+- **anytype:** Invert the rapportÔåötask link, derive the project through tasks
 - **app:** Always surface the streaming transcript in the log
 - **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
 - **app:** Register always-on local sinks before settings migration
