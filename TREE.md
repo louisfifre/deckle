@@ -444,7 +444,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── pair-bigrams-fr.tsv.gz
 │   │   │   └── verbs-fr.tsv.gz
 │   │   ├── Engine/
+│   │   │   ├── AutocorrectEngine.Commit.cs
 │   │   │   ├── AutocorrectEngine.cs
+│   │   │   ├── AutocorrectEngine.Input.cs
+│   │   │   ├── AutocorrectEngine.Lifecycle.cs
+│   │   │   ├── AutocorrectEngine.Telemetry.cs
 │   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
