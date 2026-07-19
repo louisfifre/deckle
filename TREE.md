@@ -1211,6 +1211,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
 │   │   │   ├── TranscriptionEngine.Finalize.cs
+│   │   │   ├── TranscriptionEngine.Finalize.Observability.cs
+│   │   │   ├── TranscriptionEngine.Finalize.Rewrite.cs
 │   │   │   ├── TranscriptionEngine.Lifecycle.cs
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
@@ -1232,16 +1234,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── HangoverCurveCanvas.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── WhisperViewModel.cs
-│   │   │   └── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.DictationExperience.cs
+│   │   │   ├── WhisperViewModel.Engine.cs
+│   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   ├── WhisperViewModel.Streaming.cs
+│   │   │   └── WhisperViewModel.Telemetry.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Backend-agnostic transcription orchestrator — the IAsrBackend boundary, the mod…
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-transcription [agent-instructions] Transcription vocabulary — the two entry points (dictation, file transcription)…
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
+│   │   ├── DeckleWhispSource.Decode.cs
 │   │   ├── DeckleWhispSource.Delivery.cs
 │   │   ├── DeckleWhispSource.FileTranscription.cs
 │   │   ├── DeckleWhispSource.PipelineCompletion.cs
 │   │   ├── DeckleWhispSource.Preprocessing.cs
+│   │   ├── DeckleWhispSource.Segments.cs
+│   │   ├── DeckleWhispSource.Streaming.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs

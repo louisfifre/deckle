@@ -76,31 +76,20 @@ public sealed partial class WhisperPage : Page
         // PropertyChanged subscription is already in place to catch Load()'s refresh
         // — the same Compose-before-Load ordering RecordingPage uses. The composers
         // are held in fields so their subscriptions live as long as the cached page.
-        ComposeBehaviourSection();
-        ComposeFileTranscriptionSection();
-        ComposeUseGpuSection();
-        ComposeModelsDirectorySection();
-        ComposeVadSection();
-        ComposeStreamingSection();
-        ComposeOutputFiltersSection();
-        ComposeContextSection();
-        ComposeDecodingSection();
-        ComposeConfidenceSection();
-        ComposeDiagnosticsSection();
+        ComposeSettings();
+
+        // The cached page can be loaded again after navigation. Wire these once in
+        // the constructor so hover handlers never accumulate across page entries.
+        WireHover(ModelCard, ModelReset);
+        WireHover(LanguageCard, LanguageReset);
+        InitialPromptCard.PointerEntered += (_, _) => InitialPromptReset.Opacity = 1;
+        InitialPromptCard.PointerExited += (_, _) => InitialPromptReset.Opacity = 0;
 
         Loaded += (_, _) =>
         {
             DeckleWhispSource.Log.PageLoadedStart();
             try
             {
-                // Hover reveal for reset buttons — one-time setup.
-                // ModelCard is now a plain SettingsCard (the models directory it
-                // used to nest is composed into its own card below), so its reset
-                // reveals through the shared WireHover like Language's.
-                WireHover(ModelCard, ModelReset);
-                WireHover(LanguageCard, LanguageReset);
-                InitialPromptCard.PointerEntered += (_, _) => InitialPromptReset.Opacity = 1;
-                InitialPromptCard.PointerExited += (_, _) => InitialPromptReset.Opacity = 0;
                 // GPU acceleration and the models directory are composed now — the
                 // composer wires each card's own per-card reset and hover reveal (and
                 // the Path card's AppPaths fallback rides in PathArgs.DefaultPath), so
@@ -116,6 +105,7 @@ public sealed partial class WhisperPage : Page
 
                 // React to VM property changes for side effects (restart
                 // state, model folder re-scan).
+                ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
                 DeckleWhispSource.Log.PageReady();
@@ -130,7 +120,7 @@ public sealed partial class WhisperPage : Page
         };
     }
 
-    // ── Composed folds (VAD + Streaming) ────────────────────────────────────
+    // ── Composed settings ────────────────────────────────────────────────────
     //
     // The page only hosts: each method hands the host StackPanel and the VM's
     // settings manifest (declared beside the VM in WhisperViewModel.Settings.cs)
@@ -141,133 +131,45 @@ public sealed partial class WhisperPage : Page
     // so the subscription catches Load()'s refresh; held in fields so it lives as
     // long as the cached page.
 
-    // The dictation-experience section (overlay HUD + auto-paste), relocated from
-    // GeneralPage. Its values persist in the shell's Overlay/Paste settings (the VM
-    // pushes them there); the section "Reset" link gates active-when-dirty off the
-    // composer, like GeneralPage's sections. Composed first, before the folds below.
+    private readonly List<SettingsComposer> _composers = new();
     private SettingsComposer? _behaviourComposer;
 
-    private void ComposeBehaviourSection()
+    private void ComposeSettings()
     {
-        _behaviourComposer = new SettingsComposer(BehaviourHost, ViewModel);
-        _behaviourComposer.DirtyChanged += (_, _) =>
-            BehaviourResetLink.IsEnabled = _behaviourComposer.IsDirty();
-        _behaviourComposer.Compose(ViewModel.BehaviourSettings);
+        SettingsComposer behaviourComposer = ComposeRegion(
+            BehaviourHost,
+            ViewModel.BehaviourSettings,
+            composer => composer.DirtyChanged += (_, _) =>
+                BehaviourResetLink.IsEnabled = composer.IsDirty());
+        _behaviourComposer = behaviourComposer;
+
+        ComposeRegion(FileTranscriptionHost, ViewModel.FileTranscriptionSettingsManifest);
+        ComposeRegion(UseGpuHost, ViewModel.UseGpuSettingsManifest);
+        ComposeRegion(ModelsDirectoryHost, ViewModel.ModelsDirectorySettingsManifest);
+        ComposeRegion(VadHost, ViewModel.VadSettings);
+        ComposeRegion(StreamingHost, ViewModel.StreamingSettings);
+        ComposeRegion(OutputFiltersHost, ViewModel.OutputFilterSettingsManifest);
+        ComposeRegion(ContextHost, ViewModel.ContextSettingsManifest);
+        ComposeRegion(DecodingHost, ViewModel.DecodingSettingsManifest);
+        ComposeRegion(ConfidenceHost, ViewModel.ConfidenceSettingsManifest);
+        ComposeRegion(DiagnosticsHost, ViewModel.DiagnosticsSettings);
     }
 
-    // File transcription — a lone Path leaf (the output destination folder),
-    // composed straight into its host like the models directory below. No
-    // section-reset link: a single-card section leans on the card's own per-card
-    // reset (and the page-wide "Reset all"), the same way ComposeModelsDirectorySection
-    // carries no DirtyChanged wiring.
-    private SettingsComposer? _fileTranscriptionComposer;
-
-    private void ComposeFileTranscriptionSection()
+    private SettingsComposer ComposeRegion(
+        Panel host,
+        IReadOnlyList<SettingDescriptor> settings,
+        Action<SettingsComposer>? configure = null)
     {
-        _fileTranscriptionComposer = new SettingsComposer(FileTranscriptionHost, ViewModel);
-        _fileTranscriptionComposer.Compose(ViewModel.FileTranscriptionSettingsManifest);
+        var composer = new SettingsComposer(host, ViewModel);
+        configure?.Invoke(composer);
+        composer.Compose(settings);
+        _composers.Add(composer);
+        return composer;
     }
 
-    // GPU acceleration and the models directory are flat, restart-neutral leaves —
-    // a lone Toggle and a lone editable Path — each composed straight into its host,
-    // the same host-only pattern as the flat sections below (composed before the
-    // first Load() so the subscription catches its refresh, held in a field for the
-    // cached page's lifetime). The composer rebuilds each card's own per-card reset
-    // and hover reveal (the Path variant carries the AppPaths fallback in PathArgs),
-    // so no WireHover or reset handler is wired here. The UseGpu toggle drives the
-    // same VM.UseGpu the restart footer watches, so it still trips the footer.
-    private SettingsComposer? _useGpuComposer;
-    private SettingsComposer? _modelsDirectoryComposer;
-
-    private void ComposeUseGpuSection()
-    {
-        _useGpuComposer = new SettingsComposer(UseGpuHost, ViewModel);
-        _useGpuComposer.Compose(ViewModel.UseGpuSettingsManifest);
-    }
-
-    private void ComposeModelsDirectorySection()
-    {
-        _modelsDirectoryComposer = new SettingsComposer(ModelsDirectoryHost, ViewModel);
-        _modelsDirectoryComposer.Compose(ViewModel.ModelsDirectorySettingsManifest);
-    }
-
-    private SettingsComposer? _vadComposer;
-    private SettingsComposer? _streamingComposer;
-
-    private void ComposeVadSection()
-    {
-        _vadComposer = new SettingsComposer(VadHost, ViewModel);
-        _vadComposer.Compose(ViewModel.VadSettings);
-    }
-
-    private void ComposeStreamingSection()
-    {
-        _streamingComposer = new SettingsComposer(StreamingHost, ViewModel);
-        _streamingComposer.Compose(ViewModel.StreamingSettings);
-    }
-
-    // Output filters and Context are FLAT sections — a run of independent cards
-    // under a section header, no master toggle — so each composes its leaf
-    // manifest straight into its host panel. Same host-only pattern as VAD/Streaming
-    // (composed before the first Load() so the subscription catches its refresh,
-    // held in a field for the cached page's lifetime), minus the group wrapper. The
-    // hand-authored cards these replace had their own per-card reset and hover reveal;
-    // the composer rebuilds both, so no WireHover or reset handler is wired here.
-
-    private SettingsComposer? _outputFiltersComposer;
-    private SettingsComposer? _contextComposer;
-
-    private void ComposeOutputFiltersSection()
-    {
-        _outputFiltersComposer = new SettingsComposer(OutputFiltersHost, ViewModel);
-        _outputFiltersComposer.Compose(ViewModel.OutputFilterSettingsManifest);
-    }
-
-    private void ComposeContextSection()
-    {
-        _contextComposer = new SettingsComposer(ContextHost, ViewModel);
-        _contextComposer.Compose(ViewModel.ContextSettingsManifest);
-    }
-
-    // Decoding and Confidence are master-less Sections — a header+chevron fold with
-    // composed children, no master toggle. Same host-only pattern as the flat
-    // sections above (composed before the first Load() so the subscription catches
-    // its refresh, held in a field for the cached page's lifetime). The slider bounds
-    // that the constructor used to set imperatively now live in the Confidence
-    // manifest's SliderArgs, and the fallback warning rides on the TemperatureIncrement
-    // card's Advisory — so neither needs any code-behind here beyond the compose call.
-
-    private SettingsComposer? _decodingComposer;
-    private SettingsComposer? _confidenceComposer;
-
-    private void ComposeDecodingSection()
-    {
-        _decodingComposer = new SettingsComposer(DecodingHost, ViewModel);
-        _decodingComposer.Compose(ViewModel.DecodingSettingsManifest);
-    }
-
-    private void ComposeConfidenceSection()
-    {
-        _confidenceComposer = new SettingsComposer(ConfidenceHost, ViewModel);
-        _confidenceComposer.Compose(ViewModel.ConfidenceSettingsManifest);
-    }
-
-    // Diagnostics — the dictation-scoped observability opt-ins (streaming-transcription
-    // log filter, latency telemetry, audio-corpus consent fold) composed into their
-    // host. Same host-only pattern as the flat sections above; no section-reset link
-    // (these opt-ins carry no resettable default — a privacy opt-in has no per-row
-    // reset), so the composer's DirtyChanged is left unwired here.
-    private SettingsComposer? _diagnosticsComposer;
-
-    private void ComposeDiagnosticsSection()
-    {
-        _diagnosticsComposer = new SettingsComposer(DiagnosticsHost, ViewModel);
-        _diagnosticsComposer.Compose(ViewModel.DiagnosticsSettings);
-    }
-
-    // NavigationCacheMode.Required reuses the page instance. Loaded + hover
-    // wiring only fire once (first navigation). On subsequent navigations we
-    // reload settings from the POCO via the VM.
+    // NavigationCacheMode.Required reuses the page instance. On every navigation
+    // we reload settings from the POCO via the VM; constructor-time hover wiring
+    // remains unique for the lifetime of the cached page.
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
