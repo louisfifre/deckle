@@ -118,9 +118,6 @@
 
   <!-- Nav label — module-owned. The Settings shell reads this bare key straight
        into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
-  <data name="SettingsModuleNavLabel" xml:space="preserve">
-    <value>Recording</value>
-  </data>
 
   <!-- Shared section-reset link. Copied here (each WinUI assembly resolves x:Uid
        against its own PRI subtree); the same key also lives in the Settings shell
@@ -192,9 +189,6 @@
   <data name="GeneralVoiceLevelExpander.Description" xml:space="preserve">
     <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Leave this off to let auto-calibration set the range from your measured percentiles; turn it on to set the floor, ceiling, and curve yourself.</value>
   </data>
-  <data name="GeneralVoiceLevelAutoLabel.Text" xml:space="preserve">
-    <value>Auto</value>
-  </data>
   <data name="GeneralVoiceLevelFloorCard.Header" xml:space="preserve">
     <value>Floor</value>
   </data>
@@ -231,5 +225,8 @@
   </data>
   <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
     <value>At the end of every recording, record the RMS distribution of your microphone (min, percentiles, max in dBFS) to microphone.jsonl in your telemetry folder. Off by default; kept on this device. Useful when calibrating the level window.</value>
+  </data>
+  <data name="SettingsModuleNavLabel" xml:space="preserve">
+    <value>Recording</value>
   </data>
 </root>

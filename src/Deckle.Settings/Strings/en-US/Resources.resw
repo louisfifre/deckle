@@ -122,26 +122,8 @@
   <data name="Common_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="Common_Back" xml:space="preserve">
-    <value>Back</value>
-  </data>
-  <data name="Common_Next" xml:space="preserve">
-    <value>Next</value>
-  </data>
   <data name="Common_Enable" xml:space="preserve">
     <value>Enable</value>
-  </data>
-  <data name="Common_Reset" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Common_Remove" xml:space="preserve">
-    <value>Remove</value>
-  </data>
-  <data name="Common_Keep" xml:space="preserve">
-    <value>Keep</value>
-  </data>
-  <data name="Common_Browse" xml:space="preserve">
-    <value>Browse...</value>
   </data>
 
   <!-- ─── FolderPickerCard / FolderPickerEditableCard ────────────────
@@ -265,329 +247,44 @@
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and
        echoed to LogWindow under [STATUS]. Status_Rewriting takes the
        active rewrite profile name as {0}. -->
-  <data name="Status_LoadingModel" xml:space="preserve">
-    <value>Loading model…</value>
-  </data>
-  <data name="Status_Ready" xml:space="preserve">
-    <value>Ready</value>
-  </data>
-  <data name="Status_Recording" xml:space="preserve">
-    <value>Recording…</value>
-  </data>
-  <data name="Status_Transcribing" xml:space="preserve">
-    <value>Transcribing…</value>
-  </data>
-  <data name="Status_ModelNotReady" xml:space="preserve">
-    <value>Model not ready</value>
-  </data>
-  <data name="Status_TranscriptionFailed" xml:space="preserve">
-    <value>Transcription failed</value>
-  </data>
-  <data name="Status_Rewriting_Format" xml:space="preserve">
-    <value>Rewriting ({0})…</value>
-  </data>
 
   <!-- ─── Engine feedback ────────────────────────────────────────────
        UserFeedback Title/Body pairs raised by TranscriptionEngine when an
        error or warning is worth surfacing in the HUD. Each pair maps
        to one (Severity, Role) combination decided in code, not here.
        Naming: Engine_<Reason>_Title and Engine_<Reason>_Body. -->
-  <data name="Engine_WhisperModelNotFound_Title" xml:space="preserve">
-    <value>Whisper model not found</value>
-  </data>
-  <data name="Engine_WhisperModelNotFound_Body" xml:space="preserve">
-    <value>See in settings.</value>
-  </data>
-  <data name="Engine_ModelLoadFailed_Title" xml:space="preserve">
-    <value>Failed to load model</value>
-  </data>
-  <data name="Engine_ModelLoadFailed_Body" xml:space="preserve">
-    <value>Low GPU memory or corrupt file.</value>
-  </data>
-  <data name="Engine_ModelNotReady_Title" xml:space="preserve">
-    <value>Model not ready</value>
-  </data>
-  <data name="Engine_ModelNotReady_Body" xml:space="preserve">
-    <value>Load failed. See in settings.</value>
-  </data>
-  <data name="Engine_RewriterUnavailable_Title" xml:space="preserve">
-    <value>Rewriter unavailable</value>
-  </data>
-  <data name="Engine_RewriterUnavailable_Body" xml:space="preserve">
-    <value>Ollama wasn't ready at startup. Start it and try again.</value>
-  </data>
-  <data name="Engine_PipelineCrashed_Title" xml:space="preserve">
-    <value>Pipeline crashed</value>
-  </data>
-  <data name="Engine_PipelineCrashed_Body" xml:space="preserve">
-    <value>Try again. Check logs if it persists.</value>
-  </data>
-  <data name="Engine_LowAudio_Title" xml:space="preserve">
-    <value>Low audio detected</value>
-  </data>
-  <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Your mic is picking up very little sound.</value>
-  </data>
-  <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
-    <value>Transcription failed</value>
-  </data>
-  <data name="Engine_TranscriptionFailed_Body" xml:space="preserve">
-    <value>Whisper could not decode the audio.</value>
-  </data>
-  <data name="Engine_ClipboardCopyFailed_Memory_Title" xml:space="preserve">
-    <value>Clipboard copy failed</value>
-  </data>
-  <data name="Engine_ClipboardCopyFailed_Memory_Body" xml:space="preserve">
-    <value>Memory allocation failed. Try again.</value>
-  </data>
-  <data name="Engine_ClipboardUnavailable_Title" xml:space="preserve">
-    <value>Clipboard unavailable</value>
-  </data>
-  <data name="Engine_ClipboardUnavailable_Body" xml:space="preserve">
-    <value>Another app is holding it. Try again.</value>
-  </data>
-  <data name="Engine_ClipboardCopyFailed_Refused_Title" xml:space="preserve">
-    <value>Clipboard copy failed</value>
-  </data>
-  <data name="Engine_ClipboardCopyFailed_Refused_Body" xml:space="preserve">
-    <value>Windows refused the write. Try again.</value>
-  </data>
-  <data name="Engine_ClipboardIncomplete_Unverified_Title" xml:space="preserve">
-    <value>Clipboard may be incomplete</value>
-  </data>
-  <data name="Engine_ClipboardIncomplete_Unverified_Body" xml:space="preserve">
-    <value>Text is copied but unverified.</value>
-  </data>
-  <data name="Engine_ClipboardIncomplete_LengthMismatch_Title" xml:space="preserve">
-    <value>Clipboard may be incomplete</value>
-  </data>
-  <data name="Engine_ClipboardIncomplete_LengthMismatch_Body" xml:space="preserve">
-    <value>Length mismatch on read-back.</value>
-  </data>
 
   <!-- ─── Microphone errors ──────────────────────────────────────────
        UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The
        Unavailable body interpolates the raw MMSYSERR code as {0}
        for diagnostic clarity. -->
-  <data name="MicError_NotDetected_Title" xml:space="preserve">
-    <value>No microphone detected</value>
-  </data>
-  <data name="MicError_NotDetected_Body" xml:space="preserve">
-    <value>Plug in a mic. See in settings.</value>
-  </data>
-  <data name="MicError_InUse_Title" xml:space="preserve">
-    <value>Microphone in use</value>
-  </data>
-  <data name="MicError_InUse_Body" xml:space="preserve">
-    <value>Another app is using it. Try again.</value>
-  </data>
-  <data name="MicError_Unavailable_Title" xml:space="preserve">
-    <value>Microphone unavailable</value>
-  </data>
-  <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Audio device open failed (MMSYSERR {0}).</value>
-  </data>
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
        Short post-paste / post-copy confirmations rendered in the HUD
        message slot. Hud_Copied_Hint sits under the title to remind the
        user how to paste manually when the auto-paste path didn't run. -->
-  <data name="Hud_Pasted_Title" xml:space="preserve">
-    <value>Pasted</value>
-  </data>
-  <data name="Hud_Copied_Title" xml:space="preserve">
-    <value>Copied to clipboard</value>
-  </data>
-  <data name="Hud_Copied_Hint" xml:space="preserve">
-    <value>Ctrl+V where you want it.</value>
-  </data>
 
   <!-- ─── Tray ───────────────────────────────────────────────────────
        Tray icon tooltip. Capped at 127 chars by Shell_NotifyIcon. The
        {0} placeholder receives a Status_* string from TranscriptionEngine. -->
-  <data name="Tray_Tooltip_Format" xml:space="preserve">
-    <value>Deckle — {0}</value>
-  </data>
 
   <!-- ─── Setup wizard — shell ───────────────────────────────────────
        SetupWindow shell strings: window title, footer buttons. The
        footer buttons reuse Common_* via x:Uid in XAML. -->
-  <data name="Setup_WindowTitle" xml:space="preserve">
-    <value>Deckle Setup</value>
-  </data>
-  <data name="SetupCancelButton.Content" xml:space="preserve">
-    <value>Cancel</value>
-  </data>
-  <data name="SetupBackButton.Content" xml:space="preserve">
-    <value>Back</value>
-  </data>
-  <data name="SetupNextButton.Content" xml:space="preserve">
-    <value>Next</value>
-  </data>
 
   <!-- ─── Setup wizard — choices page ────────────────────────────────
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
-  <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Setup</value>
-  </data>
-  <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Tell the app where to install everything, and pick the speech model you want.</value>
-  </data>
-  <data name="Setup_NextLabel_Install" xml:space="preserve">
-    <value>Install</value>
-  </data>
-  <data name="SetupChoicesInstallLocation.Header" xml:space="preserve">
-    <value>Install location</value>
-  </data>
-  <data name="SetupChoicesInstallLocation.Description" xml:space="preserve">
-    <value>Where the app stores its data. Pick a custom location later from Settings.</value>
-  </data>
-  <data name="SetupChoicesSpeechRuntime.Header" xml:space="preserve">
-    <value>Speech runtime</value>
-  </data>
-  <data name="SetupChoicesSpeechRuntime.Description" xml:space="preserve">
-    <value>Native whisper.cpp libraries the engine loads at start-up.</value>
-  </data>
-  <data name="SetupChoicesSpeechModel.Header" xml:space="preserve">
-    <value>Speech model</value>
-  </data>
-  <data name="SetupChoicesSpeechModel.Description" xml:space="preserve">
-    <value>Pick the Whisper model the engine will run. You can swap it later from Settings.</value>
-  </data>
-  <data name="SetupTotalEstimateBar.Title" xml:space="preserve">
-    <value>Total install size</value>
-  </data>
-  <data name="Setup_Native_Installed" xml:space="preserve">
-    <value>Installed</value>
-  </data>
-  <data name="Setup_Native_Replace" xml:space="preserve">
-    <value>Replace...</value>
-  </data>
-  <data name="Setup_Native_BrowseLocal" xml:space="preserve">
-    <value>Use local copy...</value>
-  </data>
-  <data name="Setup_Native_Missing_Format" xml:space="preserve">
-    <value>Missing {0} file(s)</value>
-  </data>
-  <data name="Setup_Native_WillDownload_Format" xml:space="preserve">
-    <value>Will be downloaded (~{0})</value>
-  </data>
-  <data name="Setup_Native_ImportFailed_Format" xml:space="preserve">
-    <value>Could not import: {0}</value>
-  </data>
-  <data name="Setup_TotalEstimate_Format" xml:space="preserve">
-    <value>~{0} to download for the model and VAD. Native runtime is {1}</value>
-  </data>
-  <data name="Setup_TotalEstimate_WithNative_Format" xml:space="preserve">
-    <value>~{0} to download (speech runtime, model, and VAD).</value>
-  </data>
-  <data name="Setup_TotalEstimate_NativeAlreadyInstalled" xml:space="preserve">
-    <value>already installed.</value>
-  </data>
-  <data name="Setup_TotalEstimate_NativeNotInstalled" xml:space="preserve">
-    <value>not yet installed.</value>
-  </data>
 
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
-  <data name="SetupCancelInstallButton.Content" xml:space="preserve">
-    <value>Cancel install</value>
-  </data>
-  <data name="Setup_StepTitle_Installing" xml:space="preserve">
-    <value>Installing</value>
-  </data>
-  <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
-    <value>Downloading the speech runtime, model, and VAD. This can take a while on a slow link.</value>
-  </data>
-  <data name="Setup_Install_Step1Of3_Format" xml:space="preserve">
-    <value>Step 1 of 3 — installing {0}...</value>
-  </data>
-  <data name="Setup_Install_Step2Of3_Format" xml:space="preserve">
-    <value>Step 2 of 3 — downloading {0}...</value>
-  </data>
-  <data name="Setup_Install_Step3Of3_Format" xml:space="preserve">
-    <value>Step 3 of 3 — downloading {0}...</value>
-  </data>
-  <data name="Setup_Install_Connecting" xml:space="preserve">
-    <value>Connecting...</value>
-  </data>
-  <data name="Setup_Install_Extracting" xml:space="preserve">
-    <value>Extracting...</value>
-  </data>
-  <data name="Setup_Install_Done_Format" xml:space="preserve">
-    <value>Done — {0}</value>
-  </data>
-  <data name="Setup_Install_Done" xml:space="preserve">
-    <value>Done.</value>
-  </data>
-  <data name="Setup_Install_Cancelled" xml:space="preserve">
-    <value>Cancelled.</value>
-  </data>
-  <data name="Setup_Install_UnknownError" xml:space="preserve">
-    <value>unknown error</value>
-  </data>
-  <data name="Setup_Install_NativePlaceholderUrl" xml:space="preserve">
-    <value>Auto-download not configured. Please use the Browse... button on the previous step.</value>
-  </data>
-  <data name="Setup_Install_VadAlreadyInstalledStatus" xml:space="preserve">
-    <value>Silero VAD already installed.</value>
-  </data>
-  <data name="Setup_Install_AlreadyInstalled" xml:space="preserve">
-    <value>Already installed</value>
-  </data>
-  <data name="SetupInstallNativeLabel.Text" xml:space="preserve">
-    <value>Whisper.cpp + Vulkan runtime</value>
-  </data>
-  <data name="Setup_Install_Progress_WithTotal_Format" xml:space="preserve">
-    <value>{0} / {1}  ({2})</value>
-  </data>
-  <data name="Setup_Install_Progress_NoTotal_Format" xml:space="preserve">
-    <value>{0} downloaded</value>
-  </data>
 
   <!-- ─── Setup wizard — summary page ────────────────────────────────
        Renders per-item Results captured by InstallingPage. The Next
        button label flips between "Get started" (success path) and
        "Retry" (any failure path). -->
-  <data name="Setup_StepTitle_Summary_Success" xml:space="preserve">
-    <value>All set</value>
-  </data>
-  <data name="Setup_StepTitle_Summary_Failure" xml:space="preserve">
-    <value>Some items could not be installed</value>
-  </data>
-  <data name="Setup_StepSubtitle_Summary_Success" xml:space="preserve">
-    <value>Dependencies installed. The app is ready to use.</value>
-  </data>
-  <data name="Setup_StepSubtitle_Summary_Failure" xml:space="preserve">
-    <value>Review the issues below and either retry or quit.</value>
-  </data>
-  <data name="Setup_NextLabel_GetStarted" xml:space="preserve">
-    <value>Get started</value>
-  </data>
-  <data name="Setup_NextLabel_Retry" xml:space="preserve">
-    <value>Retry</value>
-  </data>
-  <data name="Setup_Result_CompleteTitle" xml:space="preserve">
-    <value>Installation complete</value>
-  </data>
-  <data name="Setup_Result_IncompleteTitle" xml:space="preserve">
-    <value>Installation incomplete</value>
-  </data>
-  <data name="Setup_Result_StoredUnder_Format" xml:space="preserve">
-    <value>Stored under {0}.</value>
-  </data>
-  <data name="Setup_Result_FailedCount_Format" xml:space="preserve">
-    <value>{0} of {1} item(s) failed.</value>
-  </data>
-  <data name="Setup_Result_Detail_BytesInstalled_Format" xml:space="preserve">
-    <value>{0} installed</value>
-  </data>
-  <data name="Setup_Result_Detail_Installed" xml:space="preserve">
-    <value>installed</value>
-  </data>
 
   <!-- ─── Settings shell ─────────────────────────────────────────────
        NavigationView host with a native TitleBar. The TitleBar carries
@@ -600,9 +297,6 @@
   </data>
   <data name="SettingsNavGeneral.Content" xml:space="preserve">
     <value>General</value>
-  </data>
-  <data name="SettingsNavRecording.Content" xml:space="preserve">
-    <value>Recording</value>
   </data>
   <!-- The module pages' nav labels (Recording, Transcription, Rewriting,
        Autocorrect, Ambient Light, Trackpad, Diagnostics) moved to each owning
@@ -650,9 +344,6 @@
   <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
     <value>Reset this section to defaults</value>
   </data>
-  <data name="Settings_ResetAll.Content" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
 
   <!-- Whole-page "Reset all" button on GeneralPage (title row, trailing edge).
        Same affordance as WhisperPage / LlmPage; active-when-dirty. General's has
@@ -668,33 +359,6 @@
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
        Telemetry, Back up & restore, Application data. -->
-  <data name="GeneralPage_Title" xml:space="preserve">
-    <value>General</value>
-  </data>
-  <data name="GeneralPage_Subtitle" xml:space="preserve">
-    <value>Keyboard shortcuts, appearance, startup behavior, recording and data.</value>
-  </data>
-  <data name="GeneralPage_Section_Shortcuts" xml:space="preserve">
-    <value>Shortcuts</value>
-  </data>
-  <data name="GeneralPage_Section_Appearance" xml:space="preserve">
-    <value>Appearance</value>
-  </data>
-  <data name="GeneralPage_Section_Startup" xml:space="preserve">
-    <value>Startup</value>
-  </data>
-  <data name="GeneralPage_Section_Recording" xml:space="preserve">
-    <value>Recording</value>
-  </data>
-  <data name="GeneralPage_Section_Telemetry" xml:space="preserve">
-    <value>Telemetry</value>
-  </data>
-  <data name="GeneralPage_Section_BackupRestore" xml:space="preserve">
-    <value>Back up &amp; restore</value>
-  </data>
-  <data name="GeneralPage_Section_ApplicationData" xml:space="preserve">
-    <value>Application data</value>
-  </data>
   <data name="GeneralTranscribeCard.Header" xml:space="preserve">
     <value>Principal hotkey</value>
   </data>
@@ -773,123 +437,6 @@
   <data name="Settings_MoveDataInsufficientSpace_Format" xml:space="preserve">
     <value>Not enough space on {0}: {1} needed, {2} free.</value>
   </data>
-  <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
-    <value>Microphone</value>
-  </data>
-  <data name="GeneralMicrophoneCard.Description" xml:space="preserve">
-    <value>Audio input device used for recording. Default: system default.</value>
-  </data>
-  <data name="GeneralAutoPasteCard.Header" xml:space="preserve">
-    <value>Auto-paste after transcription</value>
-  </data>
-  <data name="GeneralAutoPasteCard.Description" xml:space="preserve">
-    <value>Also tries to paste into the focused field. The paste is strict and only fires when the target can be safely confirmed — so it rarely triggers. The clipboard is always the reliable path.</value>
-  </data>
-  <data name="GeneralVoiceLevelExpander.Header" xml:space="preserve">
-    <value>Set the level window manually</value>
-  </data>
-  <data name="GeneralVoiceLevelExpander.Description" xml:space="preserve">
-    <value>The dBFS range the recording HUD uses to map your microphone signal onto the on-screen level. Leave this off to let auto-calibration set the range from your measured percentiles; turn it on to set the floor, ceiling, and curve yourself.</value>
-  </data>
-  <data name="GeneralVoiceLevelAutoLabel.Text" xml:space="preserve">
-    <value>Auto</value>
-  </data>
-  <data name="GeneralVoiceLevelFloorCard.Header" xml:space="preserve">
-    <value>Floor</value>
-  </data>
-  <data name="GeneralVoiceLevelFloorCard.Description" xml:space="preserve">
-    <value>Below this level, the HUD reads silence. Set just under the percentile of your normal pauses (typical: -55 dBFS).</value>
-  </data>
-  <data name="GeneralVoiceLevelCeilingCard.Header" xml:space="preserve">
-    <value>Ceiling</value>
-  </data>
-  <data name="GeneralVoiceLevelCeilingCard.Description" xml:space="preserve">
-    <value>At or above this level, the HUD saturates. Set just below your loudest peaks (typical: -32 dBFS).</value>
-  </data>
-  <data name="GeneralVoiceLevelCurveCard.Header" xml:space="preserve">
-    <value>Curve</value>
-  </data>
-  <data name="GeneralVoiceLevelCurveCard.Description" xml:space="preserve">
-    <value>Shape of the response between floor and ceiling. 1.0 = linear (recommended). Higher = compress quiet, expand loud. Lower = the opposite.</value>
-  </data>
-  <data name="GeneralOverlayExpander.Header" xml:space="preserve">
-    <value>Show the overlay while recording</value>
-  </data>
-  <data name="GeneralOverlayExpander.Description" xml:space="preserve">
-    <value>A small floating indicator shown at the bottom of your screen while Deckle captures and transcribes.</value>
-  </data>
-  <data name="GeneralOverlayFadeCard.Header" xml:space="preserve">
-    <value>Fade when your cursor is near</value>
-  </data>
-  <data name="GeneralOverlayFadeCard.Description" xml:space="preserve">
-    <value>Make the overlay transparent when you move over it, so it never blocks what's underneath.</value>
-  </data>
-  <data name="GeneralOverlayAnimationsCard.Header" xml:space="preserve">
-    <value>Animate overlay feedback</value>
-  </data>
-  <data name="GeneralOverlayAnimationsCard.Description" xml:space="preserve">
-    <value>Animate processing, microphone feedback, and message movement. This setting is independent of the Windows animation preference.</value>
-  </data>
-  <data name="GeneralOverlayPositionCard.Header" xml:space="preserve">
-    <value>Screen position</value>
-  </data>
-  <data name="GeneralOverlayPositionCard.Description" xml:space="preserve">
-    <value>Where the overlay appears on your primary display. Applied on the next recording.</value>
-  </data>
-  <data name="GeneralOverlayPositionTop.Content" xml:space="preserve">
-    <value>Top</value>
-  </data>
-  <data name="GeneralOverlayPositionBottom.Content" xml:space="preserve">
-    <value>Bottom</value>
-  </data>
-  <data name="GeneralLogMicrophoneCard.Header" xml:space="preserve">
-    <value>Log microphone</value>
-  </data>
-  <data name="GeneralLogMicrophoneCard.Description" xml:space="preserve">
-    <value>At the end of every recording, log the RMS distribution of your microphone (min, percentiles, max in dBFS) to the LogWindow and to microphone.jsonl. Useful when calibrating the level window.</value>
-  </data>
-  <data name="GeneralLatencyCard.Header" xml:space="preserve">
-    <value>Latency</value>
-  </data>
-  <data name="GeneralLatencyCard.Description" xml:space="preserve">
-    <value>Record per-step timings of each transcription — voice detection, Whisper, rewrite, clipboard, paste — to latency.jsonl. Timings only, no transcript text.</value>
-  </data>
-  <data name="DiagnosticsAutocorrectDecisionsExpander.Header" xml:space="preserve">
-    <value>Autocorrect decisions</value>
-  </data>
-  <data name="DiagnosticsAutocorrectDecisionsExpander.Description" xml:space="preserve">
-    <value>Record every corrected or left-alone word on an enrolled app to autocorrect.decisions.jsonl — its candidates, scores, margins and the rule that decided it. The deep view for tuning the corrector. Includes the words you type.</value>
-  </data>
-  <data name="DiagnosticsAutocorrectTextCard.Header" xml:space="preserve">
-    <value>Keep the text I type</value>
-  </data>
-  <data name="DiagnosticsAutocorrectTextCard.Description" xml:space="preserve">
-    <value>Also record each sentence you type in enrolled apps to autocorrect.text.jsonl, verbatim and paired with the corrected form, to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Password fields, paste and dictation are never recorded.</value>
-  </data>
-  <data name="GeneralCorpusExpander.Header" xml:space="preserve">
-    <value>Corpus</value>
-  </data>
-  <data name="GeneralCorpusExpander.Description" xml:space="preserve">
-    <value>Save every transcription as a JSONL line under a per-profile subfolder (one corpus.jsonl per rewrite profile). Text only — for offline prompt tuning and analysis.</value>
-  </data>
-  <data name="GeneralAudioCorpusCard.Header" xml:space="preserve">
-    <value>Also save audio (WAV)</value>
-  </data>
-  <data name="GeneralAudioCorpusCard.Description" xml:space="preserve">
-    <value>Keep the 16 kHz mono audio of each recording alongside the JSONL, in an audio/ subfolder per profile. Roughly 2 MB per minute of speech.</value>
-  </data>
-  <data name="GeneralAudioCorpusContentCard.Header" xml:space="preserve">
-    <value>Recorded audio</value>
-  </data>
-  <data name="GeneralAudioCorpusContentCard.Description" xml:space="preserve">
-    <value>Choose which version of each take is saved. “Match the transcription” stores what the engine actually heard — the processed signal when pre-processing is on, the raw capture otherwise. “Always raw” keeps the untouched microphone signal, so you can re-process it later against a different model.</value>
-  </data>
-  <data name="GeneralAudioCorpusContentMatch.Content" xml:space="preserve">
-    <value>Match the transcription</value>
-  </data>
-  <data name="GeneralAudioCorpusContentRaw.Content" xml:space="preserve">
-    <value>Always raw</value>
-  </data>
   <data name="GeneralBackupExpander.Header" xml:space="preserve">
     <value>Back up and restore your settings</value>
   </data>
@@ -937,292 +484,19 @@
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
-  <data name="WhisperPage_Title" xml:space="preserve">
-    <value>Transcription</value>
-  </data>
-  <data name="WhisperPage_Subtitle" xml:space="preserve">
-    <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
-  </data>
-  <data name="WhisperPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset all transcription settings to defaults</value>
-  </data>
-  <data name="WhisperPage_Section_ModelEngine" xml:space="preserve">
-    <value>Model &amp; engine</value>
-  </data>
-  <data name="WhisperPage_Section_SpeechFiltering" xml:space="preserve">
-    <value>Speech filtering</value>
-  </data>
-  <data name="WhisperPage_Section_OutputFilters" xml:space="preserve">
-    <value>Output filters</value>
-  </data>
-  <data name="WhisperPage_Section_ContextSegmentation" xml:space="preserve">
-    <value>Context and segmentation</value>
-  </data>
-  <data name="WhisperPage_Section_Decoding" xml:space="preserve">
-    <value>Decoding</value>
-  </data>
-  <data name="WhisperPage_Section_ConfidenceThresholds" xml:space="preserve">
-    <value>Confidence thresholds</value>
-  </data>
-  <data name="WhisperPage_Section_Storage" xml:space="preserve">
-    <value>Storage</value>
-  </data>
-  <data name="WhisperPage_SpeechFiltering_Body" xml:space="preserve">
-    <value>Pre-filter your audio to strip silence and background noise before transcription — the main defense against phantom text on quiet stretches.</value>
-  </data>
-  <data name="WhisperResetButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset to default</value>
-  </data>
-  <data name="WhisperModelCard.Header" xml:space="preserve">
-    <value>Whisper model (requires restart)</value>
-  </data>
-  <data name="WhisperModelCard.Description" xml:space="preserve">
-    <value>The AI model that converts your voice to text. Larger models produce better results but take more time and memory.</value>
-  </data>
-  <data name="WhisperModelSuggest.PlaceholderText" xml:space="preserve">
-    <value>Pick a model</value>
-  </data>
-  <data name="WhisperLanguageCard.Header" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="WhisperLanguageCard.Description" xml:space="preserve">
-    <value>The language you're speaking. Set it to match your language for best accuracy, or use 'auto' to let Deckle detect it.</value>
-  </data>
-  <data name="WhisperInitialPromptCard.Header" xml:space="preserve">
-    <value>Initial prompt</value>
-  </data>
-  <data name="WhisperInitialPromptCard.Description" xml:space="preserve">
-    <value>A hint sentence that guides how your speech is transcribed. Use it to teach proper names, set the language tone, or fix recurring mistakes.</value>
-  </data>
-  <data name="WhisperInitialPromptBox.PlaceholderText" xml:space="preserve">
-    <value>Je parle en français, je dis parfois des mots anglais. Claude, pas cloud.</value>
-  </data>
-  <data name="WhisperUseGpuCard.Header" xml:space="preserve">
-    <value>GPU acceleration (requires restart)</value>
-  </data>
-  <data name="WhisperUseGpuCard.Description" xml:space="preserve">
-    <value>Run Whisper on the GPU via Vulkan for faster transcription. Turn off if you see instability or crashes. Default: on.</value>
-  </data>
-  <data name="WhisperVadEnabledCard.Header" xml:space="preserve">
-    <value>Voice activity detection</value>
-  </data>
-  <data name="WhisperVadEnabledCard.Description" xml:space="preserve">
-    <value>Pre-filter audio so only speech reaches the model. Reduces phantom text caused by silence or background noise. Default: on.</value>
-  </data>
-  <data name="WhisperSuppressNstCard.Header" xml:space="preserve">
-    <value>Suppress non-speech tokens</value>
-  </data>
-  <data name="WhisperSuppressNstCard.Description" xml:space="preserve">
-    <value>Remove tags like [Music] or (laughter) that Whisper sometimes adds to the transcription. Default: on.</value>
-  </data>
-  <data name="WhisperSuppressBlankCard.Header" xml:space="preserve">
-    <value>Suppress blank segments</value>
-  </data>
-  <data name="WhisperSuppressBlankCard.Description" xml:space="preserve">
-    <value>Drop segments that contain only whitespace or punctuation. Default: on.</value>
-  </data>
-  <data name="WhisperSuppressRegexCard.Header" xml:space="preserve">
-    <value>Custom regex filter</value>
-  </data>
-  <data name="WhisperSuppressRegexCard.Description" xml:space="preserve">
-    <value>A pattern to automatically remove unwanted text from the transcription. Uses regular expression syntax.</value>
-  </data>
-  <data name="WhisperSuppressRegexBox.PlaceholderText" xml:space="preserve">
-    <value>(e.g. ^\s*\[.*\]\s*$)</value>
-  </data>
-  <data name="WhisperUseContextCard.Header" xml:space="preserve">
-    <value>Carry previous context</value>
-  </data>
-  <data name="WhisperUseContextCard.Description" xml:space="preserve">
-    <value>Pass each segment's result as context for the next one, improving consistency across sentences. Turn off if the transcription starts repeating itself. Default: on.</value>
-  </data>
-  <data name="WhisperMaxTokensCard.Header" xml:space="preserve">
-    <value>Maximum tokens per segment</value>
-  </data>
-  <data name="WhisperMaxTokensCard.Description" xml:space="preserve">
-    <value>Limit how much text can be generated for each segment. Default: -1 (auto).</value>
-  </data>
-  <data name="WhisperTemperatureCard.Header" xml:space="preserve">
-    <value>Temperature</value>
-  </data>
-  <data name="WhisperTemperatureCard.Description" xml:space="preserve">
-    <value>Randomness of the decoder. 0 is deterministic and safest — raise only if the model gets stuck repeating the same phrase. Default: 0.0.</value>
-  </data>
-  <data name="WhisperTemperatureIncrementCard.Header" xml:space="preserve">
-    <value>Fallback temperature step</value>
-  </data>
-  <data name="WhisperTemperatureIncrementCard.Description" xml:space="preserve">
-    <value>When a segment seems uncertain, the model retries with increasing randomness in steps of this size. Set to 0 to disable retries. Default: 0.2.</value>
-  </data>
-  <data name="WhisperTemperatureIncrementWarning.Title" xml:space="preserve">
-    <value>Fallback disabled</value>
-  </data>
-  <data name="WhisperTemperatureIncrementWarning.Message" xml:space="preserve">
-    <value>With the step set to 0, Whisper won't retry uncertain segments. Leave at 0.2 unless you have a specific reason.</value>
-  </data>
-  <data name="WhisperEntropyCard.Header" xml:space="preserve">
-    <value>Entropy threshold</value>
-  </data>
-  <data name="WhisperEntropyCard.Description" xml:space="preserve">
-    <value>Detects repetition loops by measuring token diversity. Low-diversity segments are retried at higher temperature. Raise to catch subtler repetitions. Default: 2.4.</value>
-  </data>
-  <data name="WhisperLogprobCard.Header" xml:space="preserve">
-    <value>Log-probability threshold</value>
-  </data>
-  <data name="WhisperLogprobCard.Description" xml:space="preserve">
-    <value>Average decoder confidence per segment. Low-confidence segments are retried at higher temperature. Also gates silence suppression with the no-speech check. Raise (toward 0) to be stricter. Default: -1.0.</value>
-  </data>
-  <data name="WhisperNoSpeechCard.Header" xml:space="preserve">
-    <value>No-speech threshold</value>
-  </data>
-  <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
-    <value>Controls silence suppression. When the model flags a segment as silence and confidence is also low, the segment is dropped. Lower values suppress more aggressively. Default: 0.6.</value>
-  </data>
-  <data name="WhisperPathsCard.Header" xml:space="preserve">
-    <value>Models folder</value>
-  </data>
-  <data name="WhisperPathsCard.Description" xml:space="preserve">
-    <value>Where Whisper and Silero model files are stored on disk.</value>
-  </data>
-  <data name="WhisperModelsDirCard.Header" xml:space="preserve">
-    <value>Folder path</value>
-  </data>
-  <data name="WhisperModelsDirCard.Description" xml:space="preserve">
-    <value>Leave empty to use the default location next to the application.</value>
-  </data>
-  <data name="WhisperModelsDirBox.PlaceholderText" xml:space="preserve">
-    <value>(auto)</value>
-  </data>
-  <data name="WhisperRestartDiscard.Content" xml:space="preserve">
-    <value>Discard</value>
-  </data>
-  <data name="WhisperRestartNow.Content" xml:space="preserve">
-    <value>Restart now</value>
-  </data>
 
   <!-- ─── LlmPage + sections ─────────────────────────────────────────
        Third page in the Settings nav. Hosts five sections rendered as
        UserControls (General, ShortcutSlots, Profiles, Models).
        The Ollama InfoBar is inline on the page. -->
-  <data name="LlmPage_Title" xml:space="preserve">
-    <value>Rewriting</value>
-  </data>
-  <data name="LlmPage_Subtitle" xml:space="preserve">
-    <value>Clean up and restructure your transcriptions through a local language model via Ollama. Configure rewrite profiles with different models and prompts, then assign them to duration-based rules or the manual shortcut.</value>
-  </data>
-  <data name="LlmPage_ResetAll.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset all rewriting settings to defaults</value>
-  </data>
-  <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
-    <value>Ollama is not reachable</value>
-  </data>
 
   <!-- LlmGeneralSection -->
-  <data name="LlmGeneralHeader.Text" xml:space="preserve">
-    <value>General</value>
-  </data>
-  <data name="LlmEnableCard.Header" xml:space="preserve">
-    <value>Enable rewriting</value>
-  </data>
-  <data name="LlmEnableCard.Description" xml:space="preserve">
-    <value>Master switch for all LLM rewriting. When off, transcriptions are never sent to Ollama.</value>
-  </data>
-  <data name="LlmEndpointExpander.Header" xml:space="preserve">
-    <value>Ollama endpoint</value>
-  </data>
-  <data name="LlmEndpointExpander.Description" xml:space="preserve">
-    <value>The URL of your local Ollama instance.</value>
-  </data>
 
   <!-- LlmModelsSection -->
-  <data name="LlmModelsHeader.Text" xml:space="preserve">
-    <value>Models</value>
-  </data>
-  <data name="LlmModelsBody.Text" xml:space="preserve">
-    <value>Models available in your local Ollama instance. To add or remove models outside the app, use `ollama pull` / `ollama create` from your shell, then refresh.</value>
-  </data>
-  <data name="LlmRefreshLabel.Text" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
 
   <!-- LlmProfilesSection -->
-  <data name="LlmProfilesHeader.Text" xml:space="preserve">
-    <value>Profiles</value>
-  </data>
-  <data name="LlmProfilesBody.Text" xml:space="preserve">
-    <value>Each profile pairs an Ollama model with a system prompt tailored to a specific rewriting style. Expand a profile to edit its prompt.</value>
-  </data>
-  <data name="LlmProfile_NameBox.Header" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="LlmProfile_NameBox.PlaceholderText" xml:space="preserve">
-    <value>Profile name</value>
-  </data>
-  <data name="LlmProfile_ModelBox.Header" xml:space="preserve">
-    <value>Model</value>
-  </data>
-  <data name="LlmProfile_ModelBox.PlaceholderText" xml:space="preserve">
-    <value>Ollama model name</value>
-  </data>
-  <data name="LlmProfile_SystemPromptBox.Header" xml:space="preserve">
-    <value>System prompt</value>
-  </data>
-  <data name="LlmProfile_SystemPromptBox.PlaceholderText" xml:space="preserve">
-    <value>System prompt sent with every rewrite request...</value>
-  </data>
-  <data name="LlmProfile_SystemPromptBody.Text" xml:space="preserve">
-    <value>Instructions sent with every request to define the model's behavior and rewriting style.</value>
-  </data>
-  <data name="LlmProfile_TemperatureSlider.Header" xml:space="preserve">
-    <value>Temperature</value>
-  </data>
-  <data name="LlmProfile_TemperatureBody.Text" xml:space="preserve">
-    <value>Controls randomness. Lower values produce more focused, deterministic output. Higher values increase creativity and variation.</value>
-  </data>
-  <data name="LlmProfile_ContextSlider.Header" xml:space="preserve">
-    <value>Context size</value>
-  </data>
-  <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
-    <value>Maximum tokens the model considers at once. Larger context uses more memory and is slower.</value>
-  </data>
-  <data name="LlmProfile_AdvancedExpander.Header" xml:space="preserve">
-    <value>Advanced parameters</value>
-  </data>
-  <data name="LlmProfile_TopP.Header" xml:space="preserve">
-    <value>Top P</value>
-  </data>
-  <data name="LlmProfile_TopP.PlaceholderText" xml:space="preserve">
-    <value>Default (0.9)</value>
-  </data>
-  <data name="LlmProfile_RepeatPenalty.Header" xml:space="preserve">
-    <value>Repeat penalty</value>
-  </data>
-  <data name="LlmProfile_RepeatPenalty.PlaceholderText" xml:space="preserve">
-    <value>Default (1.1)</value>
-  </data>
-  <data name="LlmProfile_RemoveLabel.Text" xml:space="preserve">
-    <value>Remove</value>
-  </data>
-  <data name="LlmAddProfileButton.Content" xml:space="preserve">
-    <value>Add profile</value>
-  </data>
 
   <!-- LlmShortcutSlotsSection -->
-  <data name="LlmShortcutsHeader.Text" xml:space="preserve">
-    <value>Rewrite shortcuts</value>
-  </data>
-  <data name="LlmPrimarySlotCard.Header" xml:space="preserve">
-    <value>Primary rewrite profile</value>
-  </data>
-  <data name="LlmPrimarySlotCard.Description" xml:space="preserve">
-    <value>Profile triggered by Shift + Win + `.</value>
-  </data>
-  <data name="LlmSecondarySlotCard.Header" xml:space="preserve">
-    <value>Secondary rewrite profile</value>
-  </data>
-  <data name="LlmSecondarySlotCard.Description" xml:space="preserve">
-    <value>Profile triggered by Ctrl + Win + `. Pick (None) to leave this shortcut unbound.</value>
-  </data>
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────
        Page titles, subtitles, and section headers rendered as plain
@@ -1240,9 +514,6 @@
   <data name="GeneralPageAppearanceHeaderLabel.Text" xml:space="preserve">
     <value>Appearance</value>
   </data>
-  <data name="GeneralPageBehaviourHeaderLabel.Text" xml:space="preserve">
-    <value>Behaviour</value>
-  </data>
   <data name="GeneralPageStartupHeaderLabel.Text" xml:space="preserve">
     <value>Startup</value>
   </data>
@@ -1252,48 +523,6 @@
        Card-level x:Uid keys (GeneralMicrophoneCard, GeneralVoiceLevel*,
        GeneralOverlay*) reused as-is — General* prefix is a historical
        naming artifact, renaming would touch every translation file. -->
-  <data name="RecordingPageTitleLabel.Text" xml:space="preserve">
-    <value>Recording</value>
-  </data>
-  <data name="RecordingPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Microphone selection, signal pre-processing, and voice level window calibration.</value>
-  </data>
-  <data name="RecordingPageSectionHeaderLabel.Text" xml:space="preserve">
-    <value>Defaults</value>
-  </data>
-  <data name="RecordingPagePreprocessingCard.Header" xml:space="preserve">
-    <value>Microphone pre-processing</value>
-  </data>
-  <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
-    <value>Lifts and evens out a quiet or uneven microphone before transcription, for better accuracy on soft passages. Off by default. It only acts when your level is low — a microphone already at a good level passes through untouched.</value>
-  </data>
-  <data name="RecordingPageMicCheckCard.Header" xml:space="preserve">
-    <value>Microphone level check</value>
-  </data>
-  <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
-    <value>Speak for a few seconds. Deckle reads your level, shows where pre-processing would bring it (around -20 dBFS, the range transcription handles best), and tells you whether turning it on is worth it. You decide.</value>
-  </data>
-  <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
-    <value>Measure</value>
-  </data>
-  <data name="RecordingPageMicCheckListening.Title" xml:space="preserve">
-    <value>Listening — speak now…</value>
-  </data>
-  <data name="RecordingPageMicAdviceRecommended.Title" xml:space="preserve">
-    <value>Your microphone is quiet — turning pre-processing on is recommended.</value>
-  </data>
-  <data name="RecordingPageMicAdviceMarginal.Title" xml:space="preserve">
-    <value>Borderline — pre-processing would help a little.</value>
-  </data>
-  <data name="RecordingPageMicAdviceNotNeeded.Title" xml:space="preserve">
-    <value>Your microphone is already at a good level — pre-processing isn't needed.</value>
-  </data>
-  <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
-    <value>Couldn't read the microphone. Check the device above and try again.</value>
-  </data>
-  <data name="GeneralPageBackupRestoreHeaderLabel.Text" xml:space="preserve">
-    <value>Back up &amp; restore</value>
-  </data>
 
   <data name="GeneralPageApplicationDataHeaderLabel.Text" xml:space="preserve">
     <value>Application data</value>
@@ -1306,48 +535,6 @@
   </data>
   <data name="GeneralShortcutSecondaryRewriteKey.Text" xml:space="preserve">
     <value>Ctrl + Win + `</value>
-  </data>
-  <data name="WhisperPageTitleLabel.Text" xml:space="preserve">
-    <value>Transcription</value>
-  </data>
-  <data name="WhisperPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Control how Deckle turns your voice into text. Start with the model and language — then use Speech filtering to fight hallucinations on silences and background noise.</value>
-  </data>
-  <data name="WhisperPageModelEngineHeaderLabel.Text" xml:space="preserve">
-    <value>Model &amp; engine</value>
-  </data>
-  <data name="WhisperPageSpeechFilteringHeaderLabel.Text" xml:space="preserve">
-    <value>Speech filtering</value>
-  </data>
-  <data name="WhisperPageSpeechFilteringBodyLabel.Text" xml:space="preserve">
-    <value>Pre-filter your audio to strip silence and background noise before transcription — the main defense against phantom text on quiet stretches.</value>
-  </data>
-  <data name="WhisperPageOutputFiltersHeaderLabel.Text" xml:space="preserve">
-    <value>Output filters</value>
-  </data>
-  <data name="WhisperPageContextSegmentationHeaderLabel.Text" xml:space="preserve">
-    <value>Context and segmentation</value>
-  </data>
-  <data name="WhisperPageDecodingHeaderLabel.Text" xml:space="preserve">
-    <value>Decoding</value>
-  </data>
-  <data name="WhisperPageConfidenceThresholdsHeaderLabel.Text" xml:space="preserve">
-    <value>Confidence thresholds</value>
-  </data>
-  <data name="WhisperPageStorageHeaderLabel.Text" xml:space="preserve">
-    <value>Storage</value>
-  </data>
-  <data name="WhisperPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
-  <data name="LlmPageTitleLabel.Text" xml:space="preserve">
-    <value>Rewriting</value>
-  </data>
-  <data name="LlmPageSubtitleLabel.Text" xml:space="preserve">
-    <value>Clean up and restructure your transcriptions through a local language model via Ollama. Configure rewrite profiles with different models and prompts, then assign them to duration-based rules or the manual shortcut.</value>
-  </data>
-  <data name="LlmPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
   </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
@@ -1367,138 +554,26 @@
   </data>
 
   <!-- GeneralPage Audio input ComboBox items -->
-  <data name="Settings_AudioInput_SystemDefault" xml:space="preserve">
-    <value>System default</value>
-  </data>
-  <data name="Settings_AudioInput_Device_Format" xml:space="preserve">
-    <value>Device {0}</value>
-  </data>
 
   <!-- WhisperPage Reset all dialog -->
-  <data name="Settings_ResetWhisperDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetWhisperDialog_Content" xml:space="preserve">
-    <value>This will restore every transcription setting on this page to its default value.</value>
-  </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
-  <data name="Settings_ResetLlmDialog_Title" xml:space="preserve">
-    <value>Reset all rewriting settings?</value>
-  </data>
-  <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>This wipes the Ollama endpoint, profiles, rules, and shortcut bindings, then puts the three default profiles (Lissage, Affinage, Arrangement) and the matching duration / word-count rules back. Your custom prompts and parameters will be lost.</value>
-  </data>
-  <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
-    <value>Start Ollama or check the endpoint setting ({0}).</value>
-  </data>
 
   <!-- LlmShortcutSlotsSection Reset dialog -->
-  <data name="Settings_ResetShortcutsDialog_Title" xml:space="preserve">
-    <value>Reset shortcuts to (None)?</value>
-  </data>
-  <data name="Settings_ResetShortcutsDialog_Content" xml:space="preserve">
-    <value>Both rewrite shortcuts will be unbound. The hotkeys keep working — they'll just trigger a transcription without a rewrite until you assign a profile again.</value>
-  </data>
-
-  <data name="Settings_RemoveLabel" xml:space="preserve">
-    <value>Remove</value>
-  </data>
 
   <!-- LlmProfilesSection Remove + Reset dialogs -->
-  <data name="Settings_RemoveProfileDialog_Title" xml:space="preserve">
-    <value>Remove this profile?</value>
-  </data>
-  <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked — they're not deleted, they go blank until you reassign them.</value>
-  </data>
-  <data name="Settings_RemoveProfileDialog_CloseButton" xml:space="preserve">
-    <value>Keep</value>
-  </data>
-  <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
-    <value>Reset profiles to defaults?</value>
-  </data>
-  <data name="Settings_ResetProfilesDialog_Content" xml:space="preserve">
-    <value>Every profile will be replaced with the three defaults (Lissage, Affinage, Arrangement), each with its full pre-written prompt and parameters. Your custom profiles and any prompts you've written will be lost.</value>
-  </data>
 
   <!-- LlmModelsSection Remove dialog + ErrorBar -->
-  <data name="Settings_RemoveModelDialog_Title" xml:space="preserve">
-    <value>Remove model</value>
-  </data>
-  <data name="Settings_RemoveModelDialog_Content_Format" xml:space="preserve">
-    <value>Remove "{0}" from Ollama? This cannot be undone.</value>
-  </data>
-  <data name="Settings_ErrorRemovingModel_Title" xml:space="preserve">
-    <value>Error removing model</value>
-  </data>
-  <data name="Settings_NoOllamaModels" xml:space="preserve">
-    <value>No models found in Ollama. Pull one from your shell with ollama pull.</value>
-  </data>
 
   <!-- ─── LogWindow ──────────────────────────────────────────────────
        Title bar, search, level selector, command bar, and the floating
        copy badge that flips between Copy / Copy selection / Copied. -->
-  <data name="LogWindowTitleBar.Title" xml:space="preserve">
-    <value>Deckle Logs</value>
-  </data>
-  <data name="LogWindowSearchBox.PlaceholderText" xml:space="preserve">
-    <value>Search logs</value>
-  </data>
-  <data name="LogWindowSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Search logs</value>
-  </data>
-  <data name="LogWindowLevelFull.Text" xml:space="preserve">
-    <value>All</value>
-  </data>
-  <data name="LogWindowLevelFiltered.Text" xml:space="preserve">
-    <value>Activity</value>
-  </data>
-  <data name="LogWindowLevelCritical.Text" xml:space="preserve">
-    <value>Alerts</value>
-  </data>
-  <data name="LogWindowCopyButton.Label" xml:space="preserve">
-    <value>Copy</value>
-  </data>
-  <data name="LogWindowSaveButton.Label" xml:space="preserve">
-    <value>Save</value>
-  </data>
-  <data name="LogWindowClearButton.Label" xml:space="preserve">
-    <value>Clear</value>
-  </data>
-  <data name="LogWindowAutoScrollToggle.Label" xml:space="preserve">
-    <value>Auto-scroll</value>
-  </data>
-  <data name="LogWindowWrapToggle.Label" xml:space="preserve">
-    <value>Word wrap</value>
-  </data>
-  <data name="LogWindowCopyBadgeText.Text" xml:space="preserve">
-    <value>Copy</value>
-  </data>
-  <data name="LogWindow_CopyBadge_Single" xml:space="preserve">
-    <value>Copy</value>
-  </data>
-  <data name="LogWindow_CopyBadge_Selection" xml:space="preserve">
-    <value>Copy selection</value>
-  </data>
-  <data name="LogWindow_CopyBadge_Copied" xml:space="preserve">
-    <value>Copied</value>
-  </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────
        The XAML Title="..." attribute is overridden in code-behind
        through AppWindow.Title in each window's ConfigureWindow. -->
-  <data name="LogWindow_WindowTitle" xml:space="preserve">
-    <value>Deckle Logs</value>
-  </data>
   <data name="Settings_WindowTitle" xml:space="preserve">
     <value>Deckle Settings</value>
-  </data>
-  <data name="Hud_WindowTitle" xml:space="preserve">
-    <value>Deckle Recording</value>
-  </data>
-  <data name="HudOverlay_WindowTitle" xml:space="preserve">
-    <value>Deckle Overlay</value>
   </data>
 
 </root>

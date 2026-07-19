@@ -186,12 +186,6 @@
   <data name="AmbientOpenPlaygroundCard.Description" xml:space="preserve">
     <value>Adjust exposure, saturation, brightness curve, smoothing, and per-light settings with a live preview of the sampled grid.</value>
   </data>
-  <data name="Settings_SectionResetLink.Content" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="Settings_SectionResetLink.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to defaults</value>
-  </data>
 
   <!-- ── Configuration : Hue bridge pairing ────────────────── -->
   <data name="AmbientConfigSectionHeader.Text" xml:space="preserve">
@@ -335,5 +329,4 @@
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-
 </root>
