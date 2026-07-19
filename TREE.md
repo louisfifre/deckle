@@ -1069,7 +1069,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AGENTS.md  — [agent-instructions] Settings shell — aggregates module-owned pages in a NavigationView, owns non-mo…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Settings.csproj
+│   │   ├── DeckleSettingsSource.Backup.cs
 │   │   ├── DeckleSettingsSource.cs
+│   │   ├── DeckleSettingsSource.Migration.cs
+│   │   ├── DeckleSettingsSource.Navigation.cs
+│   │   ├── DeckleSettingsSource.Persistence.cs
+│   │   ├── DeckleSettingsSource.Search.cs
 │   │   ├── SettingSearchHit.cs
 │   │   ├── SettingsHost.cs
 │   │   ├── SettingsSearch.cs
