@@ -9,6 +9,28 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/lib/changelog.ps1` — do not edit it by hand.
 
+## [Unreleased]
+
+### Changed
+
+- **anytype:** Split schema administration gestures
+- **app:** Separate startup and diagnostics concerns
+- **catalog:** Decompose settings composition
+- **core:** Group native interop by subsystem
+- **input:** Separate keyboard host responsibilities
+- **taskbar-cover:** Separate host lifecycle concerns
+- **autocorrect:** Separate engine processing stages
+- **autocorrect-lab:** Decompose lexicon generation
+- **autocorrect-onnx:** Separate scorer concerns
+- **lighting:** Separate Hue service operations
+- **ambient:** Separate engine and interface concerns
+- **llm:** Separate runtime and persistence concerns
+- **settings:** Separate settings diagnostics events
+- **setup:** Separate setup diagnostics events
+- **transcription:** Separate pipeline responsibilities
+- **whisper:** Separate backend operations
+- **resources:** Prune unused localization entries
+
 ## [0.13.1](https://github.com/louisfifre/deckle/compare/v0.13.0...v0.13.1) — 2026-07-19
 
 ## [0.13.0](https://github.com/louisfifre/deckle/compare/v0.12.0...v0.13.0) — 2026-07-18
