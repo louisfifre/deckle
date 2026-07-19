@@ -611,7 +611,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── Deckle.Composition.csproj
 │   ├── Deckle.Core/
 │   │   ├── Interop/
+│   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
+│   │   │   ├── NativeMethods.Input.cs
+│   │   │   ├── NativeMethods.Shell.cs
+│   │   │   ├── NativeMethods.WindowHost.cs
+│   │   │   ├── NativeMethods.Windowing.cs
 │   │   │   ├── Structs.cs
 │   │   │   ├── UIAutomation.cs
 │   │   │   ├── Win32Clipboard.cs
