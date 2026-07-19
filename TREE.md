@@ -1101,7 +1101,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ChoicesPage.xaml.cs
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Setup.csproj
+│   │   ├── DeckleSetupSource.Choices.cs
 │   │   ├── DeckleSetupSource.cs
+│   │   ├── DeckleSetupSource.Deploy.cs
+│   │   ├── DeckleSetupSource.Provisioning.cs
+│   │   ├── DeckleSetupSource.Relocation.cs
+│   │   ├── DeckleSetupSource.Summary.cs
+│   │   ├── DeckleSetupSource.Update.cs
+│   │   ├── DeckleSetupSource.Wizard.cs
 │   │   ├── DeployPage.xaml
 │   │   ├── DeployPage.xaml.cs
 │   │   ├── FoldersPage.xaml
