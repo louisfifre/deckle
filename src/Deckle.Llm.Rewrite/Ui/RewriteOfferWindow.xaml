@@ -1,0 +1,92 @@
+<Window
+    x:Class="Deckle.Llm.Rewrite.RewriteOfferWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Llm.Rewrite">
+    <Grid x:Name="RootGrid"
+          Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+          Padding="16"
+          RowSpacing="12"
+          KeyDown="OnRootKeyDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="2">
+                <TextBlock x:Uid="RewriteOfferTitle"
+                           Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Uid="RewriteOfferSubtitle"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Button x:Name="CloseButton"
+                    Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Click="OnKeepOriginalClick"
+                    x:Uid="RewriteOfferCloseButton">
+                <SymbolIcon Symbol="Cancel" />
+            </Button>
+        </Grid>
+
+        <TextBlock x:Name="ProposalText"
+                   Grid.Row="1"
+                   TextWrapping="Wrap"
+                   MaxLines="6"
+                   TextTrimming="CharacterEllipsis"
+                   IsTextSelectionEnabled="True" />
+
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="ChangesList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:RewriteChangeView">
+                        <Grid ColumnSpacing="8"
+                              Margin="0,2"
+                              AutomationProperties.Name="{x:Bind AccessibleName}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind OriginalDisplay}"
+                                       TextWrapping="Wrap"
+                                       TextDecorations="Strikethrough"
+                                       AutomationProperties.AccessibilityView="Raw"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <FontIcon Grid.Column="1"
+                                      Glyph="&#xE72A;"
+                                      FontSize="12"
+                                      AutomationProperties.AccessibilityView="Raw"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Grid.Column="2"
+                                       Text="{x:Bind RewrittenDisplay}"
+                                       TextWrapping="Wrap"
+                                       AutomationProperties.AccessibilityView="Raw"
+                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8">
+            <Button x:Uid="RewriteOfferKeepButton"
+                    Click="OnKeepOriginalClick" />
+            <Button x:Uid="RewriteOfferApplyButton"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="OnApplyClick" />
+        </StackPanel>
+    </Grid>
+</Window>

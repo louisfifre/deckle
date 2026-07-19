@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Globalization;
 using Deckle.Core;
 using Deckle.Input;
 
@@ -23,6 +24,8 @@ public sealed class TextInjector : ITextInjector
     private const uint KEYEVENTF_UNICODE = 0x0004;
 
     private const ushort VK_BACK = 0x08;
+    private const ushort VK_RETURN = 0x0D;
+    private const ushort VK_SHIFT = 0x10;
 
     private static readonly int InputSize = Marshal.SizeOf<INPUT>();
 
@@ -68,6 +71,35 @@ public sealed class TextInjector : ITextInjector
             inputs[i++] = KeyEvent(0, unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP);
         }
 
+        return Send(inputs);
+    }
+
+    /// <summary>Replaces the paragraph immediately before a Shift+Enter line
+    /// return and recreates that return as a real key gesture. The target caret
+    /// must still be directly after the closing return; callers invalidate the
+    /// offer on every intervening edit or caret move.</summary>
+    public bool ReplaceClosedParagraph(string original, string replacement)
+    {
+        int backspaces = StringInfo.ParseCombiningCharacters(original).Length + 1;
+        var inputs = new INPUT[(backspaces + replacement.Length) * 2 + 4];
+        int i = 0;
+
+        for (int b = 0; b < backspaces; b++)
+        {
+            inputs[i++] = KeyEvent(VK_BACK, 0, 0);
+            inputs[i++] = KeyEvent(VK_BACK, 0, KEYEVENTF_KEYUP);
+        }
+
+        foreach (char unit in replacement)
+        {
+            inputs[i++] = KeyEvent(0, unit, KEYEVENTF_UNICODE);
+            inputs[i++] = KeyEvent(0, unit, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP);
+        }
+
+        inputs[i++] = KeyEvent(VK_SHIFT, 0, 0);
+        inputs[i++] = KeyEvent(VK_RETURN, 0, 0);
+        inputs[i++] = KeyEvent(VK_RETURN, 0, KEYEVENTF_KEYUP);
+        inputs[i] = KeyEvent(VK_SHIFT, 0, KEYEVENTF_KEYUP);
         return Send(inputs);
     }
 

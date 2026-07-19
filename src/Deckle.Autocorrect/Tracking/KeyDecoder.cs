@@ -52,7 +52,7 @@ public sealed class KeyDecoder
     private bool _lWin, _rWin;
     private bool _capsToggled;
 
-    private bool ShiftDown => _lShift || _rShift || _genShift;
+    public bool ShiftDown => _lShift || _rShift || _genShift;
     private bool CtrlDown => _lCtrl || _rCtrl || _genCtrl;
     private bool AltDown => _lAlt || _rAlt || _genAlt;
     private bool WinDown => _lWin || _rWin;

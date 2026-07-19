@@ -35,6 +35,7 @@ public readonly record struct RewriteResult(
 public interface IRewriteService
 {
     RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile);
+    RewriteResult RewriteParagraph(string paragraph, string endpoint, CancellationToken cancellationToken);
 }
 
 public class RewriteService : IRewriteService
@@ -106,6 +107,39 @@ public class RewriteService : IRewriteService
                 body:     "Ollama unreachable. Raw transcript copied.",
                 role:     1);
             return new RewriteResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
+        }
+    }
+
+    /// <summary>Runs the fixed paragraph-retaille contract. Unlike transcript
+    /// rewriting, failures stay silent at the UI boundary: an interactive
+    /// suggestion is optional and the caller simply offers nothing.</summary>
+    public RewriteResult RewriteParagraph(
+        string paragraph,
+        string endpoint,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return _engine.Generate(
+                ParagraphRewrite.BuildRequest(paragraph, endpoint, ParagraphRewrite.Model),
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A cancellation is either the interactive deadline or, much more
+            // often, a keystroke that made the request stale. Both are the
+            // expected precision-first path and produce no user-facing noise.
+            return default;
+        }
+        catch (Exception ex)
+        {
+            DeckleLlmSource.Log.RewriteUnavailable();
+            DeckleLlmSource.Log.RewriteUnavailableDetail(
+                ex.GetType().Name,
+                ex.Message,
+                ParagraphRewrite.Label,
+                ParagraphRewrite.Model);
+            return default;
         }
     }
 }

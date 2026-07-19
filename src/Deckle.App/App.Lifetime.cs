@@ -28,6 +28,7 @@ public partial class App
         TryShutdown("trackpad shutdown", ShutdownTrackpad);
         TryShutdown("taskbar cover shutdown", ShutdownTaskbarCover);
         TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
+        TryShutdown("paragraph rewrite shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect shutdown", ShutdownAutocorrect);
         TryShutdown("anytype mcp shutdown", ShutdownAnytypeMcp);
         TryShutdown("ambient engine dispose", () =>

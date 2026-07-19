@@ -126,6 +126,39 @@
     <value>Remove</value>
   </data>
 
+  <!-- ─── Paragraph rewrite offer ─────────────────────────────────── -->
+  <data name="RewriteOffer_WindowTitle" xml:space="preserve">
+    <value>Suggested correction</value>
+  </data>
+  <data name="RewriteOfferTitle.Text" xml:space="preserve">
+    <value>Correct this paragraph?</value>
+  </data>
+  <data name="RewriteOfferSubtitle.Text" xml:space="preserve">
+    <value>The original stays unchanged until you apply this correction.</value>
+  </data>
+  <data name="RewriteOfferCloseButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Keep original</value>
+  </data>
+  <data name="RewriteOfferCloseButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Keep the original paragraph.</value>
+  </data>
+  <data name="RewriteOfferKeepButton.Content" xml:space="preserve">
+    <value>Keep original</value>
+  </data>
+  <data name="RewriteOfferApplyButton.Content" xml:space="preserve">
+    <value>Apply correction</value>
+  </data>
+  <data name="RewriteOffer_Added" xml:space="preserve">
+    <value>Added</value>
+  </data>
+  <data name="RewriteOffer_Removed" xml:space="preserve">
+    <value>Removed</value>
+  </data>
+  <data name="RewriteOffer_Change_Format" xml:space="preserve">
+    <value>{0} becomes {1}.</value>
+    <comment>{0} is the original text span; {1} is the proposed replacement.</comment>
+  </data>
+
   <!-- ─── Consent dialogs ────────────────────────────────────────────
        Opt-in prompts for local data capture. Each dialog follows the
        same structure: Title, Body_Intro paragraph, then three

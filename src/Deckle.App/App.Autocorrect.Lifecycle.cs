@@ -112,6 +112,7 @@ public partial class App
                     DeckleAutocorrectSource.Log.RerankerStatus(
                         runtime.RerankerEngine, runtime.RerankerLoadMs);
                     DeckleAutocorrectSource.Log.EngineReady();
+                    runtime.Engine.CorrectionApplied += OnParagraphCorrectionApplied;
                     _autocorrectRuntime = runtime;
                     retained = true;
                 }

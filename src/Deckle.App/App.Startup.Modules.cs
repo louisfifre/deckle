@@ -109,6 +109,20 @@ public partial class App
         InitializeInputHost();
         context.Milestone("input_host");
 
+        // Paragraph retaille — observes the shared keyboard stream, requests a
+        // gated local rewrite on Shift+Enter, and surfaces it in a non-activating
+        // interactive inset. The module is entirely absent when Rewrite was not
+        // selected at install.
+        if (context.RewritePresent)
+        {
+            InitializeParagraphRewrite();
+            context.Milestone("paragraph_rewrite");
+        }
+        else
+        {
+            context.Milestone("paragraph_rewrite_skipped");
+        }
+
         // Mouse-wheel capture — attaches the JSONL recorder to the shared
         // host and reconciles it with the persisted settings (off by default;
         // the host only spins up when a capture is on or autocorrect is).

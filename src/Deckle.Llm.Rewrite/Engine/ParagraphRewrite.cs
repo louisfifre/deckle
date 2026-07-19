@@ -20,6 +20,15 @@ public static class ParagraphRewrite
     /// <summary>Observability label of paragraph-rewrite requests.</summary>
     public const string Label = "paragraph";
 
+    /// <summary>The measured capacity floor for the interactive retaille.
+    /// The 3B variant is deliberately not a fallback: it produces too few
+    /// faithful offers for this surface.</summary>
+    public const string Model = "ministral-3:14b";
+
+    /// <summary>The interactive offer budget. A late proposal is no longer
+    /// useful once typing has resumed, so it is cancelled rather than surfaced.</summary>
+    public static readonly TimeSpan Deadline = TimeSpan.FromSeconds(3);
+
     // A paragraph is a few hundred tokens at most; 4 K of context covers the
     // prompt comfortably without inflating the KV cache the way the
     // transcription profiles (8/16 K) must.

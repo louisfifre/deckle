@@ -18,6 +18,7 @@ public static class UIAutomation
 {
     // https://learn.microsoft.com/windows/win32/winauto/uiauto-automation-element-propids
     private const int UIA_ControlTypePropertyId = 30003;
+    private const int UIA_BoundingRectanglePropertyId = 30001;
     private const int UIA_ProcessIdPropertyId   = 30002;
     private const int UIA_IsPasswordPropertyId  = 30019;
 
@@ -152,6 +153,33 @@ public static class UIAutomation
         }
     }
 
+    /// <summary>Returns the focused element's physical screen rectangle. UIA
+    /// exposes the value as four doubles (left, top, width, height).</summary>
+    public static bool TryGetFocusedElementBounds(out ScreenRect bounds)
+    {
+        bounds = default;
+        try
+        {
+            var ua = GetInstance();
+            if (ua.GetFocusedElement(out var el) != 0 || el is null) return false;
+            if (el.GetCurrentPropertyValue(UIA_BoundingRectanglePropertyId, out var value) != 0)
+                return false;
+            if (value is not double[] rect || rect.Length != 4) return false;
+            if (rect[2] <= 0 || rect[3] <= 0) return false;
+
+            bounds = new ScreenRect(
+                (int)Math.Round(rect[0]),
+                (int)Math.Round(rect[1]),
+                (int)Math.Round(rect[2]),
+                (int)Math.Round(rect[3]));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     // True only when UIA returns a VT_BOOL TRUE for the property. A "not
     // supported" sentinel (a COM object, not a bool) or any failure reads as
     // false — the conservative default for a pattern-availability flag.
@@ -205,4 +233,10 @@ public static class UIAutomation
 
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT { public int X; public int Y; }
+}
+
+public readonly record struct ScreenRect(int X, int Y, int Width, int Height)
+{
+    public int Right => X + Width;
+    public int Bottom => Y + Height;
 }

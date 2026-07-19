@@ -379,6 +379,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
+│   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.Foundation.cs
@@ -956,6 +957,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── GateLexicon.cs
 │   │   │   ├── GateToken.cs
 │   │   │   └── RewriteDiffGate.cs
+│   │   ├── Interaction/
+│   │   │   ├── ParagraphDraft.cs
+│   │   │   ├── ParagraphRewriteCoordinator.cs
+│   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
 │   │   │   └── RewriteAvailability.cs
 │   │   ├── Strings/
@@ -974,7 +979,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LlmProfilesSection.xaml.cs
 │   │   │   ├── LlmShortcutSlotsSection.xaml
 │   │   │   ├── LlmShortcutSlotsSection.xaml.cs
-│   │   │   └── ProfileViewModel.cs
+│   │   │   ├── ProfileViewModel.cs
+│   │   │   ├── RewriteChangeView.cs
+│   │   │   ├── RewriteOfferWindow.xaml
+│   │   │   └── RewriteOfferWindow.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
@@ -1512,6 +1520,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
+│   │   ├── ParagraphDraftTests.cs
+│   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   └── RewriteDiffGateTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj

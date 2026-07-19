@@ -5,6 +5,12 @@ type: module-journal
 
 # JOURNAL — Deckle.Llm.Rewrite
 
+## 2026-07-20 — Retaille slice 2: the gated offer is an interactive transient
+
+Chose a revisioned offer lifecycle: Shift+Enter closes the continuously observed paragraph, the interactive request has a 3 s deadline on ministral-3:14b, and any later text edit, opaque caret move, pointer interaction, or surface change cancels the request and hides an existing offer. An autocorrection is mirrored into the observed paragraph only when its original span occurs once; ambiguity invalidates the paragraph instead of guessing.
+
+Chose a separate Acrylic tool window for the offer, anchored to the focused UIA element and shown with `SW_SHOWNOACTIVATE` but without `WS_EX_NOACTIVATE`: its appearance leaves typing focus in place, while an explicit click can activate native WinUI buttons, keyboard focus, Escape, and accessibility peers. Accept restores the captured target window, replaces the exact closed tail in one `SendInput` batch, and recreates the closing Shift+Enter gesture; the HUD remains click-through and unchanged.
+
 ## 2026-07-20 — Retaille slice 1: gate + seam + prompt, measured on the paragraph-gate study
 
 The diff gate is a pure all-or-nothing validator (`Gate/`): strictly monotone DP alignment whose transitions are exactly the three framed rules — bounded-form replacement (Levenshtein on normalized concatenations, groups up to 3→3 for phonetic re-segmentation), closed-class insertion, duplicate/crutch deletion. Disallowed edits carry a penalty larger than any all-allowed path, so the optimum contains a violation only when no violation-free alignment exists; the verdict carries the full edit script either way (future offer display and dataset). The engine seam landed with it: `IRewriteEngine` behind `RewriteService` (API unchanged for transcription), Ollama transport extracted to `OllamaEngine`, deadline owned by the caller — an OnnxEngine drops in without clients moving.
