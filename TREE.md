@@ -936,7 +936,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OllamaService.cs
 │   ├── Deckle.Llm.Rewrite/
 │   │   ├── Engine/
+│   │   │   ├── OllamaEngine.cs
 │   │   │   ├── PromptTemplates.cs
+│   │   │   ├── RewriteEngine.cs
 │   │   │   └── RewriteService.cs
 │   │   ├── Settings/
 │   │   │   └── RewriteAvailability.cs
