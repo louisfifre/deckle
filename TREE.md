@@ -1279,6 +1279,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── KnownHallucinations.cs
 │   │   ├── RepetitionDetector.cs
 │   │   ├── WhisperBackend.cs
+│   │   ├── WhisperBackend.Model.cs
+│   │   ├── WhisperBackend.NativeLogging.cs
+│   │   ├── WhisperBackend.Transcribe.cs
 │   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── AGENTS.md
