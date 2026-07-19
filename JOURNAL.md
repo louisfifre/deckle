@@ -7,10 +7,6 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
-## 2026-07-19 — Motion policy stays cross-cutting
-
-Chose not to create a shared motion module while the policy has no single cross-domain owner. Windows' animation preference and each domain's functional-motion preference remain distinct; `Deckle.Catalog` stays declarative and does not host runtime observers. Reassess extraction when independent modules need the same observation contract.
-
 ## 2026-07-18 — Motion policy and LogWindow decisions
 
 Found that Deckle exposes `SPI_GETCLIENTAREAANIMATION` but never calls it. The HUD helper named `AnimationSystemSetting` reads only the Dictation overlay setting. Chose to gate every Deckle-authored simple animation explicitly on the Windows animation setting while leaving control-internal motion to WinUI.

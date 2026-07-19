@@ -1,12 +1,12 @@
 ---
 name: context-deckle-hud-chrono
-description: "Chrono HUD element vocabulary — the face's eight elements, accent twins, and the animated / at-rest / dot distinctions. The normative colour-state matrix lives in this folder's AGENTS.md."
+description: "Chrono HUD element vocabulary — the face's eight elements, accent twins, and the animated / at-rest / dot distinctions."
 type: agent-instructions
 ---
 
 # Deckle.Hud — Chrono context
 
-Shared vocabulary for the chrono face (`HudChrono`). The face is the `MM.SS.cc` clock inside the HUD card. This file fixes the terms Louis and the agents use; the authoritative colour-state matrix lives in [AGENTS.md](AGENTS.md).
+Shared vocabulary for the chrono face (`HudChrono`). The face is the `MM.SS.cc` clock inside the HUD card. This file fixes the terms Louis and the agents use.
 
 ## Elements — the chrono face
 
