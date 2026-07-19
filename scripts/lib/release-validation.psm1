@@ -97,6 +97,97 @@ function Assert-DeckleReleaseSource {
     }
 }
 
+function Get-ReleaseRemoteTagCommit {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Tag
+    )
+
+    $tagRef = "refs/tags/$Tag"
+    $peeledRef = "$tagRef^{}"
+    $refs = @(& git -C $RepoRoot ls-remote origin $tagRef $peeledRef 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        throw "git ls-remote $Tag failed (code $LASTEXITCODE)"
+    }
+    if (-not $refs.Count) { return $null }
+
+    $selected = $refs | Where-Object { ($_ -split '\s+', 2)[1] -ceq $peeledRef } | Select-Object -First 1
+    if (-not $selected) {
+        $selected = $refs | Where-Object { ($_ -split '\s+', 2)[1] -ceq $tagRef } | Select-Object -First 1
+    }
+    if (-not $selected) { throw "Remote tag $Tag returned an unreadable ref" }
+    return ($selected -split '\s+', 2)[0]
+}
+
+function Publish-DeckleReleaseTag {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Tag,
+        [Parameter(Mandatory)][string]$HeadSha
+    )
+
+    $resolvedHead = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
+        'rev-parse', "$HeadSha^{commit}")))[0].Trim()
+    if ($resolvedHead -cne $HeadSha) {
+        throw "Release HEAD $HeadSha resolves to $resolvedHead"
+    }
+
+    $remoteTagSha = Get-ReleaseRemoteTagCommit -RepoRoot $RepoRoot -Tag $Tag
+    if ($remoteTagSha -and $remoteTagSha -cne $HeadSha) {
+        throw "Remote tag $Tag points to $remoteTagSha, not release HEAD $HeadSha"
+    }
+
+    $localTag = @(& git -C $RepoRoot rev-parse --verify --quiet "$Tag^{commit}" 2>$null)
+    $localTagCode = $LASTEXITCODE
+    if ($localTagCode -eq 0) {
+        if ($localTag[0].Trim() -cne $HeadSha) {
+            throw "Local tag $Tag points to $($localTag[0].Trim()), not release HEAD $HeadSha"
+        }
+    } elseif ($localTagCode -eq 1) {
+        $null = Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('tag', $Tag, $HeadSha)
+    } else {
+        throw "git rev-parse $Tag failed (code $localTagCode)"
+    }
+
+    if (-not $remoteTagSha) {
+        $refspec = "refs/tags/{0}:refs/tags/{0}" -f $Tag
+        $null = Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('push', 'origin', $refspec)
+    }
+
+    $publishedTagSha = Get-ReleaseRemoteTagCommit -RepoRoot $RepoRoot -Tag $Tag
+    if ($publishedTagSha -cne $HeadSha) {
+        throw "Remote tag $Tag does not point to release HEAD $HeadSha"
+    }
+}
+
+function Assert-DeckleReleaseDraft {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Release,
+        [Parameter(Mandatory)][string]$Tag,
+        [Parameter(Mandatory)][string]$HeadSha,
+        [Parameter(Mandatory)][System.Collections.IDictionary]$ExpectedAssets
+    )
+
+    if (-not $Release.isDraft) {
+        throw "GitHub release $Tag already exists and is not a resumable draft"
+    }
+    if ($Release.tagName -cne $Tag -or $Release.targetCommitish -cne $HeadSha) {
+        throw "GitHub draft $Tag does not target release HEAD $HeadSha"
+    }
+
+    foreach ($expected in $ExpectedAssets.GetEnumerator()) {
+        $matches = @($Release.assets | Where-Object { $_.name -ceq $expected.Key })
+        if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.Value) {
+            throw "GitHub draft asset $($expected.Key) is missing or has the wrong size"
+        }
+    }
+    if (@($Release.assets).Count -ne $ExpectedAssets.Count) {
+        throw "GitHub draft $Tag contains unexpected assets"
+    }
+}
+
 function Assert-DeckleReleaseArchive {
     [CmdletBinding()]
     param(
@@ -140,4 +231,4 @@ function Assert-DeckleReleaseArchive {
     }
 }
 
-Export-ModuleMember -Function Assert-DeckleReleaseSource, Assert-DeckleReleaseArchive
+Export-ModuleMember -Function Assert-DeckleReleaseSource, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag
