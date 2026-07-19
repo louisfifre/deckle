@@ -14,6 +14,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Fixed
 
 - **release:** Preserve changes between public releases
+- **app:** Exclude duplicate DirectML publish payload
 
 ## [0.13.4](https://github.com/louisfifre/deckle/compare/v0.8.0...v0.13.4) — 2026-07-19
 
