@@ -87,6 +87,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private readonly List<SlotEntry> _buffer = new();
     private int _epoch;
     private bool _inFlight;
+    private int _inFlightEpoch = -1;
     // The ABSOLUTE buffer index of the slot currently submitted. The request
     // carries a window-relative index (for the model), so the verdict cannot be
     // trusted to identify the slot — single-flight lets us remember it here.
@@ -281,6 +282,19 @@ public sealed class SentenceRerankCoordinator : IDisposable
     public void Invalidate(ResetReason reason)
     {
         if (_disposed) return;
+
+        int pendingSlots = 0;
+        foreach (SlotEntry slot in _buffer)
+            if (slot.IsAmbiguous && !slot.Resolved)
+                pendingSlots++;
+        if (_pendingCapSlot >= 0)
+            pendingSlots++;
+
+        bool currentRequestInFlight = _inFlight && _inFlightEpoch == _epoch;
+        if (pendingSlots > 0)
+            DeckleAutocorrectSource.Log.SentenceStageAbandoned(
+                reason.ToString(), pendingSlots, currentRequestInFlight);
+
         _epoch++;
         _buffer.Clear();
         _pendingCapSlot = -1;
@@ -301,6 +315,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
             {
                 _inFlight = true;
                 _inFlightSlot = i;
+                _inFlightEpoch = _epoch;
                 RerankRequest request = BuildRequest(i);
                 DeckleAutocorrectSource.Log.RerankSubmitted(i, request.Sentence.Count);
                 _lane.Submit(request);
@@ -324,6 +339,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
     {
         if (_disposed) return;
         _inFlight = false;
+        _inFlightEpoch = -1;
         int slotIndex = _inFlightSlot;   // the absolute index we submitted
         _inFlightSlot = -1;
 

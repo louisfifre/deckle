@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using Deckle.Autocorrect;
+using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
@@ -200,6 +203,37 @@ public class SentenceRerankCoordinatorTests
         lane.DeliverLast();                         // stale epoch → dropped
 
         Assert.Empty(inj.Calls);
+    }
+
+    [Fact]
+    public void EnterExplicitlyReportsTheSentenceStageWorkItAbandons()
+    {
+        OperationalLogAdmission.Configure(
+            static activity => activity == OperationalLogActivity.Autocorrect);
+        try
+        {
+            using var listener = new TestEventListener("Deckle-Autocorrect");
+            var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
+            var coord = new SentenceRerankCoordinator(
+                lane, ProbeForLa(), new RecordingInjector(), () => "");
+
+            coord.OnWordCommitted("la", ' ', true);
+            coord.OnWordCommitted("mer", ' ', true);
+            coord.OnWordCommitted("est", ' ', true);
+            coord.OnWordCommitted("belle", ' ', true);
+
+            coord.Invalidate(ResetReason.Enter);
+
+            EventWrittenEventArgs abandoned = Assert.Single(listener.Events,
+                e => e.EventId == DeckleAutocorrectSource.EvtSentenceStageAbandoned);
+            Assert.Equal("Enter", PayloadValue(abandoned, "reason"));
+            Assert.Equal(1, PayloadValue(abandoned, "pending_slots"));
+            Assert.Equal(true, PayloadValue(abandoned, "in_flight"));
+        }
+        finally
+        {
+            OperationalLogAdmission.Configure(static _ => false);
+        }
     }
 
     [Fact]
@@ -455,6 +489,16 @@ public class SentenceRerankCoordinatorTests
         coord.OnWordCommitted("ici", '.', true);    // closure: nothing to re-open
 
         Assert.Single(lane.Submitted);
+    }
+
+    private static object? PayloadValue(EventWrittenEventArgs ev, string name)
+    {
+        IReadOnlyList<string?>? names = ev.PayloadNames;
+        IReadOnlyList<object?>? payload = ev.Payload;
+        if (names is null || payload is null) return null;
+        for (int i = 0; i < names.Count; i++)
+            if (names[i] == name) return payload[i];
+        return null;
     }
 
     // ── Fakes ───────────────────────────────────────────────────────────────

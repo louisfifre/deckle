@@ -47,6 +47,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtInjectionRecovered  = 24;
     public const int EvtInjectionEpisodeDetail = 25;
     public const int EvtRerankerLoadFailed  = 26;
+    public const int EvtSentenceStageAbandoned = 27;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -248,6 +249,20 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtRerankVerdict, outcome);
+    }
+
+    // A reset made the current sentence-stage work unsafe before it completed.
+    // reason is the ResetReason closed vocabulary; pending_slots includes work
+    // still waiting for context and the request already in flight. This is emitted
+    // at abandonment time, not when a late result eventually returns as stale.
+    [Event(EvtSentenceStageAbandoned,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "sentence stage abandoned | reason={0} | pending_slots={1} | in_flight={2}")]
+    public void SentenceStageAbandoned(string reason, int pending_slots, bool in_flight)
+    {
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtSentenceStageAbandoned, reason, pending_slots, in_flight);
     }
 
     // ── Correction decision dataset ──────────────────────────────────────
