@@ -5,6 +5,16 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-20 — Reliability precedes the Qwen 3.5 correction stage
+
+Chose to stabilize the correction path before integrating Qwen 3.5: make the active engine and load failure observable, remove silent fallback, then fix surface tracking and sentence completion. The intended product split is a conservative deterministic first level for accents and certain spelling repairs, followed by Qwen 3.5 for grammatical correction; rewrite remains later.
+
+Found in the live trace that `models\sentence-judge` was present but the application reported `engine=camembert`. On `je n'arrive pas a choisir`, CamemBERT ranked `à` first with a 1.291 margin and abstained at its 2.0 threshold. The same Qwen3-1.7B DML export loaded in the isolated probe and chose `je n'arrive pas à choisir` with a 1.026 margin at its 1.0 threshold. `OnnxSentenceScorer.TryLoad` catches every load exception without recording it, so the application exposes neither the Qwen failure nor the fallback cause.
+
+The application asset graph currently resolves ONNX Runtime 1.26.0 alongside ONNX Runtime DirectML 1.23.0 and ONNX Runtime GenAI DirectML 0.13.0; the isolated probe resolves the 1.23 runtime and loads the judge. This version difference is a lead, not yet the proven load cause.
+
+Found two independent timing traps in the input path. `FocusEventCoalescer` publishes a foreground event immediately and suppresses the following object-focus event for the same HWND within 50 ms, while the surface is probed on the first event; a web editor that establishes its focused element between the two can leave Deckle with the earlier surface verdict. Separately, Enter, pointer or focus reset invalidates the sentence epoch, so a still-running sentence verdict is dropped as stale. The Codex edit-message field from the observed failure was nevertheless recognized as editable and its text was captured; that occurrence was a reranker abstention, not a field-detection failure.
+
 ## 2026-07-14 — Mining chantier: routing and pause pass landed
 
 Approved families are per-user records interpreted by code kinds (boundary_apostrophe, boundary_missing_space) — nothing personal frozen in code; the tracker surfaces the inter-commit separator run, invalidated whenever a backspace or reset makes it unfaithful, and span repairs inject at commit, honor suppressions, and edit the corpus final-side separator (typed keeps the fault). The pause pass flushes open slots on a typing pause (one re-armed one-shot timer through the drain marshal); pause verdicts are re-reviewed at true closure, Enter cannot re-review — the measured residue. Per-surface bars ride surface-profiles.json from the ventilation gesture; the provisional qualification formula (Enter-dominant, ≥30 timed sentences, gap p99) is quarantined in SurfaceProfiler pending calibration. First mined batch reviewed: two families approved (sub ;→', dropped space after ,).
