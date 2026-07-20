@@ -85,7 +85,18 @@ public sealed partial class OnnxSentenceScorer
     }
 
     public static ISentenceScorer? TryLoad(string modelDir, double margin, string executionProvider = "dml")
+        => TryLoad(modelDir, margin, executionProvider, out _);
+
+    // Keeps an absent optional model distinct from a present model that failed
+    // to initialize. Composition can therefore preserve its fallback policy
+    // while exposing the exact native/runtime failure that caused it.
+    public static ISentenceScorer? TryLoad(
+        string modelDir,
+        double margin,
+        string executionProvider,
+        out Exception? error)
     {
+        error = null;
         try
         {
             if (!Directory.Exists(modelDir))
@@ -93,8 +104,9 @@ public sealed partial class OnnxSentenceScorer
 
             return new OnnxSentenceScorer(modelDir, margin, executionProvider);
         }
-        catch
+        catch (Exception ex)
         {
+            error = ex;
             return null;
         }
     }

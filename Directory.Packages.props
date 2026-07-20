@@ -35,11 +35,12 @@
     <!-- Direct2D-backed drawing on a CompositionDrawingSurface (HUD rewriting stroke). -->
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
 
-    <!-- ONNX Runtime (CPU EP) for Deckle.Inference.Onnx — the external Silero VAD.
-         Plain Microsoft.ML.OnnxRuntime, NOT the .DirectML/.Gpu/genai variants: the
-         VAD model is tiny and runs single-threaded on CPU, off the GPU that whisper
-         holds. The native onnxruntime.dll resolves at the App's win-x64 build. -->
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
+    <!-- One process-wide ONNX Runtime binary for every Deckle consumer. The
+         DirectML build also exposes the CPU EP: Deckle.Inference.Onnx sessions
+         keep using CPU by default, while GenAI can opt into DML. Keeping this at
+         1.23.0 matches GenAI 0.13 and prevents two ABI-incompatible
+         onnxruntime.dll files from competing in the App output. -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.23.0" />
 
     <!-- ONNX Runtime GenAI for Deckle.Autocorrect.Onnx's closed-candidate sentence
          judge. The .DirectML variant runs the forced-decoding judge on the GPU (D3D12)
@@ -47,7 +48,8 @@
          exposing the CPU EP as a selectable fallback. Pinned to 0.13.0, NOT 0.14.x:
          genai 0.14 wants ORT API 24 but bundles ORT 1.23, a mismatch that throws
          DllNotFoundException on init (see benchmark/asr/studies/PhiBench). 0.13.0 is
-         self-consistent and is the version proven in-repo by PhiBench. -->
+         self-consistent when the whole process resolves the same ORT 1.23 binary,
+         and is the version proven in-repo by PhiBench. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.13.0" />
 
     <!-- Managed SentencePiece/BPE tokenizers (no native lib, no Python) — used by

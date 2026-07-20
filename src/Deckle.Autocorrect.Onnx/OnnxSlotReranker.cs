@@ -40,8 +40,16 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IDisposable
     // Stages the ONNX judge from a model directory; null when the model is absent
     // or fails to load, so a caller can fall back to another reranker or none.
     public static OnnxSlotReranker? TryLoad(string modelDir, double margin, string executionProvider = "dml")
+        => TryLoad(modelDir, margin, executionProvider, out _);
+
+    public static OnnxSlotReranker? TryLoad(
+        string modelDir,
+        double margin,
+        string executionProvider,
+        out Exception? error)
     {
-        ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(modelDir, margin, executionProvider);
+        ISentenceScorer? scorer = OnnxSentenceScorer.TryLoad(
+            modelDir, margin, executionProvider, out error);
         return scorer is null ? null : new OnnxSlotReranker(scorer);
     }
 

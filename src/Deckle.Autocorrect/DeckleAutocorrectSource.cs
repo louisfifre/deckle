@@ -46,6 +46,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtInjectionIncident   = 23;
     public const int EvtInjectionRecovered  = 24;
     public const int EvtInjectionEpisodeDetail = 25;
+    public const int EvtRerankerLoadFailed  = 26;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -105,6 +106,18 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void RerankerStatus(string engine, long load_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRerankerStatus, engine, load_ms);
+    }
+
+    // A present contextual model that could not initialize is a durable incident,
+    // not activity detail. exception is Exception.ToString(): type, message, inner
+    // exception and stack stay together so native loader failures are actionable.
+    [Event(EvtRerankerLoadFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Contextual correction model failed to load | engine={0} | exception={1}")]
+    public void RerankerLoadFailed(string engine, string exception)
+    {
+        if (IsEnabled()) WriteEvent(EvtRerankerLoadFailed, engine, exception);
     }
 
     // Closed vocabulary for RerankerStatus.engine — one spelling, one place.

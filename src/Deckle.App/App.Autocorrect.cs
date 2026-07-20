@@ -98,10 +98,21 @@ public partial class App
                 // load cost go to RerankerStatus below.
                 var rerankerStopwatch = Stopwatch.StartNew();
                 string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
-                ISentenceReranker? rr = OnnxSlotReranker.TryLoad(judgeDir, margin: SentenceJudgeMargin);
+                ISentenceReranker? rr = OnnxSlotReranker.TryLoad(
+                    judgeDir,
+                    margin: SentenceJudgeMargin,
+                    executionProvider: "dml",
+                    out Exception? judgeLoadError);
                 string engine = DeckleAutocorrectSource.RerankerEngines.SentenceJudge;
                 if (rr is null)
                 {
+                    if (judgeLoadError is not null)
+                    {
+                        DeckleAutocorrectSource.Log.RerankerLoadFailed(
+                            DeckleAutocorrectSource.RerankerEngines.SentenceJudge,
+                            judgeLoadError.ToString());
+                    }
+
                     string modelDir = Path.Combine(AppPaths.ModelsDirectory, CamembertAssets.DirectoryName);
                     rr = CamembertReranker.TryLoad(
                         modelDir, margin: RerankerMargin, freqPrior: RerankerFreqPrior);

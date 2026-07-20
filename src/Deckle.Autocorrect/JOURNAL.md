@@ -13,6 +13,10 @@ Found in the live trace that `models\sentence-judge` was present but the applica
 
 The application asset graph currently resolves ONNX Runtime 1.26.0 alongside ONNX Runtime DirectML 1.23.0 and ONNX Runtime GenAI DirectML 0.13.0; the isolated probe resolves the 1.23 runtime and loads the judge. This version difference is a lead, not yet the proven load cause.
 
+Found in the running Release process that GenAI 0.13 was loaded beside native ONNX Runtime 1.26 although its package depends on ONNX Runtime DirectML 1.23; DirectML itself had not loaded. Chose one process-wide ONNX Runtime DirectML 1.23 binary: ordinary inference sessions still select the CPU provider, while the sentence judge explicitly selects DML.
+
+Verified the unified build in the live application: native ONNX Runtime 1.23 and DirectML loaded, the sentence judge became the active contextual engine in 2.114 s, and no load failure was emitted.
+
 Found two independent timing traps in the input path. `FocusEventCoalescer` publishes a foreground event immediately and suppresses the following object-focus event for the same HWND within 50 ms, while the surface is probed on the first event; a web editor that establishes its focused element between the two can leave Deckle with the earlier surface verdict. Separately, Enter, pointer or focus reset invalidates the sentence epoch, so a still-running sentence verdict is dropped as stale. The Codex edit-message field from the observed failure was nevertheless recognized as editable and its text was captured; that occurrence was a reranker abstention, not a field-detection failure.
 
 ## 2026-07-14 — Mining chantier: routing and pause pass landed

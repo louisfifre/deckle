@@ -15,7 +15,25 @@ public sealed class OnnxSentenceScorerTests
     {
         string missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
-        Assert.Null(OnnxSentenceScorer.TryLoad(missing, margin: 0.0));
+        Assert.Null(OnnxSentenceScorer.TryLoad(
+            missing, margin: 0.0, executionProvider: "dml", out Exception? error));
+        Assert.Null(error);
+    }
+
+    [Fact]
+    public void TryLoadReportsWhyAPresentModelCannotLoad()
+    {
+        string invalid = Directory.CreateTempSubdirectory().FullName;
+        try
+        {
+            Assert.Null(OnnxSentenceScorer.TryLoad(
+                invalid, margin: 0.0, executionProvider: "dml", out Exception? error));
+            Assert.NotNull(error);
+        }
+        finally
+        {
+            Directory.Delete(invalid);
+        }
     }
 
     [Fact]
