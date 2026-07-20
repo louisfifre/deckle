@@ -83,10 +83,10 @@ public static class NativeRuntime
         string DisplayName);
 
     public static NativeRuntimeBundle CurrentBundle { get; } = new(
-        Version:     "1.0.0",
-        Url:         "https://github.com/louisfifre/deckle/releases/download/native-v1.0.0/deckle-native-1.0.0.zip",
-        Sha256:      "c7304be24ccca1255b2bdd6d10609d87fe806590704a07e20b9af233b1d6e4cc",
-        SizeBytes:   19_131_111L,
+        Version:     "1.9.1",
+        Url:         "https://github.com/louisfifre/deckle/releases/download/native-v1.9.1/deckle-native-1.9.1.zip",
+        Sha256:      "74c75b4bc49a538a155c05d1eabc96273f0e1cb166a23148ad06bbf2663310b7",
+        SizeBytes:   24_746_525L,
         DisplayName: "Whisper.cpp + Vulkan runtime");
 
     // True while CurrentBundle.Url has not been wired to the actual published
@@ -99,17 +99,16 @@ public static class NativeRuntime
 
     // ── Status + install paths ───────────────────────────────────────────────
 
-    // True when libwhisper.dll is present in NativeDirectory — the canonical
-    // install location populated by any of the three provisioning paths.
-    //
-    // The full catalog isn't checked file-by-file: if the entry point
-    // is there, NativeMethods.SetDllImportResolver loads it and Windows
-    // resolves the transitive ggml-*.dll dependencies from the same
-    // directory automatically. A missing transitive dep would surface
-    // as a DllNotFoundException on the first whisper_* call — clear
-    // enough without a redundant catalog sweep here.
+    // True only when the complete native catalog is present. libwhisper.dll
+    // alone is not an installation: Windows still needs the ggml backends and
+    // the MinGW runtime beside it. Keeping this gate strict makes a partial
+    // manual import or interrupted extraction repairable by the setup wizard
+    // instead of deferring the failure to the first transcription.
     public static bool IsInstalled() =>
-        File.Exists(Path.Combine(AppPaths.NativeDirectory, EntryDll));
+        IsInstalled(AppPaths.NativeDirectory);
+
+    internal static bool IsInstalled(string nativeDirectory) =>
+        GetMissing(nativeDirectory).Count == 0;
 
     // Copies every catalog DLL found in `sourcePath` into NativeDirectory,
     // overwriting existing files. Returns the count of DLLs actually copied.
@@ -233,11 +232,14 @@ public static class NativeRuntime
     // result = fully installed. Used by the wizard to surface a precise
     // status ("4 of 8 files installed") and by diagnostics surfaces.
     public static IReadOnlyList<string> GetMissing()
+        => GetMissing(AppPaths.NativeDirectory);
+
+    internal static IReadOnlyList<string> GetMissing(string nativeDirectory)
     {
         var missing = new List<string>();
         foreach (string name in RequiredDllNames)
         {
-            string path = Path.Combine(AppPaths.NativeDirectory, name);
+            string path = Path.Combine(nativeDirectory, name);
             if (!File.Exists(path)) missing.Add(name);
         }
         return missing;
