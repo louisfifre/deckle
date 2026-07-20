@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Input
 
+## 2026-07-20 — Foreground and object focus remain distinct
+
+Found that `EVENT_SYSTEM_FOREGROUND` can precede `EVENT_OBJECT_FOCUS` for the editable child in the same window. Chose to publish both observations and collapse only consecutive exact duplicates, so a foreground probe cannot suppress the later focused-object probe.
+
 ## 2026-06-15 — One mouse per process → shared input host
 
 Mouse Raw Input is one-window-per-process: only the last window registered for the mouse usage page receives WM_INPUT, so two hosts steal the stream from each other. `KeyboardInputHost` became the single per-process keyboard+mouse host, reference-counted by its consumers (autocorrect, wheel capture); the native window and registration come up on the first `Start` and unwind on the last `Stop`. This is the shared input foundation any future mouse consumer must reuse rather than re-register.

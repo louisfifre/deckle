@@ -1,10 +1,10 @@
 namespace Deckle.Input;
 
-// Collapses the short WinEvent burst produced by one focus transition. Windows
-// commonly reports both the foreground window and its focused object, and some
-// accessibility providers repeat the same object-focus event. Publishing the
-// first signal keeps the password gate synchronous; the bounded window avoids
-// mistaking a later return to the same target for the original transition.
+// Collapses exact WinEvent duplicates produced by accessibility providers.
+// Foreground and object-focus are distinct observations even when they arrive
+// for one window in one burst: the first keeps the password gate synchronous,
+// while the second lets consumers probe the object that actually received
+// keyboard focus.
 internal sealed class FocusEventCoalescer
 {
     internal const uint WindowMilliseconds = 50;
@@ -19,15 +19,12 @@ internal sealed class FocusEventCoalescer
     public bool ShouldPublish(uint eventType, IntPtr window, int objectId, int childId, uint timestamp)
     {
         bool sameBurst = _hasObserved && unchecked(timestamp - _timestamp) <= WindowMilliseconds;
-        bool sameTarget = window == _window && objectId == _objectId && childId == _childId;
-        bool foregroundPair = window == _window &&
-            _eventType == WinEventInterop.EVENT_SYSTEM_FOREGROUND &&
-            eventType == WinEventInterop.EVENT_OBJECT_FOCUS;
-        bool shouldPublish = !sameBurst || (!sameTarget && !foregroundPair);
+        bool sameTarget = eventType == _eventType &&
+            window == _window && objectId == _objectId && childId == _childId;
+        bool shouldPublish = !sameBurst || !sameTarget;
 
-        // Keep the last observed native target, including suppressed callbacks.
-        // This makes foreground + initial focus one pair without hiding a second,
-        // genuinely different object that follows in the same short interval.
+        // Keep the last observed native target, including suppressed callbacks,
+        // so only a consecutive exact duplicate disappears.
         _hasObserved = true;
         _eventType = eventType;
         _window = window;
