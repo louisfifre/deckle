@@ -43,8 +43,15 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return sb.ToString().TrimEnd();
     }
 
-    // Compact hits: one line per result — type, name, id, snippet.
-    public async Task<string> SearchAsync(string text, IReadOnlyList<string>? typeKeys = null, CancellationToken ct = default)
+    // Compact by default: type, name and id. Context mode adds the concise
+    // framing properties for project/task hits, then up to five lines of
+    // Anytype's bounded body snippet. Name still falls back to the snippet's
+    // first line for nameless note-layout objects in either mode.
+    public async Task<string> SearchAsync(
+        string text,
+        IReadOnlyList<string>? typeKeys = null,
+        bool context = false,
+        CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
@@ -55,10 +62,23 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         foreach (JsonNode? node in hits)
         {
             if (node is not JsonObject o) continue;
-            sb.Append(QueryProp.TypeKey(o) ?? "?").Append(" · ").Append(QueryProp.Name(o));
+            string typeKey = QueryProp.TypeKey(o) ?? "?";
+            sb.Append(typeKey).Append(" · ").Append(QueryProp.Name(o));
             sb.Append(" · ").Append(QueryProp.Id(o));
-            string snippet = QueryProp.Snippet(o);
-            if (snippet.Length > 0) sb.Append(" · ").Append(snippet);
+
+            if (context)
+            {
+                if (typeKey is DevSpace.Types.Project or DevSpace.Types.Task)
+                {
+                    AppendSearchProperty(sb, o, DevSpace.Props.Description, "Description");
+                    AppendSearchProperty(sb, o, DevSpace.Props.DefinitionDeFini, "Définition de fini");
+                }
+
+                string snippet = QueryProp.Snippet(o);
+                if (snippet.Length > 0)
+                    sb.Append('\n').Append("Aperçu :\n").Append(snippet);
+            }
+
             sb.Append('\n');
         }
 
@@ -67,6 +87,13 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 
         DeckleAnytypeSource.Log.GestureCompleted("search", Elapsed(started));
         return digest;
+    }
+
+    static void AppendSearchProperty(StringBuilder sb, JsonObject obj, string key, string label)
+    {
+        string? value = QueryProp.Render(obj, key);
+        if (!string.IsNullOrWhiteSpace(value))
+            sb.Append('\n').Append(label).Append(" : ").Append(value.Trim());
     }
 
     // Appends targets into the natural link property of the (source type, target
@@ -454,7 +481,8 @@ file static class QueryProp
 
     public static string Markdown(JsonObject obj) => obj["markdown"]?.GetValue<string>() ?? "";
 
-    public static string Snippet(JsonObject obj) => FirstLine(obj["snippet"]?.GetValue<string>());
+    public static string Snippet(JsonObject obj) =>
+        FirstLines(obj["snippet"]?.GetValue<string>(), 5);
 
     // The object's type key. The API nests it as {type:{key,...}}.
     public static string? TypeKey(JsonObject obj) => obj["type"]?["key"]?.GetValue<string>();
@@ -520,5 +548,27 @@ file static class QueryProp
         if (string.IsNullOrEmpty(s)) return "";
         int nl = s.IndexOf('\n');
         return nl < 0 ? s : s[..nl];
+    }
+
+    static string FirstLines(string? value, int count)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+
+        int start = 0;
+        for (int line = 0; line < count; line++)
+        {
+            int newline = value.IndexOf('\n', start);
+            if (newline < 0) return value.TrimEnd();
+            if (line == count - 1)
+            {
+                string preview = value[..newline].TrimEnd();
+                return string.IsNullOrWhiteSpace(value[(newline + 1)..])
+                    ? preview
+                    : preview + " …";
+            }
+            start = newline + 1;
+        }
+
+        return value.TrimEnd();
     }
 }
