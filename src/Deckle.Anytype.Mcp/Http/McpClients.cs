@@ -1,6 +1,6 @@
 namespace Deckle.Anytype.Mcp;
 
-// The two callers the resident HTTP host serves, and the surface each one gets.
+// The callers the resident HTTP host serves, and the surface each one gets.
 // A profile is the whole identity of a client: which tool profile it sees, whether
 // the destructive management catalog is mounted for it, the vault name its bearer
 // lives under, and the environment variable that hands that bearer to the external
@@ -12,13 +12,10 @@ public sealed record McpClientProfile(
     string TokenSecretName,
     string TokenEnvVar);
 
-// The per-client surfaces mirror what the stdio era served: claude launched with
-// ["--management"] over the project-management profile, codex with
-// ["--profile","all"] and no management catalog. Collapsing those two exes into one
-// in-process host means the surface distinction now rides the authenticated bearer
-// instead of the launch args, but the shape each client sees is unchanged. The
-// env-var names were frozen 2026-06-19 (JOURNAL) — the external clients read them by
-// name, so they are a wire contract, not an implementation detail.
+// The legacy claude/codex surfaces still mirror what the stdio era served. New
+// narrow clients (schema-admin, Home) ride the same authenticated-bearer routing
+// without widening either legacy contract. Environment-variable names are wire
+// contracts because external clients read them directly.
 public static class McpClients
 {
     public static readonly McpClientProfile Claude = new(
@@ -31,5 +28,9 @@ public static class McpClients
         "schema-admin", ToolProfile.SchemaAdmin, false,
         "mcp-token-schema-admin", "DECKLE_MCP_TOKEN_SCHEMA_ADMIN");
 
-    public static readonly IReadOnlyList<McpClientProfile> All = new[] { Claude, Codex, SchemaAdmin };
+    public static readonly McpClientProfile Home = new(
+        "home", ToolProfile.Home, false, "mcp-token-home", "DECKLE_MCP_TOKEN_HOME");
+
+    public static readonly IReadOnlyList<McpClientProfile> All =
+        new[] { Claude, Codex, SchemaAdmin, Home };
 }

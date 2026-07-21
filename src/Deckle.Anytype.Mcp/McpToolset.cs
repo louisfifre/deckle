@@ -1,4 +1,5 @@
 using Deckle.Anytype;
+using Deckle.Home;
 
 namespace Deckle.Anytype.Mcp;
 
@@ -24,6 +25,15 @@ public static class McpToolset
         var dialogues = new DialogueGestures(api, resolver);
         var managementGestures = new ManagementGestures(api, resolver);
 
+        // Home's alias and schema are runtime configuration. Keep construction
+        // lazy so initialize/tools/list remain available when Home still needs
+        // provisioning; a failed resolution is not cached, so the same session
+        // can retry after the local alias is repaired.
+        HomeGestures? home = null;
+        HomeGestures ResolveHome() => home ??= new HomeGestures(
+            api,
+            (aliases ?? AnytypeSpaceAliases.Load(api.SpaceId)).Resolve("home"));
+
         IReadOnlyList<ToolDescriptor> tools = profile switch
         {
             ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, documents),
@@ -33,6 +43,7 @@ public static class McpToolset
             ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query, documents)
                 .Concat(DialogueToolCatalog.Build(dialogues))
                 .ToArray(),
+            ToolProfile.Home => HomeToolCatalog.Build(ResolveHome),
             _ => throw new InvalidOperationException($"Profil MCP inconnu : {profile}."),
         };
 
@@ -42,6 +53,7 @@ public static class McpToolset
             ToolProfile.Dialogues => McpServer.DialoguesDescriptor,
             ToolProfile.SchemaAdmin => McpServer.SchemaAdminDescriptor,
             ToolProfile.All => McpServer.AllDescriptor,
+            ToolProfile.Home => McpServer.HomeDescriptor,
             _ => McpServer.ProjectManagementDescriptor,
         };
 

@@ -32,13 +32,15 @@ public class McpHttpHostTests
         public string BaseUrl => Host.BaseUrl;
         public string ClaudeBearer { get; }
         public string CodexBearer { get; }
+        public string HomeBearer { get; }
 
-        private Harness(McpHttpHost host, string claude, string codex)
+        private Harness(McpHttpHost host, string claude, string codex, string home)
         {
             Host = host;
             Client = new HttpClient();
             ClaudeBearer = claude;
             CodexBearer = codex;
+            HomeBearer = home;
         }
 
         // Build the whole stack and bind a free loopback port, walking up from a base
@@ -51,6 +53,7 @@ public class McpHttpHostTests
 
             vault.TryGet(McpClients.Claude.TokenSecretName, out string? claude);
             vault.TryGet(McpClients.Codex.TokenSecretName, out string? codex);
+            vault.TryGet(McpClients.Home.TokenSecretName, out string? home);
 
             // The API client never sees a live backend: a dead port so a stray tool
             // call would fail fast rather than hang. initialize/tools/list never dial it.
@@ -61,7 +64,7 @@ public class McpHttpHostTests
             {
                 var host = new McpHttpHost(api, tokens, port);
                 if (host.Start())
-                    return new Harness(host, claude!, codex!);
+                    return new Harness(host, claude!, codex!, home!);
 
                 // Bind failed (port taken): dispose and try the next.
                 host.DisposeAsync().AsTask().GetAwaiter().GetResult();
@@ -207,6 +210,21 @@ public class McpHttpHostTests
         // codex gets the All profile: dialogue tools present, delete withheld.
         Assert.Contains("dialogue_create", names);
         Assert.DoesNotContain("delete", names);
+    }
+
+    [Fact]
+    public async Task HomeSessionListsOnlyHomeToolsWithoutTouchingItsAliasOrSchema()
+    {
+        await using var h = Harness.Start();
+        string session = await OpenSession(h, h.HomeBearer);
+
+        using var response = await h.Client.SendAsync(
+            Post(h.BaseUrl, h.HomeBearer, ToolsListBody, sessionId: session), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            new[] { "create", "delete", "get", "search", "update" },
+            ToolNames(await BodyJson(response)).OrderBy(value => value));
     }
 
     // ── session routing ─────────────────────────────────────────────────────────

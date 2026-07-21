@@ -321,6 +321,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
 │   │   │   ├── DialogueToolCatalog.cs
+│   │   │   ├── HomeToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
@@ -1374,6 +1375,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
+│   │   ├── HomeToolCatalogTests.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensTests.cs
 │   │   ├── McpHttpHostTests.cs

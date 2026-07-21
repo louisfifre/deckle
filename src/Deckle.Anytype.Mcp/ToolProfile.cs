@@ -9,4 +9,5 @@ public enum ToolProfile
     Dialogues,
     SchemaAdmin,
     All,
+    Home,
 }
