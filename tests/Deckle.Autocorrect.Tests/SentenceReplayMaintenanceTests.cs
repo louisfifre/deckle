@@ -15,13 +15,13 @@ namespace Deckle.Autocorrect.Tests;
 // wherever either is absent (CI, a fresh clone, before any corpus is collected or a
 // judge is staged). Where both are present it is a deliberate, supervised run: the
 // judge is seconds per slot, so a full corpus is minutes, and nothing is applied.
-[Trait("Category", "gesture")]
+[Trait("Category", "maintenance")]
 [Collection(OnnxJudgeSerialCollection.Name)]
-public sealed class SentenceReplayGestureTests
+public sealed class SentenceReplayMaintenanceTests
 {
     private readonly ITestOutputHelper _out;
 
-    public SentenceReplayGestureTests(ITestOutputHelper output) => _out = output;
+    public SentenceReplayMaintenanceTests(ITestOutputHelper output) => _out = output;
 
     // The corpus lands either directly under telemetry/ or in its validation
     // subfolder, depending on the sink's configuration — take whichever exists.
@@ -31,7 +31,7 @@ public sealed class SentenceReplayGestureTests
         Path.Combine(AppPaths.TelemetryDirectory, "autocorrect.text.jsonl"),
     }.FirstOrDefault(File.Exists);
 
-    [Fact]
+    [Fact(Explicit = true)]
     public void CalibratesTheSentenceMarginOverTheCollectedCorpus()
     {
         string? corpusPath = FindCorpus();

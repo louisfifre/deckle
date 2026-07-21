@@ -10,6 +10,7 @@ namespace Deckle.Autocorrect.Tests;
 // noise or sensitive and never reach disk. Unknown-word classification rides on
 // the lexicon's own key space (lowercased + NFC), so case never leaks a known
 // word through as unknown.
+[Trait("Category", "unit")]
 public sealed class HarvestFilterTests
 {
     // A tiny French lexicon: two known forms, one accented.

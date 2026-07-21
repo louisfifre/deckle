@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Deckle.Install.Tests;
 
+[Trait("Category", "unit")]
 public sealed class ReleaseResolverTests
 {
     [Fact]

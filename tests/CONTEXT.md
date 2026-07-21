@@ -6,7 +6,7 @@ type: agent-instructions
 
 # Deckle tests — Context
 
-Vocabulary of the test taxonomy. Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Two categories are outside the automatic scope: they exist and are useful, but Louis executes them manually on an interactive workstation via the `verify` skill in the Claude harness.
+Vocabulary of the test taxonomy. Four categories fall within the automatic test scope, runnable by an agent or by Louis via `dotnet test` without human interaction. Three categories are outside the automatic scope: they exist and are useful, but require an explicit maintainer action or an interactive workstation.
 
 ## In the automatic scope
 
@@ -31,6 +31,10 @@ Test that exercises a heavy native runtime in a realistic condition — loading 
 
 **interactive** :
 Test that requires an interactive Windows workstation and a human or a fake human capable of presenting real conditions to the system — a real mic that picks up sound, a global hotkey that does not conflict with another app, a UIAutomation target window to validate the paste, a physical display for DXGI Output Duplication. Not automatable by an agent; Louis validates it manually via the `verify` skill in the Claude harness.
+
+**maintenance** :
+Explicit maintainer operation hosted by the test runner because it composes existing library modules and benefits from assertions — regenerate a derived lexicon, mine a collected corpus, refresh a calibrated artifact. It may read local maintainer data or write versioned/runtime artifacts, so it MUST use xUnit's `Explicit` flag and never run during an ordinary `dotnet test`. Run it deliberately from Test Explorer or with explicit tests enabled and a narrow method filter.
+_Avoid_ : gesture, tool test.
 
 ## Key distinction between integration and system
 

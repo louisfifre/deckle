@@ -13,12 +13,12 @@ namespace Deckle.Autocorrect.Tests;
 // automatic) and the JSON the routing wiring will consume once reviewed. Wires
 // the REAL lexicons like the replay gesture; read-only over the corpus, no
 // model, seconds. A silent skip when corpus or lexicon is absent.
-[Trait("Category", "gesture")]
-public sealed class MistouchMiningGestureTests
+[Trait("Category", "maintenance")]
+public sealed class MistouchMiningMaintenanceTests
 {
     private readonly ITestOutputHelper _out;
 
-    public MistouchMiningGestureTests(ITestOutputHelper output) => _out = output;
+    public MistouchMiningMaintenanceTests(ITestOutputHelper output) => _out = output;
 
     private static string? FindCorpus() => new[]
     {
@@ -26,7 +26,7 @@ public sealed class MistouchMiningGestureTests
         Path.Combine(AppPaths.TelemetryDirectory, "autocorrect.text.jsonl"),
     }.FirstOrDefault(File.Exists);
 
-    [Fact]
+    [Fact(Explicit = true)]
     public void MinesMistouchFamiliesOverTheCollectedCorpus()
     {
         string? corpusPath = FindCorpus();

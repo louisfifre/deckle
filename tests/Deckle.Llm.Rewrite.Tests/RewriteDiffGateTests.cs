@@ -7,6 +7,7 @@ namespace Deckle.Llm.Rewrite.Tests;
 // monotone order, all-or-nothing. The framing examples of 2026-07-19 are
 // pinned as-is ("samarreter" passes, "voiture" → "véhicule" blocks) — they
 // are the contract, not an illustration of it.
+[Trait("Category", "unit")]
 public class RewriteDiffGateTests
 {
     // ── Identity and pure form repairs ──────────────────────────────────

@@ -1428,7 +1428,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
-│   │   ├── BuildDataGestureTests.cs
+│   │   ├── BuildDataMaintenanceTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs
@@ -1450,7 +1450,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MistouchFamilyCorrectorTests.cs
 │   │   ├── MistouchFamilyStoreTests.cs
 │   │   ├── MistouchMinerTests.cs
-│   │   ├── MistouchMiningGestureTests.cs
+│   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
 │   │   ├── OnnxJudgeSerialCollection.cs
 │   │   ├── OnnxSentenceScorerTests.cs
@@ -1461,10 +1461,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
-│   │   ├── SentenceReplayGestureTests.cs
+│   │   ├── SentenceReplayMaintenanceTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
-│   │   ├── SurfaceProfileGestureTests.cs
+│   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TruthOverlayTests.cs

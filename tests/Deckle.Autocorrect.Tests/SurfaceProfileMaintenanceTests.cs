@@ -12,12 +12,12 @@ namespace Deckle.Autocorrect.Tests;
 // module root — qualified surfaces only, measured, never edited by hand).
 // Read-only over the corpus, no model, seconds — a silent skip when no corpus
 // is collected yet (CI, a fresh clone).
-[Trait("Category", "gesture")]
-public sealed class SurfaceProfileGestureTests
+[Trait("Category", "maintenance")]
+public sealed class SurfaceProfileMaintenanceTests
 {
     private readonly ITestOutputHelper _out;
 
-    public SurfaceProfileGestureTests(ITestOutputHelper output) => _out = output;
+    public SurfaceProfileMaintenanceTests(ITestOutputHelper output) => _out = output;
 
     // The corpus lands either directly under telemetry/ or in its validation
     // subfolder, depending on the sink's configuration — take whichever exists.
@@ -27,7 +27,7 @@ public sealed class SurfaceProfileGestureTests
         Path.Combine(AppPaths.TelemetryDirectory, "autocorrect.text.jsonl"),
     }.FirstOrDefault(File.Exists);
 
-    [Fact]
+    [Fact(Explicit = true)]
     public void VentilatesTheCollectedCorpusIntoSurfaceProfiles()
     {
         string? corpusPath = FindCorpus();

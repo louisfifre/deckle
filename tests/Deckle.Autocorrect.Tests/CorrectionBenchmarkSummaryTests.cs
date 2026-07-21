@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
+[Trait("Category", "unit")]
 public sealed class CorrectionBenchmarkSummaryTests
 {
     [Fact]
