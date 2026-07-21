@@ -20,6 +20,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype-mcp:** Expose guarded Home surface
 - **anytype:** Support type icons in schema manifests
 - **scripts:** Add context footprint inspection
+- **scripts:** Track context document drift
 
 ### Changed
 
