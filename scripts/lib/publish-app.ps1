@@ -58,6 +58,7 @@ $ScriptDir = $PSScriptRoot                                  # scripts/lib/
 . (Join-Path $ScriptDir 'deckle-process.ps1')
 Import-Module (Join-Path $ScriptDir 'release-history.psm1') -Force
 Import-Module (Join-Path $ScriptDir 'release-validation.psm1') -Force
+Import-Module (Join-Path $ScriptDir 'native-runtime-release.psm1') -Force
 
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
@@ -150,6 +151,26 @@ if ($Publish) {
         throw "GitHub repository preflight failed for $OwnerRepo"
     }
     Ok "GitHub access verified for $OwnerRepo"
+
+    # The app payload deliberately excludes whisper.cpp. Prove the separately
+    # versioned bundle is publicly downloadable and byte-for-byte identical to
+    # the metadata compiled into Deckle before releasing an installer that
+    # depends on it during first run.
+    Step 'Verify native runtime release'
+    $nativeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
+    $nativeBundle = Get-DeckleNativeRuntimeBundle -SourcePath $nativeSource
+    $nativeDownload = Join-Path ([IO.Path]::GetTempPath()) "deckle-native-preflight-$([guid]::NewGuid()).zip"
+    try {
+        Invoke-WebRequest -Uri $nativeBundle.Url -OutFile $nativeDownload
+        $verifiedNative = Assert-DeckleNativeRuntimeArtifact `
+            -Bundle $nativeBundle `
+            -ArtifactPath $nativeDownload
+        Ok "native-v$($verifiedNative.Version) available and verified ($($verifiedNative.SizeBytes) bytes)"
+    } finally {
+        if (Test-Path -LiteralPath $nativeDownload) {
+            Remove-Item -LiteralPath $nativeDownload -Force
+        }
+    }
 }
 
 # ── Output layout ────────────────────────────────────────────────────────────

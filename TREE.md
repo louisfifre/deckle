@@ -246,6 +246,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── fetch-autocorrect-data.ps1
 │   │   ├── install-hooks.ps1
 │   │   ├── launch-app.ps1
+│   │   ├── native-runtime-release.psm1
+│   │   ├── native-runtime-release.tests.ps1
 │   │   ├── publish-app.ps1
 │   │   ├── publish-native-runtime.ps1
 │   │   ├── record-release.ps1
@@ -1579,6 +1581,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── KnownHallucinationsTests.cs
+│   │   ├── NativeRuntimeTests.cs
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   └── SpeechModelResolverTests.cs

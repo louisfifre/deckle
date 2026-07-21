@@ -13,7 +13,7 @@
 #
 # Sources:
 #   - whisper DLLs : <WhisperRepo>\build\bin\ (cmake -DGGML_VULKAN=ON)
-#   - MinGW DLLs   : <scoop>\apps\mingw\current\bin\
+#   - MinGW DLLs   : beside the C++ compiler recorded in CMakeCache.txt
 #
 # Keep this script aligned with the native runtime bundle metadata in code.
 
@@ -98,10 +98,25 @@ if (-not (Test-Path $WhisperBin)) {
     throw "whisper.cpp build output not found: $WhisperBin (cmake --build build needed first)"
 }
 
-$ScoopRoot  = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE 'scoop' }
-$ScoopMingw = Join-Path $ScoopRoot 'apps\mingw\current\bin'
-if (-not (Test-Path $ScoopMingw)) {
-    throw "MinGW Scoop install not found: $ScoopMingw (run: scoop install mingw)"
+$CMakeCache = Join-Path $WhisperRepo 'build\CMakeCache.txt'
+if (-not (Test-Path $CMakeCache)) {
+    throw "whisper.cpp CMake cache not found: $CMakeCache"
+}
+$compilerMatch = Select-String -Path $CMakeCache `
+    -Pattern '^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=(.+)$' |
+    Select-Object -First 1
+if (-not $compilerMatch) {
+    throw "CMAKE_CXX_COMPILER not found in $CMakeCache"
+}
+$CxxExe = $compilerMatch.Matches[0].Groups[1].Value.Trim()
+if (-not (Test-Path -LiteralPath $CxxExe -PathType Leaf)) {
+    throw "C++ compiler recorded by whisper.cpp no longer exists: $CxxExe"
+}
+$MingwBin = Split-Path -Parent $CxxExe
+foreach ($name in $MingwDlls) {
+    if (-not (Test-Path -LiteralPath (Join-Path $MingwBin $name) -PathType Leaf)) {
+        throw "MinGW runtime paired with the whisper.cpp build is missing: $(Join-Path $MingwBin $name)"
+    }
 }
 
 if (-not $OutDir) {
@@ -135,7 +150,7 @@ function Stage-Dll($srcDir, $name) {
 }
 
 foreach ($n in $WhisperDlls) { Stage-Dll $WhisperBin  $n }
-foreach ($n in $MingwDlls)   { Stage-Dll $ScoopMingw $n }
+foreach ($n in $MingwDlls)   { Stage-Dll $MingwBin $n }
 
 # ── Gather provenance metadata ───────────────────────────────────────────────
 
@@ -156,11 +171,10 @@ if (Test-Path (Join-Path $WhisperRepo '.git')) {
     if ($LASTEXITCODE -eq 0 -and $rev) { $WhisperCommit = $rev.Trim() }
 }
 
-# Compiler — call cc.exe --version, take first line.
-$CcExe = Join-Path $ScoopMingw 'cc.exe'
+# Compiler — query the exact executable CMake used for this build.
 $CompilerLine = 'unknown'
-if (Test-Path $CcExe) {
-    $line = (& $CcExe --version 2>$null | Select-Object -First 1)
+if (Test-Path $CxxExe) {
+    $line = (& $CxxExe --version 2>$null | Select-Object -First 1)
     if ($line) { $CompilerLine = $line }
 }
 
@@ -190,7 +204,6 @@ $ninjaOut = (& ninja --version 2>$null)
 if ($ninjaOut) { $NinjaLine = $ninjaOut.Trim() }
 
 # Build flags from CMakeCache
-$CMakeCache = Join-Path $WhisperRepo 'build\CMakeCache.txt'
 $VulkanFlags = @()
 if (Test-Path $CMakeCache) {
     $VulkanFlags = (Select-String -Path $CMakeCache -Pattern '^GGML_VULKAN[A-Z_]*:BOOL=' |
@@ -223,6 +236,7 @@ commit         : $WhisperCommit
 Toolchain
 ---------
 Compiler       : $CompilerLine
+Runtime DLLs   : $MingwBin
 Vulkan SDK     : $VulkanSdk
 CMake          : $CMakeLine
 Generator      : Ninja $NinjaLine
