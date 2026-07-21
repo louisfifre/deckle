@@ -19,6 +19,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **home:** Add guarded Anytype inventory domain
 - **anytype-mcp:** Expose guarded Home surface
 
+### Changed
+
+- **mcp:** Isolate custom surfaces
+
 ### Fixed
 
 - **setup:** Make native runtime installation releasable
