@@ -725,6 +725,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TelemetryListenerBootstrap.cs
 │   │   ├── TelemetrySettings.cs
 │   │   └── TelemetrySettingsService.cs
+│   ├── Deckle.Home/
+│   │   ├── AGENTS.md  — [agent-instructions] Home inventory domain — public nomenclature, live Anytype room registry, guarde…
+│   │   ├── CONTEXT.md  — [agent-instructions] Home inventory vocabulary — the public norm, personal room registry, element co…
+│   │   ├── Deckle.Home.csproj
+│   │   ├── DeckleHomeSource.cs
+│   │   ├── HomeCode.cs
+│   │   ├── HomeCollectionWriter.cs
+│   │   ├── HomeGestures.cs
+│   │   ├── HomeObjects.cs
+│   │   ├── HomePropertyWriter.cs
+│   │   ├── HomeRequests.cs
+│   │   ├── HomeRuntimeProvider.cs
+│   │   ├── HomeSchema.cs
+│   │   ├── HomeSchemaRuntime.cs
+│   │   └── JOURNAL.md  — [journal] Durable findings and frozen decisions for the Home inventory domain.
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
 │   │   │   ├── AGENTS.md
@@ -1487,6 +1502,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatterTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   └── OperationalLogAdmissionTests.cs
+│   ├── Deckle.Home.Tests/
+│   │   ├── Deckle.Home.Tests.csproj
+│   │   ├── FakeHomeAnytypeServer.cs
+│   │   ├── HomeCodeTests.cs
+│   │   └── HomeGesturesTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj

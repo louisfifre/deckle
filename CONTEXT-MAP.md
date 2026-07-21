@@ -20,6 +20,7 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 - [Autocorrect](src/Deckle.Autocorrect/CONTEXT.md) — correctable surfaces, the two stages, datasets, learning
 - [Llm.Rewrite](src/Deckle.Llm.Rewrite/CONTEXT.md) — the rewrite service
 - [Anytype](src/Deckle.Anytype/CONTEXT.md) — backend / host / surfaces, bot vs token, Home types (covers `.Mcp`)
+- [Home](src/Deckle.Home/CONTEXT.md) — public home-inventory norm vs personal room registry and inventory
 - [Hud Chrono](src/Deckle.Hud/Chrono/CONTEXT.md) — the chrono face elements and their states
 
 ## Relationships
@@ -29,3 +30,4 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 - **Input → Input.Trackpad**: Input assembles contact frames; the Trackpad recognizer consumes them into gesture intentions
 - **Autocorrect ↔ Llm.Rewrite**: both sit on the system-wide Correction / Rewrite boundary — Autocorrect owns bounded corrections, the rewrite service carries every free regeneration (including the sentence stage's escalations)
 - **Diagnostics → everything**: the observability vocabulary governs every module's log stream; the `observability` test category (Tests) exercises it
+- **Home → Anytype**: Home owns the inventory language and guards; Anytype provides the local storage and schema coordinates
