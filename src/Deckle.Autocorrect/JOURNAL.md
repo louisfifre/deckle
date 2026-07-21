@@ -147,6 +147,10 @@ Observation: each sentence slot records its ordered history — first-typed form
 
 Engine: the internal ONNX runtime enters this chantier as its final phase — a small judge model auditioned ONNX-local (Luth/Qwen3 0.6–1.7B class, logprobs over bounded candidates, onnxruntime-genai C#); Ollama serves during construction and remains a pluggable option afterwards. The personal LoRA over typed→corrected pairs is the next chantier; its corpus is already accumulating. Dormant artifacts (verbs-fr.tsv.gz, the Morphalou overlay call) regenerate through the maintainer's build-data gesture.
 
+## 2026-07-21 — UIA caret ranges cross editor boundaries
+
+Live probes in Codex and Anytype found a caret through TextPattern, but extending its degenerate range to the left returned at least 512 characters across the surrounding document rather than stopping at the composer or block boundary. Chose not to use that range to restore sentence context after pointer or navigation invalidation.
+
 ## 2026-07-02 — Globish seed source chosen
 
 Chose FranceTerme-only for the cold-start globish seed: `lexicon-en-globish.tsv.gz` is generated from `Equivalent langue="en"` in `FranceTerme.xml`, with common function words and French exact/accent-fold/one-edit collisions filtered out. SUBTLEX derivatives and wordfreq stay out of the shipped artifact until their licence/propagation questions are explicitly accepted.
