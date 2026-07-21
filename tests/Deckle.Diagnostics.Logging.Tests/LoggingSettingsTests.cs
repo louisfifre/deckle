@@ -14,12 +14,14 @@ public sealed class LoggingSettingsTests
     };
 
     [Fact]
+    [Trait("Category", "unit")]
     public void InputActivityDefaultsToOff()
     {
         Assert.False(new LoggingSettings().LogInputActivity);
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void InputActivityRoundTripsThroughTheSettingsStore()
     {
         string path = Path.Combine(

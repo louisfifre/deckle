@@ -6,6 +6,7 @@ namespace Deckle.Autocorrect.Tests;
 // The harvest's aggregation: a repeated signal collapses onto one entry whose
 // count grows and whose last-seen advances, while distinct signals stay apart.
 // Time is passed in, so the behaviour is asserted exactly, not observed.
+[Trait("Category", "unit")]
 public sealed class HarvestDataTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 6, 13, 12, 0, 0, TimeSpan.Zero);

@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
+[Trait("Category", "unit")]
 public sealed class AnimationGateTests
 {
     [Fact]

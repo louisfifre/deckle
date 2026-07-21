@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Logging.Tests;
 
+[Trait("Category", "unit")]
 public sealed class LogTransferTests
 {
     private static readonly string[] Entries = ["one", "two", "three"];

@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;
@@ -179,6 +180,7 @@ internal sealed class FakeAnytypeServer : IDisposable
     // Fixed space id so the path prefix is deterministic in assertions.
     public const string Space = "test-space";
 
+    readonly LoopbackHttpListenerLease _listenerLease;
     readonly HttpListener _listener;
     readonly string _prefix;
     readonly List<Route> _routes = new();
@@ -191,11 +193,9 @@ internal sealed class FakeAnytypeServer : IDisposable
 
     public FakeAnytypeServer()
     {
-        int port = FreePort();
-        _prefix = $"http://localhost:{port}/";
-        _listener = new HttpListener();
-        _listener.Prefixes.Add(_prefix);
-        _listener.Start();
+        _listenerLease = LoopbackHttpListenerLease.Start();
+        _prefix = _listenerLease.Prefix;
+        _listener = _listenerLease.Listener;
         _loop = Task.Run(ServeAsync);
     }
 
@@ -311,19 +311,9 @@ internal sealed class FakeAnytypeServer : IDisposable
         return matches[Math.Min(hit - 1, matches.Length - 1)];
     }
 
-    static int FreePort()
-    {
-        var l = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-        l.Start();
-        int port = ((IPEndPoint)l.LocalEndpoint).Port;
-        l.Stop();
-        return port;
-    }
-
     public void Dispose()
     {
-        _listener.Stop();
-        _listener.Close();
+        _listenerLease.Dispose();
         try { _loop.Wait(TimeSpan.FromSeconds(2)); } catch { }
     }
 }

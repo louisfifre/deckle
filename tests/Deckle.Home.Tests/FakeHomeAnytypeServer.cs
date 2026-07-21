@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
 using Deckle.Home;
+using Deckle.TestSupport;
 
 namespace Deckle.Home.Tests;
 
@@ -12,6 +13,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     public const string HomeSpace = "home-test-space";
     private const string DevSpace = "dev-test-space";
 
+    private readonly LoopbackHttpListenerLease _listenerLease;
     private readonly HttpListener _listener;
     private readonly string _prefix;
     private readonly Task _loop;
@@ -24,11 +26,9 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
 
     public FakeHomeAnytypeServer()
     {
-        int port = FreePort();
-        _prefix = $"http://127.0.0.1:{port}/";
-        _listener = new HttpListener();
-        _listener.Prefixes.Add(_prefix);
-        _listener.Start();
+        _listenerLease = LoopbackHttpListenerLease.Start();
+        _prefix = _listenerLease.Prefix;
+        _listener = _listenerLease.Listener;
         _loop = Task.Run(ServeAsync);
     }
 
@@ -252,19 +252,9 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         ["pagination"] = new JsonObject { ["has_more"] = false },
     };
 
-    private static int FreePort()
-    {
-        var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
-    }
-
     public void Dispose()
     {
-        _listener.Stop();
-        _listener.Close();
+        _listenerLease.Dispose();
         try { _loop.Wait(TimeSpan.FromSeconds(2)); } catch { }
     }
 }

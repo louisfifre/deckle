@@ -4,13 +4,13 @@ using Xunit;
 
 namespace Deckle.Transcription.Whisper.Tests;
 
-[Trait("Category", "component")]
 public sealed class NativeRuntimeTests : IDisposable
 {
     private readonly string _nativeDirectory = Path.Combine(
         Path.GetTempPath(), $"deckle-native-{Guid.NewGuid():N}");
 
     [Fact]
+    [Trait("Category", "integration")]
     public void CompleteCatalogIsRequiredForAnInstalledRuntime()
     {
         Directory.CreateDirectory(_nativeDirectory);
@@ -32,6 +32,7 @@ public sealed class NativeRuntimeTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void WhisperV191InteropLayoutsMatchTheNativeAbi()
     {
         Assert.Equal(48, Marshal.SizeOf<WhisperContextParams>());

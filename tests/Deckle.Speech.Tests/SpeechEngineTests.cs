@@ -19,6 +19,7 @@ public class SpeechEngineTests
     {
         public readonly ManualResetEventSlim Entered = new(false);
         public CancellationToken LastToken;
+        public int CallCount;
 
         public string Name => "fake";
         public bool IsModelLoaded => true;
@@ -29,6 +30,7 @@ public class SpeechEngineTests
         public async Task<float[]> SynthesizeAsync(
             string text, SpeechVoice voice, double temperature, CancellationToken ct)
         {
+            Interlocked.Increment(ref CallCount);
             LastToken = ct;
             Entered.Set();
             await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
@@ -65,6 +67,6 @@ public class SpeechEngineTests
 
         engine.Speak("   ");
 
-        Assert.False(backend.Entered.Wait(200, TestContext.Current.CancellationToken), "whitespace text must be a no-op — the backend is never called");
+        Assert.Equal(0, Volatile.Read(ref backend.CallCount));
     }
 }

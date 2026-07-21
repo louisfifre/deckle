@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
+[Trait("Category", "unit")]
 public sealed class LogLineFormatterTests
 {
     [Fact]

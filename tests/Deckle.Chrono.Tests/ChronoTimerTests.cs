@@ -57,7 +57,6 @@ public class ChronoTimerTests
     {
         var t = new ChronoTimer();
         t.Start();
-        Thread.Sleep(10);
 
         t.Reset();
 

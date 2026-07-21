@@ -4,6 +4,7 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Logging.Tests;
 
+[Trait("Category", "unit")]
 public sealed class RangeObservableCollectionTests
 {
     [Fact]

@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Deckle.Transcription.Whisper.Tests;
 
-[Trait("Category", "component")]
+[Trait("Category", "integration")]
 public sealed class SpeechModelFilesTests
 {
     [Fact]

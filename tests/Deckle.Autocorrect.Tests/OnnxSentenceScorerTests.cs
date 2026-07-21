@@ -11,6 +11,7 @@ namespace Deckle.Autocorrect.Tests;
 public sealed class OnnxSentenceScorerTests
 {
     [Fact]
+    [Trait("Category", "integration")]
     public void TryLoadReturnsNullWhenDirectoryIsMissing()
     {
         string missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -21,6 +22,7 @@ public sealed class OnnxSentenceScorerTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void TryLoadReportsWhyAPresentModelCannotLoad()
     {
         string invalid = Directory.CreateTempSubdirectory().FullName;
@@ -37,6 +39,7 @@ public sealed class OnnxSentenceScorerTests
     }
 
     [Fact]
+    [Trait("Category", "system")]
     public void ModelLoadsWhenStaged()
     {
         if (!RunIntegrationTests())
@@ -58,6 +61,7 @@ public sealed class OnnxSentenceScorerTests
     }
 
     [Fact]
+    [Trait("Category", "system")]
     public void ScoresClosedCandidatesWhenModelIsStaged()
     {
         if (!RunIntegrationTests())

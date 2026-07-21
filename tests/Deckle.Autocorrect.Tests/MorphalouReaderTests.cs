@@ -7,6 +7,7 @@ namespace Deckle.Autocorrect.Tests;
 // The Morphalou CSV reader must read the INFLECTED form (the second GRAPHIE
 // column), not the lemma (the first), and find that column past a preamble of
 // arbitrary length — without hard-coding an index.
+[Trait("Category", "unit")]
 public sealed class MorphalouReaderTests
 {
     // Mirrors the real file shape: free-text preamble, a group line, the column

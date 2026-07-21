@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
+[Trait("Category", "unit")]
 public sealed class ParagraphRewriteCoordinatorTests
 {
     [Fact]

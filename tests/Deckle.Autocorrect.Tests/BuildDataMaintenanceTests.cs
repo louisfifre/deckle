@@ -12,16 +12,16 @@ namespace Deckle.Autocorrect.Tests;
 // globish seed) from the raw sources fetched by scripts/lib/fetch-autocorrect-data.ps1,
 // then self-certifies the globish seed.
 //
-// It SKIPS unless the raw sources are present, so an ordinary test run never
-// touches the repo. Run it deliberately after a fetch:
-//   dotnet test --filter "FullyQualifiedName~RegenerateLexicons"
+// It is explicit and also skips unless the raw sources are present, so an ordinary
+// test run never touches the repo. Run it deliberately after a fetch, with explicit
+// tests enabled and a narrow method filter.
 // LexiconBuilder is byte-deterministic, so a run over unchanged sources leaves the
 // artifacts identical — `git diff` then shows exactly what a source update changed.
 // The Morphalou overlay stays opt-in and out of this default gesture.
-[Trait("Category", "gesture")]
-public sealed class BuildDataGestureTests
+[Trait("Category", "maintenance")]
+public sealed class BuildDataMaintenanceTests
 {
-    [Fact]
+    [Fact(Explicit = true)]
     public void RegenerateLexicons()
     {
         string repo = FindRepoRoot();

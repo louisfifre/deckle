@@ -3,12 +3,12 @@ using Xunit;
 
 namespace Deckle.Setup.Tests;
 
-[Trait("Category", "component")]
 public sealed class DataRootTreeTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"deckle-relocate-{Guid.NewGuid():N}");
 
     [Fact]
+    [Trait("Category", "integration")]
     public void CopiesARepresentativeTreeAndShedsOnlyDiagnosticsFailures()
     {
         string source = Path.Combine(_root, "source");
@@ -35,6 +35,7 @@ public sealed class DataRootTreeTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void RequiredFileFailureStopsTheCopy()
     {
         string source = Path.Combine(_root, "source");
@@ -49,6 +50,7 @@ public sealed class DataRootTreeTests : IDisposable
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData(@"diagnostics\app.jsonl", true)]
     [InlineData(@"Diagnostics\live\app.jsonl", true)]
     [InlineData(@"models\diagnostics.bin", false)]
@@ -59,6 +61,7 @@ public sealed class DataRootTreeTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void RollbackRemovesOwnedArtifactsButSparesConcurrentContent()
     {
         string source = Path.Combine(_root, "source");

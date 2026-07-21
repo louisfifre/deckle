@@ -36,8 +36,8 @@ public class SpaceWriteLockTests : IDisposable
 
         Task<IDisposable> second = sut.AcquireAsync("update", "obj-1", Ct);
 
-        // The second acquisition must not complete while the first is held.
-        await Task.Delay(150, Ct);
+        // AcquireAsync attempts the exclusive open before its first await. Reaching
+        // this line means contention has already sent it into the retry path.
         Assert.False(second.IsCompleted);
 
         first.Dispose();
