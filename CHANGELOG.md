@@ -15,6 +15,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **rewrite:** Surface gated paragraph correction offers
 - **anytype:** Add optional search context
+- **anytype:** Expose cross-space schema and collection APIs
+- **home:** Add guarded Anytype inventory domain
+- **anytype-mcp:** Expose guarded Home surface
 
 ### Fixed
 
