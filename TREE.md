@@ -228,6 +228,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── launcher/
 │   │   │   ├── actions.ps1
 │   │   │   ├── context.ps1
+│   │   │   ├── menu-layout.ps1
+│   │   │   ├── menu-layout.tests.ps1
 │   │   │   └── menus.ps1
 │   │   ├── menu/
 │   │   │   ├── chrome.ps1
@@ -241,9 +243,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── build-server-cleanup.ps1
 │   │   ├── changelog.ps1
 │   │   ├── clean.ps1
+│   │   ├── context-inventory.psm1
+│   │   ├── context-inventory.tests.ps1
 │   │   ├── cut-version.ps1
 │   │   ├── deckle-process.ps1
 │   │   ├── fetch-autocorrect-data.ps1
+│   │   ├── inspect-context.ps1
 │   │   ├── install-hooks.ps1
 │   │   ├── launch-app.ps1
 │   │   ├── native-runtime-release.psm1
