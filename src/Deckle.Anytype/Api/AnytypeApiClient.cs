@@ -70,9 +70,17 @@ public sealed partial class AnytypeApiClient : IDisposable
 
     // GET object → returns the inner "object" node (the API wraps it as
     // {object:{…}}).
-    public async Task<JsonObject> GetObjectAsync(string id, CancellationToken ct = default)
+    public Task<JsonObject> GetObjectAsync(string id, CancellationToken ct = default) =>
+        GetObjectAsync(SpaceId, id, ct);
+
+    public async Task<JsonObject> GetObjectAsync(
+        string spaceId, string id, CancellationToken ct = default)
     {
-        JsonObject root = await SendAsync(HttpMethod.Get, $"{_spacePath}/objects/{id}", null, ct)
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        JsonObject root = await SendAsync(
+                HttpMethod.Get, $"{SpacePath(spaceId)}/objects/{id}", null, ct)
             .ConfigureAwait(false);
         return Inner(root, "object");
     }
@@ -80,12 +88,22 @@ public sealed partial class AnytypeApiClient : IDisposable
     // POST search → returns the root node ({data, pagination}). typeKeys null
     // → no type filter. sort by last-modified desc is the API default; the
     // gestures pass an explicit sort when they need another order.
+    public Task<JsonObject> SearchAsync(
+        string query,
+        IReadOnlyList<string>? typeKeys = null,
+        int limit = 20,
+        CancellationToken ct = default) =>
+        SearchAsync(SpaceId, query, typeKeys, limit, ct);
+
     public async Task<JsonObject> SearchAsync(
+        string spaceId,
         string query,
         IReadOnlyList<string>? typeKeys = null,
         int limit = 20,
         CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+
         var body = new JsonObject
         {
             ["query"] = query,
@@ -98,25 +116,58 @@ public sealed partial class AnytypeApiClient : IDisposable
             body["types"] = arr;
         }
 
-        return await SendAsync(HttpMethod.Post, $"{_spacePath}/search", body, ct).ConfigureAwait(false);
+        return await SendAsync(
+                HttpMethod.Post, $"{SpacePath(spaceId)}/search", body, ct)
+            .ConfigureAwait(false);
+    }
+
+    // GET all objects for one space page. Home uses this exhaustive path for
+    // room-registry and code-uniqueness checks: free-text search is deliberately
+    // not treated as an inventory index.
+    public async Task<JsonObject> ListObjectsAsync(
+        string spaceId,
+        int offset = 0,
+        int limit = 1000,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+        if (limit is < 1 or > 1000) throw new ArgumentOutOfRangeException(nameof(limit));
+
+        string path = $"{SpacePath(spaceId)}/objects?offset={offset}&limit={limit}";
+        return await SendAsync(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
     }
 
     // POST object → returns the inner "object" node. payload carries type_key
     // plus name/body/properties per the vendor wire shape (createObject).
-    public async Task<JsonObject> CreateObjectAsync(JsonObject payload, CancellationToken ct = default)
+    public Task<JsonObject> CreateObjectAsync(JsonObject payload, CancellationToken ct = default) =>
+        CreateObjectAsync(SpaceId, payload, ct);
+
+    public async Task<JsonObject> CreateObjectAsync(
+        string spaceId, JsonObject payload, CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         ArgumentNullException.ThrowIfNull(payload);
-        JsonObject root = await SendAsync(HttpMethod.Post, $"{_spacePath}/objects", payload, ct)
+        JsonObject root = await SendAsync(
+                HttpMethod.Post, $"{SpacePath(spaceId)}/objects", payload, ct)
             .ConfigureAwait(false);
         return Inner(root, "object");
     }
 
     // PATCH object → returns the inner "object" node. The markdown field is a
     // FULL REPLACEMENT of the body, never an append (API-level constraint).
-    public async Task<JsonObject> UpdateObjectAsync(string id, JsonObject payload, CancellationToken ct = default)
+    public Task<JsonObject> UpdateObjectAsync(
+        string id, JsonObject payload, CancellationToken ct = default) =>
+        UpdateObjectAsync(SpaceId, id, payload, ct);
+
+    public async Task<JsonObject> UpdateObjectAsync(
+        string spaceId, string id, JsonObject payload, CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(payload);
-        JsonObject root = await SendAsync(HttpMethod.Patch, $"{_spacePath}/objects/{id}", payload, ct)
+        JsonObject root = await SendAsync(
+                HttpMethod.Patch, $"{SpacePath(spaceId)}/objects/{id}", payload, ct)
             .ConfigureAwait(false);
         return Inner(root, "object");
     }
@@ -125,10 +176,16 @@ public sealed partial class AnytypeApiClient : IDisposable
     // NOT a hard delete (verified 2026-06-12, see JOURNAL). Returns the inner
     // "object" node when the API echoes the archived object, and tolerates an
     // empty body by returning the bare root.
-    public async Task<JsonObject> DeleteObjectAsync(string id, CancellationToken ct = default)
+    public Task<JsonObject> DeleteObjectAsync(string id, CancellationToken ct = default) =>
+        DeleteObjectAsync(SpaceId, id, ct);
+
+    public async Task<JsonObject> DeleteObjectAsync(
+        string spaceId, string id, CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        JsonObject root = await SendAsync(HttpMethod.Delete, $"{_spacePath}/objects/{id}", null, ct)
+        JsonObject root = await SendAsync(
+                HttpMethod.Delete, $"{SpacePath(spaceId)}/objects/{id}", null, ct)
             .ConfigureAwait(false);
         return root["object"] as JsonObject ?? root;
     }
@@ -159,18 +216,57 @@ public sealed partial class AnytypeApiClient : IDisposable
     // POST list members. A collection IS a list: members are added through
     // /lists/{id}/objects with body {objects:[ids]} (vendor addToCollection).
     // The success body is a bare JSON string, not an object — skip parsing it.
+    public Task AddToCollectionAsync(
+        string collectionId,
+        IReadOnlyList<string> objectIds,
+        CancellationToken ct = default) =>
+        AddToCollectionAsync(SpaceId, collectionId, objectIds, ct);
+
     public async Task AddToCollectionAsync(
+        string spaceId,
         string collectionId,
         IReadOnlyList<string> objectIds,
         CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(collectionId);
         ArgumentNullException.ThrowIfNull(objectIds);
+        if (objectIds.Count == 0)
+            throw new ArgumentException("At least one object id is required.", nameof(objectIds));
 
         var arr = new JsonArray();
-        foreach (string oid in objectIds) arr.Add(oid);
+        foreach (string objectId in objectIds)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(objectId);
+            arr.Add(objectId);
+        }
         var body = new JsonObject { ["objects"] = arr };
 
-        await SendAsync(HttpMethod.Post, $"{_spacePath}/lists/{collectionId}/objects", body, ct,
+        await SendAsync(
+            HttpMethod.Post,
+            $"{SpacePath(spaceId)}/lists/{collectionId}/objects",
+            body,
+            ct,
+            parseBody: false).ConfigureAwait(false);
+    }
+
+    // DELETE one list member without touching the object itself. Collection
+    // membership is provider structure, separate from an objects relation.
+    public async Task RemoveFromCollectionAsync(
+        string spaceId,
+        string collectionId,
+        string objectId,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(collectionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(objectId);
+
+        await SendAsync(
+            HttpMethod.Delete,
+            $"{SpacePath(spaceId)}/lists/{collectionId}/objects/{objectId}",
+            null,
+            ct,
             parseBody: false).ConfigureAwait(false);
     }
 

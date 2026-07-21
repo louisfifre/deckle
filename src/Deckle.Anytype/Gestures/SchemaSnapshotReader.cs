@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace Deckle.Anytype;
 
-internal sealed class SchemaSnapshotReader(AnytypeApiClient api)
+public sealed class SchemaSnapshotReader(AnytypeApiClient api)
 {
     private const int PageLimit = 100;
     private readonly AnytypeApiClient _api = api;
@@ -10,16 +10,33 @@ internal sealed class SchemaSnapshotReader(AnytypeApiClient api)
     internal async Task<SchemaSnapshot> BuildAsync(
         string spaceId,
         SchemaManifest? manifest,
-        CancellationToken ct)
+        CancellationToken ct) =>
+        await ReadAsync(
+            spaceId,
+            manifest?.Properties
+                .Where(p => SchemaPlanner.IsTagFormat(p.Format))
+                .Select(p => p.Key)
+                .ToArray(),
+            ct).ConfigureAwait(false);
+
+    // Public provider boundary for domains backed by Anytype. Reads the complete
+    // type/property shape and, when requested, the live options of selected
+    // select properties. Callers name property keys, never Anytype ids.
+    public async Task<SchemaSnapshot> ReadAsync(
+        string spaceId,
+        IReadOnlyCollection<string>? tagPropertyKeys = null,
+        CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+
         Dictionary<string, SchemaTypeInfo> types = await ReadAllTypesAsync(spaceId, ct);
         Dictionary<string, SchemaPropertyInfo> properties = await ReadAllPropertiesAsync(spaceId, ct);
         var tagsByProperty = new Dictionary<string, IReadOnlyDictionary<string, SchemaTagInfo>>(StringComparer.Ordinal);
 
-        if (manifest is not null)
-            foreach (PropertySpec spec in manifest.Properties.Where(p => SchemaPlanner.IsTagFormat(p.Format)))
-                if (properties.TryGetValue(spec.Key, out SchemaPropertyInfo? property) && property.Id.Length > 0)
-                    tagsByProperty[spec.Key] = await ReadAllTagsAsync(spaceId, property.Id, ct);
+        if (tagPropertyKeys is not null)
+            foreach (string key in tagPropertyKeys.Distinct(StringComparer.Ordinal))
+                if (properties.TryGetValue(key, out SchemaPropertyInfo? property) && property.Id.Length > 0)
+                    tagsByProperty[key] = await ReadAllTagsAsync(spaceId, property.Id, ct);
 
         return new SchemaSnapshot(types, properties, tagsByProperty);
     }

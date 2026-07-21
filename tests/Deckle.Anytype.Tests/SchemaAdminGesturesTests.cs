@@ -238,6 +238,31 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewAcceptsCollectionLayoutSupportedByTheAnytypeApi()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        JsonObject manifest = new()
+        {
+            ["types"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["key"] = "niveau",
+                    ["name"] = "Niveau",
+                    ["layout"] = "collection",
+                },
+            },
+        };
+
+        string digest = await NewGestures(server).PreviewAsync("home", manifest, Ct);
+
+        Assert.Contains("create_type · niveau", digest);
+        Assert.DoesNotContain(server.Requests, request => request.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
     public async Task PreviewRejectsNonStringTypeLayoutBeforeReadingAnytype()
     {
         using var server = new FakeAnytypeServer();

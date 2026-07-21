@@ -56,7 +56,7 @@ internal sealed record TypeSpec(
     IReadOnlyList<string> Properties)
 {
     private static readonly HashSet<string> AllowedLayouts =
-        new(StringComparer.Ordinal) { "basic", "profile", "action", "note" };
+        new(StringComparer.Ordinal) { "basic", "profile", "action", "note", "collection" };
 
     public static TypeSpec Parse(JsonObject obj)
     {
