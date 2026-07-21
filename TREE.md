@@ -295,6 +295,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SchemaApiJson.cs
+│   │   │   ├── SchemaIcons.cs
 │   │   │   ├── SchemaManifest.cs
 │   │   │   ├── SchemaModels.cs
 │   │   │   ├── SchemaPlanner.cs
