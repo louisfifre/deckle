@@ -7,7 +7,8 @@ internal sealed record SchemaPreview(
     SchemaManifest Manifest,
     SchemaSnapshot Snapshot,
     IReadOnlyList<SchemaAction> Actions,
-    IReadOnlyList<string> Conflicts);
+    IReadOnlyList<string> Conflicts,
+    IReadOnlyList<string> SkippedConflicts);
 
 internal sealed record SchemaAction(string Kind, string Key, string Name);
 
@@ -22,7 +23,25 @@ public sealed record SchemaTypeInfo(
     string Name,
     string PluralName,
     string Layout,
+    SchemaTypeIconInfo? Icon,
     IReadOnlyList<SchemaPropertyLinkInfo> PropertyLinks);
+
+public sealed record SchemaTypeIconInfo(
+    string Format,
+    string? Name,
+    string? Color,
+    string? Emoji,
+    string? File)
+{
+    public string Display => Format switch
+    {
+        "icon" when Color is not null => $"icon:{Name}:{Color}",
+        "icon" => $"icon:{Name}",
+        "emoji" => $"emoji:{Emoji}",
+        "file" => $"file:{File}",
+        _ => Format,
+    };
+}
 
 public sealed record SchemaPropertyInfo(string Id, string Key, string Name, string Format);
 

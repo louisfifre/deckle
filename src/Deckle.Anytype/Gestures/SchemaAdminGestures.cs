@@ -20,7 +20,8 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         sb.Append("Espace ").Append(space).Append(" : ").Append(spaceId).Append('\n');
         sb.Append("Types : ").Append(snapshot.Types.Count).Append('\n');
         foreach (SchemaTypeInfo type in snapshot.Types.Values.OrderBy(t => t.Key, StringComparer.Ordinal))
-            sb.Append("- ").Append(type.Key).Append(" · ").Append(type.Name).Append(" · ").Append(type.Layout).Append('\n');
+            sb.Append("- ").Append(type.Key).Append(" · ").Append(type.Name).Append(" · ").Append(type.Layout)
+                .Append(" · ").Append(type.Icon?.Display ?? "icon:none").Append('\n');
 
         sb.Append("Propriétés : ").Append(snapshot.Properties.Count).Append('\n');
         foreach (SchemaPropertyInfo prop in snapshot.Properties.Values.OrderBy(p => p.Key, StringComparer.Ordinal))
@@ -77,6 +78,11 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
             p => p.Key, p => p.Value, StringComparer.Ordinal);
         var typesByKey = snapshot.Types.ToDictionary(
             t => t.Key, t => t.Value, StringComparer.Ordinal);
+        var setIconKeys = livePlan.Actions
+            .Where(action => action.Kind == "set_icon")
+            .Select(action => action.Key)
+            .ToHashSet(StringComparer.Ordinal);
+        var createdTypeKeys = new HashSet<string>(StringComparer.Ordinal);
 
         var applied = new List<string>();
 
@@ -150,46 +156,63 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 SchemaPlanner.OrDefault(SchemaApiJson.Str(createdObject, "name"), spec.Name),
                 SchemaPlanner.OrDefault(SchemaApiJson.Str(createdObject, "plural_name"), spec.PluralName),
                 SchemaPlanner.OrDefault(SchemaApiJson.Str(createdObject, "layout"), spec.Layout),
+                SchemaApiJson.TypeIcon(createdObject) ?? spec.Icon?.ToInfo(),
                 createdLinks.Count > 0 ? createdLinks : links);
+            createdTypeKeys.Add(spec.Key);
             applied.Add($"type créé {spec.Key}");
+            if (spec.Icon is not null)
+                applied.Add($"icône définie {spec.Key} · {spec.Icon.Display}");
         }
 
         foreach (TypeSpec type in preview.Manifest.Types)
         {
-            if (type.Properties.Count == 0) continue;
             if (!typesByKey.TryGetValue(type.Key, out SchemaTypeInfo? liveType) || liveType.Id.Length == 0)
                 throw new InvalidOperationException(
                     $"Impossible d'attacher les propriétés à « {type.Key} » : id de type introuvable.");
 
-            var links = SchemaPlanner.ResolveTypePropertyLinks(liveType, propertiesByKey).ToList();
-
-            bool changed = false;
-            foreach (string propKey in type.Properties)
+            var payload = new JsonObject();
+            bool propertiesChanged = false;
+            if (type.Properties.Count > 0)
             {
-                if (!propertiesByKey.TryGetValue(propKey, out SchemaPropertyInfo? property))
-                    throw new InvalidOperationException(
-                        $"Propriété « {propKey} » introuvable pour le type « {type.Key} ».");
-
-                if (!links.Any(link => SchemaPlanner.LinkMatches(link, property)))
+                var links = SchemaPlanner.ResolveTypePropertyLinks(liveType, propertiesByKey).ToList();
+                foreach (string propKey in type.Properties)
                 {
-                    links.Add(SchemaPlanner.LinkFrom(property));
-                    changed = true;
+                    if (!propertiesByKey.TryGetValue(propKey, out SchemaPropertyInfo? property))
+                        throw new InvalidOperationException(
+                            $"Propriété « {propKey} » introuvable pour le type « {type.Key} ».");
+
+                    if (!links.Any(link => SchemaPlanner.LinkMatches(link, property)))
+                    {
+                        links.Add(SchemaPlanner.LinkFrom(property));
+                        propertiesChanged = true;
+                    }
+                }
+
+                if (propertiesChanged)
+                {
+                    payload["name"] = SchemaPlanner.OrDefault(liveType.Name, type.Name);
+                    payload["plural_name"] = SchemaPlanner.OrDefault(liveType.PluralName, type.PluralName);
+                    payload["properties"] = SchemaPlanner.PropertyLinkArray(links);
                 }
             }
 
-            if (!changed) continue;
+            bool iconChanged = type.Icon is not null
+                && setIconKeys.Contains(type.Key)
+                && !createdTypeKeys.Contains(type.Key);
+            if (iconChanged)
+                payload["icon"] = type.Icon!.ToPayload();
+
+            if (payload.Count == 0) continue;
 
             await api.UpdateTypeAsync(
                 preview.SpaceId,
                 liveType.Id,
-                new JsonObject
-                {
-                    ["name"] = SchemaPlanner.OrDefault(liveType.Name, type.Name),
-                    ["plural_name"] = SchemaPlanner.OrDefault(liveType.PluralName, type.PluralName),
-                    ["properties"] = SchemaPlanner.PropertyLinkArray(links),
-                },
+                payload,
                 ct);
-            applied.Add($"propriétés attachées à {type.Key}");
+            if (propertiesChanged)
+                applied.Add($"propriétés attachées à {type.Key}");
+            if (iconChanged)
+                applied.Add($"icône définie {type.Key} · {type.Icon!.Display}");
         }
 
         _previewStore.Remove(previewId);

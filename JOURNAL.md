@@ -7,6 +7,12 @@ type: project-journal
 
 Project-level dated notes: a finding, a milestone, a usage observation — worth recording with a date, but not heavy enough for an ADR nor timeless enough for a CLAUDE.md. Most recent on top.
 
+## 2026-07-22 — Frontière entre utilités Anytype et MCP personnalisés
+
+Chose to separate reusable, precise Anytype utilities from custom MCP surfaces. Deckle.Anytype owns cross-domain capabilities for creating, inspecting and acting on Anytype structures; each custom MCP owns only its bounded domain gestures and composes the reusable utilities it needs.
+
+Chose that selecting the Anytype module in the installer must expose an independent choice of one or more reusable Anytype utilities and custom MCP surfaces. Each utility and each domain surface remains optional rather than being enabled as one indivisible Anytype package.
+
 ## 2026-07-18 — Motion policy and LogWindow decisions
 
 Found that Deckle exposes `SPI_GETCLIENTAREAANIMATION` but never calls it. The HUD helper named `AnimationSystemSetting` reads only the Dictation overlay setting. Chose to gate every Deckle-authored simple animation explicitly on the Windows animation setting while leaving control-internal motion to WinUI.

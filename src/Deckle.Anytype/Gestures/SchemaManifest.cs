@@ -53,6 +53,7 @@ internal sealed record TypeSpec(
     string Name,
     string PluralName,
     string Layout,
+    TypeIconSpec? Icon,
     IReadOnlyList<string> Properties)
 {
     private static readonly HashSet<string> AllowedLayouts =
@@ -60,7 +61,7 @@ internal sealed record TypeSpec(
 
     public static TypeSpec Parse(JsonObject obj)
     {
-        JsonShape.RequireOnly(obj, ["key", "name", "plural_name", "layout", "properties"], "type");
+        JsonShape.RequireOnly(obj, ["key", "name", "plural_name", "layout", "icon", "properties"], "type");
 
         string key = SchemaManifestFields.RequiredKey(obj, "key", rejectNonString: true);
         string name = SchemaManifestFields.RequiredString(obj, "name", rejectNonString: true);
@@ -71,6 +72,14 @@ internal sealed record TypeSpec(
             throw new ArgumentException(
                 $"Layout inconnu « {layout} » pour le type « {key} ». " +
                 $"Layouts acceptés : {string.Join(", ", AllowedLayouts)}.");
+
+        TypeIconSpec? icon = null;
+        if (obj.TryGetPropertyValue("icon", out JsonNode? iconNode))
+        {
+            if (iconNode is not JsonObject iconObject)
+                throw new ArgumentException($"Le champ « icon » du type « {key} » doit être un objet.");
+            icon = TypeIconSpec.Parse(iconObject, key);
+        }
 
         var props = new List<string>();
         if (obj.TryGetPropertyValue("properties", out JsonNode? propsNode) && propsNode is not null)
@@ -89,7 +98,7 @@ internal sealed record TypeSpec(
             }
         }
         JsonShape.RequireUnique(props, $"type {key}.properties");
-        return new TypeSpec(key, name, pluralName, layout, props);
+        return new TypeSpec(key, name, pluralName, layout, icon, props);
     }
 
     private static string DefaultPluralName(string name) =>

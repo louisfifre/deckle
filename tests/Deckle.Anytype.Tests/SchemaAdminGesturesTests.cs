@@ -31,15 +31,34 @@ public class SchemaAdminGesturesTests
     static JsonObject ExistingType(
         string name = "Pièce",
         string pluralName = "Pièces",
-        JsonArray? properties = null) => new()
+        JsonArray? properties = null,
+        JsonObject? icon = null)
     {
-        ["id"] = "type-piece",
-        ["key"] = "piece",
-        ["name"] = name,
-        ["plural_name"] = pluralName,
-        ["layout"] = "basic",
-        ["properties"] = properties ?? new JsonArray(),
-    };
+        var type = new JsonObject
+        {
+            ["id"] = "type-piece",
+            ["key"] = "piece",
+            ["name"] = name,
+            ["plural_name"] = pluralName,
+            ["layout"] = "basic",
+            ["properties"] = properties ?? new JsonArray(),
+        };
+        if (icon is not null)
+            type["icon"] = icon;
+        return type;
+    }
+
+    static JsonObject TypeManifest(JsonObject? icon = null)
+    {
+        var type = new JsonObject
+        {
+            ["key"] = "piece",
+            ["name"] = "Pièce",
+        };
+        if (icon is not null)
+            type["icon"] = icon;
+        return new JsonObject { ["types"] = new JsonArray { type } };
+    }
 
     static JsonObject ExistingProperty() => new()
     {
@@ -263,6 +282,123 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewKeepsTypeIconOptional()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", TypeManifest(), Ct);
+
+        Assert.Contains("create_type · piece", digest);
+        Assert.DoesNotContain("set_icon", digest);
+    }
+
+    [Fact]
+    public async Task PreviewParsesBuiltInAndEmojiIcons()
+    {
+        using var builtInServer = new FakeAnytypeServer();
+        builtInServer.OnListTypes(EmptyList());
+        builtInServer.OnListProperties(EmptyList());
+        string builtIn = await NewGestures(builtInServer).PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject
+            {
+                ["format"] = "icon",
+                ["name"] = "home",
+                ["color"] = "blue",
+            }),
+            Ct);
+
+        using var emojiServer = new FakeAnytypeServer();
+        emojiServer.OnListTypes(EmptyList());
+        emojiServer.OnListProperties(EmptyList());
+        string emoji = await NewGestures(emojiServer).PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject { ["format"] = "emoji", ["emoji"] = "🚪" }),
+            Ct);
+
+        Assert.Contains("set_icon · piece · icon:home:blue", builtIn);
+        Assert.Contains("set_icon · piece · emoji:🚪", emoji);
+    }
+
+    [Fact]
+    public async Task PreviewRejectsUnknownBuiltInIconNameBeforeReadingAnytype()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            NewGestures(server).PreviewAsync(
+                "home",
+                TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "front-door" }),
+                Ct));
+
+        Assert.Contains("Nom d’icône Anytype inconnu", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    public async Task PreviewRejectsUnknownIconColorBeforeReadingAnytype()
+    {
+        using var server = new FakeAnytypeServer();
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            NewGestures(server).PreviewAsync(
+                "home",
+                TypeManifest(new JsonObject
+                {
+                    ["format"] = "icon",
+                    ["name"] = "home",
+                    ["color"] = "green",
+                }),
+                Ct));
+
+        Assert.Contains("Couleur d’icône Anytype inconnue", ex.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    public async Task PreviewReportsExistingIconAsSkippedConflict()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(icon: new JsonObject
+            {
+                ["format"] = "icon",
+                ["name"] = "home",
+                ["color"] = "grey",
+            }),
+        }));
+        server.OnListProperties(EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "bed" }),
+            Ct);
+
+        Assert.Contains("Conflits ignorés (additif seulement)", digest);
+        Assert.Contains("icône existante icon:home:grey, demandée icon:bed", digest);
+        Assert.DoesNotContain("Actions additives :\n- set_icon", digest);
+        Assert.DoesNotContain(server.Requests, request => request.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
+    public async Task InspectIncludesCurrentTypeIcon()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(icon: new JsonObject { ["format"] = "emoji", ["emoji"] = "🚪" }),
+        }));
+        server.OnListProperties(EmptyList());
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("piece · Pièce · basic · emoji:🚪", digest);
+    }
+
+    [Fact]
     public async Task PreviewRejectsNonStringTypeLayoutBeforeReadingAnytype()
     {
         using var server = new FakeAnytypeServer();
@@ -391,6 +527,103 @@ public class SchemaAdminGesturesTests
         Assert.Equal("etat_identification", link["key"]!.GetValue<string>());
         Assert.Equal("État d'identification", link["name"]!.GetValue<string>());
         Assert.Equal("select", link["format"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task ApplyCreatesTypeWithThePreviewedIcon()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnPostType(ExistingType(icon: new JsonObject
+        {
+            ["format"] = "icon",
+            ["name"] = "home",
+        }));
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "home" }),
+            Ct);
+        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+
+        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+
+        Assert.Contains("set_icon · piece · icon:home", preview);
+        Assert.Contains("icône définie piece · icon:home", digest);
+        JsonObject create = server.Requests
+            .Where(request => request.Method == "POST" && request.Path.EndsWith("/types", StringComparison.Ordinal))
+            .Select(request => (JsonObject)JsonNode.Parse(request.Body)!)
+            .Single();
+        JsonObject icon = Assert.IsType<JsonObject>(create["icon"]);
+        Assert.Equal("icon", icon["format"]!.GetValue<string>());
+        Assert.Equal("home", icon["name"]!.GetValue<string>());
+        Assert.Null(icon["color"]);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task ApplySetsIconOnlyWhenExistingTypeHasNone()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnPatchType("type-piece", ExistingType(icon: new JsonObject
+        {
+            ["format"] = "emoji",
+            ["emoji"] = "🚪",
+        }));
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject { ["format"] = "emoji", ["emoji"] = "🚪" }),
+            Ct);
+        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+
+        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+
+        Assert.Contains("set_icon · piece · emoji:🚪", preview);
+        Assert.Contains("icône définie piece · emoji:🚪", digest);
+        JsonObject patchBody = server.LastBodyFor("PATCH");
+        JsonObject icon = Assert.IsType<JsonObject>(patchBody["icon"]);
+        Assert.Equal("emoji", icon["format"]!.GetValue<string>());
+        Assert.Equal("🚪", icon["emoji"]!.GetValue<string>());
+        Assert.Single(server.Requests, request => request.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task ApplyDoesNotOverwriteIconSetAfterPreview()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(icon: new JsonObject
+            {
+                ["format"] = "icon",
+                ["name"] = "home",
+                ["color"] = "grey",
+            }),
+        }));
+        server.OnListProperties(EmptyList());
+        server.OnListProperties(EmptyList());
+
+        var gestures = NewGestures(server);
+        string preview = await gestures.PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject { ["format"] = "icon", ["name"] = "bed" }),
+            Ct);
+        string previewId = preview.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+
+        string digest = await gestures.ApplyAsync("home", previewId, confirm: true, Ct);
+
+        Assert.Contains("set_icon · piece · icon:bed", preview);
+        Assert.Contains("Schéma inchangé", digest);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
     [Fact]
