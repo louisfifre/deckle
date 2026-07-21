@@ -4,7 +4,7 @@ using Xunit;
 namespace Deckle.Input.Tests;
 
 [Trait("Category", "unit")]
-public class LowLevelMouseHookInteropTests
+public sealed class LowLevelMouseHookInteropTests
 {
     [Theory]
     [InlineData(0x00780000u, 120)]
@@ -14,5 +14,24 @@ public class LowLevelMouseHookInteropTests
     public void GetWheelDeltaReturnsSignedHighWord(uint mouseData, short expected)
     {
         Assert.Equal(expected, LowLevelMouseHookInterop.GetWheelDelta(mouseData));
+    }
+
+    [Theory]
+    [InlineData(LowLevelMouseHookInterop.WM_LBUTTONDOWN)]
+    [InlineData(LowLevelMouseHookInterop.WM_RBUTTONDOWN)]
+    [InlineData(LowLevelMouseHookInterop.WM_MBUTTONDOWN)]
+    [InlineData(LowLevelMouseHookInterop.WM_XBUTTONDOWN)]
+    public void EveryButtonDownMessageIsAPointerInteraction(int message)
+    {
+        Assert.True(LowLevelMouseHookInterop.IsButtonDown(message));
+    }
+
+    [Theory]
+    [InlineData(LowLevelMouseHookInterop.WM_MOUSEWHEEL)]
+    [InlineData(LowLevelMouseHookInterop.WM_MOUSEHWHEEL)]
+    [InlineData(0x0200)] // WM_MOUSEMOVE
+    public void MovementAndWheelMessagesAreNotPointerInteractions(int message)
+    {
+        Assert.False(LowLevelMouseHookInterop.IsButtonDown(message));
     }
 }

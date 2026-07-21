@@ -87,10 +87,10 @@ public sealed partial class KeyboardInputHost
 
         if ((buttonFlags & RawInputInterop.RI_MOUSE_ANY_BUTTON_DOWN) == 0) return;
 
-        bool rollupEnabled = IsKeyboardRollupEnabled();
-        if (rollupEnabled) _rollupPointerDowns++;
-        PointerInteraction?.Invoke();
-        if (rollupEnabled) TrackRollup(RawInputHost.NowMs);
+        // The low-level hook is the canonical button source: unlike Raw Input it
+        // also sees the mouse messages Windows synthesizes for Precision Touchpad
+        // clicks. Raw Input remains the fallback when hook installation failed.
+        _mouseInteractions.ObserveRawButtonDown(_mouseHook != IntPtr.Zero);
     }
 
     private void HandleKeyboard(int dataOffset, RawInputInterop.RAWINPUTHEADER header)

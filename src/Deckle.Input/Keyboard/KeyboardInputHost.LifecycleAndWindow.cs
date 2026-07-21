@@ -224,6 +224,11 @@ public sealed partial class KeyboardInputHost
                 DrainRequested?.Invoke();
                 continue;
             }
+            if (msg.message == WM_APP_POINTER_DOWN)
+            {
+                _mouseInteractions.PublishQueuedButtonDown();
+                continue;
+            }
             RawInputInterop.TranslateMessage(ref msg);
             RawInputInterop.DispatchMessage(ref msg);
         }

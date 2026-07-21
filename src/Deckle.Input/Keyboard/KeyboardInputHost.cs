@@ -10,8 +10,8 @@ namespace Deckle.Input;
 // message-only window, its own GetMessage pump, registration for the
 // Generic Desktop keyboard (0x01:0x06) and mouse (0x01:0x02) usages with
 // RIDEV_INPUTSINK (events regardless of focus), plus a WH_MOUSE_LL hook for
-// wheel messages that Windows may synthesize from Precision Touchpad
-// gestures instead of surfacing as raw mouse wheel reports. No
+// button and wheel messages that Windows may synthesize from Precision Touchpad
+// interactions instead of surfacing as raw mouse reports. No
 // RIDEV_DEVNOTIFY (presence is irrelevant here — we observe transitions,
 // not which device produced them).
 //
@@ -44,12 +44,13 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private const string ClassName = "DeckleKeyboardHost";
     private const double RollupPeriodMs = 30_000;
 
-    // A bare thread message (hwnd == 0) the pump relays as DrainRequested. WM_APP is
-    // the first id reserved for application-private messages, so it never collides
-    // with a system message; it carries no payload — the consumer drains its own queue.
+    // Bare thread messages (hwnd == 0) relay private work through the pump. WM_APP
+    // is reserved for application messages, so these never collide with Windows.
     private const uint WM_APP_DRAIN = 0x8000; // WM_APP
+    private const uint WM_APP_POINTER_DOWN = 0x8001;
 
     private readonly object _stateLock = new();
+    private readonly MouseInteractionRouter _mouseInteractions;
 
     private Thread? _thread;
     private uint _threadId;
@@ -81,10 +82,18 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
     // _stateLock, like the thread handle.
     private int _refCount;
 
+    public KeyboardInputHost()
+    {
+        _mouseInteractions = new MouseInteractionRouter(
+            QueuePointerInteraction,
+            PublishPointerInteraction,
+            PublishWheelInteraction);
+    }
+
     /// <summary>Raised on the input thread for every non-overrun keyboard transition.</summary>
     public event Action<KeyboardKeyEvent>? KeyReceived;
 
-    /// <summary>Raised on the input thread when any mouse button transitions to down.</summary>
+    /// <summary>Raised on the input thread when any mouse or touchpad button transitions to down.</summary>
     public event Action? PointerInteraction;
 
     /// <summary>Raised on the input thread for every mouse-wheel transition (vertical or horizontal).</summary>

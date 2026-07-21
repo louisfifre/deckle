@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Input
 
+## 2026-07-21 — Precision Touchpad clicks arrive as mouse messages
+
+Live observation found Precision Touchpad clicks absent from Raw Input mouse packets and present as button-down messages in the existing `WH_MOUSE_LL` hook. The hook is the canonical pointer-down source while installed; Raw Input remains its fallback to avoid duplicate physical-mouse events.
+
 ## 2026-07-20 — Foreground and object focus remain distinct
 
 Found that `EVENT_SYSTEM_FOREGROUND` can precede `EVENT_OBJECT_FOCUS` for the editable child in the same window. Chose to publish both observations and collapse only consecutive exact duplicates, so a foreground probe cannot suppress the later focused-object probe.

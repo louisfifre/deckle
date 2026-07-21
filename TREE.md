@@ -779,10 +779,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.FocusHooks.cs
 │   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
+│   │   │   ├── KeyboardInputHost.MouseHook.cs
 │   │   │   ├── KeyboardInputHost.RawInput.cs
 │   │   │   ├── KeyboardInputHost.Rollup.cs
-│   │   │   ├── KeyboardInputHost.WheelHook.cs
 │   │   │   ├── KeyboardKeyEvent.cs
+│   │   │   ├── MouseInteractionRouter.cs
 │   │   │   └── MouseWheelEvent.cs
 │   │   ├── Telemetry/
 │   │   │   ├── ContactFrameRecorder.cs
@@ -1494,7 +1495,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
-│   │   └── LowLevelMouseHookInteropTests.cs
+│   │   ├── LowLevelMouseHookInteropTests.cs
+│   │   └── MouseInteractionRouterTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs
