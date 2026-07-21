@@ -24,6 +24,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **input:** Preserve focused-object events
 - **autocorrect:** Expose abandoned sentence work
 - **input:** Capture precision touchpad clicks
+- **app:** Prevent duplicate resident processes
+- **autocorrect:** Apply sentence corrections safely
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
