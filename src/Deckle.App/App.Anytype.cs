@@ -1,5 +1,6 @@
 using Deckle.Anytype;
 using Deckle.Anytype.Mcp;
+using Deckle.Home;
 using Deckle.Security;
 
 namespace Deckle.App;
@@ -81,7 +82,13 @@ public partial class App
         // app hands out the credential, it does not reconfigure someone else's
         // client. A vault that cannot be written is the same dormant-door state
         // as one that cannot be read above.
-        var tokens = new McpClientTokens(SecretVault.CreateDefault());
+        // Core Anytype clients and optional domain surfaces meet only at the
+        // application composition root. Selecting the Anytype module installs
+        // this build's Home adapter and provisions its bearer alongside the
+        // reusable Anytype surfaces; later UI can choose a narrower list here.
+        IReadOnlyList<McpClientProfile> clients =
+            [.. McpClients.All, HomeMcp.Client];
+        var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
         try
         {
             tokens.EnsureMinted();

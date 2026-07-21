@@ -22,6 +22,14 @@ namespace Deckle.Anytype.Mcp.Tests;
 [Trait("Category", "unit")]
 public class McpHttpHostTests
 {
+    private static readonly McpClientProfile CustomClient = new(
+        "custom",
+        new McpSurface(
+            "custom-dialogues",
+            api => McpToolset.Build(api, ToolProfile.Dialogues, management: false)),
+        "mcp-token-custom",
+        "DECKLE_MCP_TOKEN_CUSTOM");
+
     // A running host with its bearers already read out of the fake vault, so a test
     // can present the right token for each client. IAsyncDisposable so `await using`
     // tears the listener down.
@@ -32,15 +40,15 @@ public class McpHttpHostTests
         public string BaseUrl => Host.BaseUrl;
         public string ClaudeBearer { get; }
         public string CodexBearer { get; }
-        public string HomeBearer { get; }
+        public string CustomBearer { get; }
 
-        private Harness(McpHttpHost host, string claude, string codex, string home)
+        private Harness(McpHttpHost host, string claude, string codex, string custom)
         {
             Host = host;
             Client = new HttpClient();
             ClaudeBearer = claude;
             CodexBearer = codex;
-            HomeBearer = home;
+            CustomBearer = custom;
         }
 
         // Build the whole stack and bind a free loopback port, walking up from a base
@@ -48,12 +56,12 @@ public class McpHttpHostTests
         public static Harness Start()
         {
             var vault = new FakeSecretVault();
-            var tokens = new McpClientTokens(vault);
+            var tokens = new McpClientTokens(vault, [.. McpClients.All, CustomClient]);
             tokens.EnsureMinted();
 
             vault.TryGet(McpClients.Claude.TokenSecretName, out string? claude);
             vault.TryGet(McpClients.Codex.TokenSecretName, out string? codex);
-            vault.TryGet(McpClients.Home.TokenSecretName, out string? home);
+            vault.TryGet(CustomClient.TokenSecretName, out string? custom);
 
             // The API client never sees a live backend: a dead port so a stray tool
             // call would fail fast rather than hang. initialize/tools/list never dial it.
@@ -64,7 +72,7 @@ public class McpHttpHostTests
             {
                 var host = new McpHttpHost(api, tokens, port);
                 if (host.Start())
-                    return new Harness(host, claude!, codex!, home!);
+                    return new Harness(host, claude!, codex!, custom!);
 
                 // Bind failed (port taken): dispose and try the next.
                 host.DisposeAsync().AsTask().GetAwaiter().GetResult();
@@ -213,18 +221,18 @@ public class McpHttpHostTests
     }
 
     [Fact]
-    public async Task HomeSessionListsOnlyHomeToolsWithoutTouchingItsAliasOrSchema()
+    public async Task InjectedClientListsOnlyItsConfiguredSurface()
     {
         await using var h = Harness.Start();
-        string session = await OpenSession(h, h.HomeBearer);
+        string session = await OpenSession(h, h.CustomBearer);
 
         using var response = await h.Client.SendAsync(
-            Post(h.BaseUrl, h.HomeBearer, ToolsListBody, sessionId: session), Ct);
+            Post(h.BaseUrl, h.CustomBearer, ToolsListBody, sessionId: session), Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(
-            new[] { "create", "delete", "get", "search", "update" },
-            ToolNames(await BodyJson(response)).OrderBy(value => value));
+        string[] names = ToolNames(await BodyJson(response));
+        Assert.Contains("dialogue_create", names);
+        Assert.DoesNotContain("create_task", names);
     }
 
     // ── session routing ─────────────────────────────────────────────────────────

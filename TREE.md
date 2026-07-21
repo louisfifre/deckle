@@ -321,15 +321,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
 │   │   │   ├── DialogueToolCatalog.cs
-│   │   │   ├── HomeToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
 │   │   │   └── ToolDescriptor.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Anytype MCP adapter — streamable-HTTP host, client surfaces, and JSON-RPC tool…
+│   │   ├── AGENTS.md  — [agent-instructions] Resident MCP host and reusable Anytype surfaces, extensible by domain MCP adapt…
 │   │   ├── CLAUDE.md
 │   │   ├── Deckle.Anytype.Mcp.csproj
 │   │   ├── DeckleAnytypeMcpSource.cs
+│   │   ├── McpSurface.cs
 │   │   ├── McpToolset.cs
 │   │   └── ToolProfile.cs
 │   ├── Deckle.App/
@@ -734,12 +734,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
 │   │   ├── HomeGestures.cs
+│   │   ├── HomeMcp.cs
 │   │   ├── HomeObjects.cs
 │   │   ├── HomePropertyWriter.cs
 │   │   ├── HomeRequests.cs
 │   │   ├── HomeRuntimeProvider.cs
 │   │   ├── HomeSchema.cs
 │   │   ├── HomeSchemaRuntime.cs
+│   │   ├── HomeToolCatalog.cs
 │   │   └── JOURNAL.md  — [journal] Durable findings and frozen decisions for the Home inventory domain.
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
@@ -1375,7 +1377,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
-│   │   ├── HomeToolCatalogTests.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensTests.cs
 │   │   ├── McpHttpHostTests.cs
@@ -1508,7 +1509,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeHomeAnytypeServer.cs
 │   │   ├── HomeCodeTests.cs
-│   │   └── HomeGesturesTests.cs
+│   │   ├── HomeGesturesTests.cs
+│   │   ├── HomeMcpTests.cs
+│   │   └── HomeToolCatalogTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj

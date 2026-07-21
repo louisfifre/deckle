@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using Deckle.Home;
+using Deckle.Anytype.Mcp;
 
-namespace Deckle.Anytype.Mcp;
+namespace Deckle.Home;
 
 public static class HomeToolCatalog
 {

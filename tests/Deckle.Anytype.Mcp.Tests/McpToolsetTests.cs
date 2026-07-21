@@ -96,28 +96,6 @@ public class McpToolsetTests
     }
 
     [Fact]
-    public void HomeMountsOnlyTheGuardedInventorySurface()
-    {
-        var aliases = new AnytypeSpaceAliases(
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["dev"] = "dummy-space",
-                ["home"] = "dummy-home-space",
-            });
-
-        var (tools, descriptor) = McpToolset.Build(
-            DummyClient(), ToolProfile.Home, management: true, aliases);
-        string[] names = Names(tools);
-
-        Assert.Equal(new[] { "create", "delete", "get", "search", "update" },
-            names.OrderBy(value => value));
-        Assert.DoesNotContain("create_task", names);
-        Assert.DoesNotContain("dialogue_create", names);
-        Assert.DoesNotContain("schema_apply", names);
-        Assert.Contains("home inventory", descriptor.Instructions);
-    }
-
-    [Fact]
     public void EachBuildYieldsFreshDescriptorInstances()
     {
         // The gesture graph is session-scoped, so every Build must rebuild it: two

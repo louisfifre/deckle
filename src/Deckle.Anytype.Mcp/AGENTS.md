@@ -1,5 +1,5 @@
 ---
-description: Anytype MCP adapter — streamable-HTTP host, client surfaces, and JSON-RPC tool catalog over Deckle.Anytype gestures.
+description: Resident MCP host and reusable Anytype surfaces, extensible by domain MCP adapters.
 type: agent-instructions
 ---
 
@@ -13,13 +13,28 @@ The HTTP host owns transport concerns: loopback listener, bearer authentication,
 
 The tool catalogs own model-facing command shape: tool names, descriptions, JSON schemas, argument validation, and dispatch into gesture methods. A catalog may explain how to use a capability, but the actual Anytype payload belongs in `Deckle.Anytype`.
 
-`McpToolset` is the composition seam. It builds a fresh gesture graph per MCP session because session gestures carry current-report state.
+`McpSurface` is the extension seam: a client points to one surface that builds a
+fresh tool graph for each session. Reusable Anytype utilities stay here; each
+bounded use owns its domain, catalog, descriptor and client profile in one
+sibling module, and the application composition root plugs it into the host.
+
+The current project-management and dialogue catalogs predate this boundary and
+still live here. That is migration debt, not a precedent: project management
+must move to a sibling custom MCP module like `Deckle.Home`, and dialogue usage
+must be judged along the same line. Schema administration is a transverse
+Anytype utility and remains here.
 
 ## Adding A Tool
 
-Add the behavior in `Deckle.Anytype` first, then expose it here. Keep input schemas strict object schemas with `additionalProperties:false`; a shape mistake should return an `isError:true` tool result the model can correct.
+Add reusable Anytype behavior in `Deckle.Anytype` first, then expose it here.
+Domain behavior and its catalog belong in the domain's MCP adapter. Keep input
+schemas strict object schemas with `additionalProperties:false`; a shape mistake
+should return an `isError:true` tool result the model can correct.
 
-Surface membership is deliberate. Project-management tools belong to the project-management and all profiles; dialogue tools belong to dialogue and all profiles; destructive tools stay in the management catalog only.
+Until those legacy surfaces move, their membership remains deliberate:
+project-management tools belong to the project-management and all profiles;
+dialogue tools belong to dialogue and all profiles; destructive tools stay in
+the management catalog only.
 
 ## Tests
 

@@ -1,8 +1,9 @@
 using System.Text.Json.Nodes;
+using Deckle.Anytype.Mcp;
 using Deckle.Home;
 using Xunit;
 
-namespace Deckle.Anytype.Mcp.Tests;
+namespace Deckle.Home.Tests;
 
 [Trait("Category", "unit")]
 public class HomeToolCatalogTests

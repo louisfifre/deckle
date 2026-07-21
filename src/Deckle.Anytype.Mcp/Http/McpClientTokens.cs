@@ -15,9 +15,23 @@ namespace Deckle.Anytype.Mcp;
 // external client process reads by name; it must exist for the client to connect,
 // but it is a mirror, never the authority — Authenticate compares against a
 // once-per-process snapshot of the vault, never against the environment.
-public sealed class McpClientTokens(ISecretVault vault)
+public sealed class McpClientTokens
 {
-    private readonly ISecretVault _vault = vault;
+    private readonly ISecretVault _vault;
+    private readonly IReadOnlyList<McpClientProfile> _clients;
+
+    public McpClientTokens(
+        ISecretVault vault,
+        IReadOnlyList<McpClientProfile>? clients = null)
+    {
+        ArgumentNullException.ThrowIfNull(vault);
+        _vault = vault;
+        _clients = clients?.ToArray() ?? McpClients.All;
+
+        RequireUnique(_clients.Select(client => client.Id), "client id");
+        RequireUnique(_clients.Select(client => client.TokenSecretName), "token secret name");
+        RequireUnique(_clients.Select(client => client.TokenEnvVar), "token environment variable");
+    }
 
     // The vault's tokens, decoded once and held for the host's lifetime. Tokens
     // never rotate at runtime (minting happens before the host starts, rotation
@@ -33,7 +47,7 @@ public sealed class McpClientTokens(ISecretVault vault)
     // without escaping, and never logged on the way out.
     public void EnsureMinted()
     {
-        foreach (var client in McpClients.All)
+        foreach (var client in _clients)
         {
             if (!_vault.Contains(client.TokenSecretName))
                 _vault.Set(client.TokenSecretName, Mint());
@@ -49,7 +63,7 @@ public sealed class McpClientTokens(ISecretVault vault)
     // should stay silent rather than nudge the whole desktop.
     public void MaterializeEnvironmentVariables()
     {
-        foreach (var client in McpClients.All)
+        foreach (var client in _clients)
         {
             if (!_vault.TryGet(client.TokenSecretName, out string? token) || token is null)
                 continue;
@@ -93,13 +107,21 @@ public sealed class McpClientTokens(ISecretVault vault)
 
     private IReadOnlyList<(McpClientProfile Client, byte[] Token)> LoadSnapshot()
     {
-        var entries = new List<(McpClientProfile, byte[])>(McpClients.All.Count);
-        foreach (var client in McpClients.All)
+        var entries = new List<(McpClientProfile, byte[])>(_clients.Count);
+        foreach (var client in _clients)
         {
             if (_vault.TryGet(client.TokenSecretName, out string? token) && !string.IsNullOrEmpty(token))
                 entries.Add((client, Encoding.UTF8.GetBytes(token)));
         }
         return entries;
+    }
+
+    private static void RequireUnique(IEnumerable<string> values, string label)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string value in values)
+            if (!seen.Add(value))
+                throw new ArgumentException($"Duplicate MCP {label}: {value}.", nameof(values));
     }
 
     private static string Mint()
