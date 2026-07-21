@@ -18,6 +18,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Expose cross-space schema and collection APIs
 - **home:** Add guarded Anytype inventory domain
 - **anytype-mcp:** Expose guarded Home surface
+- **anytype:** Support type icons in schema manifests
 
 ### Changed
 
