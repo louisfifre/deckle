@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net;
 using Deckle.Anytype;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;
@@ -8,6 +9,7 @@ namespace Deckle.Anytype.Tests;
 // Behavior of EnsureRunningAsync at its two deterministic gates: no binary on
 // disk, and a backend already serving. The spawn/watch/restart paths need a
 // real child process and are covered by the live proof runner, not here.
+[Trait("Category", "integration")]
 public sealed class BackendSupervisorTests
 {
     static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -29,10 +31,8 @@ public sealed class BackendSupervisorTests
         // A stand-in health endpoint answering 200, and a spec whose binary
         // exists on disk but matches no live process — the warm path returns
         // without spawning or adopting anything.
-        using var listener = new HttpListener();
-        int port = 34801 + (Environment.CurrentManagedThreadId % 100);
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listenerLease = LoopbackHttpListenerLease.Start();
+        HttpListener listener = listenerLease.Listener;
         var serving = Task.Run(async () =>
         {
             var context = await listener.GetContextAsync();
@@ -46,14 +46,13 @@ public sealed class BackendSupervisorTests
         {
             using var supervisor = new BackendSupervisor(
                 new BackendProcessSpec(fakeExe, "serve"),
-                new BackendHealthProbe($"http://127.0.0.1:{port}"));
+                new BackendHealthProbe(listenerLease.Prefix.TrimEnd('/')));
 
             Assert.Equal(BackendStartOutcome.AlreadyRunning, await supervisor.EnsureRunningAsync(Ct));
             await serving.WaitAsync(Ct);
         }
         finally
         {
-            listener.Stop();
             File.Delete(fakeExe);
         }
     }

@@ -1583,6 +1583,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs
+│   │   ├── LoopbackHttpListenerLease.cs
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
