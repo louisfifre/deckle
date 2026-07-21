@@ -57,12 +57,8 @@ Families follow the personal dictionary's adoption discipline: a family activate
 _Avoid_ : typo (the broader spelling-fault class), fat-finger (informal).
 
 **Surface profile** :
-The per-application portrait of how typing behaves there, computed from the corpus closure and timing statistics: how sentences end (sentence boundary, Enter, interruption), at what rhythm, with what pauses. Names where the sentence stage arrives too late (Enter-heavy surfaces) and calibrates the pause pass. A measured artifact, never a user-exposed setting.
+The per-application portrait of how typing behaves there, computed from the corpus closure and timing statistics: how sentences end (sentence boundary, Enter, interruption), at what rhythm, with what pauses. A measured offline artifact used to understand where terminal-punctuation correction can act and where Enter-heavy composition leaves the sentence stage deliberately silent; never a user-exposed setting.
 _Avoid_ : app profile (a surface is the focused control's context, not the whole app), configuration (nothing here is set by hand).
-
-**Pause pass** :
-An anticipated sentence-stage pass triggered mid-sentence by a typing pause, on surfaces whose profile says Enter usually closes — so corrections land before the Enter that sends the text. The pause threshold is calibrated per surface from the user's own timing statistics. The true-closure pass still reviews the whole sentence afterwards; since the typed original always stays among the candidates, a premature verdict can be silently taken back — unless Enter left first, a residue to measure.
-_Avoid_ : partial close (the sentence stays open), timeout (it is an opportunity, not a deadline).
 
 **Personal dictionary** :
 The user-visible surface of everything autocorrect has learned — adopted words and suppressed corrections. Adoption is earned, never granted on sight: recurrence across distinct days plus a cleanliness gate (typed verbatim by the user, never reopened-and-retyped, surface-clean). An entry carries one of three categories, which exist only because they change protection: anglicism (case-insensitive), proper noun (case-sensitive — the capital is part of what is protected), other. Inspectable and editable by principle: a consultable list, per-word removal, full purge. Suppression is an explicit entry (a blocklist), never the mere erasure of a counter — a removed word must not come back on its own. Candidate bridge to the ASR personal lexicon (shared learning, not yet committed).

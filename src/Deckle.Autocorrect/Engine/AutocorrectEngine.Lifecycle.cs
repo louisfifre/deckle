@@ -46,7 +46,6 @@ public sealed partial class AutocorrectEngine
     {
         if (!_started) return;
         _started = false;
-        _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _host.Stop();
         Unsubscribe();
         _corpus?.Discard();
@@ -68,7 +67,6 @@ public sealed partial class AutocorrectEngine
             StopCore();
         }
 
-        _pauseTimer?.Dispose();
         _coordinator?.Dispose();
         _lane?.Dispose();
     }

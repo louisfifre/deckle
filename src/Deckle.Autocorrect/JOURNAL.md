@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-21 — Closed-sentence writes replace live-tail rewrites
+
+Found a visible corruption where the internal final corpus was correct but the target field received duplicated characters. Two Deckle 0.14.4 residents were active simultaneously, the sentence stage applied mid-sentence after three right-context words, and its correction detail falsely reported zero backspaces regardless of the actual write plan.
+
+Chose one resident process per Windows session through a stable named mutex; install, install-continuation, update-apply and data-relocation modes remain exempt. Normal restarts now stop resident services and release ownership before spawning their successor.
+
+Restricted the sentence stage to terminal punctuation (`.`, `!`, `?`, `…`). It no longer runs after a word-count deferral, on semicolon or colon, on a typing pause, or for delayed deterministic capitalization. The first physical key after closure invalidates the epoch, and a non-empty live partial at delivery also drops the verdict. Sentence rewrites now report the actual computed injection plan to operational telemetry.
+
 ## 2026-07-20 — Reliability precedes the Qwen 3.5 correction stage
 
 Chose to stabilize the correction path before integrating Qwen 3.5: make the active engine and load failure observable, remove silent fallback, then fix surface tracking and sentence completion. The intended product split is a conservative deterministic first level for accents and certain spelling repairs, followed by Qwen 3.5 for grammatical correction; rewrite remains later.

@@ -33,31 +33,18 @@ public interface IRerankLane : IDisposable
 // the epoch, the in-flight flag — so it is lock-free by the same rule as the
 // engine itself; the only cross-thread hop is the lane.
 //
-// On each committed word it records the post-gate surface form, asks the probe
+// On each committed word it records the post-gate surface form and asks the probe
 // whether the slot is a real-word ambiguity the gate left alone (la/là, a/à,
-// ou/où), and — once enough right-context has arrived (or a sentence-ender flushes
-// it) — submits ONE rerank at a time. When the verdict returns it rewrites the
-// slot in place: it reconstructs the on-screen tail from its own buffer (never
-// reads the screen) and appends the live partial word verbatim, so the minimal-diff
-// injector backspaces exactly the right amount even while the user keeps typing.
+// ou/où). It submits ONE rerank at a time only after a terminal sentence ender.
+// When the verdict returns it rewrites the slot in place from its own closed
+// buffer; the first physical key after closure invalidates the whole request.
 //
-// Staleness is the danger and the guards are: an epoch bumped on every reset
-// (focus, pointer, Enter, a Backspace into committed text) drops any verdict that
-// outlived its sentence; the tail is always rebuilt from the live buffer, so words
-// committed during the ~100 ms inference are absorbed, not corrupted; a failed
-// (UIPI-blocked) send invalidates the whole model rather than rewrite against a
-// half-edited tail.
-//
-// Sentence-initial capitalization rides the same buffer and reinjection path,
-// deterministically (no ONNX): the first word of a vouched sentence — one that
-// began after a real sentence-ender or Enter, never after a mere caret move — is
-// raised to a capital, composed on top of any diacritic verdict for that slot.
+// Staleness is the danger and the guards are deliberately strict: an epoch bumped
+// on every reset or post-closure physical key drops any verdict that outlived its
+// exact screen state; a non-empty live partial also rejects the write; a failed
+// (UIPI-blocked) send invalidates the model rather than continue from uncertainty.
 public sealed class SentenceRerankCoordinator : IDisposable
 {
-    // Right-context words to wait for before resolving a slot (Louis's "2-3
-    // words"); a sentence-ender flushes earlier. Calibration constant, not exposed.
-    private const int DeferralWords = 3;
-
     // The buffer is a rolling window; past this many words it drops to a fresh
     // sentence rather than grow unbounded.
     private const int BufferCap = 40;
@@ -66,19 +53,16 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // what resolves la/là; a wide window only slows inference and risks >512 tokens.
     private const int ContextWindow = 12;
 
-    // A boundary that ends a clause enough to decide its pending slots now.
-    private static readonly HashSet<char> SentenceBreaks = new() { '.', '!', '?', ';', ':', '…' };
-
-    // A boundary after which the next word starts a new sentence (gets a capital).
-    // Tighter than SentenceBreaks: ';' and ':' continue the sentence lowercase.
-    private static readonly HashSet<char> CapitalizingEnders = new() { '.', '!', '?', '…' };
+    // Only terminal punctuation closes a sentence. A colon or semicolon does not
+    // grant the model permission to rewrite text that the user is still composing.
+    private static readonly HashSet<char> SentenceEnders = new() { '.', '!', '?', '…' };
 
     private readonly IRerankLane _lane;
     private readonly IAmbiguityProbe _probe;
     private readonly ITextInjector _injector;
     private readonly Func<string> _currentPartial;
     private readonly Action<string>? _realignLastCommitted;
-    private readonly Action<CorrectionDecision>? _onApplied;
+    private readonly Action<CorrectionDecision, InjectionPlan>? _onApplied;
     // Gate for the per-word decision telemetry: when it returns true the deferred
     // reranker verdict is emitted to the autocorrect.decisions dataset (scores and
     // margin included). Null or false = no rerank line, no rendering cost.
@@ -92,8 +76,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // carries a window-relative index (for the model), so the verdict cannot be
     // trusted to identify the slot — single-flight lets us remember it here.
     private int _inFlightSlot = -1;
-    private bool _nextWordIsSentenceInitial;
-    private int _pendingCapSlot = -1;
+    private bool _sentenceClosed;
     private bool _disposed;
 
     public SentenceRerankCoordinator(
@@ -102,7 +85,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         ITextInjector injector,
         Func<string> currentPartial,
         Action<string>? realignLastCommitted = null,
-        Action<CorrectionDecision>? onApplied = null,
+        Action<CorrectionDecision, InjectionPlan>? onApplied = null,
         Func<bool>? decisionTelemetry = null)
     {
         _lane = lane;
@@ -132,18 +115,16 @@ public sealed class SentenceRerankCoordinator : IDisposable
     {
         if (_disposed) return;
 
-        // The vouch flag is the authority — set after Enter or a sentence-ender and
-        // consumed here. It is NOT gated on an empty buffer: the rolling buffer keeps
-        // prior sentences, so the first word after a period commits with the flag set
-        // while earlier words are still present.
-        bool sentenceInitial = _nextWordIsSentenceInitial;
-        _nextWordIsSentenceInitial = false;
+        // Production sends NotePhysicalKey before a commit. Keep this direct-call
+        // guard so a caller cannot append another sentence to an already closed
+        // model and accidentally validate an old verdict.
+        if (_sentenceClosed)
+            Invalidate(ResetReason.Navigation);
 
         var entry = new SlotEntry
         {
             Form = finalForm,
             Boundary = boundary,
-            IsSentenceInitial = sentenceInitial,
             WordId = wordId,
         };
 
@@ -160,51 +141,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
             }
         }
 
-        if (sentenceInitial && NeedsCapitalization(finalForm))
-            entry.NeedsCap = true;
-
-        // Right-context grows for every still-open ambiguous slot before this one.
-        foreach (SlotEntry s in _buffer)
-            if (s.IsAmbiguous && !s.Resolved)
-                s.RightContextCount++;
-
         _buffer.Add(entry);
 
-        // A capitalization scheduled on a PRIOR commit applies now — one word
-        // behind, so it shares the transparent "a beat late" feel and never
-        // fights the gate's own same-commit injection.
-        if (_pendingCapSlot >= 0 && _pendingCapSlot < _buffer.Count)
-        {
-            ApplyCapitalizationOnly(_pendingCapSlot);
-            _pendingCapSlot = -1;
-        }
-
-        // A non-ambiguous first word's capital is scheduled for the next commit.
-        // An ambiguous first word composes its capital onto the diacritic verdict.
-        if (entry.NeedsCap && !entry.IsAmbiguous)
-            _pendingCapSlot = _buffer.Count - 1;
-
-        // A sentence-ender decides every still-open slot "from the sentence so
-        // far" — and re-reviews the slots a pause pass decided early (CONTEXT.md
-        // § Pause pass): the typed original is still among their candidates, so
-        // a premature verdict can be silently taken back from full context. A
-        // pause verdict still in flight at this instant resolves after the
-        // closure and is not re-reviewed — the Enter-race residue's cousin,
-        // accepted and rare.
-        if (SentenceBreaks.Contains(boundary))
-            foreach (SlotEntry s in _buffer)
-            {
-                if (s.IsAmbiguous && s.Resolved && s.PauseFlushed)
-                {
-                    s.Resolved = false;
-                    s.PauseFlushed = false;
-                }
-                if (s.IsAmbiguous && !s.Resolved)
-                    s.RightContextCount = Math.Max(s.RightContextCount, DeferralWords);
-            }
-
-        if (CapitalizingEnders.Contains(boundary))
-            _nextWordIsSentenceInitial = true;
+        _sentenceClosed = SentenceEnders.Contains(boundary);
 
         if (_buffer.Count > BufferCap)
         {
@@ -212,7 +151,8 @@ public sealed class SentenceRerankCoordinator : IDisposable
             return;
         }
 
-        TrySubmitNext();
+        if (_sentenceClosed)
+            TrySubmitNext();
     }
 
     // Every physical keystroke, with whether the live word had content BEFORE the
@@ -222,6 +162,16 @@ public sealed class SentenceRerankCoordinator : IDisposable
     public void NotePhysicalKey(Keystroke k, bool hasPartialWord)
     {
         if (_disposed) return;
+
+        // Once closure submitted the sentence, even a harmless-looking key means
+        // the visible target may have moved. Drop the verdict before interpreting
+        // that key; never try to absorb live typing into an in-flight rewrite.
+        if (_sentenceClosed)
+        {
+            Invalidate(ResetReason.Navigation);
+            return;
+        }
+
         if (k.Kind == KeystrokeKind.Backspace && !hasPartialWord)
         {
             Invalidate(ResetReason.Navigation);
@@ -233,8 +183,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // tracker as noise: it commits nothing, yet it IS on screen. The model
         // can no longer mirror the screen — drop it rather than let a later
         // slot rewrite rebuild a tail one char short of the screen (the
-        // eaten-letter corruption class). The sentence-initial vouch survives:
-        // punctuation noise does not move the sentence boundary.
+        // eaten-letter corruption class).
         if (k.Kind != KeystrokeKind.Text) return;
         bool empty = !hasPartialWord;
         foreach (char c in k.Text)
@@ -246,35 +195,11 @@ public sealed class SentenceRerankCoordinator : IDisposable
             }
             if (empty)
             {
-                bool vouch = _nextWordIsSentenceInitial;
                 Invalidate(ResetReason.Navigation);
-                _nextWordIsSentenceInitial = vouch;
                 return;
             }
             empty = true; // the boundary commits (or joins) the word the tracker holds
         }
-    }
-
-    // The pause pass (CONTEXT.md § Pause pass): a typing pause on a surface
-    // whose profile says Enter usually closes — decide every still-open slot
-    // NOW, so corrections land before the Enter that sends the text. Same
-    // gesture as a sentence-ender, triggered by time; the flushed slots are
-    // marked so the true-closure pass can re-review them later. Returns how
-    // many slots the pause put in motion — zero is a silent no-op.
-    public int FlushOnPause()
-    {
-        if (_disposed) return 0;
-        int flushed = 0;
-        foreach (SlotEntry s in _buffer)
-            if (s.IsAmbiguous && !s.Resolved)
-            {
-                s.PauseFlushed = true;
-                s.RightContextCount = Math.Max(s.RightContextCount, DeferralWords);
-                flushed++;
-            }
-        if (flushed > 0)
-            TrySubmitNext();
-        return flushed;
     }
 
     // Drop the sentence model: the caret left the span we model (or a backspace is
@@ -287,9 +212,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         foreach (SlotEntry slot in _buffer)
             if (slot.IsAmbiguous && !slot.Resolved)
                 pendingSlots++;
-        if (_pendingCapSlot >= 0)
-            pendingSlots++;
-
         bool currentRequestInFlight = _inFlight && _inFlightEpoch == _epoch;
         if (pendingSlots > 0)
             DeckleAutocorrectSource.Log.SentenceStageAbandoned(
@@ -297,21 +219,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
         _epoch++;
         _buffer.Clear();
-        _pendingCapSlot = -1;
-        // Enter begins a new sentence (capital vouched); any other reset is a caret
-        // move to an unknown position, where capitalizing would be a guess.
-        _nextWordIsSentenceInitial = reason == ResetReason.Enter;
+        _sentenceClosed = false;
     }
 
     // ── Submit / apply (input thread) ────────────────────────────────────────
 
     private void TrySubmitNext()
     {
-        if (_inFlight || _disposed) return;
+        if (_inFlight || _disposed || !_sentenceClosed) return;
         for (int i = 0; i < _buffer.Count; i++)
         {
             SlotEntry s = _buffer[i];
-            if (s.IsAmbiguous && !s.Resolved && s.RightContextCount >= DeferralWords)
+            if (s.IsAmbiguous && !s.Resolved)
             {
                 _inFlight = true;
                 _inFlightSlot = i;
@@ -349,8 +268,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // so the buffer no longer holds the slot we submitted. result.Epoch is the
         // freshness check; the slot is identified by our own _inFlightSlot, never by
         // result.SlotIndex (which is window-relative, for the model only).
-        if (result.Epoch != _epoch || slotIndex < 0 || slotIndex >= _buffer.Count)
+        bool partialChanged = !string.IsNullOrEmpty(_currentPartial());
+        if (result.Epoch != _epoch || !_sentenceClosed
+            || partialChanged
+            || slotIndex < 0 || slotIndex >= _buffer.Count)
         {
+            if (result.Epoch == _epoch && partialChanged)
+                Invalidate(ResetReason.Navigation);
             DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale);
             TrySubmitNext();
             return;
@@ -368,8 +292,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
         string word = slot.Form; // the form the slot held before any rewrite
         string target = outcome.Chosen ?? slot.Form;
-        if (slot.NeedsCap)
-            target = Capitalize(target);
 
         string verdict;
         if (string.Equals(target, slot.Form, StringComparison.Ordinal))
@@ -380,10 +302,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         }
         else
         {
-            CorrectionReason reason = outcome.Chosen is not null
-                ? CorrectionReason.SentenceReranker
-                : CorrectionReason.Capitalization;
-            bool applied = ApplySlotRewrite(slotIndex, target, reason);
+            bool applied = ApplySlotRewrite(slotIndex, target, CorrectionReason.SentenceReranker);
             verdict = applied ? Outcome.Applied : Outcome.Blocked;
         }
 
@@ -426,19 +345,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         return sb.ToString();
     }
 
-    private void ApplyCapitalizationOnly(int slotIndex)
-    {
-        if (slotIndex < 0 || slotIndex >= _buffer.Count)
-            return;
-        SlotEntry slot = _buffer[slotIndex];
-        if (slot.Resolved)
-            return;
-        slot.Resolved = true;
-        string target = Capitalize(slot.Form);
-        if (!string.Equals(target, slot.Form, StringComparison.Ordinal))
-            ApplySlotRewrite(slotIndex, target, CorrectionReason.Capitalization);
-    }
-
     // Rewrites one slot in place by the minimal keystroke diff. Reconstructs the
     // on-screen tail from the buffer's own forms and appends the live partial word
     // identically on both sides, so InjectionPlan preserves it and the backspace
@@ -469,6 +375,10 @@ public sealed class SentenceRerankCoordinator : IDisposable
         if (string.Equals(current, target, StringComparison.Ordinal))
             return false;
 
+        InjectionPlan plan = InjectionPlan.Compute(current, target);
+        if (plan.IsNoOp)
+            return false;
+
         if (_injector.Replace(current, target))
         {
             slot.Form = newForm;
@@ -477,7 +387,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
             // tracker models a later, unchanged word and is already consistent.
             if (slotIndex == _buffer.Count - 1)
                 _realignLastCommitted?.Invoke(newForm);
-            _onApplied?.Invoke(new CorrectionDecision(oldForm, newForm, reason));
+            _onApplied?.Invoke(new CorrectionDecision(oldForm, newForm, reason), plan);
             return true;
         }
 
@@ -494,17 +404,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
-
-    // A first word qualifies for a capital when it is a lowercase-initial plain
-    // word; an internal capital (iPhone, eBay) means the user meant that casing.
-    private static bool NeedsCapitalization(string form) =>
-        form.Length > 0
-        && char.IsLetter(form[0])
-        && char.IsLower(form[0])
-        && !WordShape.HasInternalUpper(form);
-
-    private static string Capitalize(string form) =>
-        form.Length == 0 ? form : char.ToUpperInvariant(form[0]) + form[1..];
 
     // The closed vocabulary for the rerank verdict log — one spelling, one place,
     // so a grep on an outcome finds every occurrence (logging doctrine).
@@ -527,12 +426,6 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public IReadOnlyList<AccentVariant> Candidates = Array.Empty<AccentVariant>();
         public bool IsAmbiguous;
         public bool Resolved;
-        // Set when a pause pass flushed this slot early: its verdict is
-        // provisional, and the true-closure pass re-opens it for re-review.
-        public bool PauseFlushed;
-        public int RightContextCount;
-        public bool NeedsCap;
-        public bool IsSentenceInitial;
         // The engine's per-word id, carried so the deferred reranker verdict joins
         // the synchronous decision record on the same id in the decision telemetry.
         public long WordId;

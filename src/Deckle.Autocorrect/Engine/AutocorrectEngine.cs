@@ -46,19 +46,6 @@ public sealed partial class AutocorrectEngine : IDisposable
     // Kinds are code, the records are the user's own data.
     private readonly MistouchFamilyCorrector? _mistouch;
 
-    // ── Pause pass (CONTEXT.md § Pause pass) ──
-    // Measured surface profiles by process; _pauseThresholdMs is the current
-    // surface's calibrated bar (0 = not armed, the common case). The one-shot
-    // timer re-arms on every physical key and fires on the threadpool — it only
-    // raises the pending flag and requests a drain, so the decision itself
-    // (compare against the last key's clock, flush the coordinator) runs on the
-    // input thread like everything else. Event-driven: no polling, one timer.
-    private readonly Dictionary<string, SurfaceProfileRecord>? _profiles;
-    private readonly Timer? _pauseTimer;
-    private volatile int _pauseThresholdMs;
-    private long _lastKeyTickMs;         // input thread only
-    private int _pausePassRequested;     // threadpool → input thread flag
-
     // Opt-in per-word decision telemetry. When this returns true, each evaluated
     // word on an enrolled surface emits a structured trace (candidates, scores,
     // margins, the guard that left it literal) to the autocorrect.decisions dataset.
@@ -150,8 +137,7 @@ public sealed partial class AutocorrectEngine : IDisposable
         IAmbiguityProbe? probe = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
-        IReadOnlyList<SurfaceProfileRecord>? surfaceProfiles = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
     {
         _host = host;
         _decoder = decoder;
@@ -171,13 +157,6 @@ public sealed partial class AutocorrectEngine : IDisposable
             ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
             : null;
 
-        if (surfaceProfiles is { Count: > 0 })
-        {
-            _profiles = new Dictionary<string, SurfaceProfileRecord>(StringComparer.OrdinalIgnoreCase);
-            foreach (SurfaceProfileRecord p in surfaceProfiles)
-                _profiles[p.Process] = p;
-        }
-
         // The contextual stage exists only with both a model and a probe. The lane
         // marshals inference off this thread and the verdict back via the host pump.
         if (reranker is not null && probe is not null)
@@ -192,10 +171,5 @@ public sealed partial class AutocorrectEngine : IDisposable
                 onApplied: OnCoordinatorApplied,
                 decisionTelemetry: decisionTelemetry);
         }
-
-        // The pause pass exists only with both a sentence stage to flush and at
-        // least one profiled surface to arm it on.
-        if (_profiles is not null && _coordinator is not null)
-            _pauseTimer = new Timer(OnPauseTimerElapsed);
     }
 }

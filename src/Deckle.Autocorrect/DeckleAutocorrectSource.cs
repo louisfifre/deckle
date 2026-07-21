@@ -42,6 +42,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtAutocorrectRerank   = 18;
     public const int EvtAutocorrectText     = 19;
     public const int EvtAutocorrectStream   = 21;
+    // Retired with the live pause pass; the published event id stays reserved.
     public const int EvtPausePassTriggered  = 22;
     public const int EvtInjectionIncident   = 23;
     public const int EvtInjectionRecovered  = 24;
@@ -375,23 +376,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtAutocorrectStream, process, text, erased, closure, timing);
-    }
-
-    // ── Pause pass ────────────────────────────────────────────────────────
-
-    // A typing pause on a profiled Enter-heavy surface flushed the open
-    // ambiguous slots to the sentence stage early (CONTEXT.md § Pause pass).
-    // threshold_ms is the surface's calibrated pause bar; slots how many were
-    // put in motion. A verdict beaten by Enter shows up as the existing
-    // "stale" RerankVerdict — the residue to measure rides these two together.
-    [Event(EvtPausePassTriggered,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "pause pass | threshold_ms={0} | slots={1}")]
-    public void PausePassTriggered(int threshold_ms, int slots)
-    {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtPausePassTriggered, threshold_ms, slots);
     }
 
     // ── Learning ─────────────────────────────────────────────────────────

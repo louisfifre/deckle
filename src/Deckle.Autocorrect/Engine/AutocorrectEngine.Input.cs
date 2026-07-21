@@ -25,32 +25,6 @@ public sealed partial class AutocorrectEngine
             _corpus?.Discard();
             _stream?.Discard();
         }
-        if (Interlocked.Exchange(ref _pausePassRequested, 0) != 0)
-            MaybeRunPausePass();
-    }
-
-    // The timer's threadpool callback: raise the flag and marshal to the input
-    // thread — never touch the coordinator from here.
-    private void OnPauseTimerElapsed(object? _)
-    {
-        if (_pauseThresholdMs <= 0) return;
-        Interlocked.Exchange(ref _pausePassRequested, 1);
-        _host.RequestDrain();
-    }
-
-    // Input thread. The timer races the keyboard: a key landing after the arm
-    // re-arms it, but a fire may already be in flight — re-check the clock so a
-    // pause is only declared when nothing was typed for the threshold (small
-    // slack for timer granularity).
-    private void MaybeRunPausePass()
-    {
-        int threshold = _pauseThresholdMs;
-        if (threshold <= 0 || _coordinator is null) return;
-        if (Environment.TickCount64 - _lastKeyTickMs < threshold - 50) return;
-
-        int slots = _coordinator.FlushOnPause();
-        if (slots > 0)
-            DeckleAutocorrectSource.Log.PausePassTriggered(threshold, slots);
     }
 
     private void OnKey(KeyboardKeyEvent e)
@@ -74,13 +48,6 @@ public sealed partial class AutocorrectEngine
             _stream?.OnKeystroke(k);
 
         _tracker.OnKeystroke(k);
-
-        // Re-arm the pause clock on every physical key. Armed only where the
-        // surface's profile set a bar — everywhere else the timer never runs.
-        _lastKeyTickMs = Environment.TickCount64;
-        int pauseMs = _pauseThresholdMs;
-        if (pauseMs > 0)
-            _pauseTimer?.Change(pauseMs, Timeout.Infinite);
     }
 
     private void OnPointerInteraction()
@@ -92,8 +59,7 @@ public sealed partial class AutocorrectEngine
     }
 
     // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
-    // model. Enter is forwarded verbatim so the coordinator can vouch the next word
-    // as sentence-initial; every other reason is a caret move to an unknown spot.
+    // model. No contextual verdict may survive a discontinuity.
     private void OnTrackerReset(ResetReason reason, bool droppedPartialWord)
     {
         // Close the corpus sentence first (Enter emits it tagged "enter", any other
@@ -109,14 +75,13 @@ public sealed partial class AutocorrectEngine
         _coordinator?.Invalidate(reason);
     }
 
-    // A correction the contextual stage applied behind the caret. It counts and
-    // logs like any correction, and records a Sentence transition on the corpus
-    // slot if the sentence is still open (a rewrite after flush is invisible).
-    private void OnCoordinatorApplied(CorrectionDecision decision)
+    // A correction the contextual stage applied inside the closed sentence. It
+    // counts and logs like any correction, and records the actual write plan.
+    private void OnCoordinatorApplied(CorrectionDecision decision, InjectionPlan plan)
     {
         if (IsActivityRollupEnabled()) _rollupCorrections++;
         DeckleAutocorrectSource.Log.CorrectionApplied();
-        LogCorrectionDetail(decision, backspaces: 0);
+        LogCorrectionDetail(decision, plan.Backspaces);
         if (CanCollectText())
             _corpus?.SentenceEdit(decision.Original, decision.Replacement);
         CorrectionApplied?.Invoke(decision);
@@ -131,15 +96,6 @@ public sealed partial class AutocorrectEngine
         _tracker.NotifyFocusChanged();
         _stream?.NotifyFocusChanged();
         _surface = surface;
-
-        // The pause pass follows the surface: armed at its measured bar where
-        // the profile qualifies, disarmed (threshold 0) everywhere else.
-        _pauseThresholdMs = _profiles is not null
-            && _profiles.TryGetValue(surface.ProcessName, out SurfaceProfileRecord? profile)
-            ? profile.PauseThresholdMs
-            : 0;
-        if (_pauseThresholdMs == 0)
-            _pauseTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
         bool enabled = IsEnabledFor(_settings(), surface.ProcessName);
         DeckleAutocorrectSource.Log.SurfaceChanged(

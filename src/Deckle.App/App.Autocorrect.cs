@@ -20,8 +20,8 @@ namespace Deckle.App;
 // default (AutocorrectSettings); corrections land only on enrolled processes
 // (Notepad out of the box) and never on a password surface.
 //
-// The live post-sentence stage resolves real-word ambiguities — la/là, a/à,
-// ou/où — plus sentence-initial capitals. It starts with deterministic French
+// The closed-sentence stage resolves real-word ambiguities — la/là, a/à,
+// ou/où — only after terminal punctuation. It starts with deterministic French
 // rules and delegates to a model engine when one is present, by preference:
 // the ONNX GenAI sentence judge (models\sentence-judge\), else the CamemBERT
 // masked-LM (models\camembert-base\). Both live under the user data root,
@@ -140,11 +140,6 @@ public partial class App
             var mistouchFamilies = MistouchFamilyStore.Load(Path.Combine(
                 AppPaths.GetModuleDirectory("autocorrect"), MistouchFamilyStore.FileName));
 
-            // Measured surface profiles — written by the ventilation gesture,
-            // arm the pause pass per surface. Empty until a ventilation ran.
-            var surfaceProfiles = SurfaceProfileStore.Load(Path.Combine(
-                AppPaths.GetModuleDirectory("autocorrect"), SurfaceProfileStore.FileName));
-
             // The global-English tier is deliberately restricted: only the
             // globish seed artifact activates it. The historical full English
             // list is never loaded into the live protected-literal chain.
@@ -213,8 +208,7 @@ public partial class App
                 // heaviest text capture, behind its own consent toggle.
                 textTelemetry: () =>
                     Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText,
-                mistouchFamilies: mistouchFamilies,
-                surfaceProfiles: surfaceProfiles);
+                mistouchFamilies: mistouchFamilies);
             sentenceReranker = null; // ownership moved into the engine's lane
 
             // Reactive enrollment: a would-be correction on an undecided app
