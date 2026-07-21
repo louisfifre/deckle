@@ -1,4 +1,6 @@
 # Deckle launcher submenu definitions.
+. (Join-Path $PSScriptRoot 'menu-layout.ps1')
+
 function Show-Submenu {
     param(
         [Parameter(Mandatory)][string]$Header,
@@ -6,10 +8,12 @@ function Show-Submenu {
         [string]$Footer = 'Back returns to the main menu; Ctrl+C quits anytime'
     )
 
+    $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2)
+
     $withBack = @(
         @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }
         @{ Blank = $true }
-    ) + @($Rows)
+    ) + @($wrappedRows)
 
     # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
     # never holds the entry selection.
@@ -20,10 +24,10 @@ function Show-Submenu {
 
 function Show-ReleaseMenu {
     $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
-        @{ Prefix = 'GitHub'; Cells = @(
+        @{ Prefix = 'GitHub'; Items = @(
             @{ Label = 'Publish app release'; Value = 'publish' }
         ) }
-        @{ Prefix = '.NET'; Cells = @(
+        @{ Prefix = '.NET'; Items = @(
             @{ Label = 'Prepare app release artifacts';  Value = 'artifacts' }
             @{ Label = 'Prepare native runtime release'; Value = 'native'    }
         ) }
@@ -37,15 +41,15 @@ function Show-ReleaseMenu {
 
 function Show-MaintenanceMenu {
     $v = Show-Submenu -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
-        @{ Prefix = 'Clean'; Cells = @(
+        @{ Prefix = 'Clean'; Items = @(
             @{ Label = 'Clean build outputs';     Value = 'clean' }
             @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
         ) }
-        @{ Prefix = 'Inspect'; Cells = @(
+        @{ Prefix = 'Inspect'; Items = @(
             @{ Label = 'Show module stats'; Value = 'stats' }
-            @{ Label = 'Validate resources'; Value = 'resources' }
+            @{ Label = 'Show context stats'; Value = 'context' }
         ) }
-        @{ Prefix = 'Docs'; Cells = @(
+        @{ Prefix = 'Docs'; Items = @(
             @{ Label = 'Update README pulse'; Value = 'readme-stats' }
             @{ Label = 'Update changelog';    Value = 'changelog'    }
         ) }
@@ -54,7 +58,7 @@ function Show-MaintenanceMenu {
         'clean'         { Invoke-WorktreeScript -Script 'clean.ps1' }
         'build-servers' { Invoke-StopBuildServers }
         'stats'         { Invoke-WorktreeScript -Script 'stats.ps1' }
-        'resources'     { Invoke-WorktreeScript -Script 'validate-resources.ps1' }
+        'context'       { Invoke-WorktreeScript -Script 'inspect-context.ps1' }
         'readme-stats'  { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
         'changelog'     { Invoke-WorktreeScript -Script 'changelog.ps1' }
     }
@@ -62,11 +66,11 @@ function Show-MaintenanceMenu {
 
 function Show-SetupMenu {
     $v = Show-Submenu -Header 'Deckle > Setup   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
-        @{ Prefix = 'Machine'; Cells = @(
+        @{ Prefix = 'Machine'; Items = @(
             @{ Label = 'Bootstrap dev environment'; Value = 'bootstrap' }
             @{ Label = 'Set up runtime assets';     Value = 'assets'    }
         ) }
-        @{ Prefix = 'Repo'; Cells = @(
+        @{ Prefix = 'Repo'; Items = @(
             @{ Label = 'Install git hooks'; Value = 'hooks' }
         ) }
     )
