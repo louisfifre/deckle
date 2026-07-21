@@ -119,13 +119,19 @@ public static class ToolCatalog
 
             new(
                 "search",
-                "Search objects by text; returns compact hits (type, name, id, snippet).",
+                "Search objects by text in their name and body snippet. Compact by default: type, name and id. Pass context:true when you need to compare candidates: project/task hits then include non-empty Description and Définition de fini properties, followed by up to five snippet lines. Nameless notes and reports always use the snippet's first line as their display name.",
                 Schema(
                     required: [Prop("text", "string", "Free-text query.")],
-                    optional: [ArrayProp("types", "Type keys to restrict the search; omit for any type.",
-                                         itemEnum: ["epic", "project", "task", "rapport", "idee", "document"])]),
+                    optional:
+                    [
+                        ArrayProp("types", "Type keys to restrict the search; omit for any type.",
+                                  itemEnum: ["epic", "project", "task", "rapport", "idee", "document"]),
+                        Prop("context", "boolean", "Include selection context: project/task Description and Définition de fini, then up to five body-snippet lines. Omit for compact identity-only results."),
+                    ]),
                 async (args, ct) =>
-                    await query.SearchAsync(Str(args, "text"), StrArrayOpt(args, "types"), ct)),
+                    await query.SearchAsync(
+                        Str(args, "text"), StrArrayOpt(args, "types"),
+                        BoolOpt(args, "context") ?? false, ct)),
 
             new(
                 "subtask",

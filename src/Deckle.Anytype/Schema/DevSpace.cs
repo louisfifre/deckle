@@ -92,6 +92,7 @@ public static class DevSpace
         // the module JOURNAL.md).
         public const string Tag               = "tag";                      // multi_select — auto-transversal, unmapped
         public const string Archive           = "archive";                  // checkbox
+        public const string Description       = "description";              // text
         public const string DefinitionDeFini  = "definition_de_fini";       // text
         public const string Version           = "version";                  // text
         public const string DueDate           = "due_date";                 // date
@@ -277,6 +278,7 @@ public static class DevSpace
 
     static readonly PropertyDef[] ProjectProps =
     [
+        new(Props.Description, "Description", "text"),
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.PhaseProjet, "Phase projet", "select", PhaseProjet.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
@@ -293,6 +295,7 @@ public static class DevSpace
 
     static readonly PropertyDef[] TaskProps =
     [
+        new(Props.Description, "Description", "text"),
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
         new(Props.TypeDeTache, "Type de tâche", "select", TypeDeTache.All),

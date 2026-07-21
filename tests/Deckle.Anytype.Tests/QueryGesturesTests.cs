@@ -88,6 +88,156 @@ public class QueryGesturesTests
         },
     };
 
+    // ── SearchAsync ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SearchWithContextSurfacesProjectAndTaskFramingBeforeTheSnippet()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray
+            {
+                SearchHit(
+                    ProjectId,
+                    "Deckle",
+                    DevSpace.Types.Project,
+                    "Details\nEnjeu\nConstruire l’utilitaire Windows local.",
+                    TextProperty(DevSpace.Props.Description, "Utilitaire Windows local."),
+                    TextProperty(DevSpace.Props.DefinitionDeFini, "Le parcours principal est livré.")),
+                SearchHit(
+                    TaskId,
+                    "Reconnexion",
+                    DevSpace.Types.Task,
+                    "Details\nObjet\nReprendre après une veille.",
+                    TextProperty(DevSpace.Props.Description, "Reprendre après la veille."),
+                    TextProperty(DevSpace.Props.DefinitionDeFini, "Aucune action manuelle requise.")),
+            },
+        });
+
+        string digest = await NewGestures(server).SearchAsync("Deckle", context: true, ct: Ct);
+
+        Assert.Equal(
+            $"project · Deckle · {ProjectId}\n" +
+            "Description : Utilitaire Windows local.\n" +
+            "Définition de fini : Le parcours principal est livré.\n" +
+            "Aperçu :\n" +
+            "Details\n" +
+            "Enjeu\n" +
+            "Construire l’utilitaire Windows local.\n" +
+            $"task · Reconnexion · {TaskId}\n" +
+            "Description : Reprendre après la veille.\n" +
+            "Définition de fini : Aucune action manuelle requise.\n" +
+            "Aperçu :\n" +
+            "Details\n" +
+            "Objet\n" +
+            "Reprendre après une veille.",
+            digest);
+    }
+
+    [Fact]
+    public async Task SearchWithContextOmitsEmptyProjectFramingAndLimitsSnippetsToFiveLines()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray
+            {
+                SearchHit(
+                    ProjectId,
+                    "Deckle",
+                    DevSpace.Types.Project,
+                    "Corps du projet",
+                    TextProperty(DevSpace.Props.Description, "   "),
+                    TextProperty(DevSpace.Props.DefinitionDeFini, "")),
+                SearchHit(
+                    EpicId,
+                    "Applications",
+                    DevSpace.Types.Epic,
+                    snippet: "Ligne 1\nLigne 2\nLigne 3\nLigne 4\nLigne 5\nLigne 6"),
+            },
+        });
+
+        string digest = await NewGestures(server).SearchAsync("Deckle", context: true, ct: Ct);
+
+        Assert.Equal(
+            $"project · Deckle · {ProjectId}\n" +
+            "Aperçu :\n" +
+            "Corps du projet\n" +
+            $"epic · Applications · {EpicId}\n" +
+            "Aperçu :\n" +
+            "Ligne 1\n" +
+            "Ligne 2\n" +
+            "Ligne 3\n" +
+            "Ligne 4\n" +
+            "Ligne 5 …",
+            digest);
+    }
+
+    [Fact]
+    public async Task SearchWithoutContextReturnsCompactIdentitiesAndNamesReportsFromTheirSnippet()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray
+            {
+                SearchHit(
+                    TaskId,
+                    "Reconnexion",
+                    DevSpace.Types.Task,
+                    "Details\nObjet\nReprendre après une veille.",
+                    TextProperty(DevSpace.Props.Description, "Reprendre après la veille."),
+                    TextProperty(DevSpace.Props.DefinitionDeFini, "Aucune action manuelle requise.")),
+                SearchHit(
+                    EpicId,
+                    "",
+                    DevSpace.Types.Rapport,
+                    snippet: "2026-07-21 — Session Anytype\nDécision importante"),
+            },
+        });
+
+        string digest = await NewGestures(server).SearchAsync("Anytype", ct: Ct);
+
+        Assert.Equal(
+            $"task · Reconnexion · {TaskId}\n" +
+            $"rapport · 2026-07-21 — Session Anytype · {EpicId}",
+            digest);
+    }
+
+    static JsonObject SearchHit(
+        string id,
+        string name,
+        string typeKey,
+        params JsonObject[] properties) => SearchHit(id, name, typeKey, null, properties);
+
+    static JsonObject SearchHit(
+        string id,
+        string name,
+        string typeKey,
+        string? snippet = null,
+        params JsonObject[] properties)
+    {
+        var propertyArray = new JsonArray();
+        foreach (JsonObject property in properties) propertyArray.Add(property);
+
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["name"] = name,
+            ["type"] = new JsonObject { ["key"] = typeKey },
+            ["snippet"] = snippet,
+            ["properties"] = propertyArray,
+        };
+    }
+
+    static JsonObject TextProperty(string key, string value) => new()
+    {
+        ["key"] = key,
+        ["format"] = "text",
+        ["text"] = value,
+    };
+
     // « tag » is intentionally mapped onto no type (Anytype's auto-transversal
     // residue, unused). update must therefore REFUSE it before any write — both a
     // regression guard on the schema decision and the reason the live-resolution
