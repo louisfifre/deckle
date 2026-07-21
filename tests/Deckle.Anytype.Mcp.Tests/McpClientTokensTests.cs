@@ -100,18 +100,32 @@ public class McpClientTokensTests
         vault.TryGet(McpClients.Claude.TokenSecretName, out string? claudeToken);
         vault.TryGet(McpClients.Codex.TokenSecretName, out string? codexToken);
         vault.TryGet(McpClients.SchemaAdmin.TokenSecretName, out string? schemaToken);
-        vault.TryGet(McpClients.Home.TokenSecretName, out string? homeToken);
 
         Assert.Same(McpClients.Claude, tokens.Authenticate(claudeToken));
         Assert.Same(McpClients.Codex, tokens.Authenticate(codexToken));
         Assert.Same(McpClients.SchemaAdmin, tokens.Authenticate(schemaToken));
-        Assert.Same(McpClients.Home, tokens.Authenticate(homeToken));
         Assert.NotSame(McpClients.Codex, tokens.Authenticate(claudeToken));
         Assert.NotSame(McpClients.Claude, tokens.Authenticate(codexToken));
         Assert.NotSame(McpClients.SchemaAdmin, tokens.Authenticate(claudeToken));
         Assert.NotSame(McpClients.Claude, tokens.Authenticate(schemaToken));
-        Assert.NotSame(McpClients.Home, tokens.Authenticate(schemaToken));
-        Assert.NotSame(McpClients.SchemaAdmin, tokens.Authenticate(homeToken));
+    }
+
+    [Fact]
+    public void ConfiguredCustomClientIsMintedAndAuthenticated()
+    {
+        var custom = new McpClientProfile(
+            "custom",
+            McpClients.Codex.Surface,
+            "mcp-token-custom",
+            "DECKLE_MCP_TOKEN_CUSTOM");
+        var vault = new FakeSecretVault();
+        var tokens = new McpClientTokens(vault, [.. McpClients.All, custom]);
+
+        tokens.EnsureMinted();
+        vault.TryGet(custom.TokenSecretName, out string? token);
+
+        Assert.False(string.IsNullOrEmpty(token));
+        Assert.Same(custom, tokens.Authenticate(token));
     }
 
     [Theory]

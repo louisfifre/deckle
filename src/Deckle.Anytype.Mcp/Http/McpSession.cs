@@ -30,8 +30,8 @@ public sealed class McpSession
         Id = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
         Client = client;
 
-        var (tools, descriptor) = McpToolset.Build(api, client.Profile, client.Management);
-        _server = new McpServer(tools, descriptor);
+        McpSurfaceSession surface = client.Surface.OpenSession(api);
+        _server = new McpServer(surface.Tools, surface.Descriptor);
         LastActivity = DateTimeOffset.UtcNow;
     }
 

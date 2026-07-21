@@ -58,17 +58,6 @@ public sealed class McpServer
         + "is additive only: no delete, key rename, property format change, or "
         + "property removal.");
 
-    public static readonly Descriptor HomeDescriptor = new(
-        "deckle-home",
-        "Deckle Home",
-        "Guarded home inventory stored in the configured Anytype Home space. "
-        + "Element codes follow PIÈCE-CAT[SUB]NN and never change; their room "
-        + "prefix must exist in the live room registry. Element titles are the "
-        + "codes, human labels live in Libellé, and ordinary bodies stay empty. "
-        + "Properties and relations carry structured facts. Unknown rooms, "
-        + "duplicate codes, unknown closed-vocabulary values, and element "
-        + "deletion are refused with corrective guidance. Content is French.");
-
     public static readonly Descriptor AllDescriptor = new(
         "deckle-anytype-all",
         "Deckle Anytype All",

@@ -5,9 +5,11 @@ type: agent-instructions
 
 # AGENTS.md — Deckle.Home
 
-`Deckle.Home` owns the generic home-inventory domain: its public code grammar,
-category families, closed vocabularies, schema contract, and guarded operations.
-It uses `Deckle.Anytype` as its storage provider but owns no MCP protocol shape.
+`Deckle.Home` is the custom Home MCP. It owns the generic home-inventory domain:
+its public code grammar, category families, closed vocabularies, schema contract,
+guarded operations, and their bounded model-facing MCP surface. It uses
+`Deckle.Anytype` as its storage provider and plugs into the resident transport
+through `Deckle.Anytype.Mcp`.
 
 ## Privacy boundary
 
@@ -26,12 +28,14 @@ membership, object values, and relation targets are live data. A code is valid
 only when its room prefix exists in that live registry.
 
 All writes pass through the domain guards before reaching Anytype. The MCP
-adapter may validate argument shape, but it MUST NOT reimplement nomenclature,
-immutability, deletion, vocabulary, or relation rules.
+catalog may validate argument shape, but it MUST NOT reimplement nomenclature,
+immutability, deletion, vocabulary, or relation rules. HTTP transport, bearer
+authentication and MCP sessions remain in `Deckle.Anytype.Mcp`.
 
-The current `Deckle.Anytype` module still mixes provider infrastructure with the
-Dev-space domain. `Deckle.Home` deliberately improves that boundary; extracting
-a symmetrical `Deckle.Dev` later is optional hygiene, not a prerequisite here.
+The current `Deckle.Anytype` and `Deckle.Anytype.Mcp` modules still mix provider
+infrastructure with the Dev-space project-management domain. `Deckle.Home`
+establishes the target boundary; extracting a sibling custom MCP module for
+project management is a required follow-up, not a prerequisite for Home.
 
 ## Schema
 
