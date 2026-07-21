@@ -31,7 +31,7 @@ public static class SchemaAdminToolCatalog
 
             new(
                 "schema_apply",
-                "Apply a previous schema_preview. Additive only: create missing types/properties/tags and attach properties to types. Requires confirm:true and the preview_id returned by schema_preview.",
+                "Apply a previous schema_preview. Additive only: create missing types/properties/tags, set missing type icons, and attach properties to types. Requires confirm:true and the preview_id returned by schema_preview.",
                 Schema(
                     required:
                     [
@@ -97,12 +97,55 @@ public static class SchemaAdminToolCatalog
             ["layout"] = new JsonObject
             {
                 ["type"] = "string",
-                ["enum"] = new JsonArray { "basic", "profile", "action", "note" },
+                ["enum"] = new JsonArray { "basic", "profile", "action", "note", "collection" },
             },
+            ["icon"] = IconSpecSchema(),
             ["properties"] = ArrayOf(new JsonObject { ["type"] = "string" }),
         },
         ["required"] = new JsonArray { "key", "name" },
         ["additionalProperties"] = false,
+    };
+
+    static JsonObject IconSpecSchema() => new()
+    {
+        ["oneOf"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["format"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray { "icon" } },
+                    ["name"] = new JsonObject
+                    {
+                        ["type"] = "string",
+                        ["description"] = "Name from the Anytype built-in icon set for API 2025-05-20.",
+                    },
+                    ["color"] = new JsonObject
+                    {
+                        ["type"] = "string",
+                        ["enum"] = new JsonArray
+                        {
+                            "grey", "yellow", "orange", "red", "pink",
+                            "purple", "blue", "ice", "teal", "lime",
+                        },
+                    },
+                },
+                ["required"] = new JsonArray { "format", "name" },
+                ["additionalProperties"] = false,
+            },
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["format"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray { "emoji" } },
+                    ["emoji"] = new JsonObject { ["type"] = "string" },
+                },
+                ["required"] = new JsonArray { "format", "emoji" },
+                ["additionalProperties"] = false,
+            },
+        },
     };
 
     static JsonObject PropertySpecSchema() => new()

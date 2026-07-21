@@ -67,10 +67,16 @@ public class SchemaAdminToolCatalogTests
         JsonObject typeSchema = Assert.IsType<JsonObject>(typeArray["items"]);
         JsonObject typeProperties = Assert.IsType<JsonObject>(typeSchema["properties"]);
         Assert.Contains("plural_name", typeProperties.Select(p => p.Key));
+        Assert.Contains("icon", typeProperties.Select(p => p.Key));
 
         JsonObject layout = Assert.IsType<JsonObject>(typeProperties["layout"]);
         JsonArray values = Assert.IsType<JsonArray>(layout["enum"]);
         Assert.Contains(values, node => node?.GetValue<string>() == "basic");
+        Assert.Contains(values, node => node?.GetValue<string>() == "collection");
         Assert.DoesNotContain(values, node => node?.GetValue<string>() == "page");
+
+        JsonObject icon = Assert.IsType<JsonObject>(typeProperties["icon"]);
+        JsonArray iconVariants = Assert.IsType<JsonArray>(icon["oneOf"]);
+        Assert.Equal(2, iconVariants.Count);
     }
 }

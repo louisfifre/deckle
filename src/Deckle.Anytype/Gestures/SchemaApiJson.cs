@@ -21,6 +21,23 @@ internal static class SchemaApiJson
             ? s
             : "";
 
+    public static SchemaTypeIconInfo? TypeIcon(JsonObject obj)
+    {
+        if (!obj.TryGetPropertyValue("icon", out JsonNode? node) || node is null)
+            return null;
+        if (node is not JsonObject icon)
+            return new SchemaTypeIconInfo("unknown", null, null, null, null);
+        if (icon.Count == 0)
+            return null;
+
+        return new SchemaTypeIconInfo(
+            Str(icon, "format") is { Length: > 0 } format ? format : "unknown",
+            Str(icon, "name") is { Length: > 0 } name ? name : null,
+            Str(icon, "color") is { Length: > 0 } color ? color : null,
+            Str(icon, "emoji") is { Length: > 0 } emoji ? emoji : null,
+            Str(icon, "file") is { Length: > 0 } file ? file : null);
+    }
+
     public static IReadOnlyList<SchemaPropertyLinkInfo> PropertyLinks(JsonObject obj)
     {
         if (obj["properties"] is not JsonArray arr) return [];

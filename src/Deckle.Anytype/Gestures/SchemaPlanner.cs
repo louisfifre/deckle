@@ -14,6 +14,7 @@ internal static class SchemaPlanner
     {
         var actions = new List<SchemaAction>();
         var conflicts = new List<string>();
+        var skippedConflicts = new List<string>();
 
         foreach (PropertySpec prop in manifest.Properties)
         {
@@ -40,8 +41,19 @@ internal static class SchemaPlanner
 
         foreach (TypeSpec type in manifest.Types)
         {
-            if (!snapshot.Types.ContainsKey(type.Key))
+            bool exists = snapshot.Types.TryGetValue(type.Key, out SchemaTypeInfo? existingType);
+            if (!exists)
                 actions.Add(new SchemaAction("create_type", type.Key, type.Name));
+
+            if (type.Icon is not null)
+            {
+                if (!exists || existingType!.Icon is null)
+                    actions.Add(new SchemaAction("set_icon", type.Key, type.Icon.Display));
+                else
+                    skippedConflicts.Add(
+                        $"set_icon · {type.Key} · icône existante {existingType.Icon.Display}, " +
+                        $"demandée {type.Icon.Display}");
+            }
 
             foreach (string propKey in type.Properties)
             {
@@ -65,7 +77,8 @@ internal static class SchemaPlanner
             Manifest: manifest,
             Snapshot: snapshot,
             Actions: actions,
-            Conflicts: conflicts);
+            Conflicts: conflicts,
+            SkippedConflicts: skippedConflicts);
     }
 
     internal static string Render(SchemaPreview preview)
@@ -82,6 +95,13 @@ internal static class SchemaPlanner
                 sb.Append("- ").Append(conflict).Append('\n');
         }
 
+        if (preview.SkippedConflicts.Count > 0)
+        {
+            sb.Append("Conflits ignorés (additif seulement) :\n");
+            foreach (string conflict in preview.SkippedConflicts)
+                sb.Append("- ").Append(conflict).Append('\n');
+        }
+
         if (preview.Actions.Count == 0)
         {
             sb.Append("Aucune création additive nécessaire.");
@@ -90,7 +110,12 @@ internal static class SchemaPlanner
 
         sb.Append("Actions additives :\n");
         foreach (SchemaAction action in preview.Actions)
-            sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key).Append('\n');
+        {
+            sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key);
+            if (action.Kind == "set_icon")
+                sb.Append(" · ").Append(action.Name);
+            sb.Append('\n');
+        }
 
         sb.Append("Relire puis appeler schema_apply avec confirm:true et preview_id:")
             .Append(preview.Id).Append('.');
@@ -140,6 +165,8 @@ internal static class SchemaPlanner
         };
         if (links.Count > 0)
             payload["properties"] = PropertyLinkArray(links);
+        if (spec.Icon is not null)
+            payload["icon"] = spec.Icon.ToPayload();
         return payload;
     }
 

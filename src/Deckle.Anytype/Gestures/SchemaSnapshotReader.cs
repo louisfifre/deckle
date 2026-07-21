@@ -102,6 +102,7 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
                 SchemaApiJson.Str(obj, "name"),
                 SchemaApiJson.Str(obj, "plural_name"),
                 SchemaApiJson.Str(obj, "layout"),
+                SchemaApiJson.TypeIcon(obj),
                 SchemaApiJson.PropertyLinks(obj));
         }
         return result;
