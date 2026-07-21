@@ -96,6 +96,16 @@ public partial class App : Microsoft.UI.Xaml.Application
         // engines, windows, tray or hotkeys are composed after this gate.
         if (TryEnterInstallMode()) return;
 
+        // Deckle is a resident utility. A second resident would install a second
+        // global keyboard hook and could inject the same correction twice. The
+        // transactional install/update/relocation modes above remain deliberately
+        // exempt because they coordinate overlapping processes by design.
+        if (!TryAcquireResidentOwnership())
+        {
+            Exit();
+            return;
+        }
+
         // Load-bearing order. Each phase owns one contiguous slice of the former
         // OnLaunched body; keep calls in this order when adding startup work.
         var context = new StartupContext();
