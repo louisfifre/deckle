@@ -14,6 +14,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Added
 
 - **rewrite:** Surface gated paragraph correction offers
+- **anytype:** Add optional search context
 
 ### Fixed
 
