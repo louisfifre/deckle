@@ -18,6 +18,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 ### Fixed
 
+- **setup:** Make native runtime installation releasable
 - **autocorrect:** Make sentence judge loading reliable
 - **app:** Show log entry severity
 - **input:** Preserve focused-object events
