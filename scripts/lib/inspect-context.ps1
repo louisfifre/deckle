@@ -46,8 +46,14 @@ function Write-Section {
 }
 
 function Format-Cell {
-    param([AllowEmptyString()][string]$Text, [int]$Width, [switch]$Right)
-    if ($Text.Length -gt $Width) { $Text = $Text.Substring(0, $Width - 3) + '...' }
+    param([AllowEmptyString()][string]$Text, [int]$Width, [switch]$Right, [switch]$TruncateStart)
+    if ($Text.Length -gt $Width) {
+        $Text = if ($TruncateStart) {
+            '...' + $Text.Substring($Text.Length - ($Width - 3))
+        } else {
+            $Text.Substring(0, $Width - 3) + '...'
+        }
+    }
     if ($Right) { return $Text.PadLeft($Width) }
     return $Text.PadRight($Width)
 }
@@ -55,6 +61,13 @@ function Format-Cell {
 function Format-Number {
     param($Value)
     return '{0:N0}' -f $Value
+}
+
+function Get-DocumentDisplayPath {
+    param($Document)
+
+    $directory = [System.IO.Path]::GetDirectoryName($Document.Path) -replace '\\', '/'
+    return $(if ($directory) { $directory } else { '.' })
 }
 
 function Write-SummaryRow {
@@ -73,7 +86,8 @@ function Write-SummaryRow {
 
 function Write-DocumentRow {
     param($Document)
-    $line = '  ' + (Format-Cell $Document.Path 32) + '  ' +
+    $displayPath = Get-DocumentDisplayPath $Document
+    $line = '  ' + (Format-Cell $displayPath 32 -TruncateStart) + '  ' +
             (Format-Cell $Document.Modified 10) + '  ' +
             (Format-Cell $(if ($Document.Added1Day) { 'Yes' } else { '-' }) 6 -Right) + '  ' +
             (Format-Cell $(if ($Document.Added7Days) { 'Yes' } else { '-' }) 6 -Right) + '  ' +
