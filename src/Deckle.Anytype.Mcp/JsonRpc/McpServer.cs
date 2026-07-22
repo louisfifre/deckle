@@ -53,10 +53,12 @@ public sealed class McpServer
         "Deckle Anytype Schema Admin",
         "Anytype schema administration surface. It inspects configured space "
         + "aliases, previews additive type/property/tag changes, then applies a "
-        + "previous preview only when confirm:true is passed. It never accepts a "
-        + "raw space_id; use configured aliases such as dev or home. First scope "
-        + "is additive only: no delete, key rename, property format change, or "
-        + "property removal.");
+        + "previous preview only when confirm:true is passed. It also exposes "
+        + "two bounded cross-space utilities: additive collection membership and "
+        + "select writes addressed by existing tag keys. It never accepts a "
+        + "raw space_id; use configured aliases such as dev or home. Schema "
+        + "manifests stay additive only: no delete, key rename, property format "
+        + "change, or property removal.");
 
     public static readonly Descriptor AllDescriptor = new(
         "deckle-anytype-all",

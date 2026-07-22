@@ -28,8 +28,7 @@ public static class McpToolset
         {
             ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, documents),
             ToolProfile.Dialogues => DialogueToolCatalog.Build(dialogues),
-            ToolProfile.SchemaAdmin => SchemaAdminToolCatalog.Build(
-                new SchemaAdminGestures(api, aliases ?? AnytypeSpaceAliases.Load(api.SpaceId))),
+            ToolProfile.SchemaAdmin => BuildSchemaAdmin(api, resolver, aliases),
             ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query, documents)
                 .Concat(DialogueToolCatalog.Build(dialogues))
                 .ToArray(),
@@ -58,5 +57,18 @@ public static class McpToolset
         }
 
         return new McpSurfaceSession(tools, descriptor);
+    }
+
+    private static IReadOnlyList<ToolDescriptor> BuildSchemaAdmin(
+        AnytypeApiClient api,
+        NameResolver resolver,
+        AnytypeSpaceAliases? aliases)
+    {
+        AnytypeSpaceAliases spaces = aliases ?? AnytypeSpaceAliases.Load(api.SpaceId);
+        return SchemaAdminToolCatalog.Build(new SchemaAdminGestures(api, spaces))
+            .Concat(AnytypeUtilityToolCatalog.Build(
+                new CollectionMembershipGestures(api, spaces, resolver),
+                new SelectValueGestures(api, spaces, resolver)))
+            .ToArray();
     }
 }

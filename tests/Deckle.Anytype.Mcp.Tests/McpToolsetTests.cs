@@ -76,7 +76,7 @@ public class McpToolsetTests
     }
 
     [Fact]
-    public void SchemaAdminMountsOnlySchemaTools()
+    public void SchemaAdminMountsSchemaAndBoundedAnytypeUtilities()
     {
         var aliases = new AnytypeSpaceAliases(
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -89,6 +89,8 @@ public class McpToolsetTests
 
         Assert.Contains("schema_preview", names);
         Assert.Contains("schema_apply", names);
+        Assert.Contains("anytype_collection_add", names);
+        Assert.Contains("anytype_select_set", names);
         Assert.DoesNotContain("create_task", names);
         Assert.DoesNotContain("dialogue_create", names);
         Assert.DoesNotContain("delete", names);
