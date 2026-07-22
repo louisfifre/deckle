@@ -23,9 +23,9 @@ if ($Pick) {
 }
 
 $documents = @(Get-ContextInventory -RepoRoot $RepoRoot)
-$groups = @($documents | Group-Object Kind | ForEach-Object {
+$groups = @($documents | Group-Object LoadingMode | ForEach-Object {
     [pscustomobject]@{
-        Kind            = $_.Name
+        LoadingMode     = $_.Name
         Files           = $_.Count
         Added1Day       = @($_.Group | Where-Object Added1Day).Count
         Added7Days      = @($_.Group | Where-Object Added7Days).Count
@@ -58,29 +58,30 @@ function Format-Number {
 }
 
 function Write-SummaryRow {
-    param($Kind, $Files, $New1d, $New7d, $New30d, $Sections, $Lines, $Bytes, $Tokens, [switch]$Header)
-    $line = (Format-Cell $Kind 22) + '  ' +
+    param($LoadingMode, $Files, $New1d, $New7d, $New30d, $Sections, $Lines, $Bytes, $Tokens, [switch]$Header)
+    $line = (Format-Cell $LoadingMode 22) + '  ' +
             (Format-Cell $Files 7 -Right) + '  ' +
             (Format-Cell $New1d 6 -Right) + '  ' +
             (Format-Cell $New7d 6 -Right) + '  ' +
             (Format-Cell $New30d 7 -Right) + '  ' +
             (Format-Cell $Sections 9 -Right) + '  ' +
-            (Format-Cell $Lines 10 -Right) + '  ' +
-            (Format-Cell $Bytes 11 -Right) + '  ' +
-            (Format-Cell $Tokens 14 -Right)
+            (Format-Cell $Lines 7 -Right) + '  ' +
+            (Format-Cell $Bytes 9 -Right) + '  ' +
+            (Format-Cell $Tokens 11 -Right)
     Write-Host $line -ForegroundColor $(if ($Header) { 'DarkGray' } else { 'Gray' })
 }
 
 function Write-DocumentRow {
     param($Document)
-    $line = '  ' + (Format-Cell $Document.Path 38) + '  ' +
-            (Format-Cell $(if ($Document.Added1Day) { 'Yes' } else { '-' }) 5 -Right) + '  ' +
-            (Format-Cell $(if ($Document.Added7Days) { 'Yes' } else { '-' }) 5 -Right) + '  ' +
-            (Format-Cell $(if ($Document.Added30Days) { 'Yes' } else { '-' }) 6 -Right) + '  ' +
+    $line = '  ' + (Format-Cell $Document.Path 32) + '  ' +
+            (Format-Cell $Document.Modified 10) + '  ' +
+            (Format-Cell $(if ($Document.Added1Day) { 'Yes' } else { '-' }) 6 -Right) + '  ' +
+            (Format-Cell $(if ($Document.Added7Days) { 'Yes' } else { '-' }) 6 -Right) + '  ' +
+            (Format-Cell $(if ($Document.Added30Days) { 'Yes' } else { '-' }) 7 -Right) + '  ' +
             (Format-Cell (Format-Number $Document.Sections) 8 -Right) + '  ' +
-            (Format-Cell (Format-Number $Document.Lines) 8 -Right) + '  ' +
-            (Format-Cell ('{0:N1} KB' -f ($Document.Bytes / 1KB)) 11 -Right) + '  ' +
-            (Format-Cell (Format-Number $Document.EstimatedTokens) 14 -Right)
+            (Format-Cell (Format-Number $Document.Lines) 6 -Right) + '  ' +
+            (Format-Cell ('{0:N1} KB' -f ($Document.Bytes / 1KB)) 8 -Right) + '  ' +
+            (Format-Cell (Format-Number $Document.EstimatedTokens) 11 -Right)
     Write-Host $line
 }
 
@@ -101,7 +102,7 @@ Write-Section 'Context summary (tracked Markdown)'
 Write-SummaryRow 'Document type' 'Files' 'New 1d' 'New 7d' 'New 30d' 'Sections' 'Lines' 'Size' 'Est. tokens' -Header
 Write-SummaryRow '-------------' '-----' '------' '------' '-------' '--------' '-----' '----' '-----------' -Header
 foreach ($group in $groups) {
-    Write-SummaryRow $group.Kind (Format-Number $group.Files) (Format-Number $group.Added1Day) `
+    Write-SummaryRow $group.LoadingMode (Format-Number $group.Files) (Format-Number $group.Added1Day) `
         (Format-Number $group.Added7Days) (Format-Number $group.Added30Days) `
         (Format-Number $group.Sections) (Format-Number $group.Lines) `
         ('{0:N1} KB' -f ($group.Bytes / 1KB)) (Format-Number $group.EstimatedTokens)
@@ -110,21 +111,23 @@ Write-Host ''
 Write-Host ("Context inventory total: {0:N0} document(s)  /  new: {1:N0} in 1d, {2:N0} in 7d, {3:N0} in 30d  /  {4:N0} section(s)  /  {5:N0} lines  /  {6:N1} KB  /  ~{7:N0} tokens" -f `
     $documents.Count, $total1Day, $total7Days, $total30Days, $totalSections, $totalLines, ($totalBytes / 1KB), $totalTokens) -ForegroundColor Cyan
 
-Write-Section 'Document details (by type)'
-foreach ($group in ($documents | Group-Object Kind | Sort-Object Name)) {
-    Write-Host ''
-    $heading = "--- $($group.Name) "
-    Write-Host ($heading.PadRight(112, '-')) -ForegroundColor DarkCyan
-    Write-Host ((Format-Cell '  Path' 40) + '  ' + (Format-Cell '1d' 5 -Right) + '  ' +
-        (Format-Cell '7d' 5 -Right) + '  ' + (Format-Cell '30d' 6 -Right) + '  ' +
-        (Format-Cell 'Sections' 8 -Right) + '  ' + (Format-Cell 'Lines' 8 -Right) + '  ' +
-        (Format-Cell 'Size' 11 -Right) + '  ' + (Format-Cell 'Est. tokens' 14 -Right)) -ForegroundColor DarkGray
-    foreach ($document in ($group.Group | Sort-Object `
-        @{ Expression = 'Added1Day'; Descending = $true },
-        @{ Expression = 'Added7Days'; Descending = $true },
-        @{ Expression = 'Added30Days'; Descending = $true },
-        @{ Expression = 'EstimatedTokens'; Descending = $true })) {
-        Write-DocumentRow $document
+foreach ($loadingMode in @('Automatic instructions', 'On-demand references')) {
+    Write-Section $loadingMode
+    $modeDocuments = @($documents | Where-Object LoadingMode -eq $loadingMode)
+    foreach ($typeGroup in ($modeDocuments | Group-Object DocumentType | Sort-Object Name)) {
+        Write-Host ''
+        $heading = "--- $($typeGroup.Name) "
+        Write-Host ($heading.PadRight(112, '-')) -ForegroundColor DarkCyan
+        Write-Host ((Format-Cell '  Path' 34) + '  ' + (Format-Cell 'Modified' 10) + '  ' +
+            (Format-Cell 'New 1d' 6 -Right) + '  ' + (Format-Cell 'New 7d' 6 -Right) + '  ' +
+            (Format-Cell 'New 30d' 7 -Right) + '  ' +
+            (Format-Cell 'Sections' 8 -Right) + '  ' + (Format-Cell 'Lines' 6 -Right) + '  ' +
+            (Format-Cell 'Size' 8 -Right) + '  ' + (Format-Cell 'Est. tokens' 11 -Right)) -ForegroundColor DarkGray
+        foreach ($document in ($typeGroup.Group | Sort-Object `
+            @{ Expression = 'Modified'; Descending = $true },
+            @{ Expression = 'EstimatedTokens'; Descending = $true })) {
+            Write-DocumentRow $document
+        }
     }
 }
 

@@ -238,6 +238,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── session.ps1
 │   │   ├── _menu.psm1
 │   │   ├── action-summary.ps1
+│   │   ├── action-summary.tests.ps1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
 │   │   ├── build-server-cleanup.ps1
