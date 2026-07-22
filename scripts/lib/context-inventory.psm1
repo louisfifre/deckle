@@ -1,11 +1,30 @@
 Set-StrictMode -Version Latest
 
-function Get-ContextDocumentKind {
+function Get-ContextLoadingMode {
     param([Parameter(Mandatory)][string]$RelativePath)
 
     $name = [System.IO.Path]::GetFileName($RelativePath)
     if ($name -in @('AGENTS.md', 'CLAUDE.md')) { return 'Automatic instructions' }
     return 'On-demand references'
+}
+
+function Get-ContextDocumentType {
+    param([Parameter(Mandatory)][string]$RelativePath)
+
+    $name = [System.IO.Path]::GetFileName($RelativePath)
+    if ($name -eq 'AGENTS.md') { return 'AGENTS' }
+    if ($name -eq 'CLAUDE.md') { return 'CLAUDE' }
+    if ($name -in @('CONTEXT.md', 'CONTEXT-MAP.md')) { return 'Context' }
+    if ($name -eq 'JOURNAL.md') { return 'Journal' }
+    if ($name -eq 'SKILL.md') { return 'Skill' }
+    if ($RelativePath -match '(^|[\\/])\.claude[\\/]skills[\\/]') { return 'Skill reference' }
+    if ($RelativePath -match '(^|[\\/])docs[\\/]adr[\\/]') { return 'ADR' }
+    if ($RelativePath -match '(^|[\\/])docs[\\/]research[\\/]') { return 'Research' }
+    if ($RelativePath -match '(^|[\\/])prompts?[\\/]') { return 'Prompt' }
+    if ($name -eq 'README.md') { return 'README' }
+    if ($name -eq 'CHANGELOG.md') { return 'Changelog' }
+    if ($name -eq 'TREE.md') { return 'Generated index' }
+    return 'Project document'
 }
 
 function Measure-MarkdownSections {
@@ -42,7 +61,8 @@ function Measure-ContextDocument {
     $contentLines = [System.IO.File]::ReadAllLines($fullPath)
 
     [pscustomobject]@{
-        Kind            = Get-ContextDocumentKind -RelativePath $RelativePath
+        LoadingMode     = Get-ContextLoadingMode -RelativePath $RelativePath
+        DocumentType    = Get-ContextDocumentType -RelativePath $RelativePath
         Path            = $RelativePath -replace '\\', '/'
         Bytes           = $bytes
         Characters      = $text.Length
@@ -67,6 +87,32 @@ function Get-RecentlyAddedMarkdownPaths {
     return @($paths | ForEach-Object { $_ -replace '\\', '/' })
 }
 
+function ConvertFrom-GitMarkdownLog {
+    param([Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()][string[]]$Lines)
+
+    $dates = @{}
+    $currentDate = $null
+    foreach ($line in $Lines) {
+        if ($line -match '^@@(\d{4}-\d{2}-\d{2})$') {
+            $currentDate = $Matches[1]
+            continue
+        }
+        if ($currentDate -and $line -match '\.md$') {
+            $path = $line -replace '\\', '/'
+            if (-not $dates.ContainsKey($path)) { $dates[$path] = $currentDate }
+        }
+    }
+    return $dates
+}
+
+function Get-MarkdownLastModifiedDates {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $log = @(& git -C $RepoRoot log --date=short '--format=@@%cs' --name-only -- '*.md')
+    if ($LASTEXITCODE -ne 0) { throw 'Could not read Markdown modification dates from Git history.' }
+    return ConvertFrom-GitMarkdownLog -Lines $log
+}
+
 function Get-ContextInventory {
     param([Parameter(Mandatory)][string]$RepoRoot)
 
@@ -79,9 +125,11 @@ function Get-ContextInventory {
             [string[]](Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days),
             [System.StringComparer]::OrdinalIgnoreCase)
     }
+    $modifiedDates = Get-MarkdownLastModifiedDates -RepoRoot $RepoRoot
 
     @($paths | ForEach-Object {
         $document = Measure-ContextDocument -RepoRoot $RepoRoot -RelativePath $_
+        $document | Add-Member -NotePropertyName Modified -NotePropertyValue $modifiedDates[$document.Path]
         $document | Add-Member -NotePropertyName Added1Day -NotePropertyValue $recentPaths[1].Contains($document.Path)
         $document | Add-Member -NotePropertyName Added7Days -NotePropertyValue $recentPaths[7].Contains($document.Path)
         $document | Add-Member -NotePropertyName Added30Days -NotePropertyValue $recentPaths[30].Contains($document.Path)
@@ -89,4 +137,4 @@ function Get-ContextInventory {
     })
 }
 
-Export-ModuleMember -Function Get-ContextDocumentKind, Measure-MarkdownSections, Measure-ContextDocument, Get-RecentlyAddedMarkdownPaths, Get-ContextInventory
+Export-ModuleMember -Function Get-ContextLoadingMode, Get-ContextDocumentType, Measure-MarkdownSections, Measure-ContextDocument, Get-RecentlyAddedMarkdownPaths, ConvertFrom-GitMarkdownLog, Get-MarkdownLastModifiedDates, Get-ContextInventory
