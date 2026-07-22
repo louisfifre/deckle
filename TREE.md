@@ -292,6 +292,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
+│   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
@@ -307,6 +308,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SchemaPlanner.cs
 │   │   │   ├── SchemaPreviewStore.cs
 │   │   │   ├── SchemaSnapshotReader.cs
+│   │   │   ├── SelectValueGestures.cs
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
@@ -327,6 +329,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonRpc/
 │   │   │   └── McpServer.cs
 │   │   ├── Tools/
+│   │   │   ├── AnytypeUtilityToolCatalog.cs
 │   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
@@ -1381,6 +1384,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       └── ScreenCaptureService.Recovery.cs
 ├── tests/
 │   ├── Deckle.Anytype.Mcp.Tests/
+│   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
@@ -1394,6 +1398,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Anytype.Tests/
 │   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
+│   │   ├── AnytypeUtilityGesturesTests.cs
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceTests.cs
