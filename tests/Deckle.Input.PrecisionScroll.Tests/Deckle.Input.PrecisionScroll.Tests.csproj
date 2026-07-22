@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
+  </ItemGroup>
+</Project>

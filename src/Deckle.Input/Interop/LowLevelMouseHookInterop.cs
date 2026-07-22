@@ -19,6 +19,9 @@ public static class LowLevelMouseHookInterop
     public const int WM_XBUTTONDOWN = 0x020B;
     public const int WM_MOUSEHWHEEL = 0x020E;
 
+    public const uint LLMHF_INJECTED = 0x00000001;
+    public const uint LLMHF_LOWER_IL_INJECTED = 0x00000002;
+
     public static bool IsButtonDown(int message) => message is
         WM_LBUTTONDOWN or WM_RBUTTONDOWN or WM_MBUTTONDOWN or WM_XBUTTONDOWN;
 

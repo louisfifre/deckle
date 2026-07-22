@@ -407,6 +407,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
 │   │   ├── App.ParagraphRewrite.cs
+│   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.Foundation.cs
@@ -851,16 +852,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OnnxModelSession.cs
 │   ├── Deckle.Input/
 │   │   ├── Injection/
-│   │   │   └── MouseInjector.cs
+│   │   │   ├── MouseInjector.cs
+│   │   │   └── PrecisionTouchpadInjector.cs
 │   │   ├── Interop/
 │   │   │   ├── HidInterop.cs
 │   │   │   ├── LowLevelMouseHookInterop.cs
+│   │   │   ├── PrecisionTouchpadSystemParameters.cs
 │   │   │   ├── RawInputInterop.cs
 │   │   │   ├── SendInputInterop.cs
+│   │   │   ├── SyntheticTouchpadInterop.cs
 │   │   │   └── WinEventInterop.cs
 │   │   ├── Keyboard/
 │   │   │   ├── FocusEventCoalescer.cs
 │   │   │   ├── IKeyboardInputHost.cs
+│   │   │   ├── IWheelInterceptor.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.FocusHooks.cs
 │   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
@@ -880,7 +885,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TouchpadContact.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
+│   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input hosts, Precision Touchpad HID parsing, and nat…
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-input [agent-instructions] Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
@@ -889,6 +894,27 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
+│   ├── Deckle.Input.PrecisionScroll/
+│   │   ├── Engine/
+│   │   │   ├── PrecisionScrollEngine.cs
+│   │   │   ├── PrecisionScrollGesture.cs
+│   │   │   └── WheelTickQueue.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── PrecisionScrollPage.xaml
+│   │   │   └── PrecisionScrollPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── PrecisionScrollViewModel.cs
+│   │   │   └── PrecisionScrollViewModel.Settings.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Precision scrolling domain module — classic wheel detents become native two-fin…
+│   │   ├── Deckle.Input.PrecisionScroll.csproj
+│   │   ├── DecklePrecisionScrollSource.cs
+│   │   ├── PrecisionScrollSettings.cs
+│   │   ├── PrecisionScrollSettingsModule.cs
+│   │   ├── PrecisionScrollSettingsService.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
@@ -1620,13 +1646,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Input.PrecisionScroll.Tests/
+│   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
+│   │   ├── DecklePrecisionScrollSourceTests.cs
+│   │   └── PrecisionScrollGestureTests.cs
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
-│   │   └── MouseInteractionRouterTests.cs
+│   │   ├── MouseInteractionRouterTests.cs
+│   │   └── SyntheticTouchpadFrameBuilderTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs

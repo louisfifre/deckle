@@ -15,8 +15,10 @@ public sealed class MouseInteractionRouterTests
             queuePointer: () => queued++,
             publishPointer: () => pointers++);
 
-        router.ObserveHookMessage(LowLevelMouseHookInterop.WM_LBUTTONDOWN, mouseData: 0);
+        bool intercepted = router.ObserveHookMessage(
+            LowLevelMouseHookInterop.WM_LBUTTONDOWN, mouseData: 0);
 
+        Assert.False(intercepted);
         Assert.Equal(1, queued);
         Assert.Equal(0, pointers);
 
@@ -64,17 +66,47 @@ public sealed class MouseInteractionRouterTests
         var router = new MouseInteractionRouter(
             () => queued++,
             () => pointers++,
-            (axis, delta) => wheels.Add((axis, delta)));
+            (axis, delta, _) =>
+            {
+                wheels.Add((axis, delta));
+                return false;
+            });
 
-        router.ObserveHookMessage(message, 0x00780000u);
+        bool intercepted = router.ObserveHookMessage(message, 0x00780000u);
 
+        Assert.False(intercepted);
         Assert.Equal(0, queued);
         Assert.Equal(0, pointers);
         Assert.Equal([(expectedAxis, (short)120)], wheels);
     }
 
+    [Fact]
+    public void WheelPolicyCanConsumeTheHookMessage()
+    {
+        uint observedFlags = 0;
+        var router = new MouseInteractionRouter(
+            () => { },
+            () => { },
+            (_, _, flags) =>
+            {
+                observedFlags = flags;
+                return true;
+            });
+
+        bool intercepted = router.ObserveHookMessage(
+            LowLevelMouseHookInterop.WM_MOUSEWHEEL,
+            0xFF880000u,
+            LowLevelMouseHookInterop.LLMHF_INJECTED);
+
+        Assert.True(intercepted);
+        Assert.Equal(LowLevelMouseHookInterop.LLMHF_INJECTED, observedFlags);
+    }
+
     private static MouseInteractionRouter CreateRouter(
         Action? queuePointer = null,
         Action? publishPointer = null) =>
-        new(queuePointer ?? (() => { }), publishPointer ?? (() => { }), (_, _) => { });
+        new(
+            queuePointer ?? (() => { }),
+            publishPointer ?? (() => { }),
+            (_, _, _) => false);
 }

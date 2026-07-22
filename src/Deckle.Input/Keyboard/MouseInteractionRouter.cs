@@ -7,30 +7,41 @@ internal sealed class MouseInteractionRouter
 {
     private readonly Action _queuePointer;
     private readonly Action _publishPointer;
-    private readonly Action<WheelAxis, short> _publishWheel;
+    private readonly Func<WheelAxis, short, uint, bool> _publishWheel;
 
     public MouseInteractionRouter(
         Action queuePointer,
         Action publishPointer,
-        Action<WheelAxis, short> publishWheel)
+        Func<WheelAxis, short, uint, bool> publishWheel)
     {
         _queuePointer = queuePointer;
         _publishPointer = publishPointer;
         _publishWheel = publishWheel;
     }
 
-    public void ObserveHookMessage(int message, uint mouseData)
+    public bool ObserveHookMessage(
+        int message,
+        uint mouseData,
+        uint hookFlags = 0)
     {
         if (LowLevelMouseHookInterop.IsButtonDown(message))
         {
             _queuePointer();
-            return;
+            return false;
         }
 
         if (message == LowLevelMouseHookInterop.WM_MOUSEWHEEL)
-            _publishWheel(WheelAxis.Vertical, LowLevelMouseHookInterop.GetWheelDelta(mouseData));
+            return _publishWheel(
+                WheelAxis.Vertical,
+                LowLevelMouseHookInterop.GetWheelDelta(mouseData),
+                hookFlags);
         else if (message == LowLevelMouseHookInterop.WM_MOUSEHWHEEL)
-            _publishWheel(WheelAxis.Horizontal, LowLevelMouseHookInterop.GetWheelDelta(mouseData));
+            return _publishWheel(
+                WheelAxis.Horizontal,
+                LowLevelMouseHookInterop.GetWheelDelta(mouseData),
+                hookFlags);
+
+        return false;
     }
 
     public void ObserveRawButtonDown(bool hookInstalled)

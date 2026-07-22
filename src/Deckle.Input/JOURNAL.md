@@ -5,6 +5,12 @@ type: module-journal
 
 # JOURNAL — Deckle.Input
 
+## 2026-07-22 — Precision-scroll injection boundary
+
+Found that `WH_MOUSE_LL` can suppress a wheel message but does not expose its device, while Raw Input exposes the device but cannot suppress the message. Chose to convert only physical vertical hook events at exactly ±120 and leave finer deltas untouched.
+
+Found that the installed Windows SDK does not yet declare `CreateSyntheticPointerDevice2`, although the current `user32.dll` exports it and successfully creates a gesture-only `PT_TOUCHPAD` device. Chose runtime symbol resolution so unsupported systems remain fail-open.
+
 ## 2026-07-21 — Precision Touchpad clicks arrive as mouse messages
 
 Live observation found Precision Touchpad clicks absent from Raw Input mouse packets and present as button-down messages in the existing `WH_MOUSE_LL` hook. The hook is the canonical pointer-down source while installed; Raw Input remains its fallback to avoid duplicate physical-mouse events.

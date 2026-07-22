@@ -17,9 +17,9 @@ namespace Deckle.Input;
 //
 // The mouse is a single Raw Input resource per process — only one window
 // may receive it (the last one registered wins), so this host is the sole
-// owner and the app shares one instance across consumers. Today two of
-// them: the autocorrect engine (keys, pointer-down, focus) and the wheel
-// recorder (WheelObserved). Start/Stop therefore reference-count — the
+// owner and the app shares one instance across consumers: autocorrect
+// (keys, pointer-down, focus), wheel recording (WheelObserved), and precision
+// scrolling (the synchronous wheel policy). Start/Stop therefore reference-count — the
 // native window and registration come up on the first consumer and go down
 // on the last — so neither consumer can pull the resource from under the
 // other.
@@ -63,6 +63,7 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private IntPtr _foregroundHook;
     private IntPtr _focusHook;
     private IntPtr _mouseHook;
+    private IWheelInterceptor? _wheelInterceptor;
     private readonly FocusEventCoalescer _focusEvents = new();
 
     private IntPtr _rawBuffer;
@@ -104,5 +105,8 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
 
     /// <summary>Raised on the input thread when a drain request reaches the pump (see <see cref="RequestDrain"/>).</summary>
     public event Action? DrainRequested;
+
+    public void SetWheelInterceptor(IWheelInterceptor? interceptor) =>
+        Volatile.Write(ref _wheelInterceptor, interceptor);
 
 }

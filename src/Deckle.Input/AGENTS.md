@@ -1,5 +1,5 @@
 ---
-description: Input support module — Raw Input host, Precision Touchpad HID parsing, the SendInput primitive. No gesture knowledge.
+description: Input support module — Raw Input hosts, Precision Touchpad HID parsing, and native injection primitives. No gesture knowledge.
 type: agent-instructions
 ---
 

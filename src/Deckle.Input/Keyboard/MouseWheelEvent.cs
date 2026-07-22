@@ -16,7 +16,8 @@ public readonly record struct MouseWheelEvent(
     short Delta,
     double TimestampMs,
     IntPtr Device,
-    WheelEventSource Source);
+    WheelEventSource Source,
+    bool IsInjected = false);
 
 // Which wheel a MouseWheelEvent rode: Vertical is the common scroll wheel
 // (RI_MOUSE_WHEEL), Horizontal the tilt/side wheel (RI_MOUSE_HWHEEL).
