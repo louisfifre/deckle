@@ -55,14 +55,25 @@ public sealed class NameResolver(AnytypeApiClient api)
     // throws NotFound.
     public async Task<string> ResolveAsync(
         string selector, IReadOnlyList<string>? typeKeys, CancellationToken ct = default)
+        => await ResolveAsync(_api.SpaceId, selector, typeKeys, ct).ConfigureAwait(false);
+
+    // Cross-space utilities resolve inside an allow-listed space alias while the
+    // legacy project-management gestures keep using the credentials' default
+    // space through the overload above.
+    public async Task<string> ResolveAsync(
+        string spaceId,
+        string selector,
+        IReadOnlyList<string>? typeKeys,
+        CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         if (string.IsNullOrWhiteSpace(selector))
             throw new NotFoundException(selector ?? "");
 
         selector = selector.Trim();
         if (LooksLikeId(selector)) return selector;
 
-        var candidates = await SearchCandidatesAsync(selector, typeKeys, ct);
+        var candidates = await SearchCandidatesAsync(spaceId, selector, typeKeys, ct);
         if (candidates.Count == 0) throw new NotFoundException(selector);
 
         var exact = candidates
@@ -82,9 +93,12 @@ public sealed class NameResolver(AnytypeApiClient api)
         s.Length > 40 && s.StartsWith("bafy", StringComparison.Ordinal);
 
     async Task<List<Candidate>> SearchCandidatesAsync(
-        string query, IReadOnlyList<string>? typeKeys, CancellationToken ct)
+        string spaceId,
+        string query,
+        IReadOnlyList<string>? typeKeys,
+        CancellationToken ct)
     {
-        var root = await _api.SearchAsync(query, typeKeys, limit: 20, ct);
+        var root = await _api.SearchAsync(spaceId, query, typeKeys, limit: 20, ct);
         var data = root["data"] as JsonArray;
         var result = new List<Candidate>();
         if (data is null) return result;

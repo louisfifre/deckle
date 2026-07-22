@@ -13,6 +13,11 @@ The HTTP host owns transport concerns: loopback listener, bearer authentication,
 
 The tool catalogs own model-facing command shape: tool names, descriptions, JSON schemas, argument validation, and dispatch into gesture methods. A catalog may explain how to use a capability, but the actual Anytype payload belongs in `Deckle.Anytype`.
 
+Reusable, bounded Anytype mutations live in `AnytypeUtilityToolCatalog`, separate
+from schema provisioning and from every custom MCP catalog. The schema-admin
+surface mounts these utilities for now; this separation is the seam a future
+installer can use to select utilities independently.
+
 `McpSurface` is the extension seam: a client points to one surface that builds a
 fresh tool graph for each session. Reusable Anytype utilities stay here; each
 bounded use owns its domain, catalog, descriptor and client profile in one
