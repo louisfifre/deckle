@@ -21,6 +21,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Support type icons in schema manifests
 - **scripts:** Add context footprint inspection
 - **scripts:** Track context document drift
+- **anytype:** Add bounded cross-space utilities
 
 ### Changed
 
@@ -37,6 +38,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Prevent duplicate resident processes
 - **autocorrect:** Apply sentence corrections safely
 - **scripts:** Refine context inspection output
+- **scripts:** Show parent paths in context inspection
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
