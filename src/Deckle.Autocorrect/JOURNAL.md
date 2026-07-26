@@ -25,6 +25,10 @@ Found that every ASCII word was classified as an anglicism, so three clean occur
 
 Chose an explicit `KEEP`-versus-proposal closed decision: the generated sentence is accepted only when the sentence scorer chooses it past a task-specific margin. The existing slot margin `1.0` is not transferred to multi-edit proposals. Calibration runs over the corpus `final` side, because that is the residual text left by the current correction pipeline; the paragraph diff gate is recorded as a diagnostic, not as silent-correction authority.
 
+## 2026-07-24 — Hybrid correction direction proposed
+
+Proposed a hybrid correction path: a language model reviews the complete typed sentence and proposes contextual corrections; a next-token probability model compares its expectation with the literal continuation to surface remaining faults. Both signals remain conservative evidence for bounded corrections, not permission for free regeneration.
+
 ## 2026-07-21 — Closed-sentence writes replace live-tail rewrites
 
 Found a visible corruption where the internal final corpus was correct but the target field received duplicated characters. Two Deckle 0.14.4 residents were active simultaneously, the sentence stage applied mid-sentence after three right-context words, and its correction detail falsely reported zero backspaces regardless of the actual write plan.
