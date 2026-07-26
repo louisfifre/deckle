@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Llm.Rewrite
 
+## 2026-07-26 — Sentence correction generation remains an untrusted proposal
+
+Chose a dedicated zero-temperature sentence prompt for minimal keyboard-text repair. Its output remains a Rewrite at the model boundary and is never applied directly; the offline shadow composes it with diff diagnostics and the autocorrect module's closed `KEEP`-versus-proposal verifier.
+
 ## 2026-07-20 — Retaille slice 2: the gated offer is an interactive transient
 
 Chose a revisioned offer lifecycle: Shift+Enter closes the continuously observed paragraph, the interactive request has a 3 s deadline on ministral-3:14b, and any later text edit, opaque caret move, pointer interaction, or surface change cancels the request and hides an existing offer. An autocorrection is mirrored into the observed paragraph only when its original span occurs once; ambiguity invalidates the paragraph instead of guessing.

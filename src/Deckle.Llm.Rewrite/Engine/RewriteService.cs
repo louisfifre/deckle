@@ -36,6 +36,7 @@ public interface IRewriteService
 {
     RewriteResult Rewrite(string text, string endpoint, RewriteProfile profile);
     RewriteResult RewriteParagraph(string paragraph, string endpoint, CancellationToken cancellationToken);
+    RewriteResult RewriteSentence(string sentence, string endpoint, CancellationToken cancellationToken);
 }
 
 public class RewriteService : IRewriteService
@@ -139,6 +140,36 @@ public class RewriteService : IRewriteService
                 ex.Message,
                 ParagraphRewrite.Label,
                 ParagraphRewrite.Model);
+            return default;
+        }
+    }
+
+    /// <summary>Generates one minimal whole-sentence correction proposal. The
+    /// result is untrusted model output: callers must gate and verify it before
+    /// treating any edit as a Correction.</summary>
+    public RewriteResult RewriteSentence(
+        string sentence,
+        string endpoint,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return _engine.Generate(
+                SentenceRewrite.BuildRequest(sentence, endpoint),
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return default;
+        }
+        catch (Exception ex)
+        {
+            DeckleLlmSource.Log.RewriteUnavailable();
+            DeckleLlmSource.Log.RewriteUnavailableDetail(
+                ex.GetType().Name,
+                ex.Message,
+                SentenceRewrite.Label,
+                SentenceRewrite.Model);
             return default;
         }
     }

@@ -12,5 +12,8 @@
     <ProjectReference Include="..\..\src\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
     <!-- Probe benchmark metric logic; model execution remains gated. -->
     <ProjectReference Include="..\..\src\Deckle.Autocorrect.Probe\Deckle.Autocorrect.Probe.csproj" />
+    <!-- Whole-sentence proposal maintenance replay composes the rewrite proposer
+         with the autocorrect verifier without coupling their production modules. -->
+    <ProjectReference Include="..\..\src\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
   </ItemGroup>
 </Project>

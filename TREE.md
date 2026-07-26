@@ -496,6 +496,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
 │   │   │   ├── SentenceCorpus.cs
+│   │   │   ├── SentenceProposalGate.cs
+│   │   │   ├── SentenceProposalVerifier.cs
 │   │   │   ├── SentenceRerankCoordinator.cs
 │   │   │   ├── TrainerReport.cs
 │   │   │   ├── TypoOptions.cs
@@ -984,7 +986,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ParagraphRewrite.cs
 │   │   │   ├── PromptTemplates.cs
 │   │   │   ├── RewriteEngine.cs
-│   │   │   └── RewriteService.cs
+│   │   │   ├── RewriteService.cs
+│   │   │   └── SentenceRewrite.cs
 │   │   ├── Gate/
 │   │   │   ├── DiffAlignment.cs
 │   │   │   ├── DiffGateVerdict.cs
@@ -1481,6 +1484,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
+│   │   ├── SentenceProposalGateTests.cs
+│   │   ├── SentenceProposalReplayMaintenanceTests.cs
+│   │   ├── SentenceProposalVerifierTests.cs
 │   │   ├── SentenceReplayMaintenanceTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
@@ -1571,7 +1577,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
-│   │   └── RewriteDiffGateTests.cs
+│   │   ├── RewriteDiffGateTests.cs
+│   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs

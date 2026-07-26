@@ -5,6 +5,26 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-26 — Forward typing may extend a deferred rewrite only while its suffix stays exact
+
+Superseded the 2026-07-21 first-key invalidation rule for ordinary forward typing. Chose to preserve committed words, exact separator runs and the live partial in the deferred rewrite tail; caret-moving gestures, foreign synthetic input and failed injection still invalidate it, and a tail beyond 256 characters expires without writing. A reranker choice outside its submitted candidates, below its stated margin or with malformed numeric evidence is treated as an abstention.
+
+## 2026-07-26 — Typo candidates compose physical slips with diacritics and bounded context
+
+Found `preaprer` fell between the typo and diacritics stages although it is one transposition from the fold of `préparer`. Chose to expand repaired folds through the accent index under the unchanged instant frequency and dominance bars. Chose two additional sentence-only candidate families from collected re-edits: a coherent horizontal hand shift (`qio`/`qui`) and two-edit faults up to five letters (`miru`/`mieux`); the typed literal remains an explicit closed-set choice.
+
+## 2026-07-26 — Right-context activation waits for horizon calibration
+
+Found 82 pending sentence slots but only 17 submissions in the retained operational log; 33 sentence-stage abandonments were recorded (20 navigation, 6 shortcut, 5 Enter, 1 Delete, 1 focus), with no injection incident in that window. The remaining `onn`, `paye`, `sur` and agreement residues occurred in Enter/interrupted runs where terminal punctuation never submitted the sentence stage. Chose a replay parameter that truncates each slot to a fixed number of committed right-context words; an anticipated live pass remains unwired until its margin and precision are measured separately from full-sentence replay.
+
+## 2026-07-26 — Personal learning admits no unknown accent-fold collision
+
+Found that every ASCII word was classified as an anglicism, so three clean occurrences over two days could adopt an unaccented French form such as `prepare` and permanently shield it from `prépare`. Chose an admission gate that rejects an unknown literal when the French accent index has a lexically evidenced variant behind the same fold, while preserving exact French literals, protected technical literals and unknown terms without that collision. Current dictionary files are revalidated through the same gate; explicit correction suppressions remain untouched.
+
+## 2026-07-26 — Whole-sentence verification calibrates offline before live wiring
+
+Chose an explicit `KEEP`-versus-proposal closed decision: the generated sentence is accepted only when the sentence scorer chooses it past a task-specific margin. The existing slot margin `1.0` is not transferred to multi-edit proposals. Calibration runs over the corpus `final` side, because that is the residual text left by the current correction pipeline; the paragraph diff gate is recorded as a diagnostic, not as silent-correction authority.
+
 ## 2026-07-21 — Closed-sentence writes replace live-tail rewrites
 
 Found a visible corruption where the internal final corpus was correct but the target field received duplicated characters. Two Deckle 0.14.4 residents were active simultaneously, the sentence stage applied mid-sentence after three right-context words, and its correction detail falsely reported zero backspaces regardless of the actual write plan.
