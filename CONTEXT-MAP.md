@@ -13,6 +13,7 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 - [System-wide](CONTEXT.md) — language that classifies across modules; today the Correction / Rewrite boundary
 - [Tests](tests/CONTEXT.md) — the test taxonomy: four automatic categories, two manual ones
 - [Diagnostics](src/Deckle.Diagnostics/CONTEXT.md) — observability: admission vs view, the five quieting controls (covers `.Logging` and `.Telemetry`)
+- [Security](src/Deckle.Security/CONTEXT.md) — trusted-session boundary, captured content, and custody of persisted copies
 - [Transcription](src/Deckle.Transcription/CONTEXT.md) — entry points, T1 fidelity criteria, segmentation units
 - [Audio](src/Deckle.Audio/CONTEXT.md) — display level vs transcription pre-processing
 - [Input](src/Deckle.Input/CONTEXT.md) — the contact frame and the report → frame → intention chain
@@ -30,4 +31,5 @@ The nearest `CONTEXT.md` up the tree governs the code you're touching. This map 
 - **Input → Input.Trackpad**: Input assembles contact frames; the Trackpad recognizer consumes them into gesture intentions
 - **Autocorrect ↔ Llm.Rewrite**: both sit on the system-wide Correction / Rewrite boundary — Autocorrect owns bounded corrections, the rewrite service carries every free regeneration (including the sentence stage's escalations)
 - **Diagnostics → everything**: the observability vocabulary governs every module's log stream; the `observability` test category (Tests) exercises it
+- **Security → everything**: Security classifies captured content and its custody boundary wherever a module stores, exports, or transmits it
 - **Home → Anytype**: Home owns the inventory language and guards; Anytype provides the local storage and schema coordinates

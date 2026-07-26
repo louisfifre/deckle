@@ -121,6 +121,12 @@ public sealed class TypedWordTracker
 
     public void NotifyFocusChanged() => Reset(ResetReason.FocusChanged);
 
+    // The visible surface changed through a path the tracker cannot decode
+    // faithfully (a foreign SendInput producer, or a partial/blocked Deckle
+    // injection). Keep no word, edit-window or left-context state across that
+    // uncertainty: the next physical key starts a new, known run.
+    public void NotifyExternalMutation() => Reset(ResetReason.ExternalMutation);
+
     /// <summary>
     /// Aligns the tracker with a correction the engine just injected: the word
     /// on screen is now <paramref name="replacement"/>. The edit window and the

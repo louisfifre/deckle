@@ -29,7 +29,21 @@ public sealed partial class AutocorrectEngine
 
     private void OnKey(KeyboardKeyEvent e)
     {
-        if (e.IsInjected) return;            // our own repairs never feed the view
+        if (e.IsInjected)
+        {
+            // Deckle's own SendInput burst already realigned the tracker in the
+            // injection call-site. A foreign synthetic producer (OSK, RDP,
+            // remapper, another utility) also changes the visible surface, but
+            // its text is not trustworthy Raw Input for this tracker. Forget the
+            // modeled span on key-down so a later correction cannot rebuild a
+            // stale suffix over text that appeared behind its back.
+            uint deckleTag = unchecked((uint)SendInputInterop.InjectionTag.ToInt64());
+            if (e.ExtraInfo == deckleTag)
+                return;
+            if (e.IsKeyDown)
+                InvalidateModeledSurface();
+            return;
+        }
         if (!_surface.IsTextEditable || _surface.IsPassword) return; // hard gate — before decoding
 
         var stroke = _decoder.Decode(e);
@@ -56,6 +70,16 @@ public sealed partial class AutocorrectEngine
         // Ungated: a span must close on every caret move, or a stale run would
         // leak into whatever surface is typed next.
         _stream?.NotifyPointerInteraction();
+    }
+
+    // One invalidation point for visible text that changed outside the decoded
+    // physical-key stream. Both semantic models and the verbatim replay span
+    // must stop at the same boundary or telemetry would claim a replayable run
+    // across characters it never observed.
+    private void InvalidateModeledSurface()
+    {
+        _stream?.NotifyExternalMutation();
+        _tracker.NotifyExternalMutation();
     }
 
     // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence

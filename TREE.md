@@ -479,6 +479,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
+│   │   │   ├── CompositeAmbiguityProbe.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
 │   │   │   ├── CorrectionDecision.cs
@@ -495,6 +496,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
 │   │   │   ├── SentenceCorpus.cs
+│   │   │   ├── SentenceProposalGate.cs
+│   │   │   ├── SentenceProposalVerifier.cs
 │   │   │   ├── SentenceRerankCoordinator.cs
 │   │   │   ├── TrainerReport.cs
 │   │   │   ├── TypoOptions.cs
@@ -510,6 +513,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
 │   │   │   ├── PersonalDictionaryData.cs
+│   │   │   ├── PersonalWordAdmission.cs
 │   │   │   └── SurfaceProfileStore.cs
 │   │   ├── Lexicon/
 │   │   │   ├── AccentFolding.cs
@@ -517,6 +521,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentVariant.cs
 │   │   │   ├── AutocorrectLexiconArtifacts.cs
 │   │   │   ├── FrequencyLexicon.cs
+│   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
 │   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
@@ -981,7 +986,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ParagraphRewrite.cs
 │   │   │   ├── PromptTemplates.cs
 │   │   │   ├── RewriteEngine.cs
-│   │   │   └── RewriteService.cs
+│   │   │   ├── RewriteService.cs
+│   │   │   └── SentenceRewrite.cs
 │   │   ├── Gate/
 │   │   │   ├── DiffAlignment.cs
 │   │   │   ├── DiffGateVerdict.cs
@@ -1091,6 +1097,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PlaygroundNotifications.cs
 │   │   └── PlaygroundShell.cs
 │   ├── Deckle.Security/
+│   │   ├── CONTEXT.md  — context-deckle-security [agent-instructions] Security vocabulary — the trusted-session boundary, captured content, and where…
 │   │   ├── Deckle.Security.csproj
 │   │   ├── ISecretVault.cs
 │   │   ├── SecretVault.cs
@@ -1439,7 +1446,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
+│   │   ├── AutocorrectSentenceTypingScenarioTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
+│   │   ├── AutocorrectTypingScenarioTests.cs
+│   │   ├── AutocorrectTypingStreamReplayMaintenanceTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
@@ -1470,13 +1480,18 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── PersonalWordAdmissionTests.cs
 │   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
+│   │   ├── SentenceProposalGateTests.cs
+│   │   ├── SentenceProposalReplayMaintenanceTests.cs
+│   │   ├── SentenceProposalVerifierTests.cs
 │   │   ├── SentenceReplayMaintenanceTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── SimulatedTextSurface.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs
@@ -1563,7 +1578,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
-│   │   └── RewriteDiffGateTests.cs
+│   │   ├── RewriteDiffGateTests.cs
+│   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs

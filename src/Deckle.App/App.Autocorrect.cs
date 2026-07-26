@@ -81,7 +81,8 @@ public partial class App
             var (french, english, index, context, reranker, rerankerEngine, rerankerLoadMs, verbs) = await Task.Run(() =>
             {
                 var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
-                var en = AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir);
+                var en = new GlobalEnglishLexicon(
+                    AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
                 var idx = AccentIndex.Build(fr);
                 var ctx = File.Exists(pairPath)
                     ? BigramPairDisambiguator.LoadTsvGz(pairPath, null)
@@ -132,7 +133,12 @@ public partial class App
             // inspectable and removable through the CLI `dict` command.
             string dictPath = Path.Combine(
                 AppPaths.GetModuleDirectory("autocorrect"), "personal-dictionary.json");
-            dictionary = new PersonalDictionary(dictPath);
+            var personalWordAdmission = new PersonalWordAdmission(french, index, english);
+            dictionary = new PersonalDictionary(
+                dictPath,
+                wordAdmission: personalWordAdmission.Allows);
+            if (dictionary.RemovedOnLoad > 0)
+                DeckleAutocorrectSource.Log.PersonalDictionarySanitized(dictionary.RemovedOnLoad);
 
             // Approved mistouch families — per-user data beside the dictionary,
             // same discipline (inspectable, editable, removable). The kinds are
@@ -153,13 +159,15 @@ public partial class App
                 personalVariants: BuildAutocorrectPersonalVariants(dictionary));
 
             // Stage two: Android-style spell-fix for true non-words the gate
-            // leaves untouched ("bonjuor" → "bonjour"). Disjoint from diacritics
-            // by construction; the composite makes the precedence explicit.
+            // leaves untouched ("bonjuor" → "bonjour"). The shared accent index
+            // also lets one physical slip compose with missing diacritics
+            // ("preaprer" → "préparer") under the same conservative bars.
             var typo = new ConservativeTypoCorrector(
                 french: french,
                 english: english,
                 personal: dictionary,
-                options: new TypoOptions());
+                options: new TypoOptions(),
+                accentIndex: index);
 
             // Stage two-bis, ahead of the typo corrector: restore a dropped elision
             // apostrophe in a glued proclitic ("cest" → "c'est", "jai" → "j'ai").
@@ -196,10 +204,11 @@ public partial class App
                 english: english,
                 // The post-sentence stage: deterministic French sentence rules,
                 // delegating to the loaded model engine (sentence judge, else
-                // CamemBERT) when one is present; the diacritics gate is reused
-                // as the slot probe.
+                // CamemBERT) when one is present. The slot probe merges unresolved
+                // accent variants with bounded typo neighbours; both preserve the
+                // exact literal as an explicit KEEP candidate.
                 reranker: sentenceReranker,
-                probe: diacritics,
+                probe: new CompositeAmbiguityProbe(diacritics, typo),
                 // Opt-in per-word decision telemetry, read live so a Settings flip
                 // takes effect without a rebuild. Off by default.
                 decisionTelemetry: () =>

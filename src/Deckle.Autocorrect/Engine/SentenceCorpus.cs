@@ -262,5 +262,5 @@ public sealed class SentenceCorpus
     };
 
     private static bool IsSentenceEnd(char boundary) =>
-        boundary is '.' or '!' or '?';
+        boundary is '.' or '!' or '?' or '…';
 }

@@ -47,6 +47,21 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    public void ComposesATranspositionWithMissingDiacritics()
+    {
+        FrequencyLexicon french = FrequencyLexicon.LoadTsv(new StringReader(
+            "préparer\t300\npréparé\t20\n"));
+        var corrector = new ConservativeTypoCorrector(
+            french, accentIndex: AccentIndex.Build(french));
+
+        CorrectionDecision? decision = corrector.Evaluate("preaprer", []);
+
+        Assert.NotNull(decision);
+        Assert.Equal("préparer", decision!.Replacement);
+        Assert.Equal(CorrectionReason.TypoCorrection, decision.Reason);
+    }
+
+    [Fact]
     public void CorrectsMissingLetter()
     {
         // "bonjor" — a dropped u — is one insertion from "bonjour".
@@ -112,6 +127,40 @@ public class ConservativeTypoCorrectorTests
         // "bllet" is one insertion from both ballet (100) and billet (100):
         // ratio 1, far under 10× — real ambiguity, leave it.
         Assert.Null(Corrector().Evaluate("bllet", []));
+    }
+
+    [Fact]
+    public void AmbiguousOneKeyNeighboursBecomeAClosedSentenceCandidateSet()
+    {
+        var corrector = Corrector("peu\t1586.96\npu\t366.22\npur\t44.59\n");
+        Assert.Null(corrector.Evaluate("pru", [])); // 4.33× stays below the 5× commit bar.
+
+        IReadOnlyList<AccentVariant> candidates = corrector.AmbiguousCandidates("pru");
+
+        Assert.Equal(new[] { "peu", "pu", "pur", "pru" },
+            candidates.Select(candidate => candidate.Form).ToArray());
+    }
+
+    [Fact]
+    public void CoherentHorizontalHandOffsetIsAContextualCandidateOnly()
+    {
+        var corrector = Corrector("qui\t9000\n");
+
+        Assert.Null(corrector.Evaluate("qio", []));
+        Assert.Contains(
+            corrector.AmbiguousCandidates("qio"),
+            candidate => candidate.Form == "qui");
+    }
+
+    [Fact]
+    public void ShortTwoSlipFaultIsAContextualCandidateOnly()
+    {
+        var corrector = Corrector("mieux\t900\n");
+
+        Assert.Null(corrector.Evaluate("miru", []));
+        Assert.Contains(
+            corrector.AmbiguousCandidates("miru"),
+            candidate => candidate.Form == "mieux");
     }
 
     [Fact]

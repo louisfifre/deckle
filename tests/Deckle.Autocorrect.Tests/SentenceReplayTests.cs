@@ -100,4 +100,24 @@ public sealed class SentenceReplayTests
         Assert.Empty(results);
         Assert.Empty(reranker.Calls);
     }
+
+    [Fact]
+    public void RightContextReplayShowsOnlyTheRequestedFollowingWords()
+    {
+        var typed = new[] { "on", "est", "sur", "mais", "oui" };
+        var final = new[] { "on", "est", "sûr", "mais", "oui" };
+        var probe = new FakeProbe(new()
+        {
+            ["sur"] = new[] { new AccentVariant("sur", 100), new AccentVariant("sûr", 50) },
+        });
+        var reranker = new RecordingReranker(_ =>
+            new RerankOutcome("sûr", Array.Empty<RerankCandidateScore>(), 2.0, 1.0, null));
+
+        var results = SentenceReplay.ReplaySentence(
+            typed, final, probe, reranker, rightContextWords: 1);
+
+        Assert.Single(results);
+        Assert.Equal(new[] { "on", "est", "sûr", "mais" },
+            Assert.Single(reranker.Calls).Sentence);
+    }
 }

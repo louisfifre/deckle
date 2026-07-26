@@ -71,6 +71,8 @@ public sealed partial class AutocorrectEngine
         if (enabledHere)
         {
             long wordId = ++_wordId;
+            bool surfaceKnown = true;
+            string precedingSeparators = commit.PrecedingSeparators;
 
             // Learning feeds on words the engine leaves alone. A corrected commit
             // must NOT reinforce the bare typo, or a few repetitions would adopt
@@ -80,16 +82,32 @@ public sealed partial class AutocorrectEngine
             if (decision is null)
                 RecordCommitLearning(commit.Word);
             else
-                ApplyCorrection(commit, decision);
+                surfaceKnown = ApplyCorrection(commit, decision);
 
             // Boundary mistouch families act on the span BEHIND the word — a
             // territory no word-level policy sees. Only when the commit itself
             // was left alone: never two injections off one keystroke.
-            if (decision is null)
-                TryApplyMistouchRepair(commit);
+            if (decision is null && surfaceKnown)
+            {
+                surfaceKnown = TryApplyMistouchRepair(
+                    commit, out string? repairedPrecedingSeparators);
+                if (repairedPrecedingSeparators is not null)
+                    precedingSeparators = repairedPrecedingSeparators;
+            }
 
             if (trace is not null)
                 EmitDecision(wordId, commit.Word, leftContext, trace);
+
+            // Replace=false can mean a partial SendInput burst. The screen is
+            // then unknowable: do not claim the intended replacement in the
+            // corpus or sentence model, and reset every tracker-owned span before
+            // accepting more input.
+            if (!surfaceKnown)
+            {
+                InvalidateModeledSurface();
+                MaybeRollup(commit.TimestampMs, rollupEnabled);
+                return;
+            }
 
             // Feed the typed-sentence corpus the (typed, on-screen) pair — the
             // decision replacement when one applied, else the typed word itself.
@@ -101,7 +119,8 @@ public sealed partial class AutocorrectEngine
             // elision and grammar edits stay outside its rights.
             _coordinator?.OnWordCommitted(
                 commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary,
-                sentenceMayEvaluate: SentenceStageMayEvaluate(decision), wordId);
+                sentenceMayEvaluate: SentenceStageMayEvaluate(decision), wordId,
+                precedingSeparators: precedingSeparators);
         }
         else
         {
@@ -118,7 +137,7 @@ public sealed partial class AutocorrectEngine
         MaybeRollup(commit.TimestampMs, rollupEnabled);
     }
 
-    private void ApplyCorrection(WordCommit commit, CorrectionDecision decision)
+    private bool ApplyCorrection(WordCommit commit, CorrectionDecision decision)
     {
         // The boundary as the screen shows it: an elision commit carries its
         // apostrophe inside the word, so rendering the boundary again would
@@ -136,12 +155,12 @@ public sealed partial class AutocorrectEngine
             DeckleAutocorrectSource.Log.CorrectionApplied();
             LogCorrectionDetail(decision, plan.Backspaces);
             CorrectionApplied?.Invoke(decision);
+            return true;
         }
-        else
-        {
-            OnInjectionFailed(plan.Backspaces, plan.Text.Length);
-            InjectionFailed?.Invoke(decision.Original, decision.Replacement);
-        }
+
+        OnInjectionFailed(plan.Backspaces, plan.Text.Length);
+        InjectionFailed?.Invoke(decision.Original, decision.Replacement);
+        return false;
     }
 
     // Applies an approved mistouch family's span repair — the separator run
@@ -149,15 +168,17 @@ public sealed partial class AutocorrectEngine
     // (« qu;il » → « qu'il »). A learned suppression vetoes it like any
     // correction; the corpus records the separator change on the final side so
     // the emitted sentence stays glued to the screen (the typed side keeps the
-    // faulty run — the mining pair). Known accepted drift: the tracker's
-    // two-back context and the sentence coordinator keep the pre-repair
-    // separator — advisory context, one char off, never re-injected.
-    private void TryApplyMistouchRepair(WordCommit commit)
+    // faulty run — the mining pair). The repaired separator is returned to the
+    // sentence coordinator so any deferred tail rewrite stays screen-exact.
+    private bool TryApplyMistouchRepair(
+        WordCommit commit,
+        out string? repairedPrecedingSeparators)
     {
-        if (_mistouch is null) return;
+        repairedPrecedingSeparators = null;
+        if (_mistouch is null) return true;
         MistouchFamilyCorrector.SpanRepair? repair = _mistouch.Evaluate(commit);
-        if (repair is null) return;
-        if (_dictionary?.IsSuppressed(repair.Original, repair.Replacement) == true) return;
+        if (repair is null) return true;
+        if (_dictionary?.IsSuppressed(repair.Original, repair.Replacement) == true) return true;
 
         string boundary = WordBoundaries.DisplaySeparator(commit.Boundary);
         string current = repair.Original + boundary;
@@ -174,13 +195,14 @@ public sealed partial class AutocorrectEngine
             LogCorrectionDetail(decision, plan.Backspaces);
             if (CanCollectText())
                 _corpus?.SeparatorEdit(repair.Previous, repair.OldSeparators, repair.NewSeparators);
+            repairedPrecedingSeparators = repair.NewSeparators;
             CorrectionApplied?.Invoke(decision);
+            return true;
         }
-        else
-        {
-            OnInjectionFailed(plan.Backspaces, plan.Text.Length);
-            InjectionFailed?.Invoke(repair.Original, repair.Replacement);
-        }
+
+        OnInjectionFailed(plan.Backspaces, plan.Text.Length);
+        InjectionFailed?.Invoke(repair.Original, repair.Replacement);
+        return false;
     }
 
     private void OnInjectionFailed(int backspaces, int textLength)
@@ -275,7 +297,8 @@ public sealed partial class AutocorrectEngine
         if (_french?.Contains(lower) == true) return;
         if (_english?.Contains(lower) == true) return;
 
-        _dictionary.RecordCommit(word);
+        if (!_dictionary.RecordCommit(word))
+            return;
         if (IsActivityRollupEnabled()) _rollupLearning++;
         DeckleAutocorrectSource.Log.LearningSignal("commit");
     }

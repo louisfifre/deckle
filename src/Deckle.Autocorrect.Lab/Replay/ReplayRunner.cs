@@ -32,7 +32,8 @@ public static class ReplayRunner
         ISentenceReranker reranker,
         IReadOnlyDictionary<string, string>? resolvedTruths = null,
         IReadOnlyList<double>? thresholds = null,
-        Action<ReplayProgress>? onProgress = null)
+        Action<ReplayProgress>? onProgress = null,
+        int? rightContextWords = null)
     {
         var slots = new List<SlotReplayResult>();
         var review = new List<TruthReviewRow>();
@@ -54,7 +55,8 @@ public static class ReplayRunner
             TallyClosure(entry.Record.Closure, ref closedSentence, ref closedEnter, ref interrupted);
 
             IReadOnlyList<SlotReplayResult> raw =
-                SentenceReplay.ReplaySentence(alignment.Typed, alignment.Final, probe, reranker);
+                SentenceReplay.ReplaySentence(
+                    alignment.Typed, alignment.Final, probe, reranker, rightContextWords);
 
             var sentenceSlots = new List<SlotReplayResult>(raw.Count);
             foreach (SlotReplayResult slot in raw)
@@ -107,8 +109,11 @@ public static class ReplayRunner
         IAmbiguityProbe probe,
         ISentenceReranker reranker,
         IReadOnlyList<double>? thresholds = null,
-        Action<ReplayProgress>? onProgress = null) =>
-        Run(WrapPresent(corpus), probe, reranker, resolvedTruths: null, thresholds, onProgress);
+        Action<ReplayProgress>? onProgress = null,
+        int? rightContextWords = null) =>
+        Run(
+            WrapPresent(corpus), probe, reranker, resolvedTruths: null,
+            thresholds, onProgress, rightContextWords);
 
     // Over a corpus file: reads the sibling ground-truth review sheet (if the
     // maintainer has started one) and applies its resolved truths to this pass.
@@ -117,11 +122,14 @@ public static class ReplayRunner
         IAmbiguityProbe probe,
         ISentenceReranker reranker,
         IReadOnlyList<double>? thresholds = null,
-        Action<ReplayProgress>? onProgress = null)
+        Action<ReplayProgress>? onProgress = null,
+        int? rightContextWords = null)
     {
         IReadOnlyDictionary<string, string> resolved =
             TruthOverlay.ResolvedTruths(TruthOverlay.Read(TruthOverlay.SheetPathFor(corpusPath)));
-        return Run(CorpusReader.Read(corpusPath), probe, reranker, resolved, thresholds, onProgress);
+        return Run(
+            CorpusReader.Read(corpusPath), probe, reranker, resolved,
+            thresholds, onProgress, rightContextWords);
     }
 
     private static IEnumerable<CorpusEntry> WrapPresent(IEnumerable<SentenceCorpus.SentenceRecord> records)

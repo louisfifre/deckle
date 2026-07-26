@@ -27,7 +27,8 @@ namespace Deckle.Autocorrect;
 //   • everything else ends the span: "enter" (the line was committed),
 //     "navigation", "escape", "shortcut", "delete", "deadkey" (the caret or
 //     the field left the modelled stretch), "pointer", "focus" (same, by
-//     mouse or by surface change). Text after a span end is a fresh span.
+//     mouse or by surface change), "external" (an untracked synthetic write).
+//     Text after a span end is a fresh span.
 // Erased chars can exceed what the span recorded (backing into text typed
 // before the span started): the first run of a span may then carry a non-zero
 // Erased — honest, and the reader knows those chars are unknown territory. A
@@ -106,6 +107,8 @@ public sealed class TypingStream
     public void NotifyPointerInteraction() => CloseSpan("pointer");
 
     public void NotifyFocusChanged() => CloseSpan("focus");
+
+    public void NotifyExternalMutation() => CloseSpan("external");
 
     // Privacy boundary: drop everything in flight without invoking Completed.
     // Used when text collection consent is withdrawn or the engine stops.

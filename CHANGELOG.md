@@ -22,6 +22,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Add context footprint inspection
 - **scripts:** Track context document drift
 - **anytype:** Add bounded cross-space utilities
+- **autocorrect:** Prepare verified sentence proposals
 
 ### Changed
 
@@ -39,6 +40,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Apply sentence corrections safely
 - **scripts:** Refine context inspection output
 - **scripts:** Show parent paths in context inspection
+- **autocorrect:** Harden corrections under live typing
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

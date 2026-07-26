@@ -10,7 +10,10 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The maintainer's replay gesture: run the collected typed-text corpus through the
-// staged ONNX judge, offline, and write the margin-calibration report. It is not a
+// staged ONNX judge, offline, and write the margin-calibration report. An optional
+// DECKLE_REPLAY_RIGHT_CONTEXT_WORDS value truncates each slot to the prefix that
+// would have existed after that many following commits, for anticipated-pass
+// calibration. It is not a
 // unit test — it wires the REAL FR lexicon and the REAL model, and is a silent skip
 // wherever either is absent (CI, a fresh clone, before any corpus is collected or a
 // judge is staged). Where both are present it is a deliberate, supervised run: the
@@ -50,7 +53,13 @@ public sealed class SentenceReplayMaintenanceTests
         Assert.SkipUnless(Directory.Exists(judgeDir), "sentence judge not staged");
 
         var french = FrequencyLexicon.LoadTsvGz(frenchPath);
-        var probe = new DiacriticsRestorer(french, english: null, AccentIndex.Build(french));
+        var english = new GlobalEnglishLexicon(
+            AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
+        var index = AccentIndex.Build(french);
+        var diacritics = new DiacriticsRestorer(french, english, index);
+        var typo = new ConservativeTypoCorrector(
+            french, english, accentIndex: index);
+        var probe = new CompositeAmbiguityProbe(diacritics, typo);
 
         // The execution provider is overridable so the same gesture runs the judge on
         // the GPU (DirectML, the default) or falls back to the CPU EP for a comparison,
@@ -59,6 +68,9 @@ public sealed class SentenceReplayMaintenanceTests
             ? value
             : "dml";
         Console.Error.WriteLine($"[replay] loading judge — ep={ep}, dir={judgeDir}");
+        int? rightContextWords = RightContextWords();
+        Console.Error.WriteLine(
+            $"[replay] context horizon — {(rightContextWords is int configuredRight ? $"{configuredRight} right word(s)" : "full run")}");
 
         // margin 0 → the judge returns its raw argmax and gap for every slot, so
         // the sweep, not the model, sets the operating margin. Constructed
@@ -74,10 +86,17 @@ public sealed class SentenceReplayMaintenanceTests
         string sheetPath = TruthOverlay.SheetPathFor(corpusPath!);
         var existingSheet = TruthOverlay.Read(sheetPath);
 
-        ReplayReport report = ReplayRunner.Run(corpusPath!, probe, judge!, onProgress: OnReplayProgress);
+        ReplayReport report = ReplayRunner.Run(
+            corpusPath!, probe, judge!, onProgress: OnReplayProgress,
+            rightContextWords: rightContextWords);
 
-        string reportPath = Path.Combine(Path.GetDirectoryName(corpusPath!)!, "autocorrect.replay-calibration.md");
-        File.WriteAllText(reportPath, report.Markdown);
+        string suffix = rightContextWords is int suffixRight ? $".right-{suffixRight}" : string.Empty;
+        string reportPath = Path.Combine(
+            Path.GetDirectoryName(corpusPath!)!, $"autocorrect.replay-calibration{suffix}.md");
+        string horizon = rightContextWords is int words
+            ? $"Right-context horizon: {words} committed word(s).\n\n"
+            : "Right-context horizon: full recorded run.\n\n";
+        File.WriteAllText(reportPath, horizon + report.Markdown);
         File.WriteAllText(sheetPath, TruthOverlay.Render(TruthOverlay.Merge(report.TruthReview, existingSheet)));
 
         Console.Error.WriteLine(
@@ -87,6 +106,12 @@ public sealed class SentenceReplayMaintenanceTests
         _out.WriteLine($"Calibration report → {reportPath}");
 
         Assert.NotEmpty(report.Slots);
+    }
+
+    private static int? RightContextWords()
+    {
+        string? raw = Environment.GetEnvironmentVariable("DECKLE_REPLAY_RIGHT_CONTEXT_WORDS");
+        return int.TryParse(raw, out int words) && words >= 0 ? words : null;
     }
 
     // Streams the replay's progress to stderr as it runs — a long offline pass is
