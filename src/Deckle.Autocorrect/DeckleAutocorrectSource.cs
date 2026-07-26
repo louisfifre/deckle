@@ -49,6 +49,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtInjectionEpisodeDetail = 25;
     public const int EvtRerankerLoadFailed  = 26;
     public const int EvtSentenceStageAbandoned = 27;
+    public const int EvtPersonalDictionarySanitized = 28;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -128,6 +129,19 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         public const string SentenceJudge = "sentence_judge"; // ONNX GenAI Qwen judge (DirectML)
         public const string Camembert     = "camembert";      // masked-LM reranker
         public const string None          = "none";           // deterministic rules only
+    }
+
+    // Count-only confirmation that the lexical admission policy removed learned
+    // entries which can no longer be trusted. The words themselves stay solely
+    // in the inspectable personal-dictionary file and never enter this log.
+    [Event(EvtPersonalDictionarySanitized,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "personal dictionary sanitized | removed={0}")]
+    public void PersonalDictionarySanitized(int removed)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtPersonalDictionarySanitized, removed);
     }
 
     // ── Surface gate ─────────────────────────────────────────────────────
@@ -224,9 +238,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         WriteEvent(EvtRerankSlotPending, candidates, word_len);
     }
 
-    // The slot crossed the deferral threshold (or a sentence-ender flushed it)
-    // and was handed to the background reranker. slot is its index within the
-    // submitted window; context_words the window size around it.
+    // A terminal sentence ender closed the slot's context and handed it to the
+    // background reranker. slot is its index within the submitted window;
+    // context_words the immutable closed-sentence window size around it.
     [Event(EvtRerankSubmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -240,7 +254,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // The reranker verdict landed. outcome is a closed vocabulary: applied (slot
     // rewritten), equal (model chose the typed form), abstain (model not
     // confident — left as typed), stale (the sentence was reset under the
-    // in-flight request), resolved (slot already decided), blocked (the in-place
+    // in-flight request), resolved (slot already decided), expired (the exact
+    // visible tail outgrew the bounded rewrite budget), blocked (the in-place
     // rewrite was refused by the target surface).
     [Event(EvtRerankVerdict,
            Level = EventLevel.Verbose,
@@ -357,7 +372,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // at backward repairs. `text` is the run as it landed on screen; `erased`
     // the backspaces that preceded it inside the span; `closure` why it ended
     // ("repair" and "cap" continue the span, "enter"/"navigation"/"escape"/
-    // "shortcut"/"delete"/"deadkey"/"pointer"/"focus" end it); `timing` the
+    // "shortcut"/"delete"/"deadkey"/"pointer"/"focus"/"external" end it); `timing` the
     // per-char keystroke gaps in ms. Replaying the runs in order restores the
     // faulty forms as they stood, what was erased, what was retyped — the
     // substrate of mistouch-family mining and of the natural-language corpus.

@@ -5,8 +5,8 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 // The live second stage in isolation. These tests pin the safety contract: the
-// model may judge only a closed sentence, and its verdict expires on the first
-// physical key or any other evidence that the visible target changed.
+// model may judge only a closed sentence; forward typing extends the exact tail,
+// while navigation/edit gestures or any unknown mutation expire the verdict.
 [Trait("Category", "unit")]
 public class SentenceRerankCoordinatorTests
 {
@@ -160,7 +160,24 @@ public class SentenceRerankCoordinatorTests
     }
 
     [Fact]
-    public void FirstPhysicalKeyAfterClosureDropsTheInFlightVerdict()
+    public void ForwardTextAfterClosureRemainsInTheSafeRewriteTail()
+    {
+        var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        string partial = "";
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => partial);
+
+        coord.OnWordCommitted("la", '.', true);
+        coord.NotePhysicalKey(
+            new Keystroke(KeystrokeKind.Text, "x", 0), hasPartialWord: false);
+        partial = "x";
+        lane.DeliverLast();
+
+        Assert.Equal(("la.x", "là.x"), Assert.Single(inj.Calls));
+    }
+
+    [Fact]
+    public void SeparatorAfterClosureIsIncludedInTheSafeRewriteTail()
     {
         var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
         var inj = new RecordingInjector();
@@ -168,14 +185,28 @@ public class SentenceRerankCoordinatorTests
 
         coord.OnWordCommitted("la", '.', true);
         coord.NotePhysicalKey(
-            new Keystroke(KeystrokeKind.Text, "x", 0), hasPartialWord: false);
+            new Keystroke(KeystrokeKind.Text, " ", 0), hasPartialWord: false);
         lane.DeliverLast();
 
-        Assert.Empty(inj.Calls);
+        Assert.Equal(("la. ", "là. "), Assert.Single(inj.Calls));
     }
 
     [Fact]
-    public void NonEmptyPartialAtDeliveryDropsTheVerdict()
+    public void FailedFirstSlotRewriteDoesNotAttemptASecondSlot()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector { Result = false };
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("la", ' ', true);
+        coord.OnWordCommitted("la", '.', true);
+
+        Assert.Single(lane.Submitted);
+        Assert.Single(inj.Calls);
+    }
+
+    [Fact]
+    public void NonEmptyTrackedPartialAtDeliveryRemainsInTheRewriteTail()
     {
         string partial = "";
         var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
@@ -186,7 +217,45 @@ public class SentenceRerankCoordinatorTests
         partial = "x";
         lane.DeliverLast();
 
+        Assert.Equal(("la.x", "là.x"), Assert.Single(inj.Calls));
+    }
+
+    [Fact]
+    public void RewriteExpiresWhenForwardTypingMakesTheTailTooLong()
+    {
+        string partial = new('x', 257);
+        var lane = new TestRerankLane { Manual = true, Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => partial);
+
+        coord.OnWordCommitted("la", '.', true);
+        lane.DeliverLast();
+
         Assert.Empty(inj.Calls);
+    }
+
+    [Fact]
+    public void ChosenFormOutsideTheSubmittedClosedSetIsNeverInjected()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "inventé" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("la", '.', true);
+
+        Assert.Empty(inj.Calls);
+    }
+
+    [Fact]
+    public void SentenceRewritePreservesTheCommittedWordsCasePattern()
+    {
+        var lane = new TestRerankLane { Reranker = _ => "là" };
+        var inj = new RecordingInjector();
+        var coord = new SentenceRerankCoordinator(lane, ProbeForLa(), inj, () => "");
+
+        coord.OnWordCommitted("La", '.', true);
+
+        Assert.Equal(("La.", "Là."), Assert.Single(inj.Calls));
     }
 
     [Fact]

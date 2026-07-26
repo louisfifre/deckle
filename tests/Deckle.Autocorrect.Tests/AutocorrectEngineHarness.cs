@@ -16,7 +16,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
 {
     public readonly FakeKeyboardInputHost Host = new();
     public readonly FakeSurfaceProber Prober = new();
-    public readonly RecordingInjector Injector = new();
+    public readonly SimulatedTextSurface Surface = new();
+    public readonly RecordingInjector Injector;
     public readonly TypedWordTracker Tracker = new();
     public readonly ICorrectionPolicy Policy;
     public AutocorrectSettings Settings = new();
@@ -34,6 +35,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
     // Counts character-key decode attempts (one per ToUnicode call) — lets a
     // test prove the password gate cut BEFORE decoding, not merely before tracking.
     public int DecodeCharCount { get; private set; }
+    public string VisibleText => Surface.Text;
 
     private readonly KeyDecoder _decoder;
     private readonly Dictionary<ushort, char> _layout = new();
@@ -45,9 +47,13 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         IFrequencyLexicon? english = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
+        ISentenceReranker? reranker = null,
+        IAmbiguityProbe? probe = null)
     {
         Policy = policy ?? NeverCorrects;
+        Injector = new RecordingInjector(Surface);
+        Host.DeferDrain = reranker is not null;
 
         // Fake layout: a key produces whatever char Type() registered for its
         // synthetic VK. Control/navigation keys are classified by the decoder
@@ -63,6 +69,7 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Engine = new AutocorrectEngine(
             Host, _decoder, Tracker, Prober, Policy, Injector,
             () => Settings, dictionary, french, english,
+            reranker: reranker, probe: probe,
             decisionTelemetry: decisionTelemetry, textTelemetry: textTelemetry,
             mistouchFamilies: mistouchFamilies);
 
@@ -77,20 +84,51 @@ internal sealed class AutocorrectEngineHarness : IDisposable
     // ── Driving input ────────────────────────────────────────────────────
 
     /// <summary>Types each character as a physical key-down through the host.</summary>
-    public void Type(string text)
+    public void Type(string text) => Type(text, interKeyMs: 0);
+
+    public void Type(string text, int interKeyMs)
     {
         foreach (char c in text)
         {
             ushort vk = VkFor(c);
             _layout[vk] = c;
+            Surface.Type(c);
             RaiseDown(vk);
+            if (interKeyMs > 0)
+                TimeMs += interKeyMs;
         }
     }
 
-    public void Backspace() => RaiseDown(0x08); // VK_BACK
-    public void Enter() => RaiseDown(0x0D);     // VK_RETURN
-    public void Tab() => RaiseDown(0x09);       // VK_TAB
+    public void Backspace()
+    {
+        Surface.Backspace();
+        RaiseDown(0x08); // VK_BACK
+    }
+    public void Enter() { Surface.Type('\n'); RaiseDown(0x0D); } // VK_RETURN
+    public void Tab() { Surface.Type('\t'); RaiseDown(0x09); }   // VK_TAB
+    public void Escape() => RaiseDown(0x1B);                     // VK_ESCAPE
+    public void Delete() => RaiseDown(0x2E);                     // VK_DELETE
+    public void NavigateLeft() => RaiseDown(0x25);               // VK_LEFT
+    public void ControlShortcut(char c)
+    {
+        RaiseTransition(0x11, isDown: true); // VK_CONTROL
+        ushort vk = VkFor(c);
+        _layout[vk] = c;
+        RaiseTransition(vk, isDown: true);
+        RaiseTransition(vk, isDown: false);
+        RaiseTransition(0x11, isDown: false);
+    }
     public void Pointer() => Host.RaisePointer();
+
+    // Waits for a background sentence verdict, then delivers it through the
+    // fake host's input-pump boundary on the calling test thread.
+    public bool PumpDrain(TimeSpan timeout)
+    {
+        if (!SpinWait.SpinUntil(() => Host.HasPendingDrain, timeout))
+            return false;
+        Host.Drain();
+        return true;
+    }
 
     /// <summary>Re-probes the (already updated) surface, as a focus change would.</summary>
     public void RefocusOn(FocusedSurface surface)
@@ -105,11 +143,26 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         ushort vk = VkFor(c);
         _layout[vk] = c;
         Host.RaiseKey(new KeyboardKeyEvent(
-            vk, ScanCode: 0, IsKeyDown: true, IsExtended: false, IsInjected: true, TimestampMs: TimeMs));
+            vk, ScanCode: 0, IsKeyDown: true, IsExtended: false, IsInjected: true, TimestampMs: TimeMs,
+            ExtraInfo: unchecked((uint)SendInputInterop.InjectionTag.ToInt64())));
     }
 
-    private void RaiseDown(ushort vk) => Host.RaiseKey(new KeyboardKeyEvent(
-        vk, ScanCode: 0, IsKeyDown: true, IsExtended: false, IsInjected: false, TimestampMs: TimeMs));
+    // A synthetic key from another producer is visible but must never join the
+    // modeled word/sentence. The engine should invalidate its state on receipt.
+    public void RaiseForeignInjected(char c)
+    {
+        ushort vk = VkFor(c);
+        _layout[vk] = c;
+        Surface.Type(c);
+        Host.RaiseKey(new KeyboardKeyEvent(
+            vk, ScanCode: 0, IsKeyDown: true, IsExtended: false, IsInjected: true, TimestampMs: TimeMs,
+            ExtraInfo: 0x12345678));
+    }
+
+    private void RaiseDown(ushort vk) => RaiseTransition(vk, isDown: true);
+
+    private void RaiseTransition(ushort vk, bool isDown) => Host.RaiseKey(new KeyboardKeyEvent(
+        vk, ScanCode: 0, IsKeyDown: isDown, IsExtended: false, IsInjected: false, TimestampMs: TimeMs));
 
     // Synthetic VK for a character. Letters/digits use their natural codes;
     // boundary punctuation uses its OEM code; anything else (accented letters)
@@ -123,10 +176,15 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         >= '0' and <= '9' => (ushort)c,
         '\'' => 0xDE, // VK_OEM_7
         '-' => 0xBD,  // VK_OEM_MINUS
-        '.' => 0xBE,  // VK_OEM_PERIOD
-        ',' => 0xBC,  // VK_OEM_COMMA
-        ';' => 0xBA,  // VK_OEM_1
-        _ => (ushort)c,
+        '.' or '…' => 0xBE, // VK_OEM_PERIOD
+        ',' => 0xBC,        // VK_OEM_COMMA
+        ';' or ':' => 0xBA, // VK_OEM_1
+        '?' => 0xBF,        // VK_OEM_2
+        '!' => 0x31,        // shifted 1 on the physical layout
+        '"' => 0xDE,        // shifted VK_OEM_7
+        '(' => 0x39,        // shifted 9
+        ')' => 0x30,        // shifted 0
+        _ => 0xE2,          // VK_OEM_102; fake layout supplies the character
     };
 
     // ── Surface factories ────────────────────────────────────────────────
@@ -159,10 +217,27 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
     public bool StartResult = true;
     public int StartCount;
     public int StopCount;
+    public bool DeferDrain;
+    private int _pendingDrains;
+    public bool HasPendingDrain => Volatile.Read(ref _pendingDrains) > 0;
 
     public bool Start() { StartCount++; return StartResult; }
     public void Stop() => StopCount++;
-    public void RequestDrain() => DrainRequested?.Invoke();
+    public void RequestDrain()
+    {
+        if (!DeferDrain)
+        {
+            DrainRequested?.Invoke();
+            return;
+        }
+        Interlocked.Increment(ref _pendingDrains);
+    }
+
+    public void Drain()
+    {
+        while (Interlocked.Exchange(ref _pendingDrains, 0) > 0)
+            DrainRequested?.Invoke();
+    }
 
     public void RaiseKey(KeyboardKeyEvent e) => KeyReceived?.Invoke(e);
     public void RaisePointer() => PointerInteraction?.Invoke();
@@ -182,13 +257,19 @@ internal sealed class FakeSurfaceProber : ISurfaceProber
 // Records each requested edit and returns a controllable verdict.
 internal sealed class RecordingInjector : ITextInjector
 {
+    private readonly SimulatedTextSurface? _surface;
+
+    public RecordingInjector(SimulatedTextSurface? surface = null) => _surface = surface;
+
     public bool Result = true;
     public readonly List<(string Current, string Target)> Calls = new();
 
     public bool Replace(string current, string target)
     {
         Calls.Add((current, target));
-        return Result;
+        if (!Result)
+            return false;
+        return _surface?.ReplaceSuffix(current, target) ?? true;
     }
 }
 

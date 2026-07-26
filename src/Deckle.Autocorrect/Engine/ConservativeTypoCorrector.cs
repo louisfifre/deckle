@@ -19,26 +19,32 @@ namespace Deckle.Autocorrect;
 // deletion (an extra key), a transposition (two keys swapped), a keyboard-adjacent
 // substitution (a wrong key — only physically touching keys count as a slip) or an
 // insertion (a missing key); the far tier composes two such edits. Membership is
-// the exact lowercased lexicon, whose forms carry their accents; restoring an
-// accent is the diacritics gate's job, so a typo of an *accented* word is
-// deliberately out of scope here rather than miscorrected.
-public sealed class ConservativeTypoCorrector : ICorrectionPolicy
+// checked both against exact French forms and, when the accent index is supplied,
+// against accented forms behind the repaired fold. This composes one physical
+// slip with missing diacritics ("preaprer" → "préparer") without relaxing either
+// tier's frequency or dominance bars.
+public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityProbe
 {
+    private const int SentenceCandidateCap = 4;
+    private const int ContextualFarMaxWordLength = 5;
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly IPersonalLexicon? _personal;
     private readonly TypoOptions _options;
+    private readonly AccentIndex? _accentIndex;
 
     public ConservativeTypoCorrector(
         IFrequencyLexicon french,
         IFrequencyLexicon? english = null,
         IPersonalLexicon? personal = null,
-        TypoOptions? options = null)
+        TypoOptions? options = null,
+        AccentIndex? accentIndex = null)
     {
         _french = french;
         _english = english;
         _personal = personal;
         _options = options ?? new TypoOptions();
+        _accentIndex = accentIndex;
     }
 
     public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
@@ -162,23 +168,39 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
     // frequency-desc. Each branch is a hashset membership test; the near tier is a
     // few hundred lookups, the far tier its square — bounded by Edits2MaxWordLength
     // and only ever run when the near tier came up empty.
-    private List<Candidate> ValidNeighbours(string w, bool twoEdits)
+    private List<Candidate> ValidNeighbours(
+        string w,
+        bool twoEdits,
+        bool includeCoherentHorizontalShifts = false)
     {
+        var generated = new HashSet<string>(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var found = new List<Candidate>();
 
+        void Add(string form, double frequency)
+        {
+            if (form.Length == 0 || form == w || !seen.Add(form)) return;
+            found.Add(new Candidate(form, frequency));
+        }
+
         void Consider(string candidate)
         {
-            if (candidate.Length == 0 || candidate == w) return;
-            if (!seen.Add(candidate)) return;
-            if (!_french.Contains(candidate)) return;
-            found.Add(new Candidate(candidate, _french.FrequencyOf(candidate)));
+            if (candidate.Length == 0 || candidate == w || !generated.Add(candidate)) return;
+            if (_french.Contains(candidate))
+                Add(candidate, _french.FrequencyOf(candidate));
+
+            if (_accentIndex is null) return;
+            foreach (AccentVariant variant in _accentIndex.VariantsOf(candidate))
+                Add(variant.Form, variant.FrequencyPerMillion);
         }
 
         if (!twoEdits)
         {
             foreach (string e in Edits1(w))
                 Consider(e);
+            if (includeCoherentHorizontalShifts)
+                foreach (string shifted in QwertyAdjacency.CoherentHorizontalShifts(w))
+                    Consider(shifted);
         }
         else
         {
@@ -189,6 +211,79 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy
 
         found.Sort(static (x, y) => y.Frequency.CompareTo(x.Frequency));
         return found;
+    }
+
+    // The commit stage abstains when several plausible neighbours fail its
+    // dominance bar. That residue is valuable sentence-stage work, not a dead
+    // end: expose a bounded closed set plus the exact typed literal as KEEP.
+    // No thresholds are relaxed in the instant path; the full-sentence judge
+    // still has to clear its own calibrated margin before anything changes.
+    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
+        SentenceCandidates(word, includeTypedLiteral: true);
+
+    public IReadOnlyList<AccentVariant> SentenceCandidates(
+        string word,
+        bool includeTypedLiteral)
+    {
+        if (!CanProbeSentence(word, out string lower))
+            return Array.Empty<AccentVariant>();
+
+        List<Candidate> neighbours = ValidNeighbours(
+            lower, twoEdits: false, includeCoherentHorizontalShifts: true);
+
+        // Short hurried tokens often combine two physical slips ("miru" for
+        // "mieux"). They are too ambiguous for the instant far tier, whose
+        // minimum length remains six, but a bounded closed set can safely reach
+        // them when the full-sentence judge retains KEEP and clears its margin.
+        // Cap the extra search at five letters to keep input-thread work bounded.
+        if (_options.MaxEditDistance >= 2 && lower.Length <= ContextualFarMaxWordLength)
+        {
+            var forms = new HashSet<string>(
+                neighbours.Select(candidate => candidate.Form),
+                StringComparer.Ordinal);
+            foreach (Candidate candidate in ValidNeighbours(lower, twoEdits: true))
+                if (forms.Add(candidate.Form))
+                    neighbours.Add(candidate);
+            neighbours.Sort(static (x, y) => y.Frequency.CompareTo(x.Frequency));
+        }
+
+        var candidates = new List<AccentVariant>(SentenceCandidateCap + 1);
+        foreach (Candidate neighbour in neighbours)
+        {
+            if (neighbour.Frequency < _options.MinFrequencyPerMillion)
+                continue;
+            if (_personal?.IsSuppressed(lower, neighbour.Form) == true)
+                continue;
+            candidates.Add(new AccentVariant(neighbour.Form, neighbour.Frequency));
+            if (candidates.Count == SentenceCandidateCap)
+                break;
+        }
+
+        // A single generated repair plus KEEP is already a valid closed choice.
+        // includeTypedLiteral is advisory for policy-revision calls; a typo slot
+        // always requires KEEP because its typed non-word is still user intent.
+        if (candidates.Count == 0)
+            return Array.Empty<AccentVariant>();
+        candidates.Add(new AccentVariant(lower, 0.0));
+        return candidates;
+    }
+
+    private bool CanProbeSentence(string word, out string lower)
+    {
+        lower = string.Empty;
+        if (word.Length < _options.MinWordLength
+            || WordShape.HasInternalUpper(word)
+            || WordShape.IsTitleCase(word)
+            || AccentFolding.HasDiacritics(word))
+            return false;
+        foreach (char c in word)
+            if (!char.IsLetter(c))
+                return false;
+
+        lower = word.ToLowerInvariant();
+        return !_french.Contains(lower)
+            && _english?.Contains(lower) != true
+            && _personal?.IsAdopted(lower) != true;
     }
 
     // The single-edit neighbourhood of a token: a deletion, an adjacent

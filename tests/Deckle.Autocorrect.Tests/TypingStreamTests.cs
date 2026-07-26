@@ -129,6 +129,20 @@ public class TypingStreamTests
     }
 
     [Fact]
+    public void ExternalMutationEndsTheReplayableSpan()
+    {
+        var (s, done) = New();
+        Type(s, "avant");
+
+        s.NotifyExternalMutation();
+        Type(s, "après");
+        s.NotifyFocusChanged();
+
+        Assert.Equal(new[] { "external", "focus" },
+            done.Select(r => r.Closure).ToArray());
+    }
+
+    [Fact]
     public void EmptyStateEmitsNothingOnReset()
     {
         var (s, done) = New();

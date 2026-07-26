@@ -36,6 +36,18 @@ public class SentenceCorpusTests
     }
 
     [Fact]
+    public void EllipsisClosesTheSameSentenceForCorpusAndReranker()
+    {
+        var (c, done) = New();
+
+        c.Word("attends", "attends", '…');
+
+        Assert.Single(done);
+        Assert.Equal("attends…", done[0].Final);
+        Assert.Equal("sentence", done[0].Closure);
+    }
+
+    [Fact]
     public void SeparatorEditRewritesTheFinalSideOnly()
     {
         // A mistouch boundary repair (« qu;il » → « qu'il ») changes the run

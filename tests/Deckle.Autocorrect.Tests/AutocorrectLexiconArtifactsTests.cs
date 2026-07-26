@@ -60,6 +60,26 @@ public sealed class AutocorrectLexiconArtifactsTests : IDisposable
         Assert.True(seed!.Contains("greenwashing"));
         Assert.False(seed.Contains("the"));
     }
+
+    [Theory]
+    [InlineData("docs")]
+    [InlineData("def")]
+    [InlineData("repo")]
+    [InlineData("push")]
+    [InlineData("git")]
+    [InlineData("size")]
+    [InlineData("stp")]
+    [InlineData("logs")]
+    [InlineData("telemetry")]
+    public void GlobalEnglishLayerProtectsObservedDeveloperLiterals(string literal)
+    {
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+        var english = new GlobalEnglishLexicon(
+            AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
+
+        Assert.True(english.Contains(literal));
+    }
+
     private void WriteGzipTsv(string fileName, string content)
     {
         string path = Path.Combine(_dir, fileName);

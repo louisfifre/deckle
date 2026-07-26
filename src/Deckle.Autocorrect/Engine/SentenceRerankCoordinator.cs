@@ -37,11 +37,13 @@ public interface IRerankLane : IDisposable
 // whether the slot is a real-word ambiguity the gate left alone (la/là, a/à,
 // ou/où). It submits ONE rerank at a time only after a terminal sentence ender.
 // When the verdict returns it rewrites the slot in place from its own closed
-// buffer; the first physical key after closure invalidates the whole request.
+// buffer. Ordinary forward typing may continue: the exact suffix grows in the
+// model and rides unchanged through the minimal rewrite. Any gesture that can
+// move the caret or mutate unknown text still invalidates the whole request.
 //
 // Staleness is the danger and the guards are deliberately strict: an epoch bumped
-// on every reset or post-closure physical key drops any verdict that outlived its
-// exact screen state; a non-empty live partial also rejects the write; a failed
+// on every reset drops any verdict that outlived its exact screen state; each
+// ready slot remembers the sentence bounds it was closed under; a failed
 // (UIPI-blocked) send invalidates the model rather than continue from uncertainty.
 public sealed class SentenceRerankCoordinator : IDisposable
 {
@@ -52,6 +54,15 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // Words on each side of the slot handed to the masked-LM. Local context is
     // what resolves la/là; a wide window only slows inference and risks >512 tokens.
     private const int ContextWindow = 12;
+
+    // Mirrors TypedWordTracker's separator-run cap. Beyond this, punctuation
+    // art is not a trustworthy word gap and the modeled suffix is abandoned.
+    private const int SeparatorRunCap = 8;
+
+    // A correct rewrite can still be too intrusive when the user has already
+    // typed far beyond the resolved slot. Expire it instead of backspacing and
+    // replaying an arbitrarily long visible suffix.
+    private const int MaxRewriteTailChars = 256;
 
     // Only terminal punctuation closes a sentence. A colon or semicolon does not
     // grant the model permission to rewrite text that the user is still composing.
@@ -77,6 +88,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // trusted to identify the slot — single-flight lets us remember it here.
     private int _inFlightSlot = -1;
     private bool _sentenceClosed;
+    private int _sentenceStartIndex;
     private bool _disposed;
 
     public SentenceRerankCoordinator(
@@ -111,20 +123,31 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // wordId is the engine's per-word id, carried so a deferred verdict joins its
     // synchronous decision line.
     public void OnWordCommitted(
-        string typedForm, string finalForm, char boundary, bool sentenceMayEvaluate, long wordId = 0)
+        string typedForm,
+        string finalForm,
+        char boundary,
+        bool sentenceMayEvaluate,
+        long wordId = 0,
+        string precedingSeparators = "")
     {
         if (_disposed) return;
 
-        // Production sends NotePhysicalKey before a commit. Keep this direct-call
-        // guard so a caller cannot append another sentence to an already closed
-        // model and accidentally validate an old verdict.
+        // Production reopens the model on the first forward word character after
+        // closure. Keep this direct-call guard for callers that bypass the key feed.
         if (_sentenceClosed)
             Invalidate(ResetReason.Navigation);
+
+        // The tracker is the authority for the exact run that separated this
+        // word from the previous one (", ", " : ", doubled spaces, …). Reconcile
+        // the prior slot before appending this word. Empty means unknown/direct
+        // test call, in which case the keystroke feed remains our best model.
+        if (_buffer.Count > 0 && precedingSeparators.Length > 0)
+            _buffer[^1].Separator = precedingSeparators;
 
         var entry = new SlotEntry
         {
             Form = finalForm,
-            Boundary = boundary,
+            Separator = WordBoundaries.DisplaySeparator(boundary),
             WordId = wordId,
         };
 
@@ -152,7 +175,10 @@ public sealed class SentenceRerankCoordinator : IDisposable
         }
 
         if (_sentenceClosed)
+        {
+            MarkCurrentSentenceReady();
             TrySubmitNext();
+        }
     }
 
     // Every physical keystroke, with whether the live word had content BEFORE the
@@ -163,11 +189,30 @@ public sealed class SentenceRerankCoordinator : IDisposable
     {
         if (_disposed) return;
 
-        // Once closure submitted the sentence, even a harmless-looking key means
-        // the visible target may have moved. Drop the verdict before interpreting
-        // that key; never try to absorb live typing into an in-flight rewrite.
+        // Separators typed after terminal punctuation (a space, closing quote or
+        // another dot) extend the exact suffix without moving the caret away.
+        // Preserve them so a verdict can still land during that natural pause.
+        // Forward word characters start a new tracked sentence and do not expire
+        // the old request; control/edit gestures still do.
         if (_sentenceClosed)
         {
+            if (k.Kind == KeystrokeKind.Text
+                && !hasPartialWord)
+            {
+                if (k.Text.Any(WordBoundaries.IsWordChar))
+                {
+                    _sentenceClosed = false;
+                    _sentenceStartIndex = _buffer.Count;
+                    return;
+                }
+                foreach (char c in k.Text)
+                    if (!TryAppendTrailingSeparator(c))
+                    {
+                        Invalidate(ResetReason.Navigation);
+                        return;
+                    }
+                return;
+            }
             Invalidate(ResetReason.Navigation);
             return;
         }
@@ -179,11 +224,10 @@ public sealed class SentenceRerankCoordinator : IDisposable
         }
 
         // A non-word char landing on an EMPTY live buffer (a quotation
-        // apostrophe, a double space, an opening bracket) is swallowed by the
-        // tracker as noise: it commits nothing, yet it IS on screen. The model
-        // can no longer mirror the screen — drop it rather than let a later
-        // slot rewrite rebuild a tail one char short of the screen (the
-        // eaten-letter corruption class).
+        // apostrophe, a double space, an opening bracket) commits no word in the
+        // tracker, yet it IS on screen. Preserve that bounded separator run in
+        // the sentence model; if it cannot be represented exactly, invalidate
+        // rather than rebuild a tail one char short (the eaten-letter class).
         if (k.Kind != KeystrokeKind.Text) return;
         bool empty = !hasPartialWord;
         foreach (char c in k.Text)
@@ -195,10 +239,49 @@ public sealed class SentenceRerankCoordinator : IDisposable
             }
             if (empty)
             {
-                Invalidate(ResetReason.Navigation);
-                return;
+                if (!TryAppendTrailingSeparator(c))
+                {
+                    Invalidate(ResetReason.Navigation);
+                    return;
+                }
+                if (_sentenceClosed)
+                {
+                    MarkCurrentSentenceReady();
+                    TrySubmitNext();
+                }
             }
             empty = true; // the boundary commits (or joins) the word the tracker holds
+        }
+    }
+
+    private bool TryAppendTrailingSeparator(char c)
+    {
+        if (_buffer.Count == 0)
+            return false;
+
+        SlotEntry tail = _buffer[^1];
+        if (tail.Separator.Length >= SeparatorRunCap)
+            return false;
+
+        tail.Separator += c;
+        if (SentenceEnders.Contains(c))
+            _sentenceClosed = true;
+        return true;
+    }
+
+    private void MarkCurrentSentenceReady()
+    {
+        int end = _buffer.Count - 1;
+        if (end < _sentenceStartIndex)
+            return;
+        for (int index = _sentenceStartIndex; index <= end; index++)
+        {
+            SlotEntry slot = _buffer[index];
+            if (!slot.IsAmbiguous || slot.Resolved || slot.Ready)
+                continue;
+            slot.Ready = true;
+            slot.ContextStart = _sentenceStartIndex;
+            slot.ContextEnd = end;
         }
     }
 
@@ -220,17 +303,18 @@ public sealed class SentenceRerankCoordinator : IDisposable
         _epoch++;
         _buffer.Clear();
         _sentenceClosed = false;
+        _sentenceStartIndex = 0;
     }
 
     // ── Submit / apply (input thread) ────────────────────────────────────────
 
     private void TrySubmitNext()
     {
-        if (_inFlight || _disposed || !_sentenceClosed) return;
+        if (_inFlight || _disposed) return;
         for (int i = 0; i < _buffer.Count; i++)
         {
             SlotEntry s = _buffer[i];
-            if (s.IsAmbiguous && !s.Resolved)
+            if (s.IsAmbiguous && !s.Resolved && s.Ready)
             {
                 _inFlight = true;
                 _inFlightSlot = i;
@@ -245,8 +329,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
 
     private RerankRequest BuildRequest(int slotIndex)
     {
-        int lo = Math.Max(0, slotIndex - ContextWindow);
-        int hi = Math.Min(_buffer.Count, slotIndex + ContextWindow + 1);
+        SlotEntry slot = _buffer[slotIndex];
+        int lo = Math.Max(slot.ContextStart, slotIndex - ContextWindow);
+        int hi = Math.Min(slot.ContextEnd + 1, slotIndex + ContextWindow + 1);
         var sentence = new List<string>(hi - lo);
         for (int i = lo; i < hi; i++)
             sentence.Add(_buffer[i].Form);
@@ -268,13 +353,9 @@ public sealed class SentenceRerankCoordinator : IDisposable
         // so the buffer no longer holds the slot we submitted. result.Epoch is the
         // freshness check; the slot is identified by our own _inFlightSlot, never by
         // result.SlotIndex (which is window-relative, for the model only).
-        bool partialChanged = !string.IsNullOrEmpty(_currentPartial());
-        if (result.Epoch != _epoch || !_sentenceClosed
-            || partialChanged
+        if (result.Epoch != _epoch
             || slotIndex < 0 || slotIndex >= _buffer.Count)
         {
-            if (result.Epoch == _epoch && partialChanged)
-                Invalidate(ResetReason.Navigation);
             DeckleAutocorrectSource.Log.RerankVerdict(Outcome.Stale);
             TrySubmitNext();
             return;
@@ -288,10 +369,31 @@ public sealed class SentenceRerankCoordinator : IDisposable
             return;
         }
 
+        // The lane is an internal component, but text injection is still a trust
+        // boundary. A chosen form must belong to the exact closed set submitted
+        // for this slot and must carry a finite margin that actually clears its
+        // non-negative threshold. A malformed provider result becomes abstention.
+        if (outcome.Chosen is not null
+            && (!slot.Candidates.Any(candidate =>
+                    string.Equals(candidate.Form, outcome.Chosen, StringComparison.Ordinal))
+                || !double.IsFinite(outcome.Margin)
+                || !double.IsFinite(outcome.Threshold)
+                || outcome.Threshold < 0.0
+                || outcome.Margin < outcome.Threshold))
+        {
+            outcome = outcome with
+            {
+                Chosen = null,
+                AbstainReason = RerankOutcome.AbstainReasons.Error,
+            };
+        }
+
         slot.Resolved = true; // decided either way — never reconsidered
 
         string word = slot.Form; // the form the slot held before any rewrite
-        string target = outcome.Chosen ?? slot.Form;
+        string target = outcome.Chosen is null
+            ? slot.Form
+            : CasePattern.Apply(slot.Form, outcome.Chosen);
 
         string verdict;
         if (string.Equals(target, slot.Form, StringComparison.Ordinal))
@@ -302,8 +404,14 @@ public sealed class SentenceRerankCoordinator : IDisposable
         }
         else
         {
-            bool applied = ApplySlotRewrite(slotIndex, target, CorrectionReason.SentenceReranker);
-            verdict = applied ? Outcome.Applied : Outcome.Blocked;
+            SlotRewriteResult rewrite = ApplySlotRewrite(
+                slotIndex, target, CorrectionReason.SentenceReranker);
+            verdict = rewrite switch
+            {
+                SlotRewriteResult.Applied => Outcome.Applied,
+                SlotRewriteResult.Expired => Outcome.Expired,
+                _ => Outcome.Blocked,
+            };
         }
 
         DeckleAutocorrectSource.Log.RerankVerdict(verdict);
@@ -349,9 +457,12 @@ public sealed class SentenceRerankCoordinator : IDisposable
     // on-screen tail from the buffer's own forms and appends the live partial word
     // identically on both sides, so InjectionPlan preserves it and the backspace
     // count is right even mid-word. Bounded by the tail length (a few words).
-    // Returns true when the rewrite reached the surface, false on a no-op diff or
-    // a refused (UIPI-blocked) send — the caller turns that into the verdict.
-    private bool ApplySlotRewrite(int slotIndex, string newForm, CorrectionReason reason)
+    // Reports whether the rewrite reached the surface, expired its bounded tail,
+    // was a no-op, or met a refused (UIPI-blocked) send.
+    private SlotRewriteResult ApplySlotRewrite(
+        int slotIndex,
+        string newForm,
+        CorrectionReason reason)
     {
         SlotEntry slot = _buffer[slotIndex];
         string oldForm = slot.Form;
@@ -364,7 +475,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
             // apostrophe inside the form, so rendering the boundary again would
             // overstate the screen by one char per elision — one extra backspace
             // (the eaten letter) and a doubled apostrophe on reinjection.
-            string separator = WordBoundaries.DisplaySeparator(_buffer[i].Boundary);
+            string separator = _buffer[i].Separator;
             currentTail.Append(_buffer[i].Form).Append(separator);
             targetTail.Append(i == slotIndex ? newForm : _buffer[i].Form).Append(separator);
         }
@@ -373,11 +484,14 @@ public sealed class SentenceRerankCoordinator : IDisposable
         string current = currentTail.Append(partial).ToString();
         string target = targetTail.Append(partial).ToString();
         if (string.Equals(current, target, StringComparison.Ordinal))
-            return false;
+            return SlotRewriteResult.NoOp;
+
+        if (current.Length > MaxRewriteTailChars || target.Length > MaxRewriteTailChars)
+            return SlotRewriteResult.Expired;
 
         InjectionPlan plan = InjectionPlan.Compute(current, target);
         if (plan.IsNoOp)
-            return false;
+            return SlotRewriteResult.NoOp;
 
         if (_injector.Replace(current, target))
         {
@@ -388,13 +502,13 @@ public sealed class SentenceRerankCoordinator : IDisposable
             if (slotIndex == _buffer.Count - 1)
                 _realignLastCommitted?.Invoke(newForm);
             _onApplied?.Invoke(new CorrectionDecision(oldForm, newForm, reason), plan);
-            return true;
+            return SlotRewriteResult.Applied;
         }
 
         // A partial / UIPI-blocked send leaves the tail in an unknown state.
         // Trust nothing further; drop the model rather than rewrite a half-edit.
         Invalidate(ResetReason.Navigation);
-        return false;
+        return SlotRewriteResult.Blocked;
     }
 
     public void Dispose()
@@ -415,6 +529,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         public const string Stale    = "stale";
         public const string Resolved = "resolved";
         public const string Blocked  = "blocked";
+        public const string Expired  = "expired";
     }
 
     // One word in the rolling sentence model. Mutable: Form is rewritten in place
@@ -422,12 +537,23 @@ public sealed class SentenceRerankCoordinator : IDisposable
     private sealed class SlotEntry
     {
         public string Form = string.Empty;
-        public char Boundary;
+        public string Separator = string.Empty;
         public IReadOnlyList<AccentVariant> Candidates = Array.Empty<AccentVariant>();
         public bool IsAmbiguous;
         public bool Resolved;
+        public bool Ready;
+        public int ContextStart;
+        public int ContextEnd;
         // The engine's per-word id, carried so the deferred reranker verdict joins
         // the synchronous decision record on the same id in the decision telemetry.
         public long WordId;
+    }
+
+    private enum SlotRewriteResult
+    {
+        Applied,
+        NoOp,
+        Expired,
+        Blocked,
     }
 }

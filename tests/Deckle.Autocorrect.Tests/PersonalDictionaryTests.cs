@@ -24,7 +24,8 @@ public sealed class PersonalDictionaryTests : IDisposable
         if (System.IO.File.Exists(_path)) System.IO.File.Delete(_path);
     }
 
-    private PersonalDictionary New() => new(_path, () => _now);
+    private PersonalDictionary New(Func<string, bool>? wordAdmission = null) =>
+        new(_path, () => _now, wordAdmission);
 
     private void Adopt(PersonalDictionary dict, string word)
     {
@@ -101,6 +102,20 @@ public sealed class PersonalDictionaryTests : IDisposable
         dict.RecordManualAccentFix("francais", "français");
 
         Assert.False(dict.IsAdopted("français"));
+        Assert.Empty(dict.SnapshotWords());
+    }
+
+    [Fact]
+    public void RejectedWordNeverEntersTheLearningSurface()
+    {
+        using var dict = New(word => word != "prepare");
+
+        Assert.False(dict.RecordCommit("prepare"));
+        _now = _now.AddDays(1);
+        Assert.False(dict.RecordCommit("prepare"));
+        Assert.False(dict.RecordCommit("prepare"));
+
+        Assert.False(dict.IsAdopted("prepare"));
         Assert.Empty(dict.SnapshotWords());
     }
 
@@ -305,6 +320,29 @@ public sealed class PersonalDictionaryTests : IDisposable
     }
 
     [Fact]
+    public void CurrentFileDropsRejectedWordsAndPreservesAcceptedState()
+    {
+        var stamped = new PersonalDictionaryData { SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion };
+        stamped.Words.Add(AdoptedEntry("prepare", PersonalWordCategory.Anglicism));
+        stamped.Words.Add(AdoptedEntry("telemetry", PersonalWordCategory.Anglicism));
+        stamped.Suppressions.Add(new SuppressionEntry
+        {
+            Original = "docs",
+            Replacement = "dos",
+            CreatedUtc = _now,
+        });
+        System.IO.File.WriteAllText(_path, JsonSerializer.Serialize(stamped, CamelCase));
+
+        using var dict = New(word => word != "prepare");
+
+        Assert.False(dict.IsAdopted("prepare"));
+        Assert.True(dict.IsAdopted("telemetry"));
+        Assert.DoesNotContain(dict.SnapshotWords(), w => w.Word == "prepare");
+        Assert.True(dict.IsSuppressed("docs", "dos"));
+        Assert.Equal(1, dict.RemovedOnLoad);
+    }
+
+    [Fact]
     public void CorruptFileFallsBackStampedSoLaterLearningSurvives()
     {
         System.IO.File.WriteAllText(_path, "{ this is not valid json ");
@@ -322,5 +360,19 @@ public sealed class PersonalDictionaryTests : IDisposable
     private static readonly JsonSerializerOptions CamelCase = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private WordEntry AdoptedEntry(string word, PersonalWordCategory category) => new()
+    {
+        Word = word,
+        Category = category,
+        CleanOccurrences = 3,
+        CleanDays = new Dictionary<string, int>
+        {
+            ["2026-06-12"] = 1,
+            ["2026-06-13"] = 2,
+        },
+        FirstSeenUtc = _now,
+        LastSeenUtc = _now.AddDays(1),
     };
 }

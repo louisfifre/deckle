@@ -33,4 +33,5 @@ public enum ResetReason
     DeadKey,
     BufferLimit,
     PasswordSurface,
+    ExternalMutation,
 }

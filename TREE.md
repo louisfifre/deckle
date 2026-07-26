@@ -479,6 +479,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
+│   │   │   ├── CompositeAmbiguityProbe.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
 │   │   │   ├── CorrectionDecision.cs
@@ -510,6 +511,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MistouchFamilyStore.cs
 │   │   │   ├── PersonalDictionary.cs
 │   │   │   ├── PersonalDictionaryData.cs
+│   │   │   ├── PersonalWordAdmission.cs
 │   │   │   └── SurfaceProfileStore.cs
 │   │   ├── Lexicon/
 │   │   │   ├── AccentFolding.cs
@@ -517,6 +519,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentVariant.cs
 │   │   │   ├── AutocorrectLexiconArtifacts.cs
 │   │   │   ├── FrequencyLexicon.cs
+│   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
 │   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
@@ -1439,7 +1442,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
+│   │   ├── AutocorrectSentenceTypingScenarioTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
+│   │   ├── AutocorrectTypingScenarioTests.cs
+│   │   ├── AutocorrectTypingStreamReplayMaintenanceTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
 │   │   ├── CamembertRerankerIntegrationTests.cs
@@ -1470,6 +1476,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
+│   │   ├── PersonalWordAdmissionTests.cs
 │   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
@@ -1477,6 +1484,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceReplayMaintenanceTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
+│   │   ├── SimulatedTextSurface.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs

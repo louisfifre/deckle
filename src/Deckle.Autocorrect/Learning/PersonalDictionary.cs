@@ -24,28 +24,47 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
 
     private readonly object _lock = new();
     private readonly Func<DateTimeOffset> _clock;
+    private readonly Func<string, bool> _wordAdmission;
     private readonly JsonSettingsStore<PersonalDictionaryData> _store;
 
-    public PersonalDictionary(string filePath, Func<DateTimeOffset>? clock = null)
+    public int RemovedOnLoad { get; private set; }
+
+    public PersonalDictionary(
+        string filePath,
+        Func<DateTimeOffset>? clock = null,
+        Func<string, bool>? wordAdmission = null)
     {
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
+        _wordAdmission = wordAdmission ?? (_ => true);
         _store = new JsonSettingsStore<PersonalDictionaryData>(
             path: filePath,
             mutexName: "Deckle-Autocorrect-PersonalDictionary",
             jsonOptions: JsonOptions,
-            postLoadMigration: MigrateSchema);
+            postLoadMigration: MigrateAndRevalidate);
     }
 
     // Older schemas either predate the corruption purge or cannot express the new
     // clean-day contract. Do not infer: restart the learning surface cleanly.
-    private static bool MigrateSchema(PersonalDictionaryData data)
+    private bool MigrateAndRevalidate(PersonalDictionaryData data)
     {
-        if (data.SchemaVersion >= PersonalDictionaryData.CurrentSchemaVersion)
-            return false;
-        data.Words.Clear();
-        data.Suppressions.Clear();
-        data.SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion;
-        return true;
+        bool mutated = false;
+        if (data.SchemaVersion < PersonalDictionaryData.CurrentSchemaVersion)
+        {
+            data.Words.Clear();
+            data.Suppressions.Clear();
+            data.SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion;
+            mutated = true;
+        }
+
+        // The admission policy is lexical rather than structural, so it does not
+        // require a schema bump. Revalidate current files on every load and remove
+        // only entries that could never be admitted now; suppressions are explicit
+        // user decisions and remain untouched.
+        RemovedOnLoad = data.Words.RemoveAll(e => !_wordAdmission(e.Word));
+        if (RemovedOnLoad > 0)
+            mutated = true;
+
+        return mutated;
     }
 
     private PersonalDictionaryData Data => _store.Current;
@@ -84,10 +103,11 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
 
     // ── Learning signals ──────────────────────────────────────────────────────
 
-    public void RecordCommit(string word)
+    public bool RecordCommit(string word)
     {
         string trimmed = (word ?? string.Empty).Trim();
-        if (trimmed.Length == 0) return;
+        if (trimmed.Length == 0) return false;
+        if (!_wordAdmission(trimmed)) return false;
 
         var category = Categorize(trimmed);
         string key = NormalizeForCategory(trimmed, category);
@@ -103,6 +123,7 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
             PruneLocked();
         }
         _store.Save();
+        return true;
     }
 
     // The user reopened a committed word and retyped it. The occurrence that just

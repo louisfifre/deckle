@@ -2,16 +2,16 @@ using Deckle.Autocorrect;
 
 namespace Deckle.Autocorrect;
 
-// Lets a caller ask the gate which words are genuinely ambiguous slots — those
-// whose folded key carries two or more surface forms a context model must
-// resolve (a/à, ou/où, cote/côté). A bare null from Evaluate does not say this:
-// it conflates "left a valid literal", "blacklisted", and "ambiguous, deferred".
-// The reranker needs the closed candidate set, and only for the real residue.
+// Lets a caller ask commit policies which words are genuinely ambiguous slots:
+// accent variants sharing one folded form (a/à, cote/côté), or bounded keyboard
+// neighbours the instant typo stage declined because no candidate dominated.
+// A bare null from Evaluate does not say this: it conflates "left literal",
+// "blacklisted", and "ambiguous, deferred". The reranker needs an explicit
+// closed candidate set, and only for that real residue.
 public interface IAmbiguityProbe
 {
-    // The closed candidate set for a word when its fold holds >=2 surface forms
-    // (after the frequency floor and user suppressions); empty when there is
-    // nothing to disambiguate. Used for a commit the gate left literal.
+    // The closed candidate set for a commit the instant gate left literal;
+    // empty when there is nothing safe to disambiguate.
     IReadOnlyList<AccentVariant> AmbiguousCandidates(string word);
 
     // The candidate set the sentence stage may weigh for a word. When
