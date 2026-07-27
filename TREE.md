@@ -1670,6 +1670,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   └── SpeechModelResolverTests.cs
+│   ├── Deckle.Travel.Tests/
+│   │   ├── Deckle.Travel.Tests.csproj
+│   │   ├── FakeTravelSpace.cs
+│   │   ├── TravelAttachTests.cs
+│   │   └── TravelSchemaTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs
