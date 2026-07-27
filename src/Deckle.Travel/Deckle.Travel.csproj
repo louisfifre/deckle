@@ -10,8 +10,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- One terms file per language; adding a language is a file addition. -->
-    <EmbeddedResource Include="Terms\*.json" />
+    <!-- One terms file per language; adding a language is a file addition.
+         WithCulture=false: the ".fr" in the filename is a terms-file language
+         tag, not an assembly culture — without it MSBuild routes the file into
+         a fr satellite assembly and the main assembly carries no resource. -->
+    <EmbeddedResource Include="Terms\*.json"
+                      WithCulture="false"
+                      LogicalName="Deckle.Travel.Terms.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
