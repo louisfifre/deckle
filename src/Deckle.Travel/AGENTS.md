@@ -9,7 +9,9 @@ type: agent-instructions
 a seven-type model, its closed vocabularies, guarded operations, and their
 bounded model-facing MCP surface. It uses `Deckle.Anytype` as its storage
 provider and plugs into the resident transport through `Deckle.Anytype.Mcp`.
-The space alias `travel` resolves to the personal « Vacances » space at runtime.
+The space alias `travel` resolves to the personal Travel space at runtime.
+Space and code are English throughout; only type and property labels are
+localized, and their keys stay English so a label change never moves an id.
 
 ## Privacy boundary
 
