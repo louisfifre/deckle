@@ -130,6 +130,16 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         return true;
     }
 
+    // Multiple ambiguous slots can complete sequentially: applying one verdict
+    // may submit the next. Keep pumping until the observable outcome is reached.
+    public bool PumpUntil(Func<bool> condition, TimeSpan timeout) =>
+        SpinWait.SpinUntil(() =>
+        {
+            if (Host.HasPendingDrain)
+                Host.Drain();
+            return condition();
+        }, timeout);
+
     /// <summary>Re-probes the (already updated) surface, as a focus change would.</summary>
     public void RefocusOn(FocusedSurface surface)
     {
@@ -158,6 +168,31 @@ internal sealed class AutocorrectEngineHarness : IDisposable
             vk, ScanCode: 0, IsKeyDown: true, IsExtended: false, IsInjected: true, TimestampMs: TimeMs,
             ExtraInfo: 0x12345678));
     }
+
+    // A real foreign autocorrect burst: the surface changes first, then Raw
+    // Input reports Backspace and VK_PACKET transitions with hDevice == 0.
+    public void ForeignReplaceSuffix(string current, string target)
+    {
+        if (!Surface.ReplaceSuffix(current, target))
+            throw new InvalidOperationException($"The simulated surface does not end in '{current}'.");
+
+        InjectionPlan plan = InjectionPlan.Compute(current, target);
+        for (int i = 0; i < plan.Backspaces; i++)
+        {
+            RaiseForeignTransition(0x08, scanCode: 0, isDown: true);
+            RaiseForeignTransition(0x08, scanCode: 0, isDown: false);
+        }
+        foreach (char unit in plan.Text)
+        {
+            RaiseForeignTransition(0xE7, unit, isDown: true); // VK_PACKET
+            RaiseForeignTransition(0xE7, unit, isDown: false);
+        }
+    }
+
+    private void RaiseForeignTransition(ushort vk, ushort scanCode, bool isDown) =>
+        Host.RaiseKey(new KeyboardKeyEvent(
+            vk, scanCode, isDown, IsExtended: false, IsInjected: true,
+            TimestampMs: TimeMs, ExtraInfo: 0x12345678));
 
     private void RaiseDown(ushort vk) => RaiseTransition(vk, isDown: true);
 
@@ -262,6 +297,7 @@ internal sealed class RecordingInjector : ITextInjector
     public RecordingInjector(SimulatedTextSurface? surface = null) => _surface = surface;
 
     public bool Result = true;
+    public bool VerifySurfaceSuffix = true;
     public readonly List<(string Current, string Target)> Calls = new();
 
     public bool Replace(string current, string target)
@@ -269,7 +305,11 @@ internal sealed class RecordingInjector : ITextInjector
         Calls.Add((current, target));
         if (!Result)
             return false;
-        return _surface?.ReplaceSuffix(current, target) ?? true;
+        if (_surface is null) return true;
+        if (VerifySurfaceSuffix)
+            return _surface.ReplaceSuffix(current, target);
+        _surface.ApplyBlindReplacement(current, target);
+        return true;
     }
 }
 

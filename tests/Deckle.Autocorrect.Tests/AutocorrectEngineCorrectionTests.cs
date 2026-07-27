@@ -134,6 +134,22 @@ public sealed class AutocorrectEngineCorrectionTests
         Assert.Equal("bonjour ami xsalut ", h.VisibleText);
     }
 
+    [Fact]
+    public void ForeignUnicodeAutocorrectRealignsTheCommittedWordForFollowingTyping()
+    {
+        var policy = new ScriptedPolicy((_, _) => null);
+        using var h = new AutocorrectEngineHarness(policy);
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Start();
+
+        h.Type("une qualite");
+        h.ForeignReplaceSuffix("qualite", "qualité ");
+        h.Type("suivante ");
+
+        Assert.Equal("une qualité suivante ", h.VisibleText);
+        Assert.Contains(("suivante", (string?)"qualité"), policy.Calls);
+    }
+
     // Regression (JOURNAL 2026-07-02): a correction firing on an elision commit
     // must not double the apostrophe. The elision apostrophe lives INSIDE the
     // committed form (« j' ») and never showed as a separate boundary char, so

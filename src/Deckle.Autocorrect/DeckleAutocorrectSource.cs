@@ -50,6 +50,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtRerankerLoadFailed  = 26;
     public const int EvtSentenceStageAbandoned = 27;
     public const int EvtPersonalDictionarySanitized = 28;
+    public const int EvtExternalMutationBurst = 29;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -279,6 +280,24 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtSentenceStageAbandoned, reason, pending_slots, in_flight);
+    }
+
+    [Event(EvtExternalMutationBurst,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "external mutation | outcome={0} | backspaces={1} | text_units={2}")]
+    public void ExternalMutationBurst(string outcome, int backspaces, int text_units)
+    {
+        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtExternalMutationBurst, outcome, backspaces, text_units);
+    }
+
+    public static class ExternalMutationOutcomes
+    {
+        public const string Reconciled = "reconciled";
+        public const string Unmodeled = "unmodeled";
+        public const string Unsupported = "unsupported";
+        public const string ProtectedSurface = "protected_surface";
     }
 
     // ── Correction decision dataset ──────────────────────────────────────

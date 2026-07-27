@@ -2,6 +2,7 @@ using Deckle.Autocorrect;
 using Deckle.Diagnostics;
 using Deckle.Input;
 using System.Diagnostics.Tracing;
+using System.Text;
 
 namespace Deckle.Autocorrect;
 
@@ -84,6 +85,13 @@ public sealed partial class AutocorrectEngine : IDisposable
     // Monotonic per-word id, input thread only. Stamps each evaluated word so its
     // synchronous decision line and the deferred reranker verdict join on one id.
     private long _wordId;
+
+    // One coalesced foreign SendInput burst. Only Backspace + VK_PACKET text is
+    // eligible for reconciliation; every other shape falls back to a hard reset.
+    private bool _foreignMutationOpen;
+    private string? _foreignMutationFallback;
+    private int _foreignBackspaces;
+    private StringBuilder? _foreignReplacement;
 
     // Rollup accumulators — input thread only.
     private double _rollupStartMs = -1;
