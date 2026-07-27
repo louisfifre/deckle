@@ -98,7 +98,8 @@ public static class DevSpace
         public const string DueDate           = "due_date";                 // date
 
         // Built-in action-layout completion checkbox. Measured live 2026-06-12 on
-        // the Dev space: a completed task carries `done [checkbox] = True`.
+        // tasks, then adopted for project chantiers when Project moved to the
+        // action layout on 2026-07-27: completion carries `done [checkbox] = True`.
         public const string Done              = "done";                     // checkbox
 
         // Budget / charge — on epic and project.
@@ -209,6 +210,7 @@ public static class DevSpace
             new("organiser", "Organiser"),
             new("echanger", "Échanger"),
             new("gestion", "Gérer"),
+            new("surveillance", "Surveiller"),
         ];
 
         public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
@@ -282,6 +284,7 @@ public static class DevSpace
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.PhaseProjet, "Phase projet", "select", PhaseProjet.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
+        new(Props.Done, "Terminé", "checkbox"),
         new(Props.Version, "Version", "text"),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
         new(Props.DueDate, "Date cible", "date"),

@@ -8,7 +8,7 @@ namespace Deckle.Anytype.Mcp.Tests;
 // Unit tests for ToolCatalog.Build. The gestures wrap a real AnytypeApiClient
 // built from dummy credentials, but Build only constructs descriptors (the
 // handlers are lazy lambdas) so no HTTP call is ever made here. These pin the
-// advertised surface: exactly the 16 base named tools, each with a well-formed
+// advertised surface: exactly the 17 base named tools, each with a well-formed
 // object input schema that forbids extra properties.
 [Trait("Category", "unit")]
 public class ToolCatalogTests
@@ -17,7 +17,7 @@ public class ToolCatalogTests
     {
         "session_start", "log", "get", "project_overview", "create_task",
         "complete", "archive", "link", "list_projects", "search", "subtask",
-        "create_project", "create_idea", "create_document", "update", "replace_section",
+        "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
     };
 
     static IReadOnlyList<ToolDescriptor> BuildCatalog()
@@ -39,11 +39,11 @@ public class ToolCatalogTests
     }
 
     [Fact]
-    public void BuildExposesExactlyTheSixteenNamedTools()
+    public void BuildExposesExactlyTheSeventeenNamedTools()
     {
         var names = BuildCatalog().Select(t => t.Name).ToArray();
 
-        Assert.Equal(16, names.Length);
+        Assert.Equal(17, names.Length);
         Assert.Equal(
             ExpectedToolNames.OrderBy(n => n),
             names.OrderBy(n => n));
@@ -56,6 +56,22 @@ public class ToolCatalogTests
 
         Assert.Contains("project -> epic", link.Description);
         Assert.DoesNotContain("cannot attach anything to an epic", link.Description);
+    }
+
+    [Fact]
+    public void ProjectManagementToolsAdvertiseTheEpicChantierTaskModel()
+    {
+        var tools = BuildCatalog();
+        ToolDescriptor complete = tools.Single(t => t.Name == "complete");
+        ToolDescriptor createTask = tools.Single(t => t.Name == "create_task");
+        ToolDescriptor createProject = tools.Single(t => t.Name == "create_project");
+
+        Assert.Contains("project or task", complete.Description);
+        Assert.True(((JsonObject)complete.InputSchema["properties"]!).ContainsKey("object"));
+        Assert.Contains("surveillance", PropertyDescription(createTask, "type"));
+        Assert.Contains("Existing projects", PropertyDescription(createProject, "epic"));
+        Assert.Contains("permanent Epic", McpServer.ProjectManagementDescriptor.Instructions);
+        Assert.Contains("Project (chantier)", McpServer.ProjectManagementDescriptor.Instructions);
     }
 
     [Fact]
@@ -80,5 +96,12 @@ public class ToolCatalogTests
             Assert.False(schema["additionalProperties"]!.GetValue<bool>(),
                 $"Tool '{tool.Name}' schema must forbid additional properties.");
         }
+    }
+
+    static string PropertyDescription(ToolDescriptor tool, string property)
+    {
+        var properties = Assert.IsType<JsonObject>(tool.InputSchema["properties"]);
+        var schema = Assert.IsType<JsonObject>(properties[property]);
+        return schema["description"]!.GetValue<string>();
     }
 }

@@ -5,15 +5,9 @@ using Deckle.Anytype;
 
 namespace Deckle.Anytype;
 
-// Task gestures: create an action-layout task under a project, set its
-// completion checkbox (complete / reopen), and toggle/append inline checklist
-// items in its markdown body.
-//
-// The action-layout "done" state is set through the object's `done` checkbox
-// property: the vendor reference (anytypeHelper) maps the action/todo layout
-// title checkbox to a plain boolean checkbox property, with no dedicated
-// endpoint. Measured live 2026-06-12, a completed task carries
-// `done [checkbox] = True`; the key is DevSpace.Props.Done.
+// Task gestures: create an action-layout task under a project and toggle/append
+// inline checklist items in its markdown body. Cross-type lifecycle operations
+// (complete and archive) live on QueryGestures.
 //
 // Subtask round-trip: the body markdown returned by the API is Anytype's raw
 // export form. GFM checklist lines (`- [ ]` / `- [x]`) are NOT among the
@@ -78,31 +72,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
         string objName = NameOf(created, name);
         string prioritySuffix = priority is int p ? $", priorité {p}" : "";
         return $"Tâche créée : {objName} ({DisplayType(typeKey)}{prioritySuffix})";
-    }
-
-    /// <summary>
-    /// Sets the task's action-layout completion checkbox. <paramref name="value"/>
-    /// true marks it done, false reopens it (the décochage path); default true.
-    /// </summary>
-    public async Task<string> CompleteAsync(string task, bool value = true, CancellationToken ct = default)
-    {
-        var sw = Stopwatch.StartNew();
-
-        string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
-
-        using var _ = await api.AcquireWriteScopeAsync("complete", taskId, ct);
-        var payload = new JsonObject
-        {
-            ["properties"] = new JsonArray { CheckboxProp(DevSpace.Props.Done, value) },
-        };
-
-        JsonObject updated = await api.UpdateObjectAsync(taskId, payload, ct);
-
-        sw.Stop();
-        DeckleAnytypeSource.Log.GestureCompleted("complete", sw.Elapsed.TotalMilliseconds);
-
-        string name = NameOf(updated, task);
-        return value ? $"Tâche terminée : {name}" : $"Tâche rouverte : {name}";
     }
 
     /// <summary>
@@ -224,9 +193,6 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver)
 
     static JsonObject SelectProp(string key, string tagKey)
         => new() { ["key"] = key, ["select"] = tagKey };
-
-    static JsonObject CheckboxProp(string key, bool value)
-        => new() { ["key"] = key, ["checkbox"] = value };
 
     // ── Digest helpers ───────────────────────────────────────────────────────
 

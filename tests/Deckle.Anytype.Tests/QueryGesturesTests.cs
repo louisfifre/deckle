@@ -77,6 +77,43 @@ public class QueryGesturesTests
         },
     };
 
+    // ── CompleteAsync ────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CompleteMarksATaskWithTheCanonicalDoneCheckbox()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        string digest = await NewGestures(server).CompleteAsync(TaskId, ct: Ct);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject done = Assert.IsType<JsonObject>(
+            Assert.Single((JsonArray)patched["properties"]!));
+        Assert.Equal(DevSpace.Props.Done, done["key"]!.GetValue<string>());
+        Assert.True(done["checkbox"]!.GetValue<bool>());
+        Assert.Contains("Tâche terminée", digest);
+    }
+
+    [Fact]
+    public async Task CompleteReopensAProjectThroughTheSameCanonicalSignal()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+
+        string digest = await NewGestures(server)
+            .CompleteAsync(ProjectId, value: false, ct: Ct);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject done = Assert.IsType<JsonObject>(
+            Assert.Single((JsonArray)patched["properties"]!));
+        Assert.Equal(DevSpace.Props.Done, done["key"]!.GetValue<string>());
+        Assert.False(done["checkbox"]!.GetValue<bool>());
+        Assert.Contains("Chantier rouvert", digest);
+    }
+
     static JsonObject EpicObject() => new()
     {
         ["object"] = new JsonObject

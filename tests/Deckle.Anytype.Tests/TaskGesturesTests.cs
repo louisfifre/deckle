@@ -127,39 +127,6 @@ public class TaskGesturesTests
         Assert.Equal("# Titre\nUn paragraphe libre.\n\n- [x] une étape\nUne note finale.", next);
     }
 
-    // ── CompleteAsync ─────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task CompleteSendsThePatchWithTheDoneCheckboxTrue()
-    {
-        using var server = new FakeAnytypeServer();
-        server.OnPatchObject(TaskId, TaskObject(""));
-
-        await NewGestures(server).CompleteAsync(TaskId, ct: Ct);
-
-        // The PATCH carries properties:[{key:"done", checkbox:true}].
-        JsonObject patched = server.LastBodyFor("PATCH");
-        var props = patched["properties"] as JsonArray;
-        Assert.NotNull(props);
-        JsonObject doneProp = Assert.IsType<JsonObject>(props!.Single());
-        Assert.Equal(DevSpace.Props.Done, doneProp["key"]!.GetValue<string>());
-        Assert.True(doneProp["checkbox"]!.GetValue<bool>());
-    }
-
-    [Fact]
-    public async Task CompleteWithValueFalseReopensTheTask()
-    {
-        using var server = new FakeAnytypeServer();
-        server.OnPatchObject(TaskId, TaskObject(""));
-
-        // The décochage path: value:false clears the done checkbox.
-        await NewGestures(server).CompleteAsync(TaskId, value: false, ct: Ct);
-
-        JsonObject patched = server.LastBodyFor("PATCH");
-        JsonObject doneProp = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
-        Assert.Equal(DevSpace.Props.Done, doneProp["key"]!.GetValue<string>());
-        Assert.False(doneProp["checkbox"]!.GetValue<bool>());
-    }
 }
 
 // ─── FakeAnytypeServer ─────────────────────────────────────────────────────────

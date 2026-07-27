@@ -6,7 +6,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Anytype;
 
 // Project-level gestures: a project's overview digest, the project list grouped
-// by état, and project creation (optionally placed inside an epic collection).
+// by état, and creation of projects and their epic containers.
 //
 // Every digest is a terse French plain-string — the LLM-facing product. One line
 // per fact, no banner, no markdown decoration beyond what carries meaning.
@@ -91,6 +91,35 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         return digest;
     }
 
+    // Creates the permanent epic container at the top of the planning model.
+    // Epic is a measured custom type in the Dev space; unlike projects and tasks,
+    // it carries no default template id.
+    public async Task<string> CreateEpicAsync(
+        string name, string? state = null, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+
+        string etatKey = state is null
+            ? DevSpace.Etat.EnAttente
+            : DevSpace.Etat.Resolve(state)
+                ?? throw new ArgumentException($"État inconnu « {state} ».", nameof(state));
+
+        var payload = new JsonObject
+        {
+            ["type_key"] = DevSpace.Types.Epic,
+            ["name"] = name,
+            ["properties"] = new JsonArray
+            {
+                new JsonObject { ["key"] = DevSpace.Props.Etat, ["select"] = etatKey },
+            },
+        };
+
+        JsonObject created = await api.CreateObjectAsync(payload, ct);
+
+        DeckleAnytypeSource.Log.GestureCompleted("epic_create", Elapsed(started));
+        return $"Epic créé : {PropReader.Name(created)} ({DevSpace.Etat.NameFor(etatKey) ?? etatKey})";
+    }
+
     // Creates the project (état tag from state or en_attente by default), then,
     // if an epic is given, resolves the epic collection and adds the project to
     // it (epic↔project is collection membership, not a property link).
@@ -163,6 +192,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         foreach (JsonNode? node in hits)
         {
             if (node is not JsonObject t) continue;
+            if (PropReader.Checkbox(t, DevSpace.Props.Archive)) continue;
             if (!PropReader.ObjectRefs(t, DevSpace.Props.RelationProjet).Contains(projectId)) continue;
 
             taskIds.Add(PropReader.Id(t));

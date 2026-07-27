@@ -7,6 +7,12 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-07-27 — Epic / chantier / task model frozen
+
+Decided: Deckle is the permanent Epic, a Project is one finite chantier, and a Task is one executable unit; smaller steps stay as inline checklist items. The built-in `done` checkbox is the canonical completion signal for Projects and Tasks. État remains planning state, while Archivé only removes an object from active views.
+
+Found: Anytype API `2025-11-08` documents both object creation with `type_key` and retyping through a `type_key` PATCH. Chose a bounded `create_epic` gesture instead of exposing generic retyping because the API does not document how incompatible properties or collection state survive an arbitrary type change.
+
 ## 2026-07-16 — Retired the stale schema snapshot without losing its live residues
 
 Removed `Schema/SCHEMA.md`: its type tables had become a second, drifting source beside `DevSpace.cs` and the live Anytype space. The last verified cleanup state remains here: `tag` is Anytype's auto-transversal residue and stays deliberately unmapped; `État` was removed from Idée; `rpport(s)_lie(s)` (the frozen misspelled key for “Rapport(s) lié(s)”) remains orphaned and should be deleted from the space if the live schema still exposes it. The Anytype MCP was offline during this audit, so that final live-space check is deferred rather than claimed.

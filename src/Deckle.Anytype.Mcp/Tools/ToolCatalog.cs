@@ -6,7 +6,7 @@ namespace Deckle.Anytype.Mcp;
 
 // ─── Tool catalog ─────────────────────────────────────────────────────────────
 //
-// Builds the 16 base MCP tools over the gesture classes. Each descriptor pairs a
+// Builds the 17 base MCP tools over the gesture classes. Each descriptor pairs a
 // JSON Schema (2020-12, additionalProperties:false) with a handler that reads and
 // type-checks the arguments before invoking the gesture.
 //
@@ -67,7 +67,7 @@ public static class ToolCatalog
                     [
                         Prop("project", "string", "Parent project, name or id."),
                         Prop("name", "string", "Task title."),
-                        Prop("type", "string", "Task type, key or display name. Keys: production (build, deliver), recherche (investigate), organiser (structure, tidy), echanger (discuss, decide with someone), gestion (manage, admin)."),
+                        Prop("type", "string", "Task type, key or display name. Keys: production (build, deliver), recherche (investigate), organiser (structure, tidy), echanger (discuss, decide with someone), gestion (manage, admin), surveillance (watch for a measured recurrence)."),
                     ],
                     optional:
                     [
@@ -81,12 +81,12 @@ public static class ToolCatalog
 
             new(
                 "complete",
-                "Set a task's built-in completion checkbox: omit done to mark it done, pass done:false to reopen it. This is the canonical 'task finished' signal, distinct from the état select (Ouvert/En cours/Terminé…). Nothing is archived and the checklist items are untouched.",
+                "Set a project or task's built-in completion checkbox: omit done to mark it done, pass done:false to reopen it. This is the canonical finished signal for finite chantiers and executable tasks, distinct from the état select. Nothing is archived and inline checklist items are untouched.",
                 Schema(
-                    required: [Prop("task", "string", "Task, name or id.")],
+                    required: [Prop("object", "string", "Project or task, name or id.")],
                     optional: [Prop("done", "boolean", "Completion state; omit to mark done, pass false to reopen.")]),
                 async (args, ct) =>
-                    await tasks.CompleteAsync(Str(args, "task"), BoolOpt(args, "done") ?? true, ct)),
+                    await query.CompleteAsync(Str(args, "object"), BoolOpt(args, "done") ?? true, ct)),
 
             new(
                 "archive",
@@ -148,13 +148,23 @@ public static class ToolCatalog
                         Str(args, "task"), Str(args, "label"), BoolOpt(args, "done"), ct)),
 
             new(
+                "create_epic",
+                "Create the permanent epic container at the top of the Epic / Chantier / Task model.",
+                Schema(
+                    required: [Prop("name", "string", "Epic title.")],
+                    optional: [Prop("state", "string", "Starting état, key or display name: termine, ouvert, en_cours, dormant, en_attente, abandonne.")]),
+                async (args, ct) =>
+                    await projects.CreateEpicAsync(
+                        Str(args, "name"), StrOpt(args, "state"), ct)),
+
+            new(
                 "create_project",
-                "Create a project from the project template, optionally with a starting état.",
+                "Create a finite chantier from the project template, optionally attach it to its epic, and set its starting état.",
                 Schema(
                     required: [Prop("name", "string", "Project title.")],
                     optional:
                     [
-                        Prop("epic", "string", "Epic collection to add the project to, name or id — at creation only; an existing project cannot join an epic later."),
+                        Prop("epic", "string", "Epic collection to add the project to, name or id. Existing projects can be attached later with link."),
                         Prop("state", "string", "Starting état, key or display name: termine, ouvert, en_cours, dormant, en_attente, abandonne."),
                     ]),
                 async (args, ct) =>

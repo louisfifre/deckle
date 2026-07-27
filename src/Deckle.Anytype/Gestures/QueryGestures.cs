@@ -96,6 +96,47 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
             sb.Append('\n').Append(label).Append(" : ").Append(value.Trim());
     }
 
+    // Sets the canonical action-layout completion checkbox on a finite chantier
+    // or an executable task. État remains planning state; completion is the
+    // built-in `done` signal for both object types.
+    public async Task<string> CompleteAsync(
+        string selector, bool value = true, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+
+        string id = await resolver.ResolveAsync(
+            selector, [DevSpace.Types.Project, DevSpace.Types.Task], ct);
+
+        using var _ = await api.AcquireWriteScopeAsync("complete", id, ct);
+        JsonObject obj = await api.GetObjectAsync(id, ct);
+        string type = QueryProp.TypeKey(obj) ?? "";
+        if (type is not (DevSpace.Types.Project or DevSpace.Types.Task))
+            throw new InvalidOperationException(
+                "Seuls un chantier (project) ou une tâche portent le signal de fin canonique.");
+
+        var payload = new JsonObject
+        {
+            ["properties"] = new JsonArray
+            {
+                new JsonObject { ["key"] = DevSpace.Props.Done, ["checkbox"] = value },
+            },
+        };
+
+        JsonObject updated = await api.UpdateObjectAsync(id, payload, ct);
+
+        DeckleAnytypeSource.Log.GestureCompleted("complete", Elapsed(started));
+
+        string name = QueryProp.Name(updated);
+        bool project = type == DevSpace.Types.Project;
+        return (project, value) switch
+        {
+            (true, true) => $"Chantier terminé : {name}",
+            (true, false) => $"Chantier rouvert : {name}",
+            (false, true) => $"Tâche terminée : {name}",
+            _ => $"Tâche rouverte : {name}",
+        };
+    }
+
     // Appends targets into the natural link property of the (source type, target
     // type) pair. The API PATCH replaces a property's value wholesale, so this is
     // a read-modify-write: union the current refs with the resolved target ids.

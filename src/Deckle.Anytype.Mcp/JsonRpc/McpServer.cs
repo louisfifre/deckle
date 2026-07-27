@@ -24,9 +24,13 @@ public sealed class McpServer
     public static readonly Descriptor ProjectManagementDescriptor = new(
         "deckle-anytype",
         "Deckle Anytype",
-        "Anytype project-management space: projects (one per app or life area) "
-        + "hold tasks; subtasks are inline '- [ ]' checklist items in the task "
-        + "body, not separate objects. Before work that changes the space, call "
+        "Anytype project-management space for Deckle. Shared model: Deckle is the "
+        + "permanent Epic; each finite workstream is a Project (chantier); each "
+        + "executable unit is a Task. Subtasks are inline '- [ ]' checklist items "
+        + "in the task body, not separate objects. The built-in done checkbox is "
+        + "the canonical completion signal for projects and tasks; état remains "
+        + "planning state, and archive only removes an object from active views. "
+        + "Before work that changes the space, call "
         + "session_start on the anchor task, then journal the why with log as "
         + "you go; plain reads need no session. Shared vocabulary — états: "
         + "termine, ouvert, en_cours, dormant, en_attente, abandonne; priority "

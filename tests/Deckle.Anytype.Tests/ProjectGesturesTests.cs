@@ -12,12 +12,34 @@ public class ProjectGesturesTests
 {
     const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string EpicId    = "bafyreiepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ActiveTaskId = "bafyreiTaskactiveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ArchivedTaskId = "bafyreiTaskarchivedaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     static ProjectGestures NewGestures(FakeAnytypeServer server)
     {
         var client = new AnytypeApiClient(server.Credentials);
         return new ProjectGestures(client, new NameResolver(client));
+    }
+
+    [Fact]
+    public async Task CreateEpicUsesTheMeasuredEpicTypeWithoutAProjectTemplate()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPostObject(new JsonObject
+        {
+            ["object"] = new JsonObject { ["id"] = EpicId, ["name"] = "Deckle" },
+        });
+
+        await NewGestures(server).CreateEpicAsync("Deckle", state: "en_cours", ct: Ct);
+
+        JsonObject created = server.LastBodyFor("POST");
+        Assert.Equal(DevSpace.Types.Epic, created["type_key"]!.GetValue<string>());
+        Assert.False(created.ContainsKey("template_id"));
+        JsonObject state = Assert.IsType<JsonObject>(
+            Assert.Single((JsonArray)created["properties"]!));
+        Assert.Equal(DevSpace.Props.Etat, state["key"]!.GetValue<string>());
+        Assert.Equal("en_cours", state["select"]!.GetValue<string>());
     }
 
     [Fact]
@@ -68,4 +90,85 @@ public class ProjectGesturesTests
         string id = Assert.Single(objects)!.GetValue<string>();
         Assert.Equal(ProjectId, id);
     }
+
+    [Fact]
+    public async Task OverviewOmitsArchivedTasksAndTheirReports()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray
+            {
+                TaskHit(ActiveTaskId, "Tâche active", archived: false),
+                TaskHit(ArchivedTaskId, "Tâche archivée", archived: true),
+            },
+        });
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray
+            {
+                ReportHit("Rapport actif", ActiveTaskId),
+                ReportHit("Rapport archivé", ArchivedTaskId),
+            },
+        });
+
+        string digest = await NewGestures(server).OverviewAsync(ProjectId, Ct);
+
+        Assert.Contains("Tâche active", digest);
+        Assert.Contains("Rapport actif", digest);
+        Assert.DoesNotContain("Tâche archivée", digest);
+        Assert.DoesNotContain("Rapport archivé", digest);
+    }
+
+    static JsonObject ProjectObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = ProjectId,
+            ["name"] = "Refonte Anytype",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Project },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    static JsonObject TaskHit(string id, string name, bool archived) => new()
+    {
+        ["id"] = id,
+        ["name"] = name,
+        ["type"] = new JsonObject { ["key"] = DevSpace.Types.Task },
+        ["properties"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["key"] = DevSpace.Props.RelationProjet,
+                ["objects"] = new JsonArray(ProjectId),
+            },
+            new JsonObject
+            {
+                ["key"] = DevSpace.Props.Archive,
+                ["checkbox"] = archived,
+            },
+        },
+    };
+
+    static JsonObject ReportHit(string body, string taskId) => new()
+    {
+        ["id"] = "bafyreiReportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ["type"] = new JsonObject { ["key"] = DevSpace.Types.Rapport },
+        ["markdown"] = body,
+        ["properties"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["key"] = DevSpace.Props.TachesLiees,
+                ["objects"] = new JsonArray(taskId),
+            },
+            new JsonObject
+            {
+                ["key"] = DevSpace.Props.DateDuJournal,
+                ["date"] = "2026-07-27T00:00:00Z",
+            },
+        },
+    };
 }
