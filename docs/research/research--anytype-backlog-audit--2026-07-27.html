@@ -1,0 +1,3826 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Audit du backlog Deckle</title>
+<style>:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --red: light-dark(rgb(186 38 35), rgb(250 66 62));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed="true"],
+    [aria-selected="true"],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html>body{padding:0}</style>
+</head>
+<body>
+<div id="deckle-audit">
+  <style>
+    #deckle-audit {
+      display: grid;
+      gap: 1.5rem;
+      color: var(--foreground);
+    }
+    #deckle-audit .audit-head,
+    #deckle-audit .audit-actions,
+    #deckle-audit .audit-meta,
+    #deckle-audit .audit-section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    #deckle-audit .audit-head {
+      justify-content: space-between;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    #deckle-audit .audit-actions {
+      justify-content: flex-end;
+    }
+    #deckle-audit .audit-field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    #deckle-audit .audit-field-wide {
+      grid-column: 1 / -1;
+    }
+    #deckle-audit .audit-field {
+      display: grid;
+      gap: 0.35rem;
+      align-content: start;
+    }
+    #deckle-audit .audit-section {
+      display: grid;
+      gap: 0.75rem;
+    }
+    #deckle-audit .audit-section-head {
+      justify-content: space-between;
+    }
+    #deckle-audit .audit-section-head h2,
+    #deckle-audit .audit-section-head h3,
+    #deckle-audit .audit-section-head p {
+      margin: 0;
+    }
+    #deckle-audit .audit-context {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-height: 22rem;
+      overflow-y: auto;
+      color: var(--foreground);
+      background: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+    }
+    #deckle-audit .audit-recommendation {
+      display: grid;
+      gap: 0.5rem;
+    }
+    #deckle-audit .audit-recommendation p,
+    #deckle-audit .audit-empty {
+      margin: 0;
+    }
+    #deckle-audit .audit-name-button {
+      text-align: left;
+    }
+    #deckle-audit .audit-current {
+      opacity: 0.72;
+    }
+    #deckle-audit .audit-complete {
+      text-decoration: line-through;
+      opacity: 0.72;
+    }
+    #deckle-audit .audit-save {
+      min-width: 9rem;
+    }
+    #deckle-audit textarea {
+      min-height: 5.5rem;
+      resize: vertical;
+    }
+    #deckle-audit .audit-subtask-note {
+      min-width: 12rem;
+    }
+    #deckle-audit .audit-plan-card {
+      display: grid;
+      gap: 0.65rem;
+      align-content: start;
+    }
+    #deckle-audit .audit-plan-card h3,
+    #deckle-audit .audit-plan-card p,
+    #deckle-audit .audit-plan-card ul {
+      margin: 0;
+    }
+    #deckle-audit .audit-plan-card ul {
+      padding-left: 1.15rem;
+    }
+    #deckle-audit .audit-plan-grid {
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    }
+    #deckle-audit .audit-plan-groups,
+    #deckle-audit .audit-plan-group {
+      display: grid;
+      gap: 0.75rem;
+    }
+    #deckle-audit .audit-plan-card > .btn {
+      justify-self: start;
+      margin-top: auto;
+    }
+    #deckle-audit .audit-detail-divider {
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 620px) {
+      #deckle-audit .audit-field-grid {
+        grid-template-columns: 1fr;
+      }
+      #deckle-audit .audit-field-wide {
+        grid-column: auto;
+      }
+      #deckle-audit .audit-actions {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+
+  <div class="audit-head">
+    <div class="audit-meta">
+      <span class="viz-badge">Deckle → Epic permanent</span>
+      <span id="audit-save-status" class="text-small text-muted audit-save" aria-live="polite">Sauvegarde locale prête</span>
+    </div>
+    <div class="audit-actions">
+      <button id="audit-export" class="btn" type="button">Exporter les décisions</button>
+      <label class="form-label audit-field">
+        <span>Restaurer une sauvegarde</span>
+        <input id="audit-import" class="form-control" type="file" accept="application/json,.json">
+      </label>
+    </div>
+  </div>
+
+  <div class="viz-grid" aria-label="Avancement de l’audit">
+    <div class="card viz-stat">
+      <span class="text-muted">Éléments déjà triés</span>
+      <span id="audit-reviewed" class="viz-stat-value">38 / 38</span>
+    </div>
+    <div class="card viz-stat">
+      <span class="text-muted">Passages utiles avec Louis</span>
+      <span id="audit-undecided" class="viz-stat-value">2</span>
+    </div>
+    <div class="card viz-stat">
+      <span class="text-muted">Sous-éléments non classés</span>
+      <span id="audit-subtasks" class="viz-stat-value">0</span>
+    </div>
+  </div>
+
+  <section class="audit-section" aria-labelledby="audit-plan-heading">
+    <div class="audit-section-head">
+      <div>
+        <h2 id="audit-plan-heading">Backlog proposé</h2>
+        <p class="text-muted">Sept chantiers conservés. Le reste est clos, absorbé ou parqué hors du chemin critique.</p>
+      </div>
+      <div class="audit-meta">
+        <span class="viz-badge">7 chantiers</span>
+        <span class="viz-badge">4 idées parquées</span>
+        <span class="viz-badge">22 sujets clos</span>
+      </div>
+    </div>
+    <div id="audit-plan" class="audit-plan-groups"></div>
+  </section>
+
+  <div class="viz-controls">
+    <label class="form-label">
+      Chantier à examiner
+      <select id="audit-picker" class="form-select"></select>
+    </label>
+    <button id="audit-next" class="btn btn-primary" type="button">Voir le prochain passage utile</button>
+  </div>
+
+  <section id="audit-detail" class="audit-section" aria-live="polite"></section>
+
+  <section class="audit-section audit-detail-divider" aria-labelledby="audit-inventory-heading">
+    <div class="audit-section-head">
+      <h2 id="audit-inventory-heading">Vue d’ensemble</h2>
+      <div class="viz-controls">
+        <label class="form-label">
+          Rechercher
+          <input id="audit-search" class="form-control" type="search" autocomplete="off">
+        </label>
+        <label class="form-label">
+          Afficher
+          <select id="audit-filter" class="form-select">
+            <option value="all">Tout</option>
+            <option value="unreviewed">À revoir avec Louis</option>
+            <option value="undecided">Sans décision</option>
+            <option value="project">Chantier</option>
+            <option value="archive">À clore</option>
+            <option value="rework">À restructurer</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">Élément actuel</th>
+            <th scope="col">État</th>
+            <th scope="col">Priorité</th>
+            <th scope="col">Destination cible</th>
+            <th scope="col">Décision</th>
+            <th scope="col">À revoir</th>
+          </tr>
+        </thead>
+        <tbody id="audit-inventory"></tbody>
+      </table>
+    </div>
+    <p id="audit-no-results" class="audit-empty text-muted" hidden>Aucun élément ne correspond à ces filtres.</p>
+  </section>
+
+  <script>
+    (function () {
+      const root = document.getElementById("deckle-audit");
+      if (!root) return;
+
+      const candidates =
+[
+  {
+    "name": "Revue multilingue",
+    "state": "",
+    "priority": "1",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Externaliser les libellés de chaque module MCP dans son fichier de termes"
+      },
+      {
+        "done": false,
+        "label": "Ajouter l'anglais comme seconde langue lors de la passe"
+      },
+      {
+        "done": false,
+        "label": "Home : les identifiants Anytype existants sont en français — auditer sans casser les clés déjà gravées dans l'espace"
+      }
+    ],
+    "prose": "## Details    \n---\nContexte   \nLes libellés visibles dans Anytype (types, propriétés, options de vocabulaires) doivent sortir du code vers des fichiers de termes par module, français d'abord — forme posée avec Deckle.Travel. La traduction se fera en une passe unique sur l'app et tous les modules touchés.   \n## Portée",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P1",
+      "confidence": "fort",
+      "rationale": "Chantier transversal fini et vérifiable. À lancer après stabilisation des libellés afin d’éviter de traduire une surface encore mouvante."
+    }
+  },
+  {
+    "name": "Touchpad virtuel",
+    "state": "En cours",
+    "priority": "1",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-06-30T00:00:00Z",
+    "doneDefinition": "La molette produit un scroll ressenti comme un geste à deux doigts de Precision Touchpad — pixel, accélération, inertie native Windows — cohérent dans Explorer, Notepad, navigateur et surfaces WinUI, réglable au moins par une sensibilité globale, via un périphérique virtuel local sans dépendance cloud.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "**P0 — disponibilité locale.** `user32.dll` exporte `CreateSyntheticPointerDevice2` sur le système courant. La création puis la destruction d’un périphérique `PT\\\\_TOUCHPAD` limité aux gestes réussissent."
+      },
+      {
+        "done": false,
+        "label": "**P1 — preuve perceptuelle.** La trajectoire suit le contrat Microsoft, mais le dépôt interdit de lancer Deckle pendant la validation agent. Direction, distance, inertie et matrice applicative restent à éprouver dans une session réelle."
+      },
+      {
+        "done": false,
+        "label": "**P2 — preuve d’interception.** Le hook supprime et route le cran de façon bornée ; l’absence de récursion et de double défilement reste à confirmer en exécution."
+      },
+      {
+        "done": true,
+        "label": "**G1 — périmètre décidé.** Deckle convertit tout événement vertical physique exactement égal à ±120. Les événements injectés, l’axe horizontal, Raw Input et les deltas fins restent natifs. Deux souris classiques ne peuvent pas être distinguées sans driver."
+      },
+      {
+        "done": false,
+        "label": "**P3 — calibration réelle.** Le premier mapping part de la cadence et des coordonnées physiques de l’exemple Microsoft. Il devra être ajusté sur des gestes mesurés, sans exposer de réglages supplémentaires."
+      },
+      {
+        "done": true,
+        "label": "**P4 — modèle déterministe.** Les crans s’accumulent en distance physique ; le retard augmente la vitesse dans une borne fixe ; une inversion relève les deux contacts avant de repartir ; les limites du pavé déclenchent un rollover propre."
+      },
+      {
+        "done": true,
+        "label": "**P5 — intégration produit.** Cycle de vie à références partagées, file SPSC de 64 éléments, un worker natif, cadence de 10 ms par `AutoResetEvent`, direction système lue par `SPI\\\\_GETTOUCHPADPARAMETERS`, observabilité agrégée, réglages localisés et version `0.16.0`."
+      },
+      {
+        "done": false,
+        "label": "**P6 — validation d’usage.** Vérifier le premier cran, les flings, les changements de direction, les fenêtres élevées, le vrai Precision Touchpad, la saturation et un usage prolongé."
+      }
+    ],
+    "prose": "## Details   \n### État   \nL’implémentation est complète sur la branche `feat/precision-wheel-scroll`. La fonction est désactivée par défaut et apparaît dans Réglages > Precision scrolling avec un commutateur maître et une seule magnitude de vitesse.   \n### Plan réalisé   \n### Architecture   \nLe hook bas niveau ne fait ni allocation, ni verrou, ni calcul de geste. Il classe le message, écrit un couple direction–temps dans une file producteur-consommateur fixe, réveille le worker et retourne.   \nLe worker possède le périphérique synthétique et un tableau fixe de deux contacts réutilisé pour chaque frame. Windows reçoit des coordonnées himétriques complètes à deux doigts et conserve la responsabilité du pan et de l’inertie. Aucun minuteur UI, `Channel`, `Task` par événement ou courbe de scroll maison n’est utilisé.   \nQuand la fonction est coupée, la file, l’événement noyau, le worker et le périphérique synthétique n’existent pas. La sécurité est fail-open : si l’API manque, si la création ou l’injection échoue, ou si la file sature, Deckle cesse de consommer la molette et Windows retrouve immédiatement son comportement normal.   \n### Validation acquise   \nLa compilation Debug x64 de l’application, de `Deckle.Input.Tests`, de `Deckle.Input.PrecisionScroll.Tests` et de `Deckle.Autocorrect.Tests` réussit avec zéro avertissement et zéro erreur. Les tests couvrent les tailles ABI x64, la séquence contact–mouvement–relâchement, la conservation de la dernière position au lift, l’accumulation, l’inversion et le filtre des événements.   \nLa trace MX Master 3S existante reste la base du filtre : 953 événements sur environ 558 secondes, tous à ±120, avec des écarts de 22 à 772 ms. Les deltas fins observés sur un Precision Touchpad ne sont pas convertis.   \n### Références   \n- [Guide Microsoft Precision Touchpad](https://learn.microsoft.com/en-us/windows/win32/input-precisiontouchpad/precision-touchpad-guide)   \n- [CreateSyntheticPointerDevice2](https://learn.microsoft.com/en-us/windows/win32/input-precisiontouchpad/createsyntheticpointerdevice2)   \n- [TOUCHPAD\\\\_PARAMETERS\\\\_V1](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-touchpad_parameters_v1)",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P1",
+      "confidence": "fort",
+      "rationale": "Le chantier existe déjà réellement : architecture livrée, branche dédiée et validation d’usage restante. La priorité active P1 mérite toutefois d’être assumée ou relevée."
+    }
+  },
+  {
+    "name": "Scroll de précision",
+    "state": "",
+    "priority": "3",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "2026-08-07T00:00:00Z",
+    "doneDefinition": "Un prototype intercepte la molette sans double scroll, injecte un pan Precision Touchpad à deux doigts dans la matrice d’applications définie et documente un go/no-go fondé sur compatibilité, inertie, latence et intégrité.",
+    "archived": "oui",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Créer puis détruire un périphérique synthétique `PT\\_TOUCHPAD`"
+      },
+      {
+        "done": false,
+        "label": "Injecter un pan fixe à deux doigts au moyen de contacts en himetric"
+      },
+      {
+        "done": false,
+        "label": "Intercepter un cran physique et supprimer son message original"
+      },
+      {
+        "done": false,
+        "label": "Écarter une boucle entre sortie synthétique et hook de molette"
+      },
+      {
+        "done": false,
+        "label": "Tester Explorer, Paramètres, Edge ou Chrome, une surface WinUI et une fenêtre élevée"
+      },
+      {
+        "done": false,
+        "label": "Mesurer latence, continuité, inertie et comportement au changement de direction"
+      },
+      {
+        "done": false,
+        "label": "Décider entre API Precision Touchpad, repli `SendInput` ou abandon du chemin sans driver"
+      }
+    ],
+    "prose": "## Details    \n---\nIntention   \nVérifier que la molette de la MX Master peut piloter un véritable pan Precision Touchpad sous Windows 11, sans driver noyau, avec un ressenti continu et sans double défilement.   \n## Constat   \nDeckle capture déjà les événements de molette et les contacts réels en JSONL. Microsoft documente depuis avril 2026 l’injection `PT\\_TOUCHPAD` en espace utilisateur, mais cette surface reste marquée préversion. Sur la machine cible, les exports existent dans `user32.dll` alors que les headers du SDK 26100 ne les déclarent pas encore.   \n## Travail   \n## Risques   \nL’API pourrait dépendre d’un build Windows non documenté ou changer avant stabilisation. Le hook actuel perd l’identité du périphérique et laisse passer le scroll original. L’intégrité des fenêtres élevées et le comportement de l’inertie restent à établir par test.",
+    "recommendation": {
+      "outcomeLabel": "Archiver — obsolète",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Doublon exploratoire déjà absorbé par « Touchpad virtuel » et déjà archivé. Ne recréer aucun chantier ni aucune tâche depuis cette fiche."
+    }
+  },
+  {
+    "name": "Correcteur de confiance",
+    "state": "Terminé",
+    "priority": "5",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-07-21T00:00:00Z",
+    "doneDefinition": "Dans Codex et Anytype, le niveau 1 applique seulement ses corrections déterministes sur les surfaces enrôlées ; un clic souris ou trackpad, une navigation, Entrée ou un changement de focus abandonne immédiatement tout verdict contextuel en attente avec sa cause observable ; un champ mot de passe n’est ni lu ni corrigé ; ONNX Runtime 1.23 et le moteur réellement actif sont observables ; le build Debug x64 finit sans avertissement ni erreur.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Livrer le niveau déterministe conservateur et retirer le revert implicite au Backspace."
+      },
+      {
+        "done": true,
+        "label": "Unifier ONNX Runtime 1.23 et rendre observable le moteur réellement chargé."
+      },
+      {
+        "done": true,
+        "label": "Fiabiliser le suivi UIA des surfaces Codex, Anytype et mot de passe."
+      },
+      {
+        "done": true,
+        "label": "Abandonner immédiatement et explicitement le sentence stage sur Entrée, clic, navigation ou changement de focus."
+      },
+      {
+        "done": true,
+        "label": "Capturer les clics du Precision Touchpad sans doubler les souris physiques."
+      },
+      {
+        "done": true,
+        "label": "Vérifier en situation réelle le focus, le trackpad, la navigation et l’abandon."
+      },
+      {
+        "done": true,
+        "label": "Retirer la sonde UIA exploratoire rejetée, reconstruire et vérifier le diff final."
+      }
+    ],
+    "prose": "## Details   \n---\n## Cadre   \nSuccesseure d'« Autocorrection système » : les briques sont livrées, la confiance ne l'est pas. La barre passe des fonctionnalités mergées à l'usage — taper sans y penser, l'anglais en corpus français compris. Le contrat de comportement a été redécidé le 2026-07-02 (session de grill) et gravé : vocabulaire normatif dans `CONTEXT.md` (§ Autocorrect, § Text operations), décisions datées dans le JOURNAL du module.   \nLe contrat en bref : revert implicite au Backspace mort — reprise d'une correction uniquement par l'encart (undo/redo explicite, porteur du signal négatif d'apprentissage) ; deux étages (commit stage instantané, sentence stage différé qui peut réviser dans la phrase en cours seulement) ; le silence réservé aux édits bornés quel que soit le moteur ; lexique anglais restreint en protection seule ; réécriture mutualisée en un service unique (runtime cible ONNX décidé, Ollama en attendant la migration).   \n## Reste à faire   \n### Sas de fiabilité   \n### Suite scindée   \n- `Qualification Qwen` tranche la viabilité du runtime et du modèle.   \n- `Grammaire locale` porte le contrat grammatical et la reprise après frontière forte.   \n- `Encart correctif` porte undo, redo, péremption et apprentissage négatif.   \n- `Réécriture de sélection` porte la transformation explicite avec acceptation.   \n- `Extensions déterministes` porte les familles lexicales restantes.",
+    "recommendation": {
+      "outcomeLabel": "Archiver — terminé",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Résultat fini, définition de fini satisfaite et sous-éléments cochés. Garder l’historique, mais ne pas l’introduire dans le backlog actif."
+    }
+  },
+  {
+    "name": "Extensions déterministes",
+    "state": "Ouvert",
+    "priority": "2",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "2026-10-01T00:00:00Z",
+    "doneDefinition": "Chaque famille candidate listée est soit intégrée avec corpus de preuve, règle explicable, abstention et non-régression sans faux positif, soit rejetée avec la mesure qui la disqualifie ; aucune candidate ne reste indécise.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Calibrer é/er/ez et « voila » → « voilà » sur la télémétrie."
+      },
+      {
+        "done": false,
+        "label": "Miner les familles de mistouch restantes en candidats bornés."
+      },
+      {
+        "done": false,
+        "label": "Finaliser l’amorce globish avec filtre anti-collision français."
+      }
+    ],
+    "prose": "## Details   \n## Cadre   \nLes ajouts au niveau 1 viennent de défauts mesurés, jamais d’un objectif abstrait de couverture.   \n## Candidats connus   \n## Règle d’admission   \nChaque famille doit avoir un corpus de preuve, une règle explicable, une abstention définie et aucun faux positif dans son jeu de non-régression avant intégration.",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P2",
+      "confidence": "modérée",
+      "rationale": "Enquête finissable avec trois familles candidates et une règle d’admission nette. Le titre doit rester borné à cette vague, pas devenir un bac permanent."
+    }
+  },
+  {
+    "name": "Encart correctif",
+    "state": "Ouvert",
+    "priority": "4",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-08-31T00:00:00Z",
+    "doneDefinition": "Après une correction, un encart non focusable montre le diff et permet reprendre ou réappliquer tant que la cible est identique ; il expire sans effet au premier changement de contenu, sélection ou focus, et un refus produit le signal négatif attendu sur la matrice clavier, souris et trackpad.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Afficher la correction et son diff sans activation ni déplacement du caret."
+      },
+      {
+        "done": false,
+        "label": "Proposer reprendre et réappliquer explicitement."
+      },
+      {
+        "done": false,
+        "label": "Expirer dès que la cible, le contenu ou le focus n’est plus identique."
+      },
+      {
+        "done": false,
+        "label": "Enregistrer le refus comme signal négatif sans réintroduire le revert au Backspace."
+      },
+      {
+        "done": false,
+        "label": "Vérifier clavier, souris, trackpad, thèmes et mise à l’échelle."
+      }
+    ],
+    "prose": "## Details   \n## Cadre   \nL’encart rend une correction inspectable et réversible sans voler le focus au champ édité. Il porte aussi les propositions explicites de réécriture, sans confondre leurs règles d’application.   \n## Construction",
+    "recommendation": {
+      "outcomeLabel": "Fusionner",
+      "priority": "P4",
+      "confidence": "modérée",
+      "rationale": "À réunir avec « Retaille de paragraphe » et « Réécriture de sélection » dans un chantier « Réécriture assistée » : même encart, même gate de diff et mêmes règles de péremption."
+    }
+  },
+  {
+    "name": "Grammaire locale",
+    "state": "Ouvert",
+    "priority": "4",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-09-15T00:00:00Z",
+    "doneDefinition": "Sur une phrase observée sans discontinuité, le modèle qualifié ne produit que des corrections grammaticales bornées passant le gate de diff ; clic, navigation, Entrée ou focus bloquent toute reprise jusqu’à une nouvelle frontière forte, et moteur actif, chargement, durée, abstention et erreurs sont observables sans fallback silencieux.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Définir le contrat d’entrée, d’abstention et de diff borné."
+      },
+      {
+        "done": false,
+        "label": "Brancher le modèle qualifié derrière la frontière d’inférence locale."
+      },
+      {
+        "done": false,
+        "label": "Exposer chargement, moteur actif, durée et erreurs sans fallback silencieux."
+      },
+      {
+        "done": false,
+        "label": "Calibrer précision, couverture et latence sur le replay."
+      },
+      {
+        "done": false,
+        "label": "Retirer CamemBERT seulement après satisfaction des mêmes critères."
+      }
+    ],
+    "prose": "## Details   \n## Cadre   \nLe niveau grammatical ne travaille que sur une phrase observée sans discontinuité. Un clic, une navigation, Entrée ou un changement de focus invalide immédiatement le contexte ; la reprise attend une nouvelle frontière forte observée.   \n## Construction",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P4",
+      "confidence": "fort",
+      "rationale": "Résultat utilisateur distinct et finissable. « Qualification Qwen » devient une tâche d’investigation de ce chantier, pas un projet concurrent."
+    }
+  },
+  {
+    "name": "Qualification Qwen",
+    "state": "Ouvert",
+    "priority": "4",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "2026-08-15T00:00:00Z",
+    "doneDefinition": "Un candidat Qwen 3.5 figé charge et infère avec ONNX Runtime DirectML sur le matériel cible ; chargement, latences, mémoire, erreurs et qualité sur le corpus français mêlé d’anglais sont mesurés, puis une décision continuer, réduire ou arrêter est enregistrée avec ses seuils.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Choisir le plus petit candidat crédible et figer ses artefacts."
+      },
+      {
+        "done": false,
+        "label": "Exporter puis charger le modèle avec la pile ONNX Runtime unique de Deckle."
+      },
+      {
+        "done": false,
+        "label": "Mesurer chargement, premier passage, régime établi, mémoire et erreurs."
+      },
+      {
+        "done": false,
+        "label": "Évaluer les corrections et abstentions sur le corpus réel français mêlé d’anglais."
+      },
+      {
+        "done": false,
+        "label": "Rendre une décision continuer, réduire ou arrêter avec ses seuils mesurés."
+      }
+    ],
+    "prose": "## Details   \n## Question   \nQwen 3.5 pourrait-il fournir la grammaire complète localement sur le matériel cible, avec ONNX Runtime DirectML et une latence compatible avec l’écriture ?   \n## Protocole",
+    "recommendation": {
+      "outcomeLabel": "Convertir en tâche",
+      "priority": "P4",
+      "confidence": "fort",
+      "rationale": "C’est une preuve technique qui débloque « Grammaire locale », pas un résultat produit autonome. Son cycle de vie reste utile au niveau tâche."
+    }
+  },
+  {
+    "name": "Réécriture de sélection",
+    "state": "Ouvert",
+    "priority": "3",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-09-15T00:00:00Z",
+    "doneDefinition": "Une sélection explicite produit dans l’encart une proposition de réécriture avec diff ; le texte ne change qu’après acceptation, et l’offre expire sans effet dès que la sélection, son contenu ou le focus change.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Détecter une sélection exploitable sur les surfaces UIA compatibles."
+      },
+      {
+        "done": false,
+        "label": "Capturer l’instantané et son identité de remplacement."
+      },
+      {
+        "done": false,
+        "label": "Soumettre la sélection au service mutualisé et au gate de diff."
+      },
+      {
+        "done": false,
+        "label": "Afficher accepter, refuser et péremption dans l’encart."
+      },
+      {
+        "done": false,
+        "label": "Remplacer uniquement si l’instantané est encore valide."
+      }
+    ],
+    "prose": "## Details    \n---\n## Cadre   \nUne sélection explicite ouvre une intention de transformation distincte de la correction silencieuse et de la retaille au retour à la ligne. L’encart porte cette action visible sans détourner le focus du champ.   \n## Comportement   \nLa sélection est figée comme instantané puis envoyée au service de réécriture mutualisé. La proposition affiche son diff dans l’encart et ne remplace le texte qu’après acceptation explicite.   \nL’offre expire sans effet si la sélection, le contenu ou le focus change. Aucun raccourci clavier n’applique la proposition.   \n## Construction",
+    "recommendation": {
+      "outcomeLabel": "Fusionner",
+      "priority": "P3",
+      "confidence": "modérée",
+      "rationale": "Même infrastructure et même surface que l’encart et la retaille. La séparer en projet créerait trois chantiers dépendants pour une seule expérience."
+    }
+  },
+  {
+    "name": "Espace connaissance Deckle",
+    "state": "",
+    "priority": "2",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Trancher le rôle dominant de l'espace (pont / mémoire visible / bac à sable)"
+      },
+      {
+        "done": false,
+        "label": "Vérifier l'API/MCP Anytype officiel et la granularité de sync"
+      },
+      {
+        "done": false,
+        "label": "Modéliser à la main un premier objet Module, liste déduite en Set"
+      },
+      {
+        "done": false,
+        "label": "MCP dédié différé — ne cristalliser qu'une fois les gestes répétés constatés"
+      }
+    ],
+    "prose": "## Details    \n---\nEnjeu   \nUn espace Anytype dédié à Deckle, distinct du PM et de la mémoire fichier de Claude. Sa raison d'être ne tient qu'à une loi : n'y déposer que ce qui n'a d'autorité nulle part ailleurs. Toute copie d'un contenu déjà maître sur disque ou dans le PM serait une dette qui diverge — l'espace deviendrait le fourre-tout redouté.   \n## Rôles retenus au filtre   \nDeux passent. Le *pont* : une carte des modules — dépendances, à télécharger, à configurer, liens vers le vrai code — qui n'existe rassemblée nulle part. La *mémoire visible* : ce que Claude sait entre sessions, rendu inspectable et corrigeable, accessible à Codex. Écarté : archiver les README bien écrits, pure dette de copie.   \n## Modélisation pressentie   \nUn Module serait une page (corps + propriétés + liens), non une liste ; la liste des modules se déduit en Set par-dessus le type. À confirmer dans l'UI Anytype.   \n## Ce qui bloque   \nLouis doit trancher ce qu'il espère trouver dans cet espace dans trois mois que le repo et le PM ne lui donnent pas déjà. Tout le reste en dépend, MCP compris.   \n## Non vérifié   \nExistence et état d'une API/MCP Anytype officiel générique. Granularité de sync (a priori l'espace, pas l'objet).   \n## Suite",
+    "recommendation": {
+      "outcomeLabel": "Archiver — obsolète",
+      "priority": "",
+      "confidence": "modérée",
+      "rationale": "L’enquête a précédé l’espace Anytype et le MCP aujourd’hui en place. Extraire seulement une éventuelle tâche de cartographie si ce besoin reste réel."
+    }
+  },
+  {
+    "name": "Setup & installateur",
+    "state": "En attente",
+    "priority": "5",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-06-16T00:00:00Z",
+    "doneDefinition": "Un compagnon unique installe et gère les modules Deckle par sélection à cocher (présence + dépendances en cascade), au first-run et à la demande depuis la Home. Le stub GitHub se réduit à poser le socle puis lance ce compagnon, brique de Deckle relançable. Néophytes seulement (les devs gardent les scripts du repo) ; défaut transcription ggml-base ; updater sur la convention de release.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Stub NativeAOT `Deckle.Installer` existant : résout la dernière release GitHub, télécharge `Deckle-vX.Y.Z.zip`, vérifie le sidecar `.sha256`, installe sous `%LOCALAPPDATA%\\Programs\\Deckle`, inscrit Installed apps + raccourci, gère update, réinstallation et désinstallation."
+      },
+      {
+        "done": true,
+        "label": "Convention de release déjà matérialisée : asset utilisateur `Deckle-Setup-vX.Y.Z-win-x64.exe`, payload `Deckle-vX.Y.Z.zip` et sidecar `.sha256`."
+      },
+      {
+        "done": true,
+        "label": "Wizard WinUI `Deckle.Setup` existant : provisionne le runtime Whisper et un modèle, propose l'import manuel, affiche un résumé et se relance depuis Settings."
+      },
+      {
+        "done": true,
+        "label": "Navigation Settings dynamique côté code : `SettingsModuleRegistry`, descripteurs par module, enregistrement depuis `App.OnLaunched`, rebuild à chaud du `NavigationView`."
+      },
+      {
+        "done": true,
+        "label": "Runtime Anytype déjà rangé sous `%LOCALAPPDATA%\\Programs\\Deckle\\anytype`; la séparation Programs/data existe au moins pour ce module."
+      },
+      {
+        "done": true,
+        "label": "Fusionner le stub et le wizard en compagnon unique : aujourd'hui le stub installe/lance Deckle, le wizard reste centré transcription."
+      },
+      {
+        "done": true,
+        "label": "Ajouter un catalogue de présence des modules installés : aujourd'hui l'app enregistre tous les modules compilés, pas seulement les modules posés."
+      },
+      {
+        "done": true,
+        "label": "Sélecteur de modules à cocher avec dépendances en cascade, orienté présence, pas activation runtime."
+      },
+      {
+        "done": false,
+        "label": "Reprendre la navigation après stabilisation Settings/Fable : Settings a le registry, Home n'est pas vérifiée comme surface relançable."
+      },
+      {
+        "done": true,
+        "label": "Généraliser le provisioning piloté par modules cochés : Whisper existe, autres modules, ONNX et assets lourds ne sont pas encore catalogués."
+      },
+      {
+        "done": true,
+        "label": "Passer le défaut transcription à `ggml-base` : le code pointe encore `SpeechModels.DefaultModelFileName = \"ggml-large-v3.bin\"`."
+      },
+      {
+        "done": true,
+        "label": "Définir l'updater in-app au-dessus de la convention de release existante."
+      },
+      {
+        "done": true,
+        "label": "Clarifier la règle de stockage : l'installateur annonce les modèles dans le data root, alors que la tâche cible assets lourds sous `Programs\\Deckle`."
+      },
+      {
+        "done": true,
+        "label": "Ajouter choix de disque + relocalisation après-coup avec contrôle d'espace."
+      },
+      {
+        "done": true,
+        "label": "Diagnostics transversal : page Diagnostics globale vs diagnostics par module à trancher."
+      }
+    ],
+    "prose": "## Details   \nÉtat vérifié le 2026-07-09 par lecture Anytype + code.   \nAcquis vérifiés :   \nReste à faire :   \nDécision courante :\nL'installateur repasse en attente. La suite dépend de la fin du chantier Settings avec Fable, surtout la stabilité du registry et la surface Home/relance.",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P3",
+      "confidence": "fort",
+      "rationale": "La fiche est cochée terminée tout en restant « En attente » avec un reste ouvert. Archiver la livraison acquise et sortir la reprise Home/Settings dans un chantier au périmètre neuf."
+    }
+  },
+  {
+    "name": "Retaille de paragraphe",
+    "state": "",
+    "priority": "4",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-09-01T00:00:00Z",
+    "doneDefinition": "Au retour à la ligne, une offre de retaille fiable apparaît dans l'encart et je l'accepte d'un clic — mes mots, mon ordre, jamais silencieux ; le gate mécanique jette tout ce qui dérive.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Service de réécriture mutualisé + gate de diff, hors UI, mesurés sur le prompt-échantillon"
+      },
+      {
+        "done": false,
+        "label": "Dataset offre + verdict (enveloppe consentie, kind dédié)"
+      },
+      {
+        "done": false,
+        "label": "Câblage : déclencheur → service → carte d'offre → application au clic (attend l'encart)"
+      },
+      {
+        "done": false,
+        "label": "Calibrations : plancher de mots, seuil de distance du gate, latence et péremption"
+      }
+    ],
+    "prose": "## Details   \n## Cadre   \nPhase 2 du correcteur, cadrée au grill du 2026-07-19. Au retour à la ligne (Entrée qui insère, ou Shift+Entrée ; plancher ~8-10 mots à calibrer ; seulement si le retour reste dans le champ), le paragraphe clos part au service de réécriture mutualisé. Sa sortie est un Rewrite : jamais silencieuse, offerte et acceptée d'un clic.   \n## Le gate de diff   \nValidateur mécanique global, tout ou rien, montré tel quel à l'offre. Trois règles sous alignement monotone strict : remplacements à distance de forme bornée (la re-segmentation phonétique passe, la substitution de vocabulaire bloque) ; insertions limitées aux classes fermées (ponctuation, mots-outils, élisions) ; suppressions limitées aux doublons et béquilles. Calibrage sévère assumé — un faux rejet coûte une offre, un faux accept coûterait la confiance. Portes notées, fermées en V1 : le filtre par classe d'édit, le réordonnancement.   \n## L'offre   \nDans l'encart de correction, acceptation au clic, jamais d'interception clavier. Péremption passive : réédition du paragraphe, perte de focus ou envoi du texte tuent l'offre sans rien appliquer.   \n## L'après   \nLe paragraphe accepté est final — ni re-correction, ni re-réécriture. Le texte retaillé n'entre dans aucun corpus d'apprentissage de la langue ; la paire original → retaille + verdict (accepté / refusé / périmé / rejeté par le gate) alimente un dataset consenti dédié — calibration du gate, matière du futur LoRA personnel.   \n## Le moteur   \nOllama pour construire (classe Ministral, température 0, sortie = le texte retaillé seul ; le warm-up d'OllamaService existe déjà, sans appelant), ONNX pour cible via le seam du service mutualisé. Warm-up opportuniste (préchargement quand un paragraphe s'accumule sur surface enrôlée, keep\\\\\\_alive borné), jamais de résidence VRAM permanente. Latence cible ~2-3 s, mesurée sur le taux d'offres périmées, pas promise.   \n## Construction",
+    "recommendation": {
+      "outcomeLabel": "Fusionner",
+      "priority": "P4",
+      "confidence": "modérée",
+      "rationale": "À intégrer au chantier « Réécriture assistée ». Le service et le gate sont déjà mutualisés ; garder trois projets masquerait la dépendance réelle."
+    }
+  },
+  {
+    "name": "Explorer Rampart",
+    "state": "",
+    "priority": "2",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "2026-10-01T00:00:00Z",
+    "doneDefinition": "Rampart a été analysé quand le système d'inférence de Deckle permet une évaluation réaliste ; une décision est consignée entre mode dédié, inspiration partielle ou abandon.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Comprendre ce que Rampart fait réellement, avec ses contraintes de licence, d'exécution et de dépendances."
+      },
+      {
+        "done": false,
+        "label": "Vérifier si son approche peut tourner dans le système d'inférence prévu pour Deckle."
+      },
+      {
+        "done": false,
+        "label": "Décider entre intégration, inspiration seule, ou abandon."
+      }
+    ],
+    "prose": "## Details    \n---\nIntention   \nGarder Rampart comme piste à revoir quand le système d'inférence local de Deckle sera suffisamment posé pour évaluer des modes additionnels.   \n## Piste   \n[https://huggingface.co/spaces/nationaldesignstudio/rampart](https://huggingface.co/spaces/nationaldesignstudio/rampart)   \nL'étudier sous deux angles : intégration éventuelle comme mode dédié, et inspiration pour l'expérience ou l'architecture sans dépendance structurelle au service externe.   \n## À vérifier",
+    "recommendation": {
+      "outcomeLabel": "Convertir en idée",
+      "priority": "P0",
+      "confidence": "fort",
+      "rationale": "Piste conditionnelle sans déclencheur actuel. Elle ne doit pas occuper le backlog des chantiers avant que le système d’inférence permette réellement de l’évaluer."
+    }
+  },
+  {
+    "name": "Refonte LogWindow",
+    "state": "",
+    "priority": "4",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "LogWindow refondu : barre de filtres trois dimensions (niveau, provider, keywords), sélection native ListView, rendu rows épuré — niveau d'une app Store Microsoft.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Modèle multi-sélection à trois dimensions : niveaux, providers et catégories ; OR dans une dimension, AND entre dimensions."
+      },
+      {
+        "done": true,
+        "label": "Cinq niveaux natifs, providers découverts dynamiquement, recherche texte dans la barre de titre, presets retirés."
+      },
+      {
+        "done": true,
+        "label": "Interaction conservée : le toggle Filters ouvre le panneau séparé ; les choix s’ajoutent à la liste de filtres actifs."
+      },
+      {
+        "done": true,
+        "label": "Remplacer les boutons-cartes des flyouts par des ListView natives en sélection multiple, sans cases à cocher et sans libellé « Added »."
+      },
+      {
+        "done": true,
+        "label": "Permettre de sélectionner et désélectionner directement chaque ligne sans fermer le flyout."
+      },
+      {
+        "done": true,
+        "label": "Remplacer le WrapGrid des filtres actifs par un layout à largeur intrinsèque afin de supprimer les grands écarts entre chips."
+      },
+      {
+        "done": true,
+        "label": "Word wrap et Auto-scroll restent deux commandes directes de la CommandBar ; aucun menu Display."
+      },
+      {
+        "done": true,
+        "label": "Retirer les icônes de Word wrap et Auto-scroll ; leurs labels suffisent."
+      },
+      {
+        "done": true,
+        "label": "Retirer les tooltips redondants de cette surface et conserver uniquement l’aide réellement nécessaire."
+      },
+      {
+        "done": true,
+        "label": "Opcode, Task et Channel restent hors de la surface."
+      },
+      {
+        "done": true,
+        "label": "Les dix keywords transverses existants restent inchangés dans ce chantier."
+      },
+      {
+        "done": true,
+        "label": "ListView utilise SelectionMode Extended."
+      },
+      {
+        "done": true,
+        "label": "Les handlers pointer, le drag-select custom, le balayage de l’arbre visuel et le badge de copie sont retirés."
+      },
+      {
+        "done": true,
+        "label": "Une méthode centralise « copier la sélection dans l’ordre d’affichage, sinon tout le visible »."
+      },
+      {
+        "done": true,
+        "label": "Copy, Ctrl+C et le ContextFlyout appellent cette méthode."
+      },
+      {
+        "done": true,
+        "label": "Ctrl+A vérifié dans l’application par Louis."
+      },
+      {
+        "done": false,
+        "label": "Vérifier Ctrl+Click, Shift+Click, les trois voies de copie, persistance de sélection et scroll sous charge."
+      },
+      {
+        "done": true,
+        "label": "Lignes simples en Consolas 12 avec couleurs de niveau pilotées par ThemeResource."
+      },
+      {
+        "done": true,
+        "label": "Timestamp, source et message sont séparés tout en restant dans un TextBlock qui wrap ; timestamp en Caption/tertiary, source et message selon le niveau."
+      },
+      {
+        "done": true,
+        "label": "Info utilise TextFillColorPrimaryBrush ; les deux couleurs hexadécimales dédiées sont supprimées."
+      },
+      {
+        "done": false,
+        "label": "Valider le rendu en clair, sombre, contraste élevé, wrap et plusieurs largeurs."
+      },
+      {
+        "done": true,
+        "label": "Deckle.App compile en Debug x64 sans warning ni erreur après restauration exacte des filtres."
+      },
+      {
+        "done": true,
+        "label": "Deckle.Tests.sln compile en Debug x64 sans warning ni erreur ; le contrat de recomposition timestamp/source/message est couvert."
+      },
+      {
+        "done": true,
+        "label": "Valider visuellement les listes de filtres, la densité des chips et les commandes texte dans l’instance mainteneur."
+      },
+      {
+        "done": true,
+        "label": "Terminer la passe visuelle et interaction dans l’instance mainteneur."
+      },
+      {
+        "done": true,
+        "label": "Symétrie fenêtre↔JSONL et rotation : app.jsonl est auto-descriptif et persiste la ligne rendue ; le fichier actif roule tous les 8 000 événements vers des générations numérotées. Les archives s'accumulent encore sans cap global."
+      },
+      {
+        "done": true,
+        "label": "Couleur Info : texte primary système retenu. Il reste lisible dans les thèmes système et supprime la palette bleue codée en dur."
+      }
+    ],
+    "prose": "## Details   \n---\nVolet LogWindow scindé de « Settings & LogWindow » — refonte filtres, sélection et rendu de la fenêtre de logs.   \n## Chantiers   \n### Filtres structurés   \n### Sélection native   \n### Rendu des lignes   \n### Validation   \n### Suite   \n1. Vérifier Ctrl+Click, Shift+Click, les trois voies de copie, la persistance de sélection et le scroll sous charge.   \n2. Vérifier le contraste élevé et le wrap aux largeurs extrêmes.   \n3. Clore la tâche si aucun écart n’apparaît.   \n   \n## À trancher (Louis)   \n## Différés & principes   \nIdées différées : Verbose en présentation secondary par défaut (dimmed) + switch CommandBar (les six sub-providers transverses rendent la fenêtre bruyante) ; mode highlight/tag d'events choisis (EventId, provider, expression — pure présentation live, distinct de la gate télémétrie JSONL) ; settings reliés au log directement dans LogWindow. Principes transverses : labels toujours visibles sur les actions ; simple > élaboré — si la primitive native suffit, pas de couche en plus.",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P4",
+      "confidence": "fort",
+      "rationale": "Chantier presque fini : deux validations manuelles restent ouvertes. Il faut le fermer proprement, pas diluer ces contrôles dans une nouvelle refonte."
+    }
+  },
+  {
+    "name": "Module Mail",
+    "state": "",
+    "priority": "0",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "V1 en main : scan manuel INBOX + sous-dossiers au lancement, récap incrémental dans la fenêtre, tri proposé puis appliqué après validation utilisateur, sans rien persister des mails.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Suivi du « déjà présenté » : flag non-lu IMAP ou journal local propre"
+      },
+      {
+        "done": false,
+        "label": "Mécanique d'apprentissage des catégories"
+      },
+      {
+        "done": false,
+        "label": "Ouverture d'un mail dans le client externe (mailto:, Thunderbird)"
+      },
+      {
+        "done": false,
+        "label": "Périmètre exact de la persistance (catégories, exemples, prompts)"
+      },
+      {
+        "done": false,
+        "label": "Boîte mail jetable pour les tests"
+      },
+      {
+        "done": false,
+        "label": "Refacto Deckle.Llm : méthode Generate() neutre pour classification et résumé"
+      },
+      {
+        "done": false,
+        "label": "Étude Thunderbird : ISPDB, parsing MIME, heuristiques signature et citation"
+      },
+      {
+        "done": false,
+        "label": "Layout WinUI master-detail précis"
+      },
+      {
+        "done": false,
+        "label": "Graver la doctrine HITL dans le CLAUDE.md Deckle au merge V1"
+      }
+    ],
+    "prose": "## Details   \n---\nObjet   \nCompenser localement la perte de notification créée par les règles serveur Infomaniak : les mails classés en sous-dossiers à l'arrivée ne notifient pas et s'accumulent sans être vus. Au lancement matinal, Deckle scanne INBOX et tous les sous-dossiers, résume et catégorise chaque mail via Ollama, puis propose un tri appliqué seulement après validation.   \n## Acté   \nPipeline complet avec validation humaine — le human-in-the-loop devient doctrine transverse Deckle pour tout module qui mute un système externe. Scan INBOX + sous-dossiers, lancement manuel V1, aucun polling. Interface incrémentale : item Accueil en tête (récap global, tri groupé), puis un item par mail avec détail et actions one-click. Les catégories s'apprennent au fil des validations, pas de liste pré-déclarée. Local pur, credentials chiffrés DPAPI, aucun mail persisté sur disque.   \n## À trancher   \n## Hors scope V1   \nTri automatique sans validation, threading IMAP, polling, multi-comptes, pièces jointes, notifications système, lecture et écriture depuis l'interface. Vision V3+ notée à part : version serveur avec notifications mobiles.   \n## Scène cible   \nLancement matinal au démarrage du PC. Petite fenêtre flottante, gros boutons natifs Windows, encart de stats affiché tôt (« 12 mails, 3 catégories, N importants »). La liste se remplit au fil du traitement : item Accueil en tête sur une ligne, puis un item par mail plus large (titre, début de description, catégorie proposée). Le clic ouvre le détail — objet paraphrasé, résumé d'une phrase, actions contextuelles (Archiver, Trier, Garder). L'utilisateur peut cliquer sur un item pendant que la suite se charge.   \n## Garde-fous   \nRisque identifié : le récap groupé qui dit « tout va bien » et masque une erreur de classification sur un mail important. Parade V1 : le bouton « Appliquer tout » moins proéminent que les actions par mail, voire inactif tant qu'aucune validation unitaire n'a eu lieu. La friction baisserait ensuite à mesure que la confiance se mesure — ce qui suppose un mini-journal des accords et désaccords utilisateur pendant la phase de validation.   \n## Idées parallèles   \nDeckle Welcome : mini-module hôte au démarrage Windows qui orchestrerait les récaps matinaux ; hors scope Mail, mais tout déclencheur passe par la même entrée du moteur. Actions via MCP : V2 ou plus tard, la V1 reste sur des actions codées en dur.",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P0",
+      "confidence": "fort",
+      "rationale": "Vrai module avec problème utilisateur, V1 et arbitrages propres. P0 paraît cohérent tant que les fondations principales de Deckle ne sont pas stabilisées."
+    }
+  },
+  {
+    "name": "Ambient lighting",
+    "state": "Terminé",
+    "priority": "3",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-07-20T00:00:00Z",
+    "doneDefinition": "HDR et Hue Entertainment v2 sont validés en runtime, la découverte du pont fonctionne en mDNS local avec recours cloud uniquement explicite, le choix du moniteur est appliqué au démarrage de la capture et le pipeline reste stable en usage quotidien sans passer par le Playground.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "J7 — HDR validation runtime"
+      },
+      {
+        "done": true,
+        "label": "J3.3 — Discovery mDNS locale"
+      },
+      {
+        "done": true,
+        "label": "Bug — Ambient Light se fige"
+      },
+      {
+        "done": true,
+        "label": "J9 — Choix moniteur runtime"
+      },
+      {
+        "done": true,
+        "label": "Hue Entertainment v2"
+      },
+      {
+        "done": true,
+        "label": "J4 — Extraction multi-zones"
+      }
+    ],
+    "prose": "## Details   \nChaîne HDR validée en runtime avec gamma logarithmique, exposition 0 et luminosité minimale 20.   \nLa découverte par défaut interroge `\\_hue.\\_tcp.local` via DNS-SD Windows. Le recours à discovery.meethue.com est une action explicite révélée seulement après un résultat local vide. Réponse du pont réel validée par Louis.   \nLe gel observé sur les vidéos longues est traité ; la validation quotidienne reste le garde-fou.   \nLe sélecteur Settings persiste l’écran choisi et le moteur le transmet au démarrage de la capture. Un écran déconnecté retombe sur le principal ; le changement prend effet au prochain démarrage.   \nDTLS-PSK, clientkey protégé, zones et canaux, cycle de streaming et fallback REST sont livrés. Validation matérielle obtenue sur cinq lampes via HueEntertainmentLightOutput.   \nLes quatre bandes, l’affectation et la luminosité par lampe, la suggestion depuis Hue et la prévisualisation sont livrées. La détection des bandes noires ne rouvrira ce sujet que si un défaut est observé.   \nJ5, J6 et J8 sont repris par la tâche Comportement Ambient : l’EMA actuelle constitue le socle livré ; Realistic, les profils, le smoothing adaptatif et l’auto-activation formeront une passe comportementale distincte.",
+    "recommendation": {
+      "outcomeLabel": "Archiver — terminé",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Fondation technique livrée et validée. Les suites perceptives vivent déjà dans « Comportement Ambient »."
+    }
+  },
+  {
+    "name": "Refonte Settings",
+    "state": "En attente",
+    "priority": "4",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-06-22T00:00:00Z",
+    "doneDefinition": "Pages relocalisées, SettingsRegistry câblé (pattern A), responsive Win11, recherche cross-pages et tray WinUI 3 — niveau d'une app Store Microsoft.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "1. Move H — relocaliser les pages"
+      },
+      {
+        "done": true,
+        "label": "2. Câblage SettingsRegistry (pattern A)"
+      },
+      {
+        "done": true,
+        "label": "3. Responsive pattern Win11"
+      },
+      {
+        "done": true,
+        "label": "4. Recherche cross-pages"
+      },
+      {
+        "done": true,
+        "label": "Tray — refonte WinUI 3 (parallélisable)"
+      },
+      {
+        "done": true,
+        "label": "À trancher : divergence nav nested-vs-pages — le grilling 2026-05-24 a tranché « pas de nesting initial, une page par famille parent », une fiche post-2026-05-25 attendait un NavigationView nested expandable ; re-trancher avant le câblage registry."
+      },
+      {
+        "done": false,
+        "label": "Différés & principes"
+      },
+      {
+        "done": true,
+        "label": "Composer — inventaire total des paramètres activables : balayer tout le code (Deckle.Settings + modules Capture/Audio, Transcription/Whisper, Llm/Rewrite, Telemetry dans leur propre settings.json), recenser chaque réglage, mapper sur un kind du composer ou marquer bespoke. Préalable à tout nouveau code."
+      },
+      {
+        "done": true,
+        "label": "Composer — reset 3 niveaux (carte/section/page, modèle Playground : survol+focus, instantané sans animation, actif si valeur ≠ défaut) + défaut à source unique (descripteur pointe new XxxSettings().Prop / AutostartService.DefaultEnabled, jamais copié ; tue la triple duplication POCO/ctor VM/Reset)."
+      },
+      {
+        "done": true,
+        "label": "Composer — confirmation d'action mutualisée : service partagé (titre/corps/verbe localisés → oui/non) appelé par les toggles marqués confirmOnEnable ET par les actions destructives (delete) ; remplace les 4 ContentDialog codés à la main + leurs gardes de réentrance."
+      },
+      {
+        "done": true,
+        "label": "Composer — descripteur-groupe (expander) : master toggle + descripteurs enfants comme structure du composer (la config fine révélée quand le maître est on) ; amène le style radio (RadioButtons pour un Choice à peu d'options)."
+      },
+      {
+        "done": true,
+        "label": "Composer — migrer le reste des cartes au fil de l'inventaire ; marquer explicitement le bespoke irréductible (pairing Hue, listes dynamiques, choix runtime, visibilité réactive croisée, writes préréglage/multiplex) qui reste hand-authored."
+      },
+      {
+        "done": true,
+        "label": "Composer — annexe « reset » au skill deckle-settings-ux (3 niveaux, survol+focus sans animation, molette active si ≠ défaut, défaut à source unique) : valider le contenu avec Louis AVANT d'écrire dans le skill."
+      },
+      {
+        "done": false,
+        "label": "Composer — combler les écarts à la doctrine gravée (deckle-settings-ux) : (1) confirmer les resets de pli et de page, aujourd'hui instantanés (ConfirmationService n'est câblé que côté pages) ; (2) fusionner Slider et Number en une magnitude appariée slider+champ, finesse 1-2-5 + mode géométrique, grain dérivé ; (3) réserver le grisé à l'occupation transitoire et masquer le non-applicable (EnabledWhen ne les distingue pas) ; (4) différer au relâchement les réglages réversibles mais coûteux (mesure micro, rechargement de modèle)."
+      }
+    ],
+    "prose": "## Details   \nRecordingPage → Deckle.Audio, DiagnosticsPage → Deckle.Diagnostics.Logging (les services de persistance y sont déjà ; seuls XAML/CS/VM bougent). Prérequis du câblage registry. Vérifier d'abord que les merges en attente du 2026-05-24 (carto-cleanup, docs-migration) sont résolus — probablement oui.   \nRegistration explicite miroir de SettingsHost : SettingsRegistry statique + Register(SettingsModuleDescriptor) appelé depuis App.OnLaunched par chaque module à page. Pas de DI container, pas de reflection ; contrat dans le shell Deckle.Settings. Descriptor : Tier (Header/Main/Footer) + Order intra-tier (0-100 par pas de 10), label key .resw, glyph key Catalog, parent key optionnel, Type page. Nav : une page par famille parent (Diagnostics, Transcription, Rewriting, Lighting), enfants en sections internes — nesting expandable seulement si une page déborde. ⚠ Divergence nav nested-vs-pages à faire trancher avant (cf. À trancher).   \nRéf. Task Manager / WinUI Gallery : TitleBar natif au-dessus, back button collapsed + pane toggle false sur la NavigationView, hamburger géré par la TitleBar en compact. Logs sort du footer nav → bouton dédié dans la TitleBar.   \nAutoSuggestBox TitleBar + dropdown dessous (cap 7 items + « +N more — refine »), pas de page standalone. Item : glyph parent + nom du card (matches en bold) + breadcrumb + snippet description. Click → Frame.Navigate + ScrollIntoView + focus natif (pas de highlight custom). Index par SettingsCard : label .resw + description UX + table de keywords synonymes dédiée (pas pollués dans les descriptions). Debounce 300 ms.   \nDirection B : réimplémentation inspirée du pattern SecondWindow de H.NotifyIcon (MIT, cloner pour étude, PAS de dépendance). Scope V1 : structure d'items actuelle en ToggleMenuFlyoutItem natif + apparence Win11 (mica, rounded corners, shadow Fluent). Pattern : sur WM\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_RBUTTONUP, Window transparente préparée à l'init, positionnée au curseur (CalculatePopupWindowPosition), Show + SetForeground, puis MenuFlyout.ShowAt Transient. Frictions prévisibles : lifecycle deactivation, DPI physical-vs-DIP, layered+rounded (fallback Mica), MenuFlyoutSubItem au clic parent. Le TrayIconManager Win32 existant reste le socle. V2 différé : panneau status latéral collapsible.   \nIdée différée : panneau d'aide « ? » type jeu vidéo (les descriptions SettingsCard suffisent en V1). Principes transverses du grilling : labels toujours visibles sur les actions ; simple > élaboré — si la primitive native suffit, pas de couche en plus.   \nLogWindow scindé dans « Refonte LogWindow ».",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P4",
+      "confidence": "fort",
+      "rationale": "La refonte principale est cochée terminée, mais des écarts de doctrine restent ouverts. Archiver le socle livré et décider si ces écarts justifient un chantier « Settings composer » séparé."
+    }
+  },
+  {
+    "name": "Comportement Ambient",
+    "state": "Ouvert",
+    "priority": "3",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-07-27T00:00:00Z",
+    "doneDefinition": "Realistic est calibré sur des contenus SDR et HDR variés ; le smoothing répond à des défauts observés sans scintillement ni traîne gênante ; les profils conservés ont une intention distincte et des réglages validés ; le périmètre de l’auto-activation par application est tranché.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Définir Realistic comme comportement de référence : lumière crédible, hiérarchie lumineuse préservée, saturation contenue et petits éléments vifs non dominants."
+      },
+      {
+        "done": false,
+        "label": "Calibrer Realistic sur des contenus réels variés, SDR et HDR."
+      },
+      {
+        "done": false,
+        "label": "Caractériser les défauts résiduels de l’EMA actuelle avant de choisir un nouvel interpolateur."
+      },
+      {
+        "done": false,
+        "label": "Concevoir un smoothing adaptatif si l’EMA ne suffit pas, puis le valider sur changements lents, coupes franches et scintillements."
+      },
+      {
+        "done": false,
+        "label": "Recomposer les profils à partir de Realistic ; régler Game pendant cette passe et trancher Movie / Ambient / Custom."
+      },
+      {
+        "done": false,
+        "label": "Décider l’auto-activation par application une fois les profils stabilisés."
+      }
+    ],
+    "prose": "## Details   \nCette tâche reprend le comportement perceptif après stabilisation de la fondation technique Ambient.",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P3",
+      "confidence": "fort",
+      "rationale": "Chantier perceptif cohérent après la fondation technique. Il a un résultat observable, un périmètre et des validations réelles."
+    }
+  },
+  {
+    "name": "Logo SVG",
+    "state": "",
+    "priority": "3",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "Le logo existe en SVG propre, avec contours vectoriels nets et dégradé reconstruit en SVG. Le fichier source reste lisible, réutilisable dans l'application, et le PNG original est conservé comme référence.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Installer ou choisir l'outil open source de vectorisation"
+      },
+      {
+        "done": false,
+        "label": "Produire une première passe depuis `logo/primary.png`"
+      },
+      {
+        "done": false,
+        "label": "Nettoyer les contours et réduire les noeuds inutiles"
+      },
+      {
+        "done": false,
+        "label": "Reconstruire le dégradé en vrai dégradé SVG"
+      },
+      {
+        "done": false,
+        "label": "Vérifier le rendu sur fond sombre et fond clair"
+      },
+      {
+        "done": false,
+        "label": "Exporter le fichier final dans `logo/`"
+      },
+      {
+        "done": false,
+        "label": "Documenter brièvement l'outil et la méthode retenus"
+      }
+    ],
+    "prose": "## Details    \n---\n## Intention   \nTransformer le logo PNG existant en asset SVG exploitable pour Deckle, sans dépendre d'un outil propriétaire ni produire un SVG lourd et difficile à maintenir.   \n## Définition de fini   \nLe logo existe en SVG propre, avec contours vectoriels nets et dégradé reconstruit en SVG. Le fichier source reste lisible, réutilisable dans l'application, et le PNG original est conservé comme référence.   \n## Sous-tâches",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P1",
+      "confidence": "modérée",
+      "rationale": "Petit chantier, mais fini et autonome avec plusieurs étapes et un livrable durable. Ne pas le gonfler en projet d’identité visuelle inexistant."
+    }
+  },
+  {
+    "name": "MCP Anytype",
+    "state": "Terminé",
+    "priority": "5",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-06-16T00:00:00Z",
+    "doneDefinition": "Surface MCP révisée après le pivot projet-unique, skill d'accompagnement écrit, rattachement projet→epic livré, backend/headless et hôte HTTP alignés dans le code et la documentation ; le nettoyage périodique est reporté dans une tâche P0 séparée.",
+    "archived": "non",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Mettre en place le MCP Anytype"
+      },
+      {
+        "done": true,
+        "label": "Migrer la roadmap mémoire vers Anytype"
+      },
+      {
+        "done": true,
+        "label": "Réviser la surface des 13 tools après le pivot projet-unique"
+      },
+      {
+        "done": true,
+        "label": "Étendre link au rattachement projet → epic"
+      },
+      {
+        "done": true,
+        "label": "Skill d'accompagnement du MCP"
+      },
+      {
+        "done": true,
+        "label": "Nettoyage périodique par agents"
+      },
+      {
+        "done": false,
+        "label": "Créer et tester l'extension cmdPal"
+      },
+      {
+        "done": true,
+        "label": "Re-vérifier DevSpace.cs contre l'espace live — la propriété tag a disparu de l'espace (52 propriétés, aucune « tag »)"
+      },
+      {
+        "done": true,
+        "label": "Basculer Anytype sur `anytype-cli` headless pour avoir un serveur autonome et un bot distinct de Louis"
+      },
+      {
+        "done": false,
+        "label": "Passerelle stdio→HTTP fine pour clients stdio-only (différé)"
+      },
+      {
+        "done": false,
+        "label": "Surface MCP Cartographie : create/update/read modules+dépendances (espace Deckle), priorité basse"
+      },
+      {
+        "done": true,
+        "label": "Credentials Anytype : account key, clé API et jetons par-client chiffrés DPAPI CurrentUser dans le data root"
+      },
+      {
+        "done": true,
+        "label": "Sérialiser les écritures dans l'hôte HTTP : file consommateur unique + `SpaceWriteLock` en backstop ; lectures concurrentes ; état par-client par session"
+      },
+      {
+        "done": false,
+        "label": "Feedback de conflit même-cible dans la file d'écriture : relire + signaler, distinct de la simple sérialisation"
+      },
+      {
+        "done": false,
+        "label": "Wizard provisioning : machine à états reprenable pilotée par prédicats, qui re-sonde l'état réel au lieu d'un compteur de progression"
+      },
+      {
+        "done": true,
+        "label": "Cycle de vie backend : démarre avec Deckle, en contexte utilisateur, fenêtre cachée, survit au crash/build ; Deckle supervise et relance sans tuer le backend à l'arrêt normal de supervision"
+      },
+      {
+        "done": false,
+        "label": "Binaire anytype-cli : version épinglée + signalement des nouvelles, jamais d'auto-update ; téléchargé au tag, intégrité vérifiée avant extraction dans Programs\\Deckle ; compat prouvée par `openapi.json`"
+      },
+      {
+        "done": false,
+        "label": "Deckle.Security = coffre généraliste : clé API Anytype, jetons clients, futures clés API tierces ; UI d'inspection à griller"
+      },
+      {
+        "done": false,
+        "label": "Écriture de config par-client robuste/typée : Claude JSON `type:http` + headers ; Codex TOML `url` + `bearer\\_token\\_env\\_var`/`http\\_headers` à valider empiriquement"
+      },
+      {
+        "done": true,
+        "label": "Refondre/retirer install-anytype-mcp.ps1 : HTTP supprime le verrou de binaire et la jonction Scoop"
+      },
+      {
+        "done": false,
+        "label": "Passe durcissement sécurité/robustesse du provisioning, après V1 fonctionnel — exposition plaintext du jeton par-client en variable d'env en premier"
+      },
+      {
+        "done": true,
+        "label": "Câbler le lifecycle backend au démarrage : `BackendProcessSpec` réel + `App.OnLaunched` → `BackendSupervisor.EnsureRunningAsync`"
+      },
+      {
+        "done": false,
+        "label": "Accès interne Deckle : migrer le core sur 31012 + lire le bearer depuis le vault au lieu de credentials.json, en bypassant le MCP"
+      },
+      {
+        "done": true,
+        "label": "Fait 2026-07-02 : compte bot « Deckle » + clé API « deckle-mcp » mintés, auth REST 31012 prouvée (`GET /v1/spaces` → 200) ; coffre Deckle.Security bâti ; mécanisme lifecycle corrigé et confirmé par supervision in-process du `serve` windowless"
+      }
+    ],
+    "prose": "## Details   \nMigration 2026-06-12 : le backlog des fiches mémoire Claude est passé dans Anytype. Modèle final après pivot : un projet « Deckle » pour l'app/le repo, un task par module ou chantier, le détail en sous-tâches inline. Les fiches projet mémoire sont mortes ; la mémoire Claude ne garde que profil et feedbacks en attente.   \nLe modèle epic → projets → tâches est abandonné pour Deckle. Deckle est un projet ; les modules sont des tâches. La surface projet-management expose aujourd'hui 16 outils de base, plus les profils dialogue/schema/management selon client.   \nLivré 2026-07-09 : `link(project, epic)` ajoute le projet comme membre de la collection epic via `AddToCollection`, sans PATCH du projet.   \nSorti du chantier MCP Anytype vers la tâche P0 « Nettoyage périodique Anytype par agents ». À faire plus tard : couvrir tâches et projets explicitement terminés, ne rien supprimer, ignorer les cas ambigus, protéger le projet racine « Deckle » sauf demande explicite.   \nInvestigé 2026-07-09 : l'extension réelle passe par `Microsoft.CommandPalette.Extensions`, un serveur COM et un manifeste MSIX. L'API PowerToys Command Palette est encore preview ; le repo Deckle ne porte pas encore le SDK ni le pipeline package/deploy. Garder ouvert plutôt que produire un stub non testable.",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P5",
+      "confidence": "fort",
+      "rationale": "Le socle initial est terminé, tandis que dix suites restent mêlées au corps. Archiver la livraison historique et créer « Refonte du système Anytype » pour la migration actuelle et les seuls durcissements encore pertinents."
+    }
+  },
+  {
+    "name": "Nettoyage périodique Anytype par agents",
+    "state": "",
+    "priority": "0",
+    "taskType": "Gérer",
+    "complete": "",
+    "target": "2027-12-31T00:00:00Z",
+    "doneDefinition": "Une routine validée par Louis existe pour archiver périodiquement les tâches et projets Anytype explicitement terminés, sans suppression, avec journalisation des objets traités et des cas ignorés.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Cadrer la cadence et les garde-fous avant toute automation."
+      },
+      {
+        "done": false,
+        "label": "Créer l'automation seulement après validation explicite."
+      },
+      {
+        "done": false,
+        "label": "Couvrir les tâches et projets explicitement terminés."
+      },
+      {
+        "done": false,
+        "label": "Ne rien supprimer ; archiver seulement ce qui est non ambigu."
+      },
+      {
+        "done": false,
+        "label": "Protéger le projet racine « Deckle » sauf demande explicite."
+      }
+    ],
+    "prose": "## Details    \n---\nDetails   \n## Définition de fini   \nUne routine validée par Louis existe pour archiver périodiquement les tâches et projets Anytype explicitement terminés, sans suppression, avec journalisation des objets traités et des cas ignorés.",
+    "recommendation": {
+      "outcomeLabel": "Fusionner",
+      "priority": "P0",
+      "confidence": "fort",
+      "rationale": "L’automatisation dépend du nouveau modèle et ne doit pas devenir un chantier autonome avant stabilisation. La garder comme tâche différée de « Refonte du système Anytype »."
+    }
+  },
+  {
+    "name": "Transcription de fichiers",
+    "state": "",
+    "priority": "0",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Décodeur Media Foundation : fichier audio → float 16 kHz mono"
+      },
+      {
+        "done": true,
+        "label": "Item du menu tray + sélecteur de fichiers"
+      },
+      {
+        "done": true,
+        "label": "Entrée fichier dans le moteur de transcription (pipeline monolithique, états HUD, garde CAS)"
+      },
+      {
+        "done": true,
+        "label": "Écriture disque + setting du dossier de destination (page Transcription)"
+      },
+      {
+        "done": false,
+        "label": "V2 : réécriture LLM des fichiers longs (chunking, profil dédié)"
+      },
+      {
+        "done": false,
+        "label": "V2 : progression réelle dans le chrono (callback whisper)"
+      }
+    ],
+    "prose": "## Details   \n---\nDesign tranché (grill du 2026-07-09)   \nEntrée par le menu tray : un item ouvre le sélecteur de fichiers système (pattern FileOpenPicker déjà présent dans Deckle.Setup), un fichier à la fois. Décodage par Media Foundation vers 16 kHz mono float — la seule pièce réellement neuve. Ensuite le fichier rejoint le pipeline monolithique existant, HUD dans ses états existants (Charging si modèle froid, Transcribing, puis Message).   \nSortie : un `.txt` au nom de l'audio, dans un dossier configurable depuis la page Transcription des Settings, Bureau par défaut, suffixe numérique en cas de collision. Livraison fichier + presse-papiers ; jamais de collage, pas de réécriture LLM en V1. La concurrence dictée/fichier est refusée par le garde CAS existant, avec feedback « moteur occupé ». À la fin : Message HUD seul, rien ne s'ouvre.   \nLe vocabulaire (Dictation / File transcription) est gravé dans CONTEXT.md (commit e21a696f).   \n## Sous-tâches",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P1",
+      "confidence": "fort",
+      "rationale": "La V1 est livrée ; les deux éléments ouverts sont une V2. Archiver la V1 et ne créer un chantier V2 que si réécriture longue et progression ont encore une valeur suffisante."
+    }
+  },
+  {
+    "name": "Autocorrection système",
+    "state": "Terminé",
+    "priority": "5",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-06-19T00:00:00Z",
+    "doneDefinition": "Diacritiques QWERTY US → français corrigées machine-wide (FR + EN, sans détection de langue), lexique personnel qui apprend (seuil ~3 occurrences) et partagé avec l'ASR, toggle tray en place — P2 typos peut démarrer.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "P1 — Diacritiques (QWERTY US → français)"
+      },
+      {
+        "done": false,
+        "label": "Apprentissage & lexique personnel"
+      },
+      {
+        "done": true,
+        "label": "P2 — Typos conservatrice"
+      },
+      {
+        "done": false,
+        "label": "Intégration UI (tray, perceptibilité)"
+      },
+      {
+        "done": false,
+        "label": "Liste de réglages : afficher vraie icône + nom d'app (capter chemin exe + display name à l'enrôlement)"
+      },
+      {
+        "done": false,
+        "label": "Diacritiques : « voila » → « voilà » ne se déclenche pas (sonder gardes RestorerOptions + AccentIndex)"
+      },
+      {
+        "done": true,
+        "label": "Instrumentation à fond : télémétrie correction dédiée, fichier séparé (chaque mot, candidats, scores, marges, jauges de sûreté) — préalable demandé avant toute nouvelle correction"
+      },
+      {
+        "done": false,
+        "label": "P3 — Grammaire & conjugaison : correcteur à règles déterministe local (règles existantes récupérées, façon LanguageTool), réglé ultra-conservateur"
+      },
+      {
+        "done": false,
+        "label": "LLM de réécriture (après les règles) : correcteur FR, puis option « réécrire le paragraphe au retour-ligne » à activer"
+      },
+      {
+        "done": false,
+        "label": "Réinitialiser l'apprentissage + surface de gestion du dico personnel (réglages)"
+      },
+      {
+        "done": false,
+        "label": "Élaguer le dico perso des mots inexistants (fautes adoptées type « preises ») via le LLM local de réécriture : scan périodique, un mot qui n'existe pas = une faute à retirer, pas un mot à protéger."
+      }
+    ],
+    "prose": "## Details   \n---\nMachine-wide façon téléphone. FR + EN corrigés tous deux, pas de détection de langue en V1. Recherche de fond faite → docs/research/research--system-autocorrect--2026-06-12.md (8 axes vérifiés, parcours d'apprentissage en 8 étapes, § 9 = trous restants). Vocabulaire gravé dans CONTEXT.md § Autocorrect : correctable surface, enrollment, correction revert. Louis garde le design d'interaction.   \nSeuil d'adoption ~3 occurrences (pattern AOSP confirmé) ; partage avec l'ASR via le lexique personnel.   \nCorrection de typos conservatrice, après les diacritiques.   \nToggle tray au-dessus d'Ambient Light (acté). Perceptibilité V1 = rien ; candidat V2 : swipe Composition gris/rainbow. Les notifications sont une brique externe, explorée à part (cf. docs/research notifications).   \nVoie C actée : moteur maison sur la morpho Lexique, sans JVM. Accord pronom-sujet livré et mergé (étage GrammarCorrector + artefact verbe-morpho dérivé de Lexique, ultra-conservateur). Reste : é/er/ez (non fait — piste retenue : le caler sur la télémétrie de décision plutôt que spéculer les déclencheurs), puis accord adjectif/nom et homophones.",
+    "recommendation": {
+      "outcomeLabel": "Archiver — terminé",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Chantier historique clos et déjà remplacé par des chantiers plus précis. Les cases non cochées sont des reliquats, doublons ou suites déjà sorties ailleurs."
+    }
+  },
+  {
+    "name": "Chiffrement au repos",
+    "state": "",
+    "priority": "1",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "Les données utilisateur sensibles au repos — credentials, corpus de transcription, télémétrie — sont chiffrées, le helper DPAPI servant de socle ; l'approche s'inspire du modèle Anytype et la pertinence d'un module Deckle.Security est tranchée.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Helper DPAPI pour les credentials Anytype (premier socle, livré avec le chantier MCP)"
+      },
+      {
+        "done": false,
+        "label": "Étendre le chiffrement au corpus de transcription et à la télémétrie"
+      },
+      {
+        "done": false,
+        "label": "Étudier le modèle de chiffrement/sync d'Anytype comme référence"
+      },
+      {
+        "done": false,
+        "label": "Décider si un module `Deckle.Security` se justifie (seulement quand le besoin transversal est réel)"
+      }
+    ],
+    "prose": "## Details    \n---\n## Pourquoi   \nAujourd'hui les données utilisateur sensibles vivent en clair sur le disque : corpus de transcription, télémétrie, et — jusqu'à la bascule DPAPI — les credentials. C'est pratique pour exploiter le texte, mais ça ne tiendrait pas le niveau « app première-partie » à terme.   \n## Cap   \nChiffrer au repos le maximum de données sensibles, en partant du helper DPAPI (socle credentials) puis en l'étendant. S'inspirer du modèle de chiffrement / synchronisation d'Anytype plutôt que de réinventer.   \n## Pistes",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P2",
+      "confidence": "modérée",
+      "rationale": "Sujet transversal fini et important avant une diffusion plus large. Le périmètre et le modèle de menace doivent être tranchés avant de promettre « le maximum » de chiffrement."
+    }
+  },
+  {
+    "name": "Transcription vocale",
+    "state": "Terminé",
+    "priority": "5",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-06-16T00:00:00Z",
+    "doneDefinition": "Le streaming est le mode principal : grandes fenêtres coupées aux grands silences, tail-only au Stop, hallucination de quasi-silence éteinte, résidus VAD/DSP soldés — le monolithique ne sert plus que de secours tant que la recherche ASR (Voxtral / Phi-4) n'est pas close.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Streaming grandes fenêtres"
+      },
+      {
+        "done": true,
+        "label": "Bug — hallucination « Radio-Canada » en streaming"
+      },
+      {
+        "done": true,
+        "label": "Résidus VAD passe Settings"
+      },
+      {
+        "done": true,
+        "label": "Installer les dépendances"
+      },
+      {
+        "done": true,
+        "label": "Configurer le système de transcription vocale"
+      },
+      {
+        "done": true,
+        "label": "Finaliser et préparer la doc et les notes pour plus tard"
+      }
+    ],
+    "prose": "## Details   \nLe streaming est le mode principal : grandes fenêtres coupées aux grands silences, tail-only au Stop.   \nFiltre post-coup (catalogue `KnownHallucinations`) confirmé branché en streaming, appliqué par utterance avant le backend. Le match porte sur l'utterance entière : la phrase fantôme seule est supprimée, une vraie dictée qui la cite est épargnée. Le corpus étant enregistré, les cas résiduels (variante hors catalogue, ou phrase collée à du vrai texte) restent retrouvables. Cause de fond = seuil adaptatif, dans « Suites streaming ».   \nRéglages Silero exposés dans une section dédiée. La distinction des 3 mécanismes « silence » reste au JOURNAL (2026-06-07) : elle se devine dans le code, pas de CLAUDE module à graver.   \nRésidus DSP sortis vers une tâche dédiée « DSP pré-traitement transcription » (place du stage, AGC Windows, validation WER). Raffinements qualité/segmentation et dette perf dans « Suites streaming ».",
+    "recommendation": {
+      "outcomeLabel": "Archiver — terminé",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Mode principal livré. Les raffinements ont déjà été extraits dans « Suites streaming », le DSP et l’investigation ASR."
+    }
+  },
+  {
+    "name": "DSP pré-traitement transcription",
+    "state": "",
+    "priority": "1",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "La place du DSP est tranchée : WER avec/sans DSP mesuré sur le corpus, garde-fou « AGC Windows actif » en place, défaut on/off assumé — ou le stage est retiré.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Place du stage : défaut on/off assumé, ou retrait du stage si le gain ne se mesure pas."
+      },
+      {
+        "done": false,
+        "label": "Détection « AGC Windows actif » : alerter l'utilisateur, ne jamais désactiver de force."
+      },
+      {
+        "done": false,
+        "label": "Validation WER avec/sans DSP sur le corpus. Impact attendu lors de la passe « Observabilité » (refonte logging / fenêtre de logs), où la mesure trouvera son cadre — lien à faire vers cette tâche."
+      }
+    ],
+    "prose": "## Details    \n---\n## Question   \nLe DSP de pré-traitement transcription mérite-t-il sa place ? Toggle opt-in, off par défaut, volontairement doux. Le streaming l'applique par utterance, juste avant le backend ; le segmenteur, lui, lit le RMS brut.   \n## Reste à trancher   \n## Garde-fou   \nCompresser fort remonte le bruit inter-mots, carburant des hallucinations Whisper. Rester doux ; le silence se règle au VAD.",
+    "recommendation": {
+      "outcomeLabel": "Convertir en tâche",
+      "priority": "P1",
+      "confidence": "fort",
+      "rationale": "Décision expérimentale courte qui appartient à la qualité de transcription. À rattacher au chantier renommé « Qualité du streaming »."
+    }
+  },
+  {
+    "name": "Suites trackpad",
+    "state": "Dormant",
+    "priority": "1",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-12-31T00:00:00Z",
+    "doneDefinition": "Hotkeys migrées de Deckle.Shell vers Deckle.Input (au chantier hotkey picker) ; les toggles relocalisés ou actés sur place ; l'USB reste parqué tant qu'aucune source d'INF propre n'émerge.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Migration hotkeys Shell → Input"
+      },
+      {
+        "done": false,
+        "label": "USB — réouverture conditionnelle"
+      },
+      {
+        "done": false,
+        "label": "Relocalisation des toggles (« on verra »)"
+      }
+    ],
+    "prose": "## Details    \n---\nMigrer les hotkeys de Deckle.Shell vers Deckle.Input — au chantier « sélecteur de hotkeys » (hotkey picker V2, 3 slots configurables). Rappel explicitement demandé.   \nParqué 2026-06-12 : l'INF USB officiel redistribué (lc700x) est retouché → catalogue invalide, Windows refuse l'install (refus sain, ne pas contourner). En filaire le trackpad reste une souris basique ; le câble = recharge. Rouvrir seulement si une source propre émerge (Update Catalog scripté, Brigadier/Boot Camp ESD). État machine : backup driver + logs de remédiation dans D:\\drivers\\apple-trackpad-backup, variante USB parquée dans D:\\drivers\\apple-trackpad-usb. Garde-fou : ne JAMAIS « supprimer le périphérique » dans les réglages Bluetooth (bug de re-pairing du driver Apple) — off/on du trackpad suffit pour reconnecter. Réf : ClementGre/ThreeFingerDragOnWindows (MIT, double attribution emoacht si reprise de TouchpadHelper.cs).   \n« Start elevated » irait dans General, le toggle Record frames dans Diagnostics — laissés sur la page Trackpad pour l'instant.",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P1",
+      "confidence": "fort",
+      "rationale": "Conteneur hétérogène : migration hotkeys, piste de driver USB et relocalisation de réglages n’ont ni même résultat ni même déclencheur. Ne pas recréer ce projet tel quel."
+    }
+  },
+  {
+    "name": "Portage TTS ONNX",
+    "state": "En cours",
+    "priority": "1",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "Le backend Chatterbox ONNX réel remplace le stub : 4 graphes + DSP FR portés en C# (fp16, conditional_decoder épinglé CPU), voix Pierre/Jessica naturelle au raccourci, modèle provisionné, UI de réglage (page Réglages + Playground). La boucle assistant vocal complète (dictée → LLM → voix) reste un chantier distinct.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Portage C# des 4 graphes (`speech\\_encoder`, `embed\\_tokens`, `language\\_model\\_fp16`, `conditional\\_decoder`) + boucle KV-cache autorégressive + tokenizer `tokenizer.json` + DSP FR. Précédent maison : `Deckle.Vad` (ONNX à état en C#)."
+      },
+      {
+        "done": false,
+        "label": "`conditional\\_decoder` épinglé CPU (mur DML AMD 80070057) ; **fp16**, jamais Q4 (doctrine no-Q4 ASR/TTS)."
+      },
+      {
+        "done": false,
+        "label": "Provisioning du modèle (`D:\\models\\tts\\chatterbox\\onnx`, ~2,1 Go) dans le dossier modèles de l'app."
+      },
+      {
+        "done": false,
+        "label": "Host-bridge `ISpeechEngineHost`/`AppSpeechEngineHost` (chemin modèles) + extraction `Deckle.Speech.Chatterbox` (quand `Microsoft.ML.OnnxRuntime` entre)."
+      },
+      {
+        "done": false,
+        "label": "UI de réglage : page Réglages (Enabled / Voix) + Playground (température + texte d'essai)."
+      },
+      {
+        "done": false,
+        "label": "Décisions de forme du contrat à acter au portage : `ModelLoadResult` (échec de chargement structuré, pas d'exception fichier-manquant), streaming / découpage par phrase, identité-voix (enum Pierre/Jessica → clip de référence encodé)."
+      },
+      {
+        "done": false,
+        "label": "Mode discussion côté dictée (transcription → presse-papiers sans auto-paste) — retouche fine `Deckle.Transcription`."
+      }
+    ],
+    "prose": "## Details    \n---\n## Cadre   \nPatte de sortie « parlante » d'une boucle d'assistant vocal local : raccourci → fenêtre d'enregistrement → Whisper transcrit → le LLM local comprend la question (idéalement avec accès Anytype / web) → il répond → **le module Speech lit la réponse à voix haute**. Le pendant sortie de Transcription vocale. La lecture du presse-papiers actuelle n'est qu'un démonstrateur du squelette ; la vraie boucle (dictée → LLM → voix) est un chantier d'orchestration distinct.   \nSuccède à la tâche de recherche « Synthèse vocale (TTS) » (close) : audition arbitrée le 2026-06-13, **Chatterbox-Multilingual retenu**, Orpheus abandonné, décodage **ONNX pur prouvé** (4 graphes, zéro PyTorch). Journalé dans `benchmark/JOURNAL.md`.   \n## Livré — le squelette dormant (branche feat/tts-readaloud, 5 commits, non mergée)   \n- Module `Deckle.Speech` : `ISpeechBackend`, `SpeechEngine` (synthèse hors-UI, interruption à la pression), réglages POCO + service, provider `Deckle-Speech`.   \n- 1ʳᵉ sortie audio de Deckle : `Deckle.Audio/SpeakerOutput` (`waveOut` bloquant, 24 kHz) + `FloatToPcm16`.   \n- Backend `ChatterboxSpeechBackend` = **stub** (bip 440 Hz, ignore voix/température).   \n- Raccourci `Alt+Win+\\\\`\\` → lit le presse-papiers → `Speak\\`.   \n- Observabilité bout-en-bout (jalon de complétion compris), tests 4/4.   \n   \n## Reste — le palier ONNX",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P2",
+      "confidence": "fort",
+      "rationale": "Portage technique substantiel, actif et finissable. La boucle assistant vocal reste correctement exclue et devra être décidée séparément."
+    }
+  },
+  {
+    "name": "Scission Playground",
+    "state": "En attente",
+    "priority": "2",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-06-25T00:00:00Z",
+    "doneDefinition": "PlaygroundWindow éclaté en pages frame-navigées (Home, Ambient, Hud) avec un commit par page extraite, toolbar HUD refaite sur le modèle Ambient, polish Ambient passé — plus de fichier de 3300 lignes.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Scission en pages frame-navigées"
+      },
+      {
+        "done": true,
+        "label": "HomePage — hello + sélecteur HUD / Ambient (SettingsCard)"
+      },
+      {
+        "done": true,
+        "label": "AmbientPage — mode preset + pipeline + screen capture + HDR tuning + Hue REST + light zones + preview grid + zone overlays + emitted swatches"
+      },
+      {
+        "done": true,
+        "label": "HudPage — ItemsRepeater target cards + Play/Pause + previews (HudChrono, ChronoPreview, NakedPreview) + tuning panel"
+      },
+      {
+        "done": false,
+        "label": "Refonte toolbar HUD page"
+      },
+      {
+        "done": false,
+        "label": "Polish Ambient page"
+      },
+      {
+        "done": false,
+        "label": "Sauvegarde des paramètres du Playground (modèle page de segmentation), quand la persistance existera"
+      },
+      {
+        "done": false,
+        "label": "Inspecter le générateur RMS du contour dans le Playground (suspecté mal fait)"
+      }
+    ],
+    "prose": "## Details   \nFait : PlaygroundWindow éclaté en HomePage / AmbientPage / HudPage (frame-navigées), avec des partials par responsabilité (AmbientPage.HdrTuning/.Hue/.LightZones/.Preview/.ScreenCapture ; HudPage.Expanders/.RowFactories). Coquille : TitleBar natif, MicaBackdrop, NavigationView Auto, Frame, lifecycle Closing → Hide. Chaque page reçoit son type via Tag=\"Deckle.Playground.HudPage, Deckle.Playground\" ; les subscriptions (HuePairingService.BridgeChanged, AmbientSettingsService.Changed, AmbientEngine.StateChanged) ont migré dans AmbientPage (subscribe/unsubscribe sur Loaded/Unloaded).   \nAprès la scission. Une seule ligne d'outils au-dessus du cadre preview, calquée sur la toolbar Ambient. Drop-down grouped (sections Charging/Recording/Transcribing/Rewriting puis Conic/ArcMask/Combined) remplace les deux ItemsRepeater States/Primitive ; vide par défaut au load. Transport Play/Pause/Stop mutuellement exclusifs — à valider via le skill ux-copy avant implé. Tunables conditionnels masqués tant qu'aucun state n'est sélectionné, puis sous-bloc par sous-bloc selon pertinence.   \nAprès la scission. Gap 1 pixel physique sur la grille de cells (constant quel que soit le scale Viewbox ou le DPI) → overlay Canvas sibling, lignes en DIP avec largeur 1.0 / XamlRoot.RasterizationScale. Labels nom de lampe au centre des zones (TextBlock par rect, AmbientSettings.LightZones → LightDescriptor.Name ; plusieurs lampes = virgule ou deux lignes). Bug UX mineur ComboBox Hue scroll-changes-selection (défaut WinUI 3 PointerWheelChanged) : Handled=true ou ScrollViewer isolant — pas urgent.",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P2",
+      "confidence": "fort",
+      "rationale": "La scission promise est faite ; les restes appartiennent au HUD, à Ambient ou à la persistance. Archiver le chantier d’origine et redistribuer seulement les quatre éléments encore valides."
+    }
+  },
+  {
+    "name": "Composition HUD",
+    "state": "",
+    "priority": "2",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-06-25T00:00:00Z",
+    "doneDefinition": "Composition et animations du HUD revues et intégrées au niveau app Store Microsoft : accent en Recording, swipe-masque cohérent avec le contour live en Transcribe/Rewrite (voie hybride, readout net), taille du chrono arrêtée — direction explorée, prototypée et livrée.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Valider à l'œil l'écart grayscale / ClearType sur la Bitcount à la taille cible"
+      },
+      {
+        "done": false,
+        "label": "Trancher la couleur de Transcribe : shimmer gris (désaturé) ou un peu de couleur dès Transcribe"
+      },
+      {
+        "done": false,
+        "label": "Prototyper le montage CompositionMaskBrush sur l'overlay de révélation d'un chiffre"
+      },
+      {
+        "done": false,
+        "label": "Trancher la taille du chrono (échelle Windows / DPI) — rayon de souffle : marge `-1` + géométrie du trait"
+      },
+      {
+        "done": false,
+        "label": "Réglage : couleur d'accent personnalisée des chiffres (à la place de l'accent Windows ; Windows-first pour l'instant)"
+      },
+      {
+        "done": false,
+        "label": "Bordure live de durée d'utterance : à l'arrêt de parole, faire monter une bordure qui « charge » pour indiquer la taille de l'utterance"
+      },
+      {
+        "done": false,
+        "label": "Perf : câbler le ResizeCoalescer sur le HangoverCurveCanvas (DrawText Win2D coûteux par WM\\_SIZE) — prototype parqué c2fdff2, valider au runtime via la trace WindowResizeFrame"
+      }
+    ],
+    "prose": "## Details   \n---\nRevoir la composition et les animations de la fenêtre HUD (chrono, contour, swipe, couleurs) au niveau app Store Microsoft. Exploration en cours — peu de sous-tâches au départ.   \n## Direction arrêtée   \n- **Recording** : les chiffres qui changent passent en **accent Windows** (et non plus rouge Critical) ; au stop, retour au primaire (blanc).   \n- **Transcribe + Rewrite** : le **swipe** ne peint plus le chiffre en couleur — le glyphe (vectoriel) devient un **masque** qui découpe dans la **même texture conique vivante que le contour live**. Chiffres et contour = deux fenêtres sur le même matériau.   \n- **Voie hybride** (cohérente avec l'intention : readout normal, masque seulement au swipe) : le readout au repos reste un TextBlock ClearType net ; seul l'overlay de révélation est masqué — le grayscale ne touche que les pixels qui animent.   \n   \n## Faisabilité (validée — Microsoft Learn)   \n- `CompositionMaskBrush` : source = surface conique OKLCh, masque = glyphes via Win2D `DrawText` (le mécanisme déjà utilisé pour le conique). `OpacityMask` sur `TextBlock` n'existe pas en WinUI 3 → le masque Composition est la seule voie, et elle est propre.   \n- Swipe par chiffre : `SwipeWaveAnimator` inchangé (heat [0,1]) → `CompositionPropertySet` + `ExpressionAnimation`.   \n- Compromis unique : texte à travers une surface translucide perd le ClearType (AA niveaux de gris) — invariant Direct2D, sans contournement propre. Acceptable car cantonné à l'overlay animé.   \n- Architecture déjà prête : les 8 chiffres sont des UIElements distincts, chacun avec son propre visual (primaire + overlay).   \n   \n## Inventaire de placement (fenêtre HUD)   \nFenêtre fixe **272×78 dip**, centrée horizontale, 96 dip du bas (dupliquée dans `HudOverlayWindow`). À l'intérieur tout est centré/responsive ; seuls la marge `-1,0,-1,0` et la géométrie du trait Composition sont couplées à `FontSize=48`.   \n![image_1781391888365_0](http://127.0.0.1:47800/image/bafyreigjci7yyi6plbbmjsd7ilwvfkdebzeyxto3f5y5nisqdnfqnafvbm)    \n```\n   liseré DWM 1 dip (accent) ─┐\n                              ▼\n╭────────────────────────────────────────────╮\n│                                             │\n│             0 0 . 0 0 . 0 0                 │  ← ClockText centré\n│                                             │     FontSize 48 · marge -1\n╰────────────────────────────────────────────╯\n   coin = OverlayCornerRadius (DWM round)\n   fenêtre fixe 272 × 78 dip · 96 dip du bas\n\n```\nPile d'affichage, arrière → avant :   \n1. **DWM HWND** — silhouette arrondie + liseré 1 dip (suit l'accent) — tous états   \n2. **RootGrid** — remplissage LayerFillColorDefault — tous états   \n3. **ChronoCard (Border)** — fond opaque + coin + CardStroke togglé — Charging/Transcribing/Rewriting   \n4. **ProcessingSurfaceHost** — trait Composition OKLCh, inset 1 dip — Transcribing/Rewriting   \n5. **ClockText (StackPanel)** — 6 chiffres (primaire + overlay) + 2 points — tous états, centré   \n   \n## À investiguer   \n## Questions ouvertes   \n- Accent uniquement en Recording (le flash) — à confirmer.   \n- Échantillonnage du conique le long de la rangée (chaque chiffre une teinte différente) — réglage Playground, plus tard.   \n- RMS : une fois la texture partagée, le signal qui pilote déjà le contour pourrait moduler la révélation des chiffres — en réserve.",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P2",
+      "confidence": "modérée",
+      "rationale": "Chantier visuel cohérent avec plusieurs décisions et validations. Écarter les options décoratives qui n’améliorent pas la lecture ou la confiance."
+    }
+  },
+  {
+    "name": "Lag de capture",
+    "state": "",
+    "priority": "2",
+    "taskType": "Surveiller",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Le wait\\_ms retombe-t-il sous 200 ms en dictée streaming réelle après le correctif de priorité ?"
+      },
+      {
+        "done": false,
+        "label": "Récidive de capture lag dans la télémétrie sur plusieurs sessions de dictée ?"
+      },
+      {
+        "done": false,
+        "label": "Si récidive : la priorité suffit-elle, ou faut-il découpler le consommateur Whisper (thread dédié / affinité) ?"
+      },
+      {
+        "done": false,
+        "label": "Collecter 5-10 occurrences en télémétrie puis retirer la sonde affinée (96ee8ac) une fois la cause attribuée (rapatrié de « Bugs & stabilité »)"
+      }
+    ],
+    "prose": "## Details   \n---\n> Type cible : surveillance (refusé par le MCP, enum codé en dur → à rebasculer à la main dans Anytype).   \n\n## Contexte   \nLag de capture observé pendant la dictée streaming. Instrumenté, diagnostiqué, corrigé. Pas de la production : veille sur récidive.   \n## Ce qui a été fait (livré sur main)   \n- Sonde de lag affûtée dans `WaveInLoop.cs` : milestone + miroir Verbose `CaptureLagDetectedDetail` (buffers\\\\_ready, iter, wait\\\\_ms, prev\\\\_iter\\\\_ms, gc0/1/2 par itération).   \n- Diagnostic sur 54 occurrences : `wait\\\\_ms` moy. 204 ms / max 483 ms ; `prev\\\\_iter\\\\_ms` et `gc` quasi toujours nuls → **ni GC ni travail inline, mais famine CPU du thread de capture** par l'inférence Whisper concurrente. ~57 % des événements ≥ 200 ms (au-delà du ring de 200 ms) = vraies pertes audio.   \n- Correctif : thread de capture en `ThreadPriority.AboveNormal` (`TranscriptionEngine.StateMachine.cs`). Bas risque (thread quasi-idle ; AboveNormal et non Highest pour ne pas disputer le thread UI).   \n   \n## À surveiller   \n## Définition de fini   \nPlusieurs sessions de dictée streaming sans occurrence de `capture lag` ≥ 200 ms en télémétrie → correctif confirmé, tâche close. Sinon, escalade vers un découplage du consommateur.",
+    "recommendation": {
+      "outcomeLabel": "Convertir en tâche",
+      "priority": "P2",
+      "confidence": "fort",
+      "rationale": "Le correctif est livré ; il reste une surveillance bornée. Elle appartient au chantier « Qualité du streaming », pas à un projet autonome."
+    }
+  },
+  {
+    "name": "Investigation ASR",
+    "state": "",
+    "priority": "1",
+    "taskType": "Chercher",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "L'investigation ASR est close : un moteur arbitré (Whisper actuel vs Voxtral vs Phi-4 vs suite), runtime ONNX/DirectML RDNA3 + licence + français tranchés après mesure WER/écoute sur texte Deckle réel — débloque la décision streaming-principal-vs-monolithique de Transcription vocale.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Cartographier les candidats : Whisper actuel (ggml/whisper.cpp) vs Voxtral (Apache 2.0) vs Phi-4 vs suite — un export ONNX existe-t-il, son décodeur passe-t-il DirectML ? *(fait par le balayage du 2026-06-17 ci-dessous)*"
+      },
+      {
+        "done": false,
+        "label": "Mesurer WER + latence sur du texte Deckle réel en français (pas des benchmarks NVIDIA/cloud)"
+      },
+      {
+        "done": false,
+        "label": "Licence + français : neutralité métropolitaine, pas d'accent anglophone"
+      },
+      {
+        "done": false,
+        "label": "Doctrine no-Q4 : fp16 imposé ? croise-t-il un mur d'op DirectML (cf. ConvTranspose côté TTS) ?"
+      },
+      {
+        "done": false,
+        "label": "Trancher : remplacer Whisper, ou le streaming grandes-fenêtres suffit-il et la recherche se referme sans changer de moteur ?"
+      }
+    ],
+    "prose": "## Details   \n---\n## Cadre   \nLe pendant ASR de la recherche TTS (close). La DoF de « Transcription vocale » gate le mode principal sur cette recherche : le monolithique ne sert plus que de secours tant que la recherche ASR (Voxtral / Phi-4) n'est pas close. Garde-fous : local, sans cloud structurel, ONNX/DirectML quasi-certain sur RDNA3 (RX 7900 XT), niveau app Store Microsoft. NB : le rewrite LLM (warm-up + chunking + structure, rouvert 2026-06-13) est un fil voisin — à ne pas confondre avec le choix du moteur ASR.   \n## À investiguer   \n## Pistes — à auditionner en local (rien de tranché)   \nBalayage mi-2026 : 36 modèles, 8 axes, **aucun survivant net**. Tout gain est « annoncé » (WER auto-rapportés, ou FLEURS/MLS lus normalisés), jamais mesuré sur ta dictée FR réelle ni sur l'accent métropolitain. Trois prospects valent une audition ONNX-locale ; le reste est écarté.   \n- **Parakeet TDT 0.6B v3** (NVIDIA, CC-BY-4.0) — pari runtime le plus solide. WER FR 5,15 FLEURS / 5,42 agrégé vs Whisper 6,36. Transducteur TDT *non-autorégressif* → esquive le mur KV-cache DirectML qui a tué Voxtral. Deux voies viables ici : `parakeet.cpp` (ggml, backend Vulkan **prouvé** sur la RX 7900 XT) et export ONNX **FP16** (grikdotnet) via onnx-asr/DirectML. Réserves à lever en écoute : bug FR chiffres↔mots (« 9h32 » ↔ « neuf heures trente »), accent métropolitain non garanti, viabilité AMD concrète non prouvée, non-streaming.   \n- **bofenghuang/whisper-large-v3-french** (MIT) — gain le plus *bas-friction* : même stack whisper.cpp Vulkan, on échange juste le `.bin` ggml (à reconvertir en fp16 — le fourni est Q5\\_0). WER FR auto-rapportés meilleurs que large-v3 ; la distil réduit les hallucinations long-form. Réserves : monolingue FR (perd 99 langues), accent métropolitain non garanti (entraîné en partie sur African Accented French), WER non confirmés par un tiers.   \n- **Voxtral Realtime 4B** (mistralai, Apache 2.0, BF16) — le seul *streaming natif* (atout dictée live, pas post-dictée). FR FLEURS 6,42 %@480 ms → 5,23 %@2400 ms, « à parité Whisper » à faible délai. Voie viable = fork `CrispASR` (whisper.cpp ggml + Vulkan, build Windows), contourne ORT-DirectML. Réserves : CrispASR non prouvé sur RDNA3, pas de WER FR côte-à-côte vs large-v3, voie ONNX-DirectML toujours cassée (décodeur autorégressif).   \n   \n## Écartés — ne pas re-chercher   \n- **Phi-4-multimodal** : pipeline ASR ONNX cassé en amont (bugs genai #1290/#1455 ouverts, se reproduit même sur CUDA), ONNX int4 seulement (viole no-Q4), DirectML désormais « legacy ». Route ONNX-DirectML/WinML autorégressive fermée sur cette machine.   \n- **Canary 1B v2** (NVIDIA) : meilleur WER FR papier (4,83) mais décodeur attentionnel *autorégressif* → même mur KV-cache DirectML que l'échec Voxtral 3B.   \n- **Voxtral Small 24B / Mini Transcribe V2** : 24B fp16 dépasse 20 Go (Q4 interdit) ; Transcribe V2 (batch, le plus précis) est API-only → hors doctrine local.   \n- **Kyutai STT, Meta Omnilingual, large-v3-turbo, CrisperWhisper, distil-whisper, LINAGORA LinTO** : soit pas de gain FR prouvé, soit EN-only, soit décodeur autorégressif sans voie GPU non-CUDA, soit plus petit/moins bon que large-v3.   \n   \n## Source   \nBalayage multi-agent du 2026-06-17 (8 axes, 36 modèles). Brut conservé hors-espace : `tasks/w2zukj8qg.output`. Statut : **pistes documentaires, à confirmer par audition locale — aucun swap décidé.**",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P1",
+      "confidence": "modérée",
+      "rationale": "Enquête substantielle avec corpus, runtime et décision de moteur. Garder P1 tant qu’aucun défaut mesuré ne justifie de remplacer Whisper."
+    }
+  },
+  {
+    "name": "Suites streaming",
+    "state": "",
+    "priority": "2",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "Les raffinements streaming différés sont soldés : segmentation adaptative au noise floor, décompo latence honnête, contexte de phrase coupée, double-VAD tranché, cache persistant — et la dette perf résorbée (warm-up chevauché, politique d'unload Whisper, tensors VAD réutilisés).",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Seuil segmenter adaptatif au noise floor — le vrai fix de fond ; c'est aussi le correctif profond de l'hallucination « Radio-Canada » suivie dans « Transcription vocale »"
+      },
+      {
+        "done": false,
+        "label": "Redesign décompo latence (whisper\\_init\\_ms / whisper\\_ms trompeurs depuis le kill du VAD interne)"
+      },
+      {
+        "done": false,
+        "label": "Contexte phrase coupée (queue / hangover / overlap)"
+      },
+      {
+        "done": false,
+        "label": "Double VAD energy + Silero — à trancher"
+      },
+      {
+        "done": false,
+        "label": "Persistance disque du cache"
+      },
+      {
+        "done": false,
+        "label": "Chevaucher capture + warm-up — enregistrer tout de suite, chauffer le modèle en //, bloquer la 1re itérance sur la fin du prime (garde dure : whisper.cpp non thread-safe sur un contexte) + réécrire le chemin Stop-pendant-prime ; supprime le temps mort Charging à froid"
+      },
+      {
+        "done": false,
+        "label": "Politique d'unload Whisper — re-paie ~3 Go à chaque take froid après idle ; envisager timeout plus long ou keep-resident opt-in (arbitrage VRAM/latence), à mesurer via model\\_load\\_ms"
+      },
+      {
+        "done": false,
+        "label": "VAD réutiliser les tensors via IOBinding/OrtValue (au-delà du buffer-reuse déjà livré sur perf/review) — gated sur compteurs GC"
+      }
+    ],
+    "prose": "## Details    \n---\nRaffinements différés extraits de « Transcription vocale » — le cœur streaming-principal y reste soldé ; ici, ce qui vient après.   \n## Qualité & segmentation   \n## Perf",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P3",
+      "confidence": "fort",
+      "rationale": "Renommer en « Qualité du streaming » et retirer le langage de bac à restes. Le seuil adaptatif et la latence portent un bénéfice réel ; les optimisations non mesurées restent conditionnelles."
+    }
+  },
+  {
+    "name": "Extension CmdPal",
+    "state": "",
+    "priority": "1",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "",
+    "doneDefinition": "Extension Command Palette (PowerToys CmdPal) pour Deckle créée et testée de bout en bout.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Créer et tester l'extension CmdPal de bout en bout"
+      }
+    ],
+    "prose": "## Details    \n---\n## Details   \nIssue de la scission de « CmdPal & MCP Anytype » (2026-06-16) : l'outillage MCP Anytype est parti dans son propre projet ; ne reste ici que l'extension Command Palette, feature Deckle distincte.",
+    "recommendation": {
+      "outcomeLabel": "Convertir en idée",
+      "priority": "P0",
+      "confidence": "fort",
+      "rationale": "Une seule action, API encore preview et absence de besoin produit établi. Revenir dessus quand la plateforme se stabilise ou qu’un usage concret apparaît."
+    }
+  },
+  {
+    "name": "Taskbar overlay",
+    "state": "Terminé",
+    "priority": "4",
+    "taskType": "Produire",
+    "complete": "oui",
+    "target": "2026-06-30T00:00:00Z",
+    "doneDefinition": "Le standalone taskbar-overlay est repris comme module Deckle : la bande se place et se dimensionne automatiquement sur l'arête de la taskbar (bas, haut, gauche, droite), rendue devant elle, délai 5 s conservé — l'utilitaire standalone peut être retiré.",
+    "archived": "oui",
+    "checklist": [
+      {
+        "done": true,
+        "label": "Reprendre le code du standalone"
+      },
+      {
+        "done": true,
+        "label": "Placement + dimensionnement automatiques selon l'arête de la taskbar"
+      },
+      {
+        "done": true,
+        "label": "Toujours rendu devant la taskbar"
+      },
+      {
+        "done": true,
+        "label": "En faire un module Deckle simple (famille Shell)"
+      },
+      {
+        "done": true,
+        "label": "Retirer le standalone une fois intégré"
+      }
+    ],
+    "prose": "## Details   \n---\n## Design — source de vérité   \nSpec de mars supersédée par le livré : signal curseur = hook WinEvent\n(EVENT\\_OBJECT\\_LOCATIONCHANGE filtré OBJID\\_CURSOR), pas Raw Input.\nDesign vivante → src/Deckle.Shell.TaskbarCover/CLAUDE.md\nÉcarts spec→livré documentés dans le rapport lié.",
+    "recommendation": {
+      "outcomeLabel": "Archiver — terminé",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Déjà terminé et archivé. Aucune migration active nécessaire."
+    }
+  },
+  {
+    "name": "Bugs & stabilité",
+    "state": "Ouvert",
+    "priority": "3",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-06-22T00:00:00Z",
+    "doneDefinition": "La liste est vide ou requalifiée : single-instance gardé avec signal visible, mojibake et capture lag élucidés, tray et HUD sans défauts visibles, paste fantôme reproduit ou documenté.",
+    "archived": "",
+    "checklist": [
+      {
+        "done": false,
+        "label": "Lancement multi-instance non gardé"
+      },
+      {
+        "done": false,
+        "label": "Capture lag → suivi dans la veille « Surveiller le lag de capture en dictée streaming » (collecte 5-10 occ. + strip de la sonde 96ee8ac une fois la cause attribuée)"
+      },
+      {
+        "done": true,
+        "label": "Tray menu — scroll au premier clic"
+      },
+      {
+        "done": false,
+        "label": "Ombre overlay low-audio sur le HUD"
+      },
+      {
+        "done": false,
+        "label": "Border-radius cartes overlay HUD"
+      },
+      {
+        "done": false,
+        "label": "Paste fantôme intermittent"
+      },
+      {
+        "done": false,
+        "label": "Tray icon Disable au spam-relaunch"
+      }
+    ],
+    "prose": "## Details   \nAppInstance.GetCurrent() + RedirectActivationToAsync(). Préférence : bloquer la 2e instance avec un signal visible, pas remplacer en silence. Pré-test : voir si le bug tray Disable disparaît.   \nAprès bascule d'app. Branche fix/tray-menu-measure-flyout existante ; détail dans src/Deckle.Shell.TrayMenu/JOURNAL.md.   \nShadow DWM des transient overlays fait de l'ombre sur le HUD. Passe UX/UI Settings V2.   \nLe rayon coupe le contour live (cartes transcribe/rewrite). Passe UI dédiée.   \nSendInput Ctrl+V sans effet visible, checks UIA/HUD OK. Pas de repro stable.   \nRace TrayIconManager.UpdateStatus ↔ init engine. Probablement réglé de fait par le single-instance — vérifier après.",
+    "recommendation": {
+      "outcomeLabel": "Scinder",
+      "priority": "P3",
+      "confidence": "fort",
+      "rationale": "Un bac à bugs permanent n’est pas un chantier. Transformer chaque défaut encore réel en tâche, puis les rattacher au chantier concerné ou à une vague de stabilisation finie."
+    }
+  },
+  {
+    "name": "Observabilité",
+    "state": "Dormant",
+    "priority": "1",
+    "taskType": "Produire",
+    "complete": "",
+    "target": "2026-12-31T00:00:00Z",
+    "doneDefinition": "Les six chantiers parqués traités ou requalifiés — visuals Composition HUD déclarés, events Setup reclassés, pattern HTTP générique câblé (le 3e client existe : Deckle.Anytype).",
+    "archived": "",
+    "checklist": [
+      {
+        "done": true,
+        "label": "DeckleResourceSource — visuals Composition HUD"
+      },
+      {
+        "done": false,
+        "label": "Sous-keyword par zone"
+      },
+      {
+        "done": false,
+        "label": "Préfixes module legacy"
+      },
+      {
+        "done": true,
+        "label": "Reclasser les events Setup"
+      },
+      {
+        "done": false,
+        "label": "Sub-provider Storage"
+      },
+      {
+        "done": false,
+        "label": "Pattern HTTP générique (DeckleHttpSource)"
+      },
+      {
+        "done": false,
+        "label": "Renommer le provider de log Deckle-Whisp → Deckle-Transcription (lisible, agnostique du modèle)"
+      },
+      {
+        "done": false,
+        "label": "Affiner les jalons de boot — séparer les spans groupés hudwindow/hotkeys, chronométrer le ctor App (parse XamlControlsResources, hors stopwatch aujourd'hui), deltas par étape plutôt que cumulés"
+      },
+      {
+        "done": false,
+        "label": "Helper scope-timer réutilisable (bloc chronométré → event \\\\*\\\\_ms typé) pour ne plus hand-roller un Stopwatch par site — décision de convention"
+      },
+      {
+        "done": false,
+        "label": "Étendre PageReady aux pages Settings (General/Diagnostics/Recording) : elles n'ont pas de handler Loaded, donc seul NavTiming les couvre aujourd'hui — ajouter un Loaded + flag first-load comme les pages Playground"
+      }
+    ],
+    "prose": "## Details   \n---\nLes visuals Composition du HUD (HudWindow, HudOverlayWindow) ne déclarent pas leur cycle de vie ressource. Reporté à dessein lors de la vague transverse 2026-05-25.   \nLe filtrage LogWindow se fait par provider, pas par sous-zone (debug du Clipboard de Whisp seul = grep texte). Acceptable, à laisser émerger.   \n« [audio] Settings loaded » dans Settings/Audio — JsonSettingsStore appelé avec un prefix paramétré ; à nettoyer avec la refonte SettingsHost (Classe 8 du CLAUDE Diagnostics).   \nSetupInfo/Warning/Error paramétrés par message dans Deckle.Setup — contredit la doctrine strict-typed par opération ; à reclasser en events distincts au prochain passage substantiel sur le module.   \nPattern candidat : FileWritten(path, bytes, duration\\\\\\\\\\\\\\\\_ms, outcome) + DirectoryEnsured(path, created). Attendait la relocalisation des POCOs (sous-vague 6a) — instrumenter avant attacherait des events à des sites qui bougent.   \nReporté tant qu'il n'y a que deux clients HTTP (Hue + Ollama) ; à câbler dès qu'un troisième émerge (WLED, services LLM tiers). NB : Deckle.Anytype en a ajouté un troisième depuis.",
+    "recommendation": {
+      "outcomeLabel": "Promouvoir en chantier",
+      "priority": "P1",
+      "confidence": "modérée",
+      "rationale": "Peut survivre uniquement comme vague finie, par exemple « Dette d’observabilité 2026 ». Retirer les candidats sans défaut observé et les abstractions encore spéculatives."
+    }
+  },
+  {
+    "name": "Synthèse vocale (TTS)",
+    "state": "",
+    "priority": "1",
+    "taskType": "Chercher",
+    "complete": "oui",
+    "target": "",
+    "doneDefinition": "l'investigation TTS est close — un moteur retenu pour un premier prototype de lecture vocale des réponses (boucle raccourci → réponse → voix), arbitré après un test d'écoute A/B du français sur du texte Deckle réel, contrainte runtime AMD+Windows et licence tranchées.",
+    "archived": "oui",
+    "checklist": [],
+    "prose": "",
+    "recommendation": {
+      "outcomeLabel": "Archiver — terminé",
+      "priority": "",
+      "confidence": "fort",
+      "rationale": "Recherche déjà arbitrée et archivée. Son résultat vit dans « Portage TTS ONNX »."
+    }
+  }
+];
+      const planByName = {
+        "Revue multilingue": {
+          outcome: "idea", priority: "P1", targetTitle: "Revue multilingue", bucket: "parked",
+          relation: "À réactiver quand les surfaces et les identifiants Anytype sont stables.",
+          notes: "Le besoin est réel mais une passe maintenant traduirait une surface encore mouvante. Garder une seule idée déclenchée par le gel des libellés ; ne créer ni chantier ni tâches avant ce signal.",
+          defaultSubtaskOutcome: "body"
+        },
+        "Touchpad virtuel": {
+          outcome: "project", priority: "P4", targetTitle: "Touchpad virtuel", bucket: "now", needsReview: true,
+          relation: "Deckle — Epic permanent. Branche feat/precision-wheel-scroll à éprouver avant intégration.",
+          notes: "L’architecture et l’implémentation existent déjà. Ce n’est plus un chantier de construction mais une courte boucle de preuve perceptuelle : tester, calibrer, puis fusionner ou abandonner sans nouvelle couche d’abstraction.",
+          defaultSubtaskOutcome: "task",
+          subtaskOutcomes: { "7": "merge" },
+          proposedTasks: [
+            "Éprouver le scroll dans Explorer, navigateur, WinUI, fenêtre élevée et usage prolongé.",
+            "Confirmer l’interception sans récursion ni double défilement.",
+            "Calibrer le mapping sur le ressenti mesuré, puis fusionner la branche ou arrêter."
+          ]
+        },
+        "Scroll de précision": {
+          outcome: "obsolete", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Doublon absorbé par Touchpad virtuel.",
+          notes: "Ancienne preuve technique devenue un doublon exact. Archiver sans migrer ses sous-éléments.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Correcteur de confiance": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Le résultat reste une fondation du correcteur actuel.",
+          notes: "Définition de fini satisfaite et objet déjà coché. Archiver comme historique livré.",
+          defaultSubtaskOutcome: "done"
+        },
+        "Extensions déterministes": {
+          outcome: "merge", priority: "P5", targetTitle: "Correcteur — confiance et reprise", bucket: "reworked",
+          relation: "Fusionner dans le chantier Correcteur — confiance et reprise.",
+          notes: "Les extensions déterministes ne forment pas un produit autonome. La mesure récente montre une base déjà très précise ; ne garder que les familles justifiées par la télémétrie et abandonner le globish préventif.",
+          defaultSubtaskOutcome: "merge",
+          subtaskOutcomes: { "2": "obsolete" }
+        },
+        "Encart correctif": {
+          outcome: "project", priority: "P5", targetTitle: "Correcteur — confiance et reprise", bucket: "now",
+          relation: "Deckle — Epic permanent. Absorbe Autocorrection système, Extensions déterministes et Grammaire locale.",
+          notes: "C’est le bon contenant pour la suite réelle du correcteur : rendre les corrections reprises, expirables et apprenantes. Le modèle Qwen borné et le correcteur déterministe existent déjà ; la lacune produit est désormais la confiance en usage.",
+          defaultSubtaskOutcome: "task",
+          subtaskOutcomes: { "2": "body", "4": "merge" },
+          proposedTasks: [
+            "Afficher le diff sans activation et permettre reprendre/réappliquer explicitement.",
+            "Expirer l’offre dès que cible, contenu ou focus divergent.",
+            "Transformer le refus explicite en signal négatif borné.",
+            "Finir les familles déterministes seulement à partir de télémétrie observée."
+          ]
+        },
+        "Grammaire locale": {
+          outcome: "merge", priority: "P5", targetTitle: "Correcteur — confiance et reprise", bucket: "reworked",
+          relation: "Fusionner dans le chantier Correcteur — confiance et reprise.",
+          notes: "L’objet décrit un futur qui a déjà changé : le dépôt possède GrammarCorrector, Qwen3 et un juge de propositions bornées. Conserver seulement la calibration réelle du pipeline hybride ; ne pas recréer un chantier modèle séparé.",
+          defaultSubtaskOutcome: "done",
+          subtaskOutcomes: { "3": "merge", "4": "obsolete" }
+        },
+        "Qualification Qwen": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Conclusion absorbée par Correcteur — confiance et reprise.",
+          notes: "L’enquête a déjà produit sa décision : aucun petit modèle testé n’est assez sûr pour réécrire silencieusement une phrase libre ; Qwen3 reste utile comme juge borné de candidats vérifiés. Archiver l’investigation au lieu de la relancer sous le nom Qwen 3.5.",
+          defaultSubtaskOutcome: "done"
+        },
+        "Réécriture de sélection": {
+          outcome: "project", priority: "P3", targetTitle: "Réécriture assistée", bucket: "next",
+          relation: "Deckle — Epic permanent. Absorbe Retaille de paragraphe.",
+          notes: "La réécriture de paragraphe et son offre existent déjà. Le chantier restant est une interaction assistée commune : valider le chemin livré, puis l’étendre à une sélection avec identité d’instantané et péremption strictes.",
+          defaultSubtaskOutcome: "body",
+          subtaskOutcomes: { "0": "task", "2": "task" },
+          proposedTasks: [
+            "Valider et calibrer l’offre de réécriture de paragraphe déjà livrée.",
+            "Prouver la capture fiable d’une sélection sur les surfaces UIA visées.",
+            "Livrer le trajet sélection → service partagé → offre → remplacement conditionnel."
+          ]
+        },
+        "Espace connaissance Deckle": {
+          outcome: "obsolete", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Remplacé par les espaces Anytype et le backend Deckle.Anytype existants.",
+          notes: "L’hypothèse de départ a été dépassée par l’implémentation réelle. Archiver sans extraire de nouvelles tâches.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Setup & installateur": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les défauts futurs seront des tâches du module concerné, pas une suite perpétuelle de l’installateur.",
+          notes: "Installateur, sélection des modules, mise à jour, modèle par défaut et relocalisation sont livrés. La vérification Home restante ne justifie pas de maintenir le chantier ouvert ; rouvrir uniquement sur défaut reproductible.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Retaille de paragraphe": {
+          outcome: "merge", priority: "P3", targetTitle: "Réécriture assistée", bucket: "reworked",
+          relation: "Fusionner dans Réécriture assistée.",
+          notes: "Le service partagé, le gate de diff, le câblage et la fenêtre d’offre sont présents dans main. Garder seulement une tâche de validation/calibration dans le nouveau chantier.",
+          defaultSubtaskOutcome: "merge",
+          subtaskOutcomes: { "1": "done", "2": "done", "3": "merge" }
+        },
+        "Explorer Rampart": {
+          outcome: "abandon", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Réouvrir seulement si Deckle transmet réellement du contenu capturé à un service externe.",
+          notes: "Rampart est un modèle de masquage PII côté client, utile avant un envoi à un modèle hébergé. Deckle vise le local et le sujet actuel est la protection de copies gérées au repos : l’intégrer maintenant ajouterait un classifieur sans menace correspondante.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Refonte LogWindow": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les écarts visibles futurs deviennent des tâches ponctuelles de LogWindow.",
+          notes: "La refonte, les filtres, les lignes structurées, la copie et la passe visuelle ont été livrés. Deux anciennes cases de validation ne valent pas un chantier permanent ; archiver et laisser l’usage réel rouvrir un défaut précis.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Module Mail": {
+          outcome: "idea", priority: "P0", targetTitle: "Module Mail", bucket: "parked",
+          relation: "Idée produit hors backlog actif.",
+          notes: "Le cadrage est bon mais représente un module entier, sans signal récent d’activation. Conserver une seule idée avec sa scène cible ; ne migrer aucune sous-tâche avant que le module redevienne une intention explicite.",
+          defaultSubtaskOutcome: "body"
+        },
+        "Ambient lighting": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "La suite produit vit dans Comportement Ambient.",
+          notes: "Socle technique livré et validé. Archiver comme historique.",
+          defaultSubtaskOutcome: "done"
+        },
+        "Refonte Settings": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les écarts futurs appartiennent directement à la page ou au module concerné.",
+          notes: "Registry, navigation, recherche, composer, resets et doctrine sont déjà matérialisés. Les entrées restantes sont vagues ou non confirmées ; elles ne justifient plus un chantier.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Comportement Ambient": {
+          outcome: "project", priority: "P3", targetTitle: "Comportement Ambient", bucket: "next", needsReview: true,
+          relation: "Deckle — Epic permanent.",
+          notes: "Chantier produit cohérent : calibrer un comportement de référence avant d’ajouter des profils. Louis doit juger le rendu réel ; l’interpolateur adaptatif et l’activation par application restent conditionnés à un défaut mesuré.",
+          defaultSubtaskOutcome: "task",
+          subtaskOutcomes: { "0": "body", "2": "body", "5": "body" },
+          proposedTasks: [
+            "Calibrer Realistic sur contenus SDR et HDR avec Louis.",
+            "Mesurer les défauts de l’EMA et ne construire un smoothing adaptatif que s’ils persistent.",
+            "Recomposer les profils depuis Realistic, puis décider l’activation par application."
+          ]
+        },
+        "Logo SVG": {
+          outcome: "abandon", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Recréer une tâche le jour où un canal de distribution exige réellement un SVG.",
+          notes: "C’est une solution sans besoin actif. Le logo matriciel ne bloque actuellement ni le produit ni la distribution ; supprimer le sujet du backlog.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "MCP Anytype": {
+          outcome: "project", priority: "P5", targetTitle: "Refonte du système Anytype", bucket: "now",
+          relation: "Deckle — Epic permanent. Projet de migration du modèle de travail, pas suite infinie du MCP.",
+          notes: "Le MCP historique est livré. Réutiliser l’objet comme chantier de refonte : Deckle devient l’Epic permanent, Project devient Chantier cochable, Task devient l’unité d’exécution. Les anciennes dettes techniques non observées sont écartées de cette migration.",
+          defaultSubtaskOutcome: "obsolete",
+          proposedTasks: [
+            "Passer Deckle de Project à Epic et régler Project sur le layout Action.",
+            "Figer le vocabulaire, les relations et le signal canonique de fin Project/Task.",
+            "Tester le modèle sur un petit échantillon avant migration globale.",
+            "Appliquer les décisions de cet audit : renommer, retyper, relier et archiver.",
+            "Aligner les gestes PM du MCP, leurs descriptions et leurs tests sur le nouveau modèle."
+          ]
+        },
+        "Nettoyage périodique Anytype par agents": {
+          outcome: "obsolete", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Ne pas fusionner dans la refonte Anytype tant que la dérive n’est pas répétée.",
+          notes: "Une automation avant stabilisation du modèle automatiserait surtout le mauvais classement. Faire la migration une fois ; ne recréer une maintenance périodique qu’après plusieurs dérives observées.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Transcription de fichiers": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les V2 optionnelles ne sont pas conservées sans besoin utilisateur explicite.",
+          notes: "La V1 complète est livrée : décodage, entrée moteur, interface et écriture disque. Supprimer du backlog la réécriture des longs fichiers et la progression fine tant qu’elles ne manquent pas en usage.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Autocorrection système": {
+          outcome: "merge", priority: "P5", targetTitle: "Correcteur — confiance et reprise", bucket: "reworked",
+          relation: "Fusionner dans Correcteur — confiance et reprise.",
+          notes: "L’ancien umbrella mélange du livré, du périmé et la suite réelle. La suite tient dans l’encart de reprise et l’amélioration mesurée des candidats ; les surfaces de dictionnaire et l’élagage périodique sont supprimés faute de douleur actuelle.",
+          defaultSubtaskOutcome: "merge",
+          subtaskOutcomes: { "0": "done", "1": "obsolete", "3": "merge", "4": "obsolete", "5": "done", "7": "done", "8": "done", "9": "obsolete", "10": "obsolete" }
+        },
+        "Chiffrement au repos": {
+          outcome: "project", priority: "P4", targetTitle: "Protection des copies gérées", bucket: "next",
+          relation: "Deckle — Epic permanent. S’appuie sur le vocabulaire Deckle.Security déjà figé.",
+          notes: "Le bon sujet n’est pas « tout chiffrer au maximum », mais protéger toute copie de contenu capturé dont Deckle garde la maîtrise, dans la frontière de la session Windows de confiance. Les sorties explicitement demandées par l’utilisateur restent hors de cette garde.",
+          defaultSubtaskOutcome: "task",
+          subtaskOutcomes: { "0": "done", "2": "obsolete", "3": "done" },
+          proposedTasks: [
+            "Inventorier les copies gérées de contenu capturé et leur cycle de vie.",
+            "Choisir un format versionné, authentifié et protégé par l’autorité Windows de l’utilisateur.",
+            "Migrer corpus, télémétrie contenant du texte et futures copies gérées.",
+            "Tester migration, rétention, effacement et échec de déchiffrement sans remplacement silencieux."
+          ]
+        },
+        "Transcription vocale": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les améliorations ciblées vivent dans Qualité du streaming.",
+          notes: "Le produit de base est livré. Archiver le contenant historique.",
+          defaultSubtaskOutcome: "done"
+        },
+        "DSP pré-traitement transcription": {
+          outcome: "abandon", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Réouvrir uniquement si une mesure WER isole un gain reproductible.",
+          notes: "Le stage n’a ni gain mesuré ni problème utilisateur actuel. Le garder optionnel augmente les combinaisons et la dette de réglage ; retirer le sujet du backlog.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Suites trackpad": {
+          outcome: "abandon", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les besoins concrets futurs seront créés dans le module qui les porte.",
+          notes: "Le contenant mélange une migration de hotkeys, une piste USB bloquée et des toggles indéfinis. Aucun ensemble ne forme un chantier cohérent ; dissoudre sans migrer.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Portage TTS ONNX": {
+          outcome: "idea", priority: "P1", targetTitle: "Portage TTS ONNX", bucket: "parked",
+          relation: "Idée technique réactivée seulement par un cas d’usage vocal explicitement choisi.",
+          notes: "Le portage représente plusieurs graphes, une boucle autorégressive, du provisioning et une UI, tandis que Deckle.Speech reste un squelette dormant. Conserver le cadrage dans une idée ; ne créer aucune tâche tant que la lecture vocale n’est pas revenue dans les priorités.",
+          defaultSubtaskOutcome: "body"
+        },
+        "Scission Playground": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les besoins futurs appartiennent à la page HUD ou Ambient concernée.",
+          notes: "La scission structurante est livrée. Toolbar, polish, persistance et inspection RMS sont des pistes dispersées et non des suites obligatoires ; les supprimer du backlog jusqu’à défaut observé.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Composition HUD": {
+          outcome: "idea", priority: "P1", targetTitle: "Composition HUD", bucket: "parked",
+          relation: "Idée de passe visuelle, hors backlog actif.",
+          notes: "Le sujet est une exploration de rendu et non une livraison urgente. Garder les choix perceptuels dans le corps de l’idée ; supprimer couleur d’accent, bordure d’utterance et optimisation ResizeCoalescer tant qu’aucun défaut n’est mesuré.",
+          defaultSubtaskOutcome: "body",
+          subtaskOutcomes: { "4": "obsolete", "5": "obsolete", "6": "obsolete" }
+        },
+        "Lag de capture": {
+          outcome: "task", priority: "P3", targetTitle: "Confirmer la disparition du lag de capture", bucket: "reworked",
+          relation: "Tâche du chantier Qualité du streaming.",
+          notes: "Le correctif existe ; il reste une vérification bornée, pas un chantier. Observer quelques sessions, puis retirer la sonde si le lag ne récidive pas. Ne concevoir un thread dédié qu’après récidive mesurée.",
+          defaultSubtaskOutcome: "body",
+          subtaskOutcomes: { "2": "obsolete" }
+        },
+        "Investigation ASR": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Whisper reste le moteur tant qu’un défaut mesuré ne justifie pas une nouvelle enquête.",
+          notes: "Le balayage n’a produit aucun remplaçant local, français et DirectML suffisamment crédible. La bonne décision est de fermer la veille ouverte et d’améliorer le streaming actuel ; rouvrir sur déclencheur, pas sur curiosité permanente.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Suites streaming": {
+          outcome: "project", priority: "P3", targetTitle: "Qualité du streaming", bucket: "next",
+          relation: "Deckle — Epic permanent. Accueille la tâche Lag de capture.",
+          notes: "Conserver seulement les problèmes observables : seuil adaptatif, métriques honnêtes, coupures de phrase et lag. Double VAD, cache persistant et IOBinding sont des solutions spéculatives à supprimer jusqu’à preuve chiffrée.",
+          defaultSubtaskOutcome: "obsolete",
+          subtaskOutcomes: { "0": "task", "1": "task", "2": "task", "5": "body", "6": "body" },
+          proposedTasks: [
+            "Adapter le seuil de segmentation au noise floor.",
+            "Rendre la décomposition de latence fidèle au pipeline actuel.",
+            "Traiter les coupures de phrase seulement après reproduction sur corpus réel.",
+            "Confirmer la disparition du lag et retirer sa sonde affinée.",
+            "Mesurer warm-up et résidence mémoire avant toute politique de cache."
+          ]
+        },
+        "Extension CmdPal": {
+          outcome: "abandon", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Recréer une tâche uniquement lorsqu’une action Deckle concrète mérite d’être exposée dans Command Palette.",
+          notes: "La plateforme d’extension CmdPal est désormais réelle et documentée ; la faisabilité n’est plus le problème. Aucun usage Deckle précis n’est défini, donc construire une extension maintenant serait de l’intégration pour l’intégration.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Taskbar overlay": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Module livré.",
+          notes: "Objet terminé et archivé ; conserver comme historique seulement.",
+          defaultSubtaskOutcome: "done"
+        },
+        "Bugs & stabilité": {
+          outcome: "obsolete", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Les défauts reproductibles vont directement dans leur chantier propriétaire.",
+          notes: "Un bac permanent de bugs masque l’état réel. Le multi-instance et le tray ont été corrigés ; le lag est relogé ; les autres symptômes anciens ne sont pas confirmés. Dissoudre le contenant et recréer uniquement un défaut encore visible.",
+          defaultSubtaskOutcome: "obsolete",
+          subtaskOutcomes: { "0": "done", "1": "merge", "2": "done" }
+        },
+        "Observabilité": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "Chaque lacune future reste dans le chantier qui a besoin de sa mesure.",
+          notes: "Le socle opérationnel et LogWindow sont livrés. Les sous-keywords, providers et timers génériques sont des abstractions sans défaut actuel ; fermer la vague et instrumenter juste à temps.",
+          defaultSubtaskOutcome: "obsolete"
+        },
+        "Synthèse vocale (TTS)": {
+          outcome: "done", priority: "", targetTitle: "", bucket: "closed",
+          relation: "La conclusion éventuelle est conservée dans l’idée Portage TTS ONNX.",
+          notes: "Investigation déjà close et archivée. Aucun travail à migrer.",
+          defaultSubtaskOutcome: "done"
+        }
+      };
+
+      const storageKey = "deckle-anytype-audit-v2";
+      const legacyStorageKey = "deckle-anytype-audit-v1";
+      const outcomeOptions = [
+        ["", "À trancher"],
+        ["project", "Promouvoir en chantier"],
+        ["task", "Convertir en tâche"],
+        ["idea", "Convertir en idée"],
+        ["merge", "Fusionner"],
+        ["split", "Scinder"],
+        ["done", "Archiver — terminé"],
+        ["obsolete", "Archiver — obsolète"],
+        ["abandon", "Abandonner"]
+      ];
+      const subtaskOptions = [
+        ["", "À trancher"],
+        ["task", "Créer une tâche"],
+        ["body", "Garder dans le corps"],
+        ["done", "Déjà fait"],
+        ["obsolete", "Obsolète"],
+        ["merge", "Fusionner ailleurs"],
+        ["idea", "Convertir en idée"]
+      ];
+      const priorityOptions = ["", "P0", "P1", "P2", "P3", "P4", "P5"];
+
+      let currentName = "MCP Anytype";
+      let state = loadState();
+
+      function planFor(name) {
+        return planByName[name] || {
+          outcome: "", priority: "", targetTitle: "", relation: "", notes: "",
+          bucket: "reworked", needsReview: true, defaultSubtaskOutcome: ""
+        };
+      }
+
+      function seedDecision(candidate) {
+        const plan = planFor(candidate.name);
+        const subtasks = {};
+        candidate.checklist.forEach(function (item, index) {
+          const override = plan.subtaskOutcomes && plan.subtaskOutcomes[String(index)];
+          subtasks[index] = {
+            outcome: item.done ? "done" : (override || plan.defaultSubtaskOutcome || ""),
+            notes: ""
+          };
+        });
+        return {
+          outcome: plan.outcome || "",
+          priority: plan.priority || "",
+          targetTitle: plan.targetTitle || "",
+          relation: plan.relation || "",
+          notes: plan.notes || "",
+          needsReview: Boolean(plan.needsReview),
+          subtasks: subtasks
+        };
+      }
+
+      function normalizeState(incoming, isLegacy) {
+        const normalized = { version: 2, decisions: {} };
+        candidates.forEach(function (candidate) {
+          const seed = seedDecision(candidate);
+          const previous = incoming && incoming.decisions && incoming.decisions[candidate.name];
+          if (!previous) {
+            normalized.decisions[candidate.name] = seed;
+            return;
+          }
+          if (isLegacy) {
+            ["outcome", "priority", "targetTitle", "relation", "notes"].forEach(function (field) {
+              if (previous[field]) seed[field] = previous[field];
+            });
+            if (previous.validated === true) seed.needsReview = false;
+          } else {
+            ["outcome", "priority", "targetTitle", "relation", "notes"].forEach(function (field) {
+              if (Object.prototype.hasOwnProperty.call(previous, field)) seed[field] = previous[field];
+            });
+            if (Object.prototype.hasOwnProperty.call(previous, "needsReview")) seed.needsReview = Boolean(previous.needsReview);
+          }
+          Object.keys(previous.subtasks || {}).forEach(function (index) {
+            seed.subtasks[index] = Object.assign({}, seed.subtasks[index] || {}, previous.subtasks[index]);
+          });
+          normalized.decisions[candidate.name] = seed;
+        });
+        return normalized;
+      }
+
+      function loadState() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          if (parsed && parsed.version === 2 && parsed.decisions) return normalizeState(parsed, false);
+          const legacy = JSON.parse(localStorage.getItem(legacyStorageKey) || "{}");
+          if (legacy && legacy.version === 1 && legacy.decisions) return normalizeState(legacy, true);
+          return normalizeState(null, false);
+        } catch (error) {
+          return normalizeState(null, false);
+        }
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state));
+          const time = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date());
+          root.querySelector("#audit-save-status").textContent = "Enregistré à " + time;
+        } catch (error) {
+          root.querySelector("#audit-save-status").textContent = "Sauvegarde locale indisponible";
+          root.querySelector("#audit-save-status").classList.add("text-destructive");
+        }
+      }
+
+      function decisionFor(name) {
+        if (!state.decisions[name]) {
+          const candidate = candidates.find(function (item) { return item.name === name; });
+          state.decisions[name] = candidate ? seedDecision(candidate) : seedDecision({ name: name, checklist: [] });
+        }
+        return state.decisions[name];
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function optionMarkup(options, selected) {
+        return options.map(function (entry) {
+          return '<option value="' + escapeHtml(entry[0]) + '"' + (entry[0] === selected ? " selected" : "") + ">" + escapeHtml(entry[1]) + "</option>";
+        }).join("");
+      }
+
+      function priorityMarkup(selected) {
+        return priorityOptions.map(function (value) {
+          return '<option value="' + value + '"' + (value === selected ? " selected" : "") + ">" + (value || "À trancher") + "</option>";
+        }).join("");
+      }
+
+      function labelFor(options, value) {
+        const match = options.find(function (entry) { return entry[0] === value; });
+        return match ? match[1] : "À trancher";
+      }
+
+      function currentCandidate() {
+        return candidates.find(function (candidate) { return candidate.name === currentName; }) || candidates[0];
+      }
+
+      function renderPicker() {
+        const picker = root.querySelector("#audit-picker");
+        picker.innerHTML = candidates.map(function (candidate) {
+          const decision = decisionFor(candidate.name);
+          const marker = decision.needsReview ? "! " : "✓ ";
+          return '<option value="' + escapeHtml(candidate.name) + '"' + (candidate.name === currentName ? " selected" : "") + ">" + marker + escapeHtml(candidate.name) + "</option>";
+        }).join("");
+      }
+
+      function renderDetail() {
+        const candidate = currentCandidate();
+        const decision = decisionFor(candidate.name);
+        const plan = planFor(candidate.name);
+        const currentMeta = [
+          candidate.state ? '<span class="viz-badge">' + escapeHtml(candidate.state) + "</span>" : "",
+          candidate.priority !== "" ? '<span class="viz-badge">P' + escapeHtml(candidate.priority) + "</span>" : "",
+          candidate.taskType ? '<span class="viz-badge">' + escapeHtml(candidate.taskType) + "</span>" : "",
+          candidate.complete === "oui" ? '<span class="viz-badge">Coché terminé</span>' : "",
+          candidate.archived === "oui" ? '<span class="viz-badge">Archivé</span>' : ""
+        ].filter(Boolean).join("");
+
+        const subtaskRows = candidate.checklist.length ? candidate.checklist.map(function (item, index) {
+          const itemDecision = decision.subtasks[index] || {};
+          const defaultDecision = Object.prototype.hasOwnProperty.call(itemDecision, "outcome") ? itemDecision.outcome : (item.done ? "done" : "");
+          return "<tr>" +
+            '<td class="' + (item.done ? "audit-complete" : "") + '">' + escapeHtml(item.label) + "</td>" +
+            '<td><select class="form-select" data-subtask="' + index + '" data-subfield="outcome">' + optionMarkup(subtaskOptions, defaultDecision) + "</select></td>" +
+            '<td><input class="form-control audit-subtask-note" type="text" data-subtask="' + index + '" data-subfield="notes" value="' + escapeHtml(itemDecision.notes || "") + '" aria-label="Précision pour ' + escapeHtml(item.label) + '"></td>' +
+            "</tr>";
+        }).join("") : '<tr><td colspan="3" class="text-muted">Aucun sous-élément actuel.</td></tr>';
+
+        const proposedTasks = plan.proposedTasks && plan.proposedTasks.length
+          ? '<div class="card audit-plan-card"><div class="audit-section-head"><h3>Tâches proposées</h3><span class="text-small text-muted">' + plan.proposedTasks.length + " tâches maximum</span></div><ul>" +
+              plan.proposedTasks.map(function (task) { return "<li>" + escapeHtml(task) + "</li>"; }).join("") +
+            "</ul></div>"
+          : "";
+
+        root.querySelector("#audit-detail").innerHTML =
+          '<div class="audit-section-head">' +
+            "<div><h2>" + escapeHtml(candidate.name) + "</h2><div class=\"audit-meta\">" + currentMeta + "</div></div>" +
+            '<label class="form-check form-switch">' +
+              '<input class="form-check-input" id="audit-needs-review" type="checkbox" data-field="needsReview"' + (decision.needsReview ? " checked" : "") + ">" +
+              '<span class="form-check-label">À revoir avec Louis</span>' +
+            "</label>" +
+          "</div>" +
+          '<div class="card audit-recommendation">' +
+            '<div class="audit-meta"><span class="viz-badge">' + escapeHtml(labelFor(outcomeOptions, decision.outcome)) + "</span>" +
+            (decision.priority ? '<span class="viz-badge">' + escapeHtml(decision.priority) + "</span>" : "") +
+            '<span class="text-small text-muted">Tri instruit depuis Anytype et le dépôt</span></div>' +
+            "<p>" + escapeHtml(plan.notes) + "</p>" +
+          "</div>" +
+          proposedTasks +
+          '<div class="audit-field-grid">' +
+            '<label class="form-label audit-field"><span>Décision de migration</span><select class="form-select" data-field="outcome">' + optionMarkup(outcomeOptions, decision.outcome) + "</select></label>" +
+            '<label class="form-label audit-field"><span>Priorité cible</span><select class="form-select" data-field="priority">' + priorityMarkup(decision.priority) + "</select></label>" +
+            '<label class="form-label audit-field"><span>Titre cible</span><input class="form-control" type="text" data-field="targetTitle" value="' + escapeHtml(decision.targetTitle) + '"></label>' +
+            '<label class="form-label audit-field"><span>Projet lié, fusion ou dépendance</span><input class="form-control" type="text" data-field="relation" value="' + escapeHtml(decision.relation) + '"></label>' +
+            '<label class="form-label audit-field audit-field-wide"><span>Décision et précisions</span><textarea class="form-control" data-field="notes">' + escapeHtml(decision.notes) + "</textarea></label>" +
+          "</div>" +
+          "<details>" +
+            "<summary>Voir le contexte actuel</summary>" +
+            (candidate.doneDefinition ? "<p><strong>Définition de fini actuelle</strong><br>" + escapeHtml(candidate.doneDefinition) + "</p>" : "") +
+            (candidate.target ? "<p><strong>Date cible actuelle</strong><br>" + escapeHtml(candidate.target.slice(0, 10)) + "</p>" : "") +
+            (candidate.prose ? '<pre class="audit-context">' + escapeHtml(candidate.prose) + "</pre>" : '<p class="text-muted">Aucun corps exploitable.</p>') +
+          "</details>" +
+          '<div class="audit-section">' +
+            '<div class="audit-section-head"><h3>Sous-éléments actuels</h3><span class="text-small text-muted">' + candidate.checklist.length + " au total</span></div>" +
+            '<div class="table-responsive"><table class="table table-sm">' +
+              "<thead><tr><th scope=\"col\">Élément</th><th scope=\"col\">Destination</th><th scope=\"col\">Précision</th></tr></thead>" +
+              "<tbody>" + subtaskRows + "</tbody>" +
+            "</table></div>" +
+          "</div>";
+      }
+
+      function renderPlan() {
+        const bucketLabels = { now: "Maintenant", next: "Ensuite" };
+        const bucketDescriptions = {
+          now: "À finir ou engager sans ouvrir un nouveau front.",
+          next: "À reprendre une fois la vague actuelle stabilisée."
+        };
+        const projectPlans = candidates.map(function (candidate) {
+          return { candidate: candidate, plan: planFor(candidate.name), decision: decisionFor(candidate.name) };
+        }).filter(function (entry) {
+          return entry.decision.outcome === "project";
+        }).sort(function (left, right) {
+          const bucketOrder = { now: 0, next: 1 };
+          const leftBucket = Object.prototype.hasOwnProperty.call(bucketOrder, left.plan.bucket) ? bucketOrder[left.plan.bucket] : 9;
+          const rightBucket = Object.prototype.hasOwnProperty.call(bucketOrder, right.plan.bucket) ? bucketOrder[right.plan.bucket] : 9;
+          const byBucket = leftBucket - rightBucket;
+          if (byBucket !== 0) return byBucket;
+          return String(right.decision.priority).localeCompare(String(left.decision.priority));
+        });
+        root.querySelector("#audit-plan").innerHTML = ["now", "next"].map(function (bucket) {
+          const entries = projectPlans.filter(function (entry) { return entry.plan.bucket === bucket; });
+          if (!entries.length) return "";
+          const cards = entries.map(function (entry) {
+            const tasks = entry.plan.proposedTasks || [];
+            return '<article class="card audit-plan-card">' +
+              '<div class="audit-meta"><span class="viz-badge">' + escapeHtml(entry.decision.priority || "Sans priorité") + "</span>" +
+              (entry.decision.needsReview ? '<span class="viz-badge">Passage Louis</span>' : "") + "</div>" +
+              "<h3>" + escapeHtml(entry.decision.targetTitle) + "</h3>" +
+              "<p>" + escapeHtml(entry.plan.notes.split(".")[0] + ".") + "</p>" +
+              (tasks.length ? "<details><summary>" + tasks.length + " tâches proposées</summary><ul>" + tasks.map(function (task) { return "<li>" + escapeHtml(task) + "</li>"; }).join("") + "</ul></details>" : "") +
+              '<button class="btn btn-ghost audit-name-button" type="button" data-select="' + escapeHtml(entry.candidate.name) + '">Voir la décision source</button>' +
+            "</article>";
+          }).join("");
+          return '<section class="audit-plan-group" aria-label="' + escapeHtml(bucketLabels[bucket]) + '">' +
+            '<div class="audit-section-head"><div><h3>' + escapeHtml(bucketLabels[bucket]) + '</h3><p class="text-muted">' + escapeHtml(bucketDescriptions[bucket]) + '</p></div>' +
+            '<span class="viz-badge">' + entries.length + " chantiers</span></div>" +
+            '<div class="viz-grid audit-plan-grid">' + cards + "</div>" +
+          "</section>";
+        }).join("");
+      }
+
+      function outcomeGroup(outcome) {
+        if (outcome === "project") return "project";
+        if (outcome === "done" || outcome === "obsolete" || outcome === "abandon") return "archive";
+        if (outcome === "merge" || outcome === "split" || outcome === "task" || outcome === "idea") return "rework";
+        return "";
+      }
+
+      function renderInventory() {
+        const query = root.querySelector("#audit-search").value.trim().toLocaleLowerCase("fr");
+        const filter = root.querySelector("#audit-filter").value;
+        const rows = candidates.filter(function (candidate) {
+          const decision = decisionFor(candidate.name);
+          const plan = planFor(candidate.name);
+          const haystack = (candidate.name + " " + decision.targetTitle + " " + plan.notes + " " + decision.relation).toLocaleLowerCase("fr");
+          if (query && !haystack.includes(query)) return false;
+          if (filter === "unreviewed" && !decision.needsReview) return false;
+          if (filter === "undecided" && decision.outcome) return false;
+          if (["project", "archive", "rework"].includes(filter) && outcomeGroup(decision.outcome) !== filter) return false;
+          return true;
+        }).map(function (candidate) {
+          const decision = decisionFor(candidate.name);
+          return "<tr>" +
+            '<td><button class="btn btn-ghost audit-name-button" type="button" data-select="' + escapeHtml(candidate.name) + '">' + escapeHtml(candidate.name) + "</button></td>" +
+            '<td class="audit-current">' + escapeHtml(candidate.state || "—") + "</td>" +
+            '<td class="audit-current">' + (candidate.priority !== "" ? "P" + escapeHtml(candidate.priority) : "—") + "</td>" +
+            "<td>" + escapeHtml(decision.targetTitle || decision.relation || "—") + "</td>" +
+            "<td>" + escapeHtml(labelFor(outcomeOptions, decision.outcome)) + "</td>" +
+            '<td class="text-center">' + (decision.needsReview ? "!" : "—") + "</td>" +
+          "</tr>";
+        });
+        root.querySelector("#audit-inventory").innerHTML = rows.join("");
+        root.querySelector("#audit-no-results").hidden = rows.length !== 0;
+      }
+
+      function renderStats() {
+        const decisions = candidates.map(function (candidate) { return decisionFor(candidate.name); });
+        const reviewed = decisions.filter(function (decision) { return Boolean(decision.outcome); }).length;
+        const undecided = decisions.filter(function (decision) { return decision.needsReview; }).length;
+        let subtasks = 0;
+        candidates.forEach(function (candidate) {
+          const decision = decisionFor(candidate.name);
+          candidate.checklist.forEach(function (item, index) {
+            const selected = decision.subtasks[index] && decision.subtasks[index].outcome;
+            if (!selected && !item.done) subtasks += 1;
+          });
+        });
+        root.querySelector("#audit-reviewed").textContent = reviewed + " / " + candidates.length;
+        root.querySelector("#audit-undecided").textContent = String(undecided);
+        root.querySelector("#audit-subtasks").textContent = String(subtasks);
+      }
+
+      function renderAll() {
+        renderPlan();
+        renderPicker();
+        renderDetail();
+        renderInventory();
+        renderStats();
+      }
+
+      function updateDecisionFromControl(control) {
+        const decision = decisionFor(currentName);
+        if (control.dataset.field) {
+          decision[control.dataset.field] = control.type === "checkbox" ? control.checked : control.value;
+        }
+        if (control.dataset.subtask != null) {
+          const index = control.dataset.subtask;
+          if (!decision.subtasks[index]) decision.subtasks[index] = {};
+          decision.subtasks[index][control.dataset.subfield] = control.value;
+        }
+        saveState();
+        renderPlan();
+        renderPicker();
+        renderInventory();
+        renderStats();
+      }
+
+      root.addEventListener("input", function (event) {
+        if (event.target.matches("[data-field], [data-subtask]")) updateDecisionFromControl(event.target);
+        if (event.target.id === "audit-search") renderInventory();
+      });
+
+      root.addEventListener("change", function (event) {
+        if (event.target.matches("[data-field], [data-subtask]")) updateDecisionFromControl(event.target);
+        if (event.target.id === "audit-picker") {
+          currentName = event.target.value;
+          renderDetail();
+        }
+        if (event.target.id === "audit-filter") renderInventory();
+      });
+
+      root.addEventListener("click", function (event) {
+        const selectButton = event.target.closest("[data-select]");
+        if (selectButton) {
+          currentName = selectButton.dataset.select;
+          renderPicker();
+          renderDetail();
+          root.querySelector("#audit-detail").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        if (event.target.id === "audit-next") {
+          const currentIndex = candidates.findIndex(function (candidate) { return candidate.name === currentName; });
+          let next = null;
+          for (let offset = 1; offset <= candidates.length; offset += 1) {
+            const candidate = candidates[(currentIndex + offset) % candidates.length];
+            if (decisionFor(candidate.name).needsReview) {
+              next = candidate;
+              break;
+            }
+          }
+          if (next) {
+            currentName = next.name;
+            renderPicker();
+            renderDetail();
+          }
+        }
+        if (event.target.id === "audit-export") {
+          const snapshot = {
+            schema: "deckle-anytype-audit",
+            version: 2,
+            exportedAt: new Date().toISOString(),
+            state: state,
+            inventory: candidates
+          };
+          const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = "deckle-anytype-audit.json";
+          anchor.click();
+          URL.revokeObjectURL(url);
+        }
+      });
+
+      root.querySelector("#audit-import").addEventListener("change", function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener("load", function () {
+          try {
+            const payload = JSON.parse(String(reader.result));
+            const incoming = payload.state || payload;
+            if (!incoming || ![1, 2].includes(incoming.version) || !incoming.decisions) throw new Error("format");
+            state = normalizeState(incoming, incoming.version === 1);
+            saveState();
+            renderAll();
+          } catch (error) {
+            root.querySelector("#audit-save-status").textContent = "Ce fichier ne contient pas un audit compatible";
+            root.querySelector("#audit-save-status").classList.add("text-destructive");
+          }
+        });
+        reader.readAsText(file);
+      });
+
+      renderAll();
+      saveState();
+    }());
+  </script>
+</div>
+
+<script src="https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js"></script>
+<script src="https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js"></script>
+<script>
+(() => {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set(["top", "right", "bottom", "left"]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =>
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest("[data-tooltip]")
+      : null;
+  const containsTarget = (trigger, target) =>
+    target?.nodeType != null && trigger.contains(target);
+  const getContent = (trigger) =>
+    trigger.getAttribute("data-tooltip")?.trim() ?? "";
+  const getPlacement = (trigger) => {
+    const placement = trigger.getAttribute("data-tooltip-placement");
+    return tooltipPlacements.has(placement) ? placement : "top";
+  };
+  const getTooltip = () => {
+    if (tooltip == null) {
+      tooltip = document.createElement("div");
+      tooltip.id = tooltipId;
+      tooltip.className = "tooltip";
+      tooltip.setAttribute("role", "tooltip");
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) => {
+    const ids = new Set(
+      (trigger.getAttribute("aria-describedby") ?? "")
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute("aria-describedby");
+    } else {
+      trigger.setAttribute("aria-describedby", [...ids].join(" "));
+    }
+  };
+  const clearOpenTimeout = () => {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) => {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) => {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              "--tooltip-available-width",
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              "--tooltip-available-height",
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: "fixed",
+    })
+      .then(({ x, y }) => {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = "visible";
+      })
+      .catch(() => {
+        if (activeTrigger === trigger && request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) => {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = "hidden";
+    floating.style.transform = "translate(0, 0)";
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () => {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) => {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() < skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() => {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(":focus-visible")) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) => {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () => {
+    closeTooltip(false);
+    document.removeEventListener("pointerover", handlePointerOpen);
+    document.removeEventListener("pointerout", handleLeave);
+    document.removeEventListener("focusin", handleFocusIn);
+    document.removeEventListener("focusout", handleLeave);
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("contextmenu", handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener("pointerover", handlePointerOpen);
+  document.addEventListener("pointerout", handleLeave);
+  document.addEventListener("focusin", handleFocusIn);
+  document.addEventListener("focusout", handleLeave);
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("contextmenu", handleContextMenu);
+  window.addEventListener("pagehide", destroy, { once: true });
+})();
+</script>
+<script id="codex-visualization-lucide" async src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js"></script>
+<script>
+(() => {
+  const initialize = () => {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById("codex-visualization-lucide")
+    ?.addEventListener("load", initialize, { once: true });
+})();
+</script>
+
+</body>
+</html>
