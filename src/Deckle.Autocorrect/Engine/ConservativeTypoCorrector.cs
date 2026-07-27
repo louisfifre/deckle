@@ -32,6 +32,7 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
     private readonly TypoOptions _options;
     private readonly AccentIndex? _accentIndex;
     private readonly VerbMorphology? _verbs;
+    private readonly CandidateSearchObserver? _candidateSearchObserver;
 
     public ConservativeTypoCorrector(
         IFrequencyLexicon french,
@@ -40,6 +41,20 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         TypoOptions? options = null,
         AccentIndex? accentIndex = null,
         VerbMorphology? verbs = null)
+        : this(
+            french, english, personal, options, accentIndex, verbs,
+            candidateSearchObserver: null)
+    {
+    }
+
+    internal ConservativeTypoCorrector(
+        IFrequencyLexicon french,
+        IFrequencyLexicon? english,
+        IPersonalLexicon? personal,
+        TypoOptions? options,
+        AccentIndex? accentIndex,
+        VerbMorphology? verbs,
+        CandidateSearchObserver? candidateSearchObserver)
     {
         _french = french;
         _english = english;
@@ -47,6 +62,7 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         _options = options ?? new TypoOptions();
         _accentIndex = accentIndex;
         _verbs = verbs;
+        _candidateSearchObserver = candidateSearchObserver;
     }
 
     public CorrectionDecision? Evaluate(
@@ -110,7 +126,8 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
             morphology?.Abstain(CorrectionTrace.Reasons.NoSubjectPronoun);
 
         // Near tier: a single edit away — the high-confidence case.
-        var near = ValidNeighbours(lower, twoEdits: false);
+        var near = ValidNeighbours(
+            lower, twoEdits: false, CandidateSearchPath.Commit);
         if (near.Count > 0)
         {
             if (hasSubject)
@@ -143,7 +160,8 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
             && lower.Length >= _options.Edits2MinWordLength
             && lower.Length <= Edits2MaxWordLength)
         {
-            var far = ValidNeighbours(lower, twoEdits: true);
+            var far = ValidNeighbours(
+                lower, twoEdits: true, CandidateSearchPath.Commit);
             if (far.Count > 0)
             {
                 if (hasSubject)
@@ -278,11 +296,15 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
     private List<Candidate> ValidNeighbours(
         string w,
         bool twoEdits,
+        CandidateSearchPath searchPath,
         bool includeCoherentHorizontalShifts = false)
     {
         var generated = new HashSet<string>(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var found = new List<Candidate>();
+        bool observe = _candidateSearchObserver is not null;
+        int generatedCount = 0;
+        int distinctLookups = 0;
 
         void Add(string form, double frequency)
         {
@@ -293,6 +315,7 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         void Consider(string candidate)
         {
             if (candidate.Length == 0 || candidate == w || !generated.Add(candidate)) return;
+            if (observe) distinctLookups++;
             if (_french.Contains(candidate))
                 Add(candidate, _french.FrequencyOf(candidate));
 
@@ -304,19 +327,37 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         if (!twoEdits)
         {
             foreach (string e in Edits1(w))
+            {
+                if (observe) generatedCount++;
                 Consider(e);
+            }
             if (includeCoherentHorizontalShifts)
                 foreach (string shifted in QwertyAdjacency.CoherentHorizontalShifts(w))
+                {
+                    if (observe) generatedCount++;
                     Consider(shifted);
+                }
         }
         else
         {
             foreach (string e1 in Edits1(w))
+            {
+                if (observe) generatedCount++;
                 foreach (string e2 in Edits1(e1))
+                {
+                    if (observe) generatedCount++;
                     Consider(e2);
+                }
+            }
         }
 
         found.Sort(static (x, y) => y.Frequency.CompareTo(x.Frequency));
+        _candidateSearchObserver?.Invoke(new CandidateSearchObservation(
+            searchPath,
+            twoEdits ? 2 : 1,
+            generatedCount,
+            distinctLookups,
+            found.Count));
         return found;
     }
 

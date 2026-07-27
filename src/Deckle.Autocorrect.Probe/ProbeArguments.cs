@@ -6,6 +6,7 @@ internal enum ProbeMode
 {
     Single,
     Benchmark,
+    AutocorrectBenchmark,
 }
 
 internal sealed class ProbeArguments
@@ -16,6 +17,7 @@ internal sealed class ProbeArguments
     public required IReadOnlyList<double> Thresholds { get; init; }
     public required IReadOnlyList<string> Candidates { get; init; }
     public bool ShowCases { get; private init; }
+    public int Iterations { get; private init; }
 
     // The ONNX Runtime GenAI execution provider the judge loads onto: "dml" drives
     // the forced-decoding judge on the GPU (DirectML), "cpu" the built-in CPU EP.
@@ -32,6 +34,9 @@ internal sealed class ProbeArguments
         var candidates = new List<string>();
         bool showCases = false;
         string provider = "dml";
+        int iterations = 20;
+        bool iterationsSpecified = false;
+        bool modeSelected = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -41,7 +46,29 @@ internal sealed class ProbeArguments
 
             if (arg is "--benchmark")
             {
+                if (modeSelected)
+                    return null;
                 mode = ProbeMode.Benchmark;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--autocorrect-benchmark")
+            {
+                if (modeSelected)
+                    return null;
+                mode = ProbeMode.AutocorrectBenchmark;
+                modeSelected = true;
+                continue;
+            }
+
+            if (arg is "--iterations")
+            {
+                if (++i >= args.Length
+                    || !int.TryParse(args[i], out iterations)
+                    || iterations < 1)
+                    return null;
+                iterationsSpecified = true;
                 continue;
             }
 
@@ -100,6 +127,28 @@ internal sealed class ProbeArguments
             return null;
         }
 
+        if (iterationsSpecified && mode != ProbeMode.AutocorrectBenchmark)
+            return null;
+
+        if (mode == ProbeMode.AutocorrectBenchmark)
+        {
+            if (models.Count > 0 || thresholds.Count > 0 || candidates.Count > 0
+                || showCases || margin != 0.0 || provider != "dml")
+                return null;
+
+            return new ProbeArguments
+            {
+                Mode = mode,
+                Models = Array.Empty<ModelSpec>(),
+                Margin = 0.0,
+                Thresholds = Array.Empty<double>(),
+                Candidates = Array.Empty<string>(),
+                ShowCases = false,
+                Provider = provider,
+                Iterations = iterations,
+            };
+        }
+
         if (mode == ProbeMode.Single)
         {
             if (candidates.Count < 2)
@@ -116,6 +165,7 @@ internal sealed class ProbeArguments
                 Candidates = candidates,
                 ShowCases = showCases,
                 Provider = provider,
+                Iterations = iterations,
             };
         }
 
@@ -133,6 +183,7 @@ internal sealed class ProbeArguments
             Candidates = Array.Empty<string>(),
             ShowCases = showCases,
             Provider = provider,
+            Iterations = iterations,
         };
     }
 }
@@ -144,6 +195,7 @@ internal static class ProbeUsage
         Console.Error.WriteLine("Usage:");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --model <dir> [--margin <n>] [--provider <cpu|dml>] --candidate <text> --candidate <text> [...]");
         Console.Error.WriteLine("  Deckle.Autocorrect.Probe --benchmark [--model <label=dir>] [--threshold <n>] [--provider <cpu|dml>] [--show-cases]");
+        Console.Error.WriteLine("  Deckle.Autocorrect.Probe --autocorrect-benchmark [--iterations <n>]");
         Console.Error.WriteLine();
         Console.Error.WriteLine(
             "--provider selects the ONNX Runtime GenAI execution provider (default dml = GPU/DirectML; cpu = built-in CPU EP).");

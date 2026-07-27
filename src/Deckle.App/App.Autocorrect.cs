@@ -14,9 +14,9 @@ namespace Deckle.App;
 
 // Autocorrect module composition — same posture as App.Trackpad: the App owns
 // the engine and reconciles it with the persisted module settings. The engine
-// chains the diacritics restorer (lexical gate + bigram left-context) and a
-// conservative typo corrector (non-words → nearest common French word), wired
-// to the real keyboard, repairing words on enrolled surfaces. Enabled by
+// chains elision repair, unified physical-typo/morphological evidence, the
+// diacritics restorer (lexical gate + n-gram left context), then bounded grammar,
+// wired to the real keyboard and repairing words on enrolled surfaces. Enabled by
 // default (AutocorrectSettings); corrections land only on enrolled processes
 // (Notepad out of the box) and never on a password surface.
 //

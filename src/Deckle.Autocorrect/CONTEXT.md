@@ -6,7 +6,7 @@ type: agent-instructions
 
 # Deckle.Autocorrect — Context
 
-Vocabulary of the system-autocorrect workstream (machine-wide diacritics restoration first, conservative typo correction second). The Correction / Rewrite boundary that classifies what this module may do silently is system-wide language and lives in the root `CONTEXT.md`.
+Vocabulary of the system-autocorrect workstream (machine-wide bounded correction at word commit, then closed-candidate contextual correction). The Correction / Rewrite boundary that classifies what this module may do silently is system-wide language and lives in the root `CONTEXT.md`.
 
 ## Where correction may act
 
@@ -41,8 +41,12 @@ _Avoid_ : first pass (scope is the point, not order).
 A form the commit stage must never touch because it is valid in a recognized lexicon. Three tiers protect, one architecture: the *primary language* (swappable by design; French today, the large inflected lexicon), the permanent *global-English layer* (the same whatever the primary language), and the *personal vocabulary*. The English layer is deliberately *restricted* — a fixed seed of technical globish and brand names, plus what the user's own usage adopts (dictation transcriptions are a prime source) — never a full English dictionary, which would shield too many mangled French words. Protection is one-way: a valid English form is never corrected, but nothing is corrected *toward* English and English spelling is not repaired. Whether an English-shaped token was in fact a mangled French word is the sentence stage's call, made from the whole sentence.
 _Avoid_ : whitelist (protection gates correction, not observation), English lexicon as spelling authority.
 
+**Candidate ownership** :
+The provenance relationship between a sentence-stage candidate set and the commit policy that earned it. An untouched literal has no candidate owner, so bounded alternatives from several policies may coexist. An applied correction has one owner, and its takeback set remains that policy's set. The exact typed literal belongs to the set as the explicit keep choice.
+_Avoid_ : global candidate pool (candidate provenance determines correction rights, not only ranking).
+
 **Sentence stage** :
-The deferred correction layer that runs once at sentence close (the terminal punctuation commits) and re-reads the whole sentence, revising committed words inside that sentence only. Its context is a *continuously observed sentence*: forward typing owned from an observed sentence boundary without pointer interaction, navigation, Enter, or focus change. Any such discontinuity abandons the sentence; returning the caret to its end does not restore it, and text exposed around an arbitrary UIA caret is not a trusted reconstruction. The stage resumes only for a later sentence whose opening boundary Deckle observed. Owns the decisions only context can make: code-switching, ambiguous pairs, escalation of the hardest faults — and its candidate set always includes the form the user actually typed, so it can silently take back a commit-stage correction. The sentence becomes final the moment the verdict is rendered; a verdict arriving after any keystroke since the close is dropped and counted, never woven into live typing. Its revisions surface in the correction inlay like any correction.
+The deferred correction layer that runs once at sentence close (the terminal punctuation commits) and re-reads the whole sentence, revising committed words inside that sentence only. Its context is a *continuously observed sentence*: forward typing owned from an observed sentence boundary without pointer interaction, navigation, Enter, or focus change. Any such discontinuity abandons the sentence; returning the caret to its end does not restore it, and text exposed around an arbitrary UIA caret is not a trusted reconstruction. The stage resumes only for a later sentence whose opening boundary Deckle observed. Owns the decisions only context can make: code-switching, ambiguous pairs, escalation of the hardest faults. Forward typing after closure may extend the visible rewrite tail while every committed word, separator and live partial remains exactly modeled; caret-moving gestures, foreign mutations, failed injection and an overlong tail still expire the verdict. Its revisions surface in the correction inlay like any correction.
 _Avoid_ : reranker (one possible engine of this layer, not the layer), second pass.
 
 ## Datasets and mining

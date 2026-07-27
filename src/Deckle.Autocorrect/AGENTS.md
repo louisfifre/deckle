@@ -5,7 +5,7 @@ type: agent-instructions
 
 # AGENTS.md — Deckle.Autocorrect
 
-Top-level domain module — machine-wide text autocorrect: French diacritics restoration first (QWERTY US layout), conservative typo correction second, grammar correction third (subject–verb agreement over Lexique verb morphology). Consumes the `Deckle.Input` pillar (raw keyboard stream) and the shared injection interop; owns word tracking, the correction engine, the personal dictionary and its enrollment policy. Vocabulary is normative in `CONTEXT.md` § Autocorrect; the observation posture (Raw Input + targeted UIA, repair by SendInput after the word commits, Enter is a reset, no low-level hook) and its why live in the module `JOURNAL.md`.
+Top-level domain module — machine-wide text autocorrect: elision repair, unified physical-typo and morphological evidence, French diacritics restoration (QWERTY US layout), then bounded grammar correction (subject–verb agreement over Lexique verb morphology). Consumes the `Deckle.Input` pillar (raw keyboard stream) and the shared injection interop; owns word tracking, the correction engine, the personal dictionary and its enrollment policy. Vocabulary is normative in `CONTEXT.md` § Autocorrect; the observation posture (Raw Input + targeted UIA, repair by SendInput after the word commits, Enter is a reset, no low-level hook) and its why live in the module `JOURNAL.md`.
 
 ## Hard rules
 

@@ -11,5 +11,6 @@ return parsed.Mode switch
 {
     ProbeMode.Single => SingleProbeCommand.Run(parsed),
     ProbeMode.Benchmark => CorrectionBenchmarkCommand.Run(parsed),
+    ProbeMode.AutocorrectBenchmark => AutocorrectBenchmarkCommand.Run(parsed),
     _ => 2,
 };

@@ -14,9 +14,15 @@ public interface IAmbiguityProbe
     // empty when there is nothing safe to disambiguate.
     IReadOnlyList<AccentVariant> AmbiguousCandidates(string word);
 
-    // The candidate set the sentence stage may weigh for a word. When
-    // includeTypedLiteral is true, the exact typed literal joins the set even if
-    // it is not a French lexicon form, so the sentence stage can take back a
-    // commit-stage diacritics correction from full context.
+    // The full candidate set used by offline sentence studies. Multiple commit
+    // policies may contribute because the study starts from typed text without a
+    // live decision that says which stage acted.
     IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral);
+
+    // The closed set allowed to take back a correction the commit stage already
+    // applied. A single policy defaults to its sentence candidates. A composite
+    // narrows this to the policy that owned the correction, rather than granting
+    // unrelated policies a second search over the typed word.
+    IReadOnlyList<AccentVariant> CorrectionCandidates(string typedWord) =>
+        SentenceCandidates(typedWord, includeTypedLiteral: true);
 }

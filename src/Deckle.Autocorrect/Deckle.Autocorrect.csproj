@@ -40,6 +40,8 @@
     <InternalsVisibleTo Include="Deckle.Autocorrect.Tests" />
     <!-- The offline miner reuses the engine's physical-layout model (QwertyAdjacency). -->
     <InternalsVisibleTo Include="Deckle.Autocorrect.Lab" />
+    <!-- The offline benchmark drives the internal keyboard seam and candidate observer. -->
+    <InternalsVisibleTo Include="Deckle.Autocorrect.Probe" />
   </ItemGroup>
 
   <ItemGroup>
