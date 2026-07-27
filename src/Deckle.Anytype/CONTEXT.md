@@ -33,6 +33,28 @@ _Avoid_ : Cartographie (too narrow for the intended long-term scope), Électriqu
 The Anytype MCP surface dedicated to schema administration: inspecting spaces, planning type/property/tag/template changes, previewing the diff against a live space, applying confirmed schema changes, and freezing the measured result into code. Its first scope is additive only: create or attach types, properties, tags and templates; no delete, key rename, property format change, or property removal. Cross-space work uses Deckle-configured aliases such as `dev` and `home`, never a free `space_id` argument.
 _Avoid_ : putting type/property creation inside Home tools, generic Anytype MCP (too unconstrained for Deckle's guarded workflow).
 
+## Space provisioning
+
+**Space plan** :
+The versioned declarative source of truth for one specialized Anytype space. It names the intended domain vocabulary through stable plan keys and composes transverse plan fragments with definitions owned only by that space. It contains no opaque ids discovered from a live installation and no native Anytype template or view definition.
+_Avoid_ : template (an Anytype-native concept the local API cannot write), schema snapshot (describes what was measured, not what Deckle intends to install), space manifest (too generic to carry the source-of-truth meaning).
+
+**Plan fragment** :
+A composable unit of domain vocabulary shared by more than one space plan. It represents one transverse concept without owning a space or absorbing definitions that only resemble each other.
+_Avoid_ : base plan (implies inheritance and one privileged parent), shared schema (suggests one live schema rather than reuse at definition time).
+
+**Space-local definition** :
+A type, property, option, or other planned concept owned by exactly one specialized space. It stays beside that space plan; a second superficially similar definition does not make it transverse until the two meanings are genuinely the same.
+_Avoid_ : special case (it is the normal home of domain-specific vocabulary), fragment (reserved for concepts intentionally shared across plans).
+
+**Plan key** :
+A stable English identifier authored in a space plan and consumed by code and localization resources. It identifies an intended concept across locales; it is neither the user-facing label nor an opaque Anytype id.
+_Avoid_ : Anytype key (may mean the live API key), label (localized presentation), id (resolved from the installed space).
+
+**Space provisioner** :
+The setup capability that turns a selected space plan into an installed specialized Anytype space and records the live identities it discovers. It is a deterministic installation path, distinct from the schema admin surface used for interactive inspection and guarded maintenance.
+_Avoid_ : schema admin (different workflow), space generator (suggests throwaway output rather than a versioned installation contract).
+
 ## Home space types
 
 **Étage** :
