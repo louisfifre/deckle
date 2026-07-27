@@ -1,5 +1,24 @@
 # JOURNAL — Deckle.Travel
 
+## 2026-07-27 — Les deux faits API marqués « à vérifier » sont tranchés
+
+- **Templates : lecture et application seulement.** L'API expose
+  `GET .../types/:type_id/templates` (+ get unitaire) et le champ optionnel
+  `template_id` de `POST .../objects`, qui applique un template existant à la
+  création. Aucun endpoint de création de template n'existe dans la référence
+  (`2025-11-08`). Provisionner un template = le fabriquer dans l'app, puis
+  lire son id via list-templates.
+- **Fichiers : l'upload existe, non câblé chez nous.** `POST
+  /v1/spaces/:space_id/files` (multipart), plus GET/DELETE unitaires — ajout
+  rétrocompatible du 2026-05-13 (anytype-heart v0.50.5) sous l'ombrelle
+  `2025-11-08` déjà pinnée par `AnytypeApiClient`. Chemin d'attache : upload →
+  id d'objet-fichier → propriété de format `files` sur l'objet cible. Rien de
+  ce chemin n'est implémenté dans `Deckle.Anytype` ; le schéma Travel déclare
+  déjà ses propriétés `files` (billets, GPX), la clé de payload `files` à la
+  création d'objet reste à vérifier en vif.
+- **L'espace s'appelle « Travel » côté bot**, pas « Vacances » ; id gravé
+  dans le spaces.json runtime sous l'alias `travel`.
+
 ## 2026-07-27 — Cadrage clos (grilling, deux sessions)
 
 - **Modèle arrêté à sept types** : Séjour, Étape, Lieu, Activité, Déplacement,
