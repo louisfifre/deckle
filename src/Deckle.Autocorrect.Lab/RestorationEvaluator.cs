@@ -382,7 +382,7 @@ public static class RestorationEvaluator
 
         return string.Equals(output, typed, StringComparison.Ordinal)
             ? probe.AmbiguousCandidates(typed)
-            : probe.SentenceCandidates(typed, includeTypedLiteral: true);
+            : probe.CorrectionCandidates(typed);
     }
 
     private static bool SentenceStageMayEvaluate(CorrectionDecision? decision) =>

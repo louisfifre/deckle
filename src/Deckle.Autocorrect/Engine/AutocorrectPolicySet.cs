@@ -15,12 +15,43 @@ public sealed record AutocorrectPolicySet(
         IPersonalLexicon? personal = null,
         Func<string, IReadOnlyList<AccentVariant>>? personalVariants = null,
         VerbMorphology? verbs = null)
+        => CreateCore(
+            french, english, accentIndex, context, personal, personalVariants,
+            verbs, candidateSearchObserver: null);
+
+    internal static AutocorrectPolicySet CreateWithCandidateSearchObserver(
+        IFrequencyLexicon french,
+        IFrequencyLexicon? english,
+        AccentIndex accentIndex,
+        IPairDisambiguator? context,
+        IPersonalLexicon? personal,
+        Func<string, IReadOnlyList<AccentVariant>>? personalVariants,
+        VerbMorphology? verbs,
+        CandidateSearchObserver candidateSearchObserver)
+        => CreateCore(
+            french, english, accentIndex, context, personal, personalVariants,
+            verbs, candidateSearchObserver);
+
+    private static AutocorrectPolicySet CreateCore(
+        IFrequencyLexicon french,
+        IFrequencyLexicon? english,
+        AccentIndex accentIndex,
+        IPairDisambiguator? context,
+        IPersonalLexicon? personal,
+        Func<string, IReadOnlyList<AccentVariant>>? personalVariants,
+        VerbMorphology? verbs,
+        CandidateSearchObserver? candidateSearchObserver)
     {
         var diacritics = new DiacriticsRestorer(
             french, english, accentIndex, context: context, personal: personal,
             personalVariants: personalVariants);
-        var typo = new ConservativeTypoCorrector(
-            french, english, personal, accentIndex: accentIndex, verbs: verbs);
+        var typo = candidateSearchObserver is null
+            ? new ConservativeTypoCorrector(
+                french, english, personal, accentIndex: accentIndex, verbs: verbs)
+            : new ConservativeTypoCorrector(
+                french, english, personal, options: null,
+                accentIndex: accentIndex, verbs: verbs,
+                candidateSearchObserver: candidateSearchObserver);
 
         var policies = new List<ICorrectionPolicy>
         {

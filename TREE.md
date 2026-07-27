@@ -479,6 +479,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AutocorrectPolicySet.cs
 │   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
+│   │   │   ├── CandidateSearchObservation.cs
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CompositeAmbiguityProbe.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
@@ -602,6 +603,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OnnxSentenceScorer.Scoring.cs
 │   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Autocorrect.Probe/
+│   │   ├── AutocorrectBenchmark.cs
+│   │   ├── AutocorrectBenchmarkCommand.cs
+│   │   ├── AutocorrectBenchmarkCorpus.cs
+│   │   ├── BenchmarkKeyboardSession.cs
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs
 │   │   ├── CorrectionBenchmarkCorpus.cs
@@ -1438,6 +1443,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AssemblyInfo.cs
+│   │   ├── AutocorrectBenchmarkTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCorpusTests.cs
@@ -1459,6 +1465,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CasePatternTests.cs
+│   │   ├── CompositeAmbiguityProbeTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
 │   │   ├── CorpusReaderTests.cs
 │   │   ├── CorrectionBenchmarkSummaryTests.cs

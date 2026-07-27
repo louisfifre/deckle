@@ -13,5 +13,6 @@
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
   </ItemGroup>
 </Project>

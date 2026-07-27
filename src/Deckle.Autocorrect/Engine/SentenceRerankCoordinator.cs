@@ -155,7 +155,7 @@ public sealed class SentenceRerankCoordinator : IDisposable
         {
             var candidates = string.Equals(typedForm, finalForm, StringComparison.Ordinal)
                 ? _probe.AmbiguousCandidates(finalForm)
-                : _probe.SentenceCandidates(typedForm, includeTypedLiteral: true);
+                : _probe.CorrectionCandidates(typedForm);
             if (candidates.Count >= 2)
             {
                 entry.IsAmbiguous = true;

@@ -1,11 +1,10 @@
 namespace Deckle.Autocorrect;
 
 // Runs an ordered list of correction policies and returns the first decision —
-// the earlier policy wins. The live engine chains the diacritics gate (valid
-// forms, accents) ahead of the conservative typo corrector (non-words): the two
-// are disjoint by construction — the gate yields null on a non-word, the typo
-// corrector refuses any valid form — but the order makes the precedence explicit
-// and keeps each policy a single, testable responsibility.
+// the earlier policy wins. AutocorrectPolicySet owns the production order so the
+// app, benchmark and tests cannot silently compose different engines; this type
+// only enforces first-decision precedence and keeps each policy independently
+// testable.
 public sealed class CompositeCorrectionPolicy : ICorrectionPolicy
 {
     private readonly ICorrectionPolicy[] _policies;

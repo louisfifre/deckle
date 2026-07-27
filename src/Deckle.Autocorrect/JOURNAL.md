@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-27 — Candidate ownership removes the sentence-stage cost cliff
+
+Measured the 0.19.0 deterministic keyboard corpus at 100% precision, 92.5% recall and 87.0% exact sentences. The initial production-shaped cost pass generated 143,067 candidate strings over 167 word commits; 134,798 came from sentence-slot preparation, with a 151.5 µs p95, 78,400-byte allocation p95, and individual short words reaching 4.2 MB.
+
+Found two discarded searches: the sentence typo probe built its distance-two neighbourhood before knowing whether distance one had filled the four-candidate cap, and a commit-stage diacritics correction granted the unrelated typo probe a fresh sentence search over the typed form. Chose lazy distance-two search and candidate ownership: an applied correction may be taken back only through the candidate family of the policy that produced it. The same corpus then generated 8,680 strings, with 65.9–83.9 µs measured p95 and 41,616-byte allocation p95; keyboard quality was unchanged.
+
+Compared a direct spelling index, whole-sentence LLM replacement and an anticipated next-word pass. Kept the deterministic commit plus closed-candidate sentence architecture: the direct index no longer justified its data and memory cost at the measured search bound; the live sentence judge's retained calibration is below the commit path's precision invariant; and right-context activation remains unwired until its own horizon and margin are calibrated.
+
 ## 2026-07-26 — Forward typing may extend a deferred rewrite only while its suffix stays exact
 
 Superseded the 2026-07-21 first-key invalidation rule for ordinary forward typing. Chose to preserve committed words, exact separator runs and the live partial in the deferred rewrite tail; caret-moving gestures, foreign synthetic input and failed injection still invalidate it, and a tail beyond 256 characters expires without writing. A reranker choice outside its submitted candidates, below its stated margin or with malformed numeric evidence is treated as an abstention.

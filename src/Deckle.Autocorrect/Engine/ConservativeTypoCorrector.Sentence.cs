@@ -16,24 +16,28 @@ public sealed partial class ConservativeTypoCorrector
             return Array.Empty<AccentVariant>();
 
         List<Candidate> near = ValidNeighbours(
-            lower, twoEdits: false, includeCoherentHorizontalShifts: true);
-        List<Candidate>? far = null;
-
-        // Short hurried tokens often combine two physical slips (miru -> mieux).
-        // The sentence judge can reach them safely with KEEP in the candidate set.
-        if (_options.MaxEditDistance >= 2 && lower.Length <= ContextualFarMaxWordLength)
-        {
-            var nearForms = new HashSet<string>(
-                near.Select(candidate => candidate.Form), StringComparer.Ordinal);
-            far = ValidNeighbours(lower, twoEdits: true)
-                .Where(candidate => !nearForms.Contains(candidate.Form))
-                .ToList();
-        }
+            lower, twoEdits: false, CandidateSearchPath.Sentence,
+            includeCoherentHorizontalShifts: true);
 
         var candidates = new List<AccentVariant>(SentenceCandidateCap + 1);
         AddCandidates(near);
-        if (candidates.Count < SentenceCandidateCap && far is not null)
+
+        // Short hurried tokens often combine two physical slips (miru -> mieux).
+        // The sentence judge can reach them safely with KEEP in the candidate set.
+        // Generate that much larger neighbourhood only when the near tier did not
+        // already fill the closed set; far candidates could not enter otherwise.
+        if (candidates.Count < SentenceCandidateCap
+            && _options.MaxEditDistance >= 2
+            && lower.Length <= ContextualFarMaxWordLength)
+        {
+            var nearForms = new HashSet<string>(
+                near.Select(candidate => candidate.Form), StringComparer.Ordinal);
+            List<Candidate> far = ValidNeighbours(
+                    lower, twoEdits: true, CandidateSearchPath.Sentence)
+                .Where(candidate => !nearForms.Contains(candidate.Form))
+                .ToList();
             AddCandidates(far);
+        }
 
         void AddCandidates(IEnumerable<Candidate> neighbours)
         {

@@ -7,9 +7,15 @@ namespace Deckle.Autocorrect;
 public sealed class CompositeAmbiguityProbe : IAmbiguityProbe
 {
     private readonly IReadOnlyList<IAmbiguityProbe> _probes;
+    private readonly IAmbiguityProbe _takebackProbe;
 
-    public CompositeAmbiguityProbe(params IAmbiguityProbe[] probes) =>
-        _probes = probes ?? Array.Empty<IAmbiguityProbe>();
+    public CompositeAmbiguityProbe(
+        IAmbiguityProbe takebackProbe,
+        params IAmbiguityProbe[] additionalProbes)
+    {
+        _takebackProbe = takebackProbe;
+        _probes = [takebackProbe, .. additionalProbes];
+    }
 
     public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
         Merge(probe => probe.AmbiguousCandidates(word));
@@ -18,6 +24,9 @@ public sealed class CompositeAmbiguityProbe : IAmbiguityProbe
         string word,
         bool includeTypedLiteral) =>
         Merge(probe => probe.SentenceCandidates(word, includeTypedLiteral));
+
+    public IReadOnlyList<AccentVariant> CorrectionCandidates(string typedWord) =>
+        _takebackProbe.CorrectionCandidates(typedWord);
 
     private IReadOnlyList<AccentVariant> Merge(
         Func<IAmbiguityProbe, IReadOnlyList<AccentVariant>> select)
