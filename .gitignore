@@ -246,7 +246,8 @@ coverage/
 .claude/skills/benchmark-loop/
 
 # Agent compatibility façades; canonical project instructions live under .claude/.
-.agent/
-.agents/
-.codex/
+# No trailing slash: these are symlinks to .claude, which Git sees as files.
+.agent
+.agents
+.codex
 .codex-remote-attachments/
