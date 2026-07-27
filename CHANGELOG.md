@@ -28,6 +28,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Upload files through the REST transport
 - **travel:** Attach local files to the objects that carry them
 - **travel:** Give every type its Anytype icon
+- **anytype:** Align epic planning gestures
 
 ### Changed
 
