@@ -37,6 +37,26 @@ internal static class CorrectionBenchmarkCorpus
         Case("literal_la_build", "literal", 0, 0, "je lance la build locale", "je lance là build locale"),
         Case("literal_a_variable", "literal", 0, 0, "la variable a une valeur", "la variable à une valeur"),
         Case("literal_ou_api", "literal", 0, 0, "on garde HTTP ou WebSocket", "on garde HTTP où WebSocket"),
+
+        // Live regressions from the reviewed typing telemetry. These expand the
+        // literal class beyond short homophones: a margin is not safety when the
+        // candidate itself is morphologically impossible in context.
+        Case("literal_ratures", "live-regression", 0, 0,
+            "on corrigeait bien toutes les ratures etc.",
+            "on corrigeait bien toutes les raturés etc."),
+        Case("literal_date", "live-regression", 0, 0,
+            "la date qui serait la plus importante",
+            "la daté qui serait la plus importante"),
+        Case("duplicate_letter", "live-regression", 0, 1,
+            "ce que tu proposees me convient",
+            "ce que tu proposes me convient",
+            "ce que tu proposées me convient"),
+        Case("qu_a_auxiliary", "live-regression", 0, 0,
+            "je regarde ce qu'a produit le test",
+            "je regarde ce qu'à produit le test"),
+        Case("qu_a_preposition", "live-regression", 0, 1,
+            "il n'y a qu'a vérifier",
+            "il n'y a qu'à vérifier"),
     };
 
     private static CorrectionBenchmarkCase Case(

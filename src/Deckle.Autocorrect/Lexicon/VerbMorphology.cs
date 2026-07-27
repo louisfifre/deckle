@@ -64,6 +64,24 @@ public sealed class VerbMorphology
     // the lexicon — the agreement rule never rewrites these.
     public bool IsAmbiguous(string lowerForm) => _ambiguous.Contains(lowerForm);
 
+    internal bool HasUnambiguousFiniteReading(string lowerForm, string personNumber)
+    {
+        if (IsAmbiguous(lowerForm)) return false;
+        foreach (VerbReading reading in Analyses(lowerForm))
+            if (reading.Mode is "ind" or "sub" or "cnd"
+                && reading.PersonNumber == personNumber)
+                return true;
+        return false;
+    }
+
+    internal bool HasPastParticipleReading(string lowerForm)
+    {
+        foreach (VerbReading reading in Analyses(lowerForm))
+            if (reading.Mode == "par" && reading.Tense == "pas")
+                return true;
+        return false;
+    }
+
     // The surface form a lemma takes at this exact mode/tense/person, or null
     // when no form fills the slot or more than one does (ambiguous → unsafe).
     public string? Conjugate(string lemma, string mode, string tense, string personNumber) =>

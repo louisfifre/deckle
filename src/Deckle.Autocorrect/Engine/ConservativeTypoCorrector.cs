@@ -2,10 +2,9 @@ namespace Deckle.Autocorrect;
 
 // ── ConservativeTypoCorrector ────────────────────────────────────────────────
 //
-// Stage two of the engine, after the diacritics gate: an Android-style spell-fix
+// The physical-error stage: an Android-style spell-fix
 // for a just-committed word that is NOT a French word — a real keyboard typo
-// ("bonjuor" → "bonjour"). It never touches a valid form (that is the diacritics
-// gate's domain, and it runs first). Two tiers: a near tier resolves a word one
+// ("bonjuor" → "bonjour"). It never touches a valid form. Two tiers: a near tier resolves a word one
 // edit away when it is common and clearly dominates any rival; only when nothing
 // sits one edit away does the far tier reach two edits, for bigger faults, held to
 // a stricter length/frequency/dominance bar. Ambiguity, rarity, an identifier
@@ -23,7 +22,7 @@ namespace Deckle.Autocorrect;
 // against accented forms behind the repaired fold. This composes one physical
 // slip with missing diacritics ("preaprer" → "préparer") without relaxing either
 // tier's frequency or dominance bars.
-public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityProbe
+public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityProbe
 {
     private const int SentenceCandidateCap = 4;
     private const int ContextualFarMaxWordLength = 5;
@@ -32,24 +31,45 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityPro
     private readonly IPersonalLexicon? _personal;
     private readonly TypoOptions _options;
     private readonly AccentIndex? _accentIndex;
+    private readonly VerbMorphology? _verbs;
 
     public ConservativeTypoCorrector(
         IFrequencyLexicon french,
         IFrequencyLexicon? english = null,
         IPersonalLexicon? personal = null,
         TypoOptions? options = null,
-        AccentIndex? accentIndex = null)
+        AccentIndex? accentIndex = null,
+        VerbMorphology? verbs = null)
     {
         _french = french;
         _english = english;
         _personal = personal;
         _options = options ?? new TypoOptions();
         _accentIndex = accentIndex;
+        _verbs = verbs;
     }
 
-    public CorrectionDecision? Evaluate(string word, IReadOnlyList<string> leftContext, CorrectionTrace? trace = null)
+    public CorrectionDecision? Evaluate(
+        string word,
+        IReadOnlyList<string> leftContext,
+        CorrectionTrace? trace = null) =>
+        EvaluateCore(word, leftContext, trace, morphologyOnly: false);
+
+    internal CorrectionDecision? EvaluateMorphology(
+        string word,
+        IReadOnlyList<string> leftContext,
+        CorrectionTrace? trace) =>
+        EvaluateCore(word, leftContext, trace, morphologyOnly: true);
+
+    private CorrectionDecision? EvaluateCore(
+        string word,
+        IReadOnlyList<string> leftContext,
+        CorrectionTrace? trace,
+        bool morphologyOnly)
     {
-        StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Typo);
+        StageTrace? st = trace?.Open(morphologyOnly
+            ? CorrectionTrace.StageNames.Morphology
+            : CorrectionTrace.StageNames.Typo);
 
         if (word.Length < _options.MinWordLength)
             return Abstain(st, CorrectionTrace.Reasons.TooShort);
@@ -76,25 +96,53 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityPro
 
         string lower = word.ToLowerInvariant();
 
-        // The defining gate: this stage only ever acts on a NON-word. A valid
-        // French form is the diacritics gate's business and was already settled.
-        if (_french.Contains(lower))
-            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
+        bool literalValid = _french.Contains(lower);
 
-        // Never frenchify a word that belongs to the restricted global-English
-        // seed. The seed is curated upstream; membership is the guard.
+        // Protected literals stay outside both the morphology priority and the
+        // ordinary typo path.
         if (_english?.Contains(lower) == true)
             return Abstain(st, CorrectionTrace.Reasons.ValidEnglish);
-
-        // The user's own adopted words shield themselves.
         if (_personal?.IsAdopted(lower) == true)
             return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
+
+        // The morphology priority may settle an accent ambiguity even when the
+        // bare form is itself valid; the ordinary typo stage still refuses every
+        // valid French literal without exception.
+        if (morphologyOnly)
+        {
+            CorrectionDecision? morphological = EvaluateMorphologicalAccent(
+                word, lower, literalValid, leftContext, st);
+            if (morphological is not null)
+                return morphological;
+        }
+
+        // The defining gate: this stage only ever acts on a NON-word. A valid
+        // French form is the diacritics gate's business and was already settled.
+        if (literalValid)
+            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
+
+        bool hasSubject = _verbs is not null
+            && GrammarCorrector.TryGetRequiredPerson(leftContext, out _);
+        if (morphologyOnly && !hasSubject)
+            return Abstain(st, CorrectionTrace.Reasons.NoSubjectPronoun);
 
         // Near tier: a single edit away — the high-confidence case.
         var near = ValidNeighbours(lower, twoEdits: false);
         if (near.Count > 0)
+        {
+            // A direct accent restoration costs no physical edit. A keyboard
+            // neighbour may outrank it only with the same strong frequency
+            // dominance required between typo rivals (bine -> bien, while
+            // modele stays reserved for modèle rather than modèles).
+            if (!morphologyOnly
+                && _accentIndex is not null
+                && _accentIndex.VariantsOf(lower) is { Count: > 0 } accents
+                && near[0].Frequency < accents[0].FrequencyPerMillion * _options.DominanceRatio)
+                return Abstain(st, CorrectionTrace.Reasons.AccentFoldPreferred);
+
             return Decide(word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
-                st, CorrectionTrace.Reasons.TypoNear);
+                leftContext, st, CorrectionTrace.Reasons.TypoNear, morphologyOnly);
+        }
 
         // Far tier: two edits away, for a bigger fault — only when nothing sits
         // one edit away, on a long-enough word, and held to a stricter bar.
@@ -106,7 +154,7 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityPro
             if (far.Count > 0)
                 return Decide(
                     word, far, _options.Edits2MinFrequencyPerMillion, _options.Edits2DominanceRatio,
-                    st, CorrectionTrace.Reasons.TypoFar);
+                    leftContext, st, CorrectionTrace.Reasons.TypoFar, morphologyOnly);
         }
 
         return Abstain(st, CorrectionTrace.Reasons.NoNeighbour);
@@ -133,7 +181,8 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityPro
     // its safety gauges and the exit reason onto the stage trace when present.
     private CorrectionDecision? Decide(
         string word, List<Candidate> candidates, double minFrequency, double dominanceRatio,
-        StageTrace? st, string fireReason)
+        IReadOnlyList<string> leftContext, StageTrace? st, string fireReason,
+        bool morphologyOnly)
     {
         Candidate top = candidates[0];
         double ratio = candidates.Count >= 2 && candidates[1].Frequency > 0.0
@@ -153,6 +202,37 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityPro
         // Common enough to be the obvious intent — a rare neighbour is no evidence.
         if (top.Frequency < minFrequency)
             return Abstain(st, CorrectionTrace.Reasons.TooRare);
+
+        // A subject pronoun can settle a crowded typo neighbourhood without a
+        // frequency guess: exactly one candidate is an unambiguous finite form
+        // for that person (tu proposees → tu proposes).
+        if (morphologyOnly
+            && _verbs is not null
+            && GrammarCorrector.TryGetRequiredPerson(leftContext, out string required))
+        {
+            Candidate? agreeing = null;
+            foreach (Candidate candidate in candidates)
+            {
+                if (!_verbs.HasUnambiguousFiniteReading(candidate.Form, required))
+                    continue;
+                if (agreeing is not null)
+                {
+                    agreeing = null;
+                    break;
+                }
+                agreeing = candidate;
+            }
+
+            if (agreeing is Candidate verb && verb.Frequency >= minFrequency)
+            {
+                st?.Fire(CorrectionTrace.Reasons.TypoSubjectAgreement);
+                return new CorrectionDecision(
+                    word, CasePattern.Apply(word, verb.Form), CorrectionReason.TypoCorrection);
+            }
+        }
+
+        if (morphologyOnly)
+            return Abstain(st, CorrectionTrace.Reasons.NoAgreementCandidate);
 
         // With rivals, the best must dominate; a close second means real ambiguity.
         if (candidates.Count >= 2 && top.Frequency < candidates[1].Frequency * dominanceRatio)
@@ -211,79 +291,6 @@ public sealed class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityPro
 
         found.Sort(static (x, y) => y.Frequency.CompareTo(x.Frequency));
         return found;
-    }
-
-    // The commit stage abstains when several plausible neighbours fail its
-    // dominance bar. That residue is valuable sentence-stage work, not a dead
-    // end: expose a bounded closed set plus the exact typed literal as KEEP.
-    // No thresholds are relaxed in the instant path; the full-sentence judge
-    // still has to clear its own calibrated margin before anything changes.
-    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
-        SentenceCandidates(word, includeTypedLiteral: true);
-
-    public IReadOnlyList<AccentVariant> SentenceCandidates(
-        string word,
-        bool includeTypedLiteral)
-    {
-        if (!CanProbeSentence(word, out string lower))
-            return Array.Empty<AccentVariant>();
-
-        List<Candidate> neighbours = ValidNeighbours(
-            lower, twoEdits: false, includeCoherentHorizontalShifts: true);
-
-        // Short hurried tokens often combine two physical slips ("miru" for
-        // "mieux"). They are too ambiguous for the instant far tier, whose
-        // minimum length remains six, but a bounded closed set can safely reach
-        // them when the full-sentence judge retains KEEP and clears its margin.
-        // Cap the extra search at five letters to keep input-thread work bounded.
-        if (_options.MaxEditDistance >= 2 && lower.Length <= ContextualFarMaxWordLength)
-        {
-            var forms = new HashSet<string>(
-                neighbours.Select(candidate => candidate.Form),
-                StringComparer.Ordinal);
-            foreach (Candidate candidate in ValidNeighbours(lower, twoEdits: true))
-                if (forms.Add(candidate.Form))
-                    neighbours.Add(candidate);
-            neighbours.Sort(static (x, y) => y.Frequency.CompareTo(x.Frequency));
-        }
-
-        var candidates = new List<AccentVariant>(SentenceCandidateCap + 1);
-        foreach (Candidate neighbour in neighbours)
-        {
-            if (neighbour.Frequency < _options.MinFrequencyPerMillion)
-                continue;
-            if (_personal?.IsSuppressed(lower, neighbour.Form) == true)
-                continue;
-            candidates.Add(new AccentVariant(neighbour.Form, neighbour.Frequency));
-            if (candidates.Count == SentenceCandidateCap)
-                break;
-        }
-
-        // A single generated repair plus KEEP is already a valid closed choice.
-        // includeTypedLiteral is advisory for policy-revision calls; a typo slot
-        // always requires KEEP because its typed non-word is still user intent.
-        if (candidates.Count == 0)
-            return Array.Empty<AccentVariant>();
-        candidates.Add(new AccentVariant(lower, 0.0));
-        return candidates;
-    }
-
-    private bool CanProbeSentence(string word, out string lower)
-    {
-        lower = string.Empty;
-        if (word.Length < _options.MinWordLength
-            || WordShape.HasInternalUpper(word)
-            || WordShape.IsTitleCase(word)
-            || AccentFolding.HasDiacritics(word))
-            return false;
-        foreach (char c in word)
-            if (!char.IsLetter(c))
-                return false;
-
-        lower = word.ToLowerInvariant();
-        return !_french.Contains(lower)
-            && _english?.Contains(lower) != true
-            && _personal?.IsAdopted(lower) != true;
     }
 
     // The single-edit neighbourhood of a token: a deletion, an adjacent

@@ -17,6 +17,14 @@ namespace Deckle.Autocorrect;
 // one reason it exists.
 public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
 {
+    // Valid French literals may only reach the silent sentence judge when the
+    // ambiguity is a calibrated grammatical homophone. Open-ended accent folds
+    // turned ordinary content words into false slots (ratures/raturés, date/daté).
+    private static readonly HashSet<string> ContextualHomophones = new(StringComparer.Ordinal)
+    {
+        "a", "la", "ou", "du", "sur",
+    };
+
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly AccentIndex _index;
@@ -202,8 +210,13 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
     // answers "is this an ambiguous slot, and which forms?". The blacklist guards
     // (digits, internal upper, elision, already-accented) still matter: an
     // already-accented or non-word token is never an ambiguous slot.
-    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word) =>
-        SentenceCandidates(word, includeTypedLiteral: false);
+    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word)
+    {
+        string lower = word.ToLowerInvariant();
+        if (_french.Contains(lower) && !ContextualHomophones.Contains(lower))
+            return Array.Empty<AccentVariant>();
+        return SentenceCandidates(word, includeTypedLiteral: false);
+    }
 
     public IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral)
     {

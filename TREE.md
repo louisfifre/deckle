@@ -476,12 +476,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AutocorrectEngine.Input.cs
 │   │   │   ├── AutocorrectEngine.Lifecycle.cs
 │   │   │   ├── AutocorrectEngine.Telemetry.cs
+│   │   │   ├── AutocorrectPolicySet.cs
 │   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CompositeAmbiguityProbe.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
+│   │   │   ├── ConservativeTypoCorrector.Morphology.cs
+│   │   │   ├── ConservativeTypoCorrector.Sentence.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
@@ -1445,6 +1448,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
+│   │   ├── AutocorrectKeyboardQualityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectSentenceTypingScenarioTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
@@ -1475,6 +1479,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MistouchMinerTests.cs
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
+│   │   ├── MorphologyCorrectorTests.cs
 │   │   ├── OnnxJudgeSerialCollection.cs
 │   │   ├── OnnxSentenceScorerTests.cs
 │   │   ├── OnnxSlotRerankerTests.cs

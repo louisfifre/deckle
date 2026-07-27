@@ -139,6 +139,7 @@ public sealed class CorrectionTrace
     {
         public const string Diacritics = "diacritics";
         public const string Elision    = "elision";
+        public const string Morphology = "morphology";
         public const string Typo       = "typo";
         public const string Grammar    = "grammar";
         public const string None       = "none";
@@ -196,6 +197,12 @@ public sealed class CorrectionTrace
         public const string TooRare   = "too_rare";        // best neighbour below the frequency floor
         public const string TypoNear  = "typo_near";       // fired: one edit away
         public const string TypoFar   = "typo_far";        // fired: two edits away
+        public const string TypoSubjectAgreement = "typo_subject_agreement";
+        public const string NoAgreementCandidate = "no_agreement_candidate";
+        public const string AccentFoldPreferred = "accent_fold_preferred";
+        public const string AuxiliaryParticiple = "auxiliary_participle";
+        public const string DeterminerAccent = "determiner_accent";
+        public const string RegularPluralAccent = "regular_plural_accent";
 
         // Grammar outcomes.
         public const string NoSubjectPronoun = "no_subject_pronoun"; // no subject pronoun immediately before

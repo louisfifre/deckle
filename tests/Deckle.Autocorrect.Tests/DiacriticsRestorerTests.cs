@@ -377,6 +377,62 @@ public class DiacriticsRestorerTests
         Assert.Empty(restorer.AmbiguousCandidates("mais"));
     }
 
+    [Theory]
+    [InlineData("ratures")]
+    [InlineData("date")]
+    public void InflectedContentWordsDoNotBecomeSilentSentenceHomophoneSlots(string literal)
+    {
+        var french = FrequencyLexicon.LoadTsv(new StringReader(
+            "ratures\t10\nraturés\t2\ndate\t10\ndaté\t2\n"));
+        var restorer = new DiacriticsRestorer(french, null, AccentIndex.Build(french));
+
+        Assert.Empty(restorer.AmbiguousCandidates(literal));
+    }
+
+    [Theory]
+    [InlineData("a", "à")]
+    [InlineData("la", "là")]
+    [InlineData("ou", "où")]
+    [InlineData("du", "dû")]
+    [InlineData("sur", "sûr")]
+    public void CalibratedFrenchHomophonesRemainSentenceSlots(string literal, string accented)
+    {
+        var french = FrequencyLexicon.LoadTsv(new StringReader(
+            $"{literal}\t10\n{accented}\t5\n"));
+        var restorer = new DiacriticsRestorer(french, null, AccentIndex.Build(french));
+
+        IReadOnlyList<AccentVariant> candidates = restorer.AmbiguousCandidates(literal);
+
+        Assert.Contains(candidates, candidate => candidate.Form == literal);
+        Assert.Contains(candidates, candidate => candidate.Form == accented);
+    }
+
+    [Fact]
+    public void PackagedMorphologyRestoresPrepareAfterJe()
+    {
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
+            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
+        AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
+            french,
+            english: null,
+            AccentIndex.Build(french),
+            context: BigramPairDisambiguator.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName)),
+            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
+        var trace = new CorrectionTrace();
+
+        CorrectionDecision? decision = policies.Policy.Evaluate("prepare", ["je"], trace);
+
+        Assert.True(
+            decision is not null,
+            $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
+        Assert.True(
+            decision!.Replacement == "prépare",
+            $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
+    }
+
     // ── Stubs ───────────────────────────────────────────────────────────────
 
     private sealed class StubDisambiguator(string? chosen) : IPairDisambiguator

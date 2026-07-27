@@ -48,6 +48,26 @@ public sealed class GrammarCorrector : ICorrectionPolicy
         ["elles"] = "3p",
     };
 
+    internal static bool TryGetRequiredPerson(
+        IReadOnlyList<string> leftContext,
+        out string personNumber)
+    {
+        personNumber = string.Empty;
+        return leftContext.Count > 0
+            && SubjectPronouns.TryGetValue(ContextTail(leftContext[^1]), out personNumber!);
+    }
+
+    // Elided conjunctions keep the grammatical word after the apostrophe:
+    // qu'on behaves like on, just as j'ai exposes ai to the auxiliary rule.
+    internal static string ContextTail(string word)
+    {
+        string lower = word.ToLowerInvariant();
+        int apostrophe = Math.Max(lower.LastIndexOf('\''), lower.LastIndexOf('\u2019'));
+        return apostrophe >= 0 && apostrophe + 1 < lower.Length
+            ? lower[(apostrophe + 1)..]
+            : lower;
+    }
+
     // The verb modes that inflect for person and can stand after a subject
     // pronoun: indicative, subjunctive, conditional. The imperative also inflects
     // for person but takes no overt subject, so it never agrees here.
@@ -58,10 +78,7 @@ public sealed class GrammarCorrector : ICorrectionPolicy
         StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Grammar);
 
         // The agreement window: a subject pronoun must sit immediately before.
-        if (leftContext.Count == 0)
-            return Abstain(st, CorrectionTrace.Reasons.NoSubjectPronoun);
-        string subject = leftContext[^1].ToLowerInvariant();
-        if (!SubjectPronouns.TryGetValue(subject, out string? required))
+        if (!TryGetRequiredPerson(leftContext, out string required))
             return Abstain(st, CorrectionTrace.Reasons.NoSubjectPronoun);
 
         string lower = word.ToLowerInvariant();

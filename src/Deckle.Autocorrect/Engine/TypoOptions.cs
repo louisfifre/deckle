@@ -20,7 +20,7 @@ public sealed record TypoOptions
 
     // The chosen near word must itself be common enough to be the obvious intent —
     // a rare neighbour winning a ratio over an even rarer one is not evidence.
-    public double MinFrequencyPerMillion { get; init; } = 3.0;
+    public double MinFrequencyPerMillion { get; init; } = 2.0;
 
     // With more than one near neighbour, the best must out-frequency the runner up
     // by at least this ratio to fire; a close second means real ambiguity.

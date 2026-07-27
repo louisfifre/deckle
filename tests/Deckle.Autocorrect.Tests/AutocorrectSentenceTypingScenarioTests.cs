@@ -159,6 +159,27 @@ public sealed class AutocorrectSentenceTypingScenarioTests
     }
 
     [Fact]
+    public void ForeignAutocorrectExpiresALateVerdictBeforeBlindSendInputCanCorruptTheTail()
+    {
+        FrequencyLexicon french = Lexicon("je", "suis", "la", "là");
+        var probe = new DiacriticsRestorer(french, null, AccentIndex.Build(french));
+        var reranker = new BlockingSentenceReranker("là");
+        using var h = Harness(french, probe, reranker);
+        h.Injector.VerifySurfaceSuffix = false;
+
+        h.Type("Je suis la.");
+        Assert.True(reranker.Started.Wait(
+            TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+        h.ForeignReplaceSuffix("la.", "là.");
+        reranker.Release.Set();
+        Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
+
+        Assert.Equal("Je suis là.", h.VisibleText);
+        Assert.Empty(h.Applied);
+        Assert.Empty(h.Injector.Calls);
+    }
+
+    [Fact]
     public void AmbiguousOneKeySlipIsDeferredToTheClosedSentenceJudge()
     {
         FrequencyLexicon french = FrequencyLexicon.LoadTsv(new StringReader(
@@ -255,7 +276,7 @@ public sealed class AutocorrectSentenceTypingScenarioTests
         using var h = PackagedHarness(new ChoosingSentenceReranker(chosen));
 
         h.Type(typed);
-        Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
+        Assert.True(h.PumpUntil(() => h.VisibleText == expected, TimeSpan.FromSeconds(2)));
 
         Assert.Equal(expected, h.VisibleText);
         Assert.Contains(h.Applied, correction =>
@@ -315,19 +336,20 @@ public sealed class AutocorrectSentenceTypingScenarioTests
         var english = new GlobalEnglishLexicon(
             AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
         AccentIndex index = AccentIndex.Build(french);
-        var diacritics = new DiacriticsRestorer(french, english, index);
-        var typo = new ConservativeTypoCorrector(
-            french, english, accentIndex: index);
-        var policy = new CompositeCorrectionPolicy(
-            diacritics,
-            new ElisionCorrector(french, english),
-            typo);
+        AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
+            french,
+            english,
+            index,
+            BigramPairDisambiguator.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName)),
+            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
         var harness = new AutocorrectEngineHarness(
-            policy,
+            policies.Policy,
             french: french,
             english: english,
             reranker: reranker,
-            probe: new CompositeAmbiguityProbe(diacritics, typo));
+            probe: policies.AmbiguityProbe);
         harness.Settings.Apps["codex"] = true;
         harness.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(harness.Start());
@@ -347,13 +369,18 @@ public sealed class AutocorrectSentenceTypingScenarioTests
         public RerankOutcome Rerank(
             IReadOnlyList<string> sentence,
             int slotIndex,
-            IReadOnlyList<AccentVariant> candidates) =>
-            new(
-                chosen,
+            IReadOnlyList<AccentVariant> candidates)
+        {
+            string verdict = candidates.Any(candidate => candidate.Form == chosen)
+                ? chosen
+                : sentence[slotIndex];
+            return new(
+                verdict,
                 candidates.Select(candidate => new RerankCandidateScore(candidate.Form, 1.0)).ToArray(),
                 Margin: 2.0,
                 Threshold: 1.0,
                 AbstainReason: null);
+        }
     }
 
     private sealed class BlockingSentenceReranker(string chosen) : ISentenceReranker, IDisposable
