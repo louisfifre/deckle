@@ -272,15 +272,35 @@ public sealed partial class AnytypeApiClient : IDisposable
 
     // ── Transport core ──────────────────────────────────────────────────
 
+    // JSON-bodied send. Everything below goes through SendContentAsync.
+    private Task<JsonObject> SendAsync(
+        HttpMethod method,
+        string path,
+        JsonObject? body,
+        CancellationToken ct,
+        bool parseBody = true) =>
+        SendContentAsync(
+            method,
+            path,
+            body is null
+                ? null
+                : () => new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
+            ct,
+            parseBody);
+
     // Serialized send with one transient retry. Returns the parsed root object
     // (empty JsonObject when the body is empty). parseBody:false skips parsing
     // entirely, for endpoints whose success body is not a JSON object — list-add
     // answers a bare string. Throws HttpRequestException on a non-retryable or
     // retry-exhausted failure, after emitting ApiRequestFailed.
-    private async Task<JsonObject> SendAsync(
+    //
+    // The body arrives as a FACTORY, not a built HttpContent: an HttpContent is
+    // single-use, so the retry attempt needs a fresh one. That is also what lets
+    // multipart uploads share this transport instead of bypassing the gate.
+    private async Task<JsonObject> SendContentAsync(
         HttpMethod method,
         string path,
-        JsonObject? body,
+        Func<HttpContent>? content,
         CancellationToken ct,
         bool parseBody = true)
     {
@@ -297,11 +317,7 @@ public sealed partial class AnytypeApiClient : IDisposable
                     DeckleAnytypeSource.Log.ApiRequestStarted(method.Method, path);
 
                 using var request = new HttpRequestMessage(method, path);
-                if (body is not null)
-                {
-                    request.Content = new StringContent(
-                        body.ToJsonString(), Encoding.UTF8, "application/json");
-                }
+                if (content is not null) request.Content = content();
 
                 using HttpResponseMessage response =
                     await _http.SendAsync(request, ct).ConfigureAwait(false);

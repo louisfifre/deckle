@@ -280,6 +280,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Api/
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
+│   │   │   ├── AnytypeApiClient.Files.cs
 │   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   └── SpaceWriteLock.cs
