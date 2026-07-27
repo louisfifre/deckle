@@ -13,8 +13,10 @@ public sealed class AutocorrectKeyboardQualityTests(ITestOutputHelper output)
     [Fact]
     public void ProductionKeyboardCorpusMeetsPrecisionFirstQualityGate()
     {
+        // The lexicons ride beside the binary under Data\, never flat.
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
         KeyboardQualitySummary summary =
-            AutocorrectBenchmark.MeasureKeyboardQuality(AppContext.BaseDirectory);
+            AutocorrectBenchmark.MeasureKeyboardQuality(dataDir);
         string score =
             $"quality: precision={summary.Precision:P1} "
             + $"({summary.TrueChanges}/{summary.TrueChanges + summary.WrongChanges}), "
