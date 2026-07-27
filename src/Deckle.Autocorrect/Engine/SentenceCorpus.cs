@@ -100,12 +100,32 @@ public sealed class SentenceCorpus
     // and the commit time in ms (0 = unknown, e.g. from a caller without a clock).
     // A commit-stage repair is the slot's first transition. Typed and final rendering
     // start with the same separator; only a re-edit can split them.
-    public void Word(string typed, string final, char boundary, long timestampMs = 0)
+    public void Word(
+        string typed,
+        string final,
+        char boundary,
+        long timestampMs = 0,
+        string precedingSeparators = "")
     {
         if (_nextWordSuspect)
         {
             _nextWordSuspect = false;
             return; // a likely fragment tail — never a slot
+        }
+
+        // A separator can grow after the previous word committed: the comma
+        // committed « besoin », then an empty-buffer space completed ", ". The
+        // tracker hands that faithful run to the next commit. Keep a final-side
+        // mistouch repair if one already changed the separator in the meantime.
+        if (_slots.Count > 0 && precedingSeparators.Length > 0)
+        {
+            Slot previous = _slots[^1];
+            if (string.Equals(
+                    previous.FinalSeparator, previous.TypedSeparator, StringComparison.Ordinal))
+            {
+                previous.FinalSeparator = precedingSeparators;
+            }
+            previous.TypedSeparator = precedingSeparators;
         }
 
         string separator = WordBoundaries.DisplaySeparator(boundary);
