@@ -1356,9 +1356,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WhisperBackend.Transcribe.cs
 │   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Travel/
+│   │   ├── Terms/
+│   │   │   └── terms.fr.json
 │   │   ├── AGENTS.md  — [agent-instructions] Trip-preparation domain — seven-type model, closed vocabularies, guarded operat…
 │   │   ├── CONTEXT.md  — [agent-instructions] Trip-preparation vocabulary — the seven types, their French labels, and the ter…
-│   │   └── JOURNAL.md
+│   │   ├── Deckle.Travel.csproj
+│   │   ├── DeckleTravelSource.cs
+│   │   ├── JOURNAL.md
+│   │   ├── TravelGestures.cs
+│   │   ├── TravelMcp.cs
+│   │   ├── TravelObjects.cs
+│   │   ├── TravelPropertyWriter.cs
+│   │   ├── TravelRequests.cs
+│   │   ├── TravelRuntimeProvider.cs
+│   │   ├── TravelSchema.cs
+│   │   ├── TravelSchemaRuntime.cs
+│   │   ├── TravelTerms.cs
+│   │   └── TravelToolCatalog.cs
 │   ├── Deckle.Vad/
 │   │   ├── AGENTS.md
 │   │   ├── CLAUDE.md

@@ -2,6 +2,7 @@ using Deckle.Anytype;
 using Deckle.Anytype.Mcp;
 using Deckle.Home;
 using Deckle.Security;
+using Deckle.Travel;
 
 namespace Deckle.App;
 
@@ -84,10 +85,11 @@ public partial class App
         // as one that cannot be read above.
         // Core Anytype clients and optional domain surfaces meet only at the
         // application composition root. Selecting the Anytype module installs
-        // this build's Home adapter and provisions its bearer alongside the
-        // reusable Anytype surfaces; later UI can choose a narrower list here.
+        // this build's domain adapters (Home, Travel) and provisions their
+        // bearers alongside the reusable Anytype surfaces; later UI can choose
+        // a narrower list here.
         IReadOnlyList<McpClientProfile> clients =
-            [.. McpClients.All, HomeMcp.Client];
+            [.. McpClients.All, HomeMcp.Client, TravelMcp.Client];
         var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
         try
         {

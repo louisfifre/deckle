@@ -81,6 +81,7 @@
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
     <ProjectReference Include="..\Deckle.Anytype.Mcp\Deckle.Anytype.Mcp.csproj" />
     <ProjectReference Include="..\Deckle.Home\Deckle.Home.csproj" />
+    <ProjectReference Include="..\Deckle.Travel\Deckle.Travel.csproj" />
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
