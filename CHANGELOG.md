@@ -23,6 +23,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Track context document drift
 - **anytype:** Add bounded cross-space utilities
 - **autocorrect:** Prepare verified sentence proposals
+- **travel:** Scaffold the trip-preparation MCP module
+- **app:** Mount the Travel MCP client
 
 ### Changed
 
@@ -46,6 +48,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Reconcile external correction bursts
 - **autocorrect:** Preserve typed sentence separators
 - **autocorrect:** Improve keyboard correction quality
+- **travel:** Embed the terms file culture-neutral
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
