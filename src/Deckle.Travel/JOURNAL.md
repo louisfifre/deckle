@@ -1,5 +1,15 @@
 # JOURNAL — Deckle.Travel
 
+## 2026-07-27 — Le `.fr` d'un fichier embarqué déclenche l'inférence de culture
+
+- Trouvé à la revérification du squelette : `Terms\terms.fr.json` embarqué en
+  `EmbeddedResource` partait dans un assembly satellite `fr\` — l'assembly
+  principal ne portait aucune ressource et le chargeur aurait échoué au
+  premier accès. MSBuild lit le segment `.fr` du nom comme une culture.
+  Corrigé par `WithCulture="false"` + `LogicalName` explicite (csproj).
+  Vérification qui l'a attrapé : lire les manifest resources de la DLL après
+  build, puis smoke run du chemin termes→manifeste.
+
 ## 2026-07-27 — Les deux faits API marqués « à vérifier » sont tranchés
 
 - **Templates : lecture et application seulement.** L'API expose
