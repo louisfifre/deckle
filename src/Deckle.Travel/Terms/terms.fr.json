@@ -1,0 +1,62 @@
+{
+  "language": "fr",
+  "types": {
+    "stay": { "name": "Séjour", "plural": "Séjours" },
+    "stage": { "name": "Étape", "plural": "Étapes" },
+    "place": { "name": "Lieu", "plural": "Lieux" },
+    "activity": { "name": "Activité", "plural": "Activités" },
+    "transfer": { "name": "Déplacement", "plural": "Déplacements" },
+    "lodging": { "name": "Hébergement", "plural": "Hébergements" },
+    "expense": { "name": "Dépense", "plural": "Dépenses" }
+  },
+  "properties": {
+    "start_date": "Début",
+    "end_date": "Fin",
+    "date": "Date",
+    "appointment": "RDV",
+    "arrival": "Arrivée",
+    "departure": "Départ",
+    "duration": "Durée",
+    "visit_duration": "Durée de visite",
+    "accessibility": "Accessibilité",
+    "address": "Adresse",
+    "official_site": "Site officiel",
+    "confirmation": "Référence",
+    "files": "Fichiers",
+    "amount": "Montant",
+    "activity_category": "Catégorie",
+    "expense_category": "Catégorie",
+    "place_category": "Catégorie",
+    "mode": "Mode",
+    "stay": "Séjour",
+    "stage": "Étape",
+    "place": "Lieu",
+    "expense": "Dépense"
+  },
+  "options": {
+    "activity_category": {
+      "walk": "Marche",
+      "visit": "Visite",
+      "evening": "Soirée",
+      "sport": "Sport",
+      "meal": "Repas",
+      "other": "Autre"
+    },
+    "expense_category": {
+      "transport": "Transport",
+      "lodging": "Hébergement",
+      "food": "Restauration",
+      "activity": "Activité",
+      "purchase": "Achat",
+      "fees": "Frais",
+      "other": "Autre"
+    },
+    "mode": {
+      "plane": "Avion",
+      "train": "Train",
+      "bus": "Bus",
+      "ferry": "Ferry",
+      "car": "Voiture"
+    }
+  }
+}
