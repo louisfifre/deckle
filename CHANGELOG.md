@@ -25,6 +25,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Prepare verified sentence proposals
 - **travel:** Scaffold the trip-preparation MCP module
 - **app:** Mount the Travel MCP client
+- **anytype:** Upload files through the REST transport
+- **travel:** Attach local files to the objects that carry them
+- **travel:** Give every type its Anytype icon
 
 ### Changed
 
