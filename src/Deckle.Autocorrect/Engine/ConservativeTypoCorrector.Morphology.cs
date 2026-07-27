@@ -119,19 +119,3 @@ public sealed partial class ConservativeTypoCorrector
         "un", "une", "le", "la", "les", "du", "des",
     };
 }
-
-// Priority view over the same lexical and keyboard evidence. It acts only on a
-// closed morphology proof: subject agreement, avoir + participle, a determined
-// accent fold, or a regular non-verb plural.
-public sealed class MorphologyCorrector : ICorrectionPolicy
-{
-    private readonly ConservativeTypoCorrector _inner;
-
-    public MorphologyCorrector(ConservativeTypoCorrector inner) => _inner = inner;
-
-    public CorrectionDecision? Evaluate(
-        string word,
-        IReadOnlyList<string> leftContext,
-        CorrectionTrace? trace = null) =>
-        _inner.EvaluateMorphology(word, leftContext, trace);
-}

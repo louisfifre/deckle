@@ -4,7 +4,7 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 [Trait("Category", "unit")]
-public sealed class MorphologyCorrectorTests
+public sealed class MorphologyCorrectionTests
 {
     [Fact]
     public void ElidedSubjectSelectsTheAgreeingKeyboardRepair()
@@ -32,13 +32,15 @@ public sealed class MorphologyCorrectorTests
     }
 
     [Fact]
-    public void EtreDoesNotForceARareParticipleOverACommonTypo()
+    public void EtreLetsTheCommonTypoWinOverARareParticiple()
     {
         ICorrectionPolicy policy = Policy(
             "bien\t1000\nbiné\t10\n",
             "biné\tbiner\tpar:pas\t1\n");
 
-        Assert.Null(policy.Evaluate("bine", ["c'est"]));
+        CorrectionDecision? decision = policy.Evaluate("bine", ["c'est"]);
+
+        Assert.Equal("bien", decision!.Replacement);
     }
 
     [Fact]
@@ -73,8 +75,7 @@ public sealed class MorphologyCorrectorTests
     {
         FrequencyLexicon french = FrequencyLexicon.LoadTsv(new StringReader(frenchTsv));
         VerbMorphology verbs = VerbMorphology.LoadTsv(new StringReader(verbsTsv));
-        var typo = new ConservativeTypoCorrector(
+        return new ConservativeTypoCorrector(
             french, accentIndex: AccentIndex.Build(french), verbs: verbs);
-        return new MorphologyCorrector(typo);
     }
 }

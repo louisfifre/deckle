@@ -24,13 +24,11 @@ public sealed record AutocorrectPolicySet(
 
         var policies = new List<ICorrectionPolicy>
         {
-            // Morphology gets first refusal over accent-like typo rivals such as
-            // tu proposees/proposes and je prepare/prépare.
-            new MorphologyCorrector(typo),
             // Apostrophe repair precedes spell-fix so cest cannot collapse to est.
             new ElisionCorrector(french, english, personal),
-            // A confident physical slip may beat a rare accent-only false friend;
-            // the typo policy explicitly yields to a plausible direct accent fold.
+            // One lexical pass arbitrates morphology and physical slips. A
+            // confident slip may beat a rare accent-only false friend; morphology
+            // gets priority when subject agreement or a closed accent proof exists.
             typo,
             diacritics,
         };

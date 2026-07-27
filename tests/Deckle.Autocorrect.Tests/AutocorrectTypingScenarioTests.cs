@@ -160,10 +160,9 @@ public sealed class AutocorrectTypingScenarioTests
             verbs: VerbMorphology.LoadTsvGz(Path.Combine(
                 dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
         var policy = new CompositeCorrectionPolicy(
-            new MorphologyCorrector(typo),
-            new DiacriticsRestorer(french, english, index),
             new ElisionCorrector(french, english),
-            typo);
+            typo,
+            new DiacriticsRestorer(french, english, index));
         using var h = new AutocorrectEngineHarness(policy, french: french, english: english);
         h.Settings.Apps["codex"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");

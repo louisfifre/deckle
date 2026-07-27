@@ -1479,7 +1479,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MistouchMinerTests.cs
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
-│   │   ├── MorphologyCorrectorTests.cs
+│   │   ├── MorphologyCorrectionTests.cs
 │   │   ├── OnnxJudgeSerialCollection.cs
 │   │   ├── OnnxSentenceScorerTests.cs
 │   │   ├── OnnxSlotRerankerTests.cs

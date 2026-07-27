@@ -248,8 +248,7 @@ public class ConservativeTypoCorrectorTests
                 dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
 
         var trace = new CorrectionTrace();
-        CorrectionDecision? decision = new MorphologyCorrector(corrector)
-            .Evaluate("proposees", ["tu"], trace);
+        CorrectionDecision? decision = corrector.Evaluate("proposees", ["tu"], trace);
 
         Assert.True(
             decision is not null,

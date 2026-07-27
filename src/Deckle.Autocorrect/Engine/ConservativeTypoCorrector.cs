@@ -52,47 +52,32 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
     public CorrectionDecision? Evaluate(
         string word,
         IReadOnlyList<string> leftContext,
-        CorrectionTrace? trace = null) =>
-        EvaluateCore(word, leftContext, trace, morphologyOnly: false);
-
-    internal CorrectionDecision? EvaluateMorphology(
-        string word,
-        IReadOnlyList<string> leftContext,
-        CorrectionTrace? trace) =>
-        EvaluateCore(word, leftContext, trace, morphologyOnly: true);
-
-    private CorrectionDecision? EvaluateCore(
-        string word,
-        IReadOnlyList<string> leftContext,
-        CorrectionTrace? trace,
-        bool morphologyOnly)
+        CorrectionTrace? trace = null)
     {
-        StageTrace? st = trace?.Open(morphologyOnly
-            ? CorrectionTrace.StageNames.Morphology
-            : CorrectionTrace.StageNames.Typo);
+        StageTrace? morphology = trace?.Open(CorrectionTrace.StageNames.Morphology);
 
         if (word.Length < _options.MinWordLength)
-            return Abstain(st, CorrectionTrace.Reasons.TooShort);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.TooShort);
 
         // Letters only: an apostrophe, hyphen or digit takes the token out of
         // scope — elisions, compounds and identifiers are not plain typos.
         foreach (char c in word)
             if (!char.IsLetter(c))
-                return Abstain(st, CorrectionTrace.Reasons.NonWordChar);
+                return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.NonWordChar);
 
         // camelCase/PascalCase identifiers and already-accented forms are never
         // typo-corrected: the user meant the identifier, and an accented form is
         // another stage's concern.
         if (WordShape.HasInternalUpper(word))
-            return Abstain(st, CorrectionTrace.Reasons.InternalCaps);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.InternalCaps);
         if (AccentFolding.HasDiacritics(word))
-            return Abstain(st, CorrectionTrace.Reasons.AlreadyAccented);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.AlreadyAccented);
 
         // A capitalised word mid-utterance is almost always a proper noun (a
         // name, a brand): never spell-fix it. Sentence-initial capitals are
         // exempt — there a capital is the ordinary case.
         if (leftContext.Count > 0 && WordShape.IsTitleCase(word))
-            return Abstain(st, CorrectionTrace.Reasons.ProperNounGuard);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ProperNounGuard);
 
         string lower = word.ToLowerInvariant();
 
@@ -101,47 +86,55 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         // Protected literals stay outside both the morphology priority and the
         // ordinary typo path.
         if (_english?.Contains(lower) == true)
-            return Abstain(st, CorrectionTrace.Reasons.ValidEnglish);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ValidEnglish);
         if (_personal?.IsAdopted(lower) == true)
-            return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.UserAdopted);
 
         // The morphology priority may settle an accent ambiguity even when the
         // bare form is itself valid; the ordinary typo stage still refuses every
         // valid French literal without exception.
-        if (morphologyOnly)
-        {
-            CorrectionDecision? morphological = EvaluateMorphologicalAccent(
-                word, lower, literalValid, leftContext, st);
-            if (morphological is not null)
-                return morphological;
-        }
+        CorrectionDecision? morphological = EvaluateMorphologicalAccent(
+            word, lower, literalValid, leftContext, morphology);
+        if (morphological is not null)
+            return morphological;
 
         // The defining gate: this stage only ever acts on a NON-word. A valid
         // French form is the diacritics gate's business and was already settled.
         if (literalValid)
-            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
+            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ValidFrench);
 
+        string requiredPerson = string.Empty;
         bool hasSubject = _verbs is not null
-            && GrammarCorrector.TryGetRequiredPerson(leftContext, out _);
-        if (morphologyOnly && !hasSubject)
-            return Abstain(st, CorrectionTrace.Reasons.NoSubjectPronoun);
+            && GrammarCorrector.TryGetRequiredPerson(leftContext, out requiredPerson);
+        if (!hasSubject)
+            morphology?.Abstain(CorrectionTrace.Reasons.NoSubjectPronoun);
 
         // Near tier: a single edit away — the high-confidence case.
         var near = ValidNeighbours(lower, twoEdits: false);
         if (near.Count > 0)
         {
+            if (hasSubject)
+            {
+                CorrectionDecision? agreeing = DecideAgreement(
+                    word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
+                    requiredPerson, morphology);
+                if (agreeing is not null)
+                    return agreeing;
+            }
+
+            StageTrace? typo = trace?.Open(CorrectionTrace.StageNames.Typo);
+
             // A direct accent restoration costs no physical edit. A keyboard
             // neighbour may outrank it only with the same strong frequency
             // dominance required between typo rivals (bine -> bien, while
             // modele stays reserved for modèle rather than modèles).
-            if (!morphologyOnly
-                && _accentIndex is not null
+            if (_accentIndex is not null
                 && _accentIndex.VariantsOf(lower) is { Count: > 0 } accents
                 && near[0].Frequency < accents[0].FrequencyPerMillion * _options.DominanceRatio)
-                return Abstain(st, CorrectionTrace.Reasons.AccentFoldPreferred);
+                return Abstain(typo, CorrectionTrace.Reasons.AccentFoldPreferred);
 
             return Decide(word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
-                leftContext, st, CorrectionTrace.Reasons.TypoNear, morphologyOnly);
+                typo, CorrectionTrace.Reasons.TypoNear);
         }
 
         // Far tier: two edits away, for a bigger fault — only when nothing sits
@@ -152,12 +145,27 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         {
             var far = ValidNeighbours(lower, twoEdits: true);
             if (far.Count > 0)
+            {
+                if (hasSubject)
+                {
+                    CorrectionDecision? agreeing = DecideAgreement(
+                        word, far, _options.Edits2MinFrequencyPerMillion,
+                        _options.Edits2DominanceRatio, requiredPerson, morphology);
+                    if (agreeing is not null)
+                        return agreeing;
+                }
+
+                StageTrace? typo = trace?.Open(CorrectionTrace.StageNames.Typo);
                 return Decide(
                     word, far, _options.Edits2MinFrequencyPerMillion, _options.Edits2DominanceRatio,
-                    leftContext, st, CorrectionTrace.Reasons.TypoFar, morphologyOnly);
+                    typo, CorrectionTrace.Reasons.TypoFar);
+            }
         }
 
-        return Abstain(st, CorrectionTrace.Reasons.NoNeighbour);
+        if (hasSubject)
+            morphology?.Abstain(CorrectionTrace.Reasons.NoNeighbour);
+        return Abstain(trace?.Open(CorrectionTrace.StageNames.Typo),
+            CorrectionTrace.Reasons.NoNeighbour);
     }
 
     // Records the abstain reason onto the stage trace (when present) and leaves
@@ -166,6 +174,15 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
     {
         st?.Abstain(reason);
         return null;
+    }
+
+    private static CorrectionDecision? AbstainBoth(
+        CorrectionTrace? trace,
+        StageTrace? morphology,
+        string reason)
+    {
+        morphology?.Abstain(reason);
+        return Abstain(trace?.Open(CorrectionTrace.StageNames.Typo), reason);
     }
 
     // The word length past which the far tier is skipped: its candidate space
@@ -181,58 +198,14 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
     // its safety gauges and the exit reason onto the stage trace when present.
     private CorrectionDecision? Decide(
         string word, List<Candidate> candidates, double minFrequency, double dominanceRatio,
-        IReadOnlyList<string> leftContext, StageTrace? st, string fireReason,
-        bool morphologyOnly)
+        StageTrace? st, string fireReason)
     {
         Candidate top = candidates[0];
-        double ratio = candidates.Count >= 2 && candidates[1].Frequency > 0.0
-            ? top.Frequency / candidates[1].Frequency
-            : double.PositiveInfinity;
-
-        if (st is not null)
-        {
-            foreach (Candidate c in candidates)
-                st.AddCandidate(c.Form, c.Frequency, CorrectionTrace.Sources.Index);
-            st.Gauge("top_freq", top.Frequency)
-              .Gauge("top_freq_min", minFrequency)
-              .Gauge("dominance", ratio)
-              .Gauge("dominance_min", dominanceRatio);
-        }
+        TraceEvidence(candidates, minFrequency, dominanceRatio, st);
 
         // Common enough to be the obvious intent — a rare neighbour is no evidence.
         if (top.Frequency < minFrequency)
             return Abstain(st, CorrectionTrace.Reasons.TooRare);
-
-        // A subject pronoun can settle a crowded typo neighbourhood without a
-        // frequency guess: exactly one candidate is an unambiguous finite form
-        // for that person (tu proposees → tu proposes).
-        if (morphologyOnly
-            && _verbs is not null
-            && GrammarCorrector.TryGetRequiredPerson(leftContext, out string required))
-        {
-            Candidate? agreeing = null;
-            foreach (Candidate candidate in candidates)
-            {
-                if (!_verbs.HasUnambiguousFiniteReading(candidate.Form, required))
-                    continue;
-                if (agreeing is not null)
-                {
-                    agreeing = null;
-                    break;
-                }
-                agreeing = candidate;
-            }
-
-            if (agreeing is Candidate verb && verb.Frequency >= minFrequency)
-            {
-                st?.Fire(CorrectionTrace.Reasons.TypoSubjectAgreement);
-                return new CorrectionDecision(
-                    word, CasePattern.Apply(word, verb.Form), CorrectionReason.TypoCorrection);
-            }
-        }
-
-        if (morphologyOnly)
-            return Abstain(st, CorrectionTrace.Reasons.NoAgreementCandidate);
 
         // With rivals, the best must dominate; a close second means real ambiguity.
         if (candidates.Count >= 2 && top.Frequency < candidates[1].Frequency * dominanceRatio)
@@ -241,6 +214,60 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbi
         st?.Fire(fireReason);
         return new CorrectionDecision(
             word, CasePattern.Apply(word, top.Form), CorrectionReason.TypoCorrection);
+    }
+
+    // A subject can settle a crowded physical-typo neighbourhood before the
+    // frequency fallback: exactly one candidate must be an unambiguous finite
+    // form for the required person (tu proposees → tu proposes).
+    private CorrectionDecision? DecideAgreement(
+        string word,
+        List<Candidate> candidates,
+        double minFrequency,
+        double dominanceRatio,
+        string requiredPerson,
+        StageTrace? st)
+    {
+        TraceEvidence(candidates, minFrequency, dominanceRatio, st);
+
+        Candidate? agreeing = null;
+        foreach (Candidate candidate in candidates)
+        {
+            if (!_verbs!.HasUnambiguousFiniteReading(candidate.Form, requiredPerson))
+                continue;
+            if (agreeing is not null)
+                return Abstain(st, CorrectionTrace.Reasons.NoAgreementCandidate);
+            agreeing = candidate;
+        }
+
+        if (agreeing is not Candidate verb)
+            return Abstain(st, CorrectionTrace.Reasons.NoAgreementCandidate);
+        if (verb.Frequency < minFrequency)
+            return Abstain(st, CorrectionTrace.Reasons.TooRare);
+
+        st?.Fire(CorrectionTrace.Reasons.TypoSubjectAgreement);
+        return new CorrectionDecision(
+            word, CasePattern.Apply(word, verb.Form), CorrectionReason.TypoCorrection);
+    }
+
+    private static void TraceEvidence(
+        List<Candidate> candidates,
+        double minFrequency,
+        double dominanceRatio,
+        StageTrace? st)
+    {
+        if (st is null)
+            return;
+
+        foreach (Candidate candidate in candidates)
+            st.AddCandidate(candidate.Form, candidate.Frequency, CorrectionTrace.Sources.Index);
+
+        double ratio = candidates.Count >= 2 && candidates[1].Frequency > 0.0
+            ? candidates[0].Frequency / candidates[1].Frequency
+            : double.PositiveInfinity;
+        st.Gauge("top_freq", candidates[0].Frequency)
+          .Gauge("top_freq_min", minFrequency)
+          .Gauge("dominance", ratio)
+          .Gauge("dominance_min", dominanceRatio);
     }
 
     // Valid French words one edit away (twoEdits=false) or exactly two edits away
