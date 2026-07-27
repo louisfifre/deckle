@@ -50,6 +50,19 @@ internal static class TravelObjectJson
         return result;
     }
 
+    // A "files" property carries file-object ids in its own array, not in the
+    // "objects" one. Attaching reads the current list before writing, because
+    // a property PATCH replaces it whole.
+    public static IReadOnlyList<string> FileReferences(JsonObject value, string propertyKey)
+    {
+        var result = new List<string>();
+        if (Property(value, propertyKey)?["files"] is not JsonArray files) return result;
+        foreach (JsonNode? node in files)
+            if (node is JsonValue item && item.TryGetValue<string>(out string? id) && id is not null)
+                result.Add(id);
+        return result;
+    }
+
     public static string String(JsonObject value, string key) =>
         value[key] is JsonValue node && node.TryGetValue<string>(out string? text) && text is not null
             ? text

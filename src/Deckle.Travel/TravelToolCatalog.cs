@@ -27,6 +27,13 @@ public static class TravelToolCatalog
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct)),
 
             new ToolDescriptor(
+                "attach",
+                "Attach local files — tickets, confirmations, GPX traces — to an activity, a transfer, or a lodging. Paths are read from this machine and uploaded into the space; existing attachments are kept.",
+                AttachSchema(),
+                (args, ct) => gestures().AttachAsync(
+                    RequiredString(args, "object"), StringItems(args, "files"), ct)),
+
+            new ToolDescriptor(
                 "get",
                 "Read one Travel object in full with relation targets resolved to readable names.",
                 ObjectSchema(
@@ -85,6 +92,20 @@ public static class TravelToolCatalog
                         ("name", StringSchema("New object title.")),
                         ("properties", PropertyMapSchema()),
                     ]),
+            }),
+        ]);
+
+    private static JsonObject AttachSchema() => ObjectSchema(
+        required:
+        [
+            ("object", StringSchema("Activity, transfer, or lodging name or id.")),
+            ("files", new JsonObject
+            {
+                ["type"] = "array",
+                ["minItems"] = 1,
+                ["maxItems"] = 100,
+                ["description"] = "Local file paths on this machine, uploaded in order.",
+                ["items"] = StringSchema("Local file path."),
             }),
         ]);
 
@@ -162,6 +183,20 @@ public static class TravelToolCatalog
                 RequiredString(item, "object"),
                 OptionalString(item, "name"),
                 OptionalObject(item, "properties")));
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<string> StringItems(JsonObject? args, string name)
+    {
+        JsonArray array = RequiredArray(args, name);
+        var result = new List<string>(array.Count);
+        foreach (JsonNode? node in array)
+        {
+            if (node is JsonValue value && value.TryGetValue<string>(out string? text) && text is not null)
+                result.Add(text);
+            else
+                throw new ArgumentException($"Argument '{name}' must hold strings.", name);
         }
         return result;
     }

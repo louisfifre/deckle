@@ -163,6 +163,78 @@ public sealed class TravelGestures
         return "Mis à jour :\n" + string.Join("\n", prepared.Select(item => "- " + item.Display));
     }
 
+    // Tickets, confirmations, GPX traces. Files are read from this machine and
+    // uploaded into the local space; nothing about a trip leaves it, here or
+    // anywhere else in this domain. Upload first, then attach: a file has to
+    // exist as an object before a property can reference it.
+    public async Task<string> AttachAsync(
+        string selector,
+        IReadOnlyList<string> paths,
+        CancellationToken ct = default)
+    {
+        DateTime started = DateTime.UtcNow;
+        ValidateBatch(paths, "attach");
+        TravelSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
+
+        using var writeScope = await _api.AcquireWriteScopeAsync("travel_attach", selector, ct)
+            .ConfigureAwait(false);
+        TravelObjectIndex index = await TravelObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        JsonObject target = index.Resolve(selector);
+        string typeKey = TravelObjectJson.TypeKey(target);
+
+        // Only the three booking-bearing types carry files; the others fail
+        // here rather than after the bytes have already reached the space.
+        if (!TravelSchema.RequiredByType.TryGetValue(typeKey, out IReadOnlyList<string>? typeProperties)
+            || !typeProperties.Contains(TravelSchema.Properties.Files))
+        {
+            throw new InvalidOperationException(
+                $"« {TravelObjectIndex.Display(target)} » ({typeKey}) ne porte pas de fichiers. "
+                + "Les fichiers vont sur une activité, un déplacement ou un hébergement.");
+        }
+
+        SchemaPropertyInfo property = schema.ResolveProperty(typeKey, TravelSchema.Properties.Files);
+
+        var uploaded = new List<(string Name, string Id)>();
+        foreach (string path in paths)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("Un chemin de fichier ne peut pas être vide.", nameof(paths));
+
+            string full = Path.GetFullPath(path.Trim());
+            if (!File.Exists(full))
+                throw new FileNotFoundException($"Fichier introuvable : {full}", full);
+
+            string fileName = Path.GetFileName(full);
+            byte[] bytes = await File.ReadAllBytesAsync(full, ct).ConfigureAwait(false);
+            JsonObject answer = await _api.UploadFileAsync(_spaceId, fileName, bytes, ct).ConfigureAwait(false);
+            string fileId = TravelObjectJson.String(answer, "object_id");
+            if (fileId.Length == 0)
+                throw new InvalidOperationException(
+                    $"Anytype n’a pas renvoyé l’id du fichier « {fileName} » ; rien n’a été attaché.");
+            uploaded.Add((fileName, fileId));
+        }
+
+        // The PATCH replaces the whole list, so the existing attachments are
+        // read from the indexed object and carried over.
+        var ids = new List<string>(TravelObjectJson.FileReferences(target, property.Key));
+        foreach ((_, string fileId) in uploaded)
+            if (!ids.Contains(fileId, StringComparer.Ordinal))
+                ids.Add(fileId);
+
+        var files = new JsonArray();
+        foreach (string fileId in ids) files.Add(fileId);
+
+        await _api.UpdateObjectAsync(_spaceId, TravelObjectJson.Id(target), new JsonObject
+        {
+            ["properties"] = new JsonArray(
+                new JsonObject { ["key"] = property.Key, ["files"] = files }),
+        }, ct).ConfigureAwait(false);
+
+        DeckleTravelSource.Log.GestureCompleted("attach", Elapsed(started));
+        return $"Attaché à « {TravelObjectIndex.Display(target)} » :\n"
+               + string.Join("\n", uploaded.Select(file => "- " + file.Name));
+    }
+
     public async Task<string> GetAsync(string selector, CancellationToken ct = default)
     {
         DateTime started = DateTime.UtcNow;
