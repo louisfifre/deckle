@@ -49,7 +49,7 @@ internal static class SchemaPlanner
             {
                 if (!exists || existingType!.Icon is null)
                     actions.Add(new SchemaAction("set_icon", type.Key, type.Icon.Display));
-                else
+                else if (!type.Icon.Matches(existingType.Icon))
                     skippedConflicts.Add(
                         $"set_icon · {type.Key} · icône existante {existingType.Icon.Display}, " +
                         $"demandée {type.Icon.Display}");

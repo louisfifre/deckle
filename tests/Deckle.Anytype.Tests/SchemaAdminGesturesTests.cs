@@ -384,6 +384,35 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewStaysSilentWhenTheExistingIconIsTheRequestedOne()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(icon: new JsonObject
+            {
+                ["format"] = "icon",
+                ["name"] = "home",
+                ["color"] = "blue",
+            }),
+        }));
+        server.OnListProperties(EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync(
+            "home",
+            TypeManifest(new JsonObject
+            {
+                ["format"] = "icon",
+                ["name"] = "home",
+                ["color"] = "blue",
+            }),
+            Ct);
+
+        Assert.Contains("Aucune création additive nécessaire.", digest);
+        Assert.DoesNotContain("Conflits ignorés", digest);
+    }
+
+    [Fact]
     public async Task InspectIncludesCurrentTypeIcon()
     {
         using var server = new FakeAnytypeServer();
