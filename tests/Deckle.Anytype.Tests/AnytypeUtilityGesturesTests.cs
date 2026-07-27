@@ -24,6 +24,10 @@ public class AnytypeUtilityGesturesTests
         ["pagination"] = new JsonObject { ["has_more"] = false },
     };
 
+    // GET and PATCH on an object answer the object wrapped in {object:{…}}; the
+    // fake serves a canned body verbatim, so the envelope belongs to the fixture.
+    private static JsonObject Enveloped(JsonObject value) => new() { ["object"] = value };
+
     [Fact]
     public async Task CollectionAddResolvesAndValidatesEverythingBeforeOneWrite()
     {
@@ -36,13 +40,14 @@ public class AnytypeUtilityGesturesTests
         {
             new JsonObject { ["id"] = ObjectId, ["name"] = "Cuisine" },
         }));
-        server.OnGetObject(CollectionId, new JsonObject
+        server.OnGetObject(CollectionId, Enveloped(new JsonObject
         {
             ["id"] = CollectionId,
             ["name"] = "Rez-de-chaussée",
             ["layout"] = "collection",
-        });
-        server.OnGetObject(ObjectId, new JsonObject { ["id"] = ObjectId, ["name"] = "Cuisine" });
+        }));
+        server.OnGetObject(ObjectId, Enveloped(
+            new JsonObject { ["id"] = ObjectId, ["name"] = "Cuisine" }));
         server.OnPostListObjects(CollectionId, "\"Objects added successfully\"");
 
         var api = new AnytypeApiClient(server.Credentials);
@@ -65,12 +70,12 @@ public class AnytypeUtilityGesturesTests
     public async Task CollectionAddRejectsANonCollectionBeforeWriting()
     {
         using var server = new FakeAnytypeServer();
-        server.OnGetObject(CollectionId, new JsonObject
+        server.OnGetObject(CollectionId, Enveloped(new JsonObject
         {
             ["id"] = CollectionId,
             ["name"] = "Cuisine",
             ["layout"] = "basic",
-        });
+        }));
 
         var api = new AnytypeApiClient(server.Credentials);
         var gestures = new CollectionMembershipGestures(api, Aliases(), new NameResolver(api));
@@ -139,7 +144,8 @@ public class AnytypeUtilityGesturesTests
         if (tags.Length == 0) tags = [("existant", "Existant")];
 
         var server = new FakeAnytypeServer();
-        server.OnGetObject(ObjectId, new JsonObject { ["id"] = ObjectId, ["name"] = "Objet" });
+        server.OnGetObject(ObjectId, Enveloped(
+            new JsonObject { ["id"] = ObjectId, ["name"] = "Objet" }));
         server.OnListTypes(Page(new JsonArray()));
         server.OnListProperties(Page(new JsonArray
         {
@@ -161,7 +167,7 @@ public class AnytypeUtilityGesturesTests
                 ["color"] = "grey",
             });
         server.OnListPropertyTags("property-select", Page(data));
-        server.OnPatchObject(ObjectId, new JsonObject { ["id"] = ObjectId });
+        server.OnPatchObject(ObjectId, Enveloped(new JsonObject { ["id"] = ObjectId }));
         return server;
     }
 }
