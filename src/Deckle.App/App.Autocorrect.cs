@@ -146,47 +146,16 @@ public partial class App
             var mistouchFamilies = MistouchFamilyStore.Load(Path.Combine(
                 AppPaths.GetModuleDirectory("autocorrect"), MistouchFamilyStore.FileName));
 
-            // The global-English tier is deliberately restricted: only the
-            // globish seed artifact activates it. The historical full English
-            // list is never loaded into the live protected-literal chain.
-            var diacritics = new DiacriticsRestorer(
-                french: french,
-                english: english,
-                index: index,
-                options: new RestorerOptions(),
-                context: context,
-                personal: dictionary,
-                personalVariants: BuildAutocorrectPersonalVariants(dictionary));
-
-            // Stage two: Android-style spell-fix for true non-words the gate
-            // leaves untouched ("bonjuor" → "bonjour"). The shared accent index
-            // also lets one physical slip compose with missing diacritics
-            // ("preaprer" → "préparer") under the same conservative bars.
-            var typo = new ConservativeTypoCorrector(
-                french: french,
-                english: english,
-                personal: dictionary,
-                options: new TypoOptions(),
-                accentIndex: index);
-
-            // Stage two-bis, ahead of the typo corrector: restore a dropped elision
-            // apostrophe in a glued proclitic ("cest" → "c'est", "jai" → "j'ai").
-            // It must precede the typo corrector, which would otherwise rewrite
-            // "cest" to "est" by a plain edit before the apostrophe is considered.
-            var elision = new ElisionCorrector(french, english, dictionary);
-
-            // Stage three: subject–verb agreement on a valid-but-misconjugated
-            // word the stages above leave alone ("tu mange" → "tu manges").
-            // Present only when the verb-morphology artifact loaded; last in the
-            // chain, since it acts on the forms the earlier stages pass through.
-            var grammar = verbs is not null
-                ? new GrammarCorrector(verbs, dictionary)
-                : null;
-
-            var policies = new List<ICorrectionPolicy> { diacritics, elision, typo };
-            if (grammar is not null)
-                policies.Add(grammar);
-            var policy = new CompositeCorrectionPolicy(policies.ToArray());
+            // One shared production composition: the same policy order and
+            // optional lexical knowledge are exercised by the quality tests.
+            AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
+                french,
+                english,
+                index,
+                context,
+                dictionary,
+                BuildAutocorrectPersonalVariants(dictionary),
+                verbs);
 
             sentenceReranker = new FrenchSentenceReranker(loadedReranker);
             loadedReranker = null; // ownership moved into the wrapper
@@ -196,7 +165,7 @@ public partial class App
                 decoder: new KeyDecoder(),
                 tracker: new TypedWordTracker(),
                 prober: new SurfaceProber(),
-                policy: policy,
+                policy: policies.Policy,
                 injector: new TextInjector(),
                 settings: () => AutocorrectSettingsService.Instance.Current,
                 dictionary: dictionary,
@@ -208,7 +177,7 @@ public partial class App
                 // accent variants with bounded typo neighbours; both preserve the
                 // exact literal as an explicit KEEP candidate.
                 reranker: sentenceReranker,
-                probe: new CompositeAmbiguityProbe(diacritics, typo),
+                probe: policies.AmbiguityProbe,
                 // Opt-in per-word decision telemetry, read live so a Settings flip
                 // takes effect without a rebuild. Off by default.
                 decisionTelemetry: () =>

@@ -159,6 +159,23 @@ public sealed class AutocorrectEngineCorpusTests
             && history.Contains("»user:bonsoir", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void CorpusKeepsSpacesTypedAfterPunctuation()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(textTelemetry: () => true);
+        h.Settings.Apps["chrome"] = true;
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("chrome");
+        h.Start();
+
+        h.Type("besoin, simplement.");
+
+        Assert.Contains(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtAutocorrectText
+            && PayloadValue(e, "typed") is "besoin, simplement."
+            && PayloadValue(e, "final") is "besoin, simplement.");
+    }
+
     private static object? PayloadValue(EventWrittenEventArgs ev, string name)
     {
         var names = ev.PayloadNames;

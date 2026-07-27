@@ -55,6 +55,7 @@ public sealed class TypedWordTracker
     private const int SeparatorRunCap = 8;
     private readonly StringBuilder _separators = new();
     private bool _separatorsValid;
+    private bool _reconcilingExternalMutation;
 
     public Action<WordCommit>? WordCommitted;
     public Action<WordEdit>? WordEdited;
@@ -126,6 +127,52 @@ public sealed class TypedWordTracker
     // injection). Keep no word, edit-window or left-context state across that
     // uncertainty: the next physical key starts a new, known run.
     public void NotifyExternalMutation() => Reset(ResetReason.ExternalMutation);
+
+    // Replays a closed, observable foreign SendInput replacement into the word
+    // model without presenting it as physical typing. Only a suffix we still
+    // know exactly is eligible; arbitrary OSK/RDP input remains a hard reset.
+    internal bool TryReconcileExternalMutation(int backspaces, string replacement)
+    {
+        if (backspaces <= 0 || replacement.Length == 0)
+            return false;
+
+        int knownSuffix = _buffer.Length;
+        if (knownSuffix == 0 && _editWindowOpen && !_reopened && _lastCommittedWord is not null)
+            knownSuffix = _lastCommittedWord.Length + (_lastBoundaryAttached ? 0 : 1);
+        if (backspaces > knownSuffix || replacement.Length > BufferCap + 1)
+            return false;
+
+        bool boundarySeen = false;
+        for (int i = 0; i < replacement.Length; i++)
+        {
+            char c = replacement[i];
+            if (WordBoundaries.IsWordChar(c) || WordBoundaries.IsApostrophe(c))
+            {
+                if (boundarySeen) return false;
+                continue;
+            }
+
+            // One final commit boundary is enough to realign a corrected word;
+            // richer synthetic editing is not a closed replacement anymore.
+            if (i != replacement.Length - 1)
+                return false;
+            boundarySeen = true;
+        }
+
+        _reconcilingExternalMutation = true;
+        try
+        {
+            for (int i = 0; i < backspaces; i++)
+                ProcessBackspace();
+            foreach (char c in replacement)
+                ProcessChar(c, timestampMs: 0);
+            return true;
+        }
+        finally
+        {
+            _reconcilingExternalMutation = false;
+        }
+    }
 
     /// <summary>
     /// Aligns the tracker with a correction the engine just injected: the word
@@ -293,12 +340,15 @@ public sealed class TypedWordTracker
         _editWindowOpen = true;
         _reopened = false;
 
-        WordCommitted?.Invoke(
-            new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs, wasReopened,
-                precedingSeparators));
+        if (!_reconcilingExternalMutation)
+        {
+            WordCommitted?.Invoke(
+                new WordCommit(word, boundary, wordBeforeThis, word2BeforeThis, timestampMs, wasReopened,
+                    precedingSeparators));
 
-        if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
-            WordEdited?.Invoke(new WordEdit(original, word, timestampMs));
+            if (wasReopened && original is not null && !string.Equals(original, word, StringComparison.Ordinal))
+                WordEdited?.Invoke(new WordEdit(original, word, timestampMs));
+        }
     }
 
     private void CloseEditWindow()

@@ -27,6 +27,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Changed
 
 - **mcp:** Isolate custom surfaces
+- **autocorrect:** Collapse duplicate lexical pass
 
 ### Fixed
 
@@ -41,6 +42,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Refine context inspection output
 - **scripts:** Show parent paths in context inspection
 - **autocorrect:** Harden corrections under live typing
+- **autocorrect:** Reconcile external correction bursts
+- **autocorrect:** Preserve typed sentence separators
+- **autocorrect:** Improve keyboard correction quality
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

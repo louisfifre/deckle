@@ -10,7 +10,12 @@ public sealed partial class AutocorrectEngine
     private void FeedCorpus(WordCommit commit, string onScreen)
     {
         if (CanCollectText())
-            _corpus?.Word(commit.Word, onScreen, commit.Boundary, (long)commit.TimestampMs);
+            _corpus?.Word(
+                commit.Word,
+                onScreen,
+                commit.Boundary,
+                (long)commit.TimestampMs,
+                commit.PrecedingSeparators);
     }
 
     // Emits one completed corpus sentence on the dedicated dataset, tagged with the

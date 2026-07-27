@@ -46,4 +46,17 @@ internal sealed class SimulatedTextSurface
             return true;
         }
     }
+
+    // Mirrors production SendInput: the injector cannot inspect the field, it
+    // only executes the minimal backspace/text plan it computed. Tests that
+    // exercise stale surface models use this path so corruption stays visible.
+    public void ApplyBlindReplacement(string current, string target)
+    {
+        InjectionPlan plan = InjectionPlan.Compute(current, target);
+        lock (_lock)
+        {
+            _text.Length = Math.Max(0, _text.Length - plan.Backspaces);
+            _text.Append(plan.Text);
+        }
+    }
 }

@@ -125,7 +125,9 @@ public sealed class AutocorrectTypingScenarioTests
         {
             var admission = new PersonalWordAdmission(french, AccentIndex.Build(french), english);
             using var dictionary = new PersonalDictionary(path, wordAdmission: admission.Allows);
-            using var h = Harness(french, english, dictionary, context);
+            VerbMorphology verbs = VerbMorphology.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName));
+            using var h = Harness(french, english, dictionary, context, verbs);
 
             h.Type("Je prepare le terrain.");
 
@@ -142,21 +144,54 @@ public sealed class AutocorrectTypingScenarioTests
         }
     }
 
+    [Fact]
+    public void SubjectAgreementTypoOutranksAnAccentOnlyFalseFriend()
+    {
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
+            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
+        var english = new GlobalEnglishLexicon(
+            AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
+        AccentIndex index = AccentIndex.Build(french);
+        var typo = new ConservativeTypoCorrector(
+            french,
+            english,
+            accentIndex: index,
+            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
+        var policy = new CompositeCorrectionPolicy(
+            new ElisionCorrector(french, english),
+            typo,
+            new DiacriticsRestorer(french, english, index));
+        using var h = new AutocorrectEngineHarness(policy, french: french, english: english);
+        h.Settings.Apps["codex"] = true;
+        h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
+        Assert.True(h.Start());
+
+        h.Type("ce que tu proposees me convient.");
+
+        Assert.Equal("ce que tu proposes me convient.", h.VisibleText);
+        Assert.Contains(h.Applied, correction =>
+            correction.Original == "proposees" && correction.Replacement == "proposes");
+        Assert.DoesNotContain(h.Applied, correction => correction.Replacement == "proposées");
+    }
+
     private static AutocorrectEngineHarness Harness(
         FrequencyLexicon french,
         IFrequencyLexicon? english = null,
         PersonalDictionary? dictionary = null,
-        IPairDisambiguator? context = null)
+        IPairDisambiguator? context = null,
+        VerbMorphology? verbs = null)
     {
-        var diacritics = new DiacriticsRestorer(
-            french, english, AccentIndex.Build(french), context: context, personal: dictionary);
-        var policy = new CompositeCorrectionPolicy(
-            diacritics,
-            new ElisionCorrector(french, english, dictionary),
-            new ConservativeTypoCorrector(
-                french, english, dictionary, accentIndex: AccentIndex.Build(french)));
+        AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
+            french,
+            english,
+            AccentIndex.Build(french),
+            context,
+            dictionary,
+            verbs: verbs);
         var harness = new AutocorrectEngineHarness(
-            policy,
+            policies.Policy,
             dictionary: dictionary,
             french: french,
             english: english);

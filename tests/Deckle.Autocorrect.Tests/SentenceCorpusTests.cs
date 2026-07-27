@@ -64,6 +64,29 @@ public class SentenceCorpusTests
     }
 
     [Fact]
+    public void ReconcilesSeparatorsTypedAfterThePreviousWordCommitted()
+    {
+        var (c, done) = New();
+        c.Word("besoin", "besoin", ',');
+        c.Word("simplement", "simplement", '.', precedingSeparators: ", ");
+
+        Assert.Equal("besoin, simplement.", done[0].Typed);
+        Assert.Equal("besoin, simplement.", done[0].Final);
+    }
+
+    [Fact]
+    public void SeparatorReconciliationDoesNotEraseACommittedMistouchRepair()
+    {
+        var (c, done) = New();
+        c.Word("fait", "fait", ',');
+        c.SeparatorEdit("fait", ",", ", ");
+        c.Word("beau", "beau", '.', precedingSeparators: ",");
+
+        Assert.Equal("fait,beau.", done[0].Typed);
+        Assert.Equal("fait, beau.", done[0].Final);
+    }
+
+    [Fact]
     public void PreservesTheSemicolonForApostropheSubstitution()
     {
         // « l;ecole » — the ';' is a boundary the corrector never repairs (it

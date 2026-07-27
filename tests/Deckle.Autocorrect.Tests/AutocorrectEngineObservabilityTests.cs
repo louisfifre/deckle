@@ -79,6 +79,26 @@ public sealed class AutocorrectEngineObservabilityTests
             e => e.EventId == DeckleAutocorrectSource.EvtInjectionRecovered);
     }
 
+    [Fact]
+    public void ForeignAutocorrectBurstLogsOnlyItsShapeAndOutcome()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness();
+        h.Prober.Surface = AutocorrectEngineHarness.Editable();
+        h.Start();
+
+        h.Type("bonjour ");
+        h.ForeignReplaceSuffix("bonjour ", "salut ");
+        h.Type("ami "); // closes and reconciles the coalesced foreign burst.
+
+        EventWrittenEventArgs mutation = Assert.Single(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtExternalMutationBurst
+            && PayloadValue(e, "outcome") is "reconciled");
+        Assert.Equal(8, PayloadValue(mutation, "backspaces"));
+        Assert.Equal(6, PayloadValue(mutation, "text_units"));
+        AssertNoTypedWordLeaked([mutation], "bonjour", "salut", "ami");
+    }
+
     // The hard rule, asserted directly: no string payload on any captured event
     // equals a word the user typed or the engine produced. Reasons (enum names)
     // and the process name are metadata, not typed content.

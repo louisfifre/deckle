@@ -166,9 +166,9 @@ public class ConservativeTypoCorrectorTests
     [Fact]
     public void RareNeighbourBelowFloorIsLeftAlone()
     {
-        // "obscru" → obscur, but obscur (2) sits under the 5/million floor:
+        // "obscru" → obscur, but obscur (1.5) sits under the 2/million floor:
         // not common enough to be the obvious intent.
-        Assert.Null(Corrector().Evaluate("obscru", []));
+        Assert.Null(Corrector("obscur\t1.5\n").Evaluate("obscru", []));
     }
 
     [Fact]
@@ -233,6 +233,49 @@ public class ConservativeTypoCorrectorTests
     public void DigitBearingTokenIsLeftAlone()
     {
         Assert.Null(Corrector().Evaluate("bonj0ur", []));
+    }
+
+    [Fact]
+    public void PackagedLexiconPrefersTheDeduplicatedFrenchVerb()
+    {
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
+            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
+        var corrector = new ConservativeTypoCorrector(
+            french,
+            accentIndex: AccentIndex.Build(french),
+            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
+                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
+
+        var trace = new CorrectionTrace();
+        CorrectionDecision? decision = corrector.Evaluate("proposees", ["tu"], trace);
+
+        Assert.True(
+            decision is not null,
+            $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
+        Assert.Equal("proposes", decision!.Replacement);
+    }
+
+    [Theory]
+    [InlineData("pru", "peu")]
+    [InlineData("qio", "qui")]
+    [InlineData("miru", "mieux")]
+    public void PackagedSentenceCandidatesKeepObservedKeyboardRepairs(
+        string typed,
+        string expected)
+    {
+        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
+            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
+        var corrector = new ConservativeTypoCorrector(
+            french, accentIndex: AccentIndex.Build(french));
+
+        IReadOnlyList<AccentVariant> candidates = corrector.AmbiguousCandidates(typed);
+
+        Assert.True(
+            candidates.Any(candidate => candidate.Form == expected),
+            string.Join(", ", candidates.Select(candidate =>
+                $"{candidate.Form}@{candidate.FrequencyPerMillion}")));
     }
 
     [Fact]
