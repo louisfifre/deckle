@@ -27,6 +27,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Changed
 
 - **mcp:** Isolate custom surfaces
+- **autocorrect:** Collapse duplicate lexical pass
 
 ### Fixed
 
