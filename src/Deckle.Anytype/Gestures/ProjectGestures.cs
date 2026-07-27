@@ -23,6 +23,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         JsonObject obj = await api.GetObjectAsync(projectId, ct);
 
         var sb = new StringBuilder();
+        sb.Append(PropReader.Done(obj) ? "[x] " : "[ ] ");
         sb.Append(PropReader.Name(obj));
 
         AppendHeaderFacts(sb, obj);
@@ -179,7 +180,9 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         AppendFact(sb, "Définition de fini", PropReader.Text(project, DevSpace.Props.DefinitionDeFini));
     }
 
-    // Appends the project's task lines and returns their ids (for the report join).
+    // Appends the project's active task lines and returns every related task id
+    // for the report join. Archiving a task removes that task from the active
+    // view, but does not archive the separate reports linked to it.
     // Tasks are searched by type then filtered client-side on relation_projet
     // containing this project id — the search API has no relation filter.
     async Task<IReadOnlyList<string>> AppendTasksAsync(StringBuilder sb, string projectId, CancellationToken ct)
@@ -192,10 +195,10 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         foreach (JsonNode? node in hits)
         {
             if (node is not JsonObject t) continue;
-            if (PropReader.Checkbox(t, DevSpace.Props.Archive)) continue;
             if (!PropReader.ObjectRefs(t, DevSpace.Props.RelationProjet).Contains(projectId)) continue;
 
             taskIds.Add(PropReader.Id(t));
+            if (PropReader.Checkbox(t, DevSpace.Props.Archive)) continue;
             if (!any) { sb.Append("Tâches :\n"); any = true; }
             AppendTaskLine(sb, t);
         }
@@ -239,6 +242,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
     static void AppendProjectLine(StringBuilder sb, JsonObject p)
     {
+        sb.Append(PropReader.Done(p) ? "[x] " : "[ ] ");
         sb.Append(PropReader.Name(p));
 
         string? phase = DevSpace.PhaseProjet.NameFor(PropReader.Select(p, DevSpace.Props.PhaseProjet));

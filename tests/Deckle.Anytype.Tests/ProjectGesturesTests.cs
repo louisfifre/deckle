@@ -92,7 +92,7 @@ public class ProjectGesturesTests
     }
 
     [Fact]
-    public async Task OverviewOmitsArchivedTasksAndTheirReports()
+    public async Task OverviewOmitsArchivedTasksButKeepsTheirReports()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ProjectId, ProjectObject());
@@ -118,17 +118,52 @@ public class ProjectGesturesTests
         Assert.Contains("Tâche active", digest);
         Assert.Contains("Rapport actif", digest);
         Assert.DoesNotContain("Tâche archivée", digest);
-        Assert.DoesNotContain("Rapport archivé", digest);
+        Assert.Contains("Rapport archivé", digest);
     }
 
-    static JsonObject ProjectObject() => new()
+    [Fact]
+    public async Task OverviewShowsTheCanonicalProjectCompletionSignal()
     {
-        ["object"] = new JsonObject
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject(done: true));
+        server.OnSearch(new JsonObject { ["data"] = new JsonArray() });
+
+        string digest = await NewGestures(server).OverviewAsync(ProjectId, Ct);
+
+        Assert.StartsWith("[x] Refonte Anytype", digest);
+    }
+
+    [Fact]
+    public async Task ListShowsTheCanonicalProjectCompletionSignal()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
         {
-            ["id"] = ProjectId,
-            ["name"] = "Refonte Anytype",
-            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Project },
-            ["properties"] = new JsonArray(),
+            ["data"] = new JsonArray(ProjectHit(done: true)),
+        });
+
+        string digest = await NewGestures(server).ListAsync(ct: Ct);
+
+        Assert.Contains("[x] Refonte Anytype", digest);
+    }
+
+    static JsonObject ProjectObject(bool done = false) => new()
+    {
+        ["object"] = ProjectHit(done),
+    };
+
+    static JsonObject ProjectHit(bool done) => new()
+    {
+        ["id"] = ProjectId,
+        ["name"] = "Refonte Anytype",
+        ["type"] = new JsonObject { ["key"] = DevSpace.Types.Project },
+        ["properties"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["key"] = DevSpace.Props.Done,
+                ["checkbox"] = done,
+            },
         },
     };
 
