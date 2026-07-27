@@ -32,11 +32,6 @@ catalog may validate argument shape, but it MUST NOT reimplement nomenclature,
 immutability, deletion, vocabulary, or relation rules. HTTP transport, bearer
 authentication and MCP sessions remain in `Deckle.Anytype.Mcp`.
 
-The current `Deckle.Anytype` and `Deckle.Anytype.Mcp` modules still mix provider
-infrastructure with the Dev-space project-management domain. `Deckle.Home`
-establishes the target boundary; extracting a sibling custom MCP module for
-project management is a required follow-up, not a prerequisite for Home.
-
 ## Schema
 
 Home runs only against the public managed schema contract. Type and property
