@@ -142,6 +142,21 @@ public static class TravelSchema
             ],
         };
 
+    // One Anytype built-in icon per type, colored by role so the space reads at
+    // a glance: the trip's skeleton in blue, the durable where in teal, the
+    // doing in lime, the two booked objects in purple, money in orange.
+    internal static readonly IReadOnlyDictionary<string, (string Name, string Color)> TypeIcons =
+        new Dictionary<string, (string, string)>(StringComparer.Ordinal)
+        {
+            [Types.Stay] = ("earth", "blue"),
+            [Types.Stage] = ("flag", "blue"),
+            [Types.Place] = ("pin", "teal"),
+            [Types.Activity] = ("compass", "lime"),
+            [Types.Transfer] = ("train", "purple"),
+            [Types.Lodging] = ("bed", "purple"),
+            [Types.Expense] = ("receipt", "orange"),
+        };
+
     // Closed vocabularies ship their full option set; options are added by the
     // user in Anytype, never by the surface. The Place category is a live
     // select on purpose — its options belong to the user from day one, so it
@@ -175,12 +190,19 @@ public static class TravelSchema
         {
             var attached = new JsonArray();
             foreach (string property in RequiredByType[type]) attached.Add(property);
+            (string iconName, string iconColor) = TypeIcons[type];
             types.Add(new JsonObject
             {
                 ["key"] = type,
                 ["name"] = TravelTerms.Current.TypeName(type),
                 ["plural_name"] = TravelTerms.Current.TypePluralName(type),
                 ["layout"] = "basic",
+                ["icon"] = new JsonObject
+                {
+                    ["format"] = "icon",
+                    ["name"] = iconName,
+                    ["color"] = iconColor,
+                },
                 ["properties"] = attached,
             });
         }
