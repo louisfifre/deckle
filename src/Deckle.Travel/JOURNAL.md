@@ -1,5 +1,25 @@
 # JOURNAL — Deckle.Travel
 
+## 2026-07-27 — Les fichiers : les deux clés de la chaîne, lues à la source
+
+- Le champ multipart s'appelle `file` et rien d'autre — `UploadFileHandler`
+  fait `c.FormFile("file")` et répond 400 « missing file » sinon. La réponse
+  est un `FileUploadResponse` **nu** — `{object_id, name, media, extension,
+  size_in_bytes}` — sans l'enveloppe `object` que porte toute autre création :
+  `Inner(root, "object")` aurait explosé dessus.
+- La clé d'attache à la création est bien `files`, un tableau d'ids :
+  `FilesPropertyLinkValue{ key, files []string }`. C'est déjà ce que
+  `TravelPropertyWriter` émettait — la supposition tenait, mais elle n'était
+  pas mesurée.
+- Lu dans `anyproto/anytype-heart` (`core/api/handler/file.go`,
+  `core/api/model/property.go`), pas dans la doc publique : la page de
+  référence 2025-11-08 dit « a file field » sans nommer le champ. Reste à
+  confirmer en vif sur l'espace Travel, une fois provisionné.
+- `MultipartFormDataContent.Add(content, name, fileName)` sort des tokens nus
+  (`filename=billet.pdf`) : un nom avec espace ou virgule couperait la liste de
+  paramètres. Le `Content-Disposition` est donc posé à la main, guillemets
+  compris.
+
 ## 2026-07-27 — Le `.fr` d'un fichier embarqué déclenche l'inférence de culture
 
 - Trouvé à la revérification du squelette : `Terms\terms.fr.json` embarqué en
