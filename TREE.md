@@ -470,6 +470,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── lexicon-en-globish.tsv.gz
 │   │   │   ├── lexicon-en.tsv.gz
 │   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   ├── pack-fr-it.tsv.gz
 │   │   │   ├── pair-bigrams-fr.tsv.gz
 │   │   │   └── verbs-fr.tsv.gz
 │   │   ├── Engine/
@@ -565,6 +566,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Mining/
 │   │   │   ├── MistouchFamilyReport.cs
 │   │   │   └── MistouchMiner.cs
+│   │   ├── PackReports/
+│   │   │   └── pack-fr-it.md
 │   │   ├── Profiling/
 │   │   │   ├── SurfaceProfiler.cs
 │   │   │   └── SurfaceProfileReport.cs
@@ -577,6 +580,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TruthOverlay.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
+│   │   ├── DomainPackBuilder.cs
 │   │   ├── HarvestData.cs
 │   │   ├── HarvestFilter.cs
 │   │   ├── HarvestStore.cs
@@ -1492,6 +1496,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── DomainPackMaintenanceTests.cs
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrenchSentenceRerankerTests.cs
 │   │   ├── FrequencyLexiconTests.cs

@@ -39,6 +39,11 @@ param(
     # a disjoint set of articles (no article appears in both).
     [double]$EvalMB = 1.5,
 
+    # Also fetch the kaikki.org frwiktionary raw extraction (~676 MB gz), the
+    # source of the domain packs. Opt-in: the default gesture stays light and
+    # the dump is only needed when rebuilding a pack.
+    [switch]$IncludeKaikki,
+
     # Re-download / rebuild even when a target already exists at a plausible
     # size.
     [switch]$Force
@@ -236,6 +241,22 @@ if ($franceTermeHead -notmatch '<\?xml') {
 }
 
 # =============================================================================
+# 2c. Kaikki frwiktionary raw extraction (domain-pack source, opt-in)
+# =============================================================================
+# The wiktextract JSONL dump of the French Wiktionary — the surface-form
+# deposit the domain packs are fabricated from (entries carry their topical
+# « Lexique en français de X » categories and inline inflections). The
+# topic-subset JSONLs kaikki once served are deprecated; the pack builder
+# streams this raw dump instead. Dual-licensed CC BY-SA / GFDL (see NOTICE.md).
+if ($IncludeKaikki) {
+    Step 'Kaikki frwiktionary raw extraction (domain-pack source, ~676 MB)'
+    $kaikkiDst = Join-Path $RawDir 'raw-wiktextract-frwiktionary.jsonl.gz'
+    $kaikkiUrl = 'https://kaikki.org/frwiktionary/raw-wiktextract-data.jsonl.gz'
+    # The compressed dump is ~676 MB; 600 MB is a safe completeness floor.
+    Download $kaikkiUrl $kaikkiDst 600MB | Out-Null
+}
+
+# =============================================================================
 # 3. Wikipedia FR plaintext corpus (train + eval, disjoint by article)
 # =============================================================================
 Step 'Wikipedia FR plaintext corpus (train + eval)'
@@ -377,14 +398,16 @@ if (-not $Force -and $trainOk -and $evalOk) {
 # =============================================================================
 $swTotal.Stop()
 Step 'done'
-foreach ($f in @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')) {
+$expectedFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')
+if ($IncludeKaikki) { $expectedFiles += 'raw-wiktextract-frwiktionary.jsonl.gz' }
+foreach ($f in $expectedFiles) {
     $p = Join-Path $RawDir $f
     if (Test-Path $p) { Write-Host ("         {0,-20} {1,8} MB" -f $f, (Get-SizeMB $p)) }
     else              { Warn "MISSING $f" }
 }
 Write-Host "`n         wall time: $([math]::Round($swTotal.Elapsed.TotalMinutes, 1)) min" -ForegroundColor Gray
 
-$missingFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt') |
+$missingFiles = $expectedFiles |
     Where-Object { -not (Test-Path (Join-Path $RawDir $_)) }
 $summaryResult = if ($missingFiles.Count -gt 0) { 'Partial' } else { 'Success' }
 $summarySentence = if ($missingFiles.Count -gt 0) {

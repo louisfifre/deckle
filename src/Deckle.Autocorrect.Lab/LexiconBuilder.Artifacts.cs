@@ -13,7 +13,9 @@ public static partial class LexiconBuilder
     //
     // `form<TAB>freq` lines, freq as "0.####" invariant, sorted ordinally by
     // form. Ordinal sort + fixed format = a deterministic gzip artifact.
-    private static void WriteLexicon(string outPath, Dictionary<string, double> map)
+    // Internal: DomainPackBuilder writes its pack artifacts through the same
+    // writer so every lexicon-shaped file shares one byte-deterministic form.
+    internal static void WriteLexicon(string outPath, Dictionary<string, double> map)
     {
         var forms = new List<string>(map.Keys);
         forms.Sort(StringComparer.Ordinal);

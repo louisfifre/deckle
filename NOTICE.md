@@ -90,6 +90,12 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 - Used as : source of English foreign equivalents (`Equivalent langue="en"`), reduced to the restricted protected-English seed `lexicon-en-globish.tsv.gz`. The derived artifact keeps conservative ASCII content tokens only and filters French exact/accent-fold/one-edit collisions.
 - Source snapshot used for this artifact : downloaded 2026-07-02.
 
+### Kaikki / wiktextract — French Wiktionary extraction
+
+- Source : https://kaikki.org/frwiktionary/ — Tatu Ylonen, machine-readable extraction of https://fr.wiktionary.org produced by [wiktextract](https://github.com/tatuylonen/wiktextract).
+- License : dual CC BY-SA 4.0 / GFDL (the Wiktionary text and data).
+- Used as : source of topical surface forms (entries carrying « Lexique en français de X » categories, with their inline inflections), reduced to the derived domain-pack artifacts `pack-fr-*.tsv.gz` (form + flat floor frequency). The derived files remain under CC BY-SA with this attribution; each pack's fabrication report under `src/Deckle.Autocorrect.Lab/PackReports/` records what was kept and refused.
+
 ### Wikipédia in French
 
 - Source : https://fr.wikipedia.org — plain-text article extracts.
