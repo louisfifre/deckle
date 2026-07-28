@@ -5,6 +5,10 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-28 — Gray zone judged: 220 admitted, 153 excluded, bench unchanged
+
+Ran the external judge campaign over the 373 withheld gray-zone forms: three parallel Claude judges over the worksheet (form, masking cost, distance-1 base neighbors with frequencies), family splits arbitrated by a supervising pass — verdicts versioned in `PackReports/pack-fr-it.judgments.tsv`, applied at rebuild. 220 admitted (real IT vocabulary with implausible slips: push, inline, hébergeur, qubit, standard inflections Lexique omits like répliquez), 153 excluded (Wiktionary noise, never-typed OQLF coinages like the déverminer family, French misspellings that must stay correctable like connection, forms one plausible slip from a common base word like mappes/nappes). Pack now ships 5,210 forms, zero pending; keyboard bench still strictly identical to baseline. Chose family coherence as an arbitration principle: identical neighbor patterns get one verdict (cliqueur·s, nétiquette·s), differing fault classes may split (inline admitted, inliner excluded on the c-deletion class).
+
 ## 2026-07-28 — Pilot IT pack fabricated; effective lexicon leaves the keyboard bench untouched
 
 Built the pilot computing pack from the kaikki frwiktionary raw dump (676 MB gz, streamed with a substring prefilter — 14 s wall for the full fabrication). Found the « Lexique en français de X » categories at sense level in the raw dump, not entry level as the per-word exports suggest, spelled with the U+2019 apostrophe; three categories (informatique, Internet, programmation) matched 4,173 entries. Yield: 5,658 candidate forms after shape filtering (42,497 rejects, mostly locutions) and base-lexicon dedup (2,147 already covered); sanitization at edit-distance-1 masking cost refused 295 forms above 20 opm (top: « ent » at 57,636 opm) and withheld 373 in the 1–20 opm gray zone pending LLM judgment; 4,990 forms shipped at the 0.2 opm flat floor. Fabrication is byte-deterministic over an unchanged dump + judgments file (hash-verified across runs).
