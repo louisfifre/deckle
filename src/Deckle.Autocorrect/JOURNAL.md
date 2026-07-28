@@ -5,6 +5,14 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-28 — Pilot IT pack fabricated; effective lexicon leaves the keyboard bench untouched
+
+Built the pilot computing pack from the kaikki frwiktionary raw dump (676 MB gz, streamed with a substring prefilter — 14 s wall for the full fabrication). Found the « Lexique en français de X » categories at sense level in the raw dump, not entry level as the per-word exports suggest, spelled with the U+2019 apostrophe; three categories (informatique, Internet, programmation) matched 4,173 entries. Yield: 5,658 candidate forms after shape filtering (42,497 rejects, mostly locutions) and base-lexicon dedup (2,147 already covered); sanitization at edit-distance-1 masking cost refused 295 forms above 20 opm (top: « ent » at 57,636 opm) and withheld 373 in the 1–20 opm gray zone pending LLM judgment; 4,990 forms shipped at the 0.2 opm flat floor. Fabrication is byte-deterministic over an unchanged dump + judgments file (hash-verified across runs).
+
+Measured the keyboard-quality bench over the effective lexicon (base + pack, max wins): baseline and effective strictly identical — precision 100 %, recall 92.5 %, exact 87.0 %, zero wrong changes. The general-French corpus never types pack vocabulary, so this proves non-regression only; the floor-vs-wordfreq call still needs a bench that types IT vocabulary, which does not exist yet.
+
+Found reflexive lemmas surfacing as pack forms with their clitic attached (« s'auto-amorcer ») — harmless at the floor frequency but not a typed surface form; revisit when the pack bench exists.
+
 ## 2026-07-28 — Domain packs, direction decided (untested)
 
 Grill session on activatable domain dictionaries. Decided direction, none of it banc-tested yet — glossary terms are normative in `CONTEXT.md` § Lexicon composition, everything below revisits freely after a pilot pack:
