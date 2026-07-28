@@ -554,6 +554,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── AutocorrectPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── AutocorrectAppRow.cs
+│   │   │   ├── AutocorrectExcludedWordRow.cs
 │   │   │   ├── AutocorrectPackRow.cs
 │   │   │   ├── AutocorrectViewModel.cs
 │   │   │   └── AutocorrectViewModel.Settings.cs

@@ -79,6 +79,10 @@ public partial class App
             var autocorrectSettings = AutocorrectSettingsService.Instance.Current;
             string lexiconKey = AutocorrectSettings.EffectiveLexiconKey(autocorrectSettings);
             IReadOnlyList<DomainPack> activePacks = DomainPack.ActiveIn(autocorrectSettings);
+            // Snapshot the register by reference alongside the packs: the
+            // settings service swaps the list rather than mutating it, so this
+            // stays the exact set the key above describes.
+            IReadOnlyCollection<string> excludedWords = autocorrectSettings.ExcludedWords;
 
             // The heavy step: gzip decode + build of the FR frequency lexicon,
             // its accent index, and the pair bigram model. Pure CPU/IO, no UI
@@ -89,7 +93,7 @@ public partial class App
             var loadStopwatch = Stopwatch.StartNew();
             var (french, english, index, context, reranker, rerankerEngine, rerankerLoadMs, verbs) = await Task.Run(() =>
             {
-                var fr = ComposeEffectiveLexicon(frenchPath, dataDir, activePacks);
+                var fr = ComposeEffectiveLexicon(frenchPath, dataDir, activePacks, excludedWords);
                 var en = new GlobalEnglishLexicon(
                     AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
                 var idx = AccentIndex.Build(fr);
@@ -261,18 +265,20 @@ public partial class App
 
     // Builds the effective lexicon — the single table the correctors consult:
     // the base French lexicon fused with the active packs, highest frequency
-    // winning on a form both carry (CONTEXT.md § Lexicon composition). Runs
-    // inside the off-UI-thread load with the rest of the lexical build.
+    // winning on a form both carry, then the user's excluded words subtracted
+    // (CONTEXT.md § Lexicon composition, § Word exclusion). Runs inside the
+    // off-UI-thread load with the rest of the lexical build.
     //
     // A pack whose artifact is missing from the build is skipped rather than
     // failing the load: a pack extends the lexicon, it is never a prerequisite
     // for correcting French.
     private static FrequencyLexicon ComposeEffectiveLexicon(
-        string frenchPath, string dataDir, IReadOnlyList<DomainPack> activePacks)
+        string frenchPath,
+        string dataDir,
+        IReadOnlyList<DomainPack> activePacks,
+        IReadOnlyCollection<string> excludedWords)
     {
         var baseLexicon = FrequencyLexicon.LoadTsvGz(frenchPath);
-        if (activePacks.Count == 0)
-            return baseLexicon;
 
         var packLexicons = new List<FrequencyLexicon>(activePacks.Count);
         foreach (DomainPack pack in activePacks)
@@ -283,7 +289,7 @@ public partial class App
             packLexicons.Add(forms);
         }
 
-        return EffectiveLexicon.Compose(baseLexicon, packLexicons);
+        return EffectiveLexicon.Compose(baseLexicon, packLexicons, excludedWords);
     }
 
     // The personal counterpart of the accent index: maps a folded key to the

@@ -104,6 +104,43 @@ public sealed class AutocorrectSettingsService
     }
 
     /// <summary>
+    /// Pull a word out of correction's reach and persist. Returns the
+    /// normalized form actually registered, or null when the text cannot name a
+    /// single lexicon form. Re-excluding a registered word is a no-op.
+    /// </summary>
+    public string? ExcludeWord(string? word)
+    {
+        string? normalized = AutocorrectSettings.NormalizeExcludedWord(word);
+        if (normalized is null) return null;
+
+        lock (_writeLock)
+        {
+            var s = Current;
+            s.ExcludedWords = AutocorrectSettings.WithExclusion(s.ExcludedWords, normalized);
+            Save();
+        }
+        return normalized;
+    }
+
+    /// <summary>
+    /// Put a word back within correction's reach and persist. No-op if it was
+    /// not excluded.
+    /// </summary>
+    public void IncludeWord(string word)
+    {
+        string? normalized = AutocorrectSettings.NormalizeExcludedWord(word);
+        if (normalized is null) return;
+
+        lock (_writeLock)
+        {
+            var s = Current;
+            if (!s.ExcludedWords.Contains(normalized, StringComparer.Ordinal)) return;
+            s.ExcludedWords = AutocorrectSettings.WithoutExclusion(s.ExcludedWords, normalized);
+            Save();
+        }
+    }
+
+    /// <summary>
     /// Drop a per-app decision entirely — the app returns to "never met" and
     /// can be offered enrollment again. No-op if it was not decided.
     /// </summary>

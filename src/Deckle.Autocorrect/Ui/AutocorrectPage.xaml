@@ -193,6 +193,77 @@
 
                 </StackPanel>
 
+                <!-- ── Excluded words ────────────────────────────────────────── -->
+                <!-- The settings mirror of the exclusion register: consultable
+                     and reversible, one row per word. Gated on the master
+                     switch like the sections above, and bespoke for the same
+                     reason — a live collection with add and undo gestures. -->
+                <StackPanel x:Name="ExclusionsSection"
+                            Tag="AutocorrectPage_Section_Exclusions"
+                            Spacing="{StaticResource SettingsCardSpacing}">
+
+                    <TextBlock x:Uid="AutocorrectPage_Section_Exclusions"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                    <TextBlock x:Uid="AutocorrectPage_Exclusions_Body"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+
+                    <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                            <TextBox x:Name="ExclusionBox"
+                                     x:Uid="AutocorrectPage_ExclusionBox"
+                                     Width="200"
+                                     Text="{x:Bind ViewModel.NewExclusion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="ExclusionBox_KeyDown" />
+                            <Button x:Uid="AutocorrectPage_ExcludeButton"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Command="{x:Bind ViewModel.ExcludeWordCommand}" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <TextBlock x:Name="ExclusionsEmptyState"
+                               x:Uid="AutocorrectPage_Exclusions_Empty"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0"
+                               Visibility="Collapsed" />
+
+                    <ItemsControl x:Name="ExclusionsList"
+                                  ItemsSource="{x:Bind ViewModel.ExcludedWords}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="4">
+                                    <StackPanel.ChildrenTransitions>
+                                        <TransitionCollection>
+                                            <AddDeleteThemeTransition />
+                                        </TransitionCollection>
+                                    </StackPanel.ChildrenTransitions>
+                                </StackPanel>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AutocorrectExcludedWordRow">
+                                <controls:SettingsCard Header="{x:Bind Word}">
+                                    <Button x:Uid="AutocorrectPage_IncludeButton"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Command="{x:Bind IncludeCommand}">
+                                        <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                  FontSize="16" />
+                                    </Button>
+                                </controls:SettingsCard>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+
                 <!-- ── Diagnostics ───────────────────────────────────────────── -->
                 <!-- The module's observability opt-ins, relocated here from the
                      shared Diagnostics page so they sit beside the engine they

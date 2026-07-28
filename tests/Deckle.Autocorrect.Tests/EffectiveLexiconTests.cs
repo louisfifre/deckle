@@ -114,6 +114,141 @@ public class EffectiveLexiconTests
         Assert.Same(baseLexicon, effective);
     }
 
+    // ── Exclusion precedence ────────────────────────────────────────────────
+    //
+    // exclusions > packs > base lexicon. What the precedence buys is that the
+    // user never has to know which source carried the word — so each source is
+    // asserted separately, plus the case where both carry it.
+
+    [Fact]
+    public void Compose_ExcludesAWordTheBaseLexiconCarries()
+    {
+        var effective = EffectiveLexicon.Compose(Lexicon(BaseTsv), [], ["connexion"]);
+
+        Assert.False(effective.Contains("connexion"));
+        Assert.Equal(0.0, effective.FrequencyOf("connexion"));
+    }
+
+    [Fact]
+    public void Compose_ExcludesAWordOnlyAPackCarries()
+    {
+        var effective = EffectiveLexicon.Compose(Lexicon(BaseTsv), [Lexicon(PackTsv)], ["qubit"]);
+
+        Assert.False(effective.Contains("qubit"));
+    }
+
+    // The case precedence exists for: the pack raised the form, and the
+    // exclusion must still win over the merged result, not over one source.
+    [Fact]
+    public void Compose_ExcludesAWordBothSourcesCarry()
+    {
+        var effective = EffectiveLexicon.Compose(
+            Lexicon(BaseTsv), [Lexicon(PackTsv)], ["hebergeur"]);
+
+        Assert.False(effective.Contains("hebergeur"));
+    }
+
+    [Fact]
+    public void Compose_LeavesEveryOtherFormAloneWhenExcluding()
+    {
+        var effective = EffectiveLexicon.Compose(
+            Lexicon(BaseTsv), [Lexicon(PackTsv)], ["qubit"]);
+
+        Assert.Equal(100, effective.FrequencyOf("chat"));
+        Assert.Equal(0.87, effective.FrequencyOf("hebergeur"));
+        Assert.True(effective.Contains("plugin"));
+    }
+
+    // The register is the user's and may name anything; a word no lexicon
+    // carries is nothing to remove, never an error.
+    [Fact]
+    public void Compose_IgnoresAnExclusionNoSourceCarries()
+    {
+        var effective = EffectiveLexicon.Compose(
+            Lexicon(BaseTsv), [], ["motquinexistepas"]);
+
+        Assert.Equal(3, effective.Count);
+    }
+
+    // ── The exclusion register ──────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("Connexion", "connexion")]   // case folds — the lexicon is lowercased
+    [InlineData("  qubit  ", "qubit")]       // stray whitespace is the user's, not the word's
+    public void NormalizeExcludedWord_SpellsAWordTheWayTheLexiconDoes(
+        string typed, string expected)
+    {
+        Assert.Equal(expected, AutocorrectSettings.NormalizeExcludedWord(typed));
+    }
+
+    // An exclusion removes ONE lexicon key, so anything that cannot name one is
+    // refused rather than stored as an entry that could never match.
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("deux mots")]
+    [InlineData(null)]
+    public void NormalizeExcludedWord_RefusesWhatCannotNameASingleForm(string? typed)
+    {
+        Assert.Null(AutocorrectSettings.NormalizeExcludedWord(typed));
+    }
+
+    [Fact]
+    public void WithExclusion_KeepsTheRegisterSortedAndFreeOfDuplicates()
+    {
+        List<string> register = AutocorrectSettings.WithExclusion([], "qubit");
+        register = AutocorrectSettings.WithExclusion(register, "chat");
+        register = AutocorrectSettings.WithExclusion(register, "qubit");
+
+        Assert.Equal(["chat", "qubit"], register);
+    }
+
+    [Fact]
+    public void WithoutExclusion_PutsTheWordBack()
+    {
+        List<string> register = AutocorrectSettings.WithExclusion(["chat", "qubit"], "plugin");
+
+        Assert.Equal(["chat", "plugin", "qubit"], register);
+        Assert.Equal(["chat", "qubit"], AutocorrectSettings.WithoutExclusion(register, "plugin"));
+    }
+
+    // The settings file is editable by hand, and an entry spelled unlike the
+    // lexicon would silently exclude nothing.
+    [Fact]
+    public void OnDeserialized_NormalizesAndDeduplicatesTheRegister()
+    {
+        var settings = new AutocorrectSettings
+        {
+            ExcludedWords = ["Qubit", "qubit", "  Chat ", "", "deux mots"],
+        };
+
+        settings.OnDeserialized();
+
+        Assert.Equal(["qubit", "chat"], settings.ExcludedWords);
+    }
+
+    [Fact]
+    public void EffectiveLexiconKey_ChangesWithTheExclusionRegister()
+    {
+        var none = new AutocorrectSettings();
+        var one = new AutocorrectSettings { ExcludedWords = ["qubit"] };
+
+        Assert.NotEqual(
+            AutocorrectSettings.EffectiveLexiconKey(none),
+            AutocorrectSettings.EffectiveLexiconKey(one));
+    }
+
+    [Fact]
+    public void EffectiveLexiconKey_IgnoresExclusionOrder()
+    {
+        var forward = new AutocorrectSettings { ExcludedWords = ["qubit", "chat"] };
+        var reversed = new AutocorrectSettings { ExcludedWords = ["chat", "qubit"] };
+
+        Assert.Equal(
+            AutocorrectSettings.EffectiveLexiconKey(forward),
+            AutocorrectSettings.EffectiveLexiconKey(reversed));
+    }
+
     // ── Activation state ────────────────────────────────────────────────────
 
     [Fact]

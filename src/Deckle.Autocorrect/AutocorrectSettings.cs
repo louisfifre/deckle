@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Deckle.Autocorrect;
@@ -22,6 +23,11 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     // user's deliberate act — never a shipped default.
     public Dictionary<string, bool> DomainPacks { get; set; } = new(StringComparer.Ordinal);
 
+    // Words the user pulled out of correction's reach, whatever lexicon carried
+    // them — precedence exclusions > packs > base. Stored normalized (lowercased
+    // and NFC) so an entry matches the lexicon keys it removes.
+    public List<string> ExcludedWords { get; set; } = new();
+
     // Legacy v1 allow-list. Read once and folded into Apps, then never written
     // again — the one-way migration off the flat list.
     [JsonPropertyName("enrolledProcesses")]
@@ -39,6 +45,28 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
                 if (process.Length > 0)
                     Apps[process] = true;
         EnrolledProcesses = null;
+
+        // The exclusion register removes lexicon keys, so it must be spelled
+        // the way the lexicon is. Re-normalize on load — the file is editable
+        // by hand — and drop what cannot name a form, deduplicating on the way.
+        ExcludedWords = ExcludedWords
+            .Select(NormalizeExcludedWord)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+    }
+
+    // The one spelling of an excluded word, applied on every path in: the
+    // settings page, and the settings file itself on load, which a hand edit
+    // may have left in any case. Returns null for anything that cannot name a
+    // single lexicon form — the lexicon is keyed by one lowercased word, so a
+    // phrase or a blank has nothing to remove.
+    public static string? NormalizeExcludedWord(string? word)
+    {
+        string trimmed = word?.Trim() ?? string.Empty;
+        if (trimmed.Length == 0 || trimmed.Any(char.IsWhiteSpace))
+            return null;
+        return trimmed.ToLowerInvariant().Normalize(NormalizationForm.FormC);
     }
 
     public bool IsDomainPackActive(string packId) =>
@@ -57,7 +85,8 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
             .Where(entry => entry.Value)
             .Select(entry => entry.Key)
             .OrderBy(id => id, StringComparer.Ordinal);
-        return $"packs:{string.Join(',', packs)}";
+        var exclusions = settings.ExcludedWords.OrderBy(word => word, StringComparer.Ordinal);
+        return $"packs:{string.Join(',', packs)}|excluded:{string.Join(',', exclusions)}";
     }
 
     // Pure transforms of the per-app decision map, beside the map they act on.
@@ -73,6 +102,19 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     public static Dictionary<string, bool> WithDomainPack(
         IReadOnlyDictionary<string, bool> packs, string packId, bool active) =>
         new(packs, StringComparer.Ordinal) { [packId] = active };
+
+    // Same reference-swap discipline for the exclusion register: the App reads
+    // it off the UI thread when it rebuilds the effective lexicon, so it must
+    // only ever see a complete old-or-new list. Sorted so the register reads
+    // alphabetically wherever it is shown, and deduplicated so excluding a word
+    // twice stays one entry.
+    public static List<string> WithExclusion(IReadOnlyList<string> excluded, string word) =>
+        excluded.Contains(word, StringComparer.Ordinal)
+            ? new List<string>(excluded)
+            : excluded.Append(word).OrderBy(w => w, StringComparer.Ordinal).ToList();
+
+    public static List<string> WithoutExclusion(IReadOnlyList<string> excluded, string word) =>
+        excluded.Where(w => !string.Equals(w, word, StringComparison.Ordinal)).ToList();
 
     public static Dictionary<string, bool> WithoutDecision(
         IReadOnlyDictionary<string, bool> apps, string process)
