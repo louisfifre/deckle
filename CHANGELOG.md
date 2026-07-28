@@ -54,6 +54,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Improve keyboard correction quality
 - **travel:** Embed the terms file culture-neutral
 - **anytype:** Compare the existing type icon before flagging a conflict
+- **anytype:** Keep project status and history observable
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
