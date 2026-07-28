@@ -88,6 +88,22 @@ public sealed class AutocorrectSettingsService
     }
 
     /// <summary>
+    /// Activate or deactivate a domain pack and persist. The effective lexicon
+    /// is merged at engine build, so the App rebuilds its runtime when the
+    /// resulting EffectiveLexiconKey changes.
+    /// </summary>
+    public void SetDomainPackActive(string packId, bool active)
+    {
+        if (string.IsNullOrEmpty(packId)) return;
+        lock (_writeLock)
+        {
+            var s = Current;
+            s.DomainPacks = AutocorrectSettings.WithDomainPack(s.DomainPacks, packId, active);
+            Save();
+        }
+    }
+
+    /// <summary>
     /// Drop a per-app decision entirely — the app returns to "never met" and
     /// can be offered enrollment again. No-op if it was not decided.
     /// </summary>

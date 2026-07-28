@@ -51,6 +51,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtSentenceStageAbandoned = 27;
     public const int EvtPersonalDictionarySanitized = 28;
     public const int EvtExternalMutationBurst = 29;
+    public const int EvtDomainPackMerged      = 30;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -85,6 +86,21 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void LexiconLoadComplete(long load_ms, int entries)
     {
         if (IsEnabled()) WriteEvent(EvtLexiconLoadComplete, load_ms, entries);
+    }
+
+    // One active domain pack fused into the effective lexicon. forms is what
+    // the pack artifact carries, not what it added — max-wins means a form the
+    // base already holds is absorbed, so the gap between the sum of these and
+    // the entries on LexiconLoadComplete is itself the overlap. Emitted before
+    // LexiconLoadComplete, whose entries count is the post-merge total; verbose
+    // beside it, and silent when no pack is active.
+    [Event(EvtDomainPackMerged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "domain pack merged | pack={0} | forms={1}")]
+    public void DomainPackMerged(string pack, int forms)
+    {
+        if (IsEnabled()) WriteEvent(EvtDomainPackMerged, pack, forms);
     }
 
     // Concise readiness edge: the engine is built, wired and reconciled to the

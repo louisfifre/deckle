@@ -71,6 +71,15 @@ public partial class App
             if (!File.Exists(frenchPath))
                 return null;
 
+            // Which domain packs this engine will read, decided once here. The
+            // key travels with the runtime so ReconcileAutocorrect can tell a
+            // settings change that leaves the lexicon alone (an app enrolled)
+            // from one that invalidates it (a pack flipped) — the merge happens
+            // at load, so the second needs a rebuild and the first does not.
+            var autocorrectSettings = AutocorrectSettingsService.Instance.Current;
+            string lexiconKey = AutocorrectSettings.EffectiveLexiconKey(autocorrectSettings);
+            IReadOnlyList<DomainPack> activePacks = DomainPack.ActiveIn(autocorrectSettings);
+
             // The heavy step: gzip decode + build of the FR frequency lexicon,
             // its accent index, and the pair bigram model. Pure CPU/IO, no UI
             // affinity — run it on the thread pool so boot is not blocked.
@@ -80,7 +89,7 @@ public partial class App
             var loadStopwatch = Stopwatch.StartNew();
             var (french, english, index, context, reranker, rerankerEngine, rerankerLoadMs, verbs) = await Task.Run(() =>
             {
-                var fr = FrequencyLexicon.LoadTsvGz(frenchPath);
+                var fr = ComposeEffectiveLexicon(frenchPath, dataDir, activePacks);
                 var en = new GlobalEnglishLexicon(
                     AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
                 var idx = AccentIndex.Build(fr);
@@ -195,7 +204,7 @@ public partial class App
             engine.EnrollmentSuggested += p => _ = PromptAutocorrectEnrollmentAsync(p);
 
             var runtime = new AutocorrectRuntime(
-                engine, dictionary, rerankerEngine, rerankerLoadMs);
+                engine, dictionary, rerankerEngine, rerankerLoadMs, lexiconKey);
             engine = null;
             dictionary = null;
             return runtime;
@@ -248,6 +257,33 @@ public partial class App
         // reference under its own lock, so the engine — reading Apps live on its
         // input thread — never observes a half-updated map.
         AutocorrectSettingsService.Instance.SetDecision(process, enable);
+    }
+
+    // Builds the effective lexicon — the single table the correctors consult:
+    // the base French lexicon fused with the active packs, highest frequency
+    // winning on a form both carry (CONTEXT.md § Lexicon composition). Runs
+    // inside the off-UI-thread load with the rest of the lexical build.
+    //
+    // A pack whose artifact is missing from the build is skipped rather than
+    // failing the load: a pack extends the lexicon, it is never a prerequisite
+    // for correcting French.
+    private static FrequencyLexicon ComposeEffectiveLexicon(
+        string frenchPath, string dataDir, IReadOnlyList<DomainPack> activePacks)
+    {
+        var baseLexicon = FrequencyLexicon.LoadTsvGz(frenchPath);
+        if (activePacks.Count == 0)
+            return baseLexicon;
+
+        var packLexicons = new List<FrequencyLexicon>(activePacks.Count);
+        foreach (DomainPack pack in activePacks)
+        {
+            FrequencyLexicon? forms = pack.TryLoad(dataDir);
+            if (forms is null) continue;
+            DeckleAutocorrectSource.Log.DomainPackMerged(pack.Id, forms.Count);
+            packLexicons.Add(forms);
+        }
+
+        return EffectiveLexicon.Compose(baseLexicon, packLexicons);
     }
 
     // The personal counterpart of the accent index: maps a folded key to the
