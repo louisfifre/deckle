@@ -24,6 +24,9 @@ public sealed record DomainPack(string Id, string ResourceKey)
 {
     public string FileName => $"pack-{Id}.tsv.gz";
 
+    // The dilution indicator, shipped beside the forms it describes.
+    public string ManifestFileName => $"pack-{Id}.manifest.json";
+
     // Every pack the build ships. The list is code, not data: an artifact
     // dropped into Data/ without an entry here is inert, which is the point —
     // a pack reaches the user through a reviewed release, never a stray file.

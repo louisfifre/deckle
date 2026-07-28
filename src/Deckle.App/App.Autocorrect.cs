@@ -61,7 +61,7 @@ public partial class App
             var host = _keyboardMouseHost;
             if (host is null) return null;
 
-            string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+            string dataDir = AutocorrectLexiconArtifacts.DataDirectory;
             string frenchPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.FrenchFileName);
             string pairPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName);
             string verbsPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName);

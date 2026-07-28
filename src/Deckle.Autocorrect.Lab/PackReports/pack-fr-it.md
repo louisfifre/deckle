@@ -23,6 +23,8 @@ Categories:
 
 The pack brings 5210 correctable forms; 448 were refused to protect base corrections (295 above the masking threshold, 153 judged out) and 0 stay withheld pending judgment.
 
+The same counts ship as `pack-fr-it.manifest.json` beside the pack artifact — the machine-readable side the settings page reads.
+
 ## Refused above threshold
 
 | form | masking cost (opm) |

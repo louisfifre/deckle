@@ -120,6 +120,21 @@
     <value>French terms from computing, the internet and programming.</value>
   </data>
 
+  <!-- The dilution indicator, one per pack: what it brings against what
+       fabrication refused to keep base corrections working. The counts come
+       from the pack's shipped manifest, so they are formatted at runtime, and
+       the strings are resolved by AutocorrectPackRow rather than x:Uid — a
+       DataTemplate is not a reliable x:Uid scope. -->
+  <data name="AutocorrectPage_PackDilution_Format" xml:space="preserve">
+    <value>Brings {0} words. {1} more were left out: each was one typo away from a common French word, so keeping it would have blocked that correction.</value>
+  </data>
+  <data name="AutocorrectPage_PackWarning_Title" xml:space="preserve">
+    <value>Correction is a little less sure while this pack is on</value>
+  </data>
+  <data name="AutocorrectPage_PackWarning_Message" xml:space="preserve">
+    <value>Every word a pack adds is another word a typo can be corrected into. Turn the pack off if ordinary French starts getting corrected wrongly.</value>
+  </data>
+
   <!-- Diagnostics — the module's purpose-specific dataset consents.
        Decisions and text are independent disk-persistence opt-ins.
        Keys are flat SettingsCards composed by the SettingsComposer, so they bind

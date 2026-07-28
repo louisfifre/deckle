@@ -150,11 +150,43 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:AutocorrectPackRow">
-                                <controls:SettingsCard Header="{x:Bind DisplayName}"
-                                                       Description="{x:Bind Description}"
-                                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
+                                <!-- The in-page fold the settings doctrine
+                                     allows: the toggle stays on the header row,
+                                     and what the pack brings against what
+                                     sanitization refused sits one expand away.
+                                     Every string is bound from the row rather
+                                     than x:Uid — a DataTemplate is not a
+                                     reliable x:Uid scope, and the rows already
+                                     resolve their wording through Loc. -->
+                                <controls:SettingsExpander Header="{x:Bind DisplayName}"
+                                                           Description="{x:Bind Description}"
+                                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
                                     <ToggleSwitch IsOn="{x:Bind Active, Mode=TwoWay}" />
-                                </controls:SettingsCard>
+                                    <controls:SettingsExpander.Items>
+                                        <controls:SettingsCard ContentAlignment="Left">
+                                            <StackPanel Spacing="12"
+                                                        Margin="0,4,0,4"
+                                                        HorizontalAlignment="Stretch">
+                                                <TextBlock Text="{x:Bind DilutionSummary}"
+                                                           Visibility="{x:Bind DilutionVisibility}"
+                                                           Style="{StaticResource BodyTextBlockStyle}"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           TextWrapping="Wrap" />
+                                                <!-- Open exactly while the pack
+                                                     is active: the cost is real
+                                                     only once the pack is
+                                                     loaded, and warning about a
+                                                     state the user is not in is
+                                                     noise. -->
+                                                <InfoBar Title="{x:Bind WarningTitle}"
+                                                         Message="{x:Bind WarningMessage}"
+                                                         IsOpen="{x:Bind Active, Mode=OneWay}"
+                                                         IsClosable="False"
+                                                         Severity="Informational" />
+                                            </StackPanel>
+                                        </controls:SettingsCard>
+                                    </controls:SettingsExpander.Items>
+                                </controls:SettingsExpander>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

@@ -470,6 +470,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── lexicon-en-globish.tsv.gz
 │   │   │   ├── lexicon-en.tsv.gz
 │   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   ├── pack-fr-it.manifest.json
 │   │   │   ├── pack-fr-it.tsv.gz
 │   │   │   ├── pair-bigrams-fr.tsv.gz
 │   │   │   └── verbs-fr.tsv.gz
@@ -528,6 +529,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentVariant.cs
 │   │   │   ├── AutocorrectLexiconArtifacts.cs
 │   │   │   ├── DomainPack.cs
+│   │   │   ├── DomainPackManifest.cs
 │   │   │   ├── EffectiveLexicon.cs
 │   │   │   ├── FrequencyLexicon.cs
 │   │   │   ├── GlobalEnglishLexicon.cs
@@ -1503,6 +1505,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── DomainPackMaintenanceTests.cs
+│   │   ├── DomainPackManifestTests.cs
 │   │   ├── EffectiveLexiconTests.cs
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrenchSentenceRerankerTests.cs

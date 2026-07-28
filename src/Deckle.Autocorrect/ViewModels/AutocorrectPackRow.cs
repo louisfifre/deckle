@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Catalog;
+using Microsoft.UI.Xaml;
 
 namespace Deckle.Autocorrect;
 
@@ -29,15 +31,46 @@ public sealed partial class AutocorrectPackRow : ObservableObject
 
     public string Description { get; }
 
+    // The dilution indicator, read from the pack's shipped manifest: what it
+    // brings against what sanitization refused. Empty and collapsed when no
+    // manifest ships — the figures inform, they are never a precondition.
+    public string DilutionSummary { get; }
+
+    public Visibility DilutionVisibility { get; }
+
+    // The dilution warning, carried by an InfoBar that opens exactly while the
+    // pack is active — the cost is real only when the pack is loaded, and a
+    // warning about a state the user is not in is noise. One channel, one
+    // severity: the wording carries the tone, so there is no ladder to climb
+    // as packs stack.
+    public string WarningTitle { get; }
+
+    public string WarningMessage { get; }
+
     [ObservableProperty]
     public partial bool Active { get; set; }
 
     public AutocorrectPackRow(
-        DomainPack pack, bool active, Action<AutocorrectPackRow, bool> onToggled)
+        DomainPack pack,
+        bool active,
+        DomainPackManifest? manifest,
+        Action<AutocorrectPackRow, bool> onToggled)
     {
         PackId = pack.Id;
         DisplayName = Loc.GetFrom(ResourceLibrary, $"{pack.ResourceKey}.Header");
         Description = Loc.GetFrom(ResourceLibrary, $"{pack.ResourceKey}.Description");
+        WarningTitle = Loc.GetFrom(ResourceLibrary, "AutocorrectPage_PackWarning_Title");
+        WarningMessage = Loc.GetFrom(ResourceLibrary, "AutocorrectPage_PackWarning_Message");
+
+        DilutionSummary = manifest is null
+            ? string.Empty
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                Loc.GetFrom(ResourceLibrary, "AutocorrectPage_PackDilution_Format"),
+                manifest.ShippedForms,
+                manifest.RefusedForms);
+        DilutionVisibility = manifest is null ? Visibility.Collapsed : Visibility.Visible;
+
         _onToggled = onToggled;
 
         _syncing = true;

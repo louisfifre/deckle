@@ -77,11 +77,18 @@ public sealed partial class AutocorrectViewModel : ObservableObject
             AutocorrectDecisions = telemetry.AutocorrectDecisions;
             AutocorrectText = telemetry.AutocorrectText;
 
+            // The dilution figures come from each pack's shipped manifest, read
+            // here rather than held live: they are fabrication output and only
+            // change when a new pack ships.
+            string dataDir = AutocorrectLexiconArtifacts.DataDirectory;
             Packs.Clear();
             foreach (DomainPack pack in DomainPack.Shipped)
             {
                 Packs.Add(new AutocorrectPackRow(
-                    pack, settings.IsDomainPackActive(pack.Id), OnPackToggled));
+                    pack,
+                    settings.IsDomainPackActive(pack.Id),
+                    DomainPackManifest.TryLoad(dataDir, pack),
+                    OnPackToggled));
             }
 
             Apps.Clear();

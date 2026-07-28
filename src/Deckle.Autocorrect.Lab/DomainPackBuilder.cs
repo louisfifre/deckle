@@ -120,6 +120,21 @@ public static class DomainPackBuilder
             pack, harvest, shipped.Count, promoted, refused, gray);
 
         int pending = gray.Count(g => g.Verdict == "pending");
+
+        // The machine-readable half of the dilution indicator, shipped in
+        // outDir beside the forms it describes so the settings page can state
+        // what the pack brings and what was refused without parsing the report.
+        // Same counts as the report's Yield table, written in the same pass.
+        new DomainPackManifest
+        {
+            Id = $"fr-{pack.Key}",
+            ShippedForms = shipped.Count,
+            PromotedForms = promoted,
+            RefusedAboveThreshold = refused.Count,
+            RefusedByJudge = gray.Count(g => g.Verdict == "exclude"),
+            PendingJudgment = pending,
+            AlreadyInBaseLexicon = (int)harvest.AlreadyInBase,
+        }.Write(Path.Combine(outDir, pack.ManifestFileName));
         Console.WriteLine($"Pack {pack.Key}: shipped {shipped.Count:N0} forms "
                         + $"({promoted:N0} frequency-promoted), "
                         + $"refused {refused.Count:N0} above threshold, "
@@ -424,6 +439,8 @@ public static class DomainPackBuilder
         sb.Append($"{refused.Count + excluded} were refused to protect base corrections ");
         sb.Append($"({refused.Count} above the masking threshold, {excluded} judged out) ");
         sb.Append($"and {pending} stay withheld pending judgment.\n\n");
+        sb.Append($"The same counts ship as `{pack.ManifestFileName}` beside the pack artifact — ");
+        sb.Append("the machine-readable side the settings page reads.\n\n");
 
         sb.Append("## Refused above threshold\n\n");
         sb.Append("| form | masking cost (opm) |\n|---|---|\n");
@@ -449,6 +466,7 @@ public static class DomainPackBuilder
 public sealed record DomainPackDefinition(string Key, IReadOnlyList<string> Categories)
 {
     public string FileName => $"pack-fr-{Key}.tsv.gz";
+    public string ManifestFileName => $"pack-fr-{Key}.manifest.json";
     public string ReportFileName => $"pack-fr-{Key}.md";
     public string JudgmentsFileName => $"pack-fr-{Key}.judgments.tsv";
     public string FrequenciesFileName => $"pack-fr-{Key}.frequencies.tsv";
