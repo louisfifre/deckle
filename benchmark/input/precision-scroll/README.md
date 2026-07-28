@@ -14,6 +14,8 @@ python analyze.py --output ..\..\..\artifacts\benchmark\input\precision-scroll\a
 
 `--data-root` overrides the normal Deckle data root. `--trackpad-limit` and `--wheel-limit` restrict a quick iteration to the newest captures. `--burst-gap-ms` changes only offline wheel grouping; it does not tune production behavior. A truncated final row from an active recorder is counted and ignored. `--minimum-age-seconds 60` can exclude live files when a stable closed-session comparison matters more than the newest data.
 
+Trackpad capture schema 2 assigns every device a session-local `dev` index and writes that index on every frame. The association comes directly from the Raw Input `hDevice` that emitted the frame, so simultaneous physical and synthetic streams remain separate even when their reports are interleaved. Legacy schema 1 files have no per-frame identity and can only be associated with the most recently declared device; that attribution is not reliable when several touchpads were present.
+
 The report normalizes trackpad motion by each device's usable observed Y range when the recorded descriptor range does not contain the recorded coordinates. That fallback is necessary for legacy captures whose header lacks enough HID unit metadata for an honest millimetre conversion.
 
 The analyzer treats a two-contact segment as a scrolling candidate only when its centroid path is predominantly vertical, directionally consistent, and keeps stable finger spacing. The classification deliberately remains kinematic: application outcome and user intent labels are not present in legacy captures.

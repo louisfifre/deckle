@@ -39,6 +39,27 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.assertTrue(gesture.is_scroll_candidate)
         self.assertEqual(-300, gesture.displacement_y)
 
+    def test_trackpad_frames_keep_their_emitting_device(self) -> None:
+        rows = [
+            {"type": "device", "dev": 0, "name": "physical", "vid": 1, "pid": 2, "x": [0, 1000], "y": [0, 1000]},
+            {"type": "device", "dev": 1, "name": "Microsoft HID RID\\000D_0005", "vid": 0, "pid": 0, "x": [0, 9999], "y": [0, 5999]},
+        ]
+        for index, y in enumerate((800, 700, 600, 500)):
+            rows.append(frame(index * 10, 100 + index * 100, y, dev=0))
+            rows.append(frame(index * 10 + 1, 100 + index * 100, 5000 - index * 500, dev=1))
+
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "trackpad.jsonl"
+            write_rows(path, rows)
+            analysis = CaptureAnalysis()
+            analyze_trackpad_file(path, analysis)
+
+        self.assertEqual(2, len(analysis.gestures))
+        physical = next(gesture for gesture in analysis.gestures if not gesture.synthetic)
+        synthetic = next(gesture for gesture in analysis.gestures if gesture.synthetic)
+        self.assertEqual(-300, physical.displacement_y)
+        self.assertEqual(-1500, synthetic.displacement_y)
+
     def test_wheel_direction_change_splits_burst(self) -> None:
         rows = [
             {"t": 0, "axis": "v", "d": 120, "gap": 0},
@@ -133,14 +154,17 @@ class CaptureAnalysisTests(unittest.TestCase):
         self.assertEqual([closed.name], [path.name for path in selected])
 
 
-def frame(t: int, scan: int, y: int) -> dict[str, object]:
-    return {
+def frame(t: int, scan: int, y: int, dev: int | None = None) -> dict[str, object]:
+    value: dict[str, object] = {
         "t": t,
         "scan": scan,
         "n": 2,
         "tips": 2,
         "c": [[1, 300, y, 1, 1], [2, 700, y, 1, 1]],
     }
+    if dev is not None:
+        value["dev"] = dev
+    return value
 
 
 def write_rows(path: Path, rows: list[dict[str, object]]) -> None:

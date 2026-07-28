@@ -186,8 +186,9 @@ def scan_delta_ms(previous: int, current: int, host_delta_ms: float) -> float:
 
 
 def analyze_trackpad_file(path: Path, analysis: CaptureAnalysis) -> None:
-    device: DeviceExtent | None = None
-    builder: _GestureBuilder | None = None
+    devices: dict[int, DeviceExtent] = {}
+    legacy_device: DeviceExtent | None = None
+    builders: dict[tuple[str, int], _GestureBuilder] = {}
     analysis.trackpad_files += 1
 
     with path.open("r", encoding="utf-8-sig") as stream:
@@ -211,8 +212,22 @@ def analyze_trackpad_file(path: Path, analysis: CaptureAnalysis) -> None:
                         declared_y_max=int(y_range[1]),
                     ),
                 )
+                if "dev" in row:
+                    devices[int(row["dev"])] = device
+                else:
+                    legacy_device = device
                 continue
-            if "t" not in row or device is None:
+            if "t" not in row:
+                continue
+
+            if "dev" in row:
+                device_index = int(row["dev"])
+                device = devices.get(device_index)
+                builder_key = ("dev", device_index)
+            else:
+                device = legacy_device
+                builder_key = ("legacy", 0)
+            if device is None:
                 continue
 
             analysis.trackpad_frames += 1
@@ -225,9 +240,9 @@ def analyze_trackpad_file(path: Path, analysis: CaptureAnalysis) -> None:
                 device.observe(y)
 
             if len(active) != 2:
+                builder = builders.pop(builder_key, None)
                 if builder is not None:
                     analysis.gestures.append(builder.finish())
-                    builder = None
                 continue
 
             active.sort(key=lambda contact: contact[0])
@@ -237,12 +252,13 @@ def analyze_trackpad_file(path: Path, analysis: CaptureAnalysis) -> None:
             centroid_x = (first[1] + second[1]) / 2
             centroid_y = (first[2] + second[2]) / 2
 
+            builder = builders.get(builder_key)
             if builder is not None and builder.add(t, scan, first, second):
                 continue
             if builder is not None:
                 analysis.gestures.append(builder.finish())
 
-            builder = _GestureBuilder(
+            builders[builder_key] = _GestureBuilder(
                 device_key=device.key,
                 synthetic=device.synthetic,
                 contact_ids=(first[0], second[0]),
@@ -256,7 +272,7 @@ def analyze_trackpad_file(path: Path, analysis: CaptureAnalysis) -> None:
                 separations=[math.hypot(first[1] - second[1], first[2] - second[2])],
             )
 
-    if builder is not None:
+    for builder in builders.values():
         analysis.gestures.append(builder.finish())
 
 

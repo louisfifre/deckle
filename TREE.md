@@ -890,6 +890,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ContactFrameAssembler.cs
 │   │   │   ├── TouchpadCapabilities.cs
 │   │   │   ├── TouchpadContact.cs
+│   │   │   ├── TouchpadDevice.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input hosts, Precision Touchpad HID parsing, and nat…
