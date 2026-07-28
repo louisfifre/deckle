@@ -567,6 +567,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MistouchFamilyReport.cs
 │   │   │   └── MistouchMiner.cs
 │   │   ├── PackReports/
+│   │   │   ├── pack-fr-it.judgments.tsv
 │   │   │   └── pack-fr-it.md
 │   │   ├── Profiling/
 │   │   │   ├── SurfaceProfiler.cs

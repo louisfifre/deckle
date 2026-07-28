@@ -16,12 +16,12 @@ Categories:
 | forms already in base lexicon | 2147 |
 | candidate forms sanitized | 5658 |
 | refused (masking ≥ 20 opm) | 295 |
-| gray zone (1–20 opm) | 373 (admit 0, exclude 0, pending 373) |
-| shipped at floor 0.2 opm | 4990 |
+| gray zone (1–20 opm) | 373 (admit 220, exclude 153, pending 0) |
+| shipped at floor 0.2 opm | 5210 |
 
 ## Dilution indicator
 
-The pack brings 4990 correctable forms; 295 were refused to protect base corrections (295 above the masking threshold, 0 judged out) and 373 stay withheld pending judgment.
+The pack brings 5210 correctable forms; 448 were refused to protect base corrections (295 above the masking threshold, 153 judged out) and 0 stay withheld pending judgment.
 
 ## Refused above threshold
 
@@ -329,376 +329,376 @@ Verdicts live in `pack-fr-it.judgments.tsv` (`form<TAB>admit|exclude<TAB>note`);
 
 | form | masking cost (opm) | verdict | note |
 |---|---|---|---|
-| répliquez | 19.86 | pending |  |
-| push | 19.79 | pending |  |
-| cname | 19.49 | pending |  |
-| détarre | 19.34 | pending |  |
-| mouliné | 19.2 | pending |  |
-| clouds | 19.13 | pending |  |
-| settons | 18.98 | pending |  |
-| multiplet | 18.97 | pending |  |
-| quads | 18.85 | pending |  |
-| listant | 18.79 | pending |  |
-| pouçant | 18.72 | pending |  |
-| indicé | 18.65 | pending |  |
-| snappe | 18.25 | pending |  |
-| riao | 17.6 | pending |  |
-| ratios | 17.53 | pending |  |
-| popant | 17.35 | pending |  |
-| gifs | 17.26 | pending |  |
-| goats | 17.1 | pending |  |
-| modales | 16.83 | pending |  |
-| divite | 16.77 | pending |  |
-| iao | 16.63 | pending |  |
-| psv | 16.41 | pending |  |
-| pross | 16.32 | pending |  |
-| quote | 15.92 | pending |  |
-| cmao | 15.88 | pending |  |
-| admin | 15.88 | pending |  |
-| commentons | 15.81 | pending |  |
-| cfao | 15.47 | pending |  |
-| déhacher | 15.23 | pending |  |
-| acl | 15.12 | pending |  |
-| pinger | 14.9 | pending |  |
-| arité | 14.66 | pending |  |
-| botnet | 14.66 | pending |  |
-| castons | 14.63 | pending |  |
-| néoné | 14.57 | pending |  |
-| adas | 14.55 | pending |  |
-| jwt | 14.53 | pending |  |
-| multiplets | 14.53 | pending |  |
-| castez | 14.31 | pending |  |
-| blogues | 14.18 | pending |  |
-| sirh | 14.05 | pending |  |
-| internets | 13.9 | pending |  |
-| codets | 13.66 | pending |  |
-| forkant | 13.44 | pending |  |
-| inéditable | 13.38 | pending |  |
-| blogué | 13.3 | pending |  |
-| seuillages | 13.24 | pending |  |
-| admins | 13.04 | pending |  |
-| devrel | 12.97 | pending |  |
-| tutos | 12.97 | pending |  |
-| viralité | 12.84 | pending |  |
-| email | 12.78 | pending |  |
-| ack | 12.72 | pending |  |
-| détarrer | 12.57 | pending |  |
-| balado | 12.3 | pending |  |
-| éditant | 12.04 | pending |  |
-| tracké | 11.77 | pending |  |
-| nommages | 11.5 | pending |  |
-| volumens | 11.49 | pending |  |
-| racks | 11.48 | pending |  |
-| néone | 11.29 | pending |  |
-| pdf | 11.12 | pending |  |
-| anglets | 10.94 | pending |  |
-| blogs | 10.74 | pending |  |
-| karmas | 10.73 | pending |  |
-| rippe | 10.64 | pending |  |
-| hash | 10.6 | pending |  |
-| triplet | 10.58 | pending |  |
-| seuillage | 10.54 | pending |  |
-| ppc | 10.51 | pending |  |
-| ipc | 10.5 | pending |  |
-| ripez | 10.5 | pending |  |
-| lagué | 10.4 | pending |  |
-| leaker | 10.28 | pending |  |
-| codons | 10.27 | pending |  |
-| apl | 10.25 | pending |  |
-| logger | 10.2 | pending |  |
-| casts | 10.07 | pending |  |
-| xxe | 9.94 | pending |  |
-| inline | 9.53 | pending |  |
-| proco | 8.87 | pending |  |
-| modos | 8.82 | pending |  |
-| nétiquette | 8.79 | pending |  |
-| binons | 8.78 | pending |  |
-| gps | 8.76 | pending |  |
-| inliné | 8.58 | pending |  |
-| laguer | 8.44 | pending |  |
-| gdn | 8.43 | pending |  |
-| qubit | 8.38 | pending |  |
-| immutable | 8.38 | pending |  |
-| postages | 8.37 | pending |  |
-| formate | 8.31 | pending |  |
-| reporteur | 8.31 | pending |  |
-| évols | 8.28 | pending |  |
-| listons | 8.21 | pending |  |
-| tracker | 8.18 | pending |  |
-| gzippe | 8.16 | pending |  |
-| modulez | 8.13 | pending |  |
-| parcages | 8.12 | pending |  |
-| repokant | 8.11 | pending |  |
-| repokez | 7.81 | pending |  |
-| automagique | 7.74 | pending |  |
-| scripté | 7.68 | pending |  |
-| mappes | 7.67 | pending |  |
-| flamons | 7.65 | pending |  |
-| codecs | 7.47 | pending |  |
-| muxé | 7.38 | pending |  |
-| fifo | 7.36 | pending |  |
-| swouples | 7.23 | pending |  |
-| squad | 7.21 | pending |  |
-| nétiquettes | 7.09 | pending |  |
-| xore | 7.06 | pending |  |
-| migrons | 7.04 | pending |  |
-| twiller | 6.9 | pending |  |
-| adonnons | 6.8 | pending |  |
-| détarré | 6.78 | pending |  |
-| pca | 6.74 | pending |  |
-| ddossé | 6.63 | pending |  |
-| suffixe | 6.53 | pending |  |
-| flameur | 6.5 | pending |  |
-| agendé | 6.37 | pending |  |
-| svg | 6.36 | pending |  |
-| ged | 6.22 | pending |  |
-| déverminer | 6.1 | pending |  |
-| semver | 6.09 | pending |  |
-| ssrf | 6.04 | pending |  |
-| typage | 6.01 | pending |  |
-| dévédé | 6 | pending |  |
-| émoji | 5.88 | pending |  |
-| razant | 5.84 | pending |  |
-| inliner | 5.81 | pending |  |
-| reroute | 5.75 | pending |  |
-| compacter | 5.71 | pending |  |
-| muxer | 5.67 | pending |  |
-| pdp | 5.65 | pending |  |
-| compactez | 5.61 | pending |  |
-| ppp | 5.61 | pending |  |
-| bloguer | 5.61 | pending |  |
-| stories | 5.59 | pending |  |
-| cdrs | 5.54 | pending |  |
-| cqrs | 5.54 | pending |  |
-| forkez | 5.54 | pending |  |
-| exao | 5.52 | pending |  |
-| macros | 5.51 | pending |  |
-| babasser | 5.46 | pending |  |
-| pojo | 5.46 | pending |  |
-| pourriels | 5.34 | pending |  |
-| merdiel | 5.33 | pending |  |
-| rebouté | 5.33 | pending |  |
-| néonés | 5.3 | pending |  |
-| arités | 5.27 | pending |  |
-| réusine | 5.2 | pending |  |
-| dkim | 5.14 | pending |  |
-| tweet | 5.14 | pending |  |
-| flameurs | 5 | pending |  |
-| rerouter | 4.94 | pending |  |
-| suxé | 4.91 | pending |  |
-| sauvegardez | 4.9 | pending |  |
-| suxant | 4.87 | pending |  |
-| bnf | 4.84 | pending |  |
-| vlogue | 4.81 | pending |  |
-| repoké | 4.8 | pending |  |
-| swape | 4.8 | pending |  |
-| assemblies | 4.79 | pending |  |
-| bloguez | 4.79 | pending |  |
-| mégas | 4.75 | pending |  |
-| laggué | 4.62 | pending |  |
-| rafraichir | 4.61 | pending |  |
-| popons | 4.56 | pending |  |
-| éditez | 4.55 | pending |  |
-| razez | 4.54 | pending |  |
-| escapé | 4.51 | pending |  |
-| twip | 4.37 | pending |  |
-| déverminé | 4.33 | pending |  |
-| pipons | 4.33 | pending |  |
-| haineur | 4.32 | pending |  |
-| connection | 4.32 | pending |  |
-| epubs | 4.26 | pending |  |
-| nfts | 4.26 | pending |  |
-| castant | 4.2 | pending |  |
-| inlinant | 4.19 | pending |  |
-| seuillé | 4.19 | pending |  |
-| deep | 4.18 | pending |  |
-| flamer | 4.17 | pending |  |
-| lagguer | 4.16 | pending |  |
-| hacks | 4.13 | pending |  |
-| parseur | 4.12 | pending |  |
-| story | 4.12 | pending |  |
-| reboutant | 4.06 | pending |  |
-| ripons | 4.06 | pending |  |
-| rerouté | 4.05 | pending |  |
-| loguez | 4.04 | pending |  |
-| botnets | 3.92 | pending |  |
-| unaire | 3.86 | pending |  |
-| gravûre | 3.85 | pending |  |
-| moinsons | 3.85 | pending |  |
-| tcao | 3.85 | pending |  |
-| cliqueur | 3.8 | pending |  |
-| fisha | 3.78 | pending |  |
-| échaffaudage | 3.78 | pending |  |
-| acks | 3.7 | pending |  |
-| babassé | 3.69 | pending |  |
-| snaper | 3.68 | pending |  |
-| intel | 3.65 | pending |  |
-| arrobe | 3.56 | pending |  |
-| runet | 3.55 | pending |  |
-| salonneuse | 3.52 | pending |  |
-| préao | 3.51 | pending |  |
-| epéro | 3.45 | pending |  |
-| hashée | 3.44 | pending |  |
-| déloguer | 3.42 | pending |  |
-| déforké | 3.38 | pending |  |
-| spamme | 3.38 | pending |  |
-| beug | 3.37 | pending |  |
-| détarrez | 3.36 | pending |  |
-| codant | 3.33 | pending |  |
-| flamé | 3.32 | pending |  |
-| dpi | 3.31 | pending |  |
-| réusiné | 3.24 | pending |  |
-| transpilation | 3.24 | pending |  |
-| logon | 3.24 | pending |  |
-| muxant | 3.21 | pending |  |
-| zippe | 3.19 | pending |  |
-| reroutant | 3.18 | pending |  |
-| bourriquer | 3.13 | pending |  |
-| bourriquez | 3.13 | pending |  |
-| gtld | 3.11 | pending |  |
-| inéditables | 3.11 | pending |  |
-| poppons | 3.04 | pending |  |
-| qualifieur | 3.04 | pending |  |
-| storys | 2.97 | pending |  |
-| balados | 2.93 | pending |  |
-| colorise | 2.93 | pending |  |
-| formatons | 2.84 | pending |  |
-| swapé | 2.84 | pending |  |
-| hébergeur | 2.8 | pending |  |
-| mentaille | 2.78 | pending |  |
-| perceptron | 2.7 | pending |  |
-| sauve-garde | 2.7 | pending |  |
-| flashez | 2.67 | pending |  |
-| loaders | 2.58 | pending |  |
-| cbor | 2.57 | pending |  |
-| wand | 2.56 | pending |  |
-| transpile | 2.52 | pending |  |
-| logons | 2.5 | pending |  |
-| spof | 2.5 | pending |  |
-| surchargez | 2.5 | pending |  |
-| pivotage | 2.44 | pending |  |
-| distro | 2.43 | pending |  |
-| pwne | 2.43 | pending |  |
-| compressez | 2.38 | pending |  |
-| chaméléon | 2.35 | pending |  |
-| remisant | 2.23 | pending |  |
-| usenet | 2.23 | pending |  |
-| spouler | 2.22 | pending |  |
-| forkons | 2.21 | pending |  |
-| immutables | 2.16 | pending |  |
-| ocen | 2.16 | pending |  |
-| triable | 2.16 | pending |  |
-| automagiques | 2.14 | pending |  |
-| cliqueurs | 2.1 | pending |  |
-| persistances | 2.1 | pending |  |
-| alphas | 2.09 | pending |  |
-| bourriqué | 2.09 | pending |  |
-| pichenotte | 2.09 | pending |  |
-| hachons | 2.06 | pending |  |
-| datacombes | 2.04 | pending |  |
-| hashé | 2.02 | pending |  |
-| xorer | 2.02 | pending |  |
-| mandante | 2.01 | pending |  |
-| superviseure | 1.99 | pending |  |
-| canulard | 1.98 | pending |  |
-| maît' | 1.97 | pending |  |
-| pdma | 1.96 | pending |  |
-| tramages | 1.96 | pending |  |
-| transpiler | 1.96 | pending |  |
-| audios | 1.93 | pending |  |
-| loguant | 1.93 | pending |  |
-| diffs | 1.92 | pending |  |
-| ctps | 1.9 | pending |  |
-| hasher | 1.9 | pending |  |
-| assembly | 1.89 | pending |  |
-| arrosages | 1.89 | pending |  |
-| délogger | 1.89 | pending |  |
-| spoulé | 1.89 | pending |  |
-| bugué | 1.87 | pending |  |
-| détarrant | 1.85 | pending |  |
-| gabari | 1.82 | pending |  |
-| hashés | 1.82 | pending |  |
-| instancie | 1.76 | pending |  |
-| modaux | 1.76 | pending |  |
-| débuger | 1.74 | pending |  |
-| laguez | 1.74 | pending |  |
-| duplicaté | 1.72 | pending |  |
-| popper | 1.72 | pending |  |
-| scanneurs | 1.7 | pending |  |
-| déforke | 1.69 | pending |  |
-| loguons | 1.69 | pending |  |
-| rustiner | 1.69 | pending |  |
-| rustinez | 1.69 | pending |  |
-| agender | 1.67 | pending |  |
-| courriels | 1.66 | pending |  |
-| déchampe | 1.66 | pending |  |
-| propulsez | 1.62 | pending |  |
-| seuiller | 1.62 | pending |  |
-| aad | 1.59 | pending |  |
-| blogage | 1.57 | pending |  |
-| dévermine | 1.56 | pending |  |
-| détarer | 1.55 | pending |  |
-| patche | 1.55 | pending |  |
-| ebook | 1.5 | pending |  |
-| trackers | 1.5 | pending |  |
-| relagué | 1.49 | pending |  |
-| bloguant | 1.48 | pending |  |
-| transpilant | 1.48 | pending |  |
-| quoté | 1.46 | pending |  |
-| rdf | 1.44 | pending |  |
-| ddosser | 1.42 | pending |  |
-| compiles | 1.41 | pending |  |
-| bugger | 1.4 | pending |  |
-| flags | 1.39 | pending |  |
-| rafraichissement | 1.39 | pending |  |
-| speudo | 1.37 | pending |  |
-| fixture | 1.35 | pending |  |
-| triables | 1.34 | pending |  |
-| scripter | 1.3 | pending |  |
-| xorons | 1.29 | pending |  |
-| catènes | 1.28 | pending |  |
-| déforkant | 1.28 | pending |  |
-| fusionnez | 1.28 | pending |  |
-| intégrations | 1.28 | pending |  |
-| pushe | 1.28 | pending |  |
-| pétabit | 1.28 | pending |  |
-| beugs | 1.27 | pending |  |
-| patché | 1.27 | pending |  |
-| frontail | 1.24 | pending |  |
-| méls | 1.23 | pending |  |
-| scriptez | 1.23 | pending |  |
-| beuguant | 1.22 | pending |  |
-| ibidule | 1.22 | pending |  |
-| swaper | 1.22 | pending |  |
-| compteuse | 1.2 | pending |  |
-| assignez | 1.2 | pending |  |
-| imap | 1.18 | pending |  |
-| fred | 1.18 | pending |  |
-| vloguer | 1.18 | pending |  |
-| xao | 1.18 | pending |  |
-| trampolines | 1.17 | pending |  |
-| déforker | 1.15 | pending |  |
-| roblog | 1.15 | pending |  |
-| émulé | 1.15 | pending |  |
-| coloriser | 1.09 | pending |  |
-| continuations | 1.09 | pending |  |
-| programmathon | 1.09 | pending |  |
-| programmations | 1.09 | pending |  |
-| déverminant | 1.08 | pending |  |
-| sxo | 1.08 | pending |  |
-| taggage | 1.08 | pending |  |
-| reverses | 1.07 | pending |  |
-| spam | 1.06 | pending |  |
-| iops | 1.06 | pending |  |
-| clonages | 1.05 | pending |  |
-| qbit | 1.04 | pending |  |
-| repokons | 1.04 | pending |  |
-| apps | 1.03 | pending |  |
-| détare | 1.02 | pending |  |
-| spb | 1.02 | pending |  |
-| conjugueur | 1.01 | pending |  |
-| intercessions | 1.01 | pending |  |
-| lagguez | 1.01 | pending |  |
-| perceptrons | 1.01 | pending |  |
-| qubits | 1.01 | pending |  |
-| finalise | 1 | pending |  |
+| répliquez | 19.86 | admit | standard inflection of common verb repliquer, users legitimately type it; neighbor slip (appending z) less likely |
+| push | 19.79 | admit | daily dev borrowing (git push); pus is disjoint context and h-append slip unlikely |
+| cname | 19.49 | exclude | niche DNS term usually uppercase; came 16.5 opm one plausible n-insertion away |
+| détarre | 19.34 | exclude | unestablished coinage; démarre 17.1 opm one substitution away |
+| mouliné | 19.2 | exclude | rare participle, not the actual IT slang form (ca mouline); moulin family common |
+| clouds | 19.13 | exclude | French uses singular le cloud; clous 17.3 opm with plausible d-before-s insertion (adjacent keys) |
+| settons | 18.98 | exclude | not a real French inflection anyone types; mettons 15.8 opm one slip away |
+| multiplet | 18.97 | exclude | official-but-unused term (octet is used); multiples 14.5 opm one substitution away |
+| quads | 18.85 | admit | genuine common noun plural (quad); quais i-to-d substitution implausible on any keyboard |
+| listant | 18.79 | admit | standard participle of lister, common in IT prose; excluding would wrongly correct legit text |
+| pouçant | 18.72 | exclude | not a word; pouvant 18.7 opm one slip away |
+| indicé | 18.65 | exclude | rare math term; indice 13.3 opm one very plausible accent slip away |
+| snappe | 18.25 | exclude | marginal colloquial form; nappe 18.3 opm shielded by s-prepend slip |
+| riao | 17.6 | exclude | nonsense string; ciao 15.3 opm nearby |
+| ratios | 17.53 | admit | common genuine word; all neighbors under 10 opm |
+| popant | 17.35 | exclude | not established French; posant 16.3 opm one slip away |
+| gifs | 17.26 | admit | daily vocabulary; vifs v-to-g substitution implausible, contexts disjoint |
+| goats | 17.1 | exclude | slang not IT; goûts 17 opm one accent-slip away |
+| modales | 16.83 | admit | standard French adjective (fenetres modales); modeles e-grave-to-a substitution implausible |
+| divite | 16.77 | exclude | nonsense string; divine 14 opm nearby |
+| iao | 16.63 | exclude | nonsense string; ciao 15.3 opm one deletion away |
+| psv | 16.41 | exclude | not an IT term; psy 15.9 opm one substitution away |
+| pross | 16.32 | exclude | nonsense string; profs and pros nearby |
+| quote | 15.92 | admit | established dev borrowing (entre quotes); quête e-circumflex-to-o substitution implausible |
+| cmao | 15.88 | exclude | hyper-rare acronym, uppercase if ever; ciao 15.3 opm nearby |
+| admin | 15.88 | admit | essential daily IT term; admis s-to-n substitution implausible, disjoint contexts |
+| commentons | 15.81 | admit | standard inflection of common verb commenter; commençons c-cedilla-to-t slip implausible |
+| cfao | 15.47 | admit | established French industry acronym (CFAO); ciao i-to-f substitution implausible |
+| déhacher | 15.23 | exclude | not a word; détacher 15.1 opm one slip away |
+| acl | 15.12 | admit | genuine IT term typed lowercase in practice; all neighbors under 10 opm |
+| pinger | 14.9 | admit | real French IT verb (pinger un serveur); all neighbors under 10 opm |
+| arité | 14.66 | admit | genuine CS term (arity); agité 9.9 opm below threshold and slip semi-plausible only |
+| botnet | 14.66 | admit | established security term; bonnet n-to-t substitution implausible, disjoint contexts |
+| castons | 14.63 | exclude | improbable first-person inflection nobody types; cartons 10.1 opm nearby |
+| néoné | 14.57 | exclude | not a word; néon family common |
+| adas | 14.55 | exclude | rare acronym, uppercase if ever; amas nearby |
+| jwt | 14.53 | admit | daily dev token name typed lowercase; jet e-to-w implausible on AZERTY, contexts fully disjoint |
+| multiplets | 14.53 | exclude | unused official term; multiples 14.5 opm one plausible t-insertion away |
+| castez | 14.31 | exclude | improbable imperative of marginal verb; cassez nearby |
+| blogues | 14.18 | admit | standard francization of blogs (Quebec norm); blagues a-to-o substitution implausible |
+| sirh | 14.05 | admit | established French enterprise-IT acronym (SIRH); sir h-append slip unlikely |
+| internets | 13.9 | exclude | jocular nonstandard plural; blocks internes/internet corrections |
+| codets | 13.66 | exclude | hyper-rare official term nobody types; codes and godets nearby |
+| forkant | 13.44 | admit | real dev franglais (en forkant); all neighbors under 10 opm |
+| inéditable | 13.38 | exclude | unestablished coinage; inévitable 13.4 opm one substitution away |
+| blogué | 13.3 | admit | established verb bloguer; bloqué g-to-q substitution implausible on both layouts |
+| seuillages | 13.24 | admit | genuine image-processing term; feuillages f-to-s substitution implausible, disjoint contexts |
+| admins | 13.04 | admit | daily IT plural; admis n-insertion slip unlikely, disjoint contexts |
+| devrel | 12.97 | exclude | niche jargon below reliable usage; devrez 13 opm exact-cost neighbor |
+| tutos | 12.97 | admit | very common French colloquial (tutorials); autos a-to-t substitution implausible |
+| viralité | 12.84 | admit | genuine common word; all neighbors under 10 opm |
+| email | 12.78 | admit | daily vocabulary; all neighbors under 10 opm |
+| ack | 12.72 | admit | real dev shorthand; all neighbors under 10 opm |
+| détarrer | 12.57 | exclude | unestablished coinage; démarrer 9.1 opm plus other real verbs nearby |
+| balado | 12.3 | admit | official Quebec term for podcast; balade e-to-o substitution implausible |
+| éditant | 12.04 | admit | standard participle of éditer, common in IT; évitant d-to-v substitution implausible |
+| tracké | 11.77 | admit | common franglais participle; tracé k-insertion slip implausible |
+| nommages | 11.5 | admit | genuine dev term (conventions de nommage); all neighbors under 10 opm |
+| volumens | 11.49 | exclude | not a word; volumes 11.5 opm one insertion away |
+| racks | 11.48 | admit | genuine term (server racks); all neighbors under 10 opm |
+| néone | 11.29 | exclude | not a word; néon family nearby |
+| pdf | 11.12 | admit | daily vocabulary; all neighbors under 10 opm |
+| anglets | 10.94 | exclude | not an IT term; angles 10.7 opm one insertion away |
+| blogs | 10.74 | admit | daily vocabulary; blocs c-to-g substitution implausible |
+| karmas | 10.73 | admit | legitimate plural of established word; only neighbor is its own singular |
+| rippe | 10.64 | admit | real French usage (ripper un CD); all neighbors under 10 opm |
+| hash | 10.6 | admit | daily IT term; all neighbors under 10 opm |
+| triplet | 10.58 | admit | genuine CS-math term; all neighbors under 10 opm |
+| seuillage | 10.54 | admit | genuine image-processing term; feuillage f-to-s substitution implausible, disjoint contexts |
+| ppc | 10.51 | exclude | marginal acronym, uppercase if ever; pic 10.3 opm nearby |
+| ipc | 10.5 | exclude | lowercase form rarely typed in prose; pic 10.3 opm one classic transposition away |
+| ripez | 10.5 | exclude | improbable imperative inflection; riez 8.5 opm one deletion away |
+| lagué | 10.4 | admit | real gamer French (ça a lagué); all neighbors under 10 opm |
+| leaker | 10.28 | admit | established franglais (news-gaming); leader d-to-k substitution implausible |
+| codons | 10.27 | admit | standard inflection of coder plus biology codon; all neighbors under 10 opm |
+| apl | 10.25 | exclude | archaic language nobody types lowercase in French IT prose |
+| logger | 10.2 | admit | daily dev noun-verb; loger 7.2 opm below threshold despite plausible doubling |
+| casts | 10.07 | admit | real dev speech (faire des casts); all neighbors under 10 opm |
+| xxe | 9.94 | admit | XXE security term and XXe siècle ordinal both legitimate; axe slip implausible |
+| inline | 9.53 | admit | daily dev term; incline below 10 opm and disjoint context |
+| proco | 8.87 | admit | real French gamer slang for processeur; all neighbors under 10 opm |
+| modos | 8.82 | admit | very common forum slang for moderators; all neighbors under 10 opm |
+| nétiquette | 8.79 | admit | dictionary-established term; étiquette n-prepend slip implausible |
+| binons | 8.78 | exclude | improbable inflection nobody types; bidons nearby |
+| gps | 8.76 | admit | daily vocabulary; all neighbors under 10 opm |
+| inliné | 8.58 | admit | real dev franglais (code inliné); incliné below 10 opm |
+| laguer | 8.44 | admit | real gamer infinitive (ça va laguer); all neighbors under 10 opm |
+| gdn | 8.43 | exclude | hyper-niche acronym; gin nearby |
+| qubit | 8.38 | admit | established quantum-computing term; subit below 10 opm despite adjacent q-s keys, disjoint contexts |
+| immutable | 8.38 | admit | common dev franglais; immuable below 10 opm, both forms legitimate |
+| postages | 8.37 | exclude | not a French IT term; postales 8.1 opm nearby |
+| formate | 8.31 | admit | standard inflection of common IT verb formater; all neighbors under 10 opm |
+| reporteur | 8.31 | exclude | archaic variant, not IT; reporter 8.3 opm one insertion away |
+| évols | 8.28 | admit | real French corporate-IT shorthand for évolutions; vols é-prepend slip implausible |
+| listons | 8.21 | admit | standard inflection of lister; all neighbors under 10 opm |
+| tracker | 8.18 | admit | daily franglais noun-verb; tracer below 10 opm |
+| gzippe | 8.16 | admit | plausible dev inflection of gzipper; grippe below 10 opm with implausible r-to-z slip |
+| modulez | 8.13 | admit | standard inflection of common verb moduler; all neighbors under 10 opm |
+| parcages | 8.12 | exclude | not an IT term, rare word; parages nearby |
+| repokant | 8.11 | exclude | nonsense string; reposant 8.1 opm one slip away |
+| repokez | 7.81 | exclude | nonsense string; reposez 7.8 opm one slip away |
+| automagique | 7.74 | exclude | deliberate rare wordplay; automatique one plausible adjacent t-to-g slip away, protect its correction |
+| scripté | 7.68 | admit | common French past participle of scripter, neighbors are same family and slips implausible |
+| mappes | 7.67 | exclude | rare 2sg inflection of mapper; nappes 7.5 opm one plausible m/n slip away |
+| flamons | 7.65 | exclude | hyper-rare inflection of dated slang flamer; flacons 7.6 opm one slip away |
+| codecs | 7.47 | admit | core IT plural typed daily; codes needs an implausible c insertion |
+| muxé | 7.38 | admit | genuine AV/dev jargon; neighbors low-frequency with implausible substitutions |
+| fifo | 7.36 | admit | standard CS term FIFO; fifi is informal and slip risk acceptable |
+| swouples | 7.23 | exclude | not a real term, Wiktionary-grade noise shielding souples |
+| squad | 7.21 | admit | established borrowing in French gaming and agile prose; slips from squaw/squat implausible |
+| nétiquettes | 7.09 | admit | arbitrated: aligned with nétiquette — same leading-n-insertion implausibility |
+| xore | 7.06 | exclude | improbable inflection of hyper-rare verb xorer |
+| migrons | 7.04 | admit | regular French verb form of migrer, common in IT prose; mignons slip n-to-r implausible |
+| twiller | 6.9 | exclude | not an established term, noise next to tailler 6.9 opm |
+| adonnons | 6.8 | exclude | not IT vocabulary and rare reflexive-context form; donnons 6.7 opm one insertion away |
+| détarré | 6.78 | exclude | barely-attested tar franglais; démarré 4.3 and déterré 2.2 are real typo sources |
+| pca | 6.74 | admit | real French acronym PCA; pa insertion slip implausible |
+| ddossé | 6.63 | exclude | nonstandard slang spelling; adossé 6.6 opm one substitution away |
+| suffixe | 6.53 | admit | standard French word, common in grammar and IT; suffire slip r-to-x implausible |
+| flameur | 6.5 | exclude | dated internet slang rarely typed; flambeur one plausible b-deletion away |
+| agendé | 6.37 | admit | genuine Swiss/Belgian professional verb form; agenda final-letter slip implausible |
+| svg | 6.36 | admit | core IT format typed daily; svp slip g-for-p not adjacent |
+| ged | 6.22 | admit | established French enterprise IT acronym; gel slip l-to-d implausible |
+| déverminer | 6.1 | exclude | OQLF coinage almost never typed; déterminer 6.1 opm is a common verb one substitution away |
+| semver | 6.09 | admit | daily dev vocabulary; semer needs an implausible v insertion |
+| ssrf | 6.04 | admit | genuine security acronym; surf slip u-to-s not adjacent |
+| typage | 6.01 | admit | essential French CS term; tapage slip a-to-y not adjacent on AZERTY |
+| dévédé | 6 | exclude | francized DVD spelling almost never typed; décédé 5.7 opm one adjacent c/v slip away |
+| émoji | 5.88 | admit | daily vocabulary; émoi needs an implausible j insertion |
+| razant | 5.84 | exclude | not established vocabulary; rasant 4.9 opm one adjacent s/z slip away |
+| inliner | 5.81 | exclude | niche dev franglais; incliner 5.8 opm one plausible c-deletion away |
+| reroute | 5.75 | admit | rerouter is a dictionary French verb; redoute substitution only diagonally plausible and contexts disjoint |
+| compacter | 5.71 | admit | standard dictionary verb used in IT; neighbors are its own inflections |
+| muxer | 5.67 | admit | genuine AV/dev jargon verb; mixer 1.4 opm low and other slips implausible |
+| pdp | 5.65 | admit | very common French internet abbreviation for profile picture; pop slip o-to-d implausible |
+| compactez | 5.61 | admit | regular conjugation of a standard verb; compacte trailing-z risk outweighed |
+| ppp | 5.61 | exclude | lowercase acronym rarely typed; pop 5.5 opm one adjacent o/p slip away |
+| bloguer | 5.61 | admit | dictionary French verb; bloquer slip g-to-q not adjacent |
+| stories | 5.59 | admit | daily social-media vocabulary in French; neighbors low and slips implausible |
+| cdrs | 5.54 | exclude | hyper-niche telecom plural nobody types lowercase; cars 4.0 opm nearby |
+| cqrs | 5.54 | exclude | niche architecture acronym rarely typed lowercase; cars 4.0 opm one adjacent a/q slip away |
+| forkez | 5.54 | admit | plausible imperative in French dev tutorials; forcez and formez slips not adjacent |
+| exao | 5.52 | admit | established French educational IT acronym; expo and exam slips implausible |
+| macros | 5.51 | admit | core IT plural; micros slip a-to-i not adjacent |
+| babasser | 5.46 | exclude | archaic slang verb nobody types; tabasser 4.9 opm one substitution away |
+| pojo | 5.46 | admit | genuine Java jargon; all neighbors low-frequency with implausible slips |
+| pourriels | 5.34 | admit | established OQLF term for spam, used in Quebec; pourries insertion slip implausible |
+| merdiel | 5.33 | exclude | jocular coinage virtually never typed; merdier 5.3 opm one substitution away |
+| rebouté | 5.33 | exclude | nonstandard spelling of rebooté; redouté 4.1 opm one substitution away |
+| néonés | 5.3 | exclude | not a word, noise between néons and nénés |
+| arités | 5.27 | exclude | rare academic plural; agités 4.1 opm one diagonal g/r slip away |
+| réusine | 5.2 | admit | OQLF refactoring verb used in Quebec dev prose; résine insertion slip implausible |
+| dkim | 5.14 | admit | standard email-auth term typed by admins; daim slip a-to-k implausible |
+| tweet | 5.14 | admit | daily vocabulary; tweed 5.1 opm final d/t slip not adjacent |
+| flameurs | 5 | exclude | dated slang plural; flambeurs one plausible b-deletion away |
+| rerouter | 4.94 | admit | dictionary French verb; redouter slip only diagonally plausible and contexts disjoint |
+| suxé | 4.91 | exclude | not a word, noise near sué and sucé |
+| sauvegardez | 4.9 | admit | standard common French verb form; neighbors are its own inflections |
+| suxant | 4.87 | exclude | not a word, noise near suant and suçant |
+| bnf | 4.84 | admit | real acronym for BNF grammar and the library; bof slip o-to-n not adjacent |
+| vlogue | 4.81 | admit | legitimate inflection of vloguer; vogue l-insertion slip implausible |
+| repoké | 4.8 | exclude | not an established term; reposé 4.8 opm one substitution away |
+| swape | 4.8 | exclude | nonstandard single-p spelling of swappe; sape 4.8 opm nearby |
+| assemblies | 4.79 | admit | typed as-is in French .NET prose; assemblées slip é-to-i not adjacent |
+| bloguez | 4.79 | admit | regular form of dictionary verb bloguer; bloquez slip g-to-q not adjacent |
+| mégas | 4.75 | admit | legitimate colloquial plural for data volume; only risk is its own singular |
+| laggué | 4.62 | admit | genuine gamer verb form typed often; largué below common threshold and contexts disjoint |
+| rafraichir | 4.61 | admit | valid 1990 reform spelling of rafraîchir, must not be corrected away |
+| popons | 4.56 | exclude | hyper-rare inflection of marginal verb poper; pompons 2.6 opm nearby |
+| éditez | 4.55 | admit | standard form of common verb éditer; évitez slip d-to-v not adjacent |
+| razez | 4.54 | exclude | not established vocabulary; ratez and rasez are plausible typo sources |
+| escapé | 4.51 | admit | genuine dev franglais for escaped characters; rescapé context fully disjoint |
+| twip | 4.37 | exclude | hyper-niche unit term; trip 4.4 opm one substitution away |
+| déverminé | 4.33 | exclude | OQLF coinage almost never typed; déterminé 4.3 opm one substitution away |
+| pipons | 4.33 | exclude | improbable inflection of rare verb piper in this form; pions and pitons nearby |
+| haineur | 4.32 | admit | established French internet term for hater; haineux slip x-to-r not adjacent |
+| connection | 4.32 | exclude | the classic anglicism misspelling of connexion, must remain correctable |
+| epubs | 4.26 | admit | commonly typed ebook format plural; pubs leading-e insertion implausible |
+| nfts | 4.26 | admit | widely typed crypto plural; nets slip only diagonally plausible and contexts disjoint |
+| castant | 4.2 | admit | plausible gerund of caster in dev and streaming French; cassant slip not adjacent |
+| inlinant | 4.19 | exclude | niche gerund; inclinant 4.2 opm one plausible c-deletion away |
+| seuillé | 4.19 | admit | genuine image-processing term from seuiller; souillé slip e-to-o not adjacent |
+| deep | 4.18 | admit | common ML franglais in French prose; jeep slip j-to-d not adjacent |
+| flamer | 4.17 | exclude | dated slang verb; flamber 3.5 opm one plausible b-deletion away |
+| lagguer | 4.16 | admit | genuine gamer verb typed often; larguer below common threshold and contexts disjoint |
+| hacks | 4.13 | admit | daily IT vocabulary; all neighbors low-frequency |
+| parseur | 4.12 | admit | standard French dev term; passeur and parleur low with implausible slips |
+| story | 4.12 | admit | daily social-media and agile vocabulary; store slip e-to-y not adjacent |
+| reboutant | 4.06 | exclude | nonstandard reboot spelling gerund; redoutant 3.2 opm one substitution away |
+| ripons | 4.06 | exclude | hyper-rare inflection; rions and riions nearby as typo sources |
+| rerouté | 4.05 | admit | dictionary French verb participle; redouté substitution only diagonally plausible |
+| loguez | 4.04 | admit | common French user slang for logging in; all neighbors low-frequency |
+| botnets | 3.92 | admit | genuine security term; bonnets slip n-to-t not adjacent |
+| unaire | 3.86 | admit | standard math and CS term; lunaire context fully disjoint despite plausible l-deletion |
+| gravûre | 3.85 | exclude | pure misspelling of gravure, must remain correctable |
+| moinsons | 3.85 | exclude | not a word, noise shielding moissons |
+| tcao | 3.85 | exclude | academic acronym almost never typed lowercase; tchao 2.3 opm nearby |
+| cliqueur | 3.8 | admit | genuine term for clicker; liqueur leading-c insertion implausible |
+| fisha | 3.78 | admit | current widely-typed French internet slang; fissa slip s-to-h not adjacent |
+| échaffaudage | 3.78 | exclude | pure misspelling of échafaudage, must remain correctable |
+| acks | 3.7 | admit | plausible networking plural in French dev prose; yacks rare with y-deletion only |
+| babassé | 3.69 | exclude | archaic slang participle; tabassé 3.6 opm one substitution away |
+| snaper | 3.68 | exclude | nonstandard single-p spelling of snapper; sniper 2.5 opm nearby |
+| intel | 3.65 | admit | very common brand and slang for information; untel slip u-to-i adjacent but untel rare enough |
+| arrobe | 3.56 | admit | official dictionary term for the at sign; arrose slip s-to-b not adjacent |
+| runet | 3.55 | exclude | hyper-niche term in French prose; runes and ruent nearby |
+| salonneuse | 3.52 | exclude | not a word, noise between sablonneuse and savonneuse |
+| préao | 3.51 | admit | established French educational IT acronym; préau slip u-to-o not adjacent |
+| epéro | 3.45 | exclude | not a word, one slip from apéro |
+| hashée | 3.44 | admit | genuine dev participle of hasher; hachée context fully disjoint from cooking |
+| déloguer | 3.42 | admit | common French user slang for logging out; all neighbors low-frequency |
+| déforké | 3.38 | exclude | not an established term; déformé 3.4 opm one substitution away |
+| spamme | 3.38 | admit | very common French verb form of spammer; spasme slip s-to-m not adjacent |
+| beug | 3.37 | admit | common colloquial francization of bug; all neighbors low-frequency |
+| détarrez | 3.36 | exclude | barely-attested tar franglais; démarrez 3.2 opm one substitution away |
+| codant | 3.33 | admit | extremely common gerund of coder; cédant slip o-to-é implausible |
+| flamé | 3.32 | exclude | dated slang participle; flambé one plausible b-deletion away |
+| dpi | 3.31 | admit | standard resolution unit typed often; épi and pi low with implausible slips |
+| réusiné | 3.24 | admit | OQLF refactoring participle; résiné rare with implausible u-insertion |
+| transpilation | 3.24 | admit | genuine dev term; transpiration slip r-to-l not adjacent and contexts disjoint |
+| logon | 3.24 | admit | real Windows IT term; all neighbors low-frequency |
+| muxant | 3.21 | admit | genuine AV/dev gerund; mutant slip t-to-x not adjacent |
+| zippe | 3.19 | admit | common French verb form of zipper; all neighbors low-frequency |
+| reroutant | 3.18 | admit | dictionary French verb gerund; redoutant substitution only diagonally plausible |
+| bourriquer | 3.13 | exclude | rare dialectal verb nobody types, not IT; bourrique nearby |
+| bourriquez | 3.13 | exclude | rare dialectal verb form, not IT; bourrique nearby |
+| gtld | 3.11 | admit | genuine DNS-industry term; gold slip o-to-t not adjacent and contexts disjoint |
+| inéditables | 3.11 | exclude | rare coinage; inévitables 3.1 opm one plausible v/d slip away |
+| poppons | 3.04 | exclude | hyper-rare inflection of popper; pompons 2.6 opm nearby |
+| qualifieur | 3.04 | exclude | rare coinage, French uses qualificateur; qualifier 3.0 opm one plausible u-insertion away |
+| storys | 2.97 | admit | plural form genuinely used by French media for social stories; stores slip e-to-y not adjacent |
+| balados | 2.93 | admit | established Quebec French plural for podcasts; balades slip e-to-o not adjacent |
+| colorise | 2.93 | admit | standard French verb form of coloriser; all neighbors low-frequency |
+| formatons | 2.84 | admit | genuine inflection of formater IT users type; formations slip (i-deletion) possible but neighbor under 10 opm and contexts disjoint |
+| swapé | 2.84 | admit | common dev franglais past participle; sapé to swapé needs w insertion, implausible slip |
+| hébergeur | 2.8 | admit | core French IT term, explicitly canonical; héberger slip unlikely to land on -eur |
+| mentaille | 2.78 | exclude | not a word, Wiktionary-grade noise; shields typos of entaille |
+| perceptron | 2.7 | admit | established ML term; perception i-to-r substitution implausible, disjoint contexts |
+| sauve-garde | 2.7 | exclude | archaic hyphenated variant no one intends; would shield sauvegarde typos |
+| flashez | 2.67 | admit | legitimate imperative of flasher (firmware); flashes-to-z slip implausible on AZERTY |
+| loaders | 2.58 | admit | common dev term; leaders o/e substitution not adjacent, disjoint contexts |
+| cbor | 2.57 | admit | established data format (RFC 8949) typed in tech prose; cor-to-cbor b insertion implausible |
+| wand | 2.56 | exclude | English common noun, not French IT vocabulary; shields land typos |
+| transpile | 2.52 | admit | genuine IT verb form typed daily; transpire l/r substitution not adjacent |
+| logons | 2.5 | exclude | not a valid inflection (loguer gives loguons, loger gives logeons); English plural rare in French |
+| spof | 2.5 | admit | established French IT jargon (single point of failure); spot neighbor under 10 opm |
+| surchargez | 2.5 | admit | legitimate form of surcharger, common in IT docs; neighbors same lemma family |
+| pivotage | 2.44 | exclude | marginal coinage, standard French uses other terms; pilotage one substitution away |
+| distro | 2.43 | admit | very common Linux term; bistro d/b substitution not adjacent, disjoint contexts |
+| pwne | 2.43 | exclude | improbable conjugated leetspeak, no one types this form |
+| compressez | 2.38 | admit | legitimate imperative of compresser; neighbors same lemma family |
+| chaméléon | 2.35 | exclude | pure misspelling of caméléon, not an IT term |
+| remisant | 2.23 | exclude | valid French but not IT vocabulary, out of pack scope |
+| usenet | 2.23 | admit | established IT proper noun typed in prose; usent-to-usenet e insertion moderately implausible, disjoint contexts |
+| spouler | 2.22 | exclude | hyper-rare francization of spool, no one types it; saouler one slip away |
+| forkons | 2.21 | admit | genuine dev usage (forkons le repo); formons k/m substitution not adjacent |
+| immutables | 2.16 | admit | established anglicism in French dev prose; immuables neighbor under 2 opm |
+| ocen | 2.16 | exclude | noise, not a term; shields open typos |
+| triable | 2.16 | admit | legitimate French adjective used in IT (sortable column); neighbors rare and disjoint |
+| automagiques | 2.14 | exclude | jokey rarity, and automatiques t-to-g is a plausible AZERTY slip that would be shielded |
+| cliqueurs | 2.1 | admit | arbitrated: aligned with cliqueur — same leading-c-insertion implausibility |
+| persistances | 2.1 | admit | valid plural of common IT noun (persistence layers) |
+| alphas | 2.09 | admit | common plural (alpha versions); trailing-s inflection legitimately typed |
+| bourriqué | 2.09 | exclude | Wiktionary noise, not IT; shields bourrique typos |
+| pichenotte | 2.09 | exclude | Quebec variant of pichenette, not IT vocabulary |
+| hachons | 2.06 | admit | valid inflection of hacher, IT hashing usage; cachons c/h substitution not adjacent |
+| datacombes | 2.04 | exclude | joke coinage; catacombes one substitution away |
+| hashé | 2.02 | admit | very common dev franglais (mot de passe hashé); haché neighbor only 2 opm, contexts disjoint |
+| xorer | 2.02 | admit | genuine dev jargon (to XOR); neighbors near 1 opm with implausible slips |
+| mandante | 2.01 | exclude | legal term, not IT vocabulary, out of pack scope |
+| superviseure | 1.99 | exclude | feminine job title, not IT-specific vocabulary for this pack |
+| canulard | 1.98 | exclude | misspelling of canular, must stay correctable |
+| maît' | 1.97 | exclude | elided literary form, dictionary noise |
+| pdma | 1.96 | exclude | unrecognized acronym, no established French IT usage |
+| tramages | 1.96 | admit | tramage is genuine graphics term (dithering); ramages rare and disjoint |
+| transpiler | 1.96 | admit | genuine IT verb; transpirer l/r substitution not adjacent |
+| audios | 1.93 | admit | widely typed plural (fichiers audios); neighbor same lemma |
+| loguant | 1.93 | admit | genuine participle of loguer used by devs; all neighbors under 1 opm |
+| diffs | 1.92 | admit | daily dev term; diffus u-deletion slip possible but neighbor under 2 opm and disjoint contexts |
+| ctps | 1.9 | exclude | unrecognized acronym, noise |
+| hasher | 1.9 | admit | common dev franglais infinitive; all neighbors under 1 opm |
+| assembly | 1.89 | admit | standard term in French IT prose (langage assembly, .NET assembly); neighbors near 1 opm |
+| arrosages | 1.89 | exclude | gardening plural, not IT vocabulary |
+| délogger | 1.89 | exclude | shaky nonstandard spelling (déloguer is the usual form); g-doubling would shield déloger typos |
+| spoulé | 1.89 | exclude | hyper-rare like spouler; saoulé one slip away |
+| bugué | 1.87 | admit | extremely common French dev term; fugué f/b substitution not adjacent |
+| détarrant | 1.85 | exclude | misspelled participle of a rare verb, improbable as typed |
+| gabari | 1.82 | exclude | truncation misspelling of gabarit, must stay correctable |
+| hashés | 1.82 | admit | same rationale as hashé, common dev plural participle |
+| instancie | 1.76 | admit | genuine dev verb form (on instancie la classe); instance neighbor under 2 opm |
+| modaux | 1.76 | admit | legitimate plural used for modal dialogs; moraux under 2 opm, disjoint contexts |
+| débuger | 1.74 | exclude | shaky single-g spelling, and débuter t-to-g is an adjacent-key AZERTY slip that would be shielded |
+| laguez | 1.74 | admit | plausible form of laguer in gaming French; larguez only 1 opm |
+| duplicaté | 1.72 | exclude | not a word (dupliqué is), noise |
+| popper | 1.72 | admit | genuine dev slang (popper la stack); pomper under 2 opm, disjoint contexts |
+| scanneurs | 1.7 | admit | official francized plural of scanneur; neighbor same lemma family |
+| déforke | 1.69 | exclude | déforker is not established usage; déforme one substitution away |
+| loguons | 1.69 | admit | genuine dev inflection; all neighbors under 1.5 opm |
+| rustiner | 1.69 | admit | colloquial dev metaphor for patching; neighbors under 1 opm |
+| rustinez | 1.69 | exclude | improbable imperative of an already informal verb, no real typing evidence |
+| agender | 1.67 | exclude | Swiss regionalism for scheduling, not IT vocabulary |
+| courriels | 1.66 | admit | standard common French IT plural; courriers substitution not keyboard-plausible |
+| déchampe | 1.66 | exclude | noise, not a term; shields décampe typos |
+| propulsez | 1.62 | admit | legitimate inflection of propulser (propulsé par); neighbors same lemma |
+| seuiller | 1.62 | admit | genuine image-processing verb (seuillage family); souiller e/o substitution not adjacent |
+| aad | 1.59 | exclude | acronym typed uppercase in practice; lowercase form rare and collides with several short words |
+| blogage | 1.57 | exclude | hyper-rare coinage; blocage one substitution away |
+| dévermine | 1.56 | exclude | arbitrated: déverminer family excluded en bloc — OQLF coinage almost never typed, déterminer family one substitution away |
+| détarer | 1.55 | admit | genuine dev slang for untarring; détaler l/r substitution not adjacent |
+| patche | 1.55 | admit | common dev verb form (je patche); all neighbors under 1 opm |
+| ebook | 1.5 | admit | established common term; book neighbor disjoint enough, e-prefix insertion implausible |
+| trackers | 1.5 | admit | common IT term (torrent, ad trackers); crackers t/c substitution not adjacent |
+| relagué | 1.49 | exclude | not a real form; relégué one substitution away and must stay correctable |
+| bloguant | 1.48 | admit | legitimate participle of bloguer; bloquant under 2 opm, g/q not adjacent |
+| transpilant | 1.48 | admit | genuine participle of transpiler; transpirant rare and disjoint |
+| quoté | 1.46 | admit | real forum/dev usage of quoter; quota final-letter substitution implausible |
+| rdf | 1.44 | admit | established semantic-web format typed in tech prose; rif rare and disjoint |
+| ddosser | 1.42 | admit | real gamer and security slang (se faire ddosser); adosser slip implausible |
+| compiles | 1.41 | admit | legitimate inflection of compiler, typed daily; complies under 1 opm |
+| bugger | 1.4 | admit | common dev slang infinitive (ça va bugger); burger substitution not adjacent |
+| flags | 1.39 | admit | daily dev term; all neighbors under 1 opm |
+| rafraichissement | 1.39 | admit | valid 1990-reform spelling, common in IT (taux de rafraichissement) |
+| speudo | 1.37 | exclude | metathesis typo of pseudo, must remain correctable |
+| fixture | 1.35 | admit | standard testing term in French dev prose; mixture m/f substitution not adjacent |
+| triables | 1.34 | admit | same rationale as triable, legitimate plural |
+| scripter | 1.3 | admit | genuine IT verb; neighbors same lemma family |
+| xorons | 1.29 | exclude | first-person plural of xorer is improbably typed; corons one slip away |
+| catènes | 1.28 | exclude | rare linguistics term, not IT vocabulary |
+| déforkant | 1.28 | exclude | same as déforke, not established; déformant one substitution away |
+| fusionnez | 1.28 | admit | legitimate form of fusionner (merge), common verb; neighbors same lemma |
+| intégrations | 1.28 | admit | valid common plural, frequent in IT |
+| pushe | 1.28 | admit | very common dev French (je pushe); pusse is a rare subjunctive, disjoint contexts |
+| pétabit | 1.28 | admit | genuine unit; pétait-to-pétabit b insertion implausible slip |
+| beugs | 1.27 | admit | real colloquial francization of bugs; e-insertion slip only moderately plausible and neighbor under 2 opm |
+| patché | 1.27 | admit | common dev participle; all neighbors under 1 opm |
+| frontail | 1.24 | exclude | not a word; frontal one substitution away |
+| méls | 1.23 | exclude | contested abbreviation, plural essentially untyped |
+| scriptez | 1.23 | admit | legitimate inflection of scripter; neighbor same lemma |
+| beuguant | 1.22 | admit | participle of established colloquial beuguer; beuglant l/u substitution not adjacent |
+| ibidule | 1.22 | exclude | jokey tech-press coinage, rare; bidule is a frequent colloquial one insertion away |
+| swaper | 1.22 | admit | common dev franglais infinitive; saper w insertion implausible |
+| compteuse | 1.2 | exclude | rare and not IT vocabulary |
+| assignez | 1.2 | admit | legitimate form of assigner, common in ticketing prose; neighbors same lemma |
+| imap | 1.18 | admit | core protocol name commonly typed lowercase; imam p/m substitution not adjacent |
+| fred | 1.18 | exclude | proper name, not IT vocabulary; shields fret typos |
+| vloguer | 1.18 | admit | established modern verb (to vlog); voguer l-insertion only moderately plausible, neighbor 1 opm |
+| xao | 1.18 | exclude | generic acronym pattern rarely typed lowercase as-is |
+| trampolines | 1.17 | admit | valid plural, both common word and CS term (trampoline functions) |
+| déforker | 1.15 | exclude | not established usage; déformer one substitution away |
+| roblog | 1.15 | exclude | noise, not a term |
+| émulé | 1.15 | admit | standard French IT participle (console émulée); neighbors under 1 opm |
+| coloriser | 1.09 | admit | genuine image and video term; neighbors under 1 opm |
+| continuations | 1.09 | admit | valid plural, genuine CS term |
+| programmathon | 1.09 | exclude | hyper-rare coinage; programmation t-to-th insertion is a plausible typo that would be shielded |
+| programmations | 1.09 | admit | valid French plural genuinely used; trailing-s risk outweighed by legitimacy |
+| déverminant | 1.08 | exclude | arbitrated: déverminer family excluded en bloc — OQLF coinage almost never typed, déterminer family one substitution away |
+| sxo | 1.08 | exclude | niche marketing acronym rarely typed lowercase |
+| taggage | 1.08 | exclude | nonstandard doubled-g spelling; tangage n/g substitution plausible on AZERTY |
+| reverses | 1.07 | exclude | weak as IT term, and pack scope is IT; reverser forms already in base |
+| spam | 1.06 | admit | extremely common term; neighbors rare and disjoint |
+| iops | 1.06 | admit | genuine storage metric typed in tech prose; ions p/n substitution not adjacent |
+| clonages | 1.05 | admit | valid plural of clonage, used in IT |
+| qbit | 1.04 | exclude | nonstandard spelling that should correct toward qubit; also one insertion from bit |
+| repokons | 1.04 | exclude | noise, not a word |
+| apps | 1.03 | admit | extremely common term; appas archaic and disjoint |
+| détare | 1.02 | admit | consistent with détarer, plausible dev usage; neighbors under 1 opm |
+| spb | 1.02 | exclude | unrecognized acronym, noise |
+| conjugueur | 1.01 | admit | genuine tool noun (le conjugueur); conjuguer u-doubling slip possible but neighbor only 1 opm |
+| intercessions | 1.01 | exclude | religious term, not IT vocabulary |
+| lagguez | 1.01 | exclude | doubled-g variant on top of already informal laguez, essentially untyped |
+| perceptrons | 1.01 | admit | genuine ML plural; perceptions substitution not adjacent, disjoint contexts |
+| qubits | 1.01 | admit | standard quantum term; subits rare and disjoint |
+| finalise | 1 | admit | common verb inflection typed daily (je finalise la release); neighbors same lemma family |
