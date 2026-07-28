@@ -1,6 +1,6 @@
 namespace Deckle.Input.PrecisionScroll;
 
-internal readonly record struct WheelTick(int Direction, double TimestampMs);
+internal readonly record struct WheelTick(int Detents, double TimestampMs);
 
 // Single-producer/single-consumer ring. The low-level hook only writes and the
 // injection worker only reads, so volatile publication is sufficient and no

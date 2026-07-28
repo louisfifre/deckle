@@ -64,7 +64,7 @@
     <value>Precision scrolling</value>
   </data>
   <data name="PrecisionScrollPage_Subtitle.Text" xml:space="preserve">
-    <value>Give a notched mouse wheel the smooth motion and inertia of a Precision Touchpad.</value>
+    <value>Turn mouse-wheel steps into continuous native Precision Touchpad motion.</value>
   </data>
   <data name="PrecisionScrollPage_Group.Header" xml:space="preserve">
     <value>Precision scrolling</value>
@@ -72,11 +72,35 @@
   <data name="PrecisionScrollPage_Group.Description" xml:space="preserve">
     <value>Turn each mouse-wheel step into native touchpad movement.</value>
   </data>
-  <data name="PrecisionScrollPage_SpeedCard.Header" xml:space="preserve">
-    <value>Scroll speed</value>
+  <data name="PrecisionScrollPage_BehaviorSection.Header" xml:space="preserve">
+    <value>Behavior</value>
   </data>
-  <data name="PrecisionScrollPage_SpeedCard.Description" xml:space="preserve">
-    <value>Set how far one wheel step moves.</value>
+  <data name="PrecisionScrollPage_BehaviorSection.Description" xml:space="preserve">
+    <value>Set the only everyday scrolling preference.</value>
+  </data>
+  <data name="PrecisionScrollPage_DistancePerDetentCard.Header" xml:space="preserve">
+    <value>Scroll distance</value>
+  </data>
+  <data name="PrecisionScrollPage_DistancePerDetentCard.Description" xml:space="preserve">
+    <value>Set the virtual finger travel added by each wheel step.</value>
+  </data>
+  <data name="PrecisionScrollPage_CalibrationSection.Header" xml:space="preserve">
+    <value>Calibration</value>
+  </data>
+  <data name="PrecisionScrollPage_CalibrationSection.Description" xml:space="preserve">
+    <value>Tune the two remaining constants while the model is being evaluated.</value>
+  </data>
+  <data name="PrecisionScrollPage_InitialStepDurationCard.Header" xml:space="preserve">
+    <value>First-step duration</value>
+  </data>
+  <data name="PrecisionScrollPage_InitialStepDurationCard.Description" xml:space="preserve">
+    <value>Set how gently the first wheel step starts before Deckle can measure your cadence.</value>
+  </data>
+  <data name="PrecisionScrollPage_QuietPeriodScaleCard.Header" xml:space="preserve">
+    <value>Release timing</value>
+  </data>
+  <data name="PrecisionScrollPage_QuietPeriodScaleCard.Description" xml:space="preserve">
+    <value>Scale the recent gap between wheel steps before lifting motionless virtual fingers.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Precision scrolling</value>

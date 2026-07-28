@@ -16,65 +16,94 @@ internal readonly record struct PrecisionScrollFrame(
     uint ElapsedMs,
     bool IsRollover = false);
 
-// Deterministic two-contact gesture model. Wheel ticks add physical travel;
-// the worker samples that travel at the same 10 ms cadence as Microsoft's
-// native injection sample. A backlog increases velocity naturally, while the
-// bounded step keeps a burst from becoming a discontinuity.
+// Each detent adds an exact travel budget. Recent inter-detent gaps determine
+// how quickly that budget is delivered, so the physical wheel supplies both
+// launch speed and slowdown. A stationary frame precedes the final lift to
+// stop without adding synthetic inertia after the wheel itself has stopped.
 internal sealed class PrecisionScrollGesture
 {
     internal const int FrameIntervalMs = 10;
-    internal const int ReleaseDelayMs = 40;
-    internal const int TravelPerDetent = 1_200;
 
-    private const int FirstContactX = 3_000;
-    private const int SecondContactX = 7_000;
-    private const int MinimumY = 1_000;
-    private const int MaximumY = 5_000;
-    private const int MinimumStep = 100;
-    private const int MaximumStep = 360;
-    private const double StepFraction = 0.22;
+    private const int MinimumY = 0;
+    private const int MaximumY = PrecisionTouchpadInjector.DeviceHeight - 1;
+    private const int ContactHalfSpacing = 2_000;
+    private const double HimetricPerMillimeter = 100;
 
+    private readonly double[] _gapsMs = new double[3];
+
+    private PrecisionScrollTuning _tuning;
     private bool _active;
+    private bool _queued;
     private bool _endRequested;
+    private bool _rolloverRequested;
+    private bool _stationaryFrameSent;
     private int _direction;
+    private int _queuedDirection;
+    private int _gapCount;
+    private int _gapIndex;
     private int _y;
-    private double _pendingTravel;
+    private double _exactY;
+    private double _remainingTravel;
+    private double _speed;
     private double _lastTickMs;
     private double _lastFrameMs;
     private double _nextFrameMs;
+    private double _queuedTravel;
+    private double _queuedSpeed;
+    private double _queuedGapMs;
+    private double _queuedLastTickMs;
 
     public bool IsActive => _active;
 
-    public void AddDetent(int direction, double sensitivity, double timestampMs)
+    public PrecisionScrollGesture(PrecisionScrollTuning? tuning = null) =>
+        _tuning = (tuning ?? new PrecisionScrollTuning()).Normalize();
+
+    public void SetTuning(PrecisionScrollTuning tuning) =>
+        _tuning = tuning.Normalize();
+
+    public void AddDetents(int detents, double timestampMs)
     {
-        if (direction is not (-1 or 1))
-            throw new ArgumentOutOfRangeException(nameof(direction));
+        if (detents == 0)
+            throw new ArgumentOutOfRangeException(nameof(detents));
 
-        double travel = direction * TravelPerDetent * Math.Clamp(sensitivity, 0.5, 2.0);
-
-        if (_active && direction != _direction)
+        if (!_active)
         {
-            if (Math.Sign(_pendingTravel) != direction)
-                _pendingTravel = 0;
-            _endRequested = true;
+            QueueInput(detents, timestampMs);
+            return;
         }
-        else if (_active && _endRequested)
+
+        int direction = Math.Sign(detents);
+        double gapMs = timestampMs - _lastTickMs;
+        if (direction != _direction)
         {
-            _pendingTravel = 0;
+            _direction = direction;
+            _remainingTravel = 0;
+            _speed = 0;
+            _endRequested = false;
+            _rolloverRequested = false;
+            ResetGapHistory();
+        }
+        else if (_endRequested && !_rolloverRequested)
+        {
             _endRequested = false;
         }
-        else if (!_active && _pendingTravel != 0 && Math.Sign(_pendingTravel) != direction)
-        {
-            _pendingTravel = 0;
-        }
 
-        _pendingTravel += travel;
+        if (gapMs > 0)
+            AddGap(gapMs);
+
+        double travel = TravelForDetents(detents);
+        _remainingTravel += travel;
+        _speed = Math.Sign(travel) * Math.Abs(travel) / EstimatedGapMs();
         _lastTickMs = timestampMs;
+        _stationaryFrameSent = false;
     }
 
     public void RequestEnd()
     {
-        _pendingTravel = 0;
+        _queued = false;
+        _remainingTravel = 0;
+        _speed = 0;
+        _rolloverRequested = false;
         _endRequested = _active;
     }
 
@@ -82,95 +111,201 @@ internal sealed class PrecisionScrollGesture
     {
         if (_endRequested && _active)
         {
-            frame = End(nowMs, isRollover: false);
-            _endRequested = false;
+            frame = End(nowMs);
             return true;
         }
 
         if (!_active)
         {
-            if (_pendingTravel == 0)
+            if (!_queued)
             {
                 frame = default;
                 return false;
             }
 
-            _direction = Math.Sign(_pendingTravel);
-            _y = _direction > 0 ? MinimumY : MaximumY;
-            _active = true;
-            _lastFrameMs = nowMs;
-            _nextFrameMs = nowMs + FrameIntervalMs;
+            BeginQueued(nowMs);
             frame = CreateFrame(PrecisionScrollFrameKind.Begin, elapsedMs: 0);
             return true;
         }
 
-        if (_pendingTravel != 0)
-        {
-            if (nowMs < _nextFrameMs)
-            {
-                frame = default;
-                return false;
-            }
-
-            if (Math.Sign(_pendingTravel) != _direction)
-            {
-                frame = End(nowMs, isRollover: false);
-                return true;
-            }
-
-            int step = NextStep(_pendingTravel);
-            int nextY = _y + step;
-            if (nextY is < MinimumY or > MaximumY)
-            {
-                frame = End(nowMs, isRollover: true);
-                return true;
-            }
-
-            _y = nextY;
-            _pendingTravel -= step;
-            if (Math.Abs(_pendingTravel) < 1 || Math.Sign(_pendingTravel) != _direction)
-                _pendingTravel = 0;
-
-            uint elapsedMs = ElapsedSinceLastFrame(nowMs);
-            _lastFrameMs = nowMs;
-            _nextFrameMs = nowMs + FrameIntervalMs;
-            frame = CreateFrame(PrecisionScrollFrameKind.Move, elapsedMs);
-            return true;
-        }
-
-        double releaseAt = Math.Max(_nextFrameMs, _lastTickMs + ReleaseDelayMs);
-        if (nowMs < releaseAt)
+        if (nowMs < _nextFrameMs)
         {
             frame = default;
             return false;
         }
 
-        frame = End(nowMs, isRollover: false);
+        double elapsedMs = Math.Max(1, nowMs - _lastFrameMs);
+        double movement = NextMovement(elapsedMs);
+        double edge = _direction > 0 ? MaximumY : MinimumY;
+        double available = Math.Abs(edge - _exactY);
+        double applied = Math.Min(Math.Abs(movement), available);
+        if (applied > 0)
+        {
+            double signedApplied = Math.CopySign(applied, movement);
+            _exactY += signedApplied;
+            _remainingTravel -= signedApplied;
+            if (Math.Abs(_remainingTravel) < 0.5)
+                _remainingTravel = 0;
+        }
+
+        if (Math.Abs(movement) > available || (_remainingTravel != 0 && available == 0))
+        {
+            _rolloverRequested = true;
+            _endRequested = true;
+        }
+
+        if (_remainingTravel == 0)
+            _speed = 0;
+
+        bool stationary = applied == 0;
+        _stationaryFrameSent = stationary;
+        _y = (int)Math.Round(_exactY, MidpointRounding.AwayFromZero);
+        uint frameElapsedMs = ElapsedSinceLastFrame(nowMs);
+        _lastFrameMs = nowMs;
+        _nextFrameMs = nowMs + FrameIntervalMs;
+        frame = CreateFrame(
+            PrecisionScrollFrameKind.Move,
+            frameElapsedMs,
+            isRollover: _rolloverRequested);
+
+        if (!_rolloverRequested
+            && _remainingTravel == 0
+            && _stationaryFrameSent
+            && nowMs >= _lastTickMs + QuietDurationMs())
+        {
+            _endRequested = true;
+        }
+
         return true;
     }
 
     public int GetWaitDurationMs(double nowMs)
     {
-        if (_endRequested || (!_active && _pendingTravel != 0))
+        if (_endRequested || _queued)
             return 0;
-        if (!_active)
-            return Timeout.Infinite;
-
-        double dueAt = _pendingTravel != 0
-            ? _nextFrameMs
-            : Math.Max(_nextFrameMs, _lastTickMs + ReleaseDelayMs);
-        return dueAt <= nowMs ? 0 : (int)Math.Ceiling(dueAt - nowMs);
+        if (_active)
+            return DueInMs(_nextFrameMs, nowMs);
+        return Timeout.Infinite;
     }
 
-    private PrecisionScrollFrame End(double nowMs, bool isRollover)
+    private void QueueInput(int detents, double timestampMs)
     {
+        int direction = Math.Sign(detents);
+        double travel = TravelForDetents(detents);
+
+        if (_queued && direction == _queuedDirection)
+        {
+            double gapMs = timestampMs - _queuedLastTickMs;
+            if (gapMs > 0)
+                _queuedGapMs = gapMs;
+            _queuedTravel += travel;
+            _queuedSpeed = Math.Sign(travel) * Math.Abs(travel)
+                / Math.Max(_queuedGapMs, 1);
+        }
+        else
+        {
+            _queued = true;
+            _queuedDirection = direction;
+            _queuedTravel = travel;
+            _queuedGapMs = _tuning.InitialStepDurationMs;
+            _queuedSpeed = Math.Sign(travel) * Math.Abs(travel)
+                / _queuedGapMs;
+        }
+
+        _queuedLastTickMs = timestampMs;
+    }
+
+    private void BeginQueued(double nowMs)
+    {
+        _direction = _queuedDirection;
+        _remainingTravel = _queuedTravel;
+        _speed = _queuedSpeed;
+        _lastTickMs = _queuedLastTickMs;
+        _queued = false;
+        _queuedTravel = 0;
+        _active = true;
+        _endRequested = false;
+        _rolloverRequested = false;
+        _stationaryFrameSent = false;
+        ResetGapHistory();
+        if (_queuedGapMs != _tuning.InitialStepDurationMs)
+            AddGap(_queuedGapMs);
+        _y = _direction > 0 ? MinimumY : MaximumY;
+        _exactY = _y;
+        _lastFrameMs = nowMs;
+        _nextFrameMs = nowMs + FrameIntervalMs;
+    }
+
+    private PrecisionScrollFrame End(double nowMs)
+    {
+        if (_rolloverRequested && Math.Abs(_remainingTravel) >= 0.5)
+        {
+            _queued = true;
+            _queuedDirection = _direction;
+            _queuedTravel = _remainingTravel;
+            _queuedSpeed = _speed;
+            _queuedGapMs = EstimatedGapMs();
+            _queuedLastTickMs = _lastTickMs;
+        }
+
         uint elapsedMs = ElapsedSinceLastFrame(nowMs);
-        var frame = CreateFrame(PrecisionScrollFrameKind.End, elapsedMs, isRollover);
+        var frame = CreateFrame(
+            PrecisionScrollFrameKind.End,
+            elapsedMs,
+            isRollover: _rolloverRequested);
+
         _active = false;
+        _endRequested = false;
+        _rolloverRequested = false;
+        _stationaryFrameSent = false;
         _direction = 0;
+        _remainingTravel = 0;
+        _speed = 0;
         _nextFrameMs = nowMs;
         return frame;
     }
+
+    private double NextMovement(double elapsedMs)
+    {
+        if (_remainingTravel == 0 || _speed == 0)
+            return 0;
+
+        double magnitude = Math.Min(
+            Math.Abs(_remainingTravel),
+            Math.Abs(_speed) * elapsedMs);
+        return Math.CopySign(magnitude, _remainingTravel);
+    }
+
+    private void AddGap(double gapMs)
+    {
+        _gapsMs[_gapIndex] = gapMs;
+        _gapIndex = (_gapIndex + 1) % _gapsMs.Length;
+        _gapCount = Math.Min(_gapCount + 1, _gapsMs.Length);
+    }
+
+    private void ResetGapHistory()
+    {
+        _gapCount = 0;
+        _gapIndex = 0;
+    }
+
+    private double EstimatedGapMs() => _gapCount switch
+    {
+        0 => _tuning.InitialStepDurationMs,
+        1 => _gapsMs[0],
+        2 => (_gapsMs[0] + _gapsMs[1]) / 2,
+        _ => _gapsMs[0] + _gapsMs[1] + _gapsMs[2]
+            - Math.Min(_gapsMs[0], Math.Min(_gapsMs[1], _gapsMs[2]))
+            - Math.Max(_gapsMs[0], Math.Max(_gapsMs[1], _gapsMs[2])),
+    };
+
+    private double QuietDurationMs() => Math.Clamp(
+        EstimatedGapMs() * _tuning.QuietPeriodScale,
+        FrameIntervalMs * 2,
+        _tuning.InitialStepDurationMs * 3);
+
+    private double TravelForDetents(int detents) =>
+        detents * _tuning.DistancePerDetentMm * HimetricPerMillimeter;
 
     private PrecisionScrollFrame CreateFrame(
         PrecisionScrollFrameKind kind,
@@ -178,22 +313,18 @@ internal sealed class PrecisionScrollGesture
         bool isRollover = false) =>
         new(
             kind,
-            new TouchpadPosition(FirstContactX, _y),
-            new TouchpadPosition(SecondContactX, _y),
+            new TouchpadPosition(
+                PrecisionTouchpadInjector.DeviceWidth / 2 - ContactHalfSpacing,
+                _y),
+            new TouchpadPosition(
+                PrecisionTouchpadInjector.DeviceWidth / 2 + ContactHalfSpacing,
+                _y),
             elapsedMs,
             isRollover);
 
+    private static int DueInMs(double dueAt, double nowMs) =>
+        dueAt <= nowMs ? 0 : (int)Math.Ceiling(dueAt - nowMs);
+
     private uint ElapsedSinceLastFrame(double nowMs) =>
         (uint)Math.Clamp(Math.Round(nowMs - _lastFrameMs), 1, uint.MaxValue);
-
-    private static int NextStep(double pendingTravel)
-    {
-        double magnitude = Math.Clamp(
-            Math.Abs(pendingTravel) * StepFraction,
-            MinimumStep,
-            MaximumStep);
-        magnitude = Math.Min(magnitude, Math.Abs(pendingTravel));
-        int rounded = Math.Max(1, (int)Math.Round(magnitude, MidpointRounding.AwayFromZero));
-        return Math.Sign(pendingTravel) * rounded;
-    }
 }

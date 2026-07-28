@@ -24,7 +24,7 @@ public partial class App
         if (settings.Enabled && !_precisionScrollRunning)
         {
             _precisionScrollEngine = new PrecisionScrollEngine(_keyboardMouseHost);
-            _precisionScrollEngine.SetSensitivity(settings.Sensitivity);
+            _precisionScrollEngine.SetTuning(settings.Tuning ?? new PrecisionScrollTuning());
             if (_keyboardMouseHost.Start())
             {
                 _precisionScrollRunning = _precisionScrollEngine.Start();
@@ -43,7 +43,7 @@ public partial class App
         }
         else if (settings.Enabled)
         {
-            _precisionScrollEngine?.SetSensitivity(settings.Sensitivity);
+            _precisionScrollEngine?.SetTuning(settings.Tuning ?? new PrecisionScrollTuning());
         }
         else if (!settings.Enabled && _precisionScrollRunning)
         {

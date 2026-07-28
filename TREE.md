@@ -914,13 +914,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── PrecisionScrollPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── PrecisionScrollViewModel.cs
-│   │   │   └── PrecisionScrollViewModel.Settings.cs
+│   │   │   ├── PrecisionScrollViewModel.Settings.cs
+│   │   │   └── PrecisionScrollViewModel.Tuning.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Precision scrolling domain module — classic wheel detents become native two-fin…
 │   │   ├── Deckle.Input.PrecisionScroll.csproj
 │   │   ├── DecklePrecisionScrollSource.cs
 │   │   ├── PrecisionScrollSettings.cs
 │   │   ├── PrecisionScrollSettingsModule.cs
 │   │   ├── PrecisionScrollSettingsService.cs
+│   │   ├── PrecisionScrollTuning.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
@@ -1656,7 +1658,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.PrecisionScroll.Tests/
 │   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
 │   │   ├── DecklePrecisionScrollSourceTests.cs
-│   │   └── PrecisionScrollGestureTests.cs
+│   │   ├── PrecisionScrollGestureTests.cs
+│   │   └── PrecisionScrollTuningTests.cs
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj

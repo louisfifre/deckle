@@ -9,9 +9,6 @@ public partial class PrecisionScrollViewModel : ObservableObject
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
-    [ObservableProperty]
-    public partial double Sensitivity { get; set; }
-
     public PrecisionScrollViewModel() => Load();
 
     public void Load()
@@ -21,7 +18,7 @@ public partial class PrecisionScrollViewModel : ObservableObject
         {
             PrecisionScrollSettings settings = PrecisionScrollSettingsService.Instance.Current;
             Enabled = settings.Enabled;
-            Sensitivity = Math.Clamp(settings.Sensitivity, 0.5, 2.0);
+            LoadTuning((settings.Tuning ?? new PrecisionScrollTuning()).Normalize());
         }
         finally
         {
@@ -34,16 +31,21 @@ public partial class PrecisionScrollViewModel : ObservableObject
         if (!_isSyncing) Save();
     }
 
-    partial void OnSensitivityChanged(double value)
-    {
-        if (!_isSyncing) Save();
-    }
-
     private void Save()
     {
         PrecisionScrollSettings settings = PrecisionScrollSettingsService.Instance.Current;
         settings.Enabled = Enabled;
-        settings.Sensitivity = Math.Round(Sensitivity, 2);
+        PrecisionScrollTuning requested = CreateTuning();
+        PrecisionScrollTuning normalized = requested.Normalize();
+        settings.Tuning = normalized;
+
+        if (requested != normalized)
+        {
+            _isSyncing = true;
+            try { LoadTuning(normalized); }
+            finally { _isSyncing = false; }
+        }
+
         PrecisionScrollSettingsService.Instance.Save();
     }
 }

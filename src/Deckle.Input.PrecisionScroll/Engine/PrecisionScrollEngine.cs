@@ -10,7 +10,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 
     private PrecisionTouchpadInjector? _injector;
     private Thread? _worker;
-    private double _sensitivity = 1.0;
+    private PrecisionScrollTuning _tuning = new();
     private bool _scrollDirectionReversed;
     private int _accepting;
     private int _runRequested;
@@ -78,16 +78,16 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         }
     }
 
-    public void SetSensitivity(double sensitivity) =>
-        Volatile.Write(ref _sensitivity, Math.Clamp(sensitivity, 0.5, 2.0));
+    public void SetTuning(PrecisionScrollTuning tuning) =>
+        Volatile.Write(ref _tuning, tuning.Normalize());
 
     public bool Intercept(in MouseWheelEvent wheelEvent)
     {
         if (Volatile.Read(ref _accepting) == 0 || !CanConvert(in wheelEvent))
             return false;
 
-        int direction = wheelEvent.Delta > 0 ? 1 : -1;
-        if (!_ticks.TryEnqueue(new WheelTick(direction, wheelEvent.TimestampMs)))
+        int detents = wheelEvent.Delta / 120;
+        if (!_ticks.TryEnqueue(new WheelTick(detents, wheelEvent.TimestampMs)))
         {
             Volatile.Write(ref _accepting, 0);
             Interlocked.Exchange(ref _overflowed, 1);
@@ -95,7 +95,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
             return false;
         }
 
-        Interlocked.Increment(ref _detents);
+        Interlocked.Add(ref _detents, Math.Abs(detents));
         _wake.Set();
         return true;
     }
@@ -134,7 +134,8 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         wheelEvent.Source == WheelEventSource.MessageHook
         && wheelEvent.Axis == WheelAxis.Vertical
         && !wheelEvent.IsInjected
-        && wheelEvent.Delta is 120 or -120;
+        && wheelEvent.Delta != 0
+        && wheelEvent.Delta % 120 == 0;
 
     private void WorkerMain()
     {
@@ -142,18 +143,16 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 
         while (true)
         {
+            gesture.SetTuning(Volatile.Read(ref _tuning));
             bool running = Volatile.Read(ref _runRequested) != 0;
             if (running)
             {
                 while (_ticks.TryDequeue(out WheelTick tick))
                 {
-                    int contactDirection = _scrollDirectionReversed
-                        ? -tick.Direction
-                        : tick.Direction;
-                    gesture.AddDetent(
-                        contactDirection,
-                        Volatile.Read(ref _sensitivity),
-                        tick.TimestampMs);
+                    int contactDetents = _scrollDirectionReversed
+                        ? -tick.Detents
+                        : tick.Detents;
+                    gesture.AddDetents(contactDetents, tick.TimestampMs);
                 }
             }
             else
