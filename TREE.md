@@ -552,6 +552,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── AutocorrectPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── AutocorrectAppRow.cs
+│   │   │   ├── AutocorrectPackRow.cs
 │   │   │   ├── AutocorrectViewModel.cs
 │   │   │   └── AutocorrectViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…

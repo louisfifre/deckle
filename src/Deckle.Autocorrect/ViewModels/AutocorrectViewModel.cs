@@ -28,6 +28,12 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     // display name so the list is stable across reloads.
     public ObservableCollection<AutocorrectAppRow> Apps { get; } = new();
 
+    // The vocabulary packs the build ships, in shipped order — every one is
+    // listed whether or not the user has met it, so what a pack brings can be
+    // read before activating it. Unlike Apps this list is fixed by the build,
+    // not enumerated from the settings file.
+    public ObservableCollection<AutocorrectPackRow> Packs { get; } = new();
+
     // ── Observability ────────────────────────────────────────────────────────
     //
     // The module owns only its purpose-specific dataset consents here.
@@ -71,6 +77,13 @@ public sealed partial class AutocorrectViewModel : ObservableObject
             AutocorrectDecisions = telemetry.AutocorrectDecisions;
             AutocorrectText = telemetry.AutocorrectText;
 
+            Packs.Clear();
+            foreach (DomainPack pack in DomainPack.Shipped)
+            {
+                Packs.Add(new AutocorrectPackRow(
+                    pack, settings.IsDomainPackActive(pack.Id), OnPackToggled));
+            }
+
             Apps.Clear();
             foreach (var entry in settings.Apps
                          .OrderBy(kv => Humanize(kv.Key), StringComparer.CurrentCultureIgnoreCase))
@@ -110,6 +123,12 @@ public sealed partial class AutocorrectViewModel : ObservableObject
         telemetry.AutocorrectText = AutocorrectText;
         TelemetrySettingsService.Instance.Save();
     }
+
+    // Activating a pack changes the effective lexicon, which is merged at engine
+    // build — the App notices the key change and rebuilds. Nothing to do here
+    // beyond persisting the choice.
+    private static void OnPackToggled(AutocorrectPackRow row, bool active)
+        => AutocorrectSettingsService.Instance.SetDomainPackActive(row.PackId, active);
 
     private static void OnRowToggled(AutocorrectAppRow row, bool enabled)
         => AutocorrectSettingsService.Instance.SetDecision(row.ProcessName, enabled);

@@ -104,6 +104,7 @@ public sealed partial class AutocorrectPage : Page
     {
         bool enabled = ViewModel.Enabled;
         AppsSection.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        PacksSection.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
 
         bool any = ViewModel.Apps.Count > 0;
         AppsList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;

@@ -122,6 +122,45 @@
 
                 </StackPanel>
 
+                <!-- ── Vocabulary packs ──────────────────────────────────────── -->
+                <!-- Gated on the master switch like the Apps section above
+                     (mask-never-grey): a pack only means something while
+                     correction runs. Bespoke rather than composed — the rows are
+                     enumerated from DomainPack.Shipped at Load(), and each will
+                     grow its own dilution figures, which no composer kind
+                     models. Tag is the search index's scroll-to handle. -->
+                <StackPanel x:Name="PacksSection"
+                            Tag="AutocorrectPage_Section_Packs"
+                            Spacing="{StaticResource SettingsCardSpacing}">
+
+                    <TextBlock x:Uid="AutocorrectPage_Section_Packs"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                    <TextBlock x:Uid="AutocorrectPage_Packs_Body"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.Packs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AutocorrectPackRow">
+                                <controls:SettingsCard Header="{x:Bind DisplayName}"
+                                                       Description="{x:Bind Description}"
+                                                       HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
+                                    <ToggleSwitch IsOn="{x:Bind Active, Mode=TwoWay}" />
+                                </controls:SettingsCard>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+
                 <!-- ── Diagnostics ───────────────────────────────────────────── -->
                 <!-- The module's observability opt-ins, relocated here from the
                      shared Diagnostics page so they sit beside the engine they

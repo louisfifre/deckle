@@ -100,6 +100,26 @@
     <value>Forget this app</value>
   </data>
 
+  <!-- Vocabulary packs — the user-facing name for the domain packs of
+       CONTEXT.md § Lexicon composition. "Domain" reads as a DNS domain next to
+       a computing pack, so the interface says "vocabulary" throughout while the
+       code keeps the model's term.
+       The rows are built in code from DomainPack.Shipped, so these are resolved
+       through Loc.GetFrom rather than x:Uid; the "<key>.Header"/".Description"
+       shape still matches a SettingsCard's, one pair per shipped pack. -->
+  <data name="AutocorrectPage_Section_Packs.Text" xml:space="preserve">
+    <value>Vocabulary packs</value>
+  </data>
+  <data name="AutocorrectPage_Packs_Body.Text" xml:space="preserve">
+    <value>Add a field's vocabulary to what Deckle knows. Its words stop being corrected, and become corrections in their own right. Turn on only the fields you write in — each pack you add makes correction a little less sure.</value>
+  </data>
+  <data name="AutocorrectPage_PackFrIt.Header" xml:space="preserve">
+    <value>Computing</value>
+  </data>
+  <data name="AutocorrectPage_PackFrIt.Description" xml:space="preserve">
+    <value>French terms from computing, the internet and programming.</value>
+  </data>
+
   <!-- Diagnostics — the module's purpose-specific dataset consents.
        Decisions and text are independent disk-persistence opt-ins.
        Keys are flat SettingsCards composed by the SettingsComposer, so they bind
