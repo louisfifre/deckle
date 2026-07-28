@@ -470,6 +470,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── lexicon-en-globish.tsv.gz
 │   │   │   ├── lexicon-en.tsv.gz
 │   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   ├── pack-fr-it.manifest.json
+│   │   │   ├── pack-fr-it.tsv.gz
 │   │   │   ├── pair-bigrams-fr.tsv.gz
 │   │   │   └── verbs-fr.tsv.gz
 │   │   ├── Engine/
@@ -526,6 +528,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
 │   │   │   ├── AutocorrectLexiconArtifacts.cs
+│   │   │   ├── DomainPack.cs
+│   │   │   ├── DomainPackManifest.cs
+│   │   │   ├── EffectiveLexicon.cs
 │   │   │   ├── FrequencyLexicon.cs
 │   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
@@ -549,6 +554,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── AutocorrectPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── AutocorrectAppRow.cs
+│   │   │   ├── AutocorrectExcludedWordRow.cs
+│   │   │   ├── AutocorrectPackRow.cs
 │   │   │   ├── AutocorrectViewModel.cs
 │   │   │   └── AutocorrectViewModel.Settings.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
@@ -565,6 +572,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Mining/
 │   │   │   ├── MistouchFamilyReport.cs
 │   │   │   └── MistouchMiner.cs
+│   │   ├── PackReports/
+│   │   │   ├── pack-fr-it.frequencies.tsv
+│   │   │   ├── pack-fr-it.judgments.tsv
+│   │   │   └── pack-fr-it.md
 │   │   ├── Profiling/
 │   │   │   ├── SurfaceProfiler.cs
 │   │   │   └── SurfaceProfileReport.cs
@@ -577,6 +588,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TruthOverlay.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
+│   │   ├── DomainPackBuilder.cs
 │   │   ├── HarvestData.cs
 │   │   ├── HarvestFilter.cs
 │   │   ├── HarvestStore.cs
@@ -608,6 +620,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectBenchmark.cs
 │   │   ├── AutocorrectBenchmarkCommand.cs
 │   │   ├── AutocorrectBenchmarkCorpus.cs
+│   │   ├── AutocorrectItPackCorpus.cs
 │   │   ├── BenchmarkKeyboardSession.cs
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs
@@ -1492,6 +1505,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── DomainPackMaintenanceTests.cs
+│   │   ├── DomainPackManifestTests.cs
+│   │   ├── EffectiveLexiconTests.cs
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrenchSentenceRerankerTests.cs
 │   │   ├── FrequencyLexiconTests.cs

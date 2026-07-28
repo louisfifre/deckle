@@ -78,6 +78,14 @@ public sealed class FrequencyLexicon : IFrequencyLexicon
         return new FrequencyLexicon(map, skipped);
     }
 
+    // The way back into the type for EffectiveLexicon.Compose, which fuses
+    // several already-loaded lexicons under its own max-wins rule. Keys must
+    // already be lowercased and NFC-normalized — every caller gets them from a
+    // prior LoadTsv, which normalizes — so nothing is re-normalized here: this
+    // runs over the whole base lexicon at every engine build.
+    internal static FrequencyLexicon FromComposedEntries(Dictionary<string, double> map) =>
+        new(map, skippedLines: 0);
+
     // The shipped artifacts are gzip-compressed; decompress on the way in.
     public static FrequencyLexicon LoadTsvGz(string path)
     {

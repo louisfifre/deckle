@@ -49,6 +49,29 @@ public static class SettingsSearch
             Keywords = ["application", "program", "per-app", "forget"],
         },
 
+        // The vocabulary-pack section. Bespoke like the Apps one, and for the same
+        // reason its label is supplied inline: the header is a plain TextBlock under
+        // "AutocorrectPage_Section_Packs.Text", which the index does not probe. The
+        // keywords carry the model's own word ("domain") and what a user would type
+        // looking for it, since the visible label says neither.
+        new SettingSearchEntry
+        {
+            LabelKey = "AutocorrectPage_Section_Packs",
+            LiteralLabel = "Vocabulary packs",
+            Keywords = ["domain", "pack", "dictionary", "computing", "jargon", "terms", "lexicon"],
+        },
+
+        // The exclusion register. Bespoke like the two sections above, same inline
+        // label for the same reason. The keywords carry what a user reaches for at
+        // the moment of annoyance — a word they want left alone — since none of
+        // those words appear in the label.
+        new SettingSearchEntry
+        {
+            LabelKey = "AutocorrectPage_Section_Exclusions",
+            LiteralLabel = "Excluded words",
+            Keywords = ["exclude", "exception", "ignore", "never correct", "stop correcting", "word"],
+        },
+
         // Diagnostics — the two purpose-specific dataset toggles. Each resolves from
         // its SettingsCard header; the keywords carry the words ("diagnostics",
         // "telemetry", "corpus") a user searches for the category rather than the

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Deckle.Catalog;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace Deckle.Autocorrect;
@@ -47,6 +48,7 @@ public sealed partial class AutocorrectPage : Page
         ComposeDiagnostics();
 
         ViewModel.Apps.CollectionChanged += OnAppsChanged;
+        ViewModel.ExcludedWords.CollectionChanged += OnExclusionsChanged;
         // The master switch gates the whole Apps section (mask-never-grey), so
         // re-run the visibility pass whenever Enabled changes — the composer's
         // setter raises PropertyChanged, which routes here.
@@ -89,6 +91,19 @@ public sealed partial class AutocorrectPage : Page
     private void OnAppsChanged(object? sender, NotifyCollectionChangedEventArgs e)
         => RefreshAppsVisibility();
 
+    private void OnExclusionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => RefreshAppsVisibility();
+
+    // Enter excludes what is in the box — the gesture the keyboard expects from
+    // a field with an adjacent add button. The command owns the empty case, so
+    // there is nothing to validate here.
+    private void ExclusionBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != Windows.System.VirtualKey.Enter) return;
+        e.Handled = true;
+        ViewModel.ExcludeWordCommand.Execute(null);
+    }
+
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(AutocorrectViewModel.Enabled))
@@ -104,9 +119,15 @@ public sealed partial class AutocorrectPage : Page
     {
         bool enabled = ViewModel.Enabled;
         AppsSection.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        PacksSection.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        ExclusionsSection.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
 
         bool any = ViewModel.Apps.Count > 0;
         AppsList.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         EmptyState.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+
+        bool anyExcluded = ViewModel.ExcludedWords.Count > 0;
+        ExclusionsList.Visibility = anyExcluded ? Visibility.Visible : Visibility.Collapsed;
+        ExclusionsEmptyState.Visibility = anyExcluded ? Visibility.Collapsed : Visibility.Visible;
     }
 }

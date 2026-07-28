@@ -122,6 +122,148 @@
 
                 </StackPanel>
 
+                <!-- ── Vocabulary packs ──────────────────────────────────────── -->
+                <!-- Gated on the master switch like the Apps section above
+                     (mask-never-grey): a pack only means something while
+                     correction runs. Bespoke rather than composed — the rows are
+                     enumerated from DomainPack.Shipped at Load(), and each will
+                     grow its own dilution figures, which no composer kind
+                     models. Tag is the search index's scroll-to handle. -->
+                <StackPanel x:Name="PacksSection"
+                            Tag="AutocorrectPage_Section_Packs"
+                            Spacing="{StaticResource SettingsCardSpacing}">
+
+                    <TextBlock x:Uid="AutocorrectPage_Section_Packs"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                    <TextBlock x:Uid="AutocorrectPage_Packs_Body"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.Packs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AutocorrectPackRow">
+                                <!-- The in-page fold the settings doctrine
+                                     allows: the toggle stays on the header row,
+                                     and what the pack brings against what
+                                     sanitization refused sits one expand away.
+                                     Every string is bound from the row rather
+                                     than x:Uid — a DataTemplate is not a
+                                     reliable x:Uid scope, and the rows already
+                                     resolve their wording through Loc. -->
+                                <controls:SettingsExpander Header="{x:Bind DisplayName}"
+                                                           Description="{x:Bind Description}"
+                                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Language}}">
+                                    <ToggleSwitch IsOn="{x:Bind Active, Mode=TwoWay}" />
+                                    <controls:SettingsExpander.Items>
+                                        <controls:SettingsCard ContentAlignment="Left">
+                                            <StackPanel Spacing="12"
+                                                        Margin="0,4,0,4"
+                                                        HorizontalAlignment="Stretch">
+                                                <TextBlock Text="{x:Bind DilutionSummary}"
+                                                           Visibility="{x:Bind DilutionVisibility}"
+                                                           Style="{StaticResource BodyTextBlockStyle}"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           TextWrapping="Wrap" />
+                                                <!-- Open exactly while the pack
+                                                     is active: the cost is real
+                                                     only once the pack is
+                                                     loaded, and warning about a
+                                                     state the user is not in is
+                                                     noise. -->
+                                                <InfoBar Title="{x:Bind WarningTitle}"
+                                                         Message="{x:Bind WarningMessage}"
+                                                         IsOpen="{x:Bind Active, Mode=OneWay}"
+                                                         IsClosable="False"
+                                                         Severity="Informational" />
+                                            </StackPanel>
+                                        </controls:SettingsCard>
+                                    </controls:SettingsExpander.Items>
+                                </controls:SettingsExpander>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+
+                <!-- ── Excluded words ────────────────────────────────────────── -->
+                <!-- The settings mirror of the exclusion register: consultable
+                     and reversible, one row per word. Gated on the master
+                     switch like the sections above, and bespoke for the same
+                     reason — a live collection with add and undo gestures. -->
+                <StackPanel x:Name="ExclusionsSection"
+                            Tag="AutocorrectPage_Section_Exclusions"
+                            Spacing="{StaticResource SettingsCardSpacing}">
+
+                    <TextBlock x:Uid="AutocorrectPage_Section_Exclusions"
+                               Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
+
+                    <TextBlock x:Uid="AutocorrectPage_Exclusions_Body"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+
+                    <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                            <TextBox x:Name="ExclusionBox"
+                                     x:Uid="AutocorrectPage_ExclusionBox"
+                                     Width="200"
+                                     Text="{x:Bind ViewModel.NewExclusion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="ExclusionBox_KeyDown" />
+                            <Button x:Uid="AutocorrectPage_ExcludeButton"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Command="{x:Bind ViewModel.ExcludeWordCommand}" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <TextBlock x:Name="ExclusionsEmptyState"
+                               x:Uid="AutocorrectPage_Exclusions_Empty"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0"
+                               Visibility="Collapsed" />
+
+                    <ItemsControl x:Name="ExclusionsList"
+                                  ItemsSource="{x:Bind ViewModel.ExcludedWords}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="4">
+                                    <StackPanel.ChildrenTransitions>
+                                        <TransitionCollection>
+                                            <AddDeleteThemeTransition />
+                                        </TransitionCollection>
+                                    </StackPanel.ChildrenTransitions>
+                                </StackPanel>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AutocorrectExcludedWordRow">
+                                <controls:SettingsCard Header="{x:Bind Word}">
+                                    <Button x:Uid="AutocorrectPage_IncludeButton"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Command="{x:Bind IncludeCommand}">
+                                        <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                  FontSize="16" />
+                                    </Button>
+                                </controls:SettingsCard>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+
                 <!-- ── Diagnostics ───────────────────────────────────────────── -->
                 <!-- The module's observability opt-ins, relocated here from the
                      shared Diagnostics page so they sit beside the engine they

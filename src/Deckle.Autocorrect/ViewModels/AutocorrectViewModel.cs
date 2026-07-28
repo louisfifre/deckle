@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Autocorrect;
@@ -27,6 +28,23 @@ public sealed partial class AutocorrectViewModel : ObservableObject
     // The apps the user has decided on (enabled or declined), ordered by
     // display name so the list is stable across reloads.
     public ObservableCollection<AutocorrectAppRow> Apps { get; } = new();
+
+    // The vocabulary packs the build ships, in shipped order — every one is
+    // listed whether or not the user has met it, so what a pack brings can be
+    // read before activating it. Unlike Apps this list is fixed by the build,
+    // not enumerated from the settings file.
+    public ObservableCollection<AutocorrectPackRow> Packs { get; } = new();
+
+    // The exclusion register: words the user pulled out of correction's reach,
+    // whatever lexicon carried them. Consultable and reversible here — the
+    // settings mirror of a gesture that will also be born in the correction
+    // inlay, once that surface exists.
+    public ObservableCollection<AutocorrectExcludedWordRow> ExcludedWords { get; } = new();
+
+    // What the user is typing into the exclusion field. Not persisted — it
+    // becomes an entry only on the add gesture.
+    [ObservableProperty]
+    public partial string NewExclusion { get; set; } = string.Empty;
 
     // ── Observability ────────────────────────────────────────────────────────
     //
@@ -71,6 +89,24 @@ public sealed partial class AutocorrectViewModel : ObservableObject
             AutocorrectDecisions = telemetry.AutocorrectDecisions;
             AutocorrectText = telemetry.AutocorrectText;
 
+            // The dilution figures come from each pack's shipped manifest, read
+            // here rather than held live: they are fabrication output and only
+            // change when a new pack ships.
+            string dataDir = AutocorrectLexiconArtifacts.DataDirectory;
+            Packs.Clear();
+            foreach (DomainPack pack in DomainPack.Shipped)
+            {
+                Packs.Add(new AutocorrectPackRow(
+                    pack,
+                    settings.IsDomainPackActive(pack.Id),
+                    DomainPackManifest.TryLoad(dataDir, pack),
+                    OnPackToggled));
+            }
+
+            ExcludedWords.Clear();
+            foreach (string word in settings.ExcludedWords)
+                ExcludedWords.Add(new AutocorrectExcludedWordRow(word, OnWordIncluded));
+
             Apps.Clear();
             foreach (var entry in settings.Apps
                          .OrderBy(kv => Humanize(kv.Key), StringComparer.CurrentCultureIgnoreCase))
@@ -109,6 +145,41 @@ public sealed partial class AutocorrectViewModel : ObservableObject
         telemetry.AutocorrectDecisions = AutocorrectDecisions;
         telemetry.AutocorrectText = AutocorrectText;
         TelemetrySettingsService.Instance.Save();
+    }
+
+    // Activating a pack changes the effective lexicon, which is merged at engine
+    // build — the App notices the key change and rebuilds. Nothing to do here
+    // beyond persisting the choice.
+    private static void OnPackToggled(AutocorrectPackRow row, bool active)
+        => AutocorrectSettingsService.Instance.SetDomainPackActive(row.PackId, active);
+
+    // Excludes what is in the field. The service owns the normalization and
+    // answers with the form it registered, so the list shows the stored key
+    // rather than what was typed. Text that cannot name a single word — blank,
+    // or several words — clears the field and adds nothing: the add button is
+    // already disabled for the blank case, and a constrained control beats an
+    // error message.
+    [RelayCommand]
+    private void ExcludeWord()
+    {
+        string? excluded = AutocorrectSettingsService.Instance.ExcludeWord(NewExclusion);
+        NewExclusion = string.Empty;
+        if (excluded is null) return;
+
+        if (ExcludedWords.Any(row => string.Equals(row.Word, excluded, StringComparison.Ordinal)))
+            return;
+
+        int index = 0;
+        while (index < ExcludedWords.Count
+               && string.CompareOrdinal(ExcludedWords[index].Word, excluded) < 0)
+            index++;
+        ExcludedWords.Insert(index, new AutocorrectExcludedWordRow(excluded, OnWordIncluded));
+    }
+
+    private void OnWordIncluded(AutocorrectExcludedWordRow row)
+    {
+        AutocorrectSettingsService.Instance.IncludeWord(row.Word);
+        ExcludedWords.Remove(row);
     }
 
     private static void OnRowToggled(AutocorrectAppRow row, bool enabled)
