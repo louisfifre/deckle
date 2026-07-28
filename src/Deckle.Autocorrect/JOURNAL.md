@@ -5,6 +5,16 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-28 — Floor vs wordfreq decided at the IT bench: promotion, through a versioned overlay
+
+Built the IT gold corpus (`AutocorrectItPackCorpus`, 9 scenarios that actually type pack vocabulary) and benched base vs effective lexicon vs a wordfreq-promoted pack variant. Measured: the base alone misfires twice on IT prose (« hebergeur » → « héberger », « reinitialise » → « réinitialisé »); the flat 0.2 floor keeps protection and sole-candidate accent restoration (« agregateur » → « agrégateur ») but still let « hebergeur » be wrongly corrected to « héberger » — a pack form at 0.2 loses the contest to a base repair candidate at 4.26 opm — breaking the pack's own zero-wrong contract. With wordfreq promotion (« hébergeur » at 0.87 opm) the misfire disappears, recall rises to 4/6, and the general keyboard corpus stays strictly identical. Chose promotion: shipped frequency is max(floor, overlay), the overlay versioned as `PackReports/pack-fr-it.frequencies.tsv` (205 of 5,210 forms) and applied at fabrication; byte-determinism re-verified.
+
+Found wordfreq inflates hyphen/apostrophe compounds absurdly (it tokenizes and multiplies: « pas-à-pas » ~3,900 opm), so the overlay admits simple single-token forms only — compounds stay at the floor.
+
+Known residue, gated as such in the bench: the contested Morphalou-epsilon fold (« reinitialise » — pack 0.2 vs base 0.03, both below the dominance bar, no restoration) and instant typo repair toward a sub-bar pack form (« agrégatuer » — agrégateur at 0.43 opm stays under the instant frequency bar). Both are engine-bar questions, not frequency-policy questions.
+
+Noted: the frwiktionary Lexique categories miss much everyday franglais (backend, plugin, framework, wifi are in no lexicon) — pack coverage has a ceiling the source imposes; a complementary source or category widening is a future workstream.
+
 ## 2026-07-28 — Gray zone judged: 220 admitted, 153 excluded, bench unchanged
 
 Ran the external judge campaign over the 373 withheld gray-zone forms: three parallel Claude judges over the worksheet (form, masking cost, distance-1 base neighbors with frequencies), family splits arbitrated by a supervising pass — verdicts versioned in `PackReports/pack-fr-it.judgments.tsv`, applied at rebuild. 220 admitted (real IT vocabulary with implausible slips: push, inline, hébergeur, qubit, standard inflections Lexique omits like répliquez), 153 excluded (Wiktionary noise, never-typed OQLF coinages like the déverminer family, French misspellings that must stay correctable like connection, forms one plausible slip from a common base word like mappes/nappes). Pack now ships 5,210 forms, zero pending; keyboard bench still strictly identical to baseline. Chose family coherence as an arbitration principle: identical neighbor patterns get one verdict (cliqueur·s, nétiquette·s), differing fault classes may split (inline admitted, inliner excluded on the c-deletion class).
