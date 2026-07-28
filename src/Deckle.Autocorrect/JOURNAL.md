@@ -5,6 +5,24 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-28 — Packs and exclusions wired to the runtime; exclusion is subtraction, not demotion
+
+Shipped the runtime and UI side of the domain-pack model: the effective lexicon is merged at engine build (base + active packs, max wins, then the exclusion register subtracted), packs are inactive by default and activated per pack in settings, each pack shows its dilution figures, and the exclusion register is consultable and reversible there.
+
+Chose subtraction over demotion for word exclusion, after mapping every candidate source. Measured: setting a form's frequency to 0 does **not** keep it from being produced as a correction. Eight paths apply a candidate with no absolute frequency test — `DiacriticsRestorer` sole-candidate (`MinCandidateFrequencyPerMillion` is 0.0 by design, « 0 keeps everything the index holds ») and its pair-model branch, `Morphology.UniqueMorphologicalCandidate`, the determiner branch when `accents.Count == 1`, the synthesized regular plural (whose form need not be in the lexicon at all), `ElisionCorrector` (membership only), `GrammarCorrector` (conjugation, never consults the lexicon), and `MistouchFamilyCorrector` (membership only). Only the two edit-distance tiers and the sentence-stage typo probe carry a floor. So an exclusion has to remove the key.
+
+Consequence, accepted and stated in the interface: protection is decided by `IFrequencyLexicon.Contains`, so removing the key also stops protecting the word when typed. An exclusion is two-directional — Deckle stops treating the string as a word. **Open for the maintainer**: `CONTEXT.md` § Word exclusion says « removal from correction's reach » with precedence exclusions > packs > base, which reads as this composition chain, but « born contextually at the moment of annoyance » could also mean target-only removal with protection preserved. Target-only would need a real exclusion tier consulted at each of the eight sites above — not a composition change.
+
+Chose a JSON manifest beside the pack artifact as the machine-readable path for the dilution indicator (`pack-fr-it.manifest.json`, written by `DomainPackBuilder` in the same pass as the report, from the same counts). The report keeps the per-form tables and the judge's reasoning; the manifest keeps the totals the settings page reads. A test holds the manifest's shipped count against the artifact's — the one way the two can silently disagree.
+
+Found that a pack cannot express a removal: `EffectiveLexicon.Compose` is max-wins, so a pack entry at 0 is discarded in favour of the base frequency. Subtraction exists only at the exclusion tier.
+
+Chose to rebuild the whole autocorrect runtime when the effective lexicon changes, keyed on a sorted signature of active packs plus exclusions. The merged table, the accent index and every policy built over them are bound at construction, so nothing can be reconciled in place; the cost is the sentence model reloading, the same as flipping the master switch off and on. Settings writes arrive debounced, so a burst of edits costs one rebuild.
+
+Verified the pack fabrication stays byte-deterministic after adding the manifest: a full `BuildItPack` over the unchanged dump left `pack-fr-it.tsv.gz` and the report identical, and the three pack maintenance benches pass unchanged.
+
+Noted the interface says « vocabulary pack » where the model says « domain pack » — « domain » reads as a DNS domain next to a computing pack. Deliberate, and the only place the two vocabularies differ.
+
 ## 2026-07-28 — Floor vs wordfreq decided at the IT bench: promotion, through a versioned overlay
 
 Built the IT gold corpus (`AutocorrectItPackCorpus`, 9 scenarios that actually type pack vocabulary) and benched base vs effective lexicon vs a wordfreq-promoted pack variant. Measured: the base alone misfires twice on IT prose (« hebergeur » → « héberger », « reinitialise » → « réinitialisé »); the flat 0.2 floor keeps protection and sole-candidate accent restoration (« agregateur » → « agrégateur ») but still let « hebergeur » be wrongly corrected to « héberger » — a pack form at 0.2 loses the contest to a base repair candidate at 4.26 opm — breaking the pack's own zero-wrong contract. With wordfreq promotion (« hébergeur » at 0.87 opm) the misfire disappears, recall rises to 4/6, and the general keyboard corpus stays strictly identical. Chose promotion: shipped frequency is max(floor, overlay), the overlay versioned as `PackReports/pack-fr-it.frequencies.tsv` (205 of 5,210 forms) and applied at fabrication; byte-determinism re-verified.
