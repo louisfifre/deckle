@@ -5,7 +5,18 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
-## 2026-07-27 — Candidate ownership removes the sentence-stage cost cliff
+## 2026-07-28 — Domain packs, direction decided (untested)
+
+Grill session on activatable domain dictionaries. Decided direction, none of it banc-tested yet — glossary terms are normative in `CONTEXT.md` § Lexicon composition, everything below revisits freely after a pilot pack:
+
+- A domain pack fully extends its language's lexicon (valid forms *and* correction targets); runtime sees one effective lexicon, merged at load, highest frequency wins on duplicates.
+- Conflicts are handled at pack fabrication, not at runtime: forms whose masking cost (base-lexicon frequency mass within edit distance 1) exceeds threshold are excluded at build; borderline pairs arbitrated by an external LLM judge (Claude/Codex — maintainer tooling, not runtime), verdicts journaled in the pack report. The dilution indicator per pack derives from the same computation.
+- Word exclusion enters scope: precedence exclusions > packs > base; primary gesture in the correction inlay, mirror register in settings. Dilution warnings use native motifs (InfoBar).
+- External-LLM evaluation feeds the gold corpus: mass campaigns produce verdicts that crystallize into deterministic versioned gold cases; the CI gate stays local and reproducible, never judged live by an LLM.
+
+Research findings (three web agents + one dump probe, 2026-07-28): kaikki.org frwiktionary extraction is the viable source — ~34% of French entries carry a « Lexique en français de X » category, lemma entries embed all inflections inline (no lemma→form chaining needed), pipeline is filter-by-category → flatten forms → TSV; topic-subset JSONLs are deprecated, stream the raw dump (676 MB gz) instead. Computing topic alone yields ~5,200 single-word forms (~1,670 accented); an IT pack of 7–10k forms is plausible. FranceTerme (Licence Ouverte) complements science, lemmas only. Industry practice for out-of-Lexique frequencies is a flat floor; ~0.2 occ/million makes every base word ≥ 1 opm dominate 5× at existing thresholds. wordfreq could promote genuinely-common absent terms at build (CC BY-SA data, frozen 2021, 2–5× scale heterogeneity vs Lexique).
+
+Open: the floor value and the floor-vs-wordfreq choice — deliberately left to the pilot pack banc. An ADR on build-time conflict resolution was written then deleted the same day: nothing here has passed a test, so nothing is hard to reverse yet. — Candidate ownership removes the sentence-stage cost cliff
 
 Measured the 0.19.0 deterministic keyboard corpus at 100% precision, 92.5% recall and 87.0% exact sentences. The initial production-shaped cost pass generated 143,067 candidate strings over 167 word commits; 134,798 came from sentence-slot preparation, with a 151.5 µs p95, 78,400-byte allocation p95, and individual short words reaching 4.2 MB.
 
