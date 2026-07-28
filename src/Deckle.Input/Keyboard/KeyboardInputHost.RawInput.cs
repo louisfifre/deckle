@@ -61,27 +61,25 @@ public sealed partial class KeyboardInputHost
 
         // Wheel reports ride the same button-flags word but set no button
         // bit; the signed detent sits in usButtonData (+6). A report carries
-        // one wheel axis at a time. When the low-level hook is installed it is
-        // the single wheel source; Raw Input stays as fallback if the hook was
-        // unavailable.
+        // one wheel axis at a time. Observation stays on this input thread even
+        // when the low-level hook owns suppression, so recording never allocates,
+        // locks, or writes from the hook and still retains the source device.
         bool vertical   = (buttonFlags & RawInputInterop.RI_MOUSE_WHEEL)  != 0;
         bool horizontal = (buttonFlags & RawInputInterop.RI_MOUSE_HWHEEL) != 0;
         if (vertical || horizontal)
         {
-            if (_mouseHook == IntPtr.Zero)
-            {
-                short delta = Marshal.ReadInt16(
-                    _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
-                bool rawWheelRollupEnabled = IsKeyboardRollupEnabled();
-                if (rawWheelRollupEnabled) _rollupWheel++;
-                WheelObserved?.Invoke(new MouseWheelEvent(
-                    Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
-                    Delta:       delta,
-                    TimestampMs: RawInputHost.NowMs,
-                    Device:      header.hDevice,
-                    Source:      WheelEventSource.RawInput));
-                if (rawWheelRollupEnabled) TrackRollup(RawInputHost.NowMs);
-            }
+            short delta = Marshal.ReadInt16(
+                _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
+            bool rawWheelRollupEnabled = _mouseHook == IntPtr.Zero && IsKeyboardRollupEnabled();
+            if (rawWheelRollupEnabled) _rollupWheel++;
+            WheelObserved?.Invoke(new MouseWheelEvent(
+                Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
+                Delta:       delta,
+                TimestampMs: RawInputHost.NowMs,
+                Device:      header.hDevice,
+                Source:      WheelEventSource.RawInput,
+                IsInjected:  header.hDevice == IntPtr.Zero));
+            if (rawWheelRollupEnabled) TrackRollup(RawInputHost.NowMs);
             return;
         }
 

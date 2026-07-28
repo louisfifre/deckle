@@ -22,7 +22,8 @@ public sealed partial class KeyboardInputHost
 
             // A low-level hook must return promptly or Windows can silently remove
             // it. Button consumers may persist a typing span, so their signal is
-            // queued by the router; wheel publication stays the existing bounded path.
+            // queued by the router. The wheel path only classifies and offers the
+            // value to its bounded interceptor; Raw Input publishes observations.
             bool intercepted = _mouseInteractions.ObserveHookMessage(
                 message, hook.mouseData, hook.flags);
             if (intercepted) return new IntPtr(1);
@@ -57,7 +58,6 @@ public sealed partial class KeyboardInputHost
             Source: WheelEventSource.MessageHook,
             IsInjected: (hookFlags & (LowLevelMouseHookInterop.LLMHF_INJECTED
                 | LowLevelMouseHookInterop.LLMHF_LOWER_IL_INJECTED)) != 0);
-        WheelObserved?.Invoke(wheelEvent);
         bool intercepted = Volatile.Read(ref _wheelInterceptor)?.Intercept(in wheelEvent) ?? false;
         if (rollupEnabled) TrackRollup(RawInputHost.NowMs);
         return intercepted;
