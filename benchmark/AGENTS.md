@@ -9,6 +9,7 @@ type: agent-instructions
 
 - `asr/` — speech-recognition and speech-output evaluation: corpora, ASR/TTS sources, prompt regimes, LLM judges, WER/looping/leak metrics, and frozen Voxtral/Phi/TTS studies.
 - `rewrite/` — text-rewrite evaluation against the real `Deckle.Llm.Rewrite` code: prompt samples, gate acceptance, offer latency (paragraph-gate study).
+- `input/` — physical-input capture analysis and replay corpora: trackpad contacts, mouse-wheel cadence, gesture classification, and synthetic-output comparison.
 - `autoresearch/` — generic autonomous experiment loops following the autoresearch skill: goal, metric command/extraction, scope, baseline, experiment commit, run, measure, keep/discard, log.
 - `lib/` — cross-benchmark infrastructure only: path resolution, environment loading, event logs, resource monitoring. No ASR semantics here.
 - `viewers/` — generic result viewers. Keep them independent of ASR-specific source, judge, or metric contracts.

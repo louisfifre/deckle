@@ -181,6 +181,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AGENTS.md  — [agent-instructions] Autoresearch benchmark workspace — reusable iterative optimization loops.
 │   │   ├── CLAUDE.md
 │   │   └── README.md  — readme-autoresearch [module-readme] Generic autoresearch workspace for measurable iterative generation, editing, ju…
+│   ├── input/
+│   │   ├── precision-scroll/
+│   │   │   ├── analyze.py
+│   │   │   ├── capture_analysis.py
+│   │   │   ├── README.md
+│   │   │   └── test_capture_analysis.py
+│   │   └── AGENTS.md  — [agent-instructions] Input benchmark workspace — raw capture analysis, derived corpora, and behavior…
 │   ├── lib/
 │   │   ├── monitor/
 │   │   │   ├── gpu_monitor.ps1
