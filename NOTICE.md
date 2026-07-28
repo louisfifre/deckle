@@ -96,6 +96,12 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 - License : dual CC BY-SA 4.0 / GFDL (the Wiktionary text and data).
 - Used as : source of topical surface forms (entries carrying « Lexique en français de X » categories, with their inline inflections), reduced to the derived domain-pack artifacts `pack-fr-*.tsv.gz` (form + flat floor frequency). The derived files remain under CC BY-SA with this attribution; each pack's fabrication report under `src/Deckle.Autocorrect.Lab/PackReports/` records what was kept and refused.
 
+### wordfreq
+
+- Source : https://github.com/rspeer/wordfreq — Robyn Speer (data frozen 2021).
+- License : code MIT; frequency data CC BY-SA 4.0 (aggregated from multiple corpora, see upstream attribution).
+- Used as : source of French frequencies for the domain-pack promotion overlay (`pack-fr-*.frequencies.tsv` under `src/Deckle.Autocorrect.Lab/PackReports/`) — genuinely common pack forms ship above the flat floor with a wordfreq-derived occurrences-per-million value. The derived overlay and the pack artifacts it feeds remain under CC BY-SA with this attribution.
+
 ### Wikipédia in French
 
 - Source : https://fr.wikipedia.org — plain-text article extracts.

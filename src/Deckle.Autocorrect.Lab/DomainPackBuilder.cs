@@ -19,12 +19,15 @@ namespace Deckle.Autocorrect.Lab;
 // the judge's verdicts.
 public static class DomainPackBuilder
 {
-    // Frequency stamped on every shipped pack form. Out-of-Lexique sources
-    // carry no usable frequency, so the pack starts at a flat floor sitting
-    // well below the base lexicon's 1 opm tail: on a contested correction the
-    // base word dominates ~5× at the existing thresholds. Promotion of
-    // genuinely common absent terms (wordfreq at build) stays an open option;
-    // the floor-vs-promotion call belongs to the pilot-pack bench.
+    // Frequency stamped on a shipped pack form the promotion overlay does not
+    // carry. Out-of-Lexique sources have no frequency of their own, so forms
+    // start at a flat floor sitting well below the base lexicon's 1 opm tail.
+    // The IT bench showed the floor alone breaks the pack's own contract: a
+    // pack form at 0.2 loses the correction contest to any nearby base
+    // candidate (« hebergeur » was still corrected to « héberger »), so
+    // genuinely common terms are promoted at build through the versioned
+    // wordfreq overlay next to the judgments file — shipped frequency is
+    // max(floor, overlay).
     public const double FloorFrequencyPerMillion = 0.2;
 
     // Sanitization thresholds, in base-lexicon opm mass within edit distance 1.
@@ -61,6 +64,7 @@ public static class DomainPackBuilder
 
         var french = FrequencyLexicon.LoadTsvGz(frenchLexiconPath);
         var judgments = LoadJudgments(Path.Combine(reportDir, pack.JudgmentsFileName));
+        var promotions = LoadPromotions(Path.Combine(reportDir, pack.FrequenciesFileName));
 
         Console.WriteLine($"Pack {pack.Key}: harvesting {Path.GetFileName(dumpPath)} ...");
         var harvest = HarvestForms(dumpPath, pack, french);
@@ -99,12 +103,25 @@ public static class DomainPackBuilder
             shipped[form] = FloorFrequencyPerMillion;
         }
 
+        int promoted = 0;
+        foreach (string form in shipped.Keys.ToList())
+        {
+            if (promotions.TryGetValue(form, out double opm) && opm > shipped[form])
+            {
+                shipped[form] = opm;
+                promoted++;
+            }
+        }
+
         string packPath = Path.Combine(outDir, pack.FileName);
         LexiconBuilder.WriteLexicon(packPath, shipped);
-        WriteReport(Path.Combine(reportDir, pack.ReportFileName), pack, harvest, shipped.Count, refused, gray);
+        WriteReport(
+            Path.Combine(reportDir, pack.ReportFileName),
+            pack, harvest, shipped.Count, promoted, refused, gray);
 
         int pending = gray.Count(g => g.Verdict == "pending");
-        Console.WriteLine($"Pack {pack.Key}: shipped {shipped.Count:N0} forms, "
+        Console.WriteLine($"Pack {pack.Key}: shipped {shipped.Count:N0} forms "
+                        + $"({promoted:N0} frequency-promoted), "
                         + $"refused {refused.Count:N0} above threshold, "
                         + $"gray zone {gray.Count:N0} ({pending:N0} pending judgment).");
         Console.WriteLine($"  {Path.GetFileName(packPath),-24}{new FileInfo(packPath).Length,12:N0} bytes");
@@ -336,6 +353,31 @@ public static class DomainPackBuilder
         return verdicts;
     }
 
+    // The promotion overlay is the machine-readable outcome of the bench's
+    // floor-vs-promotion call: `form<TAB>opm` lines (wordfreq-derived, simple
+    // single-token forms only), versioned next to the judgments file. Curated
+    // by the maintainer's promotion gesture, never written by the builder;
+    // a shipped form absent from the overlay stays at the floor.
+    private static Dictionary<string, double> LoadPromotions(string path)
+    {
+        var promotions = new Dictionary<string, double>(StringComparer.Ordinal);
+        if (!File.Exists(path))
+            return promotions;
+
+        foreach (string line in File.ReadLines(path, Encoding.UTF8))
+        {
+            if (line.Length == 0 || line[0] == '#')
+                continue;
+            string[] cols = line.Split('\t');
+            if (cols.Length != 2
+                || !double.TryParse(cols[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double opm)
+                || opm <= 0.0)
+                throw new InvalidDataException($"Malformed promotion line: {line}");
+            promotions[cols[0]] = opm;
+        }
+        return promotions;
+    }
+
     // ── Report ─────────────────────────────────────────────────────────────
 
     // The fabrication report: yield of every stage, the dilution indicator the
@@ -343,7 +385,8 @@ public static class DomainPackBuilder
     // the judge campaign reads and whose verdicts it journals. All lists are
     // complete and sorted — no silent caps, byte-deterministic.
     private static void WriteReport(
-        string path, DomainPackDefinition pack, HarvestResult harvest, int shippedCount,
+        string path, DomainPackDefinition pack, HarvestResult harvest,
+        int shippedCount, int promotedCount,
         List<(string Form, double Cost)> refused,
         List<(string Form, double Cost, string Verdict, string Note)> gray)
     {
@@ -373,7 +416,8 @@ public static class DomainPackBuilder
         sb.Append($"| refused (masking ≥ {Opm(MaskingExclusionPerMillion)} opm) | {refused.Count} |\n");
         sb.Append($"| gray zone ({Opm(MaskingGrayZonePerMillion)}–{Opm(MaskingExclusionPerMillion)} opm) "
                 + $"| {gray.Count} (admit {admitted}, exclude {excluded}, pending {pending}) |\n");
-        sb.Append($"| shipped at floor {Opm(FloorFrequencyPerMillion)} opm | {shippedCount} |\n\n");
+        sb.Append($"| shipped | {shippedCount} ({promotedCount} frequency-promoted, "
+                + $"rest at floor {Opm(FloorFrequencyPerMillion)} opm) |\n\n");
 
         sb.Append("## Dilution indicator\n\n");
         sb.Append($"The pack brings {shippedCount} correctable forms; ");
@@ -407,4 +451,5 @@ public sealed record DomainPackDefinition(string Key, IReadOnlyList<string> Cate
     public string FileName => $"pack-fr-{Key}.tsv.gz";
     public string ReportFileName => $"pack-fr-{Key}.md";
     public string JudgmentsFileName => $"pack-fr-{Key}.judgments.tsv";
+    public string FrequenciesFileName => $"pack-fr-{Key}.frequencies.tsv";
 }

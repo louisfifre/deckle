@@ -567,6 +567,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MistouchFamilyReport.cs
 │   │   │   └── MistouchMiner.cs
 │   │   ├── PackReports/
+│   │   │   ├── pack-fr-it.frequencies.tsv
 │   │   │   ├── pack-fr-it.judgments.tsv
 │   │   │   └── pack-fr-it.md
 │   │   ├── Profiling/
@@ -613,6 +614,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectBenchmark.cs
 │   │   ├── AutocorrectBenchmarkCommand.cs
 │   │   ├── AutocorrectBenchmarkCorpus.cs
+│   │   ├── AutocorrectItPackCorpus.cs
 │   │   ├── BenchmarkKeyboardSession.cs
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs

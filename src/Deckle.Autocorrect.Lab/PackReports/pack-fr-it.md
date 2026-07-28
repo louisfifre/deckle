@@ -17,7 +17,7 @@ Categories:
 | candidate forms sanitized | 5658 |
 | refused (masking ≥ 20 opm) | 295 |
 | gray zone (1–20 opm) | 373 (admit 220, exclude 153, pending 0) |
-| shipped at floor 0.2 opm | 5210 |
+| shipped | 5210 (205 frequency-promoted, rest at floor 0.2 opm) |
 
 ## Dilution indicator
 
