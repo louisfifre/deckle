@@ -10,7 +10,7 @@ function Show-Submenu {
         [string[]]$ResultLines = @()
     )
 
-    $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2)
+    $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2 -SeparateSections)
 
     $withBack = @(
         @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }
@@ -22,6 +22,40 @@ function Show-Submenu {
     $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen -BannerStyle Compact -ResultTitle $ResultTitle -ResultLines $ResultLines
     if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
+}
+
+function Show-ProjectMenu {
+    $v = Show-Submenu -Header 'Deckle > Project   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
+        @{ Prefix = 'Docs'; Items = @(
+            @{ Label = 'Update README pulse'; Value = 'readme-stats' }
+            @{ Label = 'Update changelog';    Value = 'changelog' }
+        ) }
+        @{ Prefix = 'Version'; Items = @(
+            @{ Label = 'Record version'; Value = 'record-version' }
+        ) }
+    )
+    switch ($v) {
+        'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
+        'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' }
+        'record-version' { Invoke-RecordVersion }
+    }
+}
+
+function Show-ReleaseMenu {
+    $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
+        @{ Prefix = 'Publish'; Items = @(
+            @{ Label = 'Publish app release'; Value = 'publish' }
+        ) }
+        @{ Prefix = 'Prepare'; Items = @(
+            @{ Label = 'Prepare app artifacts';  Value = 'artifacts' }
+            @{ Label = 'Prepare native runtime'; Value = 'native' }
+        ) }
+    )
+    switch ($v) {
+        'publish'   { Invoke-PublishRelease }
+        'artifacts' { Invoke-PrepareArtifacts }
+        'native'    { Invoke-NativeRuntime }
+    }
 }
 
 function Show-MaintenanceMenu {

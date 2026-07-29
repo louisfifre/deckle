@@ -5,11 +5,11 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
     if ($Expected -ne $Actual) { throw "${Case}: expected $Expected, got $Actual" }
 }
 
-Assert-Equal 1 @(Get-MenuBanner -Style Compact).Count 'compact banner line count'
+Assert-Equal 2 @(Get-MenuBanner -Style Compact).Count 'compact banner line count'
 Assert-Equal 6 @(Get-MenuBanner -Style Full).Count 'full banner line count'
 Assert-Equal 12 (New-MenuRule -MaxWidth 12).Length 'rule uses requested width'
 Assert-Equal 11 (New-MenuRule -MaxWidth 11 -Style Section).Length 'section rule uses requested width'
-Assert-Equal 17 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 24) 'compact body capacity'
+Assert-Equal 16 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 24) 'compact body capacity'
 Assert-Equal 12 (Get-MenuBodyCapacity -BannerStyle Full -WindowHeight 24) 'full body capacity'
 Assert-Equal 0 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 6) 'undersized terminal has no body capacity'
 

@@ -46,7 +46,7 @@ function Read-YesNo {
         [Parameter(Mandatory)][string]$Question,
         [bool]$Default = $false
     )
-    return (Select-YesNo -Question $Question -Default $Default)
+    return (Select-YesNo -Question $Question -Default $Default -BannerStyle Compact)
 }
 
 function Read-Optional {

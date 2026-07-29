@@ -27,23 +27,27 @@ Assert-Equal 1 $singleRow.Count 'single item creates one row'
 Assert-Equal 1 $singleRow[0].Cells.Count 'single item creates one cell'
 Assert-Equal 'hooks' $singleRow[0].Cells[0].Value 'single item is preserved'
 
+$separatedRows = @(ConvertTo-MenuRows -SeparateSections -Sections @(
+    @{ Prefix = 'One'; Items = @( @{ Label = 'First'; Value = 1 } ) }
+    @{ Prefix = 'Two'; Items = @( @{ Label = 'Second'; Value = 2 } ) }
+))
+Assert-Equal 3 $separatedRows.Count 'separated sections add one breathing row'
+Assert-Equal $true $separatedRows[1].Blank 'section separator is blank'
+
 $mainRows = @(Get-DeckleMainMenuRows)
 $titles = @($mainRows | Where-Object { $_.ContainsKey('Title') } | ForEach-Object { $_.Title })
-Assert-Equal 'Run Project Release More' ($titles -join ' ') 'main section order'
+Assert-Equal 'Run Workspace' ($titles -join ' ') 'main section order'
 
-$projectTitleIndex = [Array]::FindIndex($mainRows, [Predicate[object]]{ param($row) $row.ContainsKey('Title') -and $row.Title -eq 'Project' })
-Assert-Equal 'Update README pulse' $mainRows[$projectTitleIndex + 1].Cells[0].Label 'project first action'
-Assert-Equal 'Update changelog' $mainRows[$projectTitleIndex + 1].Cells[1].Label 'project paired update'
-Assert-Equal 'Record version' $mainRows[$projectTitleIndex + 2].Cells[0].Label 'record version wraps last'
+$workspaceTitleIndex = [Array]::FindIndex($mainRows, [Predicate[object]]{ param($row) $row.ContainsKey('Title') -and $row.Title -eq 'Workspace' })
+Assert-Equal 'Project…' $mainRows[$workspaceTitleIndex + 1].Cells[0].Label 'project submenu'
+Assert-Equal 'Release…' $mainRows[$workspaceTitleIndex + 1].Cells[1].Label 'release submenu'
+Assert-Equal 'Maintenance…' $mainRows[$workspaceTitleIndex + 2].Cells[0].Label 'maintenance submenu'
+Assert-Equal 'Setup…' $mainRows[$workspaceTitleIndex + 2].Cells[1].Label 'setup submenu'
 
-$releaseTitleIndex = [Array]::FindIndex($mainRows, [Predicate[object]]{ param($row) $row.ContainsKey('Title') -and $row.Title -eq 'Release' })
-Assert-Equal 2 $mainRows[$releaseTitleIndex + 1].Cells.Count 'release first row columns'
-Assert-Equal 'Prepare native runtime' $mainRows[$releaseTitleIndex + 2].Cells[0].Label 'release third action wraps'
-
-$moreTitleIndex = [Array]::FindIndex($mainRows, [Predicate[object]]{ param($row) $row.ContainsKey('Title') -and $row.Title -eq 'More' })
-Assert-Equal 'Maintenance…' $mainRows[$moreTitleIndex + 1].Cells[0].Label 'maintenance submenu'
-Assert-Equal 'Setup…' $mainRows[$moreTitleIndex + 1].Cells[1].Label 'setup submenu'
-Assert-Equal 1 $mainRows[$moreTitleIndex + 2].ColumnOffset 'quit uses trailing column'
-Assert-Equal 'Quit' $mainRows[$moreTitleIndex + 2].Cells[0].Label 'quit wraps last'
+$quitRow = $mainRows[-1]
+Assert-Equal 1 $quitRow.ColumnOffset 'quit uses trailing column'
+Assert-Equal 'Quit' $quitRow.Cells[0].Label 'quit stays last'
+Assert-Equal 'quit' $quitRow.Cells[0].Role 'quit has a distinct visual role'
+Assert-Equal 'Right' $quitRow.Cells[0].Align 'quit is aligned to the outer edge'
 
 Write-Host 'menu-layout.tests.ps1: PASS' -ForegroundColor Green
