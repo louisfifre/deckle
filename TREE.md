@@ -233,14 +233,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── launcher/
 │   │   │   ├── actions.ps1
 │   │   │   ├── context.ps1
+│   │   │   ├── maintenance-results.ps1
+│   │   │   ├── maintenance-results.tests.ps1
 │   │   │   ├── menu-layout.ps1
 │   │   │   ├── menu-layout.tests.ps1
 │   │   │   └── menus.ps1
 │   │   ├── menu/
 │   │   │   ├── chrome.ps1
+│   │   │   ├── chrome.tests.ps1
 │   │   │   ├── grid-picker.ps1
+│   │   │   ├── grid-picker.tests.ps1
 │   │   │   ├── list-picker.ps1
-│   │   │   └── session.ps1
+│   │   │   ├── session.ps1
+│   │   │   └── status-view.ps1
 │   │   ├── _menu.psm1
 │   │   ├── action-summary.ps1
 │   │   ├── action-summary.tests.ps1
