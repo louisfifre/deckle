@@ -32,10 +32,10 @@ function Clear-DeckleMenuScreen {
 
 function Get-WorktreeOrReturn {
     try {
-        $wt = Select-Worktree -ContextDir $ScriptDir -ClearScreen
+        $wt = Select-Worktree -ContextDir $ScriptDir -ClearScreen -BannerStyle Compact
         Write-Host "Worktree: $wt" -ForegroundColor DarkGray
         return $wt
-    } catch {
+    } catch [System.OperationCanceledException] {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return $null
     }

@@ -12,6 +12,7 @@ function Write-MenuLine {
         [string]$Role,
         [bool]$Selected,
         [bool]$IsHeader,
+        [int]$ContentWidth,
         [int]$InnerWidth
     )
 
@@ -19,19 +20,19 @@ function Write-MenuLine {
     $written = 0
     if ($IsHeader) {
         $title = ' ' + ([string]$Label).ToUpperInvariant() + ' '
-        Write-MenuContentSegment -Text $title -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor Magenta -BackgroundColor $null
-        $rule = New-MenuRule -MaxWidth ($InnerWidth - $written) -Style Section
-        Write-MenuContentSegment -Text $rule -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor Gray -BackgroundColor $null
+        Write-MenuContentSegment -Text $title -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Magenta -BackgroundColor $null
+        $rule = New-MenuRule -MaxWidth ($ContentWidth - $written) -Style Section
+        Write-MenuContentSegment -Text $rule -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
     } else {
         $itemRole = Get-MenuCellRole -Cell ([pscustomobject]@{ Label = $Label; Role = $Role })
         $colors = Get-MenuRoleColor -Role $itemRole -Selected:$Selected
         if ($Selected) {
             $line = ('    ' + $Label)
-            if ($line.Length -lt $InnerWidth) { $line += ' ' * ($InnerWidth - $line.Length) }
-            Write-MenuContentSegment -Text $line -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
+            if ($line.Length -lt $ContentWidth) { $line += ' ' * ($ContentWidth - $line.Length) }
+            Write-MenuContentSegment -Text $line -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
         } else {
-            Write-MenuContentSegment -Text '    ' -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor DarkGray -BackgroundColor $null
-            Write-MenuContentSegment -Text $Label -Written ([ref]$written) -InnerWidth $InnerWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
+            Write-MenuContentSegment -Text '    ' -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor DarkGray -BackgroundColor $null
+            Write-MenuContentSegment -Text $Label -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
         }
     }
     Write-MenuLineRemainder -InnerWidth $InnerWidth -Written $written
@@ -43,7 +44,9 @@ function Invoke-MenuLoop {
         [object[]]$Items,
         [int]$Default = 0,
         [switch]$ClearScreen,
-        [string]$Footer = 'Up/Down move   Enter confirm   Esc back'
+        [string]$Footer = 'Up/Down move   Enter confirm   Esc back',
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full'
     )
 
     if ($Items.Count -eq 0) { return -1 }
@@ -73,17 +76,27 @@ function Invoke-MenuLoop {
         return -1
     }
 
-    $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $Items.Count -ClearScreen:$ClearScreen
+    $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $Items.Count -ClearScreen:$ClearScreen -BannerStyle $BannerStyle
+    $metrics = Get-MenuMetrics
 
     for ($i = 0; $i -lt $Items.Count; $i++) {
         $it = $Items[$i]
-        Write-MenuLine -Row ($viewport.BodyTop + $i) -Label $it.Label -Role $it.Role -Selected ($i -eq $selected) -IsHeader $it.IsHeader -InnerWidth $viewport.InnerWidth
+        Write-MenuLine -Row ($viewport.BodyTop + $i) -Label $it.Label -Role $it.Role -Selected ($i -eq $selected) -IsHeader $it.IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
     }
 
     [Console]::CursorVisible = $false
     try {
         while ($true) {
             $key  = [Console]::ReadKey($true)
+            $currentMetrics = Get-MenuMetrics
+            if ($currentMetrics.TerminalWidth -ne $metrics.TerminalWidth -or $currentMetrics.WindowHeight -ne $metrics.WindowHeight) {
+                $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $Items.Count -ClearScreen -BannerStyle $BannerStyle
+                $metrics = Get-MenuMetrics
+                for ($i = 0; $i -lt $Items.Count; $i++) {
+                    $it = $Items[$i]
+                    Write-MenuLine -Row ($viewport.BodyTop + $i) -Label $it.Label -Role $it.Role -Selected ($i -eq $selected) -IsHeader $it.IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
+                }
+            }
             $prev = $selected
             switch ($key.Key) {
                 'UpArrow' {
@@ -105,8 +118,8 @@ function Invoke-MenuLoop {
                 }
             }
             if ($selected -eq $prev) { continue }
-            Write-MenuLine -Row ($viewport.BodyTop + $prev)     -Label $Items[$prev].Label     -Role $Items[$prev].Role     -Selected $false -IsHeader $Items[$prev].IsHeader -InnerWidth $viewport.InnerWidth
-            Write-MenuLine -Row ($viewport.BodyTop + $selected) -Label $Items[$selected].Label -Role $Items[$selected].Role -Selected $true  -IsHeader $Items[$selected].IsHeader -InnerWidth $viewport.InnerWidth
+            Write-MenuLine -Row ($viewport.BodyTop + $prev)     -Label $Items[$prev].Label     -Role $Items[$prev].Role     -Selected $false -IsHeader $Items[$prev].IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
+            Write-MenuLine -Row ($viewport.BodyTop + $selected) -Label $Items[$selected].Label -Role $Items[$selected].Role -Selected $true  -IsHeader $Items[$selected].IsHeader -ContentWidth $viewport.ContentWidth -InnerWidth $viewport.InnerWidth
         }
     } finally {
         [Console]::CursorVisible = $true
@@ -114,15 +127,9 @@ function Invoke-MenuLoop {
 }
 
 function Format-WorktreeLabel {
-    param([string]$Branch, [string]$Path)
+    param([string]$Branch, [string]$Path, [int]$Width = ((Get-MenuMetrics).ContentWidth - 4))
 
-    try {
-        $windowWidth = [Console]::WindowWidth
-    } catch {
-        $windowWidth = 100
-    }
-
-    $maxLineLen = [Math]::Max(40, $windowWidth - 5)  # "  > " prefix + trailing gap
+    $maxLineLen = [Math]::Max(1, $Width)
     $branchText = "[$Branch]"
     $nameText = Split-Path -Leaf $Path
 
@@ -140,7 +147,9 @@ function Select-Worktree {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ContextDir,
-        [switch]$ClearScreen
+        [switch]$ClearScreen,
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full'
     )
 
     if ($ClearScreen) { Clear-MenuScreen }
@@ -183,8 +192,8 @@ function Select-Worktree {
             Role     = $null
         }
     }
-    $idx = Invoke-MenuLoop -Header 'Pick a worktree (Up/Down, Enter = confirm, Esc = cancel):' -Items $items -ClearScreen:$false
-    if ($idx -lt 0) { throw "Cancelled" }
+    $idx = Invoke-MenuLoop -Header 'Pick a worktree (Up/Down, Enter = confirm, Esc = cancel):' -Items $items -ClearScreen:$false -BannerStyle $BannerStyle
+    if ($idx -lt 0) { throw [System.OperationCanceledException]::new('Worktree selection was cancelled.') }
     return $entries[$idx].Path
 }
 

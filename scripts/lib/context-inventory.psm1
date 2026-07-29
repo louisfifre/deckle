@@ -122,8 +122,10 @@ function Get-ContextInventory {
     $recentPaths = @{}
     foreach ($days in @(1, 7, 30)) {
         $recentPaths[$days] = [System.Collections.Generic.HashSet[string]]::new(
-            [string[]](Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days),
             [System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($path in @(Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days)) {
+            $recentPaths[$days].Add($path) | Out-Null
+        }
     }
     $modifiedDates = Get-MarkdownLastModifiedDates -RepoRoot $RepoRoot
 

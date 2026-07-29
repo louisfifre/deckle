@@ -11,7 +11,11 @@ $scriptDir = $PSScriptRoot
 . (Join-Path $scriptDir 'action-summary.ps1')
 
 $repoRoot  = (git rev-parse --show-toplevel).Trim()
-$hooksDir  = Join-Path (git -C $repoRoot rev-parse --absolute-git-dir).Trim() 'hooks'
+$gitCommonDir = (git -C $repoRoot rev-parse --path-format=absolute --git-common-dir).Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitCommonDir)) {
+    throw 'Could not resolve the shared Git directory.'
+}
+$hooksDir  = Join-Path $gitCommonDir 'hooks'
 $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
 
 function Step($msg) { Write-Host "`n[hooks] $msg" -ForegroundColor Cyan }
