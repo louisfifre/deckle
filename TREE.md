@@ -1432,6 +1432,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
+│   │   ├── Fixtures/
+│   │   │   └── Experiences/
+│   │   │       ├── deckle.en-US.experience.fixture.json
+│   │   │       └── deckle.en-US.experience.zip
 │   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
