@@ -15,6 +15,7 @@ public sealed class PrecisionScrollSettingsService
     };
 
     private readonly JsonSettingsStore<PrecisionScrollSettings> _store;
+    private event Action? _changed;
 
     public static PrecisionScrollSettingsService Instance => _instance.Value;
 
@@ -22,8 +23,8 @@ public sealed class PrecisionScrollSettingsService
 
     public event Action? Changed
     {
-        add => _store.Changed += value;
-        remove => _store.Changed -= value;
+        add => _changed += value;
+        remove => _changed -= value;
     }
 
     private PrecisionScrollSettingsService()
@@ -36,7 +37,13 @@ public sealed class PrecisionScrollSettingsService
             jsonOptions: _jsonOptions);
     }
 
-    public void Save() => _store.Save();
+    // Runtime consumers react to the in-memory value synchronously. Only the
+    // disk write is debounced, so a toggle or slider never waits on storage.
+    public void Save()
+    {
+        _changed?.Invoke();
+        _store.Save();
+    }
 
     public void Flush() => _store.Flush();
 }

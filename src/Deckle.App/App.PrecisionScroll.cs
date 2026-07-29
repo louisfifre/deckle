@@ -15,6 +15,8 @@ public partial class App
         ReconcilePrecisionScroll();
     }
 
+    // Settings notifications are synchronous with the in-memory mutation;
+    // persistence remains debounced in the owning module.
     private void ReconcilePrecisionScroll()
     {
         if (_keyboardMouseHost is null) return;
