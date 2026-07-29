@@ -5,6 +5,19 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-29 — Lexical domains built, forks taken along the way (unrun)
+
+Implementation of the direction below. Compile-only validation; nothing has been run or looked at, so every claim about behaviour is what the code says rather than what was observed.
+
+- The activation rule lives in a new pure `DomainActivation` — the stored choice, else the pack's language ∈ the system languages, with the language set passed in. No write-through of the detected value into the settings file: storing it would freeze a detection into a choice, and a language added in Windows later would stop reaching the packs nobody touched. `AutocorrectSettings.IsDomainPackActive` and `EffectiveLexiconKey` moved there. The persistence shape (`DomainPacks: {packId: bool}`) is unchanged — only the meaning of *absent* changed — so there is no migration.
+- `EffectiveLexiconKey` now resolves through `DomainPack.Shipped` instead of scanning the raw dictionary. Consequence: a pack explicitly off and a pack absent outside the system languages produce the same key, since they describe the same table, and an id no build ships never enters it.
+- Windows exposes no change signal for `GlobalizationPreferences.Languages`, and polling is out, so the list is read once per process (`SystemLanguages`). Assumed limit: a language added in Windows Settings reaches the corrector at the next Deckle launch, not during the session.
+- Behaviour change for existing installs: a user who never touched the packs and has French in their Windows language list gets Computing/French on at the next launch.
+- The settings rail gained a real second level — `SettingsModuleDescriptor.ParentId` woke up, `BuildModuleNavItems` builds parents then children, and the search index's nav lookup had to become recursive or every hit on a child page would have failed silently. Children render icon-less, parents start expanded. The title-bar back button stays off: every destination still has a rail entry, so the condition written on it in `SettingsWindow.xaml` is still not met. `deckle-settings-ux` was amended in the same breath: its two-level ceiling could not stand while the repo shipped a third, so the rule now reads three levels with the middle one earned — a child page only once a family no longer fits one page, and always reachable both from the rail and from a card on the parent.
+- The master-switch gate survived the split instead of being dropped. The two drill-in cards stay visible — they are doors, and the rail lists the same destinations anyway, so hiding the card would only close one of two routes — but each child page collapses its own settings while the master is off and puts one line in their place. What the old page did with `RefreshAppsVisibility` now happens once per surface, off `Enabled` re-read at `OnNavigatedTo`; a tray flip while a page is displayed goes unnoticed until the next navigation, exactly as before.
+- The per-row dilution InfoBar was dropped, not relocated: one inline channel, and the indications prose carries the tone.
+- Word exclusion stayed on Autocorrect rather than following the domains. The « same object with opposite signs » reading is real, but an exclusion holds against every domain and every app at once, so it belongs to the family's landing page and not to one of its children.
+
 ## 2026-07-29 — Domain-pack follow-up, direction decided (untested)
 
 Grill session over what remains of the pack model. Decided direction, none of it built or benched yet; the full question-by-question record lives in the Anytype rapport of task « Grill packs suite ».

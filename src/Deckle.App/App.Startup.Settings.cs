@@ -36,6 +36,12 @@ public partial class App
         Settings.SettingsHost.ApplyTheme       = ApplyTheme;
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
+        // Page-to-page drill-in for the settings surface: a module page hands a
+        // destination PageTag, the shell selects the matching rail item (children
+        // included) and the Frame follows. Same lib-exposes-a-delegate / App-owns-the
+        // -wiring shape as the PathControlFactory below — Deckle.Autocorrect cannot
+        // see Deckle.Settings, so the hook lives on the Catalog floor between them.
+        Catalog.SettingsNavigation.GoToPage = tag => _settingsWindow?.SelectPage(tag);
         // The Path-kind picker control is module-owned (FolderPickerCard needs the
         // Settings window + ETW source), so the floor composer builds it through
         // this factory — same lib-exposes-delegate / App-owns-contract pattern.
@@ -136,7 +142,22 @@ public partial class App
         if (context.RewritePresent)
             RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);
         if (context.AutocorrectPresent)
-            RegisterSettingsModule(Autocorrect.AutocorrectSettingsModule.Describe(order: 300), Autocorrect.SettingsSearch.Entries);
+        {
+            // One family, three rail entries: the parent page, then its two children
+            // (nested through their descriptors' ParentId). Each registers on its own
+            // because the search index resolves page coordinates per registration —
+            // a child folded into its parent's call would index its cards against the
+            // parent's tag and send every hit to the wrong page.
+            RegisterSettingsModule(
+                Autocorrect.AutocorrectSettingsModule.Describe(order: 300),
+                Autocorrect.SettingsSearch.Entries);
+            RegisterSettingsModule(
+                Autocorrect.AutocorrectSettingsModule.DescribeLexicalDomains(order: 310),
+                Autocorrect.SettingsSearch.LexicalDomainsEntries);
+            RegisterSettingsModule(
+                Autocorrect.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
+                Autocorrect.SettingsSearch.AppsEnrolledEntries);
+        }
         if (context.AmbientPresent)
             RegisterSettingsModule(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.SettingsSearch.Entries);
         if (context.TrackpadPresent)

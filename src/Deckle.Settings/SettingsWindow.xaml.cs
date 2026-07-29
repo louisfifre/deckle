@@ -155,6 +155,15 @@ public sealed partial class SettingsWindow : Window
     // module's PRI subtree (Loc.GetFrom) — the module ships its own nav wording — and
     // the glyph is a Glyphs.* character built straight into a FontIcon, the same
     // code-side path the composer uses.
+    //
+    // Two passes, because a child must find its parent already built: parents first,
+    // indexed by Id, then children into parent.MenuItems. A child renders icon-less
+    // and its parent starts expanded — the WinUI hierarchical-navigation sample's
+    // shape, where indentation under a named parent carries the relation and a second
+    // icon column would only add noise. Only the top-level items are tracked in
+    // _moduleNavItems: removing a parent takes its children with it, and the registry
+    // hands children back after their parents anyway, so a dangling child is a wiring
+    // gap — traced and skipped, never a boot-stopper.
     private void BuildModuleNavItems()
     {
         foreach (NavigationViewItem old in _moduleNavItems)
@@ -169,9 +178,12 @@ public sealed partial class SettingsWindow : Window
         // top and push the Main insertion point down as they are inserted.
         int mainInsertAt = Nav.MenuItems.Count;
         int headerInsertAt = 0;
+        var parents = new Dictionary<string, NavigationViewItem>();
 
         foreach (SettingsModuleDescriptor module in SettingsModuleRegistry.Modules)
         {
+            if (module.ParentId is not null) continue;
+
             var item = new NavigationViewItem
             {
                 Content = Loc.GetFrom(module.OwningAssembly, module.LabelKey),
@@ -195,6 +207,26 @@ public sealed partial class SettingsWindow : Window
                     break;
             }
             _moduleNavItems.Add(item);
+            parents[module.Id] = item;
+        }
+
+        foreach (SettingsModuleDescriptor module in SettingsModuleRegistry.Modules)
+        {
+            if (module.ParentId is null) continue;
+            if (!parents.TryGetValue(module.ParentId, out NavigationViewItem? parent))
+            {
+                DeckleSettingsSource.Log.SettingsModuleParentMissing(module.Id, module.ParentId);
+                continue;
+            }
+
+            parent.MenuItems.Add(new NavigationViewItem
+            {
+                Content = Loc.GetFrom(module.OwningAssembly, module.LabelKey),
+                Tag = module.PageTag,
+            });
+            // Expanded from the start: the children ARE the family's surfaces, and a
+            // collapsed parent would hide destinations the user has no other route to.
+            parent.IsExpanded = true;
         }
     }
 
@@ -220,16 +252,7 @@ public sealed partial class SettingsWindow : Window
         // If a page tag is requested, select the corresponding nav item. The
         // selection triggers OnNavSelectionChanged → Frame navigation.
         if (pageTag is not null)
-        {
-            foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
-            {
-                if (item.Tag as string == pageTag)
-                {
-                    Nav.SelectedItem = item;
-                    break;
-                }
-            }
-        }
+            SelectPage(pageTag);
 
         AppWindow.Show();
         this.Activate();
@@ -242,6 +265,31 @@ public sealed partial class SettingsWindow : Window
         // because a user drag between two openings changes the rect; the last
         // trace remains the current truth.
         WindowingProbe.EmitWindowPositioned(_hwnd, "settings", "Center");
+    }
+
+    // Selects the rail item for a page tag, wherever it sits — the primary menu, a
+    // parent's children, or the footer. Selection is what navigates (it drives
+    // OnNavSelectionChanged → Frame.Navigate), so this is the one gesture every
+    // caller shares: the taskbar/tray deep link through ShowAndActivate, a search
+    // hit, and a page's own drill-in card through SettingsNavigation.GoToPage.
+    // A tag with no rail item is silently ignored — a module withdrawn while the
+    // window is open has nowhere to go, and that is not an error worth a dialog.
+    public void SelectPage(string pageTag)
+    {
+        NavigationViewItem? item = FindNavItem(pageTag);
+        if (item is null) return;
+        ExpandAncestorsOf(item);
+        Nav.SelectedItem = item;
+    }
+
+    // A child is only selectable once its parent is expanded, and a deep link may
+    // land on one before the user has ever opened the family. Parents are built
+    // expanded, so this is the guard for a parent the user collapsed by hand.
+    private void ExpandAncestorsOf(NavigationViewItem target)
+    {
+        foreach (var parent in Nav.MenuItems.OfType<NavigationViewItem>())
+            if (parent.MenuItems.OfType<NavigationViewItem>().Any(child => ReferenceEquals(child, target)))
+                parent.IsExpanded = true;
     }
 
     // ── TitleBar pane toggle ─────────────────────────────────────────────

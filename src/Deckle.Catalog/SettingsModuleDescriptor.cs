@@ -74,9 +74,17 @@ public sealed record SettingsModuleDescriptor
     // module can land between two existing ones.
     public int Order { get; init; }
 
-    // Optional parent module id, for a future nested nav (parent → children in the
-    // rail). Dormant by decision: the current nav is one page per family with
-    // in-page sections, no expandable nesting — the field is reserved so the
-    // contract need not change if that decision is ever revisited.
+    // Optional parent module id: set it and this page becomes a CHILD of that
+    // module in the rail, nested under an expandable parent item rather than
+    // sitting beside it. Left null for the ordinary case — one page per family
+    // with in-page sections — and reached for only when a family grows a surface
+    // too large to fold into its parent page.
+    //
+    // A child renders WITHOUT an icon (the WinUI hierarchical-navigation sample:
+    // the parent's icon carries the family, indentation carries the rest), so its
+    // Glyph serves only the search index, which shows it beside a hit. Children
+    // sort among themselves by (Tier, Order) like any other module; a ParentId
+    // naming no registered module is skipped, so a child cannot outlive an
+    // uninstalled parent in the rail.
     public string? ParentId { get; init; }
 }

@@ -171,4 +171,10 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     public const int EvtSearchPresentationChanged         = 79;
     public const int EvtSearchFocusReleased               = 80;
 
+    // ── Settings module nav nesting ──
+    // A child module whose ParentId names no registered module: it gets no rail
+    // item, the rest of the band still builds. Wiring gap with two ids ⇒ Verbose,
+    // same tolerant shape as SearchEntrySkipped.
+    public const int EvtSettingsModuleParentMissing       = 81;
+
 }

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Deckle.Autocorrect.LexicalDomainsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:vm="using:Deckle.Autocorrect">
+
+    <!-- Child page of the Autocorrect family: the domains that add a field's
+         vocabulary to the effective lexicon, and nothing else. Same canonical
+         Settings layout as its parent and its sibling. The domain section is
+         collapsed while the master switch is off (mask-never-grey) and one line
+         says why — the door on the parent page and the rail entry stay, so the
+         page must answer for itself when nothing behind them applies. -->
+    <!-- No section-header style here, unlike the parent and the sibling: this page
+         carries a single section and its tabs name it, so nothing resolves that
+         style and declaring it would be dead XAML. -->
+    <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+    </Page.Resources>
+
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <TextBlock x:Uid="LexicalDomainsPage_Title"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           Margin="0,0,0,8" />
+
+                <TextBlock x:Uid="LexicalDomainsPage_Subtitle"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12" />
+
+                <!-- Shown in place of the whole section while autocorrect is off:
+                     one inline channel, the wording carries the tone. -->
+                <TextBlock x:Name="DisabledNotice"
+                           x:Uid="LexicalDomainsPage_Disabled"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed" />
+
+                <!-- ── Domains ───────────────────────────────────────────────── -->
+                <!-- Tag is the search index's scroll-to handle for this bespoke
+                     section; it matches the SettingSearchEntry's LabelKey. -->
+                <StackPanel x:Name="DomainsSection"
+                            Tag="LexicalDomainsPage_Section_Domains"
+                            Spacing="{StaticResource SettingsCardSpacing}">
+
+                    <!-- Peer views, not a filter: each tab is a different domain
+                         to read, and selection follows keyboard focus — the
+                         control's own behaviour, which is why the first domain is
+                         selected on load. Items are filled from code-behind off
+                         ViewModel.Domains (a runtime-enumerated catalogue). No
+                         header above it: the tabs name the domains, and a
+                         "Categories" line would be a third title level over a page
+                         that already has two. -->
+                    <SelectorBar x:Name="DomainSelector"
+                                 Margin="0,4,0,12"
+                                 SelectionChanged="OnDomainChanged" />
+
+                    <!-- The selected domain's one-line description. No "Computing"
+                         header above the list either — the selected tab already
+                         names it. -->
+                    <TextBlock Text="{x:Bind ViewModel.SelectedDomain.Description, Mode=OneWay}"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+
+                    <!-- One row per language the domain ships. Bespoke rather than
+                         composed: the rows are enumerated from DomainPack.Shipped
+                         and each carries its own term count, which no composer kind
+                         models. The row label is self-describing (language + terms),
+                         so there is no second description line. -->
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.SelectedDomain.Languages, Mode=OneWay}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DomainLanguageRow">
+                                <controls:SettingsCard Header="{x:Bind Label}">
+                                    <ToggleSwitch IsOn="{x:Bind Active, Mode=TwoWay}" />
+                                </controls:SettingsCard>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- What the domain ships against what fabrication turned away,
+                         in prose under the list. One inline channel, and the wording
+                         carries the tone — no InfoBar, no severity ladder. -->
+                    <TextBlock Text="{x:Bind ViewModel.SelectedDomain.Indications, Mode=OneWay}"
+                               Visibility="{x:Bind ViewModel.SelectedDomain.IndicationsVisibility, Mode=OneWay}"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
+
+                </StackPanel>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

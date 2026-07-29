@@ -227,6 +227,12 @@ public class EffectiveLexiconTests
         Assert.Equal(["qubit", "chat"], settings.ExcludedWords);
     }
 
+    // The language set is an argument to the key, so these fix it explicitly
+    // rather than reading the machine's — the assertions are about the key's
+    // algebra, not about what Windows happens to be configured with.
+    private static readonly IReadOnlySet<string> NoLanguages =
+        new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
     [Fact]
     public void EffectiveLexiconKey_ChangesWithTheExclusionRegister()
     {
@@ -234,8 +240,8 @@ public class EffectiveLexiconTests
         var one = new AutocorrectSettings { ExcludedWords = ["qubit"] };
 
         Assert.NotEqual(
-            AutocorrectSettings.EffectiveLexiconKey(none),
-            AutocorrectSettings.EffectiveLexiconKey(one));
+            DomainActivation.EffectiveLexiconKey(none, NoLanguages),
+            DomainActivation.EffectiveLexiconKey(one, NoLanguages));
     }
 
     [Fact]
@@ -245,18 +251,21 @@ public class EffectiveLexiconTests
         var reversed = new AutocorrectSettings { ExcludedWords = ["chat", "qubit"] };
 
         Assert.Equal(
-            AutocorrectSettings.EffectiveLexiconKey(forward),
-            AutocorrectSettings.EffectiveLexiconKey(reversed));
+            DomainActivation.EffectiveLexiconKey(forward, NoLanguages),
+            DomainActivation.EffectiveLexiconKey(reversed, NoLanguages));
     }
 
     // ── Activation state ────────────────────────────────────────────────────
 
     [Fact]
-    public void DomainPacks_AreInactiveUntilTheUserActivatesThem()
+    public void DomainPacks_FollowTheSystemLanguagesUntilTheUserDecides()
     {
         var settings = new AutocorrectSettings();
 
-        Assert.Empty(DomainPack.ActiveIn(settings));
+        Assert.Empty(DomainActivation.ActiveIn(settings, NoLanguages));
+        Assert.Equal(
+            DomainPack.Shipped,
+            DomainActivation.ActiveIn(settings, LanguagesOf(DomainPack.Shipped[0].Language)));
     }
 
     [Fact]
@@ -268,27 +277,25 @@ public class EffectiveLexiconTests
             DomainPacks = new Dictionary<string, bool> { [shipped.Id] = true },
         };
 
-        Assert.Equal([shipped], DomainPack.ActiveIn(settings));
+        Assert.Equal([shipped], DomainActivation.ActiveIn(settings, NoLanguages));
     }
 
     // The key is an identity, not a history: the App rebuilds the engine when
     // it changes, so two settings that describe the same table must agree, and
-    // a deactivated pack must not linger in it.
+    // a deactivated pack must not linger in it. An id no build ships names no
+    // forms, so it cannot move the key either.
     [Fact]
-    public void EffectiveLexiconKey_IgnoresActivationOrder()
+    public void EffectiveLexiconKey_IgnoresIdsNoBuildShips()
     {
-        var forward = new AutocorrectSettings
+        var bare = new AutocorrectSettings();
+        var fanciful = new AutocorrectSettings
         {
-            DomainPacks = new Dictionary<string, bool> { ["fr-it"] = true, ["fr-med"] = true },
-        };
-        var reversed = new AutocorrectSettings
-        {
-            DomainPacks = new Dictionary<string, bool> { ["fr-med"] = true, ["fr-it"] = true },
+            DomainPacks = new Dictionary<string, bool> { ["fr-med"] = true },
         };
 
         Assert.Equal(
-            AutocorrectSettings.EffectiveLexiconKey(forward),
-            AutocorrectSettings.EffectiveLexiconKey(reversed));
+            DomainActivation.EffectiveLexiconKey(bare, NoLanguages),
+            DomainActivation.EffectiveLexiconKey(fanciful, NoLanguages));
     }
 
     [Fact]
@@ -304,7 +311,10 @@ public class EffectiveLexiconTests
         };
 
         Assert.NotEqual(
-            AutocorrectSettings.EffectiveLexiconKey(active),
-            AutocorrectSettings.EffectiveLexiconKey(inactive));
+            DomainActivation.EffectiveLexiconKey(active, NoLanguages),
+            DomainActivation.EffectiveLexiconKey(inactive, NoLanguages));
     }
+
+    private static IReadOnlySet<string> LanguagesOf(params string[] languages) =>
+        new HashSet<string>(languages, System.StringComparer.OrdinalIgnoreCase);
 }

@@ -77,8 +77,11 @@ public partial class App
             // from one that invalidates it (a pack flipped) — the merge happens
             // at load, so the second needs a rebuild and the first does not.
             var autocorrectSettings = AutocorrectSettingsService.Instance.Current;
-            string lexiconKey = AutocorrectSettings.EffectiveLexiconKey(autocorrectSettings);
-            IReadOnlyList<DomainPack> activePacks = DomainPack.ActiveIn(autocorrectSettings);
+            var systemLanguages = SystemLanguages.Current;
+            string lexiconKey =
+                DomainActivation.EffectiveLexiconKey(autocorrectSettings, systemLanguages);
+            IReadOnlyList<DomainPack> activePacks =
+                DomainActivation.ActiveIn(autocorrectSettings, systemLanguages);
             // Snapshot the register by reference alongside the packs: the
             // settings service swaps the list rather than mutating it, so this
             // stays the exact set the key above describes.
