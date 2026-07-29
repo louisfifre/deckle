@@ -5,6 +5,20 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-29 — Domain-pack follow-up, direction decided (untested)
+
+Grill session over what remains of the pack model. Decided direction, none of it built or benched yet; the full question-by-question record lives in the Anytype rapport of task « Grill packs suite ».
+
+- Selection is by domain, language beneath: the user picks « Computing », never « fr-IT ». Engine capabilities (grammar, spelling) stay out of that selector — they are code, not fabricated data artifacts with a dilution contract.
+- Presentation: two sub-pages under Autocorrect in settings (« Lexical domains », « Apps enrolled »), child entries in the side nav, icon-less navigation cards on the Autocorrect page. On Lexical domains: a SelectorBar of domain tabs (navigation only — chips rejected for their filter on/off semantics; WinUI doc recommends SelectorBar for peer views, shipping precedent is Explorer Home) over a list of per-language toggle rows carrying term counts. Selection follows keyboard focus, so the first domain is selected by default. The word « pack » leaves the interface. Mockups live in the Figma file, page « domains », filled with the real fr-IT manifest figures.
+- Default state of a language row follows the Windows language list (`GlobalizationPreferences`): On for a system language, Off otherwise; a user toggle is remembered and never overwritten. A pack fabricated later arrives with that same computed default — no arbitrary silent activation, no per-domain stored intention. The corrector's primary language remains its own future workstream; this page only decides which domain declensions load, one-way protection does the rest.
+- Everyday franglais (backend, plugin, wifi — measured absent from the frwiktionary Lexique categories, 2026-07-28) has its home: an en-IT pack, the English side of the Computing domain, protection-only under French primary. Personal-vocabulary adoption rejected as the home (word-by-word false positives during learning); widening fr-IT rejected (would make English forms French correction targets). Engaged, unstarted: porting the fabrication chain to English (masking measured against the French base — the risk is shielding mangled French words) and the first bench of « protects de facto », never measured.
+- Cross-language coherence is the contract, not the content: same source family (kaikki per-language Wiktionary dumps), same frequency source (wordfreq, homogeneous across ~40 languages), same fabrication chain; the Wiktionaries themselves are independent communities with unequal coverage, and the per-row term counts state that openly. Domain↔category mapping is hand-written per language at fabrication. To probe first for en-IT: the enwiktionary category yield, never sounded.
+- Word exclusion stays the shipped two-directional subtraction — a strictly manual gesture; the « excluded then typed deliberately » case is rare by construction. The target-only engine tier (eight sites) waits for telemetry showing the reverse annoyance.
+- Engine bars stay intact; the two IT-bench residues (« reinitialise », « agrégatuer ») remain gated as such — retuning calibrated bars over two data points would fit the bench, not the language. The quality route for context-dependent recall is the sentence stage: its judge sees the whole sentence, and both residues are natural entry cases for its calibration workstream.
+
+Pending maintainer validation before any engraving: the CONTEXT.md § Lexicon composition rewrite (domain-first selection, Windows-language defaults), the § Word exclusion clarification (state the two-directionality plainly), the settings-doctrine sub-page level, and the interface wording change.
+
 ## 2026-07-28 — Packs and exclusions wired to the runtime; exclusion is subtraction, not demotion
 
 Shipped the runtime and UI side of the domain-pack model: the effective lexicon is merged at engine build (base + active packs, max wins, then the exclusion register subtracted), packs are inactive by default and activated per pack in settings, each pack shows its dilution figures, and the exclusion register is consultable and reversible there.
