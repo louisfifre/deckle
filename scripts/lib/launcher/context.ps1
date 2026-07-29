@@ -1,11 +1,6 @@
 # Deckle launcher context, prompts, and session helpers.
-function Use-DeckleCompactMenu {
-    $script:DeckleMenuIsCompact = $true
-}
-
 function Get-DeckleMenuBannerStyle {
-    if ($script:DeckleMenuIsCompact) { return 'Compact' }
-    return 'Full'
+    return 'Compact'
 }
 
 function Start-DeckleMenuSession {
