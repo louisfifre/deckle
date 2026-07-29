@@ -17,12 +17,13 @@ namespace Deckle.Input;
 // line per wheel-emitting device seen (a short index, the HID name, and the
 // vid/pid parsed out of it, so the file stands alone), then one compact line
 // per event:
-//   {"t":12.3,"dev":0,"axis":"v","d":120,"gap":45.6}
+//   {"t":12.3,"dev":0,"src":"raw","axis":"v","d":120,"gap":45.6,"inj":0}
 // `t` is milliseconds since the first recorded event (host monotonic clock,
 // 0.1 ms precision); `axis` is "v" (vertical) or "h" (horizontal); `d` is the
 // signed detent from RAWMOUSE.usButtonData; `gap` is milliseconds since the
 // previous event of the SAME device — the cadence the gesture model reads,
-// 0 for the first event of a device. Burst grouping is left to the offline
+// 0 for the first event of a device; `inj` marks source-less synthetic input.
+// Burst grouping is left to the offline
 // analysis, which can sweep thresholds the capture must not pre-decide.
 //
 // Start/Stop come from the settings toggle (UI thread), OnWheel from the
@@ -88,6 +89,7 @@ public sealed class WheelEventRecorder : IDisposable
                 _line.Append(",\"axis\":\"").Append(e.Axis == WheelAxis.Vertical ? 'v' : 'h').Append('"');
                 _line.Append(",\"d\":").Append(e.Delta);
                 _line.Append(",\"gap\":").Append(gap.ToString("F1", CultureInfo.InvariantCulture));
+                _line.Append(",\"inj\":").Append(e.IsInjected ? '1' : '0');
                 _line.Append('}');
 
                 writer.WriteLine(_line);

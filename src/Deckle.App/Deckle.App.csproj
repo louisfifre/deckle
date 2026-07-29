@@ -21,7 +21,7 @@
          Windows App SDK ML is not used, so its automatic ONNX Runtime
          initialization must not compete with the host's runtime. -->
     <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
-    <Version>0.25.0</Version>
+    <Version>0.26.0</Version>
     <!-- Forces the Publish pipeline to generate/copy Deckle.pri into PublishDir.
          Without this, in unpackaged + WindowsAppSDK 1.8, the .pri doesn't land in
          publish\ and all compiled XAML resources (.xbf embedded in .pri since 1.8)
@@ -104,6 +104,7 @@
          CamemBERT for the sentence stage when its model directory is present. -->
     <ProjectReference Include="..\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
+    <ProjectReference Include="..\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />

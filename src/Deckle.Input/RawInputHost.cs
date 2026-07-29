@@ -58,6 +58,7 @@ public sealed class RawInputHost : IDisposable
 
     private volatile bool _running;
     private volatile TouchpadCapabilities? _touchpad;
+    private volatile TouchpadDevice[] _touchpads = [];
 
     /// <summary>Raised on the input thread for every assembled contact frame.</summary>
     public event Action<ContactFrame>? FrameAssembled;
@@ -65,11 +66,19 @@ public sealed class RawInputHost : IDisposable
     /// <summary>Raised on the input thread when a touchpad becomes available (boot probe or arrival).</summary>
     public event Action<TouchpadCapabilities>? TouchpadConnected;
 
+    /// <summary>
+    /// Raised with the Raw Input identity when a touchpad becomes available.
+    /// </summary>
+    public event Action<TouchpadDevice>? TouchpadDeviceConnected;
+
     /// <summary>Raised on the input thread when the last touchpad goes away.</summary>
     public event Action? TouchpadDisconnected;
 
     /// <summary>Capabilities of the current touchpad, null when none is present.</summary>
     public TouchpadCapabilities? Touchpad => _touchpad;
+
+    /// <summary>Snapshot of all touchpads currently attached to Raw Input.</summary>
+    public IReadOnlyList<TouchpadDevice> Touchpads => _touchpads;
 
     public bool IsRunning => _running;
 
@@ -243,6 +252,7 @@ public sealed class RawInputHost : IDisposable
         _devices.Clear();
         _failedDevices.Clear();
         _touchpad = null;
+        _touchpads = [];
 
         TearDownWindow();
 
@@ -336,12 +346,15 @@ public sealed class RawInputHost : IDisposable
         _touchpad = parser.Capabilities;
 
         var c = parser.Capabilities;
+        var touchpad = new TouchpadDevice(hDevice, c);
+        PublishTouchpads();
         DeckleInputSource.Log.TouchpadDetected();
         DeckleInputSource.Log.TouchpadDetectedDetail(
             c.DeviceName, c.VendorId, c.ProductId,
             c.XMin, c.XMax, c.YMin, c.YMax, c.ContactSlots, c.ReportByteLength);
 
         TouchpadConnected?.Invoke(c);
+        TouchpadDeviceConnected?.Invoke(touchpad);
         return true;
     }
 
@@ -359,6 +372,7 @@ public sealed class RawInputHost : IDisposable
                 if (_devices.Remove(hDevice, out var entry))
                 {
                     entry.Parser.Dispose();
+                    PublishTouchpads();
                     if (_devices.Count == 0)
                     {
                         _touchpad = null;
@@ -420,9 +434,18 @@ public sealed class RawInputHost : IDisposable
             var frame = device.Assembler.Add(report, now);
             if (frame is null) continue;
 
+            frame = frame with { DeviceHandle = header.hDevice };
+
             TrackRollup(frame, device.Assembler);
             FrameAssembled?.Invoke(frame);
         }
+    }
+
+    private void PublishTouchpads()
+    {
+        _touchpads = _devices
+            .Select(entry => new TouchpadDevice(entry.Key, entry.Value.Parser.Capabilities))
+            .ToArray();
     }
 
     private void TrackRollup(ContactFrame frame, ContactFrameAssembler assembler)

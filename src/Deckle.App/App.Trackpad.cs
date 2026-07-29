@@ -30,8 +30,8 @@ public partial class App
         // The recorder listens permanently; it ignores frames while not
         // recording. Device lines keep a session self-describing when the
         // trackpad (re)connects mid-recording.
-        _inputHost.FrameAssembled   += frame => _frameRecorder.OnFrame(frame);
-        _inputHost.TouchpadConnected += caps => _frameRecorder.NoteDevice(caps);
+        _inputHost.FrameAssembled        += frame => _frameRecorder.OnFrame(frame);
+        _inputHost.TouchpadDeviceConnected += device => _frameRecorder.NoteDevice(device);
 
         TrackpadSettingsService.Instance.Changed += ReconcileTrackpad;
         ReconcileTrackpad();
@@ -55,7 +55,7 @@ public partial class App
 
         if (settings.RecordFrames && inputAvailable)
         {
-            if (!_frameRecorder.IsRecording) _frameRecorder.Start(_inputHost.Touchpad);
+            if (!_frameRecorder.IsRecording) _frameRecorder.Start(_inputHost.Touchpads);
         }
         else
         {

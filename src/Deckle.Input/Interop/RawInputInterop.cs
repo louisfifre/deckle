@@ -178,6 +178,7 @@ public static class RawInputInterop
     // ── Message pump (dedicated input thread) ─────────────────────────────
 
     public const uint WM_QUIT = 0x0012;
+    public const uint WM_TIMER = 0x0113;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct MSG
@@ -200,8 +201,21 @@ public static class RawInputInterop
     [DllImport("user32.dll")]
     public static extern IntPtr DispatchMessage(ref MSG lpMsg);
 
+    [DllImport("user32.dll")]
+    public static extern int GetMessageTime();
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostThreadMessage(uint idThread, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nuint SetTimer(
+        IntPtr window,
+        nuint timerId,
+        uint intervalMs,
+        IntPtr callback);
+
+    [DllImport("user32.dll")]
+    public static extern bool KillTimer(IntPtr window, nuint timerId);
 
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();

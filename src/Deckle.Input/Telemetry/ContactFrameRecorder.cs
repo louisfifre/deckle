@@ -15,7 +15,7 @@ namespace Deckle.Input;
 // File layout: a `session` header line (session id, start time), a
 // `device` line per touchpad seen (capabilities, so the file stands
 // alone), then one compact line per frame:
-//   {"t":12.3,"scan":456,"n":3,"tips":3,"btn":0,"reports":1,
+//   {"t":12.3,"dev":0,"scan":456,"n":3,"tips":3,"btn":0,"reports":1,
 //    "c":[[id,x,y,tip,confidence],…]}
 // `t` is milliseconds since the first recorded frame (host monotonic
 // clock, 0.1 ms precision); `scan` is the device clock in 100 µs units.
@@ -29,11 +29,11 @@ public sealed class ContactFrameRecorder : IDisposable
 
     private readonly object _lock = new();
     private readonly StringBuilder _line = new(256);
+    private readonly ContactDeviceRegistry _devices = new();
 
     private StreamWriter? _writer;
     private string? _path;
     private bool _armed;
-    private TouchpadCapabilities? _pendingTouchpad;
     private long _frames;
     private double _firstFrameMs = -1;
     private double _lastFlushMs;
@@ -44,33 +44,32 @@ public sealed class ContactFrameRecorder : IDisposable
     }
 
     /// <summary>
-    /// Arms a capture session. A null <paramref name="touchpad"/> is fine
-    /// (no device yet) — the JSONL file opens only on the first actual frame.
+    /// Arms a capture session. An empty <paramref name="touchpads"/> collection
+    /// is fine — the JSONL file opens only on the first actual frame.
     /// </summary>
-    public void Start(TouchpadCapabilities? touchpad)
+    public void Start(IReadOnlyList<TouchpadDevice> touchpads)
     {
         lock (_lock)
         {
             if (_armed) return;
+            _devices.StartSession(touchpads);
             _armed = true;
-            _pendingTouchpad = touchpad;
         }
     }
 
     /// <summary>Records the capabilities of a touchpad that just became available.</summary>
-    public void NoteDevice(TouchpadCapabilities touchpad)
+    public void NoteDevice(TouchpadDevice touchpad)
     {
         lock (_lock)
         {
-            if (!_armed) return;
-            if (_writer is null)
-            {
-                _pendingTouchpad = touchpad;
-                return;
-            }
             try
             {
-                WriteDeviceLine(touchpad);
+                bool added = _devices.Observe(
+                    touchpad,
+                    preservePreviousIdentity: _writer is not null,
+                    out RegisteredTouchpad registered);
+                if (added && _writer is not null)
+                    WriteDeviceLine(registered.Index, registered.Capabilities);
             }
             catch (Exception ex)
             {
@@ -88,7 +87,7 @@ public sealed class ContactFrameRecorder : IDisposable
 
             try
             {
-                if (_writer is null && !OpenSession(_pendingTouchpad)) return;
+                if (_writer is null && !OpenSession()) return;
                 var writer = _writer!;
 
                 if (_firstFrameMs < 0)
@@ -98,9 +97,13 @@ public sealed class ContactFrameRecorder : IDisposable
                 }
 
                 double t = frame.TimestampMs - _firstFrameMs;
+                int deviceIndex = _devices.TryGet(frame.DeviceHandle, out RegisteredTouchpad device)
+                    ? device.Index
+                    : -1;
 
                 _line.Clear();
                 _line.Append("{\"t\":").Append(t.ToString("F1", CultureInfo.InvariantCulture));
+                _line.Append(",\"dev\":").Append(deviceIndex);
                 _line.Append(",\"scan\":").Append(frame.ScanTime);
                 _line.Append(",\"n\":").Append(frame.ContactCount);
                 _line.Append(",\"tips\":").Append(frame.TipCount);
@@ -143,7 +146,7 @@ public sealed class ContactFrameRecorder : IDisposable
         {
             if (!_armed) return;
             _armed = false;
-            _pendingTouchpad = null;
+            _devices.EndSession();
             if (_writer is null) return;
 
             string path = _path!;
@@ -178,7 +181,7 @@ public sealed class ContactFrameRecorder : IDisposable
 
     public void Dispose() => Stop();
 
-    private bool OpenSession(TouchpadCapabilities? touchpad)
+    private bool OpenSession()
     {
         try
         {
@@ -190,9 +193,11 @@ public sealed class ContactFrameRecorder : IDisposable
             _lastFlushMs = 0;
 
             _writer.WriteLine(
-                $"{{\"type\":\"session\",\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
+                $"{{\"type\":\"session\",\"schema\":2,\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
                 $"\"started\":\"{DateTime.Now.ToString("o", CultureInfo.InvariantCulture)}\"}}");
-            if (touchpad is not null) WriteDeviceLine(touchpad);
+            foreach (RegisteredTouchpad device in _devices.SessionDevices.OrderBy(
+                         device => device.Index))
+                WriteDeviceLine(device.Index, device.Capabilities);
             _writer.Flush();
 
             DeckleInputSource.Log.RecordingStarted();
@@ -207,16 +212,16 @@ public sealed class ContactFrameRecorder : IDisposable
             _writer = null;
             _path = null;
             _armed = false;
-            _pendingTouchpad = null;
+            _devices.EndSession();
             return false;
         }
     }
 
-    private void WriteDeviceLine(TouchpadCapabilities c)
+    private void WriteDeviceLine(int index, TouchpadCapabilities c)
     {
         string name = c.DeviceName.Replace("\\", "\\\\").Replace("\"", "\\\"");
         _writer!.WriteLine(
-            $"{{\"type\":\"device\",\"name\":\"{name}\"," +
+            $"{{\"type\":\"device\",\"dev\":{index},\"name\":\"{name}\"," +
             $"\"vid\":{c.VendorId},\"pid\":{c.ProductId}," +
             $"\"x\":[{c.XMin},{c.XMax}],\"y\":[{c.YMin},{c.YMax}]," +
             $"\"slots\":{c.ContactSlots},\"reportBytes\":{c.ReportByteLength}}}");
@@ -230,6 +235,6 @@ public sealed class ContactFrameRecorder : IDisposable
         _writer = null;
         _path = null;
         _armed = false;
-        _pendingTouchpad = null;
+        _devices.EndSession();
     }
 }

@@ -42,6 +42,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Parameterize the pack fabrication chain by language
 - **autocorrect:** Fabricate and judge the en-IT pack
 - **autocorrect:** Ship the en-IT pack
+- **input:** Add native precision wheel scrolling
+- **input:** Preserve wheel device telemetry
+- **precision-scroll:** Derive motion from wheel cadence
 
 ### Changed
 
@@ -71,6 +74,12 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Install hooks from linked worktrees
 - **scripts:** Restore launcher visual hierarchy
 - **scripts:** Align launcher spacing and quit navigation
+- **input:** Retain touchpad frame device identity
+- **input:** Preserve native wheel semantics
+- **precision-scroll:** Preserve accepted wheel motion
+- **precision-scroll:** Apply settings immediately
+- **input:** Close capture device registration race
+- **input:** Harden wheel observation correlation
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

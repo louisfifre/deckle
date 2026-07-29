@@ -258,6 +258,7 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
 
     public bool Start() { StartCount++; return StartResult; }
     public void Stop() => StopCount++;
+    public void SetWheelInterceptor(IWheelInterceptor? interceptor) { }
     public void RequestDrain()
     {
         if (!DeferDrain)
@@ -273,7 +274,6 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
         while (Interlocked.Exchange(ref _pendingDrains, 0) > 0)
             DrainRequested?.Invoke();
     }
-
     public void RaiseKey(KeyboardKeyEvent e) => KeyReceived?.Invoke(e);
     public void RaisePointer() => PointerInteraction?.Invoke();
     public void RaiseWheel(MouseWheelEvent e) => WheelObserved?.Invoke(e);

@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "referenceCommit": "5c0a75ae55c457b628b08ddf74f455c9a52bae21",
+  "scenarios": [
+    {
+      "name": "single-detent-amount",
+      "inputs": [
+        { "atMs": 0, "detents": 1 }
+      ],
+      "untilMs": 1500,
+      "expected": {
+        "beginCount": 1,
+        "endCount": 1,
+        "travelMm": 1.5,
+        "stationaryBeforeEnd": true,
+        "rollover": false
+      }
+    },
+    {
+      "name": "slow-held-continuity",
+      "series": { "startMs": 0, "intervalMs": 100, "count": 7, "detents": 1 },
+      "untilMs": 1500,
+      "expected": {
+        "beginCount": 1,
+        "endCount": 1,
+        "stationaryBeforeEnd": true,
+        "rollover": false
+      }
+    },
+    {
+      "name": "slow-cadence-reference",
+      "inputs": [
+        { "atMs": 0, "detents": 1 },
+        { "atMs": 70, "detents": 1 }
+      ],
+      "untilMs": 1500,
+      "expected": {
+        "stationaryBeforeEnd": true
+      }
+    },
+    {
+      "name": "fast-cadence-reference",
+      "series": { "startMs": 0, "intervalMs": 8, "count": 16, "detents": 1 },
+      "untilMs": 1500,
+      "expected": {
+        "fasterThan": "slow-cadence-reference",
+        "minimumSpeedRatio": 3.0,
+        "stationaryBeforeEnd": true
+      }
+    },
+    {
+      "name": "instant-reversal",
+      "inputs": [
+        { "atMs": 0, "detents": 1 },
+        { "atMs": 30, "detents": 1 },
+        { "atMs": 61, "detents": -1 }
+      ],
+      "untilMs": 1500,
+      "expected": {
+        "beginCount": 1,
+        "endCount": 1,
+        "motionAfterMs": 70,
+        "motionDirection": "negative-only",
+        "stationaryBeforeEnd": true
+      }
+    },
+    {
+      "name": "long-free-spin-rollover",
+      "series": { "startMs": 0, "intervalMs": 8, "count": 200, "detents": 1 },
+      "untilMs": 2200,
+      "expected": {
+        "minimumBeginCount": 2,
+        "balancedContacts": true,
+        "rollover": true
+      }
+    }
+  ]
+}
