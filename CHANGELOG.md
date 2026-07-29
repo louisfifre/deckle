@@ -65,6 +65,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Keep project status and history observable
 - **scripts:** Install hooks from linked worktrees
 - **scripts:** Restore launcher visual hierarchy
+- **scripts:** Align launcher spacing and quit navigation
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
