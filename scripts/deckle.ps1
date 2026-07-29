@@ -45,7 +45,7 @@ try {
         if ($v -eq 'quit') { break }
 
         if ($v -match '^(launch|run|norun):(Release|Debug)$') {
-            $result = Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
+            $result = Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2] -MenuRows $mainRows
             if ($null -ne $result) {
                 $mainResultTitle = $result.Title
                 $mainResultLines = @($result.Lines)

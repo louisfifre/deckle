@@ -1,7 +1,6 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\menu\chrome.ps1')
 . (Join-Path $PSScriptRoot '..\menu\grid-picker.ps1')
-. (Join-Path $PSScriptRoot '..\menu\status-view.ps1')
 . (Join-Path $PSScriptRoot 'action-results.ps1')
 
 function Assert-Equal($Expected, $Actual, [string]$Case) {
@@ -22,16 +21,17 @@ Assert-Equal $true $formatted[0].StartsWith('14:32:08  Info     Build') 'log col
 $title = Get-DeckleActionResultTitle -Label 'Build Debug' -State Succeeded -Elapsed ([timespan]::FromSeconds(18.4))
 Assert-Equal 'Build Debug succeeded · 18.4 s' $title 'summary states action outcome and duration'
 
-function Show-MenuStatus { }
+function Show-GridStatus { }
+$menuRows = @(@{ Cells = @( @{ Label = 'Build' } ) })
 
-$success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -Action {
+$success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
     Write-Host 'build completed'
 }
 Assert-Equal $true $success.Succeeded 'captured action reports success'
 Assert-Equal 2 $success.Lines.Count 'output and host streams are both retained'
 
-$failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -Action {
+$failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
     throw 'compiler stopped'
 }

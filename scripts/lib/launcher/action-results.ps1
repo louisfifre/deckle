@@ -45,6 +45,7 @@ function Invoke-DeckleMenuAction {
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][string]$Label,
         [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][object[]]$MenuRows,
         [Parameter(Mandatory)][scriptblock]$Action
     )
 
@@ -54,8 +55,9 @@ function Invoke-DeckleMenuAction {
     $lastRefresh = [timespan]::Zero
     $succeeded = $true
 
-    Show-MenuStatus `
+    Show-GridStatus `
         -Header $Header `
+        -Rows $MenuRows `
         -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
         -Lines @('Waiting for output…') `
         -Footer 'Live output follows the latest line; controls return when the action completes' `
@@ -67,8 +69,9 @@ function Invoke-DeckleMenuAction {
                 $lines.Add($line)
             }
             if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
-                Show-MenuStatus `
+                Show-GridStatus `
                     -Header $Header `
+                    -Rows $MenuRows `
                     -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
                     -Lines @($lines) `
                     -Footer 'Live output follows the latest line; controls return when the action completes' `

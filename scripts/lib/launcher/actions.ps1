@@ -2,7 +2,8 @@
 function Invoke-LaunchOrBuild {
     param(
         [Parameter(Mandatory)][ValidateSet('launch', 'run', 'norun')][string]$Kind,
-        [Parameter(Mandatory)][ValidateSet('Release', 'Debug')][string]$Configuration
+        [Parameter(Mandatory)][ValidateSet('Release', 'Debug')][string]$Configuration,
+        [Parameter(Mandatory)][object[]]$MenuRows
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
@@ -25,6 +26,7 @@ function Invoke-LaunchOrBuild {
         -Header "Deckle > $label" `
         -Label $label `
         -Source $source `
+        -MenuRows $MenuRows `
         -Action { & $scriptPath @actionParameters }
 }
 
