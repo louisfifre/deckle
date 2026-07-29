@@ -4,8 +4,9 @@
 # PowerShell 7+ terminal. The top level is a 2-D grid (↑↓←→ to move, Enter to
 # run): the verbs you reach for most sit up top, each with its Release/Debug
 # variant beside it, so one Enter picks both. The launcher owns a terminal
-# alternate-screen session while navigating, then restores the normal terminal
-# before running the chosen action. Back/cancel returns to the previous menu.
+# alternate-screen session while navigating and keeps captured action output in
+# a scrollable viewport below the stable command grid. Back/cancel returns to
+# the previous menu.
 #
 # Every concrete action delegates to a single-purpose script in scripts/lib/;
 # those scripts remain usable on their own CLI for automation.
@@ -21,25 +22,35 @@ $script:DeckleMenuSessionActive = $false
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')
+. (Join-Path $LibDir 'launcher\action-results.ps1')
 . (Join-Path $LibDir 'launcher\actions.ps1')
 . (Join-Path $LibDir 'launcher\statistics-plans.ps1')
 . (Join-Path $LibDir 'launcher\maintenance-results.ps1')
 . (Join-Path $LibDir 'launcher\menus.ps1')
 
 $mainRows = @(Get-DeckleMainMenuRows)
+$mainResultTitle = $null
+$mainResultLines = @()
+$mainBannerStyle = 'Full'
 
 Start-DeckleMenuSession
 try {
     while ($true) {
         $v = Select-Grid `
             -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
-            -Footer 'worktrees are asked after you pick; maintenance results stay in the menu' `
-            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Full
+            -Footer $(if ($mainResultTitle) { 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Home/End first/latest' } else { 'worktrees are asked after you pick; action results stay in the menu' }) `
+            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle $mainBannerStyle `
+            -ResultTitle $mainResultTitle -ResultLines $mainResultLines -ResultFollowTail
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
 
         if ($v -match '^(launch|run|norun):(Release|Debug)$') {
-            Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
+            $result = Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
+            if ($null -ne $result) {
+                $mainResultTitle = $result.Title
+                $mainResultLines = @($result.Lines)
+                $mainBannerStyle = 'Compact'
+            }
         } else {
             switch ($v) {
                 'project-menu'     { Show-ProjectMenu }

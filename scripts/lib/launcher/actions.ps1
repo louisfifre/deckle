@@ -6,12 +6,26 @@ function Invoke-LaunchOrBuild {
     )
     $wt = Get-WorktreeOrReturn
     if ($null -eq $wt) { return }
-    Begin-DeckleAction
-    switch ($Kind) {
-        'launch' { & (Join-Path $LibDir 'launch-app.ps1') -Target $wt -Configuration $Configuration }
-        'run'    { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $Configuration }
-        'norun'  { & (Join-Path $LibDir 'build-run.ps1')  -Target $wt -Configuration $Configuration -NoRun }
+
+    $label = switch ($Kind) {
+        'launch' { "Launch $Configuration" }
+        'run'    { "Build & run $Configuration" }
+        'norun'  { "Build $Configuration" }
     }
+    $source = if ($Kind -eq 'launch') { 'Launch' } else { 'Build' }
+    $actionParameters = @{ Target = $wt; Configuration = $Configuration }
+    $scriptPath = if ($Kind -eq 'launch') {
+        Join-Path $LibDir 'launch-app.ps1'
+    } else {
+        if ($Kind -eq 'norun') { $actionParameters.NoRun = $true }
+        Join-Path $LibDir 'build-run.ps1'
+    }
+
+    return Invoke-DeckleMenuAction `
+        -Header "Deckle > $label" `
+        -Label $label `
+        -Source $source `
+        -Action { & $scriptPath @actionParameters }
 }
 
 function Invoke-WorktreeScript {

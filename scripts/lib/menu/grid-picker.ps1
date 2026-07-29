@@ -83,7 +83,8 @@ function Invoke-GridLoop {
         [ValidateRange(0, 40)]
         [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
-        [string[]]$ResultLines = @()
+        [string[]]$ResultLines = @(),
+        [switch]$ResultFollowTail
     )
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
         throw 'Invoke-GridLoop requires an interactive console (input or output is redirected).'
@@ -139,7 +140,11 @@ function Invoke-GridLoop {
     $body = $layout.Body
     $resultRowCount = $layout.ResultRowCount
 
-    $resultOffset = 0
+    $resultOffset = if ($ResultFollowTail) {
+        Get-GridResultOffset -Current 0 -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Last
+    } else {
+        0
+    }
     $selIdx = [Math]::Min([Math]::Max($StartSel, 0), $sel.Count - 1)
     $colIdx = Get-GridColumnForRow -CurrentColumn $StartCol -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
 
@@ -216,6 +221,12 @@ function Invoke-GridLoop {
                     'PageDown' {
                         $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Next
                     }
+                    'Home' {
+                        $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction First
+                    }
+                    'End' {
+                        $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Last
+                    }
                     'Enter' {
                         Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
                         $selectedRow = $body[$sel[$selIdx].BodyIndex]
@@ -256,9 +267,10 @@ function Select-Grid {
         [ValidateRange(0, 40)]
         [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
-        [string[]]$ResultLines = @()
+        [string[]]$ResultLines = @(),
+        [switch]$ResultFollowTail
     )
-    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol -EscapeAction $EscapeAction -ClearScreen:$ClearScreen -BannerStyle $BannerStyle -CategoryWidth $CategoryWidth -ResultTitle $ResultTitle -ResultLines $ResultLines
+    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol -EscapeAction $EscapeAction -ClearScreen:$ClearScreen -BannerStyle $BannerStyle -CategoryWidth $CategoryWidth -ResultTitle $ResultTitle -ResultLines $ResultLines -ResultFollowTail:$ResultFollowTail
 }
 
 function Get-GridColumnWidths {
@@ -283,7 +295,7 @@ function Get-GridResultOffset {
         [Parameter(Mandatory)][int]$Current,
         [Parameter(Mandatory)][int]$PageSize,
         [Parameter(Mandatory)][int]$LineCount,
-        [ValidateSet('Previous', 'Next', 'Current')]
+        [ValidateSet('Previous', 'Next', 'Current', 'First', 'Last')]
         [string]$Direction
     )
 
@@ -293,6 +305,8 @@ function Get-GridResultOffset {
     $candidate = switch ($Direction) {
         'Previous' { $currentPage - $PageSize }
         'Next' { $currentPage + $PageSize }
+        'First' { 0 }
+        'Last' { $maximum }
         default { $currentPage }
     }
     return [Math]::Min($maximum, [Math]::Max(0, $candidate))
