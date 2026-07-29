@@ -229,6 +229,11 @@ public sealed partial class KeyboardInputHost
                 _mouseInteractions.PublishQueuedButtonDown();
                 continue;
             }
+            if (msg.message == WM_APP_WHEEL_OBSERVATION)
+            {
+                PublishQueuedHookWheels();
+                continue;
+            }
             RawInputInterop.TranslateMessage(ref msg);
             RawInputInterop.DispatchMessage(ref msg);
         }
@@ -239,6 +244,8 @@ public sealed partial class KeyboardInputHost
 
     private void TearDownInputThread()
     {
+        FlushAllWheelObservations();
+
         if (_rawInputRegistered)
         {
             var unregister = new[]

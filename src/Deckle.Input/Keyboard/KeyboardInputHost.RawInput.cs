@@ -12,6 +12,9 @@ public sealed partial class KeyboardInputHost
     {
         if (msg == NativeMethods.WM_INPUT)
             HandleInput(lParam);
+        else if (msg == RawInputInterop.WM_TIMER
+            && unchecked((uint)wParam.ToInt64()) == WheelObservationTimerId)
+            FlushExpiredWheelObservations();
         return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
@@ -72,13 +75,17 @@ public sealed partial class KeyboardInputHost
                 _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
             bool rawWheelRollupEnabled = _mouseHook == IntPtr.Zero && IsKeyboardRollupEnabled();
             if (rawWheelRollupEnabled) _rollupWheel++;
-            WheelObserved?.Invoke(new MouseWheelEvent(
+            var wheelEvent = new MouseWheelEvent(
                 Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
                 Delta:       delta,
                 TimestampMs: RawInputHost.NowMs,
                 Device:      header.hDevice,
                 Source:      WheelEventSource.RawInput,
-                IsInjected:  header.hDevice == IntPtr.Zero));
+                IsInjected:  header.hDevice == IntPtr.Zero);
+            if (_mouseHook == IntPtr.Zero)
+                WheelObserved?.Invoke(wheelEvent);
+            else
+                ObserveWheel(in wheelEvent);
             if (rawWheelRollupEnabled) TrackRollup(RawInputHost.NowMs);
             return;
         }

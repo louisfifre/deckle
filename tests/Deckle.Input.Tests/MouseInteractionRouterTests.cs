@@ -16,7 +16,7 @@ public sealed class MouseInteractionRouterTests
             publishPointer: () => pointers++);
 
         bool intercepted = router.ObserveHookMessage(
-            LowLevelMouseHookInterop.WM_LBUTTONDOWN, mouseData: 0);
+            LowLevelMouseHookInterop.WM_LBUTTONDOWN, default);
 
         Assert.False(intercepted);
         Assert.Equal(1, queued);
@@ -47,7 +47,7 @@ public sealed class MouseInteractionRouterTests
             queuePointer: () => queued++,
             publishPointer: () => pointers++);
 
-        router.ObserveHookMessage(LowLevelMouseHookInterop.WM_LBUTTONDOWN, mouseData: 0);
+        router.ObserveHookMessage(LowLevelMouseHookInterop.WM_LBUTTONDOWN, default);
         router.ObserveRawButtonDown(hookInstalled: true);
         router.PublishQueuedButtonDown();
 
@@ -72,7 +72,9 @@ public sealed class MouseInteractionRouterTests
                 return false;
             });
 
-        bool intercepted = router.ObserveHookMessage(message, 0x00780000u);
+        bool intercepted = router.ObserveHookMessage(
+            message,
+            new LowLevelMouseHookInterop.MSLLHOOKSTRUCT { mouseData = 0x00780000u });
 
         Assert.False(intercepted);
         Assert.Equal(0, queued);
@@ -87,16 +89,19 @@ public sealed class MouseInteractionRouterTests
         var router = new MouseInteractionRouter(
             () => { },
             () => { },
-            (_, _, flags) =>
+            (_, _, hook) =>
             {
-                observedFlags = flags;
+                observedFlags = hook.flags;
                 return true;
             });
 
         bool intercepted = router.ObserveHookMessage(
             LowLevelMouseHookInterop.WM_MOUSEWHEEL,
-            0xFF880000u,
-            LowLevelMouseHookInterop.LLMHF_INJECTED);
+            new LowLevelMouseHookInterop.MSLLHOOKSTRUCT
+            {
+                mouseData = 0xFF880000u,
+                flags = LowLevelMouseHookInterop.LLMHF_INJECTED,
+            });
 
         Assert.True(intercepted);
         Assert.Equal(LowLevelMouseHookInterop.LLMHF_INJECTED, observedFlags);

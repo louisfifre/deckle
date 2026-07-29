@@ -19,10 +19,12 @@ namespace Deckle.Input;
 // may receive it (the last one registered wins), so this host is the sole
 // owner and the app shares one instance across consumers: autocorrect
 // (keys, pointer-down, focus), wheel recording (WheelObserved), and precision
-// scrolling (the synchronous wheel policy). Start/Stop therefore reference-count — the
-// native window and registration come up on the first consumer and go down
-// on the last — so neither consumer can pull the resource from under the
-// other.
+// scrolling (the synchronous wheel policy). Hook and Raw Input wheel reports
+// are correlated on this thread so observers receive one device-aware event;
+// hook-only transitions remain visible after a short bounded wait. Start/Stop
+// therefore reference-count — the native window and registration come up on
+// the first consumer and go down on the last — so neither consumer can pull
+// the resource from under the other.
 //
 // Separate from RawInputHost by design: that host carries the touchpad
 // contact stream at report cadence feeding an injection path; this one
@@ -48,9 +50,12 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
     // is reserved for application messages, so these never collide with Windows.
     private const uint WM_APP_DRAIN = 0x8000; // WM_APP
     private const uint WM_APP_POINTER_DOWN = 0x8001;
+    private const uint WM_APP_WHEEL_OBSERVATION = 0x8002;
 
     private readonly object _stateLock = new();
     private readonly MouseInteractionRouter _mouseInteractions;
+    private readonly WheelEventQueue _hookWheelEvents = new();
+    private readonly WheelObservationBuffer _wheelObservations = new();
 
     private Thread? _thread;
     private uint _threadId;
@@ -64,6 +69,7 @@ public sealed partial class KeyboardInputHost : IDisposable, IKeyboardInputHost
     private IntPtr _focusHook;
     private IntPtr _mouseHook;
     private IWheelInterceptor? _wheelInterceptor;
+    private bool _wheelObservationTimerScheduled;
     private readonly FocusEventCoalescer _focusEvents = new();
 
     private IntPtr _rawBuffer;

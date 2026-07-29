@@ -23,9 +23,10 @@ public sealed partial class KeyboardInputHost
             // A low-level hook must return promptly or Windows can silently remove
             // it. Button consumers may persist a typing span, so their signal is
             // queued by the router. The wheel path only classifies and offers the
-            // value to its bounded interceptor; Raw Input publishes observations.
+            // value to its bounded interceptor; observations are handed to the
+            // pump for correlation with Raw Input after the callback returns.
             bool intercepted = _mouseInteractions.ObserveHookMessage(
-                message, hook.mouseData, hook.flags);
+                message, hook);
             if (intercepted) return new IntPtr(1);
         }
 
@@ -46,19 +47,26 @@ public sealed partial class KeyboardInputHost
     private bool PublishWheelInteraction(
         WheelAxis axis,
         short delta,
-        uint hookFlags)
+        LowLevelMouseHookInterop.MSLLHOOKSTRUCT hook)
     {
         bool rollupEnabled = IsKeyboardRollupEnabled();
         if (rollupEnabled) _rollupWheel++;
         var wheelEvent = new MouseWheelEvent(
             Axis: axis,
             Delta: delta,
-            TimestampMs: RawInputHost.NowMs,
+            TimestampMs: MouseWheelTimestamp.ToSharedClock(
+                hook.time,
+                unchecked((uint)Environment.TickCount),
+                RawInputHost.NowMs),
             Device: IntPtr.Zero,
             Source: WheelEventSource.MessageHook,
-            IsInjected: (hookFlags & (LowLevelMouseHookInterop.LLMHF_INJECTED
-                | LowLevelMouseHookInterop.LLMHF_LOWER_IL_INJECTED)) != 0);
-        bool intercepted = Volatile.Read(ref _wheelInterceptor)?.Intercept(in wheelEvent) ?? false;
+            IsInjected: (hook.flags & (LowLevelMouseHookInterop.LLMHF_INJECTED
+                | LowLevelMouseHookInterop.LLMHF_LOWER_IL_INJECTED)) != 0,
+            InputState: LowLevelMouseHookInterop.GetWheelInputState(),
+            HasEquivalentTarget: LowLevelMouseHookInterop.HasEquivalentTarget(hook.pt));
+        bool observationQueued = QueueHookWheelObservation(in wheelEvent);
+        bool intercepted = observationQueued
+            && (Volatile.Read(ref _wheelInterceptor)?.Intercept(in wheelEvent) ?? false);
         if (rollupEnabled) TrackRollup(RawInputHost.NowMs);
         return intercepted;
     }
