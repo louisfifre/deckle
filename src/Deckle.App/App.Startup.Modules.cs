@@ -109,6 +109,11 @@ public partial class App
         InitializeInputHost();
         context.Milestone("input_host");
 
+        // Optional wheel-to-touchpad translation. The native device and worker
+        // exist only while its persisted master switch is on.
+        InitializePrecisionScroll();
+        context.Milestone("precision_scroll");
+
         // Paragraph retaille — observes the shared keyboard stream, requests a
         // gated local rewrite on Shift+Enter, and surfaces it in a non-activating
         // interactive inset. The module is entirely absent when Rewrite was not

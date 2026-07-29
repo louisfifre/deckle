@@ -66,6 +66,7 @@ public partial class App
         TryShutdown("speech engine dispose", () => _speechEngine?.Dispose());
         TryShutdown("trackpad shutdown", ShutdownTrackpad);
         TryShutdown("taskbar cover shutdown", ShutdownTaskbarCover);
+        TryShutdown("precision scroll shutdown", ShutdownPrecisionScroll);
         TryShutdown("mouse wheel shutdown", ShutdownMouseWheel);
         TryShutdown("paragraph rewrite shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect shutdown", ShutdownAutocorrect);

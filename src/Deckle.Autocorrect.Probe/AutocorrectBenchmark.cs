@@ -10,7 +10,8 @@ internal static class AutocorrectBenchmark
             throw new ArgumentOutOfRangeException(nameof(iterations));
 
         BenchmarkKnowledge knowledge = BenchmarkKnowledge.Load(dataDirectory);
-        KeyboardQualitySummary quality = MeasureKeyboardQuality(knowledge);
+        KeyboardQualitySummary quality =
+            MeasureKeyboardQuality(knowledge, AutocorrectBenchmarkCorpus.All);
 
         AutocorrectPolicySet policies = CreatePolicySet(knowledge);
         WarmUp(knowledge, policies);
@@ -52,10 +53,16 @@ internal static class AutocorrectBenchmark
     }
 
     public static KeyboardQualitySummary MeasureKeyboardQuality(string dataDirectory) =>
-        MeasureKeyboardQuality(BenchmarkKnowledge.Load(dataDirectory));
+        MeasureKeyboardQuality(BenchmarkKnowledge.Load(dataDirectory), AutocorrectBenchmarkCorpus.All);
+
+    // Same replay, caller-chosen corpus — the domain-pack bench types its own
+    // gold sentences over an effective lexicon the product corpus never sees.
+    public static KeyboardQualitySummary MeasureKeyboardQuality(
+        string dataDirectory, IReadOnlyList<KeyboardScenario> scenarios) =>
+        MeasureKeyboardQuality(BenchmarkKnowledge.Load(dataDirectory), scenarios);
 
     private static KeyboardQualitySummary MeasureKeyboardQuality(
-        BenchmarkKnowledge knowledge)
+        BenchmarkKnowledge knowledge, IReadOnlyList<KeyboardScenario> scenarios)
     {
         AutocorrectPolicySet policies = CreatePolicySet(knowledge);
         int trueChanges = 0;
@@ -70,7 +77,7 @@ internal static class AutocorrectBenchmark
             knowledge.English,
             recordCorrections: true);
 
-        foreach (KeyboardScenario scenario in AutocorrectBenchmarkCorpus.All)
+        foreach (KeyboardScenario scenario in scenarios)
         {
             session.BeginScenario();
             session.Type(scenario.Typed);
@@ -101,7 +108,7 @@ internal static class AutocorrectBenchmark
         }
 
         return new KeyboardQualitySummary(
-            AutocorrectBenchmarkCorpus.All.Count,
+            scenarios.Count,
             goldChanges,
             trueChanges,
             wrongChanges,

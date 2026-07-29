@@ -1,10 +1,31 @@
 # Shared menu chrome and rendering primitives.
+$script:MenuPreferredContentWidth = 74
+$script:MenuMinimumContentWidth = 40
+
 function Get-MenuMetrics {
-    $terminalWidth = [Math]::Max(40, [Console]::WindowWidth - 1)
-    $innerWidth = [Math]::Max(24, $terminalWidth - 4)
+    try {
+        $windowWidth = [Console]::WindowWidth
+    } catch {
+        $windowWidth = $script:MenuPreferredContentWidth + 4
+    }
+    try {
+        $windowHeight = [Console]::WindowHeight
+    } catch {
+        $windowHeight = 24
+    }
+
+    # Leave the last terminal column untouched: writing into it can trigger an
+    # automatic line wrap in some hosts. Never pretend the terminal is wider
+    # than it really is; narrow hosts must truncate instead of wrapping.
+    $terminalWidth = [Math]::Max(1, $windowWidth - 1)
+    $innerWidth = [Math]::Max(1, $terminalWidth - 4)
+    $contentWidth = [Math]::Min($script:MenuPreferredContentWidth, $innerWidth)
     [pscustomobject]@{
         TerminalWidth = $terminalWidth
+        WindowHeight  = $windowHeight
         InnerWidth    = $innerWidth
+        ContentWidth  = $contentWidth
+        IsCompact     = $contentWidth -lt $script:MenuMinimumContentWidth
     }
 }
 
@@ -37,6 +58,7 @@ function Get-MenuRoleColor {
     switch ($Role) {
         'folder' { return @{ Foreground = 'DarkYellow'; Background = $null } }
         'back'   { return @{ Foreground = 'DarkGray';   Background = $null } }
+        'quit'   { return @{ Foreground = 'Red';        Background = $null } }
         default  { return @{ Foreground = $null;        Background = $null } }
     }
 }
@@ -48,7 +70,7 @@ function New-MenuRule {
         [string]$Style = 'Solid'
     )
 
-    $width = [Math]::Min(56, [Math]::Max(0, $MaxWidth))
+    $width = [Math]::Max(0, $MaxWidth)
     if ($Style -eq 'Section') {
         return (('- ' * [Math]::Ceiling($width / 2.0)).Substring(0, $width))
     }
@@ -56,6 +78,18 @@ function New-MenuRule {
 }
 
 function Get-MenuBanner {
+    param(
+        [ValidateSet('Full', 'Compact')]
+        [string]$Style = 'Full'
+    )
+
+    if ($Style -eq 'Compact') {
+        return @(
+            '  █▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
+            '  █▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
+        )
+    }
+
     # The figlet is duplicated in src/Deckle.Installer/Ui/ConsoleUi.cs (BannerArt) —
     # PowerShell and C# cannot share a source; keep the two in sync.
     @(
@@ -146,26 +180,92 @@ function Write-MenuChrome {
         [int]$BaseRow,
         [string]$Header,
         [string]$Footer,
-        [int]$BodyCount
+        [int]$BodyCount,
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full'
     )
 
     $metrics = Get-MenuMetrics
-    $banner = Get-MenuBanner
+    $banner = @(Get-MenuBanner -Style $BannerStyle)
     for ($i = 0; $i -lt $banner.Count; $i++) {
         Write-MenuPlainLine -Row ($BaseRow + $i) -Text $banner[$i] -ForegroundColor Blue -BackgroundColor $null
     }
 
     $headerRow = $BaseRow + $banner.Count
-    Write-MenuPlainLine -Row $headerRow -Text (' ' + $Header) -ForegroundColor DarkGray -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 1) -Text (' ' + (New-MenuRule -MaxWidth $metrics.InnerWidth)) -ForegroundColor DarkGray -BackgroundColor $null
+    $header = Limit-MenuText -Text ('  ' + $Header) -Width $metrics.ContentWidth
+    $footer = Limit-MenuText -Text ('  ' + $Footer) -Width $metrics.ContentWidth
+    Write-MenuPlainLine -Row $headerRow -Text $header -ForegroundColor DarkGray -BackgroundColor $null
+    Write-MenuPlainLine -Row ($headerRow + 1) -Text ('  ' + (New-MenuRule -MaxWidth ($metrics.ContentWidth - 2))) -ForegroundColor DarkGray -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 2) -Text '' -ForegroundColor $null -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 3 + $BodyCount) -Text '' -ForegroundColor $null -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 4 + $BodyCount) -Text (' ' + $Footer) -ForegroundColor DarkGray -BackgroundColor $null
+    Write-MenuPlainLine -Row ($headerRow + 4 + $BodyCount) -Text $footer -ForegroundColor DarkGray -BackgroundColor $null
 
     [pscustomobject]@{
         BodyTop    = $headerRow + 3
         Bottom     = $headerRow + 5 + $BodyCount
         InnerWidth = $metrics.InnerWidth
+        ContentWidth = $metrics.ContentWidth
+    }
+}
+
+function Get-MenuBodyCapacity {
+    param(
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full',
+        [int]$WindowHeight
+    )
+
+    if ($WindowHeight -le 0) {
+        try {
+            $WindowHeight = [Console]::WindowHeight
+        } catch {
+            $WindowHeight = 24
+        }
+    }
+
+    # Leave one physical row unused so reserving the viewport never scrolls
+    # the alternate screen.
+    return [Math]::Max(0, $WindowHeight - @(Get-MenuBanner -Style $BannerStyle).Count - 6)
+}
+
+function Test-MenuViewportFits {
+    param(
+        [Parameter(Mandatory)][int]$BodyCount,
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full',
+        $Metrics = (Get-MenuMetrics)
+    )
+
+    return $Metrics.ContentWidth -ge $script:MenuMinimumContentWidth -and
+        $BodyCount -le (Get-MenuBodyCapacity -BannerStyle $BannerStyle -WindowHeight $Metrics.WindowHeight)
+}
+
+function Wait-MenuViewportSize {
+    param(
+        [Parameter(Mandatory)][int]$BodyCount,
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full'
+    )
+
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return }
+
+    $requiredHeight = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + 6
+    while (-not (Test-MenuViewportFits -BodyCount $BodyCount -BannerStyle $BannerStyle)) {
+        Clear-MenuScreen
+        $metrics = Get-MenuMetrics
+        $lines = @(
+            '  DECKLE'
+            '  S C R I P T S'
+            ''
+            "  Resize the terminal to at least $($script:MenuMinimumContentWidth + 5) x $requiredHeight."
+            "  Current size: $([Console]::WindowWidth) x $($metrics.WindowHeight)."
+            '  Press any key after resizing.'
+        )
+        $visibleCount = [Math]::Min($lines.Count, $metrics.WindowHeight)
+        for ($index = 0; $index -lt $visibleCount; $index++) {
+            Write-MenuPlainLine -Row $index -Text $lines[$index] -ForegroundColor $(if ($index -eq 0) { 'Blue' } else { 'DarkGray' }) -BackgroundColor $null
+        }
+        [Console]::ReadKey($true) | Out-Null
     }
 }
 
@@ -174,18 +274,21 @@ function New-MenuViewport {
         [string]$Header,
         [string]$Footer,
         [int]$BodyCount,
-        [switch]$ClearScreen
+        [switch]$ClearScreen,
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full'
     )
 
+    Wait-MenuViewportSize -BodyCount $BodyCount -BannerStyle $BannerStyle
     if ($ClearScreen) { Clear-MenuScreen } else { Write-Host "" }
     $baseRow = [Console]::CursorTop
 
-    $reserveRows = $BodyCount + (Get-MenuBanner).Count + 5
+    $reserveRows = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + 5
     for ($i = 0; $i -lt $reserveRows; $i++) {
         Write-Host ""
     }
 
-    return Write-MenuChrome -BaseRow $baseRow -Header $Header -Footer $Footer -BodyCount $BodyCount
+    return Write-MenuChrome -BaseRow $baseRow -Header $Header -Footer $Footer -BodyCount $BodyCount -BannerStyle $BannerStyle
 }
 
 function Write-MenuLinePrefix {

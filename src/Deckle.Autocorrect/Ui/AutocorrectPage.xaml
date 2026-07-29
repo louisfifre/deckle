@@ -12,9 +12,10 @@
          a Grid, Spacing=4 between cards, section headers in BodyStrong with
          Margin 1,30,0,6. The master switch is composed (declared in
          AutocorrectViewModel.Settings.cs, built into MasterHost by the
-         SettingsComposer) ; below it, the apps the user has decided on — each a
-         card with an on/off switch and a "forget" button. The whole Apps
-         section is collapsed while the master is off (mask-never-grey). -->
+         SettingsComposer) ; below it, two navigation cards drill into the
+         family's child pages, then the exclusion register, and Diagnostics
+         closes the page. The exclusion section is collapsed while the master is
+         off (mask-never-grey). -->
     <Page.Resources>
         <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <Style x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -52,44 +53,80 @@
                 <StackPanel x:Name="MasterHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
-                <!-- ── Apps ──────────────────────────────────────────────────── -->
-                <!-- The whole per-app section — its header, body, and the
-                     empty-state/list pair — is collapsed while the master is
-                     off (mask-never-grey), driven from code-behind off the
-                     Enabled PropertyChanged. When the master is on, the
-                     empty-state and list trade places off Apps.Count, nested
-                     under this gate. -->
-                <!-- Tag is the search index's scroll-to handle for this bespoke
-                     section (composed cards get theirs from the composer); it
-                     matches the SettingSearchEntry's LabelKey. -->
-                <StackPanel x:Name="AppsSection"
-                            Tag="AutocorrectPage_Section_Apps"
+                <!-- ── Drill-ins ─────────────────────────────────────────────── -->
+                <!-- The two child pages of this family. IsClickEnabled + Click
+                     follows the SettingsCard "actionable row" pattern (the
+                     Playground home cards): the whole card is a hit target and the
+                     chevron is added automatically. Deliberately icon-less — the
+                     rail children are icon-less too, and a glyph here would claim
+                     a second identity for a page that already has the family's.
+                     The cards themselves are NOT gated on the master switch: they
+                     are doors, not settings, and the rail lists both destinations
+                     regardless, so collapsing them here would only hide one of two
+                     routes. What mask-never-grey covers is what lies BEHIND them —
+                     each child page collapses its own settings while the master is
+                     off and says so in one line, so a door opened with autocorrect
+                     off leads to an explanation rather than to live switches.
+                     Tag matches the x:Uid and the search entry's LabelKey — the
+                     scroll-to handle a hit on this card lands on. -->
+                <controls:SettingsCard x:Uid="AutocorrectPage_DomainsCard"
+                                       Tag="AutocorrectPage_DomainsCard"
+                                       IsClickEnabled="True"
+                                       Click="OnDomainsCardClick" />
+                <controls:SettingsCard x:Uid="AutocorrectPage_AppsCard"
+                                       Tag="AutocorrectPage_AppsCard"
+                                       IsClickEnabled="True"
+                                       Click="OnAppsCardClick" />
+
+                <!-- ── Excluded words ────────────────────────────────────────── -->
+                <!-- The settings mirror of the exclusion register: consultable and
+                     reversible, one row per word. It stays on the family's landing
+                     page — an exclusion crosses every domain and every app, so it
+                     belongs to neither child. Collapsed while the master is off
+                     (mask-never-grey), from code-behind off the Enabled
+                     PropertyChanged; bespoke rather than composed, a live
+                     collection with add and undo gestures no composer kind models.
+                     Tag is the search index's scroll-to handle; it matches the
+                     SettingSearchEntry's LabelKey. -->
+                <StackPanel x:Name="ExclusionsSection"
+                            Tag="AutocorrectPage_Section_Exclusions"
                             Spacing="{StaticResource SettingsCardSpacing}">
 
-                    <TextBlock x:Uid="AutocorrectPage_Section_Apps"
+                    <TextBlock x:Uid="AutocorrectPage_Section_Exclusions"
                                Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 
-                    <TextBlock x:Uid="AutocorrectPage_Apps_Body"
+                    <TextBlock x:Uid="AutocorrectPage_Exclusions_Body"
                                Style="{StaticResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,8" />
 
-                    <!-- Shown only when no app has been decided on yet ; the list
-                         and this line trade places from code-behind off
-                         Apps.CollectionChanged. -->
-                    <TextBlock x:Name="EmptyState"
-                               x:Uid="AutocorrectPage_Empty"
+                    <controls:SettingsCard x:Uid="AutocorrectPage_ExcludeCard"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Filter}}">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                            <TextBox x:Name="ExclusionBox"
+                                     x:Uid="AutocorrectPage_ExclusionBox"
+                                     Width="200"
+                                     Text="{x:Bind ViewModel.NewExclusion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="ExclusionBox_KeyDown" />
+                            <Button x:Uid="AutocorrectPage_ExcludeButton"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Command="{x:Bind ViewModel.ExcludeWordCommand}" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <TextBlock x:Name="ExclusionsEmptyState"
+                               x:Uid="AutocorrectPage_Exclusions_Empty"
                                Style="{StaticResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap"
+                               Margin="0,8,0,0"
                                Visibility="Collapsed" />
 
-                    <!-- Bespoke, not composed: the per-app list is a live,
-                         runtime-enumerated collection of cards with add/remove/
-                         forget gestures — no composer kind models that. -->
-                    <ItemsControl x:Name="AppsList"
-                                  ItemsSource="{x:Bind ViewModel.Apps}">
+                    <ItemsControl x:Name="ExclusionsList"
+                                  ItemsSource="{x:Bind ViewModel.ExcludedWords}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Spacing="4">
@@ -102,19 +139,14 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:AutocorrectAppRow">
-                                <controls:SettingsCard Header="{x:Bind DisplayName}">
-                                    <StackPanel Orientation="Horizontal"
-                                                Spacing="8"
-                                                VerticalAlignment="Center">
-                                        <ToggleSwitch IsOn="{x:Bind Enabled, Mode=TwoWay}" />
-                                        <Button x:Uid="AutocorrectPage_ForgetButton"
-                                                Style="{StaticResource SubtleButtonStyle}"
-                                                Command="{x:Bind ForgetCommand}">
-                                            <FontIcon Glyph="{StaticResource Icon.Delete}"
-                                                      FontSize="16" />
-                                        </Button>
-                                    </StackPanel>
+                            <DataTemplate x:DataType="vm:AutocorrectExcludedWordRow">
+                                <controls:SettingsCard Header="{x:Bind Word}">
+                                    <Button x:Uid="AutocorrectPage_IncludeButton"
+                                            Style="{StaticResource SubtleButtonStyle}"
+                                            Command="{x:Bind IncludeCommand}">
+                                        <FontIcon Glyph="{StaticResource Icon.Delete}"
+                                                  FontSize="16" />
+                                    </Button>
                                 </controls:SettingsCard>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -130,8 +162,9 @@
                      independent). All three are COMPOSED — declared in
                      AutocorrectViewModel.Settings.cs (DiagnosticsSettings) and
                      built into DiagnosticsHost by the SettingsComposer. This
-                     section is NOT gated by the master switch: it is always
-                     visible, unlike the Apps section above. -->
+                     section is NOT gated by the master switch: what the module
+                     records is a consent that outlives a switch flip, unlike the
+                     exclusion section above. -->
                 <TextBlock x:Uid="AutocorrectPageDiagnosticsHeader"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}" />
 

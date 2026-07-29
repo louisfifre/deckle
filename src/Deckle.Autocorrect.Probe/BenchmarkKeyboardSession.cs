@@ -243,6 +243,7 @@ internal sealed class BenchmarkKeyboardHost : IKeyboardInputHost
 
     public bool Start() => true;
     public void Stop() { }
+    public void SetWheelInterceptor(IWheelInterceptor? interceptor) { }
 
     // The benchmark measures the synchronous commit path. Sentence inference is
     // intentionally not drained onto this thread; its independently calibrated

@@ -1,0 +1,381 @@
+# Gray-zone verdicts for pack-fr-it — external LLM judge campaign, 2026-07-28.
+# Judged by Claude (Fable 5): three parallel judges over the fabrication report
+# worksheet (form, masking cost, distance-1 base neighbors with frequencies),
+# family splits arbitrated by the supervising judge (notes marked "arbitrated").
+# Rubric: admit a genuine, plausibly-typed French IT term whose neighbors are
+# unlikely typo sources; exclude noise, never-typed coinages, and forms one
+# plausible slip from a common base word; uncertainty resolves to exclude.
+# form<TAB>admit|exclude<TAB>note
+aad	exclude	acronym typed uppercase in practice; lowercase form rare and collides with several short words
+ack	admit	real dev shorthand; all neighbors under 10 opm
+acks	admit	plausible networking plural in French dev prose; yacks rare with y-deletion only
+acl	admit	genuine IT term typed lowercase in practice; all neighbors under 10 opm
+adas	exclude	rare acronym, uppercase if ever; amas nearby
+admin	admit	essential daily IT term; admis s-to-n substitution implausible, disjoint contexts
+admins	admit	daily IT plural; admis n-insertion slip unlikely, disjoint contexts
+adonnons	exclude	not IT vocabulary and rare reflexive-context form; donnons 6.7 opm one insertion away
+agender	exclude	Swiss regionalism for scheduling, not IT vocabulary
+agendé	admit	genuine Swiss/Belgian professional verb form; agenda final-letter slip implausible
+alphas	admit	common plural (alpha versions); trailing-s inflection legitimately typed
+anglets	exclude	not an IT term; angles 10.7 opm one insertion away
+apl	exclude	archaic language nobody types lowercase in French IT prose
+apps	admit	extremely common term; appas archaic and disjoint
+arité	admit	genuine CS term (arity); agité 9.9 opm below threshold and slip semi-plausible only
+arités	exclude	rare academic plural; agités 4.1 opm one diagonal g/r slip away
+arrobe	admit	official dictionary term for the at sign; arrose slip s-to-b not adjacent
+arrosages	exclude	gardening plural, not IT vocabulary
+assemblies	admit	typed as-is in French .NET prose; assemblées slip é-to-i not adjacent
+assembly	admit	standard term in French IT prose (langage assembly, .NET assembly); neighbors near 1 opm
+assignez	admit	legitimate form of assigner, common in ticketing prose; neighbors same lemma
+audios	admit	widely typed plural (fichiers audios); neighbor same lemma
+automagique	exclude	deliberate rare wordplay; automatique one plausible adjacent t-to-g slip away, protect its correction
+automagiques	exclude	jokey rarity, and automatiques t-to-g is a plausible AZERTY slip that would be shielded
+babasser	exclude	archaic slang verb nobody types; tabasser 4.9 opm one substitution away
+babassé	exclude	archaic slang participle; tabassé 3.6 opm one substitution away
+balado	admit	official Quebec term for podcast; balade e-to-o substitution implausible
+balados	admit	established Quebec French plural for podcasts; balades slip e-to-o not adjacent
+beug	admit	common colloquial francization of bug; all neighbors low-frequency
+beugs	admit	real colloquial francization of bugs; e-insertion slip only moderately plausible and neighbor under 2 opm
+beuguant	admit	participle of established colloquial beuguer; beuglant l/u substitution not adjacent
+binons	exclude	improbable inflection nobody types; bidons nearby
+blogage	exclude	hyper-rare coinage; blocage one substitution away
+blogs	admit	daily vocabulary; blocs c-to-g substitution implausible
+bloguant	admit	legitimate participle of bloguer; bloquant under 2 opm, g/q not adjacent
+bloguer	admit	dictionary French verb; bloquer slip g-to-q not adjacent
+blogues	admit	standard francization of blogs (Quebec norm); blagues a-to-o substitution implausible
+bloguez	admit	regular form of dictionary verb bloguer; bloquez slip g-to-q not adjacent
+blogué	admit	established verb bloguer; bloqué g-to-q substitution implausible on both layouts
+bnf	admit	real acronym for BNF grammar and the library; bof slip o-to-n not adjacent
+botnet	admit	established security term; bonnet n-to-t substitution implausible, disjoint contexts
+botnets	admit	genuine security term; bonnets slip n-to-t not adjacent
+bourriquer	exclude	rare dialectal verb nobody types, not IT; bourrique nearby
+bourriquez	exclude	rare dialectal verb form, not IT; bourrique nearby
+bourriqué	exclude	Wiktionary noise, not IT; shields bourrique typos
+bugger	admit	common dev slang infinitive (ça va bugger); burger substitution not adjacent
+bugué	admit	extremely common French dev term; fugué f/b substitution not adjacent
+canulard	exclude	misspelling of canular, must stay correctable
+castant	admit	plausible gerund of caster in dev and streaming French; cassant slip not adjacent
+castez	exclude	improbable imperative of marginal verb; cassez nearby
+castons	exclude	improbable first-person inflection nobody types; cartons 10.1 opm nearby
+casts	admit	real dev speech (faire des casts); all neighbors under 10 opm
+catènes	exclude	rare linguistics term, not IT vocabulary
+cbor	admit	established data format (RFC 8949) typed in tech prose; cor-to-cbor b insertion implausible
+cdrs	exclude	hyper-niche telecom plural nobody types lowercase; cars 4.0 opm nearby
+cfao	admit	established French industry acronym (CFAO); ciao i-to-f substitution implausible
+chaméléon	exclude	pure misspelling of caméléon, not an IT term
+cliqueur	admit	genuine term for clicker; liqueur leading-c insertion implausible
+cliqueurs	admit	arbitrated: aligned with cliqueur — same leading-c-insertion implausibility
+clonages	admit	valid plural of clonage, used in IT
+clouds	exclude	French uses singular le cloud; clous 17.3 opm with plausible d-before-s insertion (adjacent keys)
+cmao	exclude	hyper-rare acronym, uppercase if ever; ciao 15.3 opm nearby
+cname	exclude	niche DNS term usually uppercase; came 16.5 opm one plausible n-insertion away
+codant	admit	extremely common gerund of coder; cédant slip o-to-é implausible
+codecs	admit	core IT plural typed daily; codes needs an implausible c insertion
+codets	exclude	hyper-rare official term nobody types; codes and godets nearby
+codons	admit	standard inflection of coder plus biology codon; all neighbors under 10 opm
+colorise	admit	standard French verb form of coloriser; all neighbors low-frequency
+coloriser	admit	genuine image and video term; neighbors under 1 opm
+commentons	admit	standard inflection of common verb commenter; commençons c-cedilla-to-t slip implausible
+compacter	admit	standard dictionary verb used in IT; neighbors are its own inflections
+compactez	admit	regular conjugation of a standard verb; compacte trailing-z risk outweighed
+compiles	admit	legitimate inflection of compiler, typed daily; complies under 1 opm
+compressez	admit	legitimate imperative of compresser; neighbors same lemma family
+compteuse	exclude	rare and not IT vocabulary
+conjugueur	admit	genuine tool noun (le conjugueur); conjuguer u-doubling slip possible but neighbor only 1 opm
+connection	exclude	the classic anglicism misspelling of connexion, must remain correctable
+continuations	admit	valid plural, genuine CS term
+courriels	admit	standard common French IT plural; courriers substitution not keyboard-plausible
+cqrs	exclude	niche architecture acronym rarely typed lowercase; cars 4.0 opm one adjacent a/q slip away
+ctps	exclude	unrecognized acronym, noise
+datacombes	exclude	joke coinage; catacombes one substitution away
+ddosser	admit	real gamer and security slang (se faire ddosser); adosser slip implausible
+ddossé	exclude	nonstandard slang spelling; adossé 6.6 opm one substitution away
+deep	admit	common ML franglais in French prose; jeep slip j-to-d not adjacent
+devrel	exclude	niche jargon below reliable usage; devrez 13 opm exact-cost neighbor
+diffs	admit	daily dev term; diffus u-deletion slip possible but neighbor under 2 opm and disjoint contexts
+distro	admit	very common Linux term; bistro d/b substitution not adjacent, disjoint contexts
+divite	exclude	nonsense string; divine 14 opm nearby
+dkim	admit	standard email-auth term typed by admins; daim slip a-to-k implausible
+dpi	admit	standard resolution unit typed often; épi and pi low with implausible slips
+duplicaté	exclude	not a word (dupliqué is), noise
+débuger	exclude	shaky single-g spelling, and débuter t-to-g is an adjacent-key AZERTY slip that would be shielded
+déchampe	exclude	noise, not a term; shields décampe typos
+déforkant	exclude	same as déforke, not established; déformant one substitution away
+déforke	exclude	déforker is not established usage; déforme one substitution away
+déforker	exclude	not established usage; déformer one substitution away
+déforké	exclude	not an established term; déformé 3.4 opm one substitution away
+déhacher	exclude	not a word; détacher 15.1 opm one slip away
+délogger	exclude	shaky nonstandard spelling (déloguer is the usual form); g-doubling would shield déloger typos
+déloguer	admit	common French user slang for logging out; all neighbors low-frequency
+détare	admit	consistent with détarer, plausible dev usage; neighbors under 1 opm
+détarer	admit	genuine dev slang for untarring; détaler l/r substitution not adjacent
+détarrant	exclude	misspelled participle of a rare verb, improbable as typed
+détarre	exclude	unestablished coinage; démarre 17.1 opm one substitution away
+détarrer	exclude	unestablished coinage; démarrer 9.1 opm plus other real verbs nearby
+détarrez	exclude	barely-attested tar franglais; démarrez 3.2 opm one substitution away
+détarré	exclude	barely-attested tar franglais; démarré 4.3 and déterré 2.2 are real typo sources
+déverminant	exclude	arbitrated: déverminer family excluded en bloc — OQLF coinage almost never typed, déterminer family one substitution away
+dévermine	exclude	arbitrated: déverminer family excluded en bloc — OQLF coinage almost never typed, déterminer family one substitution away
+déverminer	exclude	OQLF coinage almost never typed; déterminer 6.1 opm is a common verb one substitution away
+déverminé	exclude	OQLF coinage almost never typed; déterminé 4.3 opm one substitution away
+dévédé	exclude	francized DVD spelling almost never typed; décédé 5.7 opm one adjacent c/v slip away
+ebook	admit	established common term; book neighbor disjoint enough, e-prefix insertion implausible
+email	admit	daily vocabulary; all neighbors under 10 opm
+epubs	admit	commonly typed ebook format plural; pubs leading-e insertion implausible
+epéro	exclude	not a word, one slip from apéro
+escapé	admit	genuine dev franglais for escaped characters; rescapé context fully disjoint
+exao	admit	established French educational IT acronym; expo and exam slips implausible
+fifo	admit	standard CS term FIFO; fifi is informal and slip risk acceptable
+finalise	admit	common verb inflection typed daily (je finalise la release); neighbors same lemma family
+fisha	admit	current widely-typed French internet slang; fissa slip s-to-h not adjacent
+fixture	admit	standard testing term in French dev prose; mixture m/f substitution not adjacent
+flags	admit	daily dev term; all neighbors under 1 opm
+flamer	exclude	dated slang verb; flamber 3.5 opm one plausible b-deletion away
+flameur	exclude	dated internet slang rarely typed; flambeur one plausible b-deletion away
+flameurs	exclude	dated slang plural; flambeurs one plausible b-deletion away
+flamons	exclude	hyper-rare inflection of dated slang flamer; flacons 7.6 opm one slip away
+flamé	exclude	dated slang participle; flambé one plausible b-deletion away
+flashez	admit	legitimate imperative of flasher (firmware); flashes-to-z slip implausible on AZERTY
+forkant	admit	real dev franglais (en forkant); all neighbors under 10 opm
+forkez	admit	plausible imperative in French dev tutorials; forcez and formez slips not adjacent
+forkons	admit	genuine dev usage (forkons le repo); formons k/m substitution not adjacent
+formate	admit	standard inflection of common IT verb formater; all neighbors under 10 opm
+formatons	admit	genuine inflection of formater IT users type; formations slip (i-deletion) possible but neighbor under 10 opm and contexts disjoint
+fred	exclude	proper name, not IT vocabulary; shields fret typos
+frontail	exclude	not a word; frontal one substitution away
+fusionnez	admit	legitimate form of fusionner (merge), common verb; neighbors same lemma
+gabari	exclude	truncation misspelling of gabarit, must stay correctable
+gdn	exclude	hyper-niche acronym; gin nearby
+ged	admit	established French enterprise IT acronym; gel slip l-to-d implausible
+gifs	admit	daily vocabulary; vifs v-to-g substitution implausible, contexts disjoint
+goats	exclude	slang not IT; goûts 17 opm one accent-slip away
+gps	admit	daily vocabulary; all neighbors under 10 opm
+gravûre	exclude	pure misspelling of gravure, must remain correctable
+gtld	admit	genuine DNS-industry term; gold slip o-to-t not adjacent and contexts disjoint
+gzippe	admit	plausible dev inflection of gzipper; grippe below 10 opm with implausible r-to-z slip
+hachons	admit	valid inflection of hacher, IT hashing usage; cachons c/h substitution not adjacent
+hacks	admit	daily IT vocabulary; all neighbors low-frequency
+haineur	admit	established French internet term for hater; haineux slip x-to-r not adjacent
+hash	admit	daily IT term; all neighbors under 10 opm
+hasher	admit	common dev franglais infinitive; all neighbors under 1 opm
+hashé	admit	very common dev franglais (mot de passe hashé); haché neighbor only 2 opm, contexts disjoint
+hashée	admit	genuine dev participle of hasher; hachée context fully disjoint from cooking
+hashés	admit	same rationale as hashé, common dev plural participle
+hébergeur	admit	core French IT term, explicitly canonical; héberger slip unlikely to land on -eur
+iao	exclude	nonsense string; ciao 15.3 opm one deletion away
+ibidule	exclude	jokey tech-press coinage, rare; bidule is a frequent colloquial one insertion away
+imap	admit	core protocol name commonly typed lowercase; imam p/m substitution not adjacent
+immutable	admit	common dev franglais; immuable below 10 opm, both forms legitimate
+immutables	admit	established anglicism in French dev prose; immuables neighbor under 2 opm
+indicé	exclude	rare math term; indice 13.3 opm one very plausible accent slip away
+inlinant	exclude	niche gerund; inclinant 4.2 opm one plausible c-deletion away
+inline	admit	daily dev term; incline below 10 opm and disjoint context
+inliner	exclude	niche dev franglais; incliner 5.8 opm one plausible c-deletion away
+inliné	admit	real dev franglais (code inliné); incliné below 10 opm
+instancie	admit	genuine dev verb form (on instancie la classe); instance neighbor under 2 opm
+intel	admit	very common brand and slang for information; untel slip u-to-i adjacent but untel rare enough
+intercessions	exclude	religious term, not IT vocabulary
+internets	exclude	jocular nonstandard plural; blocks internes/internet corrections
+intégrations	admit	valid common plural, frequent in IT
+inéditable	exclude	unestablished coinage; inévitable 13.4 opm one substitution away
+inéditables	exclude	rare coinage; inévitables 3.1 opm one plausible v/d slip away
+iops	admit	genuine storage metric typed in tech prose; ions p/n substitution not adjacent
+ipc	exclude	lowercase form rarely typed in prose; pic 10.3 opm one classic transposition away
+jwt	admit	daily dev token name typed lowercase; jet e-to-w implausible on AZERTY, contexts fully disjoint
+karmas	admit	legitimate plural of established word; only neighbor is its own singular
+lagguer	admit	genuine gamer verb typed often; larguer below common threshold and contexts disjoint
+lagguez	exclude	doubled-g variant on top of already informal laguez, essentially untyped
+laggué	admit	genuine gamer verb form typed often; largué below common threshold and contexts disjoint
+laguer	admit	real gamer infinitive (ça va laguer); all neighbors under 10 opm
+laguez	admit	plausible form of laguer in gaming French; larguez only 1 opm
+lagué	admit	real gamer French (ça a lagué); all neighbors under 10 opm
+leaker	admit	established franglais (news-gaming); leader d-to-k substitution implausible
+listant	admit	standard participle of lister, common in IT prose; excluding would wrongly correct legit text
+listons	admit	standard inflection of lister; all neighbors under 10 opm
+loaders	admit	common dev term; leaders o/e substitution not adjacent, disjoint contexts
+logger	admit	daily dev noun-verb; loger 7.2 opm below threshold despite plausible doubling
+logon	admit	real Windows IT term; all neighbors low-frequency
+logons	exclude	not a valid inflection (loguer gives loguons, loger gives logeons); English plural rare in French
+loguant	admit	genuine participle of loguer used by devs; all neighbors under 1 opm
+loguez	admit	common French user slang for logging in; all neighbors low-frequency
+loguons	admit	genuine dev inflection; all neighbors under 1.5 opm
+macros	admit	core IT plural; micros slip a-to-i not adjacent
+mandante	exclude	legal term, not IT vocabulary, out of pack scope
+mappes	exclude	rare 2sg inflection of mapper; nappes 7.5 opm one plausible m/n slip away
+maît'	exclude	elided literary form, dictionary noise
+mentaille	exclude	not a word, Wiktionary-grade noise; shields typos of entaille
+merdiel	exclude	jocular coinage virtually never typed; merdier 5.3 opm one substitution away
+migrons	admit	regular French verb form of migrer, common in IT prose; mignons slip n-to-r implausible
+modales	admit	standard French adjective (fenetres modales); modeles e-grave-to-a substitution implausible
+modaux	admit	legitimate plural used for modal dialogs; moraux under 2 opm, disjoint contexts
+modos	admit	very common forum slang for moderators; all neighbors under 10 opm
+modulez	admit	standard inflection of common verb moduler; all neighbors under 10 opm
+moinsons	exclude	not a word, noise shielding moissons
+mouliné	exclude	rare participle, not the actual IT slang form (ca mouline); moulin family common
+multiplet	exclude	official-but-unused term (octet is used); multiples 14.5 opm one substitution away
+multiplets	exclude	unused official term; multiples 14.5 opm one plausible t-insertion away
+muxant	admit	genuine AV/dev gerund; mutant slip t-to-x not adjacent
+muxer	admit	genuine AV/dev jargon verb; mixer 1.4 opm low and other slips implausible
+muxé	admit	genuine AV/dev jargon; neighbors low-frequency with implausible substitutions
+mégas	admit	legitimate colloquial plural for data volume; only risk is its own singular
+méls	exclude	contested abbreviation, plural essentially untyped
+nfts	admit	widely typed crypto plural; nets slip only diagonally plausible and contexts disjoint
+nommages	admit	genuine dev term (conventions de nommage); all neighbors under 10 opm
+néone	exclude	not a word; néon family nearby
+néoné	exclude	not a word; néon family common
+néonés	exclude	not a word, noise between néons and nénés
+nétiquette	admit	dictionary-established term; étiquette n-prepend slip implausible
+nétiquettes	admit	arbitrated: aligned with nétiquette — same leading-n-insertion implausibility
+ocen	exclude	noise, not a term; shields open typos
+parcages	exclude	not an IT term, rare word; parages nearby
+parseur	admit	standard French dev term; passeur and parleur low with implausible slips
+patche	admit	common dev verb form (je patche); all neighbors under 1 opm
+patché	admit	common dev participle; all neighbors under 1 opm
+pca	admit	real French acronym PCA; pa insertion slip implausible
+pdf	admit	daily vocabulary; all neighbors under 10 opm
+pdma	exclude	unrecognized acronym, no established French IT usage
+pdp	admit	very common French internet abbreviation for profile picture; pop slip o-to-d implausible
+perceptron	admit	established ML term; perception i-to-r substitution implausible, disjoint contexts
+perceptrons	admit	genuine ML plural; perceptions substitution not adjacent, disjoint contexts
+persistances	admit	valid plural of common IT noun (persistence layers)
+pichenotte	exclude	Quebec variant of pichenette, not IT vocabulary
+pinger	admit	real French IT verb (pinger un serveur); all neighbors under 10 opm
+pipons	exclude	improbable inflection of rare verb piper in this form; pions and pitons nearby
+pivotage	exclude	marginal coinage, standard French uses other terms; pilotage one substitution away
+pojo	admit	genuine Java jargon; all neighbors low-frequency with implausible slips
+popant	exclude	not established French; posant 16.3 opm one slip away
+popons	exclude	hyper-rare inflection of marginal verb poper; pompons 2.6 opm nearby
+popper	admit	genuine dev slang (popper la stack); pomper under 2 opm, disjoint contexts
+poppons	exclude	hyper-rare inflection of popper; pompons 2.6 opm nearby
+postages	exclude	not a French IT term; postales 8.1 opm nearby
+pourriels	admit	established OQLF term for spam, used in Quebec; pourries insertion slip implausible
+pouçant	exclude	not a word; pouvant 18.7 opm one slip away
+ppc	exclude	marginal acronym, uppercase if ever; pic 10.3 opm nearby
+ppp	exclude	lowercase acronym rarely typed; pop 5.5 opm one adjacent o/p slip away
+proco	admit	real French gamer slang for processeur; all neighbors under 10 opm
+programmathon	exclude	hyper-rare coinage; programmation t-to-th insertion is a plausible typo that would be shielded
+programmations	admit	valid French plural genuinely used; trailing-s risk outweighed by legitimacy
+propulsez	admit	legitimate inflection of propulser (propulsé par); neighbors same lemma
+pross	exclude	nonsense string; profs and pros nearby
+préao	admit	established French educational IT acronym; préau slip u-to-o not adjacent
+psv	exclude	not an IT term; psy 15.9 opm one substitution away
+push	admit	daily dev borrowing (git push); pus is disjoint context and h-append slip unlikely
+pushe	admit	very common dev French (je pushe); pusse is a rare subjunctive, disjoint contexts
+pwne	exclude	improbable conjugated leetspeak, no one types this form
+pétabit	admit	genuine unit; pétait-to-pétabit b insertion implausible slip
+qbit	exclude	nonstandard spelling that should correct toward qubit; also one insertion from bit
+quads	admit	genuine common noun plural (quad); quais i-to-d substitution implausible on any keyboard
+qualifieur	exclude	rare coinage, French uses qualificateur; qualifier 3.0 opm one plausible u-insertion away
+qubit	admit	established quantum-computing term; subit below 10 opm despite adjacent q-s keys, disjoint contexts
+qubits	admit	standard quantum term; subits rare and disjoint
+quote	admit	established dev borrowing (entre quotes); quête e-circumflex-to-o substitution implausible
+quoté	admit	real forum/dev usage of quoter; quota final-letter substitution implausible
+racks	admit	genuine term (server racks); all neighbors under 10 opm
+rafraichir	admit	valid 1990 reform spelling of rafraîchir, must not be corrected away
+rafraichissement	admit	valid 1990-reform spelling, common in IT (taux de rafraichissement)
+ratios	admit	common genuine word; all neighbors under 10 opm
+razant	exclude	not established vocabulary; rasant 4.9 opm one adjacent s/z slip away
+razez	exclude	not established vocabulary; ratez and rasez are plausible typo sources
+rdf	admit	established semantic-web format typed in tech prose; rif rare and disjoint
+reboutant	exclude	nonstandard reboot spelling gerund; redoutant 3.2 opm one substitution away
+rebouté	exclude	nonstandard spelling of rebooté; redouté 4.1 opm one substitution away
+relagué	exclude	not a real form; relégué one substitution away and must stay correctable
+remisant	exclude	valid French but not IT vocabulary, out of pack scope
+repokant	exclude	nonsense string; reposant 8.1 opm one slip away
+repokez	exclude	nonsense string; reposez 7.8 opm one slip away
+repokons	exclude	noise, not a word
+repoké	exclude	not an established term; reposé 4.8 opm one substitution away
+reporteur	exclude	archaic variant, not IT; reporter 8.3 opm one insertion away
+reroutant	admit	dictionary French verb gerund; redoutant substitution only diagonally plausible
+reroute	admit	rerouter is a dictionary French verb; redoute substitution only diagonally plausible and contexts disjoint
+rerouter	admit	dictionary French verb; redouter slip only diagonally plausible and contexts disjoint
+rerouté	admit	dictionary French verb participle; redouté substitution only diagonally plausible
+reverses	exclude	weak as IT term, and pack scope is IT; reverser forms already in base
+riao	exclude	nonsense string; ciao 15.3 opm nearby
+ripez	exclude	improbable imperative inflection; riez 8.5 opm one deletion away
+ripons	exclude	hyper-rare inflection; rions and riions nearby as typo sources
+rippe	admit	real French usage (ripper un CD); all neighbors under 10 opm
+roblog	exclude	noise, not a term
+runet	exclude	hyper-niche term in French prose; runes and ruent nearby
+rustiner	admit	colloquial dev metaphor for patching; neighbors under 1 opm
+rustinez	exclude	improbable imperative of an already informal verb, no real typing evidence
+répliquez	admit	standard inflection of common verb repliquer, users legitimately type it; neighbor slip (appending z) less likely
+réusine	admit	OQLF refactoring verb used in Quebec dev prose; résine insertion slip implausible
+réusiné	admit	OQLF refactoring participle; résiné rare with implausible u-insertion
+salonneuse	exclude	not a word, noise between sablonneuse and savonneuse
+sauve-garde	exclude	archaic hyphenated variant no one intends; would shield sauvegarde typos
+sauvegardez	admit	standard common French verb form; neighbors are its own inflections
+scanneurs	admit	official francized plural of scanneur; neighbor same lemma family
+scripter	admit	genuine IT verb; neighbors same lemma family
+scriptez	admit	legitimate inflection of scripter; neighbor same lemma
+scripté	admit	common French past participle of scripter, neighbors are same family and slips implausible
+semver	admit	daily dev vocabulary; semer needs an implausible v insertion
+settons	exclude	not a real French inflection anyone types; mettons 15.8 opm one slip away
+seuillage	admit	genuine image-processing term; feuillage f-to-s substitution implausible, disjoint contexts
+seuillages	admit	genuine image-processing term; feuillages f-to-s substitution implausible, disjoint contexts
+seuiller	admit	genuine image-processing verb (seuillage family); souiller e/o substitution not adjacent
+seuillé	admit	genuine image-processing term from seuiller; souillé slip e-to-o not adjacent
+sirh	admit	established French enterprise-IT acronym (SIRH); sir h-append slip unlikely
+snaper	exclude	nonstandard single-p spelling of snapper; sniper 2.5 opm nearby
+snappe	exclude	marginal colloquial form; nappe 18.3 opm shielded by s-prepend slip
+spam	admit	extremely common term; neighbors rare and disjoint
+spamme	admit	very common French verb form of spammer; spasme slip s-to-m not adjacent
+spb	exclude	unrecognized acronym, noise
+speudo	exclude	metathesis typo of pseudo, must remain correctable
+spof	admit	established French IT jargon (single point of failure); spot neighbor under 10 opm
+spouler	exclude	hyper-rare francization of spool, no one types it; saouler one slip away
+spoulé	exclude	hyper-rare like spouler; saoulé one slip away
+squad	admit	established borrowing in French gaming and agile prose; slips from squaw/squat implausible
+ssrf	admit	genuine security acronym; surf slip u-to-s not adjacent
+stories	admit	daily social-media vocabulary in French; neighbors low and slips implausible
+story	admit	daily social-media and agile vocabulary; store slip e-to-y not adjacent
+storys	admit	plural form genuinely used by French media for social stories; stores slip e-to-y not adjacent
+suffixe	admit	standard French word, common in grammar and IT; suffire slip r-to-x implausible
+superviseure	exclude	feminine job title, not IT-specific vocabulary for this pack
+surchargez	admit	legitimate form of surcharger, common in IT docs; neighbors same lemma family
+suxant	exclude	not a word, noise near suant and suçant
+suxé	exclude	not a word, noise near sué and sucé
+svg	admit	core IT format typed daily; svp slip g-for-p not adjacent
+swape	exclude	nonstandard single-p spelling of swappe; sape 4.8 opm nearby
+swaper	admit	common dev franglais infinitive; saper w insertion implausible
+swapé	admit	common dev franglais past participle; sapé to swapé needs w insertion, implausible slip
+swouples	exclude	not a real term, Wiktionary-grade noise shielding souples
+sxo	exclude	niche marketing acronym rarely typed lowercase
+taggage	exclude	nonstandard doubled-g spelling; tangage n/g substitution plausible on AZERTY
+tcao	exclude	academic acronym almost never typed lowercase; tchao 2.3 opm nearby
+tracker	admit	daily franglais noun-verb; tracer below 10 opm
+trackers	admit	common IT term (torrent, ad trackers); crackers t/c substitution not adjacent
+tracké	admit	common franglais participle; tracé k-insertion slip implausible
+tramages	admit	tramage is genuine graphics term (dithering); ramages rare and disjoint
+trampolines	admit	valid plural, both common word and CS term (trampoline functions)
+transpilant	admit	genuine participle of transpiler; transpirant rare and disjoint
+transpilation	admit	genuine dev term; transpiration slip r-to-l not adjacent and contexts disjoint
+transpile	admit	genuine IT verb form typed daily; transpire l/r substitution not adjacent
+transpiler	admit	genuine IT verb; transpirer l/r substitution not adjacent
+triable	admit	legitimate French adjective used in IT (sortable column); neighbors rare and disjoint
+triables	admit	same rationale as triable, legitimate plural
+triplet	admit	genuine CS-math term; all neighbors under 10 opm
+tutos	admit	very common French colloquial (tutorials); autos a-to-t substitution implausible
+tweet	admit	daily vocabulary; tweed 5.1 opm final d/t slip not adjacent
+twiller	exclude	not an established term, noise next to tailler 6.9 opm
+twip	exclude	hyper-niche unit term; trip 4.4 opm one substitution away
+typage	admit	essential French CS term; tapage slip a-to-y not adjacent on AZERTY
+unaire	admit	standard math and CS term; lunaire context fully disjoint despite plausible l-deletion
+usenet	admit	established IT proper noun typed in prose; usent-to-usenet e insertion moderately implausible, disjoint contexts
+viralité	admit	genuine common word; all neighbors under 10 opm
+vlogue	admit	legitimate inflection of vloguer; vogue l-insertion slip implausible
+vloguer	admit	established modern verb (to vlog); voguer l-insertion only moderately plausible, neighbor 1 opm
+volumens	exclude	not a word; volumes 11.5 opm one insertion away
+wand	exclude	English common noun, not French IT vocabulary; shields land typos
+xao	exclude	generic acronym pattern rarely typed lowercase as-is
+xore	exclude	improbable inflection of hyper-rare verb xorer
+xorer	admit	genuine dev jargon (to XOR); neighbors near 1 opm with implausible slips
+xorons	exclude	first-person plural of xorer is improbably typed; corons one slip away
+xxe	admit	XXE security term and XXe siècle ordinal both legitimate; axe slip implausible
+zippe	admit	common French verb form of zipper; all neighbors low-frequency
+échaffaudage	exclude	pure misspelling of échafaudage, must remain correctable
+éditant	admit	standard participle of éditer, common in IT; évitant d-to-v substitution implausible
+éditez	admit	standard form of common verb éditer; évitez slip d-to-v not adjacent
+émoji	admit	daily vocabulary; émoi needs an implausible j insertion
+émulé	admit	standard French IT participle (console émulée); neighbors under 1 opm
+évols	admit	real French corporate-IT shorthand for évolutions; vols é-prepend slip implausible

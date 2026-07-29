@@ -19,6 +19,9 @@ public sealed record ContactFrame(
     double TimestampMs,
     int ReportCount)
 {
+    /// <summary>Raw Input device that emitted this frame.</summary>
+    public IntPtr DeviceHandle { get; init; }
+
     public int TipCount
     {
         get

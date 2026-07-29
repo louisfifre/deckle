@@ -226,7 +226,7 @@ coverage/
 *.coveragexml
 
 # ─────────────────────────────────────────────────────────────────────────
-#  Claude Code runtime state and local-only customisation
+#  Agent runtime state and local-only customisation
 # ─────────────────────────────────────────────────────────────────────────
 # Tracked agent / skill / instruction files stay versioned — only
 # runtime state and personal-only customisation are excluded.
@@ -243,11 +243,8 @@ coverage/
 .claude/worktrees/
 
 # Personal-workflow skills not meant for the public repo.
-.claude/skills/benchmark-loop/
+.agents/skills/benchmark-loop/
 
-# Agent compatibility façades; canonical project instructions live under .claude/.
-# No trailing slash: these are symlinks to .claude, which Git sees as files.
+# Legacy singular agent facade, kept local when present.
 .agent
-.agents
-.codex
 .codex-remote-attachments/

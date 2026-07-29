@@ -32,16 +32,17 @@ function Invoke-StopBuildServers {
 function Select-VersionBump {
     param(
         [Parameter(Mandatory)][string]$Current,
-        [string]$Header = 'Pick the increment:'
+        [string]$Header = 'Deckle > Version   -   ↑↓ move   Enter select   Esc back'
     )
     $n = $Current.Split('.') | ForEach-Object { [int]$_ }
     $patch = "$($n[0]).$($n[1]).$($n[2] + 1)"
     $minor = "$($n[0]).$($n[1] + 1).0"
     $major = "$($n[0] + 1).0.0"
     $items = @(
-        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Patch', "$Current -> $patch", 'a fix or small step'); Value = [pscustomobject]@{ Seg = 'patch'; Target = $patch } }
-        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Minor', "$Current -> $minor", 'a real cycle');        Value = [pscustomobject]@{ Seg = 'minor'; Target = $minor } }
-        [pscustomobject]@{ Label = ("{0,-7}{1,-18}{2}" -f 'Major', "$Current -> $major", 'an overhaul');          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
+        [pscustomobject]@{ Label = 'Increment'; IsHeader = $true }
+        [pscustomobject]@{ Prefix = 'Patch'; Label = "$Current → $patch   a fix or small step"; Value = [pscustomobject]@{ Seg = 'patch'; Target = $patch } }
+        [pscustomobject]@{ Prefix = 'Minor'; Label = "$Current → $minor   a real cycle";        Value = [pscustomobject]@{ Seg = 'minor'; Target = $minor } }
+        [pscustomobject]@{ Prefix = 'Major'; Label = "$Current → $major   an overhaul";          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
     )
     try {
         return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen
@@ -85,7 +86,7 @@ function Invoke-RecordVersion {
         return
     }
 
-    $choice = Select-VersionBump -Current $cur -Header 'Record version - pick the increment:'
+    $choice = Select-VersionBump -Current $cur -Header 'Deckle > Project > Version   -   ↑↓ move   Enter select   Esc back'
     if ($null -eq $choice) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
@@ -122,7 +123,7 @@ function Invoke-PublishRelease {
     $target = $cur
     if ($recordableSinceVersion -gt 0) {
         Write-Host "$recordableSinceVersion user-facing commit(s) exist after the v$cur version record." -ForegroundColor DarkGray
-        $choice = Select-VersionBump -Current $cur -Header 'Publish release - pick the version to record first:'
+        $choice = Select-VersionBump -Current $cur -Header 'Deckle > Release > Publish   -   ↑↓ move   Enter select   Esc back'
         if ($null -eq $choice) {
             Write-Host "Cancelled." -ForegroundColor DarkGray
             return

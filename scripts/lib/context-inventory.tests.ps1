@@ -11,7 +11,8 @@ Assert-Equal 'On-demand references' (Get-ContextLoadingMode 'CONTEXT-MAP.md') 'c
 Assert-Equal 'AGENTS' (Get-ContextDocumentType 'src/Deckle.App/AGENTS.md') 'AGENTS type'
 Assert-Equal 'CLAUDE' (Get-ContextDocumentType 'src/Deckle.App/CLAUDE.md') 'CLAUDE type'
 Assert-Equal 'Context' (Get-ContextDocumentType 'CONTEXT-MAP.md') 'context type'
-Assert-Equal 'Skill' (Get-ContextDocumentType '.claude/skills/winui-app/SKILL.md') 'skill type'
+Assert-Equal 'Skill' (Get-ContextDocumentType '.agents/skills/winui-app/SKILL.md') 'skill type'
+Assert-Equal 'Skill reference' (Get-ContextDocumentType '.agents/skills/winui-app/references/foundation-setup.md') 'skill reference type'
 Assert-Equal 'ADR' (Get-ContextDocumentType 'docs/adr/0001-decision.md') 'ADR type'
 Assert-Equal 'README' (Get-ContextDocumentType 'scripts/README.md') 'readme type'
 

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Fixtures\precision-scroll-baseline.json" />
+  </ItemGroup>
+</Project>

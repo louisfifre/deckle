@@ -29,6 +29,22 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **travel:** Attach local files to the objects that carry them
 - **travel:** Give every type its Anytype icon
 - **anytype:** Align epic planning gestures
+- **autocorrect:** Fabricate the pilot IT domain pack from kaikki
+- **autocorrect:** Apply the gray-zone judge verdicts to the IT pack
+- **autocorrect:** Promote common pack forms, decided at the IT bench
+- **autocorrect:** Merge active domain packs into the effective lexicon
+- **autocorrect:** Expose vocabulary pack activation in settings
+- **autocorrect:** Surface each pack's dilution indicator
+- **autocorrect:** Add the word exclusion register
+- **scripts:** Add navigable maintenance results
+- **settings:** Teach the rail child pages and page-to-page drill-in
+- **autocorrect:** Move lexicon settings to domain-first sub-pages
+- **autocorrect:** Parameterize the pack fabrication chain by language
+- **autocorrect:** Fabricate and judge the en-IT pack
+- **autocorrect:** Ship the en-IT pack
+- **input:** Add native precision wheel scrolling
+- **input:** Preserve wheel device telemetry
+- **precision-scroll:** Derive motion from wheel cadence
 
 ### Changed
 
@@ -54,6 +70,16 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Improve keyboard correction quality
 - **travel:** Embed the terms file culture-neutral
 - **anytype:** Compare the existing type icon before flagging a conflict
+- **anytype:** Keep project status and history observable
+- **scripts:** Install hooks from linked worktrees
+- **scripts:** Restore launcher visual hierarchy
+- **scripts:** Align launcher spacing and quit navigation
+- **input:** Retain touchpad frame device identity
+- **input:** Preserve native wheel semantics
+- **precision-scroll:** Preserve accepted wheel motion
+- **precision-scroll:** Apply settings immediately
+- **input:** Close capture device registration race
+- **input:** Harden wheel observation correlation
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

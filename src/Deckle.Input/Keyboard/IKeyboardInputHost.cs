@@ -28,6 +28,12 @@ public interface IKeyboardInputHost
     event Action? DrainRequested;
 
     /// <summary>
+    /// Installs the single synchronous wheel policy used by the low-level hook.
+    /// Passing null restores observation-only behavior.
+    /// </summary>
+    void SetWheelInterceptor(IWheelInterceptor? interceptor);
+
+    /// <summary>
     /// Posts a drain request to the input thread; safe to call from any thread (a bare thread
     /// message). The pump raises <see cref="DrainRequested"/> on the input thread when it arrives.
     /// A no-op before the pump exists or after it has quit.

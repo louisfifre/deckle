@@ -17,7 +17,7 @@ function Get-ContextDocumentType {
     if ($name -in @('CONTEXT.md', 'CONTEXT-MAP.md')) { return 'Context' }
     if ($name -eq 'JOURNAL.md') { return 'Journal' }
     if ($name -eq 'SKILL.md') { return 'Skill' }
-    if ($RelativePath -match '(^|[\\/])\.claude[\\/]skills[\\/]') { return 'Skill reference' }
+    if ($RelativePath -match '(^|[\\/])\.agents[\\/]skills[\\/]') { return 'Skill reference' }
     if ($RelativePath -match '(^|[\\/])docs[\\/]adr[\\/]') { return 'ADR' }
     if ($RelativePath -match '(^|[\\/])docs[\\/]research[\\/]') { return 'Research' }
     if ($RelativePath -match '(^|[\\/])prompts?[\\/]') { return 'Prompt' }
@@ -122,8 +122,10 @@ function Get-ContextInventory {
     $recentPaths = @{}
     foreach ($days in @(1, 7, 30)) {
         $recentPaths[$days] = [System.Collections.Generic.HashSet[string]]::new(
-            [string[]](Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days),
             [System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($path in @(Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days)) {
+            $recentPaths[$days].Add($path) | Out-Null
+        }
     }
     $modifiedDates = Get-MarkdownLastModifiedDates -RepoRoot $RepoRoot
 

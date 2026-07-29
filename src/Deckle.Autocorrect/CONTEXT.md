@@ -49,6 +49,24 @@ _Avoid_ : global candidate pool (candidate provenance determines correction righ
 The deferred correction layer that runs once at sentence close (the terminal punctuation commits) and re-reads the whole sentence, revising committed words inside that sentence only. Its context is a *continuously observed sentence*: forward typing owned from an observed sentence boundary without pointer interaction, navigation, Enter, or focus change. Any such discontinuity abandons the sentence; returning the caret to its end does not restore it, and text exposed around an arbitrary UIA caret is not a trusted reconstruction. The stage resumes only for a later sentence whose opening boundary Deckle observed. Owns the decisions only context can make: code-switching, ambiguous pairs, escalation of the hardest faults. Forward typing after closure may extend the visible rewrite tail while every committed word, separator and live partial remains exactly modeled; caret-moving gestures, foreign mutations, failed injection and an overlong tail still expire the verdict. Its revisions surface in the correction inlay like any correction.
 _Avoid_ : reranker (one possible engine of this layer, not the layer), second pass.
 
+## Lexicon composition
+
+**Domain pack** :
+An activatable set of surface forms belonging to one language — scientific terms, computing terms — that fully extends that language's lexicon: its forms become valid forms *and* correction targets, exactly like the base lexicon's. Packs sit under the language in the hierarchy; a pack whose forms are foreign to the primary language protects de facto, since one-way protection already forbids correcting toward a form outside it. Packs are few by principle — stacking dilutes correction coverage.
+_Avoid_ : dictionary (overloaded — the personal dictionary is something else), protected list (a pack corrects, not only protects).
+
+**Effective lexicon** :
+The single merged table the correctors consult at runtime. All active sources — base lexicon, domain packs — fuse at load; on a duplicated form the highest frequency wins (commutative, idempotent, activation order irrelevant). The correction engine never sees a stack of dictionaries.
+_Avoid_ : merged dictionaries (plural framing — the point is that there is one).
+
+**Pack sanitization** :
+The build-time filtering that keeps a domain pack from masking corrections: forms whose masking cost (frequency mass of the base lexicon within edit distance 1) exceeds threshold are excluded at fabrication, borderline pairs arbitrated by an external LLM judge whose verdicts are journaled in the pack's report. The shipped pack is already clean; the runtime keeps its existing mechanics. The dilution indicator shown per pack — what it brings, what was refused — is computed here.
+_Avoid_ : runtime conflict resolution (the current direction keeps the hot path free of per-pack logic; untested, revisit after the pilot pack).
+
+**Word exclusion** :
+The user's removal of one word from correction's reach without deactivating anything — precedence exclusions > packs > base lexicon. Born contextually in the correction inlay at the moment of annoyance; mirrored in a consultable, reversible settings register.
+_Avoid_ : blocklist entry (that names the personal dictionary's suppression mechanism; exclusion targets shipped lexicon content).
+
 ## Datasets and mining
 
 **Typing stream** :

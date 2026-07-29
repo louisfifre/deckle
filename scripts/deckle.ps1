@@ -22,28 +22,18 @@ $script:DeckleMenuSessionActive = $false
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')
 . (Join-Path $LibDir 'launcher\actions.ps1')
+. (Join-Path $LibDir 'launcher\maintenance-results.ps1')
 . (Join-Path $LibDir 'launcher\menus.ps1')
 
-$mainRows = @(
-    @{ Title  = 'Run' }
-    @{ Prefix = 'Launch';         Cells = @( @{ Label = 'Release'; Value = 'launch:Release' }, @{ Label = 'Debug'; Value = 'launch:Debug' } ) }
-    @{ Prefix = 'Build & run';    Cells = @( @{ Label = 'Release'; Value = 'run:Release' },    @{ Label = 'Debug'; Value = 'run:Debug' } ) }
-    @{ Prefix = 'Build (no run)'; Cells = @( @{ Label = 'Release'; Value = 'norun:Release' },  @{ Label = 'Debug'; Value = 'norun:Debug' } ) }
-    @{ Blank  = $true }
-    @{ Title  = 'Project' }
-    @{ Cells  = @( @{ Label = 'Record version'; Value = 'record-version' } ) }
-    @{ Blank  = $true }
-    @{ Title  = 'More' }
-    @{ Cells  = @( @{ Label = 'Release…'; Value = 'release-menu'; Role = 'folder' }, @{ Label = 'Maintenance…'; Value = 'maintenance-menu'; Role = 'folder' }, @{ Label = 'Setup…'; Value = 'setup-menu'; Role = 'folder' }, @{ Label = 'Quit'; Value = 'quit' } ) }
-)
+$mainRows = @(Get-DeckleMainMenuRows)
 
 Start-DeckleMenuSession
 try {
     while ($true) {
         $v = Select-Grid `
             -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
-            -Footer 'the worktree is asked after you pick; the menu exits after an action runs' `
-            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen
+            -Footer 'worktrees are asked after you pick; maintenance results stay in the menu' `
+            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Full
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
 
@@ -51,7 +41,7 @@ try {
             Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
         } else {
             switch ($v) {
-                'record-version'   { Invoke-RecordVersion }
+                'project-menu'     { Show-ProjectMenu }
                 'release-menu'     { Show-ReleaseMenu }
                 'maintenance-menu' { Show-MaintenanceMenu }
                 'setup-menu'       { Show-SetupMenu }

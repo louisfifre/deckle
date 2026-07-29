@@ -11,28 +11,28 @@ All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`]
 
 ## Entry point — `deckle.ps1`
 
-`deckle.ps1` is what F5 runs in VSCodium (see [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from a terminal for daily work. It opens an arrow-key menu grouping every dev action by purpose. The launcher uses a full-screen terminal flow: while you navigate, it runs in the terminal's alternate screen buffer, so `More`, worktree selection, and version selection replace the current screen instead of appending below. When a concrete action starts, the normal terminal is restored first so build and publish logs remain visible. The release, maintenance, and setup submenus keep the same grid style: their first selectable cell is always `< Back`, so a mistaken submenu entry is one Enter away from returning.
+`deckle.ps1` is what F5 runs in VSCodium (see [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from a terminal for daily work. It opens an arrow-key menu grouping every dev action by purpose. The main surface keeps the full Deckle ASCII banner; compact two-line chrome is reserved for Project, Release, Maintenance, Setup, and worktree selection. Workspace ends with a narrow trailing `Quit` action reached from its final row, while categories inside each submenu stay on adjacent rows. The launcher runs in the terminal's alternate screen buffer, so submenus and maintenance results replace the current screen instead of appending below. Maintenance statistics keep their commands at the top and use the remaining height as a paged result viewport. Other concrete actions restore the normal terminal first so build and publish logs remain visible.
 
 | Section | Action | Per-worktree? | Delegates to |
 |---|---|:---:|---|
 | **Run** | Launch app (Release / Debug) | yes | `lib/launch-app.ps1 -Configuration Release\|Debug` |
 |  | Build and run app (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug` |
 |  | Build app without running (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug -NoRun` |
-| **Project** | Record version | yes | `lib/record-version.ps1 -Push` |
-| **More > Release** | Publish app release | yes | records a pending version when needed, then `lib/publish-app.ps1 -Publish` (confirms first) |
+| **Workspace > Project** | Update README pulse | yes | `lib/update-readme-stats.ps1` |
+|  | Update changelog | yes | `lib/changelog.ps1` |
+|  | Record version | yes | `lib/record-version.ps1 -Push` |
+| **Workspace > Release** | Publish app release | yes | records a pending version when needed, then `lib/publish-app.ps1 -Publish` (confirms first) |
 |  | Prepare app release artifacts | yes | `lib/publish-app.ps1` |
 |  | Prepare native runtime release | no | `lib/publish-native-runtime.ps1` (publishing confirms first) |
-| **More > Maintenance** | Clean build outputs | yes | `lib/clean.ps1` |
+| **Workspace > Maintenance** | Repository statistics | yes | `lib/stats.ps1 -PassThru`, rendered in the maintenance viewport |
+|  | Context statistics | yes | `lib/inspect-context.ps1 -PassThru`, rendered in the maintenance viewport |
+|  | Clean build outputs | yes | `lib/clean.ps1` |
 |  | Stop .NET build servers | no | `lib/stop-build-servers.ps1` |
-|  | Show module stats | yes | `lib/stats.ps1` |
-|  | Show context stats | yes | `lib/inspect-context.ps1` |
-|  | Update README pulse | yes | `lib/update-readme-stats.ps1` |
-|  | Update changelog | yes | `lib/changelog.ps1` |
-| **More > Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
+| **Workspace > Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
 |  | Set up runtime assets | no | `lib/setup-assets.ps1` |
 |  | Install git hooks | no | `lib/install-hooks.ps1` |
 
-Per-worktree actions prompt for a worktree right after the action is picked (auto-resolved when only the main repo exists). Global actions go straight to a short parameter prompt where needed. Once a concrete action has been launched, the menu exits instead of returning to the launcher. Use `Quit` or Ctrl+C to leave without running an action.
+Per-worktree actions prompt for a worktree right after the action is picked (auto-resolved when only the main repo exists). That picker follows the same nested-screen grammar as the submenus: compact chrome, Back first, a restrained section title, then branch and directory in distinct columns. Version choices use the same grid instead of opening a legacy vertical prompt. Global actions go straight to a short parameter prompt where needed. Repository and context statistics return to Maintenance with their summary still visible; Page Up and Page Down scroll longer results. The launcher asks for a resize instead of wrapping when the terminal is below its supported 45-column width or the height required by the current command surface. Other concrete actions exit the menu after launch. Use `Quit` or Ctrl+C to leave without running an action.
 
 ## Worker scripts — `lib/`
 
@@ -46,8 +46,8 @@ Each worker is callable directly from a terminal or a `launch.json` profile — 
 | [`lib/build-run.ps1`](lib/build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` without persistent MSBuild/Roslyn build servers, and launch the freshly built exe through ShellExecute. | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-Pick`, `-NoAutoRestart` |
 | [`lib/clean.ps1`](lib/clean.ps1) | Kill running `Deckle.exe` (it locks the output), stop .NET build servers left by manual/agent builds, then remove the consolidated `artifacts/{bin,obj,publish,package}/` plus any straggler `bin/`+`obj/` under `src/`, `tests/`, and benchmark study folders. Keeps `artifacts/Deckle-v*` release staging unless `-IncludeReleases`. Guards against symlinks / junctions. Reports total freed bytes. | `-Target <worktree>`, `-Pick`, `-IncludeReleases` |
 | [`lib/stop-build-servers.ps1`](lib/stop-build-servers.ps1) | Stop machine-wide .NET build servers left by local, menu, or agent builds. Useful when Task Manager shows lingering `.NET Host` / `VBCSCompiler` rows but you do not want to delete build outputs. | |
-| [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list file types dynamically, and print the per-file module table. Excludes `bin/obj/artifacts/.vs/Properties` and generated files (`*.g.cs`, `*.g.i.cs`, `*.xaml.g.cs`). | `-Target <worktree>`, `-Pick`, `-Json <path>` |
-| [`lib/inspect-context.ps1`](lib/inspect-context.ps1) | Inventory every tracked Markdown document by loading mode, Git modification date, additions over 1/7/30 days, heading count, exact size and line count, plus a model-independent token estimate. Separates automatically scoped instructions from references that must be opened explicitly. | `-Target <worktree>`, `-Pick`, `-Json <path>` |
+| [`lib/stats.ps1`](lib/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Pick`, `-Json <path>`; `-PassThru` for launcher integration |
+| [`lib/inspect-context.ps1`](lib/inspect-context.ps1) | Inventory every tracked Markdown document by loading mode, Git modification date, additions over 1/7/30 days, heading count, exact size and line count, plus a model-independent token estimate. Separates automatically scoped instructions from references that must be opened explicitly. | `-Target <worktree>`, `-Pick`, `-Json <path>`; `-PassThru` for launcher integration |
 | [`lib/validate-resources.ps1`](lib/validate-resources.ps1) | Audit every module `Resources.resw` against static `x:Uid`, `Loc.Get*`, descriptor literals, and the explicit dynamic-key allowlist. Reports missing keys, required-mirror divergences, and potentially unused copies without modifying resources. | `-Target <worktree>`, `-Pick`, `-Allowlist <path>`, `-Json <path>`, `-FailOnFindings` |
 | [`lib/setup-assets.ps1`](lib/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, MinGW C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WithLarge`, `-Force` |
 | [`lib/bootstrap-dev-env.ps1`](lib/bootstrap-dev-env.ps1) | Provision a fresh Windows 11 machine: winget (VS 2026, .NET 10, git, gh), optional scoop Tier 2 (MinGW, CMake, Ninja, Vulkan SDK, Ollama). Probes existing state, builds a plan, asks for confirmation, then executes. Runtime assets are left to the app's first-run wizard unless explicitly requested. | `-DryRun`, `-Full`, `-Yes`, `-IncludeAssets`, `-AssetsRelease X.Y.Z` |
@@ -61,7 +61,7 @@ Each worker is callable directly from a terminal or a `launch.json` profile — 
 | [`lib/publish-native-runtime.ps1`](lib/publish-native-runtime.ps1) | **Maintainer-only.** Assemble the native runtime zip (8 DLLs + `PROVENANCE.txt` + `SHA256SUMS`) from a local whisper.cpp build tree, pairing it with the MinGW runtime beside the compiler recorded by CMake, then optionally publish it as `native-vX.Y.Z`. | `-Version X.Y.Z`, `-WhisperRepo <path>`, `-OutDir <path>`, `-Publish`, `-Notes <path>` |
 | [`lib/action-summary.ps1`](lib/action-summary.ps1) | Internal shared writer for the final action summary used by worker scripts. | |
 | [`lib/deckle-process.ps1`](lib/deckle-process.ps1) | Internal shared process guard: stop `Deckle.exe` and wait until no instance remains before build, launch, clean, or publish rewrites locked app artefacts. | |
-| [`lib/_menu.psm1`](lib/_menu.psm1) | Public facade over `lib/menu/`, exposing `Start-MenuSession`, `Stop-MenuSession`, `Suspend-MenuSession`, `Select-Worktree`, `Select-Action`, `Select-YesNo`, and `Select-Grid`. Pickers can clear the terminal before rendering so nested screens replace each other; the launcher can also use the terminal alternate screen buffer for a full-screen flow. Imported by `deckle.ps1`, `launch-app.ps1 -Pick`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
+| [`lib/_menu.psm1`](lib/_menu.psm1) | Public facade over `lib/menu/`, exposing the menu session, pickers, grid, and compact status surface. Pickers can clear the terminal before rendering so nested screens replace each other; the launcher can also use the terminal alternate screen buffer for a full-screen flow. Imported by `deckle.ps1`, `launch-app.ps1 -Pick`, `build-run.ps1 -Pick`, `clean.ps1 -Pick`, `stats.ps1 -Pick`, `update-readme-stats.ps1 -Pick`, `changelog.ps1 -Pick`. **Not an entry point.** |
 
 ## Git hooks — TREE.md auto-update
 

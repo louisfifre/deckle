@@ -4,7 +4,8 @@
 param(
     [string]$Target,
     [switch]$Pick,
-    [string]$Json
+    [string]$Json,
+    [switch]$PassThru
 )
 
 $ErrorActionPreference = 'Stop'
@@ -106,6 +107,23 @@ $total7Days = @($documents | Where-Object Added7Days).Count
 $total30Days = @($documents | Where-Object Added30Days).Count
 $totalBytes = ($documents | Measure-Object Bytes -Sum).Sum
 $totalTokens = ($documents | Measure-Object EstimatedTokens -Sum).Sum
+
+if ($PassThru) {
+    return [pscustomobject]@{
+        Worktree = $RepoRoot
+        Totals = [pscustomobject]@{
+            Documents       = $documents.Count
+            Added1Day       = $total1Day
+            Added7Days      = $total7Days
+            Added30Days     = $total30Days
+            Sections        = $totalSections
+            Lines           = $totalLines
+            Bytes           = $totalBytes
+            EstimatedTokens = $totalTokens
+        }
+        Groups = $groups
+    }
+}
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
 Write-Host 'Token counts are estimates at 4 characters per token; exact counts vary by model.' -ForegroundColor DarkGray

@@ -24,18 +24,25 @@ public partial class App
             AutocorrectEngine engine,
             PersonalDictionary dictionary,
             string rerankerEngine,
-            long rerankerLoadMs)
+            long rerankerLoadMs,
+            string lexiconKey)
         {
             Engine = engine;
             Dictionary = dictionary;
             RerankerEngine = rerankerEngine;
             RerankerLoadMs = rerankerLoadMs;
+            LexiconKey = lexiconKey;
         }
 
         public AutocorrectEngine Engine { get; }
         public PersonalDictionary Dictionary { get; }
         public string RerankerEngine { get; }
         public long RerankerLoadMs { get; }
+
+        // Identifies the effective lexicon this engine was built over — the
+        // active domain packs. The merge happens once at load, so a change here
+        // cannot be applied in place: the runtime is torn down and rebuilt.
+        public string LexiconKey { get; }
 
         public void Dispose()
         {
@@ -76,6 +83,27 @@ public partial class App
                 _autocorrectRuntime = null;
                 runtime?.Dispose();
                 return;
+            }
+
+            // A settings change that alters the effective lexicon — a domain
+            // pack turned on or off — cannot be reconciled in place: the merged
+            // table, the accent index and every policy built over them are
+            // bound at construction. Drop the runtime and let the branch below
+            // rebuild it. Enrolling an app, by contrast, leaves the key equal
+            // and the engine reads the decision map live, so nothing is torn
+            // down for it.
+            //
+            // Settings writes reach here debounced, so a burst of edits costs
+            // one rebuild, not one per edit. The rebuild is the same cost as
+            // flipping the master switch off and on — it reloads the sentence
+            // model too.
+            AutocorrectRuntime? stale = _autocorrectRuntime;
+            if (stale is not null
+                && stale.LexiconKey != DomainActivation.EffectiveLexiconKey(
+                    AutocorrectSettingsService.Instance.Current, SystemLanguages.Current))
+            {
+                _autocorrectRuntime = null;
+                stale.Dispose();
             }
 
             if (_autocorrectRuntime is null && !_autocorrectInitializing)
@@ -120,6 +148,14 @@ public partial class App
 
             if (!retained)
                 runtime?.Dispose();
+            else
+            {
+                // A pack may have been flipped while this build ran, leaving the
+                // engine just published reading the previous table. One more
+                // pass settles it; the key comparison makes it a no-op unless
+                // that actually happened.
+                ReconcileAutocorrect();
+            }
         }
         catch
         {

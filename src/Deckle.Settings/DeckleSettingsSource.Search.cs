@@ -25,6 +25,15 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtSettingsModuleUnregistered, id);
     }
 
+    [Event(EvtSettingsModuleParentMissing,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "settings module skipped | reason=parent-not-registered | id={0} | parent={1}")]
+    public void SettingsModuleParentMissing(string id, string parent_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsModuleParentMissing, id, parent_id);
+    }
+
     // ── Settings cross-page search index ────────────────────────────────
 
     [Event(EvtSearchEntrySkipped,

@@ -2,7 +2,7 @@
 _Généré depuis `git ls-files` — ne pas éditer à la main._
 
 ```
-├── .claude/
+├── .agents/
 │   └── skills/
 │       ├── deckle-commits/
 │       │   └── SKILL.md  — deckle-commits [skill] Commit grain and the few deviations from the universal convention. Invoke befor…
@@ -66,6 +66,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │           ├── config.yaml
 │           ├── LICENSE.txt
 │           └── SKILL.md  — winui-app [skill] Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps…
+├── .claude/
+│   └── skills
+├── .codex/
+│   └── skills
 ├── .github/
 │   └── workflows/
 │       └── update-readme-stats.yml
@@ -177,6 +181,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AGENTS.md  — [agent-instructions] Autoresearch benchmark workspace — reusable iterative optimization loops.
 │   │   ├── CLAUDE.md
 │   │   └── README.md  — readme-autoresearch [module-readme] Generic autoresearch workspace for measurable iterative generation, editing, ju…
+│   ├── input/
+│   │   ├── precision-scroll/
+│   │   │   ├── analyze.py
+│   │   │   ├── capture_analysis.py
+│   │   │   ├── README.md
+│   │   │   └── test_capture_analysis.py
+│   │   └── AGENTS.md  — [agent-instructions] Input benchmark workspace — raw capture analysis, derived corpora, and behavior…
 │   ├── lib/
 │   │   ├── monitor/
 │   │   │   ├── gpu_monitor.ps1
@@ -230,17 +241,24 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── launcher/
 │   │   │   ├── actions.ps1
 │   │   │   ├── context.ps1
+│   │   │   ├── maintenance-results.ps1
+│   │   │   ├── maintenance-results.tests.ps1
 │   │   │   ├── menu-layout.ps1
 │   │   │   ├── menu-layout.tests.ps1
 │   │   │   └── menus.ps1
 │   │   ├── menu/
 │   │   │   ├── chrome.ps1
+│   │   │   ├── chrome.tests.ps1
 │   │   │   ├── grid-picker.ps1
+│   │   │   ├── grid-picker.tests.ps1
 │   │   │   ├── list-picker.ps1
-│   │   │   └── session.ps1
+│   │   │   ├── list-picker.tests.ps1
+│   │   │   ├── session.ps1
+│   │   │   └── status-view.ps1
 │   │   ├── _menu.psm1
 │   │   ├── action-summary.ps1
 │   │   ├── action-summary.tests.ps1
+│   │   ├── agent-skills-layout.tests.ps1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
 │   │   ├── build-server-cleanup.ps1
@@ -253,6 +271,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── fetch-autocorrect-data.ps1
 │   │   ├── inspect-context.ps1
 │   │   ├── install-hooks.ps1
+│   │   ├── install-hooks.tests.ps1
 │   │   ├── launch-app.ps1
 │   │   ├── native-runtime-release.psm1
 │   │   ├── native-runtime-release.tests.ps1
@@ -396,6 +415,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
 │   │   ├── App.ParagraphRewrite.cs
+│   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.Foundation.cs
@@ -471,6 +491,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── lexicon-en-globish.tsv.gz
 │   │   │   ├── lexicon-en.tsv.gz
 │   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   ├── pack-en-it.manifest.json
+│   │   │   ├── pack-en-it.tsv.gz
+│   │   │   ├── pack-fr-it.manifest.json
+│   │   │   ├── pack-fr-it.tsv.gz
 │   │   │   ├── pair-bigrams-fr.tsv.gz
 │   │   │   └── verbs-fr.tsv.gz
 │   │   ├── Engine/
@@ -527,9 +551,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
 │   │   │   ├── AutocorrectLexiconArtifacts.cs
+│   │   │   ├── DomainActivation.cs
+│   │   │   ├── DomainPack.cs
+│   │   │   ├── DomainPackManifest.cs
+│   │   │   ├── EffectiveLexicon.cs
 │   │   │   ├── FrequencyLexicon.cs
 │   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
+│   │   │   ├── LexicalDomain.cs
+│   │   │   ├── SystemLanguages.cs
 │   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -546,12 +576,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
 │   │   ├── Ui/
+│   │   │   ├── AppsEnrolledPage.xaml
+│   │   │   ├── AppsEnrolledPage.xaml.cs
 │   │   │   ├── AutocorrectPage.xaml
-│   │   │   └── AutocorrectPage.xaml.cs
+│   │   │   ├── AutocorrectPage.xaml.cs
+│   │   │   ├── LexicalDomainsPage.xaml
+│   │   │   └── LexicalDomainsPage.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── AppsEnrolledViewModel.cs
 │   │   │   ├── AutocorrectAppRow.cs
+│   │   │   ├── AutocorrectExcludedWordRow.cs
 │   │   │   ├── AutocorrectViewModel.cs
-│   │   │   └── AutocorrectViewModel.Settings.cs
+│   │   │   ├── AutocorrectViewModel.Settings.cs
+│   │   │   ├── DomainLanguageRow.cs
+│   │   │   ├── LexicalDomainsViewModel.cs
+│   │   │   └── LexicalDomainTab.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsModule.cs
@@ -566,6 +605,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Mining/
 │   │   │   ├── MistouchFamilyReport.cs
 │   │   │   └── MistouchMiner.cs
+│   │   ├── PackReports/
+│   │   │   ├── pack-en-it.judgments.tsv
+│   │   │   ├── pack-en-it.md
+│   │   │   ├── pack-fr-it.frequencies.tsv
+│   │   │   ├── pack-fr-it.judgments.tsv
+│   │   │   └── pack-fr-it.md
 │   │   ├── Profiling/
 │   │   │   ├── SurfaceProfiler.cs
 │   │   │   └── SurfaceProfileReport.cs
@@ -578,6 +623,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── TruthOverlay.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
+│   │   ├── DomainPackBuilder.cs
 │   │   ├── HarvestData.cs
 │   │   ├── HarvestFilter.cs
 │   │   ├── HarvestStore.cs
@@ -609,6 +655,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectBenchmark.cs
 │   │   ├── AutocorrectBenchmarkCommand.cs
 │   │   ├── AutocorrectBenchmarkCorpus.cs
+│   │   ├── AutocorrectItPackCorpus.cs
 │   │   ├── BenchmarkKeyboardSession.cs
 │   │   ├── CorrectionBenchmarkCase.cs
 │   │   ├── CorrectionBenchmarkCommand.cs
@@ -642,6 +689,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Loc.cs
 │   │   ├── SettingSearchEntry.cs
 │   │   ├── SettingsModuleDescriptor.cs
+│   │   ├── SettingsNavigation.cs
 │   │   └── TelemetryConsent.cs
 │   ├── Deckle.Chrono/
 │   │   ├── ChronoFormatter.cs
@@ -812,16 +860,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── OnnxModelSession.cs
 │   ├── Deckle.Input/
 │   │   ├── Injection/
-│   │   │   └── MouseInjector.cs
+│   │   │   ├── MouseInjector.cs
+│   │   │   └── PrecisionTouchpadInjector.cs
 │   │   ├── Interop/
 │   │   │   ├── HidInterop.cs
 │   │   │   ├── LowLevelMouseHookInterop.cs
+│   │   │   ├── PrecisionTouchpadSystemParameters.cs
 │   │   │   ├── RawInputInterop.cs
 │   │   │   ├── SendInputInterop.cs
+│   │   │   ├── SyntheticTouchpadInterop.cs
 │   │   │   └── WinEventInterop.cs
 │   │   ├── Keyboard/
 │   │   │   ├── FocusEventCoalescer.cs
 │   │   │   ├── IKeyboardInputHost.cs
+│   │   │   ├── IWheelInterceptor.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.FocusHooks.cs
 │   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
@@ -839,9 +891,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ContactFrameAssembler.cs
 │   │   │   ├── TouchpadCapabilities.cs
 │   │   │   ├── TouchpadContact.cs
+│   │   │   ├── TouchpadDevice.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
-│   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input host, Precision Touchpad HID parsing, the Send…
+│   │   ├── AGENTS.md  — [agent-instructions] Input support module — Raw Input hosts, Precision Touchpad HID parsing, and nat…
 │   │   ├── CLAUDE.md
 │   │   ├── CONTEXT.md  — context-deckle-input [agent-instructions] Input-layer vocabulary — the contact frame as the unit assembled from Raw Input…
 │   │   ├── Deckle.Input.csproj
@@ -850,6 +903,29 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── MouseWheelSettings.cs
 │   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
+│   ├── Deckle.Input.PrecisionScroll/
+│   │   ├── Engine/
+│   │   │   ├── PrecisionScrollEngine.cs
+│   │   │   ├── PrecisionScrollGesture.cs
+│   │   │   └── WheelTickQueue.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── PrecisionScrollPage.xaml
+│   │   │   └── PrecisionScrollPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── PrecisionScrollViewModel.cs
+│   │   │   ├── PrecisionScrollViewModel.Settings.cs
+│   │   │   └── PrecisionScrollViewModel.Tuning.cs
+│   │   ├── AGENTS.md  — [agent-instructions] Precision scrolling domain module — classic wheel detents become native two-fin…
+│   │   ├── Deckle.Input.PrecisionScroll.csproj
+│   │   ├── DecklePrecisionScrollSource.cs
+│   │   ├── PrecisionScrollSettings.cs
+│   │   ├── PrecisionScrollSettingsModule.cs
+│   │   ├── PrecisionScrollSettingsService.cs
+│   │   ├── PrecisionScrollTuning.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Input.Trackpad/
 │   │   ├── Acts/
 │   │   │   ├── ConnectionRepair.cs
@@ -1497,6 +1573,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── DomainActivationTests.cs
+│   │   ├── DomainPackMaintenanceTests.cs
+│   │   ├── DomainPackManifestTests.cs
+│   │   ├── EffectiveLexiconTests.cs
 │   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrenchSentenceRerankerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
@@ -1581,13 +1661,19 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
+│   ├── Deckle.Input.PrecisionScroll.Tests/
+│   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
+│   │   ├── DecklePrecisionScrollSourceTests.cs
+│   │   ├── PrecisionScrollGestureTests.cs
+│   │   └── PrecisionScrollTuningTests.cs
 │   ├── Deckle.Input.Tests/
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
-│   │   └── MouseInteractionRouterTests.cs
+│   │   ├── MouseInteractionRouterTests.cs
+│   │   └── SyntheticTouchpadFrameBuilderTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs
