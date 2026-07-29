@@ -46,4 +46,11 @@ $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -Me
 Assert-Equal $false $failure.Succeeded 'terminating action error reports failure'
 Assert-Equal $true (($failure.Lines -join "`n") -like '*compiler stopped*') 'failure reason stays in the log'
 
+$partial = Invoke-DeckleMenuAction -Header Deckle -Label Setup -Source Setup -MenuRows $menuRows -Action {
+    Write-Host '  Result        : Partial'
+}
+Assert-Equal 'Partial' $partial.Result 'script summary result is preserved'
+Assert-Equal $false $partial.Succeeded 'partial is not presented as full success'
+Assert-Equal $true $partial.Title.StartsWith('Setup partial · ') 'partial state stays visible in the title'
+
 Write-Host 'action-results.tests.ps1: PASS' -ForegroundColor Green

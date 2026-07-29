@@ -1,6 +1,6 @@
 # publish-native-runtime.ps1
 #
-# Builds a versioned zip of the 8 native DLLs Deckle's first-run wizard
+# Packages a versioned zip of the native DLLs Deckle's first-run wizard
 # downloads at install time. The wizard fetches this zip from a GitHub
 # Release of the Deckle repo (URL hardcoded in NativeRuntime.CurrentBundle)
 # and extracts it into <UserDataRoot>\native\.
@@ -32,6 +32,10 @@ param(
     [Parameter(Mandatory)]
     [string]$WhisperRepo,
 
+    # Deckle repository that owns the native-vX.Y.Z GitHub Release. This is
+    # source metadata only: publishing the native runtime never builds Deckle.
+    [string]$Target,
+
     # Output directory for the produced zip. Defaults to a fresh subfolder
     # under the system temp dir.
     [string]$OutDir,
@@ -41,28 +45,27 @@ param(
     [switch]$Publish,
 
     # Optional release notes file passed to `gh release create --notes-file`.
-    # Without it, gh's --generate-notes is used.
+    # Without it, deterministic notes are written locally.
     [string]$Notes
 )
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+Import-Module (Join-Path $ScriptDir 'native-runtime-release.psm1') -Force
+Import-Module (Join-Path $ScriptDir 'release-validation.psm1') -Force
 
 # ── Catalog ──────────────────────────────────────────────────────────────────
-#
-# Single source of truth for the bundle is
-# src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs RequiredDllNames. The two PowerShell
-# scripts that produce or consume the bundle (this one and setup-assets.ps1)
-# duplicate the list with a comment until extracted into a shared module.
-# Any divergence is a bug.
-$WhisperDlls = @(
-    'libwhisper.dll', 'ggml.dll', 'ggml-base.dll',
-    'ggml-cpu.dll',   'ggml-vulkan.dll'
-)
-$MingwDlls = @(
-    'libgcc_s_seh-1.dll', 'libstdc++-6.dll', 'libwinpthread-1.dll'
-)
+$RepoRoot = if ($Target) {
+    if (-not (Test-Path -LiteralPath $Target -PathType Container)) { throw "Target not found: $Target" }
+    (Get-Item -LiteralPath $Target).FullName
+} else {
+    Split-Path -Parent (Split-Path -Parent $ScriptDir)
+}
+$NativeRuntimeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
+$NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
+$WhisperDlls = @($NativeRuntimeCatalog.WhisperDlls)
+$MingwDlls = @($NativeRuntimeCatalog.MingwDlls)
 
 function Step($msg) { Write-Host "`n[publish] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "           $msg" -ForegroundColor Green }
@@ -74,6 +77,8 @@ $ZipSha256 = $null
 $ZipBytes = $null
 $ZipSize = $null
 $Published = $false
+$OwnerRepo = $null
+$HeadSha = $null
 
 trap {
     Write-DeckleActionSummary `
@@ -82,6 +87,7 @@ trap {
         -Sentence "$Workflow failed before completion." `
         -Details ([ordered]@{
             Version     = "native-v$Version"
+            DeckleRepo  = $RepoRoot
             WhisperRepo = $WhisperRepo
             OutDir      = $OutDir
             Zip         = $ZipPath
@@ -89,6 +95,32 @@ trap {
             Error       = $_.Exception.Message
         })
     throw
+}
+
+# Publication validates the Deckle repository and GitHub destination before it
+# touches the package directory. It does not invoke dotnet, CMake, Ninja, or any
+# build command; build/bin is an explicit input produced beforehand.
+if ($Publish) {
+    Step 'Validate native release destination'
+    & git -C $RepoRoot fetch origin main --tags --prune
+    if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
+    $source = Assert-DeckleReleaseRepositorySource -RepoRoot $RepoRoot
+    $OwnerRepo = $source.OwnerRepo
+    $HeadSha = $source.HeadSha
+    & gh auth status --hostname github.com *> $null
+    if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI is not authenticated for github.com' }
+    $resolvedRepo = (& gh repo view $OwnerRepo --json nameWithOwner --jq '.nameWithOwner').Trim()
+    if ($LASTEXITCODE -ne 0 -or $resolvedRepo -cne $OwnerRepo) {
+        throw "GitHub repository preflight failed for $OwnerRepo"
+    }
+    Ok "GitHub access verified for $OwnerRepo at $($HeadSha.Substring(0, 12))"
+} else {
+    $remoteUrl = & git -C $RepoRoot remote get-url origin 2>$null
+    if ($LASTEXITCODE -eq 0 -and $remoteUrl -match 'github\.com[:/](?<repo>[^/]+/[^/.]+)(?:\.git)?$') {
+        $OwnerRepo = $Matches.repo
+    } else {
+        $OwnerRepo = '<owner>/deckle'
+    }
 }
 
 # ── Resolve sources ──────────────────────────────────────────────────────────
@@ -278,6 +310,9 @@ Ok 'SHA256SUMS written'
 
 Step "Compress to $ZipName"
 Compress-Archive -Path (Join-Path $StagingDir '*') -DestinationPath $ZipPath -Force
+Assert-DeckleNativeRuntimeArchive `
+    -ArchivePath $ZipPath `
+    -DllNames $NativeRuntimeCatalog.Names
 $ZipSha256 = (Get-FileHash $ZipPath -Algorithm SHA256).Hash.ToLower()
 $ZipBytes  = (Get-Item $ZipPath).Length
 $ZipSize   = [math]::Round($ZipBytes / 1MB, 2)
@@ -295,33 +330,78 @@ Write-Host @"
   SHA256 : $ZipSha256
 
   Paste into src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs CurrentBundle
-  (Url pre-filled for the louisfifre release; adjust the owner if the repo moves):
+  (URL resolved from the selected Deckle repository):
 
     public static NativeRuntimeBundle CurrentBundle { get; } = new(
         Version:     "$Version",
-        Url:         "https://github.com/louisfifre/deckle/releases/download/native-v$Version/$ZipName",
+        Url:         "https://github.com/$OwnerRepo/releases/download/native-v$Version/$ZipName",
         Sha256:      "$ZipSha256",
         SizeBytes:   ${ZipBytes}L,
         DisplayName: "Whisper.cpp + Vulkan runtime");
 
 "@ -ForegroundColor Green
 
-# ── Optional: gh release create ──────────────────────────────────────────────
+# ── Optional: explicit draft → verify → tag → publish ────────────────────────
 
 if ($Publish) {
-    Step "Publish via gh release create"
     $tag = "native-v$Version"
     $title = "Native runtime $tag"
-    $ghArgs = @('release', 'create', $tag, $ZipPath, '--title', $title)
-    if ($Notes) {
-        $ghArgs += @('--notes-file', $Notes)
-    } else {
-        $ghArgs += '--generate-notes'
+    if (-not $Notes) {
+        $Notes = Join-Path $OutDir 'release-notes.md'
+        @(
+            "Deckle native runtime $Version"
+            ''
+            'Prebuilt whisper.cpp and MinGW runtime libraries for Deckle first-run setup.'
+            ''
+            "SHA-256: ``$ZipSha256``"
+        ) | Set-Content -LiteralPath $Notes -Encoding utf8
+    } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
+        throw "Release notes file not found: $Notes"
     }
-    & gh @ghArgs
-    if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
-    Ok "Released as $tag"
+
+    Step "Publish GitHub Release $tag"
+    $releaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish 2>$null) -join "`n"
+    $releaseExists = $LASTEXITCODE -eq 0
+    if (-not $releaseExists) {
+        & gh release create $tag $ZipPath `
+            --repo $OwnerRepo `
+            --title $title `
+            --target $HeadSha `
+            --notes-file $Notes `
+            --draft
+        if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
+        Ok "Draft release $tag uploaded"
+        $releaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
+        if ($LASTEXITCODE -ne 0) { throw "GitHub draft $tag could not be read after upload" }
+    } else {
+        Ok "Existing release $tag found; validating it for resume"
+    }
+
+    $remoteRelease = $releaseJson | ConvertFrom-Json
+    Assert-DeckleReleaseAssets `
+        -Release $remoteRelease `
+        -Tag $tag `
+        -HeadSha $HeadSha `
+        -ExpectedNames @($ZipName) `
+        -ExpectedSizes @{ $ZipName = $ZipBytes }
+    Ok 'GitHub asset verified by name and byte size'
+
+    Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $HeadSha
+    Ok "GitHub tag $tag published at release HEAD"
+
+    if ($remoteRelease.isDraft) {
+        & gh release edit $tag --repo $OwnerRepo --draft=false
+        if ($LASTEXITCODE -ne 0) {
+            throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
+        }
+    }
+    $publishedJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw "Published GitHub release $tag could not be read back" }
+    $publishedRelease = $publishedJson | ConvertFrom-Json
+    if ($publishedRelease.isDraft) { throw "GitHub release $tag is still a draft after finalization" }
+    Assert-DeckleReleaseAssets -Release $publishedRelease -Tag $tag -HeadSha $HeadSha -ExpectedNames @($ZipName) -ExpectedSizes @{ $ZipName = $ZipBytes }
     $Published = $true
+    Ok "Released as $tag"
 }
 
 $nativeTag = "native-v$Version"
@@ -337,6 +417,7 @@ Write-DeckleActionSummary `
     -Sentence $sentence `
     -Details ([ordered]@{
         Version     = $nativeTag
+        DeckleRepo  = $RepoRoot
         WhisperRepo = $WhisperRepo
         OutDir      = $OutDir
         Zip         = $ZipPath

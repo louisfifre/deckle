@@ -50,8 +50,8 @@ public static class NativeRuntime
     // the Vulkan ggml-vulkan.dll links against. Windows resolves them
     // automatically once they sit alongside libwhisper.dll.
     //
-    // Mirrored on the PowerShell side in scripts/lib/setup-assets.ps1 and
-    // scripts/lib/publish-native-runtime.ps1 — any divergence is a bug.
+    // PowerShell packaging and setup scripts read this declaration through
+    // native-runtime-release.psm1 instead of maintaining parallel catalogs.
     public static IReadOnlyList<string> RequiredDllNames { get; } = new[]
     {
         EntryDll,

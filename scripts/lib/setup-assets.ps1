@@ -65,6 +65,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'action-summary.ps1')
+Import-Module (Join-Path $ScriptDir 'native-runtime-release.psm1') -Force
 
 # Repo paths — two levels up: scripts/lib → scripts → repo root
 $Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -106,15 +107,13 @@ trap {
     throw
 }
 
-# Catalog (matches Deckle.Setup.NativeRuntime.RequiredDllNames and
-# scripts/lib/publish-native-runtime.ps1 — divergence is a bug)
-$WhisperDlls = @(
-    'libwhisper.dll', 'ggml.dll', 'ggml-base.dll',
-    'ggml-cpu.dll',   'ggml-vulkan.dll'
-)
-$MingwDlls = @(
-    'libgcc_s_seh-1.dll', 'libstdc++-6.dll', 'libwinpthread-1.dll'
-)
+# NativeRuntime.cs owns the catalog consumed by the app, local setup, and the
+# release packager. Reading it here makes a dependency change one edit instead
+# of a three-file synchronization convention.
+$NativeRuntimeSource = Join-Path $Repo 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
+$NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
+$WhisperDlls = @($NativeRuntimeCatalog.WhisperDlls)
+$MingwDlls = @($NativeRuntimeCatalog.MingwDlls)
 
 # Hosting source for the published native runtime bundle. Must match
 # NativeRuntime.CurrentBundle.Url on the C# side.
