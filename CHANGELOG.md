@@ -84,6 +84,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **input:** Harden wheel observation correlation
 - **scripts:** Page maintenance results with mouse wheel
 - **scripts:** Keep command grid visible during actions
+- **scripts:** Update live action output in place
+- **scripts:** Stabilize compact menu across actions
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

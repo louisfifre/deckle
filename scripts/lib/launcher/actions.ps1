@@ -76,7 +76,7 @@ function Select-VersionBump {
         [pscustomobject]@{ Prefix = 'Major'; Label = "$Current → $major   an overhaul";          Value = [pscustomobject]@{ Seg = 'major'; Target = $major } }
     )
     try {
-        return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen
+        return Select-Action -Header $Header -Items $items -Default 0 -ClearScreen -BannerStyle (Get-DeckleMenuBannerStyle)
     } catch {
         return $null
     }

@@ -55,7 +55,7 @@ function Invoke-DeckleMenuAction {
     $lastRefresh = [timespan]::Zero
     $succeeded = $true
 
-    Show-GridStatus `
+    $view = New-GridStatusView `
         -Header $Header `
         -Rows $MenuRows `
         -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
@@ -69,12 +69,10 @@ function Invoke-DeckleMenuAction {
                 $lines.Add($line)
             }
             if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
-                Show-GridStatus `
-                    -Header $Header `
-                    -Rows $MenuRows `
+                $view = Update-GridStatusView `
+                    -View $view `
                     -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
                     -Lines @($lines) `
-                    -Footer 'Live output follows the latest line; controls return when the action completes' `
                     -Follow
                 $lastRefresh = $timer.Elapsed
             }

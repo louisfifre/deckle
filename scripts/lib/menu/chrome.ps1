@@ -108,6 +108,16 @@ function Get-MenuBanner {
     )
 }
 
+function Get-MenuBannerGap {
+    param(
+        [ValidateSet('Full', 'Compact')]
+        [string]$Style = 'Full'
+    )
+
+    if ($Style -eq 'Compact') { return 1 }
+    return 0
+}
+
 function Limit-MenuText {
     param(
         [AllowNull()][string]$Text,
@@ -197,7 +207,12 @@ function Write-MenuChrome {
         Write-MenuPlainLine -Row ($BaseRow + $i) -Text $banner[$i] -ForegroundColor Blue -BackgroundColor $null
     }
 
-    $headerRow = $BaseRow + $banner.Count
+    $bannerGap = Get-MenuBannerGap -Style $BannerStyle
+    for ($i = 0; $i -lt $bannerGap; $i++) {
+        Write-MenuPlainLine -Row ($BaseRow + $banner.Count + $i) -Text '' -ForegroundColor $null -BackgroundColor $null
+    }
+
+    $headerRow = $BaseRow + $banner.Count + $bannerGap
     $header = Limit-MenuText -Text ('  ' + $Header) -Width $metrics.ContentWidth
     $footer = Limit-MenuText -Text ('  ' + $Footer) -Width $metrics.ContentWidth
     Write-MenuPlainLine -Row $headerRow -Text $header -ForegroundColor DarkGray -BackgroundColor $null
@@ -231,7 +246,8 @@ function Get-MenuBodyCapacity {
 
     # Leave one physical row unused so reserving the viewport never scrolls
     # the alternate screen.
-    return [Math]::Max(0, $WindowHeight - @(Get-MenuBanner -Style $BannerStyle).Count - 6)
+    $chromeHeight = @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 6
+    return [Math]::Max(0, $WindowHeight - $chromeHeight)
 }
 
 function Test-MenuViewportFits {
@@ -255,7 +271,7 @@ function Wait-MenuViewportSize {
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return }
 
-    $requiredHeight = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + 6
+    $requiredHeight = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 6
     while (-not (Test-MenuViewportFits -BodyCount $BodyCount -BannerStyle $BannerStyle)) {
         Clear-MenuScreen
         $metrics = Get-MenuMetrics
@@ -289,7 +305,7 @@ function New-MenuViewport {
     if ($ClearScreen) { Clear-MenuScreen } else { Write-Host "" }
     $baseRow = [Console]::CursorTop
 
-    $reserveRows = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + 5
+    $reserveRows = $BodyCount + @(Get-MenuBanner -Style $BannerStyle).Count + (Get-MenuBannerGap -Style $BannerStyle) + 5
     for ($i = 0; $i -lt $reserveRows; $i++) {
         Write-Host ""
     }
