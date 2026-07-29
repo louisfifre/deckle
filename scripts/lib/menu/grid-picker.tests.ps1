@@ -20,7 +20,8 @@ Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 0 -ColumnOffset 1 -CellCount
 Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 1 -ColumnOffset 0 -CellCount 2) 'up from offset row returns to cell above'
 
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
-Assert-Equal 17 $compactLayout.Body.Count 'result layout consumes available compact body'
-Assert-Equal 15 $compactLayout.ResultRowCount 'result layout reserves title and commands'
+Assert-Equal 16 $compactLayout.Body.Count 'result layout consumes available compact body'
+Assert-Equal 13 $compactLayout.ResultRowCount 'result layout reserves breathing room, title, and commands'
+Assert-Equal 'blank' $compactLayout.Body[1].Kind 'result layout separates commands from results'
 
 Write-Host 'grid-picker.tests.ps1: PASS' -ForegroundColor Green

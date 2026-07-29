@@ -33,7 +33,7 @@ try {
         $v = Select-Grid `
             -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
             -Footer 'worktrees are asked after you pick; maintenance results stay in the menu' `
-            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Compact
+            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle Full
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
 
@@ -41,12 +41,8 @@ try {
             Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2]
         } else {
             switch ($v) {
-                'record-version'   { Invoke-RecordVersion }
-                'readme-stats'     { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
-                'changelog'        { Invoke-WorktreeScript -Script 'changelog.ps1' }
-                'publish'          { Invoke-PublishRelease }
-                'artifacts'        { Invoke-PrepareArtifacts }
-                'native'           { Invoke-NativeRuntime }
+                'project-menu'     { Show-ProjectMenu }
+                'release-menu'     { Show-ReleaseMenu }
                 'maintenance-menu' { Show-MaintenanceMenu }
                 'setup-menu'       { Show-SetupMenu }
             }

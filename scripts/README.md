@@ -11,28 +11,28 @@ All scripts target PowerShell 7+. The single entry point lives at [`deckle.ps1`]
 
 ## Entry point — `deckle.ps1`
 
-`deckle.ps1` is what F5 runs in VSCodium (see [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from a terminal for daily work. It opens an arrow-key menu grouping every dev action by purpose. The launcher uses a compact full-screen terminal flow: while you navigate, it runs in the terminal's alternate screen buffer, so submenus, worktree selection, and maintenance results replace the current screen instead of appending below. Maintenance statistics keep their commands at the top and use the remaining height as a paged result viewport. Other concrete actions still restore the normal terminal first so build and publish logs remain visible. Maintenance and Setup keep `< Back` at the same first position.
+`deckle.ps1` is what F5 runs in VSCodium (see [`.vscode/launch.json`](../.vscode/launch.json)) and what you call from a terminal for daily work. It opens an arrow-key menu grouping every dev action by purpose. The main surface keeps the full Deckle ASCII banner; compact two-line chrome is reserved for Project, Release, Maintenance, Setup, and worktree selection. The launcher runs in the terminal's alternate screen buffer, so submenus and maintenance results replace the current screen instead of appending below. Maintenance statistics keep their commands at the top and use the remaining height as a paged result viewport. Other concrete actions restore the normal terminal first so build and publish logs remain visible.
 
 | Section | Action | Per-worktree? | Delegates to |
 |---|---|:---:|---|
 | **Run** | Launch app (Release / Debug) | yes | `lib/launch-app.ps1 -Configuration Release\|Debug` |
 |  | Build and run app (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug` |
 |  | Build app without running (Release / Debug) | yes | `lib/build-run.ps1 -Configuration Release\|Debug -NoRun` |
-| **Project** | Update README pulse | yes | `lib/update-readme-stats.ps1` |
+| **Workspace > Project** | Update README pulse | yes | `lib/update-readme-stats.ps1` |
 |  | Update changelog | yes | `lib/changelog.ps1` |
 |  | Record version | yes | `lib/record-version.ps1 -Push` |
-| **Release** | Publish app release | yes | records a pending version when needed, then `lib/publish-app.ps1 -Publish` (confirms first) |
+| **Workspace > Release** | Publish app release | yes | records a pending version when needed, then `lib/publish-app.ps1 -Publish` (confirms first) |
 |  | Prepare app release artifacts | yes | `lib/publish-app.ps1` |
 |  | Prepare native runtime release | no | `lib/publish-native-runtime.ps1` (publishing confirms first) |
-| **More > Maintenance** | Repository statistics | yes | `lib/stats.ps1 -PassThru`, rendered in the maintenance viewport |
+| **Workspace > Maintenance** | Repository statistics | yes | `lib/stats.ps1 -PassThru`, rendered in the maintenance viewport |
 |  | Context statistics | yes | `lib/inspect-context.ps1 -PassThru`, rendered in the maintenance viewport |
 |  | Clean build outputs | yes | `lib/clean.ps1` |
 |  | Stop .NET build servers | no | `lib/stop-build-servers.ps1` |
-| **More > Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
+| **Workspace > Setup** | Bootstrap dev environment | no | `lib/bootstrap-dev-env.ps1` |
 |  | Set up runtime assets | no | `lib/setup-assets.ps1` |
 |  | Install git hooks | no | `lib/install-hooks.ps1` |
 
-Per-worktree actions prompt for a worktree right after the action is picked (auto-resolved when only the main repo exists). Global actions go straight to a short parameter prompt where needed. Repository and context statistics return to Maintenance with their summary still visible; Page Up and Page Down scroll longer results. The launcher asks for a resize instead of wrapping when the terminal is below its supported 45-column width or the height required by the current command surface. Other concrete actions exit the menu after launch. Use `Quit` or Ctrl+C to leave without running an action.
+Per-worktree actions prompt for a worktree right after the action is picked (auto-resolved when only the main repo exists). That picker follows the same nested-screen grammar as the submenus: compact chrome, Back first, a restrained section title, then branch and directory in distinct columns. Version choices use the same grid instead of opening a legacy vertical prompt. Global actions go straight to a short parameter prompt where needed. Repository and context statistics return to Maintenance with their summary still visible; Page Up and Page Down scroll longer results. The launcher asks for a resize instead of wrapping when the terminal is below its supported 45-column width or the height required by the current command surface. Other concrete actions exit the menu after launch. Use `Quit` or Ctrl+C to leave without running an action.
 
 ## Worker scripts — `lib/`
 

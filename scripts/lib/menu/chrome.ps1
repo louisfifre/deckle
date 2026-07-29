@@ -58,6 +58,7 @@ function Get-MenuRoleColor {
     switch ($Role) {
         'folder' { return @{ Foreground = 'DarkYellow'; Background = $null } }
         'back'   { return @{ Foreground = 'DarkGray';   Background = $null } }
+        'quit'   { return @{ Foreground = 'Red';        Background = $null } }
         default  { return @{ Foreground = $null;        Background = $null } }
     }
 }
@@ -83,7 +84,10 @@ function Get-MenuBanner {
     )
 
     if ($Style -eq 'Compact') {
-        return @( '  DECKLE   S C R I P T S' )
+        return @(
+            '  DECKLE'
+            '  S C R I P T S'
+        )
     }
 
     # The figlet is duplicated in src/Deckle.Installer/Ui/ConsoleUi.cs (BannerArt) —
@@ -188,10 +192,10 @@ function Write-MenuChrome {
     }
 
     $headerRow = $BaseRow + $banner.Count
-    $header = Limit-MenuText -Text (' ' + $Header) -Width $metrics.ContentWidth
-    $footer = Limit-MenuText -Text (' ' + $Footer) -Width $metrics.ContentWidth
+    $header = Limit-MenuText -Text ('  ' + $Header) -Width $metrics.ContentWidth
+    $footer = Limit-MenuText -Text ('  ' + $Footer) -Width $metrics.ContentWidth
     Write-MenuPlainLine -Row $headerRow -Text $header -ForegroundColor DarkGray -BackgroundColor $null
-    Write-MenuPlainLine -Row ($headerRow + 1) -Text (' ' + (New-MenuRule -MaxWidth ($metrics.ContentWidth - 1))) -ForegroundColor DarkGray -BackgroundColor $null
+    Write-MenuPlainLine -Row ($headerRow + 1) -Text ('  ' + (New-MenuRule -MaxWidth ($metrics.ContentWidth - 2))) -ForegroundColor DarkGray -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 2) -Text '' -ForegroundColor $null -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 3 + $BodyCount) -Text '' -ForegroundColor $null -BackgroundColor $null
     Write-MenuPlainLine -Row ($headerRow + 4 + $BodyCount) -Text $footer -ForegroundColor DarkGray -BackgroundColor $null
@@ -250,7 +254,8 @@ function Wait-MenuViewportSize {
         Clear-MenuScreen
         $metrics = Get-MenuMetrics
         $lines = @(
-            '  DECKLE   S C R I P T S'
+            '  DECKLE'
+            '  S C R I P T S'
             ''
             "  Resize the terminal to at least $($script:MenuMinimumContentWidth + 5) x $requiredHeight."
             "  Current size: $([Console]::WindowWidth) x $($metrics.WindowHeight)."

@@ -38,7 +38,8 @@ function Write-GridLine {
             $selected = (($Index -eq $ActiveBodyIndex) -and ($column -eq $ActiveCol))
             $label = [string]$cell.Label
             $txt = Limit-MenuText -Text "  $label" -Width $ColW[$column]
-            $txt = $txt.PadRight($ColW[$column])
+            $alignment = if ($cell -is [hashtable] -and $cell.ContainsKey('Align')) { [string]$cell['Align'] } else { '' }
+            $txt = if ($alignment -eq 'Right') { $txt.PadLeft($ColW[$column]) } else { $txt.PadRight($ColW[$column]) }
             $role = Get-MenuCellRole -Cell $cell
             $colors = Get-MenuRoleColor -Role $role -Selected:$selected
             Write-MenuContentSegment -Text $txt -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
@@ -260,9 +261,10 @@ function New-GridBodyLayout {
     $resultRowCount = 0
     if ($ResultTitle) {
         $bodyCapacity = Get-MenuBodyCapacity -BannerStyle $BannerStyle
-        $minimumBodyCount = $body.Count + 2
+        $minimumBodyCount = $body.Count + 3
         $effectiveCapacity = [Math]::Max($minimumBodyCount, $bodyCapacity)
-        $resultRowCount = [Math]::Max(1, $effectiveCapacity - $body.Count - 1)
+        $resultRowCount = [Math]::Max(1, $effectiveCapacity - $body.Count - 2)
+        $body += @{ Kind = 'blank' }
         $body += @{ Kind = 'title'; Text = $ResultTitle }
         for ($slot = 0; $slot -lt $resultRowCount; $slot++) {
             $body += @{ Kind = 'result'; Slot = $slot }
