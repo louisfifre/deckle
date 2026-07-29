@@ -12,8 +12,9 @@ namespace Deckle.Autocorrect;
 // in Deckle.Autocorrect.Lab and never runs here.
 //
 // One pack IS one lexical domain in one language: the id names the pair in short
-// form ("fr-it" = the computing domain under French), so the settings key stays
-// unambiguous when a second language arrives, and artifact names derive from it
+// form ("fr-it" the French side of the computing domain, "en-it" its English
+// side), so the settings key stays unambiguous across languages, and artifact
+// names derive from it
 // by convention — a pack added to Shipped needs no per-pack path anywhere. The id
 // is frozen: it is what the settings file records and what the shipped artifacts
 // are named, so it never follows a rename of the two halves it abbreviates. Those
@@ -37,6 +38,7 @@ public sealed record DomainPack(string Id, string DomainId, string Language)
     public static IReadOnlyList<DomainPack> Shipped { get; } =
     [
         new DomainPack("fr-it", "computing", "fr"),
+        new DomainPack("en-it", "computing", "en"),
     ];
 
     // The packs of one domain, in Shipped order — the language rows the
