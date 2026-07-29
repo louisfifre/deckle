@@ -37,6 +37,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Surface each pack's dilution indicator
 - **autocorrect:** Add the word exclusion register
 - **scripts:** Add navigable maintenance results
+- **settings:** Teach the rail child pages and page-to-page drill-in
+- **autocorrect:** Move lexicon settings to domain-first sub-pages
 
 ### Changed
 
