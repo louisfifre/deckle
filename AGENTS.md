@@ -29,7 +29,7 @@ Before any non-trivial code, name the posture(s) framing the answer — engineer
 
 Everything specialized is discoverable, not pre-chewed here — orient, never recopy.
 
-- "How we do things" doctrines → `deckle-*` skills in `.claude/skills/`; their descriptions say when to invoke them, go look.
+- "How we do things" doctrines → `deckle-*` skills in `.agents/skills/`; their descriptions say when to invoke them, go look.
 - A module's local technical doctrine → the `AGENTS.md` at that module's root.
 - Repo structure (tree, headers, skills) → `TREE.md`, auto-generated.
 - Frozen decisions → `docs/adr/`.
