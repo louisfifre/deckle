@@ -7,6 +7,14 @@ type: module-journal
 
 Module-level dated notes. Most recent on top.
 
+## 2026-07-29 — Native Experience import proven as an integration fixture
+
+Measured with `anytype-cli` 0.3.6 (anytype-heart 0.50.10): private RPC `ObjectImportExperience` imported a cleaned native Desktop archive into one fresh existing space after bot membership was verified `Active`. The exact validated archive has SHA-256 `775ebd35ec185fde3fec0fa50723bab3d241deac02c85603dcb58401528019ae`. Its REST inventory moved from 14 types / 34 properties / 0 objects / 5 templates / 0 lists / 0 views to 22 / 64 / 6 / 15 / 5 / 5; Desktop then visually confirmed the types, per-type icons, linked properties, templates and views. The six retained objects are structural dashboards; Recent items is automatic and was deliberately absent from the archive.
+
+The English fixture keeps Anytype's native `Status` separate from the custom `Lifecycle status`, and reuses native archiving instead of defining a second Archived property. Anyblock JSON field shape is significant: flattening a one-item array into a scalar makes import fail with `PB:GetSnapshot json: cannot unmarshal string into Go value of type []json.RawMessage`.
+
+This proves portability for one clean import, not strict idempotence or a supported production installer. The RPC server has reflection disabled and requires the matching protobuf definition. `anytype-cli space join` 0.3.6 also ignores `RpcSpaceJoinResponse.Error`, so its success message is insufficient; membership must be checked in `space list` until it reports `Active`.
+
 ## 2026-07-27 — Epic / chantier / task model frozen
 
 Decided: Deckle is the permanent Epic, a Project is one finite chantier, and a Task is one executable unit; smaller steps stay as inline checklist items. The built-in `done` checkbox is the canonical completion signal for Projects and Tasks. État remains planning state, while Archivé only removes an object from active views.

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "fixture": "deckle",
+  "experienceVersion": "0.1.0",
+  "locale": "en-US",
+  "archiveFile": "deckle.en-US.experience.zip",
+  "archiveSha256": "775ebd35ec185fde3fec0fa50723bab3d241deac02c85603dcb58401528019ae",
+  "archiveBytes": 397732,
+  "source": "Anytype Desktop native export",
+  "validatedOn": "2026-07-29",
+  "validation": {
+    "importMethod": "ObjectImportExperience",
+    "anytypeCliVersion": "0.3.6",
+    "anytypeHeartVersion": "0.50.10",
+    "freshActiveSpace": true,
+    "desktopVisualCheck": true,
+    "before": {
+      "types": 14,
+      "properties": 34,
+      "objects": 0,
+      "templates": 5,
+      "lists": 0,
+      "views": 0
+    },
+    "after": {
+      "types": 22,
+      "properties": 64,
+      "objects": 6,
+      "templates": 15,
+      "lists": 5,
+      "views": 5
+    }
+  },
+  "logicalSha256": null,
+  "logicalHashStatus": "Pending semantic canonicalization"
+}
