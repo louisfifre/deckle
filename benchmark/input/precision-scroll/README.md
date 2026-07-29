@@ -26,6 +26,8 @@ Wheel bursts are grouped independently per recorded Raw Input device. Legacy hoo
 
 The wheel report also measures what can be known causally from the first two or three inter-event gaps. It publishes cadence bands and precision/recall at candidate gap cutoffs against a documented proxy for sustained fast bursts. This evidence may shape a continuous transfer curve, but it is not an intent label and must not become a hard drag/flick classifier by itself.
 
+The accepted perceptual model is frozen separately in `tests/Deckle.Input.PrecisionScroll.Tests/Fixtures/precision-scroll-baseline.json`. Its named scenarios reference the reviewed `5c0a75ae` behavior and cover amount, cadence, continuity, immediate reversal, stationary release, and surface rollover without embedding personal telemetry. Focus, routing, modifier, and application compatibility remain native-boundary contracts and require the documented physical acceptance matrix.
+
 Run the decoder tests with:
 
 ```powershell
