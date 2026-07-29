@@ -7,7 +7,7 @@ internal readonly record struct WheelTick(int Detents, double TimestampMs);
 // lock or per-event allocation enters the hook path.
 internal sealed class WheelTickQueue
 {
-    private const int Capacity = 64;
+    internal const int Capacity = 256;
     private const int Mask = Capacity - 1;
 
     private readonly WheelTick[] _items = new WheelTick[Capacity];

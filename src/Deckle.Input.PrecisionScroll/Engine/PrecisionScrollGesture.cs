@@ -16,10 +16,12 @@ internal readonly record struct PrecisionScrollFrame(
     uint ElapsedMs,
     bool IsRollover = false);
 
-// Each detent adds an exact travel budget. Recent inter-detent gaps determine
-// how quickly that budget is delivered, so the physical wheel supplies both
-// launch speed and slowdown. A stationary frame precedes the final lift to
-// stop without adding synthetic inertia after the wheel itself has stopped.
+// Each same-direction detent adds an exact travel budget. A direction change
+// deliberately cancels unfinished travel before the opposite detent starts:
+// reversal stays immediate instead of leaking old-direction motion. Recent
+// inter-detent gaps determine how quickly the current budget is delivered. A
+// stationary frame precedes the final lift so stopping adds no synthetic
+// inertia after the wheel itself has stopped.
 internal sealed class PrecisionScrollGesture
 {
     internal const int FrameIntervalMs = 10;
@@ -96,15 +98,6 @@ internal sealed class PrecisionScrollGesture
         _speed = Math.Sign(travel) * Math.Abs(travel) / EstimatedGapMs();
         _lastTickMs = timestampMs;
         _stationaryFrameSent = false;
-    }
-
-    public void RequestEnd()
-    {
-        _queued = false;
-        _remainingTravel = 0;
-        _speed = 0;
-        _rolloverRequested = false;
-        _endRequested = _active;
     }
 
     public bool TryAdvance(double nowMs, out PrecisionScrollFrame frame)

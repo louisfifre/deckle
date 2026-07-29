@@ -43,6 +43,8 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         {
             DecklePrecisionScrollSource.Log.TouchpadSettingsUnavailable();
             DecklePrecisionScrollSource.Log.TouchpadSettingsUnavailableDetail(settingsError);
+            injector!.Dispose();
+            return false;
         }
 
         _injector = injector;
@@ -147,27 +149,18 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         {
             gesture.SetTuning(Volatile.Read(ref _tuning));
             bool running = Volatile.Read(ref _runRequested) != 0;
-            if (running)
+            while (_ticks.TryDequeue(out WheelTick tick))
             {
-                while (_ticks.TryDequeue(out WheelTick tick))
-                {
-                    int contactDetents = _scrollDirectionReversed
-                        ? -tick.Detents
-                        : tick.Detents;
-                    gesture.AddDetents(contactDetents, tick.TimestampMs);
-                }
-            }
-            else
-            {
-                while (_ticks.TryDequeue(out _)) { }
-                gesture.RequestEnd();
+                int contactDetents = _scrollDirectionReversed
+                    ? -tick.Detents
+                    : tick.Detents;
+                gesture.AddDetents(contactDetents, tick.TimestampMs);
             }
 
             if (Interlocked.Exchange(ref _overflowed, 0) != 0)
             {
                 Volatile.Write(ref _runRequested, 0);
                 running = false;
-                gesture.RequestEnd();
                 _inputHost.SetWheelInterceptor(null);
                 DecklePrecisionScrollSource.Log.QueueOverloaded();
             }
@@ -185,7 +178,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 
                 if (frame.Kind == PrecisionScrollFrameKind.Begin)
                     _gestures++;
-                if (frame.IsRollover)
+                if (frame.Kind == PrecisionScrollFrameKind.End && frame.IsRollover)
                     _rollovers++;
                 continue;
             }
