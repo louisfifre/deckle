@@ -29,12 +29,11 @@ public sealed class ContactFrameRecorder : IDisposable
 
     private readonly object _lock = new();
     private readonly StringBuilder _line = new(256);
-    private readonly Dictionary<IntPtr, (int Index, TouchpadCapabilities Capabilities)> _devices = [];
+    private readonly ContactDeviceRegistry _devices = new();
 
     private StreamWriter? _writer;
     private string? _path;
     private bool _armed;
-    private int _nextDeviceIndex;
     private long _frames;
     private double _firstFrameMs = -1;
     private double _lastFlushMs;
@@ -53,10 +52,7 @@ public sealed class ContactFrameRecorder : IDisposable
         lock (_lock)
         {
             if (_armed) return;
-            _devices.Clear();
-            _nextDeviceIndex = 0;
-            foreach (TouchpadDevice touchpad in touchpads)
-                RegisterDevice(touchpad);
+            _devices.StartSession(touchpads);
             _armed = true;
         }
     }
@@ -66,15 +62,14 @@ public sealed class ContactFrameRecorder : IDisposable
     {
         lock (_lock)
         {
-            if (!_armed) return;
             try
             {
-                bool added = RegisterDevice(touchpad);
+                bool added = _devices.Observe(
+                    touchpad,
+                    preservePreviousIdentity: _writer is not null,
+                    out RegisteredTouchpad registered);
                 if (added && _writer is not null)
-                {
-                    var registered = _devices[touchpad.Handle];
                     WriteDeviceLine(registered.Index, registered.Capabilities);
-                }
             }
             catch (Exception ex)
             {
@@ -102,7 +97,7 @@ public sealed class ContactFrameRecorder : IDisposable
                 }
 
                 double t = frame.TimestampMs - _firstFrameMs;
-                int deviceIndex = _devices.TryGetValue(frame.DeviceHandle, out var device)
+                int deviceIndex = _devices.TryGet(frame.DeviceHandle, out RegisteredTouchpad device)
                     ? device.Index
                     : -1;
 
@@ -151,6 +146,7 @@ public sealed class ContactFrameRecorder : IDisposable
         {
             if (!_armed) return;
             _armed = false;
+            _devices.EndSession();
             if (_writer is null) return;
 
             string path = _path!;
@@ -199,7 +195,8 @@ public sealed class ContactFrameRecorder : IDisposable
             _writer.WriteLine(
                 $"{{\"type\":\"session\",\"schema\":2,\"session\":\"{Deckle.Diagnostics.DeckleEventSource.SessionId}\"," +
                 $"\"started\":\"{DateTime.Now.ToString("o", CultureInfo.InvariantCulture)}\"}}");
-            foreach (var device in _devices.Values.OrderBy(device => device.Index))
+            foreach (RegisteredTouchpad device in _devices.SessionDevices.OrderBy(
+                         device => device.Index))
                 WriteDeviceLine(device.Index, device.Capabilities);
             _writer.Flush();
 
@@ -215,20 +212,9 @@ public sealed class ContactFrameRecorder : IDisposable
             _writer = null;
             _path = null;
             _armed = false;
+            _devices.EndSession();
             return false;
         }
-    }
-
-    private bool RegisterDevice(TouchpadDevice touchpad)
-    {
-        if (_devices.TryGetValue(touchpad.Handle, out var existing))
-        {
-            _devices[touchpad.Handle] = (existing.Index, touchpad.Capabilities);
-            return false;
-        }
-
-        _devices.Add(touchpad.Handle, (_nextDeviceIndex++, touchpad.Capabilities));
-        return true;
     }
 
     private void WriteDeviceLine(int index, TouchpadCapabilities c)
@@ -249,5 +235,6 @@ public sealed class ContactFrameRecorder : IDisposable
         _writer = null;
         _path = null;
         _armed = false;
+        _devices.EndSession();
     }
 }
