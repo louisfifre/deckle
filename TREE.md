@@ -880,10 +880,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyboardInputHost.MouseHook.cs
 │   │   │   ├── KeyboardInputHost.RawInput.cs
 │   │   │   ├── KeyboardInputHost.Rollup.cs
+│   │   │   ├── KeyboardInputHost.WheelObservations.cs
 │   │   │   ├── KeyboardKeyEvent.cs
 │   │   │   ├── MouseInteractionRouter.cs
-│   │   │   └── MouseWheelEvent.cs
+│   │   │   ├── MouseWheelEvent.cs
+│   │   │   ├── WheelEventQueue.cs
+│   │   │   └── WheelObservationBuffer.cs
 │   │   ├── Telemetry/
+│   │   │   ├── ContactDeviceRegistry.cs
 │   │   │   ├── ContactFrameRecorder.cs
 │   │   │   └── WheelEventRecorder.cs
 │   │   ├── Touchpad/
@@ -1662,18 +1666,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   └── ProximityRollupAggregatorTests.cs
 │   ├── Deckle.Input.PrecisionScroll.Tests/
+│   │   ├── Fixtures/
+│   │   │   └── precision-scroll-baseline.json
 │   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
 │   │   ├── DecklePrecisionScrollSourceTests.cs
+│   │   ├── PerceptualBaselineTests.cs
 │   │   ├── PrecisionScrollGestureTests.cs
-│   │   └── PrecisionScrollTuningTests.cs
+│   │   ├── PrecisionScrollTuningTests.cs
+│   │   └── WheelTickQueueTests.cs
 │   ├── Deckle.Input.Tests/
+│   │   ├── ContactDeviceRegistryTests.cs
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
-│   │   └── SyntheticTouchpadFrameBuilderTests.cs
+│   │   ├── MouseWheelTimestampTests.cs
+│   │   ├── SyntheticTouchpadFrameBuilderTests.cs
+│   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs
