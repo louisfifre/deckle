@@ -96,6 +96,13 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 - License : dual CC BY-SA 4.0 / GFDL (the Wiktionary text and data).
 - Used as : source of topical surface forms (entries carrying « Lexique en français de X » categories, with their inline inflections), reduced to the derived domain-pack artifacts `pack-fr-*.tsv.gz` (form + flat floor frequency). The derived files remain under CC BY-SA with this attribution; each pack's fabrication report under `src/Deckle.Autocorrect.Lab/PackReports/` records what was kept and refused.
 
+### Kaikki / wiktextract — English Wiktionary extraction
+
+- Source : https://kaikki.org/dictionary/ — Tatu Ylonen, machine-readable extraction of https://en.wiktionary.org produced by [wiktextract](https://github.com/tatuylonen/wiktextract). A distinct dump from the French one above: kaikki serves the English Wiktionary from its `/dictionary/` hub, every other language from `/<lang>wiktionary/`.
+- License : dual CC BY-SA 4.0 / GFDL (the Wiktionary text and data).
+- Used as : source of topical surface forms (entries carrying the `en:Computing`, `en:Internet`, `en:Software` and `en:Programming` categories, with their inline inflections), reduced to the derived domain-pack artifacts `pack-en-*.tsv.gz` (form + flat floor frequency). The derived files remain under CC BY-SA with this attribution; each pack's fabrication report under `src/Deckle.Autocorrect.Lab/PackReports/` records what was kept and refused.
+- Source snapshot used for this artifact : downloaded 2026-07-29.
+
 ### wordfreq
 
 - Source : https://github.com/rspeer/wordfreq — Robyn Speer (data frozen 2021).

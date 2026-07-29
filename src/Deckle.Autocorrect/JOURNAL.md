@@ -5,6 +5,18 @@ type: module-journal
 
 # JOURNAL — Deckle.Autocorrect
 
+## 2026-07-29 — Fabrication chain ported to English; pack-en-it fabricated and judged
+
+Ported the pack fabrication chain to English and built the en-IT pack (core4: `en:Computing`, `en:Internet`, `en:Software`, `en:Programming`): 11,381 entries → 15,549 candidates → 12,687 shipped at the 0.2 opm floor after judgment, 1,844 refused above the 20 opm masking threshold, byte-determinism hash-verified across double runs. The general keyboard bench is strictly identical to baseline with the pack merged — 12,687 English forms in the French lexicon change nothing on general prose. The fr artifacts stayed bit-identical throughout; observed, not re-proven by refabrication — the fr dump is no longer on disk.
+
+Chose `DomainPackDefinition(Language, Key)` with a structural `Id => "{Language}-{Key}"`, making the match with `DomainPack.Id` structural instead of a coincidence between two interpolations; renamed `frenchLexiconPath` → `baseLexiconPath` (this workstream is exactly where base ≠ pack language), `ItPack` → `FrItPack` beside `EnItPack`, and derived the dump prefilter from the category list rather than a shared literal.
+
+Measured before coding, against the brief: `error` is not a wiktextract artifact but a legitimate `en:Computing` lemma (gray at 6.62 opm, masking `errer`; admitted by the judges); `no-table-tags` is the only real artifact (56 occurrences, masking cost 0 — it would have shipped) and is rejected structurally on the `table-tags` form tag, never on the value — proven no-op on fr; `framework` is carried by no core4 category (it lives under `en:Software engineering` + `en:Grammar`), so of the four founding franglais words core4 ships backend and plugin directly, wifi via judgment, framework only through a future category widening.
+
+Judged the 1,254-form gray zone (three independent judges, supervised arbitration, verdicts in `PackReports/pack-en-it.judgments.tsv`): 236 admitted, 1,018 excluded — 18.8 % admission against 59 % on fr-it, the en gray zone being mostly Wiktionary noise. Kept two arbitration lines worth reusing: lowercase-typed acronyms of configs and commands are admitted (`rpc`, `imap`, `pgp`) while prose-only-uppercase ones are excluded (`mvp`, `numa`); a form one omitted letter from a common French word is the archetypal fault class the pack never buys (`socks`/`stocks` — the campaign's one majority reversal — `servers`/`serveurs`, `functions`/`fonctions`). `cloud` (37.64) and `server` (127.33) stay refused by the unchanged threshold; whether protection-only deserves its own threshold waits for the « protects de facto » bench.
+
+Found that `dotnet test --filter` does not run `[Fact(Explicit)]` tests in this repo (VSTest reports `Total: 0` with no skip message); the working gesture is the in-process xUnit v3 runner: `Deckle.Autocorrect.Tests.exe -explicit only -method "*DomainPackMaintenanceTests.BuildEnItPack"`.
+
 ## 2026-07-29 — Lexical domains built, forks taken along the way (unrun)
 
 Implementation of the direction below. Compile-only validation; nothing has been run or looked at, so every claim about behaviour is what the code says rather than what was observed.

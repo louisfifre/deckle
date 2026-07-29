@@ -1,0 +1,1265 @@
+# Gray-zone verdicts for pack-en-it — external LLM judge campaign, 2026-07-29.
+# Judged by Claude (Fable 5): three parallel judges over the fabrication report
+# worksheet (form, masking cost, distance-1 French base neighbors with
+# frequencies), merged by the supervising judge (notes marked "arbitrated").
+# Rubric: this pack is protection-only under a French primary lexicon, so an
+# admitted form is merely never auto-corrected. Admit real English computing
+# vocabulary a French user plausibly types, when neighbors and masking cost make
+# an accidental slip toward it implausible; exclude Wiktionary noise, never-typed
+# coinages, and any form one plausible slip from a French word that must stay
+# correctable; uncertainty resolves to exclude.
+# form<TAB>admit|exclude<TAB>note
+abap	exclude	SAP language name written uppercase
+abcs	exclude	not computing vocabulary
+abort	admit	core IT verb (abort a transaction); abord t/d substitution not a keyboard slip
+aborts	admit	standard inflection, aligned with abort; abords t/d substitution not a keyboard slip
+abstract	admit	core dev keyword typed daily; French neighbors need two or more edits
+abstracts	exclude	generic English plural, not distinctive IT vocabulary
+acats	exclude	junk acronym plural
+acl	admit	genuine IT term typed lowercase in practice; neighbors weak
+acm	exclude	organization acronym typed uppercase, not lowercase vocabulary
+acquire	exclude	French writes acquérir; weak necessity
+acquires	exclude	marginal English verb form
+adaptee	exclude	French adaptee with the accent dropped, a common participle that must stay correctable
+adb	admit	Android tooling command typed lowercase daily; neighbors negligible
+add	admit	git subcommand typed constantly; masking low and neighbors weak
+addresses	exclude	the classic doubled-d confusion with French adresses, must stay correctable
+adds	exclude	generic English verb form, not distinctive IT vocabulary
+adf	exclude	ambiguous acronym
+adfs	exclude	niche Microsoft acronym typed uppercase
+adl	exclude	nonce acronym
+adlet	exclude	nonce coinage, never typed
+adlets	exclude	nonce/junk string
+adls	exclude	acronym-plural debris
+admin	admit	essential daily IT term; admis s-to-n substitution implausible, disjoint contexts
+administratour	exclude	misspelling/junk, must stay correctable
+admins	admit	daily IT plural; admis n-insertion slip unlikely, disjoint contexts
+admons	exclude	nonce clipping plural
+adobes	exclude	nonce plural of a brand name, never typed
+adts	exclude	acronym-plural debris
+aduc	exclude	niche Windows console acronym, uppercase if ever
+affined	exclude	nonce past participle
+affines	exclude	ordinary adjective shared with French
+affinity	exclude	generic English noun; French prose says affinité
+aggressive	exclude	the classic doubled-g confusion with French agressive, must stay correctable
+agps	exclude	niche positioning acronym typed uppercase
+aiming	exclude	generic English gerund, not IT vocabulary
+alg	exclude	ambiguous abbreviation, essentially never typed as a token
+align	exclude	aligne one deletion away, common French verb form
+aligned	exclude	French writes aligné; must stay correctable
+aligns	exclude	French alignes one dropped-e away, a plausible slip on a common verb
+alm	exclude	enterprise acronym written uppercase
+aloha	exclude	historical protocol name, essentially never typed today
+alternation	exclude	niche regex jargon; French prose says alternance
+alts	exclude	marginal shorthand plural; arts nearby
+ambles	exclude	not computing vocabulary
+ammy	exclude	nonce string
+ampte	exclude	junk string
+analysts	exclude	French analystes one e-deletion away
+anchors	admit	term of art in HTML and regex; French neighbors need multiple edits
+ansel	exclude	obsolete charset acronym, never typed
+apdu	exclude	niche smartcard acronym typed uppercase
+apic	exclude	niche hardware acronym typed uppercase
+apics	exclude	acronym-plural debris
+apps	admit	extremely common term; appas archaic and disjoint
+archies	exclude	obsolete tool plural, never typed
+archived	exclude	one substitution from French archivé, must stay correctable
+args	admit	core dev shorthand; arts g/t only vertically adjacent and contexts fully disjoint
+arguement	exclude	misspelling of argument, must remain correctable
+asic	exclude	hardware acronym written uppercase in practice
+assembled	exclude	generic English participle, not distinctive IT vocabulary
+assemblers	exclude	French prose says assembleurs
+assembles	exclude	identical to a French verb form that must stay correctable
+assemblies	admit	typed as-is in French .NET prose; assemblees accent slip not adjacent
+assembly	admit	standard term in French IT prose (langage assembly, .NET assembly); neighbors low
+assign	exclude	French assigne one dropped-e away, must stay correctable
+assigned	exclude	generic English participle, aligned with assign
+assigns	exclude	French assignes one dropped-e away; generic verb form otherwise
+asts	exclude	compiler acronym plural typed uppercase
+atapi	exclude	legacy hardware acronym typed uppercase
+atom	exclude	atome one deletion away and very common in French
+atoms	exclude	family with atom; atomes one deletion away
+attachment	exclude	French uses pièce jointe; attachement one insertion away
+attachments	exclude	French writes pièces jointes; attachements nearby
+attribute	exclude	French attribut one spurious-e away, a frequent IT word
+attributes	exclude	attributs one deletion away and common in French
+auths	exclude	marginal shorthand plural, not established
+avatara	exclude	nonce/foreign form
+avd	exclude	niche Android tooling acronym typed uppercase
+b-tard	exclude	censored slang artifact, not vocabulary
+barfs	exclude	hacker slang, never typed in French prose
+baseline	admit	genuine term typed in French (la baseline); neighbors weak
+batches	admit	genuine batch-processing and ML term; French neighbors need multiple edits
+bbses	exclude	obsolete acronym plural, essentially never typed
+bbss	exclude	table debris, not a word
+bcp	exclude	ambiguous business acronym
+beacon	admit	genuine BLE and networking term; reaching it from bacon needs an implausible insertion
+beast	exclude	not computing vocabulary
+beds	exclude	not computing vocabulary
+beep	exclude	generic English onomatopoeia
+bfi	exclude	nonce acronym
+bgp	admit	core routing protocol typed lowercase in configs; neighbors negligible
+bilerp	exclude	niche graphics jargon, essentially never typed
+binder	exclude	marginal English noun; the Android component is capitalized
+binds	admit	genuine dev term (key binds); bonds i/o substitution not adjacent
+bioses	exclude	awkward acronym plural, essentially never typed
+birt	exclude	niche Eclipse project acronym typed uppercase
+biters	exclude	nonce/junk plural
+bitness	exclude	niche term rarely typed in French prose
+bixie	exclude	nonce coinage
+blackout	exclude	generic English noun, not IT vocabulary
+blade	admit	genuine hardware and cloud UI term (blade server); no plausible French slip
+blades	admit	family with blade; genuine hardware plural
+blest	exclude	archaic form debris
+blips	exclude	generic English plural, not IT vocabulary
+blls	exclude	table debris, not a word
+blocke	exclude	archaic/junk spelling, must stay correctable
+blogs	admit	daily vocabulary; blocs c-to-g substitution implausible
+blort	exclude	nonce coinage
+bmp	admit	core image format typed lowercase as an extension; neighbors negligible
+bofa	exclude	junk acronym
+bofh	exclude	culture-reference acronym, not vocabulary
+bogon	exclude	hacker-lore jargon
+bogus	exclude	generic English adjective, not IT vocabulary
+bools	admit	genuine dev plural; bols is low-frequency and the doubling slip is unlikely
+booter	admit	established boot verb in French dev speech too; bouter o/u substitution not adjacent
+borders	exclude	generic English plural, not distinctive IT vocabulary
+borkage	exclude	joke coinage, never typed
+botnet	admit	established security term; bonnet n-to-t substitution implausible, disjoint contexts
+botnets	admit	genuine security term; bonnets slip n-to-t not adjacent
+botty	exclude	nonce/junk string
+boxen	exclude	Anglo hacker-jargon plural, essentially never typed by a French user
+braunch	exclude	nonce misspelling
+brent	exclude	proper name, not lowercase IT vocabulary
+bridg	exclude	truncated scanno, not a word
+bridged	exclude	generic English participle, not distinctive IT vocabulary
+brig	exclude	not IT vocabulary, generic English noun
+brigge	exclude	junk string
+brogrammer	exclude	joke coinage, never typed
+broke	exclude	generic English past tense, not IT vocabulary
+brouters	exclude	obsolete networking coinage, never typed
+browse	exclude	French prose uses naviguer; high cost
+browser	admit	daily term typed in French dev prose; French neighbors weak
+browses	exclude	marginal English verb form
+bsp	exclude	ambiguous niche acronym typed uppercase
+btses	exclude	acronym-plural debris
+btss	exclude	table debris, not a word
+buffers	admit	daily dev term typed in French (les buffers); neighbors weak
+bugg	exclude	misspelling of bug, must stay correctable
+burgir	exclude	nonce/junk string, not vocabulary
+burned	exclude	generic English participle, not distinctive IT vocabulary
+burner	exclude	generic English noun, weak as IT vocabulary
+burners	exclude	generic English plural, aligned with burner
+burnest	exclude	archaic second-person form
+burns	exclude	generic plural; French bruns one transposition away
+burnt	exclude	generic English participle, not IT vocabulary
+bustles	exclude	not computing vocabulary
+byok	exclude	niche marketing acronym typed uppercase
+byter	exclude	nonce coinage, never typed
+cadd	exclude	nonce acronym
+caddr	exclude	Lisp-only function name
+called	exclude	generic English participle, not distinctive IT vocabulary
+callee	admit	genuine CS term (caller/callee); no French neighbor of this shape
+calls	exclude	generic English plural, not distinctive IT vocabulary
+canaries	admit	standard plural (canary releases, stack canaries), aligned with canary
+canary	admit	established deployment term (canary release); canari y/i not a keyboard slip
+caption	exclude	French prose says légende; high cost
+carboned	exclude	nonce participle, never typed
+carbons	exclude	French carbones one dropped-e away; not IT vocabulary either
+cards	exclude	generic plural; cars one d-deletion away
+caricatura	exclude	foreign-language debris
+carousel	exclude	also the common misspelling of French carrousel, must stay correctable
+carries	exclude	generic English verb form, not IT vocabulary
+casing	exclude	marginal in French prose at high cost
+casings	exclude	marginal English plural
+castable	exclude	unestablished coinage
+casted	exclude	nonstandard English past tense, weak as protected vocabulary
+casts	admit	real dev speech; fr precedent admits at same cost
+catches	exclude	French caches one t-deletion away, and caches is itself IT vocabulary
+catting	exclude	jargon gerund of a command name
+ccrs	exclude	acronym-plural debris
+cdrs	exclude	acronym-plural debris
+censour	exclude	misspelling, must stay correctable
+certificate	exclude	certificat one deletion away and common in French
+certificates	exclude	certificats one deletion away and common in French
+channel	admit	core IT term (Go channels, IRC channels); charnel n/r substitution not adjacent
+chatters	exclude	generic English verb form, not IT vocabulary
+chattier	exclude	comparative debris; frequent chantier one substitution away
+child	exclude	generic English noun despite the child-process sense
+chill	exclude	generic English word, not IT vocabulary
+chopped	exclude	generic English participle, not IT vocabulary
+chopping	exclude	generic English gerund, not IT vocabulary
+chords	exclude	marginal input jargon, generic English otherwise
+chuis	exclude	French colloquial contraction, not English IT vocabulary
+cipa	exclude	legal acronym, not computing vocabulary
+cisa	exclude	organization/certification acronym typed uppercase
+cisc	exclude	architecture acronym written uppercase in prose
+cldc	exclude	obsolete Java ME acronym typed uppercase
+cleans	exclude	generic English verb form, not IT vocabulary
+clear	exclude	generic English word; command sense too weak to justify protection
+clock	exclude	French writes horloge; weak necessity
+cloners	exclude	marginal plural, not established IT vocabulary
+closest	exclude	ordinary English superlative, not IT
+clouds	exclude	French uses le cloud singular; clous one plausible d-insertion away
+clowd	exclude	misspelling of cloud, must stay correctable
+cluis	exclude	nonce/junk string
+cmd	admit	core Windows term typed lowercase daily; neighbors are negligible
+cmses	exclude	awkward acronym plural, essentially never typed
+codecs	admit	core IT plural typed daily; codes needs an implausible c insertion
+coders	exclude	English plural rarely typed in French prose
+cognos	exclude	product name, not vocabulary
+commented	exclude	French writes commenté; must stay correctable
+comparand	exclude	niche API jargon, essentially never typed
+compiles	admit	legitimate inflection typed daily; complies below threshold
+complement	exclude	French complement with the accent dropped, must stay correctable
+complements	exclude	accent-stripped French compléments, must remain correctable
+comprehension	exclude	French comprehension with the accent dropped, must stay correctable
+compress	exclude	compresse one deletion away, common French verb form
+compressed	exclude	French writes compressé; must stay correctable
+configs	admit	daily dev plural; confits is low-frequency and g/t only vertically adjacent
+connector	exclude	French prose says connecteur
+conneg	exclude	niche HTTP jargon abbreviation, essentially never typed
+conses	exclude	Lisp-only jargon plural at high cost
+contexts	exclude	French contextes one dropped-e away, must stay correctable
+continuations	admit	valid plural, genuine CS term
+converged	exclude	generic English participle, not distinctive IT vocabulary
+converges	exclude	generic English verb form, not distinctive IT vocabulary
+converter	exclude	French writes convertisseur; converser one substitution away
+convertor	exclude	nonstandard variant spelling, converter is the typed form
+cookied	exclude	nonce participle, never typed
+copiers	exclude	weak as IT vocabulary; French copier one trailing-s away
+coppie	exclude	scanno; French copie one plausible letter-doubling away
+copy	admit	core IT verb and command typed daily; French copie is two edits away
+coro	exclude	unestablished slang truncation of coroutine
+corum	exclude	misspelling of quorum, must remain correctable
+counter	exclude	French writes compteur; conter one deletion away
+couriers	exclude	French courriers one dropped-r away, must stay correctable
+cpq	exclude	nonce acronym
+cpses	exclude	acronym-plural debris
+cpython	admit	established implementation name typed lowercase; neighbors negligible
+cqrs	exclude	niche architecture acronym rarely typed lowercase; cars one adjacent a/q slip away
+crano	exclude	nonce/junk string
+cranos	exclude	nonce plural
+crashy	exclude	nonce adjective, never typed
+cred	exclude	arbitrated: family split from creds; the bare clipping lives outside computing (street cred) while the plural is the established dev shorthand
+creds	admit	real dev slang for credentials; French neighbors weak
+crunch	exclude	generic English verb, not distinctive IT vocabulary
+csma	exclude	protocol acronym, uppercase only
+csrs	exclude	acronym-plural debris
+ctal	exclude	nonce string
+cuda	admit	established GPU platform name typed lowercase in code; neighbors negligible
+cuts	exclude	generic plural; cuit/buts nearby
+cutted	exclude	nonstandard past tense, must stay correctable
+cutten	exclude	junk inflection, not a word
+cycler	exclude	marginal coinage, not established IT vocabulary
+cyclers	exclude	nonce plural
+cylinder	exclude	French cylindre one classic final-transposition away, must stay correctable
+cylinders	exclude	French cylindres one final-transposition away, aligned with cylinder
+dasd	exclude	mainframe acronym effectively never typed
+dasds	exclude	mainframe acronym plural, never typed
+dash	admit	genuine shell and streaming term (dash, MPEG-DASH); neighbors need non-adjacent slips
+dbals	exclude	acronym-plural debris
+dbc	exclude	obscure acronym, uppercase if ever
+dbcs	exclude	legacy charset acronym typed uppercase
+dbi	exclude	niche Perl module acronym typed uppercase
+dcb	exclude	nonce acronym
+dcim	exclude	folder name written uppercase
+dcing	exclude	slang artifact, not a word
+dcts	exclude	acronym-plural debris
+ddoses	exclude	awkward inflection, essentially never typed
+ddses	exclude	table debris, not a word
+decks	exclude	weak as French IT vocabulary
+declaration	exclude	French declaration with the accent dropped, must stay correctable
+declarations	exclude	accent-stripped French déclarations, must remain correctable
+declare	exclude	French declare with the accent dropped, a very common verb form that must stay correctable
+defines	admit	genuine C preprocessor noun typed in prose; French neighbors need two edits
+definition	exclude	French definition with the accent dropped, must stay correctable
+delouse	exclude	joke debugging coinage, never typed
+delouses	exclude	joke coinage inflection, never typed
+demos	exclude	French demos with the accent dropped, must stay correctable
+deop	exclude	IRC jargon, essentially never typed
+depin	exclude	crypto coinage, essentially never typed
+depins	exclude	nonce coinage plural
+destroyed	exclude	generic English participle, not IT vocabulary
+deviants	exclude	accent-stripped French déviants, must remain correctable
+dhts	exclude	acronym-plural debris
+diagnostick	exclude	misspelling/nonce, must stay correctable
+dialect	exclude	dialecte one deletion away and common in French
+dialects	exclude	dialectes one deletion away and common in French
+dicts	admit	genuine Python vocabulary; c-insertion toward dits implausible
+diffs	admit	daily dev term; diffus u-deletion slip possible but neighbor low and contexts disjoint
+dink	exclude	not computing vocabulary
+disables	exclude	generic English verb form, not distinctive IT vocabulary
+discette	exclude	misspelling of disquette, must remain correctable
+discord	admit	widely typed platform name; discorde deletion risk is negligible at this mass
+distribucion	exclude	foreign/misspelled form, must stay correctable
+distro	admit	very common Linux term; bistro d/b substitution not adjacent, disjoint contexts
+dkim	admit	standard email-auth term typed by admins; daim slip a-to-k implausible
+dled	exclude	junk abbreviation, never typed
+dling	exclude	slang artifact, not a word
+dlts	exclude	acronym-plural debris
+dmarc	admit	standard email-auth term typed lowercase in DNS records; neighbors negligible
+dmas	exclude	acronym plural typed uppercase if ever
+dmca	exclude	legal acronym written uppercase in practice
+dmers	exclude	social-media nonce plural
+dming	exclude	social-media slang artifact, not a word
+docos	exclude	regional slang, never typed in French prose
+dominate	exclude	generic English verb, not distinctive IT vocabulary
+doore	exclude	junk string
+dosed	exclude	generic English participle, not distinctive IT vocabulary; sits in the doser/dose family
+dpc	exclude	obscure Windows acronym, uppercase if ever, high masking
+dpcs	exclude	acronym-plural debris
+dpi	admit	standard resolution unit typed often; epi and pi low with implausible slips
+drf	exclude	nonce acronym
+drfs	exclude	acronym-plural debris
+dsses	exclude	table debris, not a word
+dtb	exclude	niche embedded acronym typed uppercase
+dvcs	exclude	acronym typed uppercase, not lowercase vocabulary
+dweb	exclude	niche coinage, essentially never typed
+dwim	exclude	obscure hacker acronym, never typed
+e-crime	exclude	hyphenated press coinage, essentially never typed
+eaps	exclude	acronym-plural debris
+ebit	exclude	finance acronym, not IT
+eboy	exclude	social slang, not IT
+echos	exclude	French echos with the accent dropped, must stay correctable
+ecm	exclude	enterprise acronym typed uppercase
+eda	exclude	ambiguous acronym typed uppercase
+edits	exclude	generic English plural, not distinctive IT vocabulary
+eef	exclude	nonce acronym
+eff	exclude	organization acronym, not vocabulary
+efi	admit	standard firmware term typed lowercase in paths; neighbors negligible
+egd	exclude	nonce acronym
+egg	exclude	legacy Python packaging term, essentially never typed today
+egirl	exclude	social slang, not IT
+eia	exclude	standards-body acronym, uppercase
+eib	exclude	junk acronym
+eisa	exclude	obsolete bus acronym typed uppercase
+elaboration	exclude	French elaboration with the accent dropped, must stay correctable
+emac	exclude	truncation artifact; emacs is the real form
+email	admit	daily vocabulary; fr precedent admits at same cost
+emm	exclude	nonce acronym
+emulation	exclude	French emulation with the accent dropped, must stay correctable
+encantation	exclude	misspelling of incantation, must stay correctable
+enclude	exclude	misspelling of include, must stay correctable
+engine	exclude	French says moteur; engin one deletion away and common
+engines	exclude	French engins one e-deletion away; same family as engine
+enregister	exclude	French enregistrer one dropped-r away, a plain misspelling that must stay correctable
+entries	exclude	collides with accent-stripped French entrées
+eof	admit	standard marker typed lowercase in dev prose; neighbors weak
+epic	admit	daily agile vocabulary in French teams; reaching it from pic needs a leading insertion
+epilogue	exclude	French epilogue with the accent dropped, must stay correctable
+epocha	exclude	archaic form
+erase	exclude	French says effacer; rase one insertion away
+eraser	exclude	generic English noun, weak as IT vocabulary
+erases	exclude	marginal English verb form
+ercs	exclude	acronym-plural debris
+eres	exclude	junk string
+erm	exclude	filler word, not computing vocabulary
+erps	exclude	enterprise acronym plural typed uppercase
+error	admit	typed constantly in French dev prose (log levels); erreur two edits away
+escapes	exclude	generic English plural, not distinctive IT vocabulary
+escs	exclude	marginal key-name plural, essentially never typed
+estate	exclude	not computing vocabulary
+eval	admit	daily dev term; aval e/a substitution not adjacent, contexts disjoint
+evaluation	exclude	French evaluation with the accent dropped, must stay correctable
+events	admit	core dev term; French event forms are rare and neighbors need multiple edits
+evil	exclude	generic English adjective, not computing vocabulary
+eviller	exclude	nonce coinage resembling a French verb
+evp	exclude	nonce acronym
+execute	exclude	French execute with the accent dropped, a common verb form that must stay correctable
+executions	exclude	French executions with the accent dropped, must stay correctable
+exes	exclude	marginal plural of a file extension; axes nearby
+exits	exclude	generic English plural, not distinctive IT vocabulary
+expired	exclude	French writes expiré; must stay correctable
+expires	exclude	identical to a French verb form that must stay correctable
+explode	exclude	French explose one adjacent d/s AZERTY slip away, must stay correctable
+explorers	exclude	trailing-s slip on the French verb explorer
+exposed	exclude	ordinary English past tense; exposé/exposer family nearby
+exposest	exclude	archaic second-person form
+exspire	exclude	misspelling of expire, must stay correctable
+extern	admit	core C keyword typed in code; externe deletion risk is low at this mass
+externs	exclude	arbitrated: family split from extern; same externe-minus-e fault class but the plural is essentially never typed, so protection buys nothing
+facades	exclude	French facades with the cedilla dropped, must stay correctable
+facets	exclude	French faces one t-deletion away
+fanin	exclude	unhyphenated niche EE term, essentially never typed
+fanins	exclude	niche EE term plural, aligned with fanin
+fark	exclude	nonce meme derivation
+farking	exclude	euphemism slang, not IT
+farks	exclude	nonce meme derivation
+farms	exclude	generic English plural, not distinctive IT vocabulary
+faster	exclude	ordinary English comparative, not IT
+fastest	exclude	ordinary English superlative, not IT
+fatter	exclude	comparative debris
+favourite	exclude	generic English word, not computing-specific
+favourites	exclude	generic English word, not computing-specific
+fcm	exclude	product acronym, uppercase only
+fdts	exclude	acronym-plural debris
+feat	admit	conventional-commit prefix typed daily; French neighbors need two edits
+feats	exclude	English plural not used as IT vocabulary
+feds	exclude	not computing vocabulary
+feed	admit	daily term (le feed, RSS) typed in French; neighbors weak
+fences	exclude	rarely typed in French prose despite the memory-model sense
+feps	exclude	acronym-plural debris
+fibers	exclude	French fibres one classic er/re transposition away, must stay correctable
+fifo	admit	standard CS term; fifi is informal and slip risk acceptable
+figlets	exclude	nonce tool jargon
+finalise	admit	common verb inflection typed daily and identical to the French form; neighbors same lemma family
+finger	exclude	obsolete protocol colliding with a common English noun
+fioa	exclude	nonce string
+fioas	exclude	junk acronym plural
+fixity	exclude	niche preservation jargon effectively never typed in French
+fixmes	exclude	niche plural of a code marker, high cost
+fixture	admit	standard testing term in French dev prose; mixture m/f substitution not adjacent
+flags	admit	daily dev term; all neighbors low-frequency
+flamer	exclude	dated slang verb; flamber one plausible b-deletion away
+flap	exclude	marginal networking shorthand, weak as standalone vocabulary
+flaps	exclude	marginal networking jargon plural
+flashed	exclude	French writes flashé; must stay correctable
+flashers	exclude	marginal plural, not established IT vocabulary
+flatten	admit	genuine dev verb (flatten an array); flattent is a low-frequency verb form
+flipped	exclude	ordinary English past tense, not IT
+flippy	exclude	nonce adjective, never typed
+flist	exclude	nonce clipping
+flists	exclude	junk plural, not a word
+floats	admit	core dev type name typed in French code prose; flots a-insertion implausible
+floss	exclude	FLOSS never typed lowercase in French prose; dental-floss reading dominates
+floud	exclude	nonce/junk string
+flows	admit	core English IT term (control flow, data flows); flots/flous need non-adjacent w substitutions
+fluent	exclude	weak as IT term in French prose
+flushes	exclude	generic English verb form, not distinctive IT vocabulary
+fmts	exclude	junk abbreviation plural
+fmx	exclude	nonce acronym
+folden	exclude	junk string
+folder	exclude	French writes dossier; weak necessity against French neighbors
+folds	exclude	marginal FP term in French prose; fonds/soldes neighbors
+forest	exclude	generic English noun despite the Active Directory sense
+formals	exclude	niche compiler jargon, essentially never typed
+fossers	exclude	nonce slang plural, never typed
+fossie	exclude	slang nonce, never typed
+fossies	exclude	slang nonce plural, never typed
+fpse	exclude	junk acronym
+framer	exclude	not established IT vocabulary; the tool name is capitalized
+frames	admit	core dev vocabulary (stack and video frames); trames f/t only diagonally adjacent, contexts disjoint
+frd	exclude	nonce acronym
+free	admit	core C function name and free-software term; neighbors negligible
+freeze	exclude	French writes gel/gelé; weak necessity
+freezers	exclude	generic English plural, not IT vocabulary
+freezes	exclude	marginal English verb form
+frem	exclude	nonce string
+fren	exclude	imageboard slang, not IT
+frob	exclude	obscure hacker jargon, never typed
+fugma	exclude	joke coinage
+func	admit	core keyword shorthand typed daily in Go and Python; neighbors negligible
+functions	exclude	French fonctions one u/o slip away, the classic anglicism error
+furni	exclude	nonce/junk string
+furnis	exclude	nonce clipping plural
+fusker	exclude	obscure internet jargon, never typed
+g-g	exclude	hyphenated table debris
+gadt	exclude	niche FP acronym typed uppercase
+gaian	exclude	not computing vocabulary
+gaians	exclude	junk plural, not IT vocabulary
+galleries	exclude	the classic doubled-l confusion with French galeries, must stay correctable
+gaol	exclude	archaic spelling, not IT
+gaters	exclude	nonce agent plural
+gauffre	exclude	doubled-f misspelling of French gaufre, must stay correctable
+gbit	admit	standard unit abbreviation typed in tech prose, aligned with kbit
+gbs	exclude	marginal unit plural, uppercase in practice
+gcs	exclude	ambiguous acronym plural
+gdal	exclude	niche geospatial library acronym written uppercase
+gef	exclude	nonce acronym
+gegl	exclude	niche library acronym, essentially never typed
+gem	exclude	Ruby-only jargon, three letters with dense French neighborhood
+gfm	exclude	niche markdown acronym typed uppercase
+gfs	exclude	niche filesystem acronym typed uppercase
+gfu	exclude	nonce acronym
+ggg	exclude	nonce string
+ggs	exclude	gaming interjection debris, not vocabulary
+ghit	exclude	nonce string
+gibit	exclude	niche binary-prefix unit, essentially never typed
+gibps	exclude	niche unit abbreviation, never typed
+gids	admit	standard Unix admin plural typed lowercase; neighbors negligible
+gifs	admit	daily vocabulary; vifs substitution implausible, contexts disjoint
+gigo	exclude	jokey acronym, essentially never typed
+gigs	exclude	marginal slang plural, weak as IT vocabulary
+gilt	exclude	not computing vocabulary
+glob	exclude	globe one deletion away and common in French
+globals	exclude	globales one deletion away and common in French
+globs	exclude	French globes one dropped-e away, a plausible slip
+gml	exclude	niche markup acronym typed uppercase
+gods	exclude	not computing vocabulary
+golfed	exclude	code-golf slang past tense
+golfer	exclude	code-golf slang, marginal
+gotos	exclude	marginal plural of a keyword, essentially never typed in French prose
+gould	exclude	proper-noun debris
+gpl	admit	license name typed lowercase daily in file headers; neighbors negligible
+gpm	exclude	nonce acronym
+gps	admit	daily term genuinely typed lowercase in French
+gpt	admit	standard partition-table and model-family name typed lowercase; neighbors negligible
+greek	exclude	marginal typography jargon, and lowercase proper adjective otherwise
+greps	exclude	marginal noun plural at high cost
+grilf	exclude	deliberate misspelling meme
+grilfs	exclude	deliberate misspelling meme
+groil	exclude	nonce string
+groop	exclude	deliberate misspelling of group, must stay correctable
+groul	exclude	nonce/junk string
+gsl	exclude	niche library acronym typed uppercase
+gtg	exclude	chat slang acronym
+gtgs	exclude	chat slang plural
+gtld	admit	genuine DNS-industry term; gold slip o-to-t not adjacent and contexts disjoint
+gung-fu	exclude	joke coinage
+gwt	exclude	obsolete toolkit acronym typed uppercase
+hacks	admit	daily IT vocabulary; all neighbors low-frequency
+halants	exclude	junk string
+hamr	exclude	niche storage acronym typed uppercase
+harden	exclude	English security verb; French prose says durcir
+hardens	exclude	marginal English verb form
+hash	admit	daily IT term; fr precedent admits at same cost
+hashes	admit	genuine dev plural; haches s/c substitution not adjacent and contexts disjoint
+hauler	exclude	not computing vocabulary
+hazards	exclude	French hasards one adjacent z/s AZERTY slip away, must stay correctable
+header	admit	daily dev term in French prose; no plausible French neighbor
+headers	admit	family with header; daily dev plural in French prose
+heap	admit	core CS term typed in French (le heap); neighbors weak
+help	admit	typed daily as a command/flag in French dev prose; masking low
+hibp	exclude	niche service acronym typed uppercase
+hids	exclude	ambiguous niche acronym plural typed uppercase
+hivernate	exclude	misspelling blending hiberner and Hibernate, must stay correctable
+hkt	exclude	niche type-theory abbreviation typed uppercase
+hmas	exclude	acronym-plural debris
+hoast	exclude	misspelling of host, must stay correctable
+holes	exclude	generic English plural, not IT vocabulary
+hook	admit	core dev term (git hooks, React hooks); look h/l substitution not adjacent
+hooks	admit	family with hook; git hooks typed daily
+host	admit	core IT term typed daily in French prose; neighbors are negligible
+hostee	exclude	nonce coinage, never typed
+hoster	exclude	unestablished agent noun
+hosters	exclude	unestablished coinage plural
+hosts	admit	family with host; /etc/hosts typed daily, neighbors weak
+hotkey	admit	genuine term typed in French; no French neighbor of this shape
+hovers	exclude	generic English verb form, not distinctive IT vocabulary
+hpc	exclude	computing-field acronym typed uppercase
+hpus	exclude	acronym-plural debris
+hung	exclude	generic English participle, not distinctive IT vocabulary
+hunk	admit	genuine diff/patch term; no common French word one plausible slip away
+hunks	admit	standard plural, aligned with hunk
+hybrid	exclude	hybride one deletion away and common in French
+hybrids	exclude	hybrides one deletion away and common in French
+hygiene	exclude	French hygiene with the accent dropped, must stay correctable
+hystorie	exclude	archaic/junk spelling, must stay correctable
+ianas	exclude	organization-acronym plural debris
+iaps	exclude	acronym-plural debris
+iax	exclude	niche VoIP acronym typed uppercase
+idek	exclude	chat slang acronym
+identifiers	exclude	French writes identifiants; trailing-s slip on the common verb identifier
+idm	exclude	ambiguous acronym typed uppercase
+idns	exclude	niche acronym plural typed uppercase
+idts	exclude	acronym-plural debris
+ifc	exclude	niche BIM format acronym typed uppercase
+ihv	exclude	niche industry acronym typed uppercase
+imap	admit	core protocol name commonly typed lowercase; imam p/m substitution not adjacent
+immortal	exclude	generic English adjective, not IT vocabulary
+immortals	exclude	generic English plural, not IT vocabulary
+immutable	admit	common dev anglicism; immuable is low-frequency and both forms are legitimate
+implode	exclude	implose one substitution away, common French verb
+in-line	exclude	rarely-typed hyphenated variant; inline is the form devs write
+include	admit	core dev keyword typed daily; reaching it from inclue needs an implausible d insertion
+incomplete	exclude	French incomplete with the accent dropped, must stay correctable
+indirected	exclude	nonce participle, never typed
+initiable	exclude	nonce adjective, never typed
+inject	exclude	injecte one deletion away, common French verb form
+injected	exclude	generic English past participle
+injects	exclude	French injectes one e-omission away; same family as inject
+inline	admit	daily dev term; incline is low-frequency and the context is disjoint
+inode	admit	core Unix filesystem term; inonde is a low-frequency verb form
+insn	exclude	niche toolchain abbreviation, essentially never typed
+inspector	exclude	generic English agent noun; French inspecteur nearby
+instaunce	exclude	archaic spelling debris
+intelligenter	exclude	Wiktionary comparative debris; French intelligente one r-deletion away
+intelligentest	exclude	superlative debris
+interceptor	admit	genuine framework term (Angular/HTTP interceptors) typed in French
+intern	exclude	French interne one dropped-final-e away, must stay correctable
+internaut	exclude	French internaute one dropped-e away, must stay correctable
+internets	exclude	jocular nonstandard plural; blocks internes/internet corrections
+interpreter	exclude	French interpreter with the accent dropped, a common verb that must stay correctable
+interroupt	exclude	misspelling of interrupt, must stay correctable
+interrumpt	exclude	misspelling of interrupt, must stay correctable
+ioe	exclude	nonce acronym
+ioes	exclude	acronym-plural debris
+ipam	exclude	niche network-management acronym typed uppercase
+ipc	exclude	written uppercase IPC in practice
+is-a	exclude	hyphenated OOP jargon, essentially never typed as a token
+is-as	exclude	hyphenated jargon plural, never typed
+isam	exclude	legacy access-method acronym typed uppercase
+isc	exclude	organization acronym typed uppercase
+isf	exclude	nonce acronym
+isr	exclude	embedded acronym typed uppercase
+itsm	exclude	service-management acronym typed uppercase
+ixes	exclude	Wiktionary debris, not a word anyone types
+jad	exclude	obsolete J2ME acronym
+jank	admit	genuine web-performance jargon; no common French word one plausible slip away
+japh	exclude	Perl in-joke acronym, never typed
+japhs	exclude	Perl in-joke plural, never typed
+jax	exclude	short library acronym with heavy French mass nearby (fax/jas/jar), uppercase in prose
+jdt	exclude	niche Eclipse component acronym, uppercase if ever
+jeos	exclude	nonce acronym
+jeps	exclude	acronym-plural debris
+jmps	exclude	assembly mnemonic plural
+jna	exclude	niche Java acronym typed uppercase
+jocks	exclude	not computing vocabulary
+jres	exclude	acronym plural typed uppercase, marginal
+jscript	exclude	obsolete Microsoft dialect name, essentially never typed today
+jsse	exclude	niche Java security acronym typed uppercase
+jukebox	exclude	generic media term, not computing-specific
+jumped	exclude	generic English past tense, not IT vocabulary
+junction	exclude	one vowel slip from French jonction, must stay correctable
+justifiers	exclude	marginal coinage; French justifier one trailing-s away
+karmas	admit	legitimate plural of an established word; only neighbor is its own singular
+kbd	admit	genuine HTML element name typed lowercase; neighbors negligible
+kbit	admit	standard unit typed in French (kbit/s); kit b-insertion implausible
+kermit	exclude	obsolete protocol name, essentially never typed today
+key	admit	daily dev term (API key); no plausible French neighbor
+kfers	exclude	junk acronym plural
+kill	admit	core sysadmin verb typed in French; kilt/bill substitutions implausible
+killed	exclude	generic English participle, not distinctive IT vocabulary
+kills	exclude	generic/gaming plural, not core computing; high cost
+kitler	exclude	meme coinage
+klocs	exclude	obsolete metrics jargon
+kluge	exclude	rare jargon variant of kludge, essentially never typed
+ksis	exclude	acronym-plural debris
+kubes	exclude	unestablished slang plural; cubes/tubes nearby
+kungfu	exclude	not computing vocabulary
+kwd	exclude	nonce abbreviation
+landers	exclude	marketing slang plural
+languages	exclude	generic English plural, not distinctive IT vocabulary
+lapp	exclude	niche stack acronym, essentially never typed
+lassoes	exclude	generic English plural
+lassu	exclude	nonce string, not English computing vocabulary
+launch	exclude	generic English verb, not distinctive IT vocabulary
+layers	admit	term of art in ML and graphics prose; French neighbors need multiple edits
+lcps	exclude	acronym-plural debris
+lease	admit	genuine DHCP terminology typed in French networking prose
+leaves	exclude	generic English plural; French prose says feuilles for tree leaves
+lexes	exclude	rare verb form debris
+lff	exclude	nonce acronym
+lfn	exclude	obsolete filesystem acronym typed uppercase
+libraries	exclude	generic English plural; French prose says bibliothèques
+lifo	admit	standard CS term paired with fifo; neighbors negligible
+liking	exclude	social-media gerund
+lilo	exclude	obsolete bootloader name, essentially never typed today
+link	admit	core IT term typed daily; neighbors need non-adjacent substitutions
+linting	admit	genuine dev term typed in French (le linting); neighbors weak
+linx	exclude	misspelling/nonce, must stay correctable toward links
+lisper	exclude	marginal community jargon, essentially never typed
+litteral	exclude	misspelling of littéral/literal, must remain correctable
+llps	exclude	acronym-plural debris
+load	admit	daily dev term (load balancer, la load); French neighbors weak
+loaders	admit	common dev term; leaders o/e substitution not adjacent, disjoint contexts
+loads	admit	standard inflection, aligned with load
+localization	exclude	French localisation one adjacent z/s AZERTY slip away, must stay correctable
+localizer	exclude	French localiser one adjacent z/s AZERTY slip away, must stay correctable
+locker	exclude	generic English noun, not IT vocabulary
+lockers	exclude	generic English plural, not IT vocabulary
+locks	admit	core concurrency term typed daily; neighbors negligible
+logins	admit	daily IT plural; reaching it from logis needs an implausible n insertion
+logon	admit	real Windows term typed in French technical prose
+logons	admit	standard English plural of a real Windows term, aligned with logon
+loops	exclude	French says boucles; loups is a common neighbor one vowel away
+louses	exclude	Wiktionary form debris
+loved	exclude	generic English participle, not IT vocabulary
+loving	exclude	generic English gerund, not IT vocabulary
+lowers	exclude	generic English verb form, not IT vocabulary
+lpcs	exclude	acronym-plural debris
+lsps	exclude	acronym plural typed uppercase, marginal
+ltos	exclude	acronym-plural debris
+lusers	exclude	joke jargon plural, never typed
+lvalue	admit	standard C++ term typed lowercase; no French neighbor
+lwps	exclude	acronym-plural debris
+lwuit	exclude	obsolete toolkit acronym, never typed
+lzma	admit	standard compression algorithm name typed lowercase; neighbors negligible
+macos	admit	product name typed daily; macon s/n substitution not adjacent
+macros	admit	core IT plural; micros a/i substitution not adjacent
+magnet	admit	genuine magnet-link term used in French; magnat e/a substitution not adjacent
+maister	exclude	archaic spelling debris
+makes	exclude	generic English verb form, not IT vocabulary
+manifest	exclude	French manifeste one dropped-final-e away, a plausible slip that must stay correctable
+manifests	exclude	French manifestes one e-omission away, a very plausible slip
+mapper	admit	genuine dev term (object mapper, device-mapper); neighbors negligible
+marchitecture	exclude	joke coinage, never typed
+marshall	exclude	nonstandard doubled-l variant; marshal is the typed form
+mask	admit	genuine networking and graphics term, aligned with masks
+masks	admit	genuine networking and graphics term (subnet and bit masks); no common French word one plausible slip away
+massah	exclude	nonce string
+masta	exclude	slang misspelling
+mastr	exclude	truncated scanno, not a word
+matched	exclude	generic English participle, not distinctive IT vocabulary
+mayster	exclude	archaic spelling debris
+mbox	admit	standard mail format name typed lowercase; neighbors negligible
+mboxes	admit	family with mbox; mail-format plural
+mcus	exclude	acronym-plural debris
+mdac	exclude	obsolete Microsoft component acronym
+mdas	exclude	acronym-plural debris
+mdm	exclude	enterprise acronym written uppercase
+mdx	admit	genuine format name typed lowercase as an extension; neighbors negligible
+measter	exclude	archaic spelling debris
+medias	exclude	French medias with the accent dropped, the classic misspelling that must stay correctable
+memo	exclude	French memo with the accent dropped, must stay correctable
+microes	exclude	junk plural, not a word
+mimd	exclude	niche parallel-computing acronym typed uppercase
+minix	admit	established OS name; French neighbors need two edits
+modelers	exclude	marginal agent-noun plural
+modell	exclude	doubled-l misspelling of model, must stay correctable
+modeller	exclude	marginal variant spelling, not established IT vocabulary
+models	exclude	French modèles/modeles one e-deletion away
+modifiers	exclude	French verb modifier plus spurious s, a correctable typo
+moduli	exclude	rare math plural, essentially never typed by a computing user
+modulo	admit	genuine CS operator name used in French too; module o/e substitution not adjacent
+modulus	admit	genuine math and crypto term; French modules is two edits away
+monitour	exclude	misspelling of monitor/moniteur, must stay correctable
+moove	exclude	misspelling of move, must stay correctable
+mount	admit	core sysadmin verb typed in French; mont u-insertion not a keyboard slip
+mounts	admit	standard inflection, aligned with mount; monts needs an implausible u insertion
+mouso	exclude	nonce string
+moves	exclude	generic English verb form, not distinctive IT vocabulary
+mowse	exclude	joke misspelling of mouse, must stay correctable
+msas	exclude	acronym-plural debris
+msil	exclude	niche .NET acronym typed uppercase
+msus	exclude	acronym-plural debris
+msys	admit	established Windows dev environment name typed lowercase; neighbors negligible
+mudding	exclude	obsolete gaming jargon, never typed
+muder	exclude	scanno/junk string
+mung	exclude	obscure hacker jargon, never typed in French prose
+mungs	exclude	obscure jargon inflection, never typed
+munj	exclude	nonce string
+mutex	admit	core concurrency term typed daily in French; neighbors weak
+mutual	exclude	generic English adjective, not distinctive IT vocabulary
+mvp	exclude	product acronym written uppercase, no lowercase typing context
+naiive	exclude	misspelling of naive, must stay correctable
+naive	exclude	French naive with the diaeresis dropped, must stay correctable
+nak	exclude	protocol abbreviation written uppercase, never typed
+natiue	exclude	scanno of native, not a word
+natyf	exclude	nonce misspelling
+nav	exclude	three-letter shorthand with high masking, too many short French neighbors
+navers	exclude	nonce plural
+nbf	exclude	nonce acronym
+netties	exclude	nonce slang plural, never typed
+neurodes	exclude	nonce coinage plural
+newe	exclude	junk string
+nfts	admit	widely typed crypto plural; nets slip only diagonally plausible and contexts disjoint
+niced	exclude	nonce participle of a shell command, never typed
+nick	admit	IRC/chat term genuinely typed in French; neighbors weak
+nics	exclude	acronym plural typed uppercase, high cost
+nipples	exclude	not computing vocabulary
+nonserver	exclude	Wiktionary non- coinage, never typed
+nro	exclude	nonce acronym
+nsf	exclude	nonce acronym
+nsis	exclude	niche installer acronym typed uppercase
+numa	exclude	hardware acronym written uppercase
+obliqued	exclude	Wiktionary form debris
+oboe	exclude	not computing vocabulary
+odb	exclude	nonce acronym
+odd	exclude	ordinary English word, not IT
+odf	exclude	niche format acronym rarely typed in prose
+odm	exclude	niche industry acronym typed uppercase
+ofm	exclude	nonce acronym
+okie	exclude	slang, not computing vocabulary
+olap	exclude	BI acronym written uppercase in practice
+olaps	exclude	implausible plural of an acronym
+old	exclude	ordinary English word, not IT
+omlette	exclude	misspelling that must stay correctable
+ooa	exclude	obsolete methodology acronym
+opake	exclude	misspelling of opaque, must stay correctable
+opaquer	exclude	nonce coinage that looks like a French verb
+opaquest	exclude	superlative debris
+opens	exclude	generic English verb form, not distinctive IT vocabulary
+oper	exclude	IRC-only abbreviation, dense short-word neighborhood
+opfs	exclude	niche web API acronym typed uppercase
+organizer	exclude	French organiser one adjacent z/s AZERTY slip away, must stay correctable
+os's	exclude	apostrophe artifact, not a typed form
+oscs	exclude	acronym-plural debris
+osgi	exclude	niche framework acronym typed with mixed case
+osss	exclude	table debris, not a word
+otp	exclude	top is one classic transposition away and very common; protecting otp would shield mangled top
+outpage	exclude	nonce coinage, never typed
+outpages	exclude	nonce coinage plural, never typed
+ovf	exclude	niche virtualization acronym typed uppercase
+owa	exclude	product acronym, uppercase only
+packet	admit	core networking term typed daily; French paquet is two edits away
+packing	exclude	not French computing vocabulary; frequent parking nearby
+pacss	exclude	acronym-plural debris
+padding	admit	core CSS and crypto term typed daily; pudding a/u substitution not adjacent
+paragraph	exclude	paragraphe one deletion away and common in French
+paragraphs	exclude	paragraphes one deletion away and common in French
+param	admit	daily dev shorthand; reaching it from para needs an implausible m insertion
+params	admit	daily dev shorthand; same family as param
+parented	exclude	nonce participle, never typed
+parity	exclude	generic English noun; French prose says parité
+parsable	admit	genuine dev adjective; no plausible French neighbor
+parsing	admit	genuine daily French dev borrowing (le parsing); parking slip s-to-k not adjacent
+partials	admit	genuine template term in web frameworks; partiels a/e substitution not adjacent
+parting	exclude	generic English gerund, not computing vocabulary
+pasted	exclude	generic English participle, not distinctive IT vocabulary
+pasting	exclude	generic English gerund, not distinctive IT vocabulary
+path	admit	core dev term (le PATH); math/patte substitutions implausible
+paths	admit	core dev term typed daily; no common French word one plausible slip away
+pbp	exclude	nonce acronym
+pdf	admit	daily vocabulary; fr precedent admits at same cost
+peers	admit	core networking term (P2P peers); French neighbors need multiple edits
+pentest	admit	daily security vocabulary in French too; neighbors are negligible
+perceptron	admit	established ML term; perception i-to-r substitution implausible, disjoint contexts
+perceptrons	admit	genuine ML plural; perceptions substitution not adjacent, disjoint contexts
+periscope	exclude	product name, not vocabulary
+persist	exclude	persiste one deletion away, common French verb form
+persisted	exclude	generic English participle, not distinctive IT vocabulary
+persists	exclude	generic English verb form, not distinctive IT vocabulary
+pessimism	exclude	generic English noun, not IT vocabulary
+pessimisms	exclude	non-word plural
+pfy	exclude	BOFH joke jargon, never typed
+pga	exclude	not computing vocabulary in lowercase use
+pgp	admit	established crypto tool name typed lowercase; pop g/o substitution not adjacent
+pharmer	exclude	marginal security coinage, essentially never typed
+phper	exclude	nonce coinage for PHP programmer, never typed
+phy	exclude	layer abbreviation written uppercase, never typed lowercase
+picas	exclude	typography unit plural, essentially never typed today
+pickel	exclude	misspelling of pickle, must stay correctable
+pickle	admit	genuine Python serialization term; neighbors negligible
+pickler	exclude	marginal Python coinage, essentially never typed
+plainest	exclude	ordinary English superlative, not IT
+platter	exclude	marginal hardware term rarely typed in French
+plop	exclude	nonce string
+plotter	exclude	marginal in French prose; flotter/crotter family nearby
+pmc	exclude	nonce acronym
+pmcs	exclude	acronym-plural debris
+pmos	exclude	niche electronics acronym typed uppercase
+pmp	exclude	certification acronym typed uppercase, not IT vocabulary
+pnd	exclude	nonce acronym
+pnds	exclude	acronym-plural debris
+pnp	exclude	acronym written uppercase in practice
+poast	exclude	deliberate internet misspelling of post, must stay correctable
+poasts	exclude	deliberate meme misspelling plural
+podules	exclude	obsolete Acorn jargon, never typed in French prose
+pointees	exclude	rare coinage; French pointees with accent one slip away, must stay correctable
+pointier	exclude	comparative debris
+poked	exclude	marginal past tense and weak vocabulary; French poker nearby
+policers	exclude	coinage; French policiers one insertion away
+polled	exclude	generic English participle, not distinctive IT vocabulary
+poller	exclude	niche agent noun; frequent coller/aller family nearby at high cost
+pooper	exclude	nonce coinage
+populate	exclude	generic English verb, not distinctive IT vocabulary
+porcelain	exclude	porcelaine one deletion away and common in French
+porcelains	exclude	git jargon never pluralized in prose; French porcelaines one dropped-e away
+portals	exclude	French writes portails; weak necessity
+posix	admit	core standard name typed lowercase daily; neighbors negligible
+postees	exclude	junk form; French postees with accent one slip away
+ppc	exclude	marginal acronym, uppercase if ever; pic nearby
+ppcs	exclude	acronym-plural debris
+ppp	exclude	protocol acronym typed uppercase in practice
+prefs	admit	common dev shorthand for preferences; profs e/o substitution not adjacent
+prelude	exclude	French prelude with the accent dropped, must stay correctable
+preso	exclude	marginal slang, never typed in French prose
+presos	exclude	marginal slang, never typed in French prose
+primative	exclude	misspelling of primitive, must remain correctable
+privates	exclude	junk plural, not IT vocabulary
+privilege	exclude	French privilege with the accent dropped, must stay correctable
+privileges	exclude	accent-stripped French privilèges, must remain correctable
+procedure	exclude	French procedure with the accent dropped, must stay correctable
+procedures	exclude	accent-stripped French procédures, must remain correctable
+prods	exclude	marginal slang plural, not established IT vocabulary
+profiled	exclude	generic English participle, not distinctive IT vocabulary
+profilee	exclude	nonce coinage, never typed
+profilers	admit	genuine dev plural typed in French; masking low
+profiles	exclude	French profils one e-deletion away
+progies	exclude	slang nonce plural, never typed
+programer	exclude	misspelling of programmer, must remain correctable
+programmers	exclude	trailing-s slip on the common French verb programmer
+progs	exclude	marginal slang plural; profs one adjacent f/g AZERTY slip away
+prolog	admit	established language name; French prologue is two edits away
+prologues	exclude	ordinary word shared with French, not a computing term
+promote	exclude	generic English verb, not distinctive IT vocabulary
+prompted	exclude	generic English participle, not IT vocabulary
+promyse	exclude	nonce misspelling, never typed
+protocol	exclude	protocole one deletion away and common in French
+protocols	exclude	protocoles one deletion away and common in French
+proxies	admit	daily IT term; reaching it from proies needs an implausible x insertion
+prælude	exclude	archaic ligature debris
+psbs	exclude	acronym-plural debris
+pseud	exclude	truncation artifact, must stay correctable toward pseudo
+psps	exclude	acronym-plural debris
+psw	exclude	nonce acronym
+psws	exclude	acronym-plural debris
+ptbs	exclude	acronym-plural debris
+ptf	exclude	nonce acronym
+ptp	exclude	protocol acronym typed uppercase in practice
+pucks	exclude	not computing vocabulary
+pump	exclude	generic English noun; only the message-pump collocation is technical
+pung	exclude	nonce/junk string
+purest	exclude	ordinary English superlative, not IT
+purty	exclude	dialect slang, not IT
+push	admit	daily dev borrowing (git push); pus is disjoint and h-append slip unlikely
+pushes	admit	standard inflection, aligned with push
+puters	exclude	jokey truncation slang, never typed seriously
+pwa	admit	standard modern web term typed lowercase; neighbors negligible
+pwi	exclude	nonce acronym
+pwp	exclude	nonce acronym
+qic	exclude	obsolete tape acronym, uppercase if ever; tic/pic/bic cluster nearby
+qics	exclude	obsolete acronym plural
+qorum	exclude	misspelling of quorum, must stay correctable
+qualifiers	exclude	French verb qualifier plus spurious s, a correctable typo
+quarantain	exclude	misspelling sitting between French quarantaine and English quarantine, must stay correctable
+quarantine	exclude	generic English; French quarantaine close and term rarely typed
+queries	admit	core dev term typed daily; French neighbors need multiple edits
+queuers	exclude	marginal coinage, not established vocabulary
+quittest	exclude	archaic second-person form, Wiktionary noise
+quora	exclude	ambiguous rare plural and brand name, essentially never typed lowercase
+raising	exclude	generic gerund; French raisin one g-deletion away
+raml	exclude	niche API-spec acronym, essentially never typed lowercase
+ranck	exclude	nonce misspelling of rank
+ravel	exclude	marginal library function name, not established prose vocabulary
+ravels	exclude	marginal library function name plural, aligned with ravel
+rcp	exclude	obsolete command name
+rcps	exclude	acronym-plural debris
+rdc	exclude	collides with the common French abbreviation rez-de-chaussée
+rdfa	exclude	niche semantic-web acronym, essentially never typed
+rdp	admit	standard remote-desktop term typed lowercase as an extension; neighbors negligible
+reactions	exclude	French reactions with the accent dropped, must stay correctable
+real	exclude	ordinary English word, not IT
+reblit	exclude	nonce coinage, never typed
+recent	exclude	French recent with the accent dropped, must stay correctable
+recents	exclude	French recents with the accent dropped, must stay correctable
+recommendation	exclude	the classic English-interference misspelling of French recommandation
+recommendations	exclude	the classic English-interference misspelling of French recommandations, must stay correctable
+recur	exclude	rare English verb, not typed in French prose
+recurs	exclude	French recours one dropped-o away, a plausible slip
+redist	exclude	Windows-installer abbreviation, marginal
+refer	exclude	generic English verb, not distinctive IT vocabulary
+referer	exclude	also the accent-stripped shape of référer, must remain correctable
+referrer	admit	standard English IT term; French accented forms are two edits away
+register	exclude	French registre one classic final-transposition away, must stay correctable
+registers	exclude	French registres one final-transposition away; aligned with register
+registries	admit	family with registry; core dev term, neighbors weak
+registry	admit	core Windows term; registre y/e substitution not adjacent, contexts disjoint
+regression	exclude	French regression with the accent dropped, must stay correctable
+regs	exclude	marginal slang plural, not established vocabulary
+relex	exclude	junk string, not established vocabulary
+relp	exclude	niche protocol acronym, essentially never typed
+remort	exclude	obsolete MUD jargon, never typed
+remotes	admit	genuine git term typed in French (les remotes); neighbors weak
+renice	admit	genuine Unix command; reaching it from renie needs an implausible c insertion
+repaint	admit	genuine rendering term; repeint a/e substitution not adjacent
+reparent	exclude	French reparent with the accent dropped, a common verb form that must stay correctable
+repartition	exclude	French repartition with the accent dropped, must stay correctable
+repertoire	exclude	French repertoire with the accent dropped, and it is the French word for directory
+repl	exclude	written uppercase in practice; repli one insertion away and common
+reposts	exclude	marginal social-media plural, weak vocabulary
+resel	exclude	nonce coinage
+reservoir	exclude	French reservoir with the accent dropped, must stay correctable
+reservoirs	exclude	accent-stripped French réservoirs, must remain correctable
+resident	exclude	French resident with the accent dropped, must stay correctable
+resolution	exclude	French resolution with the accent dropped, must stay correctable
+resolutions	exclude	accent-stripped French résolutions, must remain correctable
+restarts	exclude	generic English plural, not distinctive IT vocabulary
+reup	exclude	slang clipping
+reups	exclude	social slang plural
+reverses	exclude	weak as IT term, and reverser forms are already in base
+rfb	exclude	niche protocol acronym typed uppercase
+rfc	admit	daily standards vocabulary typed lowercase; neighbors negligible
+rfcs	admit	family with rfc; standards plural typed lowercase
+rhip	exclude	nonce acronym
+rll	exclude	obsolete encoding acronym, essentially never typed
+rmb	exclude	nonce acronym
+rming	exclude	shell-slang artifact, not a word
+rolls	exclude	generic English plural, not IT vocabulary
+room	exclude	generic English noun, not distinctive IT vocabulary
+roots	exclude	marginal English plural in French prose
+routing	admit	genuine French dev borrowing (le routing); routine is distance 2
+rpc	admit	core distributed-systems term typed lowercase in code; neighbors negligible
+rpcs	admit	family with rpc; protocol plural typed lowercase
+rpg	admit	widely typed genre and language name; neighbors negligible
+rpn	exclude	niche notation acronym typed uppercase
+rsvp	exclude	not computing vocabulary
+rtcs	exclude	ambiguous acronym plural
+rtti	exclude	C++ acronym typed uppercase
+rtx	admit	real GPU line genuinely typed lowercase by French users
+runet	exclude	proper noun, not vocabulary
+rvalue	admit	standard C++ term typed lowercase; no French neighbor
+rymer	exclude	nonce string
+sabr	exclude	nonce acronym
+safer	exclude	ordinary English comparative, not IT
+sarif	exclude	niche tooling format, essentially never typed in prose
+sash	exclude	generic English noun; GUI sense too niche to type
+sashes	exclude	generic English noun, not IT vocabulary
+sasl	admit	standard auth framework name typed lowercase in configs; neighbors negligible
+saturations	exclude	generic English plural, not IT vocabulary
+scanned	exclude	French writes scanné; must stay correctable
+scea	exclude	nonce acronym
+sceas	exclude	acronym-plural debris
+sclate	exclude	scanno/junk string
+scm	exclude	acronym typed uppercase, not lowercase vocabulary
+sco	exclude	company acronym, not vocabulary
+scripter	admit	genuine IT agent noun; neighbors are same lemma family
+scrobble	exclude	niche platform jargon, essentially never typed in French prose
+sdls	exclude	acronym-plural debris
+sdp	exclude	niche signalling acronym typed uppercase
+sdts	exclude	acronym-plural debris
+securable	exclude	nonce adjective
+seech	exclude	junk string
+seed	admit	real term (torrent seed, random seed) typed in French; neighbors weak
+selection	exclude	French selection with the accent dropped, must stay correctable
+semver	admit	daily dev vocabulary; semer needs an implausible v insertion
+seoer	exclude	nonce coinage, never typed
+servers	exclude	French serveurs one u-omission away, very plausible
+setups	admit	typed in French dev prose (les setups); French neighbors weak
+sexps	exclude	Lisp-only jargon plural
+shape	exclude	weak as IT term in French prose
+shapelet	exclude	nonce coinage
+shapelets	exclude	nonce plural
+shapes	exclude	weak as IT term in French prose
+share	exclude	generic English noun; French prose says partage
+shas	exclude	marginal acronym plural, written SHAs in practice
+shim	admit	genuine dev term typed in French prose; neighbors weak
+shock	exclude	not computing vocabulary
+shout	exclude	generic English verb, not IT vocabulary
+shouts	exclude	generic English plural, not IT vocabulary
+shuts	exclude	generic English verb form, not IT vocabulary
+sids	exclude	acronym-plural debris
+sift	exclude	generic English verb; the algorithm name is uppercase
+sifting	exclude	generic English gerund, not IT vocabulary
+sigs	exclude	marginal slang plural, not established vocabulary
+siloes	exclude	nonstandard plural, must stay correctable toward silos
+simd	admit	standard vectorization term typed lowercase in code; neighbors negligible
+sink	exclude	generic English noun; rarely typed in French dev prose
+sinks	exclude	marginal English plural
+siri	exclude	product name typed capitalized; high cost
+siris	exclude	nonce plural of a product name, never typed
+sisd	exclude	niche architecture acronym typed uppercase
+skag	exclude	nonce string
+slack	admit	genuine slack-space/slack-time term and product name; neighbors negligible
+slacks	exclude	marginal plural, not IT
+slander	exclude	not computing vocabulary
+slates	exclude	generic English plural, not IT vocabulary
+sled	exclude	not established IT vocabulary in lowercase prose
+slider	admit	standard UI control name; French neighbors need non-adjacent substitutions
+slides	admit	daily presentation vocabulary typed in French; neighbors need multiple edits
+slpp	exclude	nonce acronym
+slsa	exclude	niche supply-chain acronym typed uppercase
+smail	exclude	joke/nonce coinage, never typed
+smails	exclude	junk plural, not a word
+smp	exclude	niche architecture acronym typed uppercase
+smts	exclude	acronym-plural debris
+snapin	exclude	written snap-in in practice; unhyphenated form essentially never typed
+snapins	exclude	written snap-ins in practice; unhyphenated form essentially never typed
+snark	exclude	not computing vocabulary
+sniffed	exclude	generic English participle, not distinctive IT vocabulary
+sniffs	exclude	generic English verb form, not IT vocabulary
+snip	exclude	marginal; slip is a common French word one substitution away
+snips	exclude	generic English plural, aligned with snip
+snses	exclude	acronym-plural debris
+socks	exclude	arbitrated: French stocks is one dropped-t away, the archetypal omission slip; the socks5 sense does not pay for shielding it
+sodimm	exclude	hardware acronym written uppercase and hyphenated in practice
+softies	exclude	jokey slang for Microsoft staff, never typed in French prose
+softs	exclude	marginal slang plural, not established vocabulary
+spam	admit	extremely common term; neighbors rare and disjoint
+span	exclude	spam is extremely common and span/spam is a classic single-letter confusion
+spb	exclude	nonce acronym
+speculation	exclude	accent-stripped French spéculation, must remain correctable
+speculations	exclude	accent-stripped French spéculations, must remain correctable
+speller	exclude	marginal agent noun
+spiders	exclude	French writes robots/araignées; weak necessity
+sping	exclude	nonce coinage
+splines	admit	genuine graphics and math term; French neighbors need two or more edits
+spls	exclude	acronym-plural debris
+spod	exclude	obscure jargon slang, never typed
+spods	exclude	obsolete jargon plural
+spog	exclude	nonce acronym
+spogs	exclude	nonce plural
+spool	admit	genuine printing and queueing term typed in French dev prose
+squatted	exclude	generic English participle, not IT vocabulary
+squawk	exclude	not computing vocabulary
+srp	exclude	design-principle acronym typed uppercase
+ssrf	admit	real security term typed lowercase by French practitioners
+staas	exclude	as-a-service acronym nobody types
+stabler	exclude	comparative debris
+stablest	exclude	superlative debris
+stack	admit	core daily term (la stack); stock a/o substitution not adjacent
+stacks	admit	family with stack; core daily term, stocks a/o not adjacent
+staler	exclude	comparative debris
+steal	exclude	generic English verb, not distinctive IT vocabulary
+steals	exclude	generic English verb form, not IT vocabulary
+steps	exclude	generic English plural, not distinctive IT vocabulary
+stewards	exclude	not computing vocabulary
+sticky	admit	genuine dev adjective (sticky bit/header) typed in French; neighbors weak
+stored	exclude	generic English participle, not distinctive IT vocabulary
+storest	exclude	archaic second-person form
+storie	exclude	misspelling of story/stories, must stay correctable
+stories	admit	daily social-media and agile vocabulary; neighbors low and slips implausible
+storing	exclude	generic English gerund, not distinctive IT vocabulary
+story	admit	daily social-media and agile vocabulary; store slip e-to-y not adjacent
+streak	exclude	generic English noun, not IT vocabulary
+streaks	exclude	generic English plural, not IT vocabulary
+stride	admit	genuine array and ML term, aligned with strides
+strides	admit	genuine array and ML term; French neighbors need multiple edits
+stringy	exclude	nonce adjective, never typed
+stripe	admit	real payment platform name typed lowercase by devs
+stripes	exclude	arbitrated: family split from stripe, whose neighbourhood is less than half as dense; the plural is barely typed and carries the mass
+struct	admit	core C/Go/Rust keyword typed daily; strict below 10 opm and contexts fully disjoint
+stub	admit	genuine dev term (RPC stub); stuc is low-frequency and disjoint
+stubs	admit	standard plural, aligned with stub
+stuff	exclude	ordinary English word, not IT
+stylus	admit	genuine input-device and preprocessor name; French neighbors need two edits
+subsite	exclude	unestablished coinage
+subsites	exclude	unestablished coinage plural
+succ	exclude	truncation/slang, not established
+sunk	exclude	generic English participle, not IT vocabulary
+supervisor	exclude	generic English noun; French prose says superviseur
+supervisour	exclude	misspelling, must stay correctable
+supportest	exclude	archaic second-person form
+symbol	exclude	symbole one deletion away, extremely common French word
+symbols	exclude	French symboles one dropped-e away, must stay correctable
+syntax	admit	core term typed daily; syntaxe deletion risk is negligible at this mass
+takes	exclude	ordinary English verb, not IT
+targetted	exclude	nonstandard doubled-t spelling, must stay correctable
+tarpit	exclude	niche security jargon rarely typed in French
+tasks	exclude	generic English plural, not distinctive IT vocabulary
+taxel	exclude	nonce coinage
+taxels	exclude	nonce plural
+tbf	exclude	chat slang acronym
+tcb	exclude	niche security acronym typed uppercase
+tcf	exclude	nonce acronym
+tears	exclude	generic English plural, not IT vocabulary
+telex	exclude	French telex with the accent dropped, must stay correctable
+terminals	exclude	French writes terminaux; terminales one deletion away
+terp	exclude	marginal jargon truncation, never typed in French prose
+textfile	exclude	unspaced compound, essentially never typed as one token
+theme	exclude	French theme with the accent dropped, the classic misspelling
+themes	exclude	accent-stripped French thèmes, must remain correctable
+thicket	exclude	generic English noun, not IT vocabulary
+thickets	exclude	not computing vocabulary
+thunk	admit	genuine CS term typed in French dev prose; French neighbors weak
+thunks	admit	family with thunk; genuine CS plural
+tibit	exclude	niche unit coinage, never typed
+tick	admit	genuine clock/timer term; reaching it from tic needs an implausible k insertion
+ticks	admit	standard inflection, aligned with tick
+tiff	admit	standard image format typed lowercase as an extension; tifs is low-frequency slang
+tiffs	admit	family with tiff; tifs slang rare and disjoint
+tmf	exclude	nonce acronym
+tnef	exclude	obscure Microsoft mail format
+toad	exclude	tool name colliding with a common English noun
+toads	exclude	generic English plural, aligned with toad
+toml	admit	daily config-format name typed lowercase; tome l/e substitution not adjacent
+took	exclude	ordinary English past tense, not IT
+topic	admit	genuine term (Kafka topic, forum topic) typed in French; topo low and disjoint
+tortle	exclude	nonce string
+totp	exclude	written uppercase in practice; top one insertion away and very common
+touchest	exclude	archaic second-person form, pure Wiktionary noise
+tourist	exclude	not computing vocabulary
+tpf	exclude	nonce acronym
+tpm	admit	standard security-chip term typed lowercase in tooling; neighbors negligible
+tracker	admit	daily franglais noun-verb; tracer below threshold
+trackers	admit	common IT term (torrent and ad trackers); crackers t/c substitution not adjacent
+traffic	exclude	the classic anglicism misspelling of French trafic, must stay correctable
+traffics	exclude	same anglicism fault as traffic; trafics must stay correctable
+traffique	exclude	archaic spelling debris
+trampolin	exclude	misspelling, must stay correctable
+trampolined	exclude	nonce participle, never typed
+trampolines	admit	valid plural, both common word and CS term (trampoline functions)
+transcribe	exclude	generic English verb, not distinctive IT vocabulary
+transmiss	exclude	truncated scanno, not a word
+transmisses	exclude	junk inflection, not a word
+transpiler	admit	genuine IT verb; transpirer l/r substitution not adjacent
+trapped	exclude	generic English participle, not distinctive IT vocabulary
+trash	exclude	French says corbeille; weak IT necessity
+traversing	exclude	generic English gerund, not distinctive IT vocabulary
+tray	exclude	French says barre d'état; short form with common neighbors
+trays	exclude	family with tray; French says barre d'état
+triages	exclude	generic word shared with French, not a computing term
+try	admit	core keyword typed daily (try/catch); tri y/i substitution not adjacent
+tsrs	exclude	obsolete DOS acronym plural, never typed
+tuio	exclude	niche protocol acronym, essentially never typed
+tuple	admit	core CS term typed in French; no plausible one-slip French neighbor
+tuples	admit	core CS term typed daily in French prose; neighbors need multiple edits
+tweep	exclude	social-media slang nonce, never typed
+twip	exclude	hyper-niche unit term; trip one substitution away
+tōfu	exclude	macron debris, not IT
+uaes	exclude	acronym-plural debris nobody types
+uaf	exclude	niche security acronym typed uppercase
+uids	admit	standard Unix admin plural typed lowercase; neighbors negligible
+uled	exclude	junk abbreviation, never typed
+umas	exclude	acronym-plural debris
+unices	exclude	jocular plural, essentially never typed in French prose
+unixes	exclude	jocular plural, essentially never typed in French prose
+untie	exclude	generic English verb, not IT vocabulary
+unties	exclude	generic English verb form, not IT vocabulary
+upi	exclude	nonce acronym
+uptimes	exclude	plural essentially never typed, singular is the usable form
+urbis	exclude	nonce string
+usenet	admit	established IT proper noun typed in prose; usent e-insertion implausible
+usps	exclude	not computing vocabulary
+usrs	exclude	path-fragment plural debris
+utility	exclude	utilité one substitution away and common in French
+utm	admit	standard URL parameter prefix typed lowercase; neighbors negligible
+vaccines	exclude	not computing vocabulary
+vanilla	admit	established dev jargon (vanilla JS); vanille a/e substitution not adjacent
+variances	exclude	generic English plural, not IT vocabulary
+variants	exclude	French variantes one e-deletion away
+varint	admit	genuine encoding term (protobuf varint) typed lowercase; neighbors negligible
+vber	exclude	junk string
+vbr	exclude	niche encoding acronym typed uppercase
+vdls	exclude	acronym-plural debris
+vended	exclude	generic English participle, not IT vocabulary
+vfat	admit	standard filesystem name typed lowercase in mount commands; neighbors negligible
+vidlet	exclude	nonce coinage, never typed
+vidlets	exclude	nonce coinage plural, never typed
+virii	exclude	jocular incorrect plural, must stay correctable toward virus
+virtual	admit	language keyword typed daily in French code prose; virtuel two edits away
+visibility	exclude	generic English noun; French prose says visibilité
+visionos	admit	genuine Apple OS name; reaching it from visions needs an implausible o insertion
+vmm	exclude	niche virtualization acronym typed uppercase
+vpls	exclude	niche carrier acronym typed uppercase
+vpns	admit	standard admin plural; vins p/i substitution not adjacent
+vtls	exclude	acronym-plural debris
+vulnerable	exclude	French vulnerable with the accent dropped, must stay correctable
+wad	exclude	niche game-file acronym, essentially never typed in prose
+waf	exclude	security acronym written uppercase in practice
+waker	exclude	nonce agent noun
+wakers	exclude	nonce plural
+wallet	admit	daily crypto term typed in French; valet/ballet not adjacent slips
+wallets	admit	family with wallet; daily crypto plural
+wam	exclude	nonce acronym
+wbe	exclude	nonce acronym
+wia	exclude	niche Windows acronym typed uppercase
+wickets	exclude	not computing vocabulary
+wifi	admit	daily vocabulary typed lowercase; neighbors negligible
+wipes	exclude	generic English verb form, not IT vocabulary
+wisa	exclude	nonce acronym
+wiz	exclude	slang, not established French IT usage
+wkid	exclude	nonce acronym
+wmas	exclude	acronym-plural debris
+woca	exclude	nonce/junk string
+woff	admit	standard web font format typed lowercase as an extension; neighbors negligible
+wore	exclude	generic English past tense, not IT vocabulary
+wp	exclude	two-letter abbreviation, too much French mass for a short form
+wpa	admit	standard WiFi security term typed lowercase; neighbors negligible
+wrapt	exclude	archaic form debris
+write	admit	core read/write dev vocabulary; w-initial shape has no French neighbor
+wrote	exclude	generic English past tense, not IT vocabulary
+xff	exclude	niche header abbreviation typed uppercase
+xlet	exclude	obsolete Java TV coinage, never typed
+xmas	exclude	not computing vocabulary
+xmm	exclude	assembly register name, effectively never in prose
+xoff	exclude	legacy flow-control token typed uppercase, essentially never in prose
+xp	exclude	two-letter form written uppercase in practice, too much French mass nearby
+xpointer	exclude	niche W3C spec name, essentially never typed
+xpus	exclude	acronym-plural debris
+xvalue	admit	genuine C++ term typed lowercase
+ybit	exclude	hyper-niche unit prefix, never typed
+yfga	exclude	nonce acronym
+ygm	exclude	chat-slang acronym
+yib	exclude	niche unit abbreviation, essentially never typed
+yold	exclude	nonce string
+yolden	exclude	junk string
+zbit	exclude	hyper-niche unit prefix, never typed
+zib	exclude	nonce string
+zips	admit	standard archive-format plural typed daily; neighbors negligible
+zombied	exclude	nonce participle, never typed
+zomby	exclude	misspelling of zombie, must stay correctable
+zumbi	exclude	misspelling of zombie
+æmulation	exclude	ligature debris

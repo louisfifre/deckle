@@ -39,9 +39,10 @@ param(
     # a disjoint set of articles (no article appears in both).
     [double]$EvalMB = 1.5,
 
-    # Also fetch the kaikki.org frwiktionary raw extraction (~676 MB gz), the
-    # source of the domain packs. Opt-in: the default gesture stays light and
-    # the dump is only needed when rebuilding a pack.
+    # Also fetch the kaikki.org wiktionary raw extractions (~3.3 GB gz in
+    # total, one per pack language), the source of the domain packs. Opt-in:
+    # the default gesture stays light and the dumps are only needed when
+    # rebuilding a pack.
     [switch]$IncludeKaikki,
 
     # Re-download / rebuild even when a target already exists at a plausible
@@ -241,19 +242,33 @@ if ($franceTermeHead -notmatch '<\?xml') {
 }
 
 # =============================================================================
-# 2c. Kaikki frwiktionary raw extraction (domain-pack source, opt-in)
+# 2c. Kaikki wiktionary raw extractions (domain-pack sources, opt-in)
 # =============================================================================
-# The wiktextract JSONL dump of the French Wiktionary — the surface-form
-# deposit the domain packs are fabricated from (entries carry their topical
-# « Lexique en français de X » categories and inline inflections). The
-# topic-subset JSONLs kaikki once served are deprecated; the pack builder
-# streams this raw dump instead. Dual-licensed CC BY-SA / GFDL (see NOTICE.md).
+# The wiktextract JSONL dumps — the surface-form deposits the domain packs are
+# fabricated from (entries carry their topical categories and their inline
+# inflections). The topic-subset JSONLs kaikki once served are deprecated; the
+# pack builder streams these raw dumps instead. One entry per pack language:
+# the URLs are not templatable, kaikki serves the English hub under /dictionary/
+# and every other language under its own /<lang>wiktionary/ path. Dual-licensed
+# CC BY-SA / GFDL (see NOTICE.md).
+$KaikkiDumps = @(
+    @{ Name = 'raw-wiktextract-frwiktionary.jsonl.gz'
+       Url  = 'https://kaikki.org/frwiktionary/raw-wiktextract-data.jsonl.gz'
+       # ~676 MB compressed; 600 MB is a safe completeness floor.
+       MinBytes = 600MB
+       Label = 'French Wiktionary (~676 MB)' }
+    @{ Name = 'raw-wiktextract-enwiktionary.jsonl.gz'
+       Url  = 'https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz'
+       # ~2.64 GB compressed; 2.4 GB is a safe completeness floor.
+       MinBytes = 2400MB
+       Label = 'English Wiktionary (~2.64 GB)' }
+)
+
 if ($IncludeKaikki) {
-    Step 'Kaikki frwiktionary raw extraction (domain-pack source, ~676 MB)'
-    $kaikkiDst = Join-Path $RawDir 'raw-wiktextract-frwiktionary.jsonl.gz'
-    $kaikkiUrl = 'https://kaikki.org/frwiktionary/raw-wiktextract-data.jsonl.gz'
-    # The compressed dump is ~676 MB; 600 MB is a safe completeness floor.
-    Download $kaikkiUrl $kaikkiDst 600MB | Out-Null
+    foreach ($dump in $KaikkiDumps) {
+        Step "Kaikki raw extraction — $($dump.Label)"
+        Download $dump.Url (Join-Path $RawDir $dump.Name) $dump.MinBytes | Out-Null
+    }
 }
 
 # =============================================================================
@@ -399,7 +414,7 @@ if (-not $Force -and $trainOk -and $evalOk) {
 $swTotal.Stop()
 Step 'done'
 $expectedFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')
-if ($IncludeKaikki) { $expectedFiles += 'raw-wiktextract-frwiktionary.jsonl.gz' }
+if ($IncludeKaikki) { $expectedFiles += $KaikkiDumps.Name }
 foreach ($f in $expectedFiles) {
     $p = Join-Path $RawDir $f
     if (Test-Path $p) { Write-Host ("         {0,-20} {1,8} MB" -f $f, (Get-SizeMB $p)) }
