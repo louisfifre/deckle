@@ -21,15 +21,23 @@ Assert-Equal $true $formatted[0].StartsWith('14:32:08  Info     Build') 'log col
 $title = Get-DeckleActionResultTitle -Label 'Build Debug' -State Succeeded -Elapsed ([timespan]::FromSeconds(18.4))
 Assert-Equal 'Build Debug succeeded · 18.4 s' $title 'summary states action outcome and duration'
 
-function Show-GridStatus { }
+function New-GridStatusView { return [pscustomobject]@{ Name = 'status-view' } }
+function Update-GridStatusView {
+    param($View, [string]$Title, [string[]]$Lines, [switch]$Follow)
+    $script:ActionViewUpdateCount++
+    return $View
+}
+$script:ActionViewUpdateCount = 0
 $menuRows = @(@{ Cells = @( @{ Label = 'Build' } ) })
 
 $success = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
+    [Threading.Thread]::Sleep(120)
     Write-Host 'build completed'
 }
 Assert-Equal $true $success.Succeeded 'captured action reports success'
 Assert-Equal 2 $success.Lines.Count 'output and host streams are both retained'
+Assert-Equal $true ($script:ActionViewUpdateCount -gt 0) 'captured output updates the existing action view'
 
 $failure = Invoke-DeckleMenuAction -Header Deckle -Label Build -Source Build -MenuRows $menuRows -Action {
     Write-Output 'restore completed'
