@@ -39,7 +39,6 @@ function Show-ProjectMenu {
             @{ Label = 'Record version'; Value = 'record-version' }
         ) }
     )
-    if ($null -ne $v) { Use-DeckleCompactMenu }
     switch ($v) {
         'readme-stats'   { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
         'changelog'      { Invoke-WorktreeScript -Script 'changelog.ps1' }
@@ -57,7 +56,6 @@ function Show-ReleaseMenu {
             @{ Label = 'Prepare native runtime'; Value = 'native' }
         ) }
     )
-    if ($null -ne $v) { Use-DeckleCompactMenu }
     switch ($v) {
         'publish'   { Invoke-PublishRelease }
         'artifacts' { Invoke-PrepareArtifacts }
@@ -87,7 +85,6 @@ function Show-MaintenanceMenu {
             -ResultLines $resultLines
 
         if ($null -eq $v) { return }
-        Use-DeckleCompactMenu
         switch ($v) {
             'clean'         { Invoke-CleanBuildOutputs; return }
             'build-servers' { Invoke-StopBuildServers; return }
@@ -117,7 +114,6 @@ function Show-SetupMenu {
             @{ Label = 'Install git hooks'; Value = 'hooks' }
         ) }
     )
-    if ($null -ne $v) { Use-DeckleCompactMenu }
     switch ($v) {
         'bootstrap' { Invoke-BootstrapDev }
         'assets'    { Invoke-SetupAssets }

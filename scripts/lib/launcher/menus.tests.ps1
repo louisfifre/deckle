@@ -14,18 +14,12 @@ function Select-Grid {
 function Invoke-WorktreeScript { }
 
 $rows = @(@{ Prefix = 'Section'; Items = @( @{ Label = 'Action'; Value = 'action' } ) })
-$script:DeckleMenuIsCompact = $false
 $script:NextMenuSelection = '__back__'
 Show-Submenu -Header 'Deckle > Test' -Rows $rows | Out-Null
-Assert-Equal 'Full' $script:LastSubmenuBannerStyle 'submenus use the full opening state'
+Assert-Equal 'Compact' $script:LastSubmenuBannerStyle 'submenus always use the compact banner'
 
-Use-DeckleCompactMenu
-Show-Submenu -Header 'Deckle > Test' -Rows $rows | Out-Null
-Assert-Equal 'Compact' $script:LastSubmenuBannerStyle 'submenus retain the session compact state'
-
-$script:DeckleMenuIsCompact = $false
 $script:NextMenuSelection = 'readme-stats'
 Show-ProjectMenu
-Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'selecting a real command compacts the session before it runs'
+Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'running a command keeps the compact banner'
 
 Write-Host 'menus.tests.ps1: PASS' -ForegroundColor Green

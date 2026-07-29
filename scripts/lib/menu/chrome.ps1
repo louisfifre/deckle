@@ -89,22 +89,9 @@ function Get-MenuBanner {
         [string]$Style = 'Full'
     )
 
-    if ($Style -eq 'Compact') {
-        return @(
-            '  █▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
-            '  █▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
-        )
-    }
-
-    # The figlet is duplicated in src/Deckle.Installer/Ui/ConsoleUi.cs (BannerArt) —
-    # PowerShell and C# cannot share a source; keep the two in sync.
-    @(
-        '  ____   _____   ____  _  __  _      _____'
-        ' |  _ \ | ____| / ___|| |/ / | |    | ____|'
-        ' | | | ||  _|  | |    |   /  | |    |  _|'
-        ' | |_| || |___ | |___ |   \  | |___ | |___'
-        ' |____/ |_____| \____||_|\_\ |_____||_____|'
-        '  S C R I P T S'
+    return @(
+        '  █▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
+        '  █▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
     )
 }
 
@@ -114,8 +101,7 @@ function Get-MenuBannerGap {
         [string]$Style = 'Full'
     )
 
-    if ($Style -eq 'Compact') { return 1 }
-    return 0
+    return 1
 }
 
 function Limit-MenuText {
@@ -275,9 +261,8 @@ function Wait-MenuViewportSize {
     while (-not (Test-MenuViewportFits -BodyCount $BodyCount -BannerStyle $BannerStyle)) {
         Clear-MenuScreen
         $metrics = Get-MenuMetrics
-        $lines = @(
-            '  DECKLE'
-            '  S C R I P T S'
+        $banner = @(Get-MenuBanner -Style $BannerStyle)
+        $lines = @($banner) + @(
             ''
             "  Resize the terminal to at least $($script:MenuMinimumContentWidth + 5) x $requiredHeight."
             "  Current size: $([Console]::WindowWidth) x $($metrics.WindowHeight)."
@@ -285,7 +270,7 @@ function Wait-MenuViewportSize {
         )
         $visibleCount = [Math]::Min($lines.Count, $metrics.WindowHeight)
         for ($index = 0; $index -lt $visibleCount; $index++) {
-            Write-MenuPlainLine -Row $index -Text $lines[$index] -ForegroundColor $(if ($index -eq 0) { 'Blue' } else { 'DarkGray' }) -BackgroundColor $null
+            Write-MenuPlainLine -Row $index -Text $lines[$index] -ForegroundColor $(if ($index -lt $banner.Count) { 'Blue' } else { 'DarkGray' }) -BackgroundColor $null
         }
         [Console]::ReadKey($true) | Out-Null
     }

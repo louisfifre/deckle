@@ -19,7 +19,6 @@ $ScriptDir = $PSScriptRoot
 $LibDir    = Join-Path $ScriptDir 'lib'
 $script:DeckleActionCompleted = $false
 $script:DeckleMenuSessionActive = $false
-$script:DeckleMenuIsCompact = $false
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')
@@ -45,7 +44,6 @@ try {
         if ($v -eq 'quit') { break }
 
         if ($v -match '^(launch|run|norun):(Release|Debug)$') {
-            Use-DeckleCompactMenu
             $result = Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2] -MenuRows $mainRows
             if ($null -ne $result) {
                 $mainResultTitle = $result.Title

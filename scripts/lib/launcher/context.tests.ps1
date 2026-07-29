@@ -5,9 +5,6 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
     if ($Expected -ne $Actual) { throw "${Case}: expected $Expected, got $Actual" }
 }
 
-$script:DeckleMenuIsCompact = $false
-Assert-Equal 'Full' (Get-DeckleMenuBannerStyle) 'session starts with the full banner'
-Use-DeckleCompactMenu
-Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'first action compacts the whole session'
+Assert-Equal 'Compact' (Get-DeckleMenuBannerStyle) 'the launcher always uses the compact banner'
 
 Write-Host 'context.tests.ps1: PASS' -ForegroundColor Green
