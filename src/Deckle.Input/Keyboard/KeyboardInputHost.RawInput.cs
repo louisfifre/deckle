@@ -73,12 +73,16 @@ public sealed partial class KeyboardInputHost
         {
             short delta = Marshal.ReadInt16(
                 _rawBuffer, dataOffset + RawInputInterop.MouseButtonDataOffset);
+            double timestampMs = MouseWheelTimestamp.ToSharedClock(
+                unchecked((uint)RawInputInterop.GetMessageTime()),
+                unchecked((uint)Environment.TickCount),
+                RawInputHost.NowMs);
             bool rawWheelRollupEnabled = _mouseHook == IntPtr.Zero && IsKeyboardRollupEnabled();
             if (rawWheelRollupEnabled) _rollupWheel++;
             var wheelEvent = new MouseWheelEvent(
                 Axis:        vertical ? WheelAxis.Vertical : WheelAxis.Horizontal,
                 Delta:       delta,
-                TimestampMs: RawInputHost.NowMs,
+                TimestampMs: timestampMs,
                 Device:      header.hDevice,
                 Source:      WheelEventSource.RawInput,
                 IsInjected:  header.hDevice == IntPtr.Zero);

@@ -11,10 +11,10 @@ public sealed partial class KeyboardInputHost
             return false;
 
         return RawInputInterop.PostThreadMessage(
-                _threadId,
-                WM_APP_WHEEL_OBSERVATION,
-                IntPtr.Zero,
-                IntPtr.Zero);
+            _threadId,
+            WM_APP_WHEEL_OBSERVATION,
+            IntPtr.Zero,
+            IntPtr.Zero);
     }
 
     private void PublishQueuedHookWheels()
@@ -35,6 +35,8 @@ public sealed partial class KeyboardInputHost
                 WheelObservationTimerId,
                 WheelObservationTimerMs,
                 IntPtr.Zero) != 0;
+            if (!_wheelObservationTimerScheduled)
+                FlushBufferedWheelObservations();
         }
     }
 
@@ -52,6 +54,8 @@ public sealed partial class KeyboardInputHost
                 WheelObservationTimerId,
                 WheelObservationTimerMs,
                 IntPtr.Zero) != 0;
+            if (!_wheelObservationTimerScheduled)
+                FlushBufferedWheelObservations();
         }
     }
 
@@ -59,6 +63,11 @@ public sealed partial class KeyboardInputHost
     {
         CancelWheelObservationTimer();
         PublishQueuedHookWheels();
+        FlushBufferedWheelObservations();
+    }
+
+    private void FlushBufferedWheelObservations()
+    {
         while (_wheelObservations.TryDequeue(out MouseWheelEvent wheelEvent))
             WheelObserved?.Invoke(wheelEvent);
     }

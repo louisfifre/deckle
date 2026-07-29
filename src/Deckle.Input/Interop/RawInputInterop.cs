@@ -201,6 +201,9 @@ public static class RawInputInterop
     [DllImport("user32.dll")]
     public static extern IntPtr DispatchMessage(ref MSG lpMsg);
 
+    [DllImport("user32.dll")]
+    public static extern int GetMessageTime();
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostThreadMessage(uint idThread, uint msg, IntPtr wParam, IntPtr lParam);
 
