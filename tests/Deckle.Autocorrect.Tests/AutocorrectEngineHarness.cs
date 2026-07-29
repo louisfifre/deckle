@@ -108,7 +108,19 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Surface.Backspace();
         RaiseDown(0x08); // VK_BACK
     }
+    // Starts from a known hard-return boundary without adding that pre-existing
+    // boundary to the simulated field. Sentence tests that exercise fully
+    // observed typing use this instead of accidentally relying on startup state.
+    public void BeginObservedSentence() => RaiseDown(0x0D); // VK_RETURN
     public void Enter() { Surface.Type('\n'); RaiseDown(0x0D); } // VK_RETURN
+    public void ShiftEnter()
+    {
+        Surface.Type('\n');
+        RaiseTransition(0x10, isDown: true);  // VK_SHIFT
+        RaiseTransition(0x0D, isDown: true); // VK_RETURN
+        RaiseTransition(0x0D, isDown: false);
+        RaiseTransition(0x10, isDown: false);
+    }
     public void Tab() { Surface.Type('\t'); RaiseDown(0x09); }   // VK_TAB
     public void Escape() => RaiseDown(0x1B);                     // VK_ESCAPE
     public void Delete() => RaiseDown(0x2E);                     // VK_DELETE

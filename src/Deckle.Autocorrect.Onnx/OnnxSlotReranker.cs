@@ -112,34 +112,38 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
                 : outcome.AbstainReason ?? RerankOutcome.AbstainReasons.NoRule);
     }
 
-    public RerankOutcome RerankSentence(
-        IReadOnlyList<string> sentence,
-        IReadOnlyList<SentenceEditCandidate> candidates)
+    public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
     {
-        if (candidates.Count == 0)
+        if (transaction.Edits.Count == 0)
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.NoRule);
-        if (!HasMinimumContext(sentence))
+        if (!HasMinimumContext(transaction.Words))
             return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.ShortContext);
 
-        var variants = new List<string>(candidates.Count + 1)
+        var variants = new List<string>(transaction.Edits.Count + 1)
         {
-            string.Join(' ', sentence),
+            transaction.Literal,
         };
-        var mapped = new List<SentenceEditCandidate>(candidates.Count);
+        var mapped = new List<SentenceEditCandidate>(transaction.Edits.Count);
         var seen = new HashSet<string>(StringComparer.Ordinal)
         {
             variants[0],
         };
 
-        foreach (SentenceEditCandidate candidate in candidates)
+        foreach (SentenceEditCandidate candidate in transaction.Edits)
         {
-            if (candidate.SlotIndex < 0 || candidate.SlotIndex >= sentence.Count
-                || string.IsNullOrWhiteSpace(candidate.Form))
+            if (candidate.SlotIndex < 0
+                || candidate.SlotIndex >= transaction.Words.Count
+                || candidate.Start < 0
+                || candidate.Length < 0
+                || candidate.Start > transaction.Literal.Length - candidate.Length
+                || string.IsNullOrWhiteSpace(candidate.Replacement)
+                || !transaction.Literal.AsSpan(candidate.Start, candidate.Length)
+                    .SequenceEqual(transaction.Words[candidate.SlotIndex].AsSpan()))
                 return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
 
-            var words = sentence.ToArray();
-            words[candidate.SlotIndex] = candidate.Form;
-            string variant = string.Join(' ', words);
+            string variant = transaction.Literal[..candidate.Start]
+                + candidate.Replacement
+                + transaction.Literal[(candidate.Start + candidate.Length)..];
             if (!seen.Add(variant))
                 continue;
             variants.Add(variant);
@@ -156,7 +160,7 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
         {
             string label = i == 0
                 ? "keep"
-                : $"{mapped[i - 1].SlotIndex}:{mapped[i - 1].Form}";
+                : $"{mapped[i - 1].SlotIndex}@{mapped[i - 1].Start}:{mapped[i - 1].Replacement}";
             scores[i] = new RerankCandidateScore(label, outcome.Scores[i].Score);
         }
 
@@ -177,7 +181,7 @@ public sealed class OnnxSlotReranker : ISentenceReranker, IWholeSentenceReranker
 
         SentenceEditCandidate chosen = mapped[chosenIndex - 1];
         return new RerankOutcome(
-            chosen.Form,
+            chosen.Replacement,
             scores,
             outcome.Margin,
             outcome.Threshold,

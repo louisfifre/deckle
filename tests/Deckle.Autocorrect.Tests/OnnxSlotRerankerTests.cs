@@ -60,12 +60,13 @@ public sealed class OnnxSlotRerankerTests
     [Fact]
     public void WholeSentenceJudgmentChoosesOneEditAcrossDifferentSlots()
     {
-        var sentence = new[] { "il", "y", "a", "une", "seul", "erreur" };
-        var edits = new[]
-        {
-            new SentenceEditCandidate(3, "un"),
-            new SentenceEditCandidate(4, "seule"),
-        };
+        var transaction = new ClosedSentenceTransaction(
+            "Il y a  une seul erreur.",
+            new[] { "Il", "y", "a", "une", "seul", "erreur" },
+            [
+                new SentenceEditCandidate(3, 8, 3, "un"),
+                new SentenceEditCandidate(4, 12, 4, "seule"),
+            ]);
         var scorer = new FakeScorer(cands => new SentenceScoringOutcome(
             Chosen: cands[2],
             Scores: cands.Select((text, index) =>
@@ -75,14 +76,14 @@ public sealed class OnnxSlotRerankerTests
             AbstainReason: null));
         using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
 
-        RerankOutcome outcome = reranker.RerankSentence(sentence, edits);
+        RerankOutcome outcome = reranker.RerankSentence(transaction);
 
         Assert.Equal(
             new[]
             {
-                "il y a une seul erreur",
-                "il y a un seul erreur",
-                "il y a une seule erreur",
+                "Il y a  une seul erreur.",
+                "Il y a  un seul erreur.",
+                "Il y a  une seule erreur.",
             },
             scorer.Received);
         Assert.Equal("seule", outcome.Chosen);
@@ -92,8 +93,10 @@ public sealed class OnnxSlotRerankerTests
     [Fact]
     public void WholeSentenceLiteralWinnerProducesNoEdit()
     {
-        var sentence = new[] { "il", "y", "a", "une", "seule", "erreur" };
-        var edits = new[] { new SentenceEditCandidate(4, "seul") };
+        var transaction = new ClosedSentenceTransaction(
+            "il y a une seule erreur!",
+            new[] { "il", "y", "a", "une", "seule", "erreur" },
+            [new SentenceEditCandidate(4, 11, 5, "seul")]);
         var scorer = new FakeScorer(cands => new SentenceScoringOutcome(
             Chosen: cands[0],
             Scores: cands.Select(text =>
@@ -103,7 +106,7 @@ public sealed class OnnxSlotRerankerTests
             AbstainReason: null));
         using var reranker = new OnnxSlotReranker(scorer, ownsScorer: false);
 
-        RerankOutcome outcome = reranker.RerankSentence(sentence, edits);
+        RerankOutcome outcome = reranker.RerankSentence(transaction);
 
         Assert.Null(outcome.Chosen);
         Assert.Null(outcome.ChosenSlotIndex);

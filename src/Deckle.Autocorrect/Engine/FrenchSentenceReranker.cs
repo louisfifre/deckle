@@ -45,16 +45,15 @@ public sealed class FrenchSentenceReranker : ISentenceReranker, IWholeSentenceRe
 
     public void Dispose() => (_inner as IDisposable)?.Dispose();
 
-    public RerankOutcome RerankSentence(
-        IReadOnlyList<string> sentence,
-        IReadOnlyList<SentenceEditCandidate> candidates)
+    public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
     {
+        IReadOnlyList<string> sentence = transaction.Words;
         // Preserve the short-context locative rule without reopening independent
         // slot judgments: when its exact one-edit sentence is in the global set,
         // it returns one global verdict.
-        foreach (SentenceEditCandidate candidate in candidates)
+        foreach (SentenceEditCandidate candidate in transaction.Edits)
         {
-            if (!string.Equals(candidate.Form, "là", StringComparison.Ordinal)
+            if (!string.Equals(candidate.Replacement, "là", StringComparison.Ordinal)
                 || candidate.SlotIndex <= 0
                 || candidate.SlotIndex >= sentence.Count
                 || !string.Equals(sentence[candidate.SlotIndex], "la", StringComparison.Ordinal))
@@ -73,7 +72,7 @@ public sealed class FrenchSentenceReranker : ISentenceReranker, IWholeSentenceRe
         }
 
         return _inner is IWholeSentenceReranker wholeSentence
-            ? wholeSentence.RerankSentence(sentence, candidates)
+            ? wholeSentence.RerankSentence(transaction)
             : RerankOutcome.Abstained(
                 RerankOutcome.AbstainReasons.WholeSentenceUnsupported);
     }

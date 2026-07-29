@@ -18,21 +18,13 @@ public interface ISentenceReranker
     RerankOutcome Rerank(IReadOnlyList<string> sentence, int slotIndex, IReadOnlyList<AccentVariant> candidates);
 }
 
-// One bounded edit that may compete with the literal whole sentence. The slot
-// index is relative to the submitted sentence window; Form is a lexicon-backed
-// surface candidate for that exact slot. A whole-sentence judge compares the
-// literal and every one-edit sentence together, then may choose at most one.
-public readonly record struct SentenceEditCandidate(int SlotIndex, string Form);
-
 // Optional capability implemented by judges that can arbitrate the complete
 // closed candidate set in one transaction. Legacy masked-LM implementations can
 // remain slot-based; the coordinator falls back only for candidate families that
 // already had slot-local rights.
 public interface IWholeSentenceReranker
 {
-    RerankOutcome RerankSentence(
-        IReadOnlyList<string> sentence,
-        IReadOnlyList<SentenceEditCandidate> candidates);
+    RerankOutcome RerankSentence(ClosedSentenceTransaction transaction);
 }
 
 // The reranker's verdict for one slot, scores included. Chosen is the winning
@@ -63,6 +55,7 @@ public readonly record struct RerankOutcome(
         public const string BelowMargin  = "below_margin";  // top did not clear the confidence margin
         public const string NoRule       = "no_rule";       // no deterministic rule or model handled the slot
         public const string ShortContext = "short_context"; // too few word tokens for the judge to be reliable
+        public const string CandidateOverflow = "candidate_overflow";
         public const string StaleEvidence = "stale_evidence"; // verified caret text changed before apply
         public const string WholeSentenceUnsupported = "whole_sentence_unsupported";
         public const string Error        = "error";         // inference threw — abstained, lane survives

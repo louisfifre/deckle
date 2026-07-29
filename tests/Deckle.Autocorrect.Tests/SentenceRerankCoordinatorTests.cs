@@ -294,9 +294,9 @@ public class SentenceRerankCoordinatorTests
         });
         var lane = new TestRerankLane
         {
-            WholeSentenceReranker = request => request.SentenceCandidates!
+            WholeSentenceReranker = request => request.Transaction.Edits
                 .Single(candidate =>
-                    candidate.SlotIndex == 4 && candidate.Form == "seule"),
+                    candidate.SlotIndex == 4 && candidate.Replacement == "seule"),
         };
         var injector = new RecordingInjector();
         var coordinator = new SentenceRerankCoordinator(
@@ -310,14 +310,17 @@ public class SentenceRerankCoordinatorTests
         coordinator.OnWordCommitted("seul", ' ', true);
         coordinator.OnWordCommitted("erreur", '.', true);
 
-        RerankRequest submitted = Assert.Single(lane.Submitted);
-        Assert.NotNull(submitted.SentenceCandidates);
+        ClosedSentenceRerankRequest submitted = Assert.IsType<ClosedSentenceRerankRequest>(
+            Assert.Single(lane.Submitted));
+        Assert.Equal("il y a une seul erreur.", submitted.Transaction.Literal);
         Assert.Contains(
-            submitted.SentenceCandidates,
-            candidate => candidate is { SlotIndex: 3, Form: "un" });
+            submitted.Transaction.Edits,
+            candidate => candidate is
+                { SlotIndex: 3, Start: 7, Length: 3, Replacement: "un" });
         Assert.Contains(
-            submitted.SentenceCandidates,
-            candidate => candidate is { SlotIndex: 4, Form: "seule" });
+            submitted.Transaction.Edits,
+            candidate => candidate is
+                { SlotIndex: 4, Start: 11, Length: 4, Replacement: "seule" });
         Assert.Equal(
             ("seul erreur.", "seule erreur."),
             Assert.Single(injector.Calls));
@@ -358,7 +361,7 @@ public class SentenceRerankCoordinatorTests
         var legacyProbe = new FakeProbe(new Dictionary<string, AccentVariant[]>());
         var wholeProbe = new FakeProbe(new Dictionary<string, AccentVariant[]>
         {
-            ["La"] =
+            ["la"] =
             [
                 new AccentVariant("la", 100),
                 new AccentVariant("là", 90),
@@ -366,7 +369,7 @@ public class SentenceRerankCoordinatorTests
         });
         var lane = new TestRerankLane
         {
-            WholeSentenceReranker = request => request.SentenceCandidates!.Single(),
+            WholeSentenceReranker = request => request.Transaction.Edits.Single(),
         };
         var injector = new RecordingInjector();
         var coordinator = new SentenceRerankCoordinator(
@@ -376,8 +379,9 @@ public class SentenceRerankCoordinatorTests
         coordinator.OnWordCommitted("La", '.', true);
 
         Assert.Equal(
-            new SentenceEditCandidate(0, "Là"),
-            Assert.Single(Assert.Single(lane.Submitted).SentenceCandidates!));
+            new SentenceEditCandidate(0, 0, 2, "Là"),
+            Assert.Single(Assert.IsType<ClosedSentenceRerankRequest>(
+                Assert.Single(lane.Submitted)).Transaction.Edits));
         Assert.Equal(("La.", "Là."), Assert.Single(injector.Calls));
     }
 
@@ -454,8 +458,9 @@ public class SentenceRerankCoordinatorTests
     {
         public Action<RerankResult>? ResultSink { get; set; }
         public readonly List<RerankRequest> Submitted = new();
-        public Func<RerankRequest, string?>? Reranker;
-        public Func<RerankRequest, SentenceEditCandidate?>? WholeSentenceReranker;
+        public Func<HistoricalSlotRerankRequest, string?>? Reranker;
+        public Func<ClosedSentenceRerankRequest, SentenceEditCandidate?>?
+            WholeSentenceReranker;
         public bool Manual;
 
         public void Submit(RerankRequest request)
@@ -468,15 +473,15 @@ public class SentenceRerankCoordinatorTests
 
         private void Deliver(RerankRequest request)
         {
-            if (request.SentenceCandidates is { Count: > 0 })
+            if (request is ClosedSentenceRerankRequest closed)
             {
-                SentenceEditCandidate? edit = WholeSentenceReranker?.Invoke(request);
+                SentenceEditCandidate? edit = WholeSentenceReranker?.Invoke(closed);
                 RerankOutcome wholeOutcome = WholeSentenceReranker is null
                     ? RerankOutcome.Abstained(
                         RerankOutcome.AbstainReasons.WholeSentenceUnsupported)
                     : edit is SentenceEditCandidate chosenEdit
                         ? new RerankOutcome(
-                            chosenEdit.Form,
+                            chosenEdit.Replacement,
                             System.Array.Empty<RerankCandidateScore>(),
                             1.0,
                             0.0,
@@ -491,16 +496,19 @@ public class SentenceRerankCoordinatorTests
                             0.0,
                             null);
                 ResultSink?.Invoke(new RerankResult(
-                    request.SlotIndex, request.Epoch, wholeOutcome));
+                    -1, request.Epoch, wholeOutcome));
                 return;
             }
 
-            string? chosen = Reranker?.Invoke(request);
+            HistoricalSlotRerankRequest historical =
+                Assert.IsType<HistoricalSlotRerankRequest>(request);
+            string? chosen = Reranker?.Invoke(historical);
             RerankOutcome outcome = chosen is null
                 ? RerankOutcome.Abstained(RerankOutcome.AbstainReasons.BelowMargin)
                 : new RerankOutcome(
                     chosen, System.Array.Empty<RerankCandidateScore>(), 0.0, 0.0, null);
-            ResultSink?.Invoke(new RerankResult(request.SlotIndex, request.Epoch, outcome));
+            ResultSink?.Invoke(new RerankResult(
+                historical.SlotIndex, request.Epoch, outcome));
         }
 
         public void Dispose() { }

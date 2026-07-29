@@ -74,8 +74,10 @@ public sealed class FrenchSentenceRerankerTests
         var reranker = new FrenchSentenceReranker();
 
         RerankOutcome outcome = reranker.RerankSentence(
-            new[] { "je", "suis", "la" },
-            new[] { new SentenceEditCandidate(2, "là") });
+            new ClosedSentenceTransaction(
+                "je suis la.",
+                new[] { "je", "suis", "la" },
+                [new SentenceEditCandidate(2, 8, 2, "là")]));
 
         Assert.Equal("là", outcome.Chosen);
         Assert.Equal(2, outcome.ChosenSlotIndex);

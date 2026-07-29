@@ -99,6 +99,22 @@ public sealed class AutocorrectEngineObservabilityTests
         AssertNoTypedWordLeaked([mutation], "bonjour", "salut", "ami");
     }
 
+    [Fact]
+    public void RerankVerdictKeepsOutcomeAndReasonDistinct()
+    {
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+
+        DeckleAutocorrectSource.Log.RerankVerdict(
+            "stale", RerankOutcome.AbstainReasons.StaleEvidence);
+
+        EventWrittenEventArgs verdict = Assert.Single(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtRerankVerdict
+            && PayloadValue(e, "outcome") is "stale");
+        Assert.Equal(
+            RerankOutcome.AbstainReasons.StaleEvidence,
+            PayloadValue(verdict, "reason"));
+    }
+
     // The hard rule, asserted directly: no string payload on any captured event
     // equals a word the user typed or the engine produced. Reasons (enum names)
     // and the process name are metadata, not typed content.

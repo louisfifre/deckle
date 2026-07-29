@@ -71,12 +71,19 @@ public sealed class BackgroundRerankLane : IRerankLane
                 RerankOutcome outcome;
                 try
                 {
-                    outcome = req.SentenceCandidates is { Count: > 0 } sentenceCandidates
-                        ? _reranker is IWholeSentenceReranker wholeSentence
-                            ? wholeSentence.RerankSentence(req.Sentence, sentenceCandidates)
-                            : RerankOutcome.Abstained(
-                                RerankOutcome.AbstainReasons.WholeSentenceUnsupported)
-                        : _reranker.Rerank(req.Sentence, req.SlotIndex, req.Candidates);
+                    outcome = req switch
+                    {
+                        ClosedSentenceRerankRequest closed =>
+                            _reranker is IWholeSentenceReranker wholeSentence
+                                ? wholeSentence.RerankSentence(closed.Transaction)
+                                : RerankOutcome.Abstained(
+                                    RerankOutcome.AbstainReasons.WholeSentenceUnsupported),
+                        HistoricalSlotRerankRequest historical => _reranker.Rerank(
+                            historical.Sentence,
+                            historical.SlotIndex,
+                            historical.Candidates),
+                        _ => RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error),
+                    };
                     if (WouldRewrite(req, outcome)
                         && req.VerifiedSentence is VerifiedCaretSentence verified
                         && !VerifyRecoveredSentence(verified))
@@ -91,7 +98,10 @@ public sealed class BackgroundRerankLane : IRerankLane
                     outcome = RerankOutcome.Abstained(RerankOutcome.AbstainReasons.Error);
                 }
 
-                _completed.Enqueue(new RerankResult(req.SlotIndex, req.Epoch, outcome));
+                int slotIndex = req is HistoricalSlotRerankRequest slotRequest
+                    ? slotRequest.SlotIndex
+                    : -1;
+                _completed.Enqueue(new RerankResult(slotIndex, req.Epoch, outcome));
                 if (!_disposed)
                     _host.RequestDrain();
             }
@@ -111,20 +121,25 @@ public sealed class BackgroundRerankLane : IRerankLane
 
     private static bool WouldRewrite(RerankRequest request, RerankOutcome outcome) =>
         outcome.Chosen is not null
-        && (request.SentenceCandidates is { Count: > 0 }
-            ? outcome.ChosenSlotIndex is int chosenSlot
+        && (request switch
+        {
+            ClosedSentenceRerankRequest closed =>
+                outcome.ChosenSlotIndex is int chosenSlot
                 && chosenSlot >= 0
-                && chosenSlot < request.Sentence.Count
+                && chosenSlot < closed.Transaction.Words.Count
                 && !string.Equals(
                     outcome.Chosen,
-                    request.Sentence[chosenSlot],
-                    StringComparison.Ordinal)
-            : request.SlotIndex >= 0
-                && request.SlotIndex < request.Sentence.Count
+                    closed.Transaction.Words[chosenSlot],
+                    StringComparison.Ordinal),
+            HistoricalSlotRerankRequest historical =>
+                historical.SlotIndex >= 0
+                && historical.SlotIndex < historical.Sentence.Count
                 && !string.Equals(
                     outcome.Chosen,
-                    request.Sentence[request.SlotIndex],
-                    StringComparison.Ordinal));
+                    historical.Sentence[historical.SlotIndex],
+                    StringComparison.Ordinal),
+            _ => false,
+        });
 
     // Input thread (raised by the host pump). Drain every queued verdict.
     private void OnDrainRequested()

@@ -67,6 +67,29 @@ public static partial class UIAutomation
                 IID_IUIAutomationTextPattern2);
             if (textPattern2 is not null)
             {
+                // GetCaretRange reports the active caret even while the control
+                // owns a non-empty selection. Recovery is allowed only when
+                // GetSelection proves the insertion range itself is degenerate.
+                hr = textPattern2.GetSelection(out IUIAutomationTextRangeArray? ranges);
+                if (hr != 0 || ranges is null || ranges.GetLength(out int count) != 0 || count != 1
+                    || ranges.GetElement(0, out IUIAutomationTextRange? selection) != 0
+                    || selection is null)
+                {
+                    diagnostic = $"single_selection_unavailable hr=0x{hr:X}";
+                    return false;
+                }
+                hr = selection.CompareEndpoints(
+                    TextPatternRangeEndpointStart,
+                    selection,
+                    TextPatternRangeEndpointEnd,
+                    out int selectionEndpointDifference);
+                if (hr != 0 || selectionEndpointDifference != 0)
+                {
+                    diagnostic =
+                        $"selection_not_degenerate hr=0x{hr:X} delta={selectionEndpointDifference}";
+                    return false;
+                }
+
                 hr = textPattern2.GetCaretRange(out int isActive, out caret);
                 if (hr != 0 || isActive == 0 || caret is null)
                 {

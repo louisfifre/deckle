@@ -284,15 +284,16 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // confident — left as typed), stale (the sentence was reset under the
     // in-flight request), resolved (slot already decided), expired (the exact
     // visible tail outgrew the bounded rewrite budget), blocked (the in-place
-    // rewrite was refused by the target surface).
+    // rewrite was refused by the target surface). reason carries the closed
+    // abstention/error reason when one exists; it is empty for ordinary outcomes.
     [Event(EvtRerankVerdict,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank verdict | outcome={0}")]
-    public void RerankVerdict(string outcome)
+           Message = "rerank verdict | outcome={0} | reason={1}")]
+    public void RerankVerdict(string outcome, string reason)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtRerankVerdict, outcome);
+        WriteEvent(EvtRerankVerdict, outcome, reason);
     }
 
     // A reset made the current sentence-stage work unsafe before it completed.

@@ -28,6 +28,46 @@ public sealed class AutocorrectSentenceTypingScenarioTests
     }
 
     [Fact]
+    public void ClosedExactPhraseAppliesOnlyTheSeuleEdit()
+    {
+        using var h = PackagedHarness(new ChoosingSentenceReranker("seule"));
+
+        h.Type("Il y a une seul erreur.");
+        Assert.True(h.PumpUntil(
+            () => h.VisibleText == "Il y a une seule erreur.",
+            TimeSpan.FromSeconds(2)));
+
+        Assert.Equal("Il y a une seule erreur.", h.VisibleText);
+        CorrectionDecision applied = Assert.Single(h.Applied);
+        Assert.Equal(("seul", "seule"), (applied.Original, applied.Replacement));
+        Assert.Equal(
+            ("seul erreur.", "seule erreur."),
+            Assert.Single(h.Injector.Calls));
+        Assert.DoesNotContain(
+            h.Injector.Calls,
+            call => call.Target.Contains("un seul erreur", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ImmediateShiftEnterExpiresTheExactPhraseVerdict()
+    {
+        var reranker = new BlockingSentenceReranker("seule");
+        using var h = PackagedHarness(reranker);
+
+        h.Type("Il y a une seul erreur.");
+        Assert.True(reranker.Started.Wait(
+            TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+
+        h.ShiftEnter();
+        reranker.Release.Set();
+        Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
+
+        Assert.Equal("Il y a une seul erreur.\n", h.VisibleText);
+        Assert.Empty(h.Applied);
+        Assert.Empty(h.Injector.Calls);
+    }
+
+    [Fact]
     public void ContinuousForwardTypingRemainsInTheExactLateRewriteTail()
     {
         FrequencyLexicon french = Lexicon("je", "suis", "la", "là");
@@ -193,10 +233,12 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             policy,
             french: french,
             reranker: new ChoosingSentenceReranker("peu"),
-            probe: probe);
+            probe: probe,
+            wholeSentenceProbe: probe);
         h.Settings.Apps["codex"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(h.Start());
+        h.BeginObservedSentence();
 
         h.Type("avant ça allait vraiment un pru mieux.");
         Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
@@ -218,10 +260,12 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             policy,
             french: french,
             reranker: new ChoosingSentenceReranker("qui"),
-            probe: probe);
+            probe: probe,
+            wholeSentenceProbe: probe);
         h.Settings.Apps["codex"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(h.Start());
+        h.BeginObservedSentence();
 
         h.Type("la date qio serait la plus importante.");
         Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
@@ -243,10 +287,12 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             policy,
             french: french,
             reranker: new ChoosingSentenceReranker("mieux"),
-            probe: probe);
+            probe: probe,
+            wholeSentenceProbe: probe);
         h.Settings.Apps["codex"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(h.Start());
+        h.BeginObservedSentence();
 
         h.Type("ça allait un peu miru.");
         Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
@@ -297,10 +343,12 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             french: french,
             reranker: new ChoosingSentenceReranker("là"),
             probe: diacritics,
+            wholeSentenceProbe: diacritics,
             mistouchFamilies: [family]);
         h.Settings.Apps["codex"] = true;
         h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(h.Start());
+        h.BeginObservedSentence();
 
         h.Type("Je suis la, parce qu;il pleut.");
         Assert.True(h.PumpDrain(TimeSpan.FromSeconds(2)));
@@ -321,10 +369,12 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             policy,
             french: french,
             reranker: reranker,
-            probe: probe);
+            probe: probe,
+            wholeSentenceProbe: probe);
         harness.Settings.Apps["codex"] = true;
         harness.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(harness.Start());
+        harness.BeginObservedSentence();
         return harness;
     }
 
@@ -354,6 +404,7 @@ public sealed class AutocorrectSentenceTypingScenarioTests
         harness.Settings.Apps["codex"] = true;
         harness.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
         Assert.True(harness.Start());
+        harness.BeginObservedSentence();
         return harness;
     }
 
@@ -365,26 +416,21 @@ public sealed class AutocorrectSentenceTypingScenarioTests
         return FrequencyLexicon.LoadTsv(new StringReader(rows));
     }
 
-    private sealed class ChoosingSentenceReranker(string chosen) : ISentenceReranker
+    private sealed class ChoosingSentenceReranker(string chosen)
+        : ISentenceReranker, IWholeSentenceReranker
     {
         public RerankOutcome Rerank(
             IReadOnlyList<string> sentence,
             int slotIndex,
-            IReadOnlyList<AccentVariant> candidates)
-        {
-            string verdict = candidates.Any(candidate => candidate.Form == chosen)
-                ? chosen
-                : sentence[slotIndex];
-            return new(
-                verdict,
-                candidates.Select(candidate => new RerankCandidateScore(candidate.Form, 1.0)).ToArray(),
-                Margin: 2.0,
-                Threshold: 1.0,
-                AbstainReason: null);
-        }
+            IReadOnlyList<AccentVariant> candidates) =>
+            throw new InvalidOperationException("Sentence scenarios must use one global verdict.");
+
+        public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction) =>
+            ChooseWholeSentence(chosen, transaction.Edits);
     }
 
-    private sealed class BlockingSentenceReranker(string chosen) : ISentenceReranker, IDisposable
+    private sealed class BlockingSentenceReranker(string chosen)
+        : ISentenceReranker, IWholeSentenceReranker, IDisposable
     {
         public ManualResetEventSlim Started { get; } = new();
         public ManualResetEventSlim Release { get; } = new();
@@ -392,16 +438,14 @@ public sealed class AutocorrectSentenceTypingScenarioTests
         public RerankOutcome Rerank(
             IReadOnlyList<string> sentence,
             int slotIndex,
-            IReadOnlyList<AccentVariant> candidates)
+            IReadOnlyList<AccentVariant> candidates) =>
+            throw new InvalidOperationException("Sentence scenarios must use one global verdict.");
+
+        public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
         {
             Started.Set();
             Release.Wait(TimeSpan.FromSeconds(2));
-            return new RerankOutcome(
-                chosen,
-                candidates.Select(candidate => new RerankCandidateScore(candidate.Form, 1.0)).ToArray(),
-                Margin: 2.0,
-                Threshold: 1.0,
-                AbstainReason: null);
+            return ChooseWholeSentence(chosen, transaction.Edits);
         }
 
         public void Dispose()
@@ -410,5 +454,27 @@ public sealed class AutocorrectSentenceTypingScenarioTests
             Started.Dispose();
             Release.Dispose();
         }
+    }
+
+    private static RerankOutcome ChooseWholeSentence(
+        string chosen,
+        IReadOnlyList<SentenceEditCandidate> candidates)
+    {
+        SentenceEditCandidate[] matches = candidates
+            .Where(candidate => candidate.Replacement == chosen)
+            .ToArray();
+        if (matches.Length != 1)
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.NoRule);
+
+        SentenceEditCandidate winner = matches[0];
+        return new RerankOutcome(
+            winner.Replacement,
+            Array.Empty<RerankCandidateScore>(),
+            Margin: 2.0,
+            Threshold: 1.0,
+            AbstainReason: null)
+        {
+            ChosenSlotIndex = winner.SlotIndex,
+        };
     }
 }

@@ -8,6 +8,41 @@ namespace Deckle.Autocorrect.Tests;
 public sealed class AutocorrectEngineCaretRecoveryTests
 {
     [Fact]
+    public void TerminalPunctuationRecoversTheExactPhraseAfterAnEditReset()
+    {
+        const string literal = "Il y a une seul erreur.";
+        var reader = new StableCaretReader("Titre\n" + literal);
+        FrequencyLexicon french = FrequencyLexicon.LoadTsv(new StringReader(
+            "il\t100\ny\t100\na\t100\nune\t100\nun\t90\nseul\t80\nseule\t70\nerreur\t100\n"));
+        var gender = new GenderVariantProbe(french);
+        using var harness = new AutocorrectEngineHarness(
+            french: french,
+            reranker: new ChooseSeuleWholeSentenceReranker(),
+            probe: gender,
+            wholeSentenceProbe: gender,
+            caretTextReader: reader);
+        harness.Settings.Apps["codex"] = true;
+        harness.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
+        Assert.True(harness.Start());
+
+        harness.Type("Il y a une seul erreur");
+        harness.Backspace();
+        harness.Type("r.");
+
+        Assert.True(SpinWait.SpinUntil(() => reader.ReadCount >= 1, 2_000));
+        harness.Host.Drain();
+        Assert.True(SpinWait.SpinUntil(() => reader.ReadCount >= 2, 2_000));
+        Assert.True(SpinWait.SpinUntil(() => harness.Host.HasPendingDrain, 2_000));
+        harness.Host.Drain();
+
+        Assert.Equal("Il y a une seule erreur.", harness.VisibleText);
+        Assert.Equal(
+            ("seul erreur.", "seule erreur."),
+            Assert.Single(harness.Injector.Calls));
+        Assert.Single(harness.Applied);
+    }
+
+    [Fact]
     public void TerminalPunctuationRecoversEvenWhenNoWordWasObservedBeforeIt()
     {
         var reader = new StableCaretReader("Titre\nla.");
@@ -66,6 +101,31 @@ public sealed class AutocorrectEngineCaretRecoveryTests
             int slotIndex,
             IReadOnlyList<AccentVariant> candidates) =>
             new("là", Array.Empty<RerankCandidateScore>(), 2.0, 1.0, null);
+    }
+
+    private sealed class ChooseSeuleWholeSentenceReranker
+        : ISentenceReranker, IWholeSentenceReranker
+    {
+        public RerankOutcome Rerank(
+            IReadOnlyList<string> sentence,
+            int slotIndex,
+            IReadOnlyList<AccentVariant> candidates) =>
+            throw new InvalidOperationException("The exact phrase must use one global verdict.");
+
+        public RerankOutcome RerankSentence(ClosedSentenceTransaction transaction)
+        {
+            SentenceEditCandidate winner = transaction.Edits.Single(candidate =>
+                candidate.Replacement == "seule");
+            return new RerankOutcome(
+                winner.Replacement,
+                Array.Empty<RerankCandidateScore>(),
+                Margin: 2.0,
+                Threshold: 1.0,
+                AbstainReason: null)
+            {
+                ChosenSlotIndex = winner.SlotIndex,
+            };
+        }
     }
 
     private sealed class LaAccentProbe : IAmbiguityProbe
