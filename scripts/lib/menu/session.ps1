@@ -18,6 +18,7 @@ function Clear-MenuScreen {
     if ([Console]::IsOutputRedirected) { return }
     try {
         [Console]::Clear()
+        [Console]::SetCursorPosition(0, 0)
     } catch {
         Write-Host ""
     }
