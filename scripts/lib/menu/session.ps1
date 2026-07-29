@@ -1,5 +1,8 @@
 # Menu terminal session lifecycle.
-$script:MenuSessionDepth = 0; $script:MenuSessionUsesAlternateScreen = $false
+$script:MenuSessionDepth = 0
+$script:MenuSessionUsesAlternateScreen = $false
+$script:MenuPointerInputDepth = 0
+$script:MenuPreviousTreatControlCAsInput = $false
 
 function Write-Ansi {
     param([Parameter(Mandatory)][string]$Sequence)
@@ -42,12 +45,39 @@ function Stop-MenuSession {
     $script:MenuSessionDepth--
     if ($script:MenuSessionDepth -gt 0) { return }
 
+    while ($script:MenuPointerInputDepth -gt 0) {
+        Stop-MenuPointerInput
+    }
     [Console]::CursorVisible = $true
     Write-Ansi "$([char]27)[0m"
     if ($script:MenuSessionUsesAlternateScreen) {
         Write-Ansi "$([char]27)[?1049l"
     }
     $script:MenuSessionUsesAlternateScreen = $false
+}
+
+function Start-MenuPointerInput {
+    if (-not (Test-MenuPointerInputAvailable)) { return $false }
+
+    $script:MenuPointerInputDepth++
+    if ($script:MenuPointerInputDepth -eq 1) {
+        $script:MenuPreviousTreatControlCAsInput = [Console]::TreatControlCAsInput
+        [Console]::TreatControlCAsInput = $true
+        $escape = [char]27
+        Write-Ansi "$escape[?1000h$escape[?1006h"
+    }
+    return $true
+}
+
+function Stop-MenuPointerInput {
+    if ($script:MenuPointerInputDepth -le 0) { return }
+
+    $script:MenuPointerInputDepth--
+    if ($script:MenuPointerInputDepth -eq 0) {
+        $escape = [char]27
+        Write-Ansi "$escape[?1000l$escape[?1006l"
+        [Console]::TreatControlCAsInput = $script:MenuPreviousTreatControlCAsInput
+    }
 }
 
 function Suspend-MenuSession {

@@ -15,8 +15,13 @@ Assert-Equal 55 ($widths[0] + $widths[1]) 'columns fill available content width'
 
 Assert-Equal 0 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Previous) 'result stays at first page'
 Assert-Equal 5 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Next) 'result advances one page'
-Assert-Equal 7 (Get-GridResultOffset -Current 5 -PageSize 5 -LineCount 12 -Direction Next) 'result clamps to final page'
-Assert-Equal 7 (Get-GridResultOffset -Current 9 -PageSize 5 -LineCount 12 -Direction Current) 'current result offset clamps after resize'
+Assert-Equal 10 (Get-GridResultOffset -Current 5 -PageSize 5 -LineCount 12 -Direction Next) 'result advances to a non-overlapping final page'
+Assert-Equal 5 (Get-GridResultOffset -Current 9 -PageSize 5 -LineCount 12 -Direction Current) 'current result offset snaps to its page after resize'
+Assert-Equal 5 (Get-GridResultOffset -Current 10 -PageSize 5 -LineCount 12 -Direction Previous) 'result returns to the previous page'
+
+$lastPage = Get-GridResultPage -Offset 10 -PageSize 5 -LineCount 12
+Assert-Equal 3 $lastPage.Number 'page indicator reports the current result page'
+Assert-Equal 3 $lastPage.Count 'page indicator reports the total result pages'
 
 Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 0 -ColumnOffset 1 -CellCount 1) 'down to offset row keeps its visual column'
 Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 1 -ColumnOffset 0 -CellCount 2) 'up from offset row returns to cell above'
@@ -27,5 +32,6 @@ $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTit
 Assert-Equal 16 $compactLayout.Body.Count 'result layout consumes available compact body'
 Assert-Equal 13 $compactLayout.ResultRowCount 'result layout reserves breathing room, title, and commands'
 Assert-Equal 'blank' $compactLayout.Body[1].Kind 'result layout separates commands from results'
+Assert-Equal 'result-title' $compactLayout.Body[2].Kind 'result heading can display page state'
 
 Write-Host 'grid-picker.tests.ps1: PASS' -ForegroundColor Green

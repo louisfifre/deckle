@@ -51,6 +51,8 @@ try {
 
         if ($script:DeckleActionCompleted) { break }
     }
+} catch [DeckleMenuQuitException] {
+    # Ctrl+C is an intentional exit while pointer paging owns console input.
 } finally {
     Stop-DeckleMenuSession
 }

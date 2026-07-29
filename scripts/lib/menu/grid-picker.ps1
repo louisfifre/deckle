@@ -5,14 +5,19 @@ function Write-GridLine {
         [int]$InnerWidth, [int]$ContentWidth,
         [int]$ActiveBodyIndex, [int]$ActiveCol,
         [int]$TrailingWidth = 0, [int]$TrailingGap = 0, [int]$TrailingColumn = -1,
-        [string[]]$ResultLines = @(), [int]$ResultOffset = 0
+        [string[]]$ResultLines = @(), [int]$ResultOffset = 0,
+        [int]$ResultPage = 1, [int]$ResultPageCount = 1
     )
     $entry = $Body[$Index]
     Write-MenuLinePrefix -Row ($Top + $Index)
     $written = 0
 
-    if ($entry.Kind -eq 'title') {
-        $label = ' ' + ([string]$entry.Text).ToUpperInvariant() + ' '
+    if ($entry.Kind -in @('title', 'result-title')) {
+        $titleText = [string]$entry.Text
+        if ($entry.Kind -eq 'result-title' -and $ResultPageCount -gt 1) {
+            $titleText += "  ·  Page $ResultPage/$ResultPageCount"
+        }
+        $label = ' ' + $titleText.ToUpperInvariant() + ' '
         Write-MenuContentSegment -Text $label -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Magenta -BackgroundColor $null
         $rule = New-MenuRule -MaxWidth ($ContentWidth - $written) -Style Section
         Write-MenuContentSegment -Text $rule -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Gray -BackgroundColor $null
@@ -144,20 +149,23 @@ function Invoke-GridLoop {
     $top = $viewport.BodyTop
 
     $render = {
+        $page = Get-GridResultPage -Offset $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count
         for ($i = 0; $i -lt $body.Count; $i++) {
             Write-GridLine -Top $top -Index $i -Body $body -ColW $colW -PrefixW $prefixW `
                 -InnerWidth $viewport.InnerWidth -ContentWidth $viewport.ContentWidth `
                 -ActiveBodyIndex $sel[$selIdx].BodyIndex -ActiveCol $colIdx `
                 -TrailingWidth $trailingW -TrailingGap $trailingGap -TrailingColumn $columnCount `
-                -ResultLines $resultLinesArray -ResultOffset $resultOffset
+                -ResultLines $resultLinesArray -ResultOffset $resultOffset `
+                -ResultPage $page.Number -ResultPageCount $page.Count
         }
     }
 
+    $usesPointerInput = $resultRowCount -gt 0 -and $resultLinesArray.Count -gt $resultRowCount -and (Start-MenuPointerInput)
     [Console]::CursorVisible = $false
     try {
         & $render
         while ($true) {
-            $key = [Console]::ReadKey($true)
+            $inputEvent = Read-MenuInputEvent
             $geometryChanged = $false
             $currentMetrics = Get-MenuMetrics
             if ($currentMetrics.TerminalWidth -ne $metrics.TerminalWidth -or $currentMetrics.WindowHeight -ne $metrics.WindowHeight) {
@@ -175,48 +183,59 @@ function Invoke-GridLoop {
             }
             $prevSelIdx = $selIdx
             $prevColIdx = $colIdx
-            switch ($key.Key) {
-                'UpArrow' {
-                    if ($selIdx -gt 0) {
-                        $selIdx--
-                        $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
+            $previousResultOffset = $resultOffset
+            if ([string]$inputEvent.Kind -eq 'Wheel') {
+                $direction = Get-MenuWheelPageDirection -Delta $inputEvent.WheelDelta
+                $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction $direction
+            } else {
+                $key = $inputEvent.KeyInfo
+                if ($key.Key -eq 'C' -and ($key.Modifiers -band [ConsoleModifiers]::Control)) {
+                    throw [DeckleMenuQuitException]::new()
+                }
+                switch ($key.Key) {
+                    'UpArrow' {
+                        if ($selIdx -gt 0) {
+                            $selIdx--
+                            $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
+                        }
                     }
-                }
-                'DownArrow' {
-                    if ($selIdx -lt $sel.Count - 1) {
-                        $selIdx++
-                        $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
+                    'DownArrow' {
+                        if ($selIdx -lt $sel.Count - 1) {
+                            $selIdx++
+                            $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
+                        }
                     }
-                }
-                'LeftArrow'  { if ($colIdx -gt $sel[$selIdx].ColumnOffset) { $colIdx-- } }
-                'RightArrow' {
-                    $lastColumn = if ($sel[$selIdx].HasTrailing) { $columnCount } else { $sel[$selIdx].ColumnOffset + $sel[$selIdx].NCells - 1 }
-                    if ($colIdx -lt $lastColumn) { $colIdx++ }
-                }
-                'PageUp' {
-                    $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Previous
-                }
-                'PageDown' {
-                    $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Next
-                }
-                'Enter' {
-                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
-                    $selectedRow = $body[$sel[$selIdx].BodyIndex]
-                    if ($selectedRow.TrailingCell -and $colIdx -eq $columnCount) {
-                        return $selectedRow.TrailingCell.Value
+                    'LeftArrow'  { if ($colIdx -gt $sel[$selIdx].ColumnOffset) { $colIdx-- } }
+                    'RightArrow' {
+                        $lastColumn = if ($sel[$selIdx].HasTrailing) { $columnCount } else { $sel[$selIdx].ColumnOffset + $sel[$selIdx].NCells - 1 }
+                        if ($colIdx -lt $lastColumn) { $colIdx++ }
                     }
-                    $localColumn = $colIdx - $sel[$selIdx].ColumnOffset
-                    return $selectedRow.Cells[$localColumn].Value
-                }
-                'Escape' {
-                    if ($EscapeAction -eq 'Ignore') { continue }
-                    Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
-                    return $null
+                    'PageUp' {
+                        $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Previous
+                    }
+                    'PageDown' {
+                        $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Next
+                    }
+                    'Enter' {
+                        Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
+                        $selectedRow = $body[$sel[$selIdx].BodyIndex]
+                        if ($selectedRow.TrailingCell -and $colIdx -eq $columnCount) {
+                            return $selectedRow.TrailingCell.Value
+                        }
+                        $localColumn = $colIdx - $sel[$selIdx].ColumnOffset
+                        return $selectedRow.Cells[$localColumn].Value
+                    }
+                    'Escape' {
+                        if ($EscapeAction -eq 'Ignore') { continue }
+                        Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
+                        return $null
+                    }
                 }
             }
-            if ($geometryChanged -or $selIdx -ne $prevSelIdx -or $colIdx -ne $prevColIdx -or $key.Key -in @('PageUp', 'PageDown')) { & $render }
+            if ($geometryChanged -or $selIdx -ne $prevSelIdx -or $colIdx -ne $prevColIdx -or $resultOffset -ne $previousResultOffset) { & $render }
         }
     } finally {
+        if ($usesPointerInput) { Stop-MenuPointerInput }
         [Console]::CursorVisible = $true
     }
 }
@@ -268,13 +287,31 @@ function Get-GridResultOffset {
         [string]$Direction
     )
 
-    $maximum = [Math]::Max(0, $LineCount - $PageSize)
+    if ($PageSize -le 0 -or $LineCount -le 0) { return 0 }
+    $maximum = [Math]::Floor(($LineCount - 1) / $PageSize) * $PageSize
+    $currentPage = [Math]::Floor([Math]::Max(0, $Current) / $PageSize) * $PageSize
     $candidate = switch ($Direction) {
-        'Previous' { $Current - $PageSize }
-        'Next' { $Current + $PageSize }
-        default { $Current }
+        'Previous' { $currentPage - $PageSize }
+        'Next' { $currentPage + $PageSize }
+        default { $currentPage }
     }
     return [Math]::Min($maximum, [Math]::Max(0, $candidate))
+}
+
+function Get-GridResultPage {
+    param(
+        [Parameter(Mandatory)][int]$Offset,
+        [Parameter(Mandatory)][int]$PageSize,
+        [Parameter(Mandatory)][int]$LineCount
+    )
+
+    if ($PageSize -le 0 -or $LineCount -le 0) {
+        return [pscustomobject]@{ Number = 1; Count = 1 }
+    }
+    return [pscustomobject]@{
+        Number = [Math]::Floor([Math]::Max(0, $Offset) / $PageSize) + 1
+        Count = [Math]::Ceiling($LineCount / [double]$PageSize)
+    }
 }
 
 function Get-GridColumnForRow {
@@ -306,7 +343,7 @@ function New-GridBodyLayout {
         $effectiveCapacity = [Math]::Max($minimumBodyCount, $bodyCapacity)
         $resultRowCount = [Math]::Max(1, $effectiveCapacity - $body.Count - 2)
         $body += @{ Kind = 'blank' }
-        $body += @{ Kind = 'title'; Text = $ResultTitle }
+        $body += @{ Kind = 'result-title'; Text = $ResultTitle }
         for ($slot = 0; $slot -lt $resultRowCount; $slot++) {
             $body += @{ Kind = 'result'; Slot = $slot }
         }

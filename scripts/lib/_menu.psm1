@@ -8,6 +8,7 @@ Set-StrictMode -Version Latest
 
 $ModuleDir = $PSScriptRoot
 . (Join-Path $ModuleDir 'menu\session.ps1')
+. (Join-Path $ModuleDir 'menu\input.ps1')
 . (Join-Path $ModuleDir 'menu\chrome.ps1')
 . (Join-Path $ModuleDir 'menu\list-picker.ps1')
 . (Join-Path $ModuleDir 'menu\grid-picker.ps1')

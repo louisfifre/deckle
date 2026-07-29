@@ -65,11 +65,14 @@ function Show-ReleaseMenu {
 function Show-MaintenanceMenu {
     $resultTitle = 'Results'
     $resultLines = @('Select a statistics action to inspect this worktree.')
+    $scanHasRun = $false
 
     while ($true) {
+        $bannerStyle = Get-MaintenanceBannerStyle -ScanHasRun $scanHasRun
         $v = Show-Submenu `
             -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
-            -Footer '↑↓←→ move   Enter run   PgUp/PgDn results   Esc back' `
+            -Footer 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Esc goes back' `
+            -BannerStyle $bannerStyle `
             -Rows @(
                 @{ Prefix = 'Statistics'; Items = @(
                     @{ Label = 'Repository statistics'; Value = 'stats' }
@@ -92,12 +95,14 @@ function Show-MaintenanceMenu {
                 if ($null -eq $scan) { continue }
                 $resultTitle = $scan.Title
                 $resultLines = @($scan.Lines)
+                $scanHasRun = $true
             }
             'context' {
                 $scan = Invoke-MaintenanceScanFlow -Kind Context
                 if ($null -eq $scan) { continue }
                 $resultTitle = $scan.Title
                 $resultLines = @($scan.Lines)
+                $scanHasRun = $true
             }
         }
     }

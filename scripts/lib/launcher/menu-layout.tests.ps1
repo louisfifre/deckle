@@ -20,6 +20,9 @@ Assert-Equal 'Inspect' $rows[0].Prefix 'first row prefix'
 Assert-Equal '' $rows[1].Prefix 'wrapped row prefix'
 Assert-Equal 3 $rows[1].Cells[0].Value 'item order'
 
+Assert-Equal 'Full' (Get-MaintenanceBannerStyle -ScanHasRun $false) 'maintenance starts with the full banner'
+Assert-Equal 'Compact' (Get-MaintenanceBannerStyle -ScanHasRun $true) 'maintenance compacts after a scan'
+
 $singleRow = @(ConvertTo-MenuRows -Sections @(
     @{ Prefix = 'Repo'; Items = @( @{ Label = 'Install git hooks'; Value = 'hooks' } ) }
 ))
