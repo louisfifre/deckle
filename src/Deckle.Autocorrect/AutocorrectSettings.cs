@@ -17,10 +17,12 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     public Dictionary<string, bool> Apps { get; set; } =
         new(StringComparer.OrdinalIgnoreCase) { ["notepad"] = true };
 
-    // Active domain packs, by pack id ("fr-it"). Absent or false = inactive:
-    // a pack extends the lexicon with vocabulary most users never type, and
-    // stacking packs dilutes correction coverage, so activation is always the
-    // user's deliberate act — never a shipped default.
+    // The user's decisions about domain packs, by pack id ("fr-it").
+    //   absent      = never decided — the pack follows the Windows language
+    //                 list, so a language the user already writes in is on.
+    //   true/false  = decided here, and never overwritten by that detection.
+    // The rule that reads this map lives in DomainActivation, which takes the
+    // system languages as an argument — this stays a plain serializable POCO.
     public Dictionary<string, bool> DomainPacks { get; set; } = new(StringComparer.Ordinal);
 
     // Words the user pulled out of correction's reach, whatever lexicon carried
@@ -67,26 +69,6 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
         if (trimmed.Length == 0 || trimmed.Any(char.IsWhiteSpace))
             return null;
         return trimmed.ToLowerInvariant().Normalize(NormalizationForm.FormC);
-    }
-
-    public bool IsDomainPackActive(string packId) =>
-        DomainPacks.TryGetValue(packId, out bool active) && active;
-
-    // Identifies the effective lexicon a built engine is reading — the active
-    // packs, in a stable order. The App holds the key of the runtime it built
-    // and compares it on every settings change: an equal key means the loaded
-    // table is still the right one, a different key means the merge changed and
-    // the runtime must be rebuilt. Sorting is what makes it an identity rather
-    // than a history: two settings files that activate the same packs in a
-    // different order describe the same lexicon and must produce the same key.
-    public static string EffectiveLexiconKey(AutocorrectSettings settings)
-    {
-        var packs = settings.DomainPacks
-            .Where(entry => entry.Value)
-            .Select(entry => entry.Key)
-            .OrderBy(id => id, StringComparer.Ordinal);
-        var exclusions = settings.ExcludedWords.OrderBy(word => word, StringComparer.Ordinal);
-        return $"packs:{string.Join(',', packs)}|excluded:{string.Join(',', exclusions)}";
     }
 
     // Pure transforms of the per-app decision map, beside the map they act on.

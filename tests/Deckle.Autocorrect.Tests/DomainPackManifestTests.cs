@@ -79,7 +79,7 @@ public class DomainPackManifestTests
     [Fact]
     public void TryLoad_ReturnsNullWhenNoManifestShips()
     {
-        var absent = new DomainPack("fr-nothing", "AutocorrectPage_PackFrIt");
+        var absent = new DomainPack("fr-nothing", "computing", "fr");
 
         Assert.Null(DomainPackManifest.TryLoad(DataDirectory, absent));
     }

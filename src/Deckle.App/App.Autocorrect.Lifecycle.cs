@@ -99,8 +99,8 @@ public partial class App
             // model too.
             AutocorrectRuntime? stale = _autocorrectRuntime;
             if (stale is not null
-                && stale.LexiconKey != AutocorrectSettings.EffectiveLexiconKey(
-                    AutocorrectSettingsService.Instance.Current))
+                && stale.LexiconKey != DomainActivation.EffectiveLexiconKey(
+                    AutocorrectSettingsService.Instance.Current, SystemLanguages.Current))
             {
                 _autocorrectRuntime = null;
                 stale.Dispose();

@@ -67,15 +67,20 @@
   </resheader>
 
   <!-- ─── AutocorrectPage ────────────────────────────────────────────
-       Settings page for the Autocorrect module. Title + subtitle, the
-       master switch, then the list of apps the user has decided on.
-       x:Uid keys follow AutocorrectPage_<Element>(.<Property>) — plain
-       TextBlocks bind .Text, SettingsCards bind .Header / .Description. -->
+       Settings page for the Autocorrect module — title + subtitle, the master
+       switch, the two drill-ins to the child pages, the exclusion register, then
+       Diagnostics. The two child pages carry their own key prefixes
+       (AppsEnrolledPage_*, LexicalDomainsPage_*) further down.
+       x:Uid keys follow <Page>_<Element>(.<Property>) — plain TextBlocks bind
+       .Text, SettingsCards bind .Header / .Description. -->
   <data name="AutocorrectPage_Title.Text" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
+  <!-- Says what the feature does, and stops there. Where correction runs belongs
+       to the Apps enrolled page, whose own subtitle states it — each surface
+       describes what it holds, so the sentence is written once. -->
   <data name="AutocorrectPage_Subtitle.Text" xml:space="preserve">
-    <value>Restore French accents and fix typos as you type. Autocorrect runs only in the apps you turn it on for — Deckle offers to enable it the first time a correction could help in a new app.</value>
+    <value>Restore French accents and fix typos as you type.</value>
   </data>
 
   <!-- Master switch -->
@@ -83,63 +88,31 @@
     <value>Enable autocorrect</value>
   </data>
   <data name="AutocorrectPage_MasterCard.Description" xml:space="preserve">
-    <value>Master switch. When off, no text is corrected in any app, whatever you've chosen below.</value>
+    <value>Master switch. When off, no text is corrected in any app, whatever you've chosen.</value>
   </data>
 
-  <!-- Apps -->
-  <data name="AutocorrectPage_Section_Apps.Text" xml:space="preserve">
-    <value>Apps</value>
+  <!-- Navigation cards — the two drill-ins to the child pages. Icon-less
+       SettingsCards, so only .Header / .Description; the chevron says the rest. -->
+  <data name="AutocorrectPage_DomainsCard.Header" xml:space="preserve">
+    <value>Lexical domains</value>
   </data>
-  <data name="AutocorrectPage_Apps_Body.Text" xml:space="preserve">
-    <value>The apps you've answered for. Turn correction on or off for each, or forget an app to be asked again the next time a correction could help there.</value>
+  <data name="AutocorrectPage_DomainsCard.Description" xml:space="preserve">
+    <value>Teach Deckle the vocabulary of the fields you write about.</value>
   </data>
-  <data name="AutocorrectPage_Empty.Text" xml:space="preserve">
-    <value>No apps yet. Deckle will offer to turn autocorrect on the first time a correction could help in an app — your choices show up here.</value>
+  <data name="AutocorrectPage_AppsCard.Header" xml:space="preserve">
+    <value>Apps enrolled</value>
   </data>
-  <data name="AutocorrectPage_ForgetButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Forget this app</value>
-  </data>
-
-  <!-- Vocabulary packs — the user-facing name for the domain packs of
-       CONTEXT.md § Lexicon composition. "Domain" reads as a DNS domain next to
-       a computing pack, so the interface says "vocabulary" throughout while the
-       code keeps the model's term.
-       The rows are built in code from DomainPack.Shipped, so these are resolved
-       through Loc.GetFrom rather than x:Uid; the "<key>.Header"/".Description"
-       shape still matches a SettingsCard's, one pair per shipped pack. -->
-  <data name="AutocorrectPage_Section_Packs.Text" xml:space="preserve">
-    <value>Vocabulary packs</value>
-  </data>
-  <data name="AutocorrectPage_Packs_Body.Text" xml:space="preserve">
-    <value>Add a field's vocabulary to what Deckle knows. Its words stop being corrected, and become corrections in their own right. Turn on only the fields you write in — each pack you add makes correction a little less sure.</value>
-  </data>
-  <data name="AutocorrectPage_PackFrIt.Header" xml:space="preserve">
-    <value>Computing</value>
-  </data>
-  <data name="AutocorrectPage_PackFrIt.Description" xml:space="preserve">
-    <value>French terms from computing, the internet and programming.</value>
+  <data name="AutocorrectPage_AppsCard.Description" xml:space="preserve">
+    <value>Where correction runs, app by app.</value>
   </data>
 
-  <!-- The dilution indicator, one per pack: what it brings against what
-       fabrication refused to keep base corrections working. The counts come
-       from the pack's shipped manifest, so they are formatted at runtime, and
-       the strings are resolved by AutocorrectPackRow rather than x:Uid — a
-       DataTemplate is not a reliable x:Uid scope. -->
-  <data name="AutocorrectPage_PackDilution_Format" xml:space="preserve">
-    <value>Brings {0} words. {1} more were left out: each was one typo away from a common French word, so keeping it would have blocked that correction.</value>
-  </data>
-  <data name="AutocorrectPage_PackWarning_Title" xml:space="preserve">
-    <value>Correction is a little less sure while this pack is on</value>
-  </data>
-  <data name="AutocorrectPage_PackWarning_Message" xml:space="preserve">
-    <value>Every word a pack adds is another word a typo can be corrected into. Turn the pack off if ordinary French starts getting corrected wrongly.</value>
-  </data>
-
-  <!-- Excluded words — the settings mirror of the exclusion register. The body
-       states both halves of what an exclusion does, because the second half is
-       the surprising one: the word stops being a correction target AND stops
-       being protected. Precedence is exclusions > packs > base lexicon, so the
-       wording says "whatever it came from" rather than naming a source. -->
+  <!-- Excluded words — the settings mirror of the exclusion register. It sits on
+       this page rather than on a child because an exclusion holds against every
+       domain and every app at once. The body states both halves of what an
+       exclusion does, because the second half is the surprising one: the word
+       stops being a correction target AND stops being protected. Precedence is
+       exclusions &gt; domains &gt; base lexicon, so the wording says "whatever it came
+       from" rather than naming a source. -->
   <data name="AutocorrectPage_Section_Exclusions.Text" xml:space="preserve">
     <value>Excluded words</value>
   </data>
@@ -150,7 +123,7 @@
     <value>Exclude a word</value>
   </data>
   <data name="AutocorrectPage_ExcludeCard.Description" xml:space="preserve">
-    <value>An exclusion applies whatever the word came from — a vocabulary pack or Deckle's own French.</value>
+    <value>An exclusion applies whatever the word came from — a lexical domain or Deckle's own French.</value>
   </data>
   <data name="AutocorrectPage_ExclusionBox.PlaceholderText" xml:space="preserve">
     <value>One word</value>
@@ -163,6 +136,73 @@
   </data>
   <data name="AutocorrectPage_IncludeButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Put this word back</value>
+  </data>
+
+  <!-- ── Apps enrolled (child page) ───────────────────────────────────────── -->
+  <data name="AppsEnrolledPage_Title.Text" xml:space="preserve">
+    <value>Apps enrolled</value>
+  </data>
+  <data name="AppsEnrolledPage_Subtitle.Text" xml:space="preserve">
+    <value>Autocorrect runs only where you've allowed it. Deckle offers to enable it the first time a correction could help in a new app.</value>
+  </data>
+  <data name="AppsEnrolledPage_Section_Apps.Text" xml:space="preserve">
+    <value>Apps</value>
+  </data>
+  <data name="AppsEnrolledPage_Apps_Body.Text" xml:space="preserve">
+    <value>The apps you've answered for. Turn correction on or off for each, or forget an app to be asked again the next time a correction could help there.</value>
+  </data>
+  <data name="AppsEnrolledPage_Empty.Text" xml:space="preserve">
+    <value>No apps yet. Deckle will offer to turn autocorrect on the first time a correction could help in an app — your choices show up here.</value>
+  </data>
+  <data name="AppsEnrolledPage_ForgetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Forget this app</value>
+  </data>
+  <!-- Shown instead of the whole section while the master switch is off: none of
+       these rows applies then, so they are hidden rather than greyed, and this
+       line says where to change that. -->
+  <data name="AppsEnrolledPage_Disabled.Text" xml:space="preserve">
+    <value>Autocorrect is off, so nothing is corrected anywhere. Turn it on in Autocorrect to choose where it runs.</value>
+  </data>
+
+  <!-- ── Lexical domains (child page) ─────────────────────────────────────── -->
+  <!-- A domain is a field of writing whose vocabulary the corrector can be
+       taught; a row inside it is one language of that domain. The word "pack"
+       (the code's term for the intersection) never surfaces here. -->
+  <data name="LexicalDomainsPage_Title.Text" xml:space="preserve">
+    <value>Lexical domains</value>
+  </data>
+  <data name="LexicalDomainsPage_Subtitle.Text" xml:space="preserve">
+    <value>Specialized vocabularies that extend correction to the fields you write about. Pick a domain, then enable the languages you write in.</value>
+  </data>
+
+  <!-- One pair per shipped domain, keyed by LexicalDomain.ResourceKey. Built in
+       code (the tabs are enumerated from LexicalDomain.Shipped), so these resolve
+       through Loc.GetFrom rather than x:Uid; the "<key>/Header" shape matches a
+       SettingsCard's so the two paths read alike. -->
+  <data name="AutocorrectDomain_Computing.Header" xml:space="preserve">
+    <value>Computing</value>
+  </data>
+  <data name="AutocorrectDomain_Computing.Description" xml:space="preserve">
+    <value>Terms from computing, programming and the Internet.</value>
+  </data>
+
+  <!-- A language row names itself: the language as Windows spells it, and how
+       many terms turning it on would add. -->
+  <data name="LexicalDomainsPage_LanguageRow_Format" xml:space="preserve">
+    <value>{0} — {1:N0} terms</value>
+  </data>
+  <!-- The indications block, in prose under the list: what the domain ships and
+       what fabrication turned away to keep base corrections working. The counts
+       come from each shipped manifest, so the line is formatted at runtime. -->
+  <data name="LexicalDomainsPage_Indications_Format" xml:space="preserve">
+    <value>{0:N0} {1} terms shipped — {2:N0} candidates withheld to protect everyday words.</value>
+  </data>
+
+  <!-- Shown instead of the whole section while the master switch is off: no
+       domain reaches the corrector then, so the rows are hidden rather than
+       greyed, and this line says where to change that. -->
+  <data name="LexicalDomainsPage_Disabled.Text" xml:space="preserve">
+    <value>Autocorrect is off, so no vocabulary reaches the corrector. Turn it on in Autocorrect to pick your domains.</value>
   </data>
 
   <!-- Diagnostics — the module's purpose-specific dataset consents.
@@ -184,7 +224,14 @@
   <data name="AutocorrectTextCard.Description" xml:space="preserve">
     <value>Also record each sentence you type in enrolled apps to autocorrect.text.jsonl, verbatim and paired with the corrected form, to build a corpus of your own writing and mistakes. Heavier: a full record of typed input. Password fields, paste and dictation are never recorded.</value>
   </data>
+  <!-- Rail labels: the module's own entry, then its two nested children. -->
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Autocorrect</value>
+  </data>
+  <data name="SettingsModuleNavLabel_LexicalDomains" xml:space="preserve">
+    <value>Lexical domains</value>
+  </data>
+  <data name="SettingsModuleNavLabel_AppsEnrolled" xml:space="preserve">
+    <value>Apps enrolled</value>
   </data>
 </root>
