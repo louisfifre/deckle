@@ -60,10 +60,13 @@
              relays through PaneToggleRequested — the WinUI 3 Gallery pattern, pure
              code-behind, no automatic link between the two controls.
              No back button: IsBackButtonVisible stays at its default (false).
-             Frame.Navigate pushes the back stack on every nav change, so binding
-             the button to CanGoBack would surface it for first-level navigation,
-             against the flat-nav intent. Wire it once a genuine navigated
-             sub-page (returnable from the title bar) exists. -->
+             The rail now nests (a module page may register under a ParentId), but
+             every destination still HAS a rail entry — a child is one click away in
+             the pane, never reachable only by going back. Frame.Navigate pushes the
+             back stack on every nav change, siblings included, so a CanGoBack-bound
+             button would offer to retrace ordinary page switches, against the
+             flat-nav intent. Wire it once a destination exists that the rail does
+             not list. -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="SettingsTitleBar"

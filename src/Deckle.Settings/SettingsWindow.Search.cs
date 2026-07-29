@@ -318,7 +318,9 @@ public sealed partial class SettingsWindow
 
         // Selecting the item drives OnNavSelectionChanged → Frame.Navigate, which builds
         // the page synchronously. If it is already the selected item on the current page,
-        // selection does not change and the page is already built.
+        // selection does not change and the page is already built. A child item is only
+        // selectable with its parent expanded, hence the ancestor pass first.
+        ExpandAncestorsOf(navItem);
         Nav.SelectedItem = navItem;
 
         if (PageFrame.Content is not FrameworkElement page) return;
@@ -364,12 +366,24 @@ public sealed partial class SettingsWindow
         card.Focus(FocusState.Programmatic);
     }
 
+    // Locates the rail item for a page tag across the whole rail — the primary menu,
+    // each item's own children (a module registered under a ParentId), then the
+    // footer. The descent is what makes a search hit on a child page reachable: a
+    // flat scan would find nothing and the hit would fail silently.
     private NavigationViewItem? FindNavItem(string pageTag)
     {
-        foreach (var item in Nav.MenuItems.OfType<NavigationViewItem>())
+        NavigationViewItem? found = FindNavItem(Nav.MenuItems, pageTag);
+        return found ?? FindNavItem(Nav.FooterMenuItems, pageTag);
+    }
+
+    private static NavigationViewItem? FindNavItem(IList<object> items, string pageTag)
+    {
+        foreach (var item in items.OfType<NavigationViewItem>())
+        {
             if (item.Tag as string == pageTag) return item;
-        foreach (var item in Nav.FooterMenuItems.OfType<NavigationViewItem>())
-            if (item.Tag as string == pageTag) return item;
+            NavigationViewItem? nested = FindNavItem(item.MenuItems, pageTag);
+            if (nested is not null) return nested;
+        }
         return null;
     }
 
