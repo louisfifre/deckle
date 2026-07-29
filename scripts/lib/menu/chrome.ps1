@@ -85,8 +85,8 @@ function Get-MenuBanner {
 
     if ($Style -eq 'Compact') {
         return @(
-            '  DECKLE'
-            '  S C R I P T S'
+            '  █▀▄ █▀▀ █▀▀ █▄▀ █   █▀▀'
+            '  █▄▀ █▄▄ █▄▄ █ █ █▄▄ █▄▄  SCRIPTS'
         )
     }
 

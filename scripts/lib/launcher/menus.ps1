@@ -10,7 +10,7 @@ function Show-Submenu {
         [string[]]$ResultLines = @()
     )
 
-    $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2 -SeparateSections)
+    $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2)
 
     $withBack = @(
         @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }

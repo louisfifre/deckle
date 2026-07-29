@@ -4,6 +4,7 @@ function Write-GridLine {
         [int]$Top, [int]$Index, [object[]]$Body, [hashtable]$ColW, [int]$PrefixW,
         [int]$InnerWidth, [int]$ContentWidth,
         [int]$ActiveBodyIndex, [int]$ActiveCol,
+        [int]$TrailingWidth = 0, [int]$TrailingGap = 0, [int]$TrailingColumn = -1,
         [string[]]$ResultLines = @(), [int]$ResultOffset = 0
     )
     $entry = $Body[$Index]
@@ -37,9 +38,22 @@ function Write-GridLine {
             $column = $columnOffset + $c
             $selected = (($Index -eq $ActiveBodyIndex) -and ($column -eq $ActiveCol))
             $label = [string]$cell.Label
-            $txt = Limit-MenuText -Text "  $label" -Width $ColW[$column]
+            $cellWidth = $ColW[$column]
+            if ($entry.TrailingCell -and $c -eq ($entry.Cells.Count - 1)) {
+                $cellWidth = [Math]::Max(1, $cellWidth - $TrailingGap - $TrailingWidth)
+            }
+            $txt = Limit-MenuText -Text "  $label" -Width $cellWidth
             $alignment = if ($cell -is [hashtable] -and $cell.ContainsKey('Align')) { [string]$cell['Align'] } else { '' }
-            $txt = if ($alignment -eq 'Right') { $txt.PadLeft($ColW[$column]) } else { $txt.PadRight($ColW[$column]) }
+            $txt = if ($alignment -eq 'Right') { $txt.PadLeft($cellWidth) } else { $txt.PadRight($cellWidth) }
+            $role = Get-MenuCellRole -Cell $cell
+            $colors = Get-MenuRoleColor -Role $role -Selected:$selected
+            Write-MenuContentSegment -Text $txt -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
+        }
+        if ($entry.TrailingCell) {
+            Write-MenuContentSegment -Text (' ' * $TrailingGap) -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $null -BackgroundColor $null
+            $cell = $entry.TrailingCell
+            $selected = (($Index -eq $ActiveBodyIndex) -and ($ActiveCol -eq $TrailingColumn))
+            $txt = (Limit-MenuText -Text ([string]$cell.Label) -Width $TrailingWidth).PadLeft($TrailingWidth)
             $role = Get-MenuCellRole -Cell $cell
             $colors = Get-MenuRoleColor -Role $role -Selected:$selected
             Write-MenuContentSegment -Text $txt -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $colors.Foreground -BackgroundColor $colors.Background
@@ -72,6 +86,7 @@ function Invoke-GridLoop {
     $sel  = @()          # selectable rows: @{ BodyIndex; NCells; ColumnOffset }
     $prefixW = 0
     $colW = @{}
+    $trailingW = 0
 
     foreach ($r in $Rows) {
         if ($r.ContainsKey('Title')) {
@@ -87,8 +102,12 @@ function Invoke-GridLoop {
                 $len = ([string]$cells[$c].Label).Length + 2
                 if (-not $colW.ContainsKey($column) -or $len -gt $colW[$column]) { $colW[$column] = $len }
             }
-            $body += @{ Kind = 'row'; Prefix = $prefix; Cells = $cells; ColumnOffset = $columnOffset }
-            $sel  += @{ BodyIndex = ($body.Count - 1); NCells = $cells.Count; ColumnOffset = $columnOffset }
+            $trailingCell = if ($r.ContainsKey('TrailingCell')) { $r['TrailingCell'] } else { $null }
+            if ($trailingCell) {
+                $trailingW = [Math]::Max($trailingW, ([string]$trailingCell.Label).Length)
+            }
+            $body += @{ Kind = 'row'; Prefix = $prefix; Cells = $cells; ColumnOffset = $columnOffset; TrailingCell = $trailingCell }
+            $sel  += @{ BodyIndex = ($body.Count - 1); NCells = $cells.Count; ColumnOffset = $columnOffset; HasTrailing = [bool]$trailingCell }
         } else {
             $body += @{ Kind = 'blank' }
         }
@@ -96,6 +115,12 @@ function Invoke-GridLoop {
     if ($sel.Count -eq 0) { return $null }
     if ($prefixW -gt 0) { $prefixW += $GAP }
     $columnCount = (@($colW.Keys | Measure-Object -Maximum).Maximum + 1)
+    foreach ($selection in $sel) {
+        if ($selection.HasTrailing -and ($selection.ColumnOffset + $selection.NCells) -ne $columnCount) {
+            throw 'Invoke-GridLoop: TrailingCell requires regular cells through the final grid column.'
+        }
+    }
+    $trailingGap = if ($trailingW -gt 0) { $GAP } else { 0 }
     $metrics = Get-MenuMetrics
     $colW = Get-GridColumnWidths -ContentWidth $metrics.ContentWidth -PrefixWidth $prefixW -ColumnCount $columnCount
 
@@ -107,7 +132,7 @@ function Invoke-GridLoop {
 
     $resultOffset = 0
     $selIdx = [Math]::Min([Math]::Max($StartSel, 0), $sel.Count - 1)
-    $colIdx = Get-GridColumnForRow -CurrentColumn $StartCol -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells
+    $colIdx = Get-GridColumnForRow -CurrentColumn $StartCol -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
 
     $viewport = New-MenuViewport -Header $Header -Footer $Footer -BodyCount $body.Count -ClearScreen:$ClearScreen -BannerStyle $BannerStyle
     $metrics = Get-MenuMetrics
@@ -119,6 +144,7 @@ function Invoke-GridLoop {
             Write-GridLine -Top $top -Index $i -Body $body -ColW $colW -PrefixW $prefixW `
                 -InnerWidth $viewport.InnerWidth -ContentWidth $viewport.ContentWidth `
                 -ActiveBodyIndex $sel[$selIdx].BodyIndex -ActiveCol $colIdx `
+                -TrailingWidth $trailingW -TrailingGap $trailingGap -TrailingColumn $columnCount `
                 -ResultLines $resultLinesArray -ResultOffset $resultOffset
         }
     }
@@ -149,17 +175,20 @@ function Invoke-GridLoop {
                 'UpArrow' {
                     if ($selIdx -gt 0) {
                         $selIdx--
-                        $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells
+                        $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
                     }
                 }
                 'DownArrow' {
                     if ($selIdx -lt $sel.Count - 1) {
                         $selIdx++
-                        $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells
+                        $colIdx = Get-GridColumnForRow -CurrentColumn $colIdx -ColumnOffset $sel[$selIdx].ColumnOffset -CellCount $sel[$selIdx].NCells -HasTrailing $sel[$selIdx].HasTrailing -TrailingColumn $columnCount
                     }
                 }
                 'LeftArrow'  { if ($colIdx -gt $sel[$selIdx].ColumnOffset) { $colIdx-- } }
-                'RightArrow' { if ($colIdx -lt ($sel[$selIdx].ColumnOffset + $sel[$selIdx].NCells - 1)) { $colIdx++ } }
+                'RightArrow' {
+                    $lastColumn = if ($sel[$selIdx].HasTrailing) { $columnCount } else { $sel[$selIdx].ColumnOffset + $sel[$selIdx].NCells - 1 }
+                    if ($colIdx -lt $lastColumn) { $colIdx++ }
+                }
                 'PageUp' {
                     $resultOffset = Get-GridResultOffset -Current $resultOffset -PageSize $resultRowCount -LineCount $resultLinesArray.Count -Direction Previous
                 }
@@ -168,8 +197,12 @@ function Invoke-GridLoop {
                 }
                 'Enter' {
                     Set-MenuCursorPosition -Left 0 -Top $viewport.Bottom
+                    $selectedRow = $body[$sel[$selIdx].BodyIndex]
+                    if ($selectedRow.TrailingCell -and $colIdx -eq $columnCount) {
+                        return $selectedRow.TrailingCell.Value
+                    }
                     $localColumn = $colIdx - $sel[$selIdx].ColumnOffset
-                    return $body[$sel[$selIdx].BodyIndex].Cells[$localColumn].Value
+                    return $selectedRow.Cells[$localColumn].Value
                 }
                 'Escape' {
                     if ($EscapeAction -eq 'Ignore') { continue }
@@ -242,10 +275,12 @@ function Get-GridColumnForRow {
     param(
         [Parameter(Mandatory)][int]$CurrentColumn,
         [Parameter(Mandatory)][int]$ColumnOffset,
-        [Parameter(Mandatory)][int]$CellCount
+        [Parameter(Mandatory)][int]$CellCount,
+        [bool]$HasTrailing = $false,
+        [int]$TrailingColumn = -1
     )
 
-    $lastColumn = $ColumnOffset + $CellCount - 1
+    $lastColumn = if ($HasTrailing) { $TrailingColumn } else { $ColumnOffset + $CellCount - 1 }
     return [Math]::Min($lastColumn, [Math]::Max($ColumnOffset, $CurrentColumn))
 }
 

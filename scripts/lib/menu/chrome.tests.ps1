@@ -6,6 +6,7 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
 }
 
 Assert-Equal 2 @(Get-MenuBanner -Style Compact).Count 'compact banner line count'
+Assert-Equal $true ((Get-MenuBanner -Style Compact)[1].EndsWith('SCRIPTS')) 'compact banner places scripts at the lower right'
 Assert-Equal 6 @(Get-MenuBanner -Style Full).Count 'full banner line count'
 Assert-Equal 12 (New-MenuRule -MaxWidth 12).Length 'rule uses requested width'
 Assert-Equal 11 (New-MenuRule -MaxWidth 11 -Style Section).Length 'section rule uses requested width'

@@ -18,6 +18,8 @@ Assert-Equal 7 (Get-GridResultOffset -Current 9 -PageSize 5 -LineCount 12 -Direc
 
 Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 0 -ColumnOffset 1 -CellCount 1) 'down to offset row keeps its visual column'
 Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 1 -ColumnOffset 0 -CellCount 2) 'up from offset row returns to cell above'
+Assert-Equal 2 (Get-GridColumnForRow -CurrentColumn 2 -ColumnOffset 0 -CellCount 2 -HasTrailing $true -TrailingColumn 2) 'trailing action remains reachable on its row'
+Assert-Equal 1 (Get-GridColumnForRow -CurrentColumn 2 -ColumnOffset 0 -CellCount 2 -TrailingColumn 2) 'leaving trailing action returns to the nearest regular column'
 
 $compactLayout = New-GridBodyLayout -CommandBody @(@{ Kind = 'row' }) -ResultTitle 'Results' -BannerStyle Compact
 Assert-Equal 16 $compactLayout.Body.Count 'result layout consumes available compact body'

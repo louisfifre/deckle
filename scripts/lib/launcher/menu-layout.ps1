@@ -46,11 +46,7 @@ function Get-DeckleMainMenuRows {
         @{ Cells = @(
             @{ Label = 'Maintenance…'; Value = 'maintenance-menu'; Role = 'folder' }
             @{ Label = 'Setup…';       Value = 'setup-menu';       Role = 'folder' }
-        ) }
-        @{ Blank = $true }
-        @{ ColumnOffset = 1; Cells = @(
-            @{ Label = 'Quit'; Value = 'quit'; Role = 'quit'; Align = 'Right' }
-        ) }
+        ); TrailingCell = @{ Label = 'Quit'; Value = 'quit'; Role = 'quit' } }
     )) { $rows.Add($row) }
 
     return @($rows)

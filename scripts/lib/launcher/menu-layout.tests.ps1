@@ -34,6 +34,13 @@ $separatedRows = @(ConvertTo-MenuRows -SeparateSections -Sections @(
 Assert-Equal 3 $separatedRows.Count 'separated sections add one breathing row'
 Assert-Equal $true $separatedRows[1].Blank 'section separator is blank'
 
+$joinedRows = @(ConvertTo-MenuRows -Sections @(
+    @{ Prefix = 'One'; Items = @( @{ Label = 'First'; Value = 1 } ) }
+    @{ Prefix = 'Two'; Items = @( @{ Label = 'Second'; Value = 2 } ) }
+))
+Assert-Equal 2 $joinedRows.Count 'submenu sections stay on adjacent rows by default'
+Assert-Equal 'Two' $joinedRows[1].Prefix 'the next submenu section follows without a blank row'
+
 $mainRows = @(Get-DeckleMainMenuRows)
 $titles = @($mainRows | Where-Object { $_.ContainsKey('Title') } | ForEach-Object { $_.Title })
 Assert-Equal 'Run Workspace' ($titles -join ' ') 'main section order'
@@ -45,9 +52,9 @@ Assert-Equal 'Maintenance…' $mainRows[$workspaceTitleIndex + 2].Cells[0].Label
 Assert-Equal 'Setup…' $mainRows[$workspaceTitleIndex + 2].Cells[1].Label 'setup submenu'
 
 $quitRow = $mainRows[-1]
-Assert-Equal 1 $quitRow.ColumnOffset 'quit uses trailing column'
-Assert-Equal 'Quit' $quitRow.Cells[0].Label 'quit stays last'
-Assert-Equal 'quit' $quitRow.Cells[0].Role 'quit has a distinct visual role'
-Assert-Equal 'Right' $quitRow.Cells[0].Align 'quit is aligned to the outer edge'
+Assert-Equal 'Maintenance…' $quitRow.Cells[0].Label 'quit shares the final workspace row'
+Assert-Equal 'Setup…' $quitRow.Cells[1].Label 'setup precedes quit on the final row'
+Assert-Equal 'Quit' $quitRow.TrailingCell.Label 'quit occupies the small trailing column'
+Assert-Equal 'quit' $quitRow.TrailingCell.Role 'quit has a distinct visual role'
 
 Write-Host 'menu-layout.tests.ps1: PASS' -ForegroundColor Green
