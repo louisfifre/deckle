@@ -1,0 +1,103 @@
+# Captured launcher action output and persistent menu result formatting.
+
+function Get-DeckleActionLogLevel {
+    param([Parameter(Mandatory)][string]$Message)
+
+    $meaningfulMessage = $Message `
+        -replace '(?i)\b0\s+error(?:\(s\)|s)?\b', '' `
+        -replace '(?i)\b0\s+warning(?:\(s\)|s)?\b', ''
+    if ($meaningfulMessage -match '(?i)\b(error|failed|failure)\b') { return 'Error' }
+    if ($meaningfulMessage -match '(?i)\bwarning\b') { return 'Warning' }
+    if ($Message -match '^\[(build|launch)\]') { return 'Step' }
+    if ($Message -match '^\[summary\]') { return 'Summary' }
+    return 'Info'
+}
+
+function ConvertTo-DeckleActionLogLines {
+    param(
+        [Parameter(Mandatory)]$InputObject,
+        [Parameter(Mandatory)][string]$Source,
+        [datetime]$Timestamp = (Get-Date)
+    )
+
+    $raw = [string]$InputObject
+    $withoutAnsi = $raw -replace "$([char]27)\[[0-9;?]*[ -/]*[@-~]", ''
+    foreach ($message in @($withoutAnsi -split "\r?\n")) {
+        if ([string]::IsNullOrWhiteSpace($message)) { continue }
+        $level = Get-DeckleActionLogLevel -Message $message
+        '{0}  {1,-7}  {2,-8}  {3}' -f $Timestamp.ToString('HH:mm:ss'), $level, $Source, $message.TrimEnd()
+    }
+}
+
+function Get-DeckleActionResultTitle {
+    param(
+        [Parameter(Mandatory)][string]$Label,
+        [Parameter(Mandatory)][ValidateSet('Running', 'Succeeded', 'Failed')][string]$State,
+        [Parameter(Mandatory)][timespan]$Elapsed
+    )
+
+    $seconds = $Elapsed.TotalSeconds.ToString('0.0', [Globalization.CultureInfo]::InvariantCulture)
+    return '{0} {1} · {2} s' -f $Label, $State.ToLowerInvariant(), $seconds
+}
+
+function Invoke-DeckleMenuAction {
+    param(
+        [Parameter(Mandatory)][string]$Header,
+        [Parameter(Mandatory)][string]$Label,
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][object[]]$MenuRows,
+        [Parameter(Mandatory)][scriptblock]$Action
+    )
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $timer = [System.Diagnostics.Stopwatch]::StartNew()
+    $refreshInterval = [timespan]::FromMilliseconds(100)
+    $lastRefresh = [timespan]::Zero
+    $succeeded = $true
+
+    Show-GridStatus `
+        -Header $Header `
+        -Rows $MenuRows `
+        -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
+        -Lines @('Waiting for output…') `
+        -Footer 'Live output follows the latest line; controls return when the action completes' `
+        -Follow
+
+    try {
+        & $Action *>&1 | ForEach-Object {
+            foreach ($line in @(ConvertTo-DeckleActionLogLines -InputObject $_ -Source $Source)) {
+                $lines.Add($line)
+            }
+            if (($timer.Elapsed - $lastRefresh) -ge $refreshInterval) {
+                Show-GridStatus `
+                    -Header $Header `
+                    -Rows $MenuRows `
+                    -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
+                    -Lines @($lines) `
+                    -Footer 'Live output follows the latest line; controls return when the action completes' `
+                    -Follow
+                $lastRefresh = $timer.Elapsed
+            }
+        }
+    } catch {
+        $succeeded = $false
+        foreach ($line in @(ConvertTo-DeckleActionLogLines -InputObject $_ -Source $Source)) {
+            if ($lines.Count -eq 0 -or $lines[$lines.Count - 1] -ne $line) {
+                $lines.Add($line)
+            }
+        }
+    } finally {
+        $timer.Stop()
+    }
+
+    if ($lines.Count -eq 0) {
+        $lines.Add(('{0}  Info     {1,-8}  The action produced no console output.' -f (Get-Date).ToString('HH:mm:ss'), $Source))
+    }
+
+    $state = if ($succeeded) { 'Succeeded' } else { 'Failed' }
+    return [pscustomobject]@{
+        Succeeded = $succeeded
+        Title     = Get-DeckleActionResultTitle -Label $Label -State $state -Elapsed $timer.Elapsed
+        Lines     = @($lines)
+    }
+}

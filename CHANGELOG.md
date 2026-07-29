@@ -46,6 +46,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **input:** Preserve wheel device telemetry
 - **precision-scroll:** Derive motion from wheel cadence
 - **scripts:** Add targeted maintenance scans
+- **scripts:** Keep action logs in menu viewport
 
 ### Changed
 
@@ -82,6 +83,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **input:** Close capture device registration race
 - **input:** Harden wheel observation correlation
 - **scripts:** Page maintenance results with mouse wheel
+- **scripts:** Keep command grid visible during actions
 
 ## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 

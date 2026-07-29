@@ -18,6 +18,8 @@ Assert-Equal 5 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direc
 Assert-Equal 10 (Get-GridResultOffset -Current 5 -PageSize 5 -LineCount 12 -Direction Next) 'result advances to a non-overlapping final page'
 Assert-Equal 5 (Get-GridResultOffset -Current 9 -PageSize 5 -LineCount 12 -Direction Current) 'current result offset snaps to its page after resize'
 Assert-Equal 5 (Get-GridResultOffset -Current 10 -PageSize 5 -LineCount 12 -Direction Previous) 'result returns to the previous page'
+Assert-Equal 0 (Get-GridResultOffset -Current 10 -PageSize 5 -LineCount 12 -Direction First) 'home returns to the first result page'
+Assert-Equal 10 (Get-GridResultOffset -Current 0 -PageSize 5 -LineCount 12 -Direction Last) 'end follows the latest result page'
 
 $lastPage = Get-GridResultPage -Offset 10 -PageSize 5 -LineCount 12
 Assert-Equal 3 $lastPage.Number 'page indicator reports the current result page'

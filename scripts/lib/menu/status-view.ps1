@@ -1,4 +1,23 @@
 # Non-interactive status surface shown while a menu action is running.
+function Get-MenuStatusLayout {
+    param(
+        [Parameter(Mandatory)][int]$LineCount,
+        [Parameter(Mandatory)][int]$BodyCapacity,
+        [switch]$Follow
+    )
+
+    $visibleLineCount = [Math]::Max(1, $BodyCapacity - 1)
+    $lineOffset = if ($Follow) {
+        [Math]::Max(0, $LineCount - $visibleLineCount)
+    } else {
+        0
+    }
+    return [pscustomobject]@{
+        VisibleLineCount = $visibleLineCount
+        LineOffset       = $lineOffset
+    }
+}
+
 function Show-MenuStatus {
     [CmdletBinding()]
     param(
@@ -6,15 +25,16 @@ function Show-MenuStatus {
         [Parameter(Mandatory)][string]$Title,
         [string[]]$Lines = @(),
         [string]$Footer = '',
+        [switch]$Follow,
         [ValidateSet('Full', 'Compact')]
         [string]$BannerStyle = 'Compact'
     )
 
     $lineArray = @($Lines)
     $capacity = Get-MenuBodyCapacity -BannerStyle $BannerStyle
-    $visibleLineCount = [Math]::Min($lineArray.Count, [Math]::Max(1, $capacity - 1))
+    $layout = Get-MenuStatusLayout -LineCount $lineArray.Count -BodyCapacity $capacity -Follow:$Follow
     $body = @(@{ Kind = 'title'; Text = $Title })
-    for ($slot = 0; $slot -lt $visibleLineCount; $slot++) {
+    for ($slot = 0; $slot -lt $layout.VisibleLineCount; $slot++) {
         $body += @{ Kind = 'result'; Slot = $slot }
     }
 
@@ -22,6 +42,6 @@ function Show-MenuStatus {
     for ($index = 0; $index -lt $body.Count; $index++) {
         Write-GridLine -Top $viewport.BodyTop -Index $index -Body $body -ColW @{} -PrefixW 0 `
             -InnerWidth $viewport.InnerWidth -ContentWidth $viewport.ContentWidth `
-            -ActiveBodyIndex -1 -ActiveCol -1 -ResultLines $lineArray -ResultOffset 0
+            -ActiveBodyIndex -1 -ActiveCol -1 -ResultLines $lineArray -ResultOffset $layout.LineOffset
     }
 }
