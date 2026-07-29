@@ -39,6 +39,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Add navigable maintenance results
 - **settings:** Teach the rail child pages and page-to-page drill-in
 - **autocorrect:** Move lexicon settings to domain-first sub-pages
+- **autocorrect:** Parameterize the pack fabrication chain by language
+- **autocorrect:** Fabricate and judge the en-IT pack
+- **autocorrect:** Ship the en-IT pack
 
 ### Changed
 
