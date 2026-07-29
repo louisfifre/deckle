@@ -244,6 +244,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── grid-picker.ps1
 │   │   │   ├── grid-picker.tests.ps1
 │   │   │   ├── list-picker.ps1
+│   │   │   ├── list-picker.tests.ps1
 │   │   │   ├── session.ps1
 │   │   │   └── status-view.ps1
 │   │   ├── _menu.psm1
@@ -262,6 +263,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── fetch-autocorrect-data.ps1
 │   │   ├── inspect-context.ps1
 │   │   ├── install-hooks.ps1
+│   │   ├── install-hooks.tests.ps1
 │   │   ├── launch-app.ps1
 │   │   ├── native-runtime-release.psm1
 │   │   ├── native-runtime-release.tests.ps1
@@ -480,6 +482,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── lexicon-en-globish.tsv.gz
 │   │   │   ├── lexicon-en.tsv.gz
 │   │   │   ├── lexicon-fr.tsv.gz
+│   │   │   ├── pack-en-it.manifest.json
+│   │   │   ├── pack-en-it.tsv.gz
 │   │   │   ├── pack-fr-it.manifest.json
 │   │   │   ├── pack-fr-it.tsv.gz
 │   │   │   ├── pair-bigrams-fr.tsv.gz
@@ -538,12 +542,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AccentIndex.cs
 │   │   │   ├── AccentVariant.cs
 │   │   │   ├── AutocorrectLexiconArtifacts.cs
+│   │   │   ├── DomainActivation.cs
 │   │   │   ├── DomainPack.cs
 │   │   │   ├── DomainPackManifest.cs
 │   │   │   ├── EffectiveLexicon.cs
 │   │   │   ├── FrequencyLexicon.cs
 │   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
+│   │   │   ├── LexicalDomain.cs
+│   │   │   ├── SystemLanguages.cs
 │   │   │   └── VerbMorphology.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -560,14 +567,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
 │   │   ├── Ui/
+│   │   │   ├── AppsEnrolledPage.xaml
+│   │   │   ├── AppsEnrolledPage.xaml.cs
 │   │   │   ├── AutocorrectPage.xaml
-│   │   │   └── AutocorrectPage.xaml.cs
+│   │   │   ├── AutocorrectPage.xaml.cs
+│   │   │   ├── LexicalDomainsPage.xaml
+│   │   │   └── LexicalDomainsPage.xaml.cs
 │   │   ├── ViewModels/
+│   │   │   ├── AppsEnrolledViewModel.cs
 │   │   │   ├── AutocorrectAppRow.cs
 │   │   │   ├── AutocorrectExcludedWordRow.cs
-│   │   │   ├── AutocorrectPackRow.cs
 │   │   │   ├── AutocorrectViewModel.cs
-│   │   │   └── AutocorrectViewModel.Settings.cs
+│   │   │   ├── AutocorrectViewModel.Settings.cs
+│   │   │   ├── DomainLanguageRow.cs
+│   │   │   ├── LexicalDomainsViewModel.cs
+│   │   │   └── LexicalDomainTab.cs
 │   │   ├── AGENTS.md  — [agent-instructions] Machine-wide autocorrect domain module — typed-word tracking, conservative corr…
 │   │   ├── AutocorrectSettings.cs
 │   │   ├── AutocorrectSettingsModule.cs
@@ -583,6 +597,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── MistouchFamilyReport.cs
 │   │   │   └── MistouchMiner.cs
 │   │   ├── PackReports/
+│   │   │   ├── pack-en-it.judgments.tsv
+│   │   │   ├── pack-en-it.md
 │   │   │   ├── pack-fr-it.frequencies.tsv
 │   │   │   ├── pack-fr-it.judgments.tsv
 │   │   │   └── pack-fr-it.md
@@ -664,6 +680,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Loc.cs
 │   │   ├── SettingSearchEntry.cs
 │   │   ├── SettingsModuleDescriptor.cs
+│   │   ├── SettingsNavigation.cs
 │   │   └── TelemetryConsent.cs
 │   ├── Deckle.Chrono/
 │   │   ├── ChronoFormatter.cs
@@ -1515,6 +1532,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
+│   │   ├── DomainActivationTests.cs
 │   │   ├── DomainPackMaintenanceTests.cs
 │   │   ├── DomainPackManifestTests.cs
 │   │   ├── EffectiveLexiconTests.cs
