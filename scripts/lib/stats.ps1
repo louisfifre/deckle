@@ -48,7 +48,11 @@ param(
 
     # Write module and file inventory to this JSON path in addition to
     # the console output.
-    [string]$Json
+    [string]$Json,
+
+    # Return the measured summary without rendering the long console report.
+    # Used by the interactive maintenance surface.
+    [switch]$PassThru
 )
 
 $ErrorActionPreference = 'Stop'
@@ -218,7 +222,10 @@ function Measure-ModuleFiles {
     )
 
     $files = Get-ChildItem -LiteralPath $ModuleRoot -Recurse -File -ErrorAction SilentlyContinue |
-             Where-Object { -not (Test-SkippedPath -Path $_.FullName -RootForRelative $ModuleRoot) }
+             Where-Object {
+                 ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and
+                 -not (Test-SkippedPath -Path $_.FullName -RootForRelative $ModuleRoot)
+             }
 
     foreach ($file in $files) {
         $lineInfo = Get-FileLines -File $file
@@ -261,6 +268,7 @@ function Get-FileTypeRows {
                 Type  = $_.Name
                 Files = $_.Count
                 Lines = if ($rawSum) { [int]$rawSum } else { 0 }
+                Bytes = [int64]$bytes
                 Size  = Format-Size ([int64]$bytes)
             }
         }
@@ -533,22 +541,26 @@ function Test-UnderAnyRoot {
 function Get-RepoTypeFiles {
     param([string[]]$ExcludedRoots)
 
-    Get-ChildItem -LiteralPath $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object {
-            -not (Test-SkippedPath -Path $_.FullName -RootForRelative $RepoRoot) -and
-            -not (Test-UnderAnyRoot -Path $_.FullName -Roots $ExcludedRoots)
-        } |
-        ForEach-Object {
-            $lineInfo = Get-FileLines -File $_
-            $relRepo = Get-RelativePath -Root $RepoRoot -Path $_.FullName
-            $parts = Get-PathParts -Path $relRepo
-            [pscustomobject]@{
-                Scope     = if ($parts.Count -gt 1) { $parts[0] } else { '(repo root)' }
-                Extension = Get-ExtensionLabel -File $_
-                Bytes     = [int64]$_.Length
-                RawLines  = $lineInfo.RawLines
-            }
+    $trackedPaths = @(& git -C $RepoRoot ls-files)
+    if ($LASTEXITCODE -ne 0) { throw 'Could not list tracked repository files.' }
+
+    foreach ($relRepo in $trackedPaths) {
+        $fullPath = Join-Path $RepoRoot $relRepo
+        if (Test-UnderAnyRoot -Path $fullPath -Roots $ExcludedRoots) { continue }
+
+        $item = Get-Item -LiteralPath $fullPath -Force -ErrorAction SilentlyContinue
+        $isLink = $null -ne $item -and (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)
+        $isFile = $null -ne $item -and -not $item.PSIsContainer -and -not $isLink
+        $lineInfo = if ($isFile) { Get-FileLines -File $item } else { $null }
+        $parts = Get-PathParts -Path $relRepo
+        [pscustomobject]@{
+            Scope       = if ($parts.Count -gt 1) { $parts[0] } else { '(repo root)' }
+            RelativeRepo = $relRepo -replace '\\', '/'
+            Extension   = if ($isLink) { '(link)' } elseif ($isFile) { Get-ExtensionLabel -File $item } else { '(missing)' }
+            Bytes       = if ($isFile) { [int64]$item.Length } else { 0L }
+            RawLines    = if ($null -ne $lineInfo) { $lineInfo.RawLines } else { $null }
         }
+    }
 }
 
 # Walk every csproj under src/.
@@ -598,7 +610,7 @@ $longFiles = @($moduleFiles |
     } |
     Sort-Object -Property @{ Expression = { if ($_.Extension -eq '.cs') { $_.Loc } else { $_.RawLines } }; Descending = $true }, RelativeRepo)
 
-if ($longFiles.Count -gt 0) {
+if (-not $PassThru -and $longFiles.Count -gt 0) {
     Write-Section "Files over threshold (non-resource text)"
     foreach ($file in $longFiles) {
         if ($file.Extension -eq '.cs' -and $file.Loc -ge $CSharpTooLargeThreshold) {
@@ -617,7 +629,7 @@ $resourceFiles = @($moduleFiles |
     Where-Object { $_.Extension -eq '.resw' -and $null -ne $_.ReswKeys -and $_.ReswKeys -ge $ResourceWatchThreshold } |
     Sort-Object -Property @{ Expression = 'ReswKeys'; Descending = $true }, RelativeRepo)
 
-if ($resourceFiles.Count -gt 0) {
+if (-not $PassThru -and $resourceFiles.Count -gt 0) {
     Write-Section "Resource inventories (.resw)"
     foreach ($file in $resourceFiles) {
         if ($file.ReswKeys -ge $ResourceTooLargeThreshold) {
@@ -629,15 +641,17 @@ if ($resourceFiles.Count -gt 0) {
 }
 
 # Module table.
-Write-Section "Module summary (src modules)"
-$rows | Out-PlainTable -Property @(
-    @{Name='Module';     Expression={$_.Module}},
-    @{Name='Files';      Expression={$_.Files}; Alignment='Right'},
-    @{Name='LOC cs';     Expression={'{0:N0}' -f $_.LocCs}; Alignment='Right'},
-    @{Name='LOC xaml';   Expression={'{0:N0}' -f $_.LocXaml}; Alignment='Right'},
-    @{Name='LOC total';  Expression={'{0:N0}' -f $_.LocTotal}; Alignment='Right'},
-    @{Name='resw keys';  Expression={$_.ReswKeys}; Alignment='Right'}
-)
+if (-not $PassThru) {
+    Write-Section "Module summary (src modules)"
+    $rows | Out-PlainTable -Property @(
+        @{Name='Module';     Expression={$_.Module}},
+        @{Name='Files';      Expression={$_.Files}; Alignment='Right'},
+        @{Name='LOC cs';     Expression={'{0:N0}' -f $_.LocCs}; Alignment='Right'},
+        @{Name='LOC xaml';   Expression={'{0:N0}' -f $_.LocXaml}; Alignment='Right'},
+        @{Name='LOC total';  Expression={'{0:N0}' -f $_.LocTotal}; Alignment='Right'},
+        @{Name='resw keys';  Expression={$_.ReswKeys}; Alignment='Right'}
+    )
+}
 
 $tot = [pscustomobject]@{
     Files    = ($rows | Measure-Object -Property Files    -Sum).Sum
@@ -646,17 +660,42 @@ $tot = [pscustomobject]@{
     LocTotal = ($rows | Measure-Object -Property LocTotal -Sum).Sum
     ReswKeys = ($rows | Measure-Object -Property ReswKeys -Sum).Sum
 }
+
+# Repository-wide type inventory. Git defines the project-file boundary: ignored
+# workspace data is excluded, and tracked links are counted without traversal.
+$moduleTypeRows = @(Get-FileTypeRows -Files $moduleFiles)
+$moduleRootPaths = @($csprojs | ForEach-Object { $_.Directory.FullName })
+$repoTypeFiles = @(Get-RepoTypeFiles -ExcludedRoots $moduleRootPaths)
+$scopes = @($repoTypeFiles | Group-Object Scope | Sort-Object Name | ForEach-Object { $_.Name })
+$repoTypeRows = @(Get-FileTypeRows -Files $repoTypeFiles)
+$repositoryFiles = @($moduleFiles) + @($repoTypeFiles)
+$repositoryTypeRows = @(Get-FileTypeRows -Files $repositoryFiles)
+$repositoryBytes = ($repositoryFiles | Measure-Object -Property Bytes -Sum).Sum
+$repositoryLines = ($repositoryFiles | Where-Object { $null -ne $_.RawLines } | Measure-Object -Property RawLines -Sum).Sum
+
+if ($PassThru) {
+    return [pscustomobject]@{
+        Worktree      = $RepoRoot
+        Modules       = @($rows | Select-Object Module, Files, LocCs, LocXaml, LocTotal, ReswKeys, Types)
+        Totals        = $tot
+        Repository    = [pscustomobject]@{
+            Files  = $repositoryFiles.Count
+            Lines  = if ($repositoryLines) { [int64]$repositoryLines } else { 0L }
+            Bytes  = if ($repositoryBytes) { [int64]$repositoryBytes } else { 0L }
+            Scopes = @('src') + $scopes
+            Types  = $repositoryTypeRows
+        }
+        LargeFiles    = @($longFiles | Select-Object RelativeRepo, Extension, RawLines, Loc, Bytes)
+        ResourceFiles = @($resourceFiles | Select-Object RelativeRepo, RawLines, ReswKeys, Bytes)
+    }
+}
+
 Write-Host ("Module inventory total: {0} file(s)  /  LOC: {1:N0} cs + {2:N0} xaml = {3:N0}  /  resw keys: {4:N0}" -f `
     $tot.Files, $tot.LocCs, $tot.LocXaml, $tot.LocTotal, $tot.ReswKeys) -ForegroundColor Cyan
 Write-Host ""
 
 # Dynamic type summary.
 Write-Section "File types"
-$moduleTypeRows = @(Get-FileTypeRows -Files $moduleFiles)
-$moduleRootPaths = @($csprojs | ForEach-Object { $_.Directory.FullName })
-$repoTypeFiles = @(Get-RepoTypeFiles -ExcludedRoots $moduleRootPaths)
-$scopes = @($repoTypeFiles | Group-Object Scope | Sort-Object Name | ForEach-Object { $_.Name })
-$repoTypeRows = @(Get-FileTypeRows -Files $repoTypeFiles)
 Write-Host ("Outside scope: {0}" -f ($scopes -join ', ')) -ForegroundColor DarkGray
 Write-Host ""
 Write-FileTypeTables -ModuleRows $moduleTypeRows -RepoRows $repoTypeRows

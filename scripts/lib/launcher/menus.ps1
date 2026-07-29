@@ -5,7 +5,9 @@ function Show-Submenu {
     param(
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][object[]]$Rows,
-        [string]$Footer = 'Back returns to the main menu; Ctrl+C quits anytime'
+        [string]$Footer = 'Back returns to the main menu; Ctrl+C quits anytime',
+        [string]$ResultTitle,
+        [string[]]$ResultLines = @()
     )
 
     $wrappedRows = @(ConvertTo-MenuRows -Sections $Rows -Columns 2)
@@ -17,50 +19,73 @@ function Show-Submenu {
 
     # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
     # never holds the entry selection.
-    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen
+    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen -BannerStyle Compact -ResultTitle $ResultTitle -ResultLines $ResultLines
     if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
 }
 
-function Show-ReleaseMenu {
-    $v = Show-Submenu -Header 'Deckle > Release   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
-        @{ Prefix = 'GitHub'; Items = @(
-            @{ Label = 'Publish app release'; Value = 'publish' }
-        ) }
-        @{ Prefix = '.NET'; Items = @(
-            @{ Label = 'Prepare app release artifacts';  Value = 'artifacts' }
-            @{ Label = 'Prepare native runtime release'; Value = 'native'    }
-        ) }
-    )
-    switch ($v) {
-        'publish'   { Invoke-PublishRelease }
-        'artifacts' { Invoke-PrepareArtifacts }
-        'native'    { Invoke-NativeRuntime }
-    }
-}
-
 function Show-MaintenanceMenu {
-    $v = Show-Submenu -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
-        @{ Prefix = 'Clean'; Items = @(
-            @{ Label = 'Clean build outputs';     Value = 'clean' }
-            @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
-        ) }
-        @{ Prefix = 'Inspect'; Items = @(
-            @{ Label = 'Show module stats'; Value = 'stats' }
-            @{ Label = 'Show context stats'; Value = 'context' }
-        ) }
-        @{ Prefix = 'Docs'; Items = @(
-            @{ Label = 'Update README pulse'; Value = 'readme-stats' }
-            @{ Label = 'Update changelog';    Value = 'changelog'    }
-        ) }
-    )
-    switch ($v) {
-        'clean'         { Invoke-WorktreeScript -Script 'clean.ps1' }
-        'build-servers' { Invoke-StopBuildServers }
-        'stats'         { Invoke-WorktreeScript -Script 'stats.ps1' }
-        'context'       { Invoke-WorktreeScript -Script 'inspect-context.ps1' }
-        'readme-stats'  { Invoke-WorktreeScript -Script 'update-readme-stats.ps1' }
-        'changelog'     { Invoke-WorktreeScript -Script 'changelog.ps1' }
+    $resultTitle = 'Results'
+    $resultLines = @('Select a statistics action to inspect this worktree.')
+
+    while ($true) {
+        $v = Show-Submenu `
+            -Header 'Deckle > Maintenance   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
+            -Footer '↑↓←→ move   Enter run   PgUp/PgDn results   Esc back' `
+            -Rows @(
+                @{ Prefix = 'Statistics'; Items = @(
+                    @{ Label = 'Repository statistics'; Value = 'stats' }
+                    @{ Label = 'Context statistics';    Value = 'context' }
+                ) }
+                @{ Prefix = 'Cleanup'; Items = @(
+                    @{ Label = 'Clean build outputs';     Value = 'clean' }
+                    @{ Label = 'Stop .NET build servers'; Value = 'build-servers' }
+                ) }
+            ) `
+            -ResultTitle $resultTitle `
+            -ResultLines $resultLines
+
+        if ($null -eq $v) { return }
+        switch ($v) {
+            'clean'         { Invoke-WorktreeScript -Script 'clean.ps1'; return }
+            'build-servers' { Invoke-StopBuildServers; return }
+            'stats' {
+                try {
+                    $wt = Get-WorktreeOrReturn
+                } catch {
+                    $resultTitle = 'Repository statistics failed'
+                    $resultLines = @(Get-MaintenanceFailureLines -ErrorRecord $_)
+                    continue
+                }
+                if ($null -eq $wt) { continue }
+                $resultTitle = 'Repository statistics'
+                Show-MenuStatus `
+                    -Header 'Deckle > Maintenance' `
+                    -Title $resultTitle `
+                    -Lines @('Scanning repository files…')
+                $scan = Invoke-MaintenanceStatisticsScan -Kind Repository -Worktree $wt -LibDir $LibDir
+                $resultTitle = if ($scan.Succeeded) { 'Repository statistics' } else { 'Repository statistics failed' }
+                $resultLines = @($scan.Lines)
+            }
+            'context' {
+                try {
+                    $wt = Get-WorktreeOrReturn
+                } catch {
+                    $resultTitle = 'Context statistics failed'
+                    $resultLines = @(Get-MaintenanceFailureLines -ErrorRecord $_)
+                    continue
+                }
+                if ($null -eq $wt) { continue }
+                $resultTitle = 'Context statistics'
+                Show-MenuStatus `
+                    -Header 'Deckle > Maintenance' `
+                    -Title $resultTitle `
+                    -Lines @('Scanning context documents…')
+                $scan = Invoke-MaintenanceStatisticsScan -Kind Context -Worktree $wt -LibDir $LibDir
+                $resultTitle = if ($scan.Succeeded) { 'Context statistics' } else { 'Context statistics failed' }
+                $resultLines = @($scan.Lines)
+            }
+        }
     }
 }
 
