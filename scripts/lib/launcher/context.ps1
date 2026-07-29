@@ -33,7 +33,6 @@ function Clear-DeckleMenuScreen {
 function Get-WorktreeOrReturn {
     try {
         $wt = Select-Worktree -ContextDir $ScriptDir -ClearScreen -BannerStyle Compact
-        Write-Host "Worktree: $wt" -ForegroundColor DarkGray
         return $wt
     } catch [System.OperationCanceledException] {
         Write-Host "Cancelled." -ForegroundColor DarkGray
@@ -44,9 +43,12 @@ function Get-WorktreeOrReturn {
 function Read-YesNo {
     param(
         [Parameter(Mandatory)][string]$Question,
-        [bool]$Default = $false
+        [bool]$Default = $false,
+        [string]$ConfirmLabel = 'Yes',
+        [string]$CancelLabel = 'No',
+        [switch]$Destructive
     )
-    return (Select-YesNo -Question $Question -Default $Default -BannerStyle Compact)
+    return (Select-YesNo -Question $Question -Default $Default -ConfirmLabel $ConfirmLabel -CancelLabel $CancelLabel -Destructive:$Destructive -BannerStyle Compact)
 }
 
 function Read-Optional {

@@ -22,6 +22,21 @@ function Invoke-WorktreeScript {
     & (Join-Path $LibDir $Script) -Target $wt
 }
 
+function Invoke-CleanBuildOutputs {
+    $wt = Get-WorktreeOrReturn
+    if ($null -eq $wt) { return }
+    $worktreeName = Split-Path -Leaf $wt
+    $confirmed = Read-YesNo `
+        -Question "Delete generated build outputs from $worktreeName?" `
+        -Default $false `
+        -ConfirmLabel 'Delete outputs' `
+        -CancelLabel 'Keep files' `
+        -Destructive
+    if (-not $confirmed) { return }
+    Begin-DeckleAction
+    & (Join-Path $LibDir 'clean.ps1') -Target $wt
+}
+
 function Invoke-StopBuildServers {
     Begin-DeckleAction
     & (Join-Path $LibDir 'stop-build-servers.ps1')
@@ -140,7 +155,7 @@ function Invoke-PublishRelease {
     }
 
     Write-Host "This pushes v$target, builds the artifacts, then publishes a PUBLIC GitHub Release. Its tag is created only after the builds succeed." -ForegroundColor Yellow
-    if (-not (Read-YesNo -Question "Publish Deckle v$target to GitHub now?" -Default $true)) {
+    if (-not (Read-YesNo -Question "Publish Deckle v$target to GitHub now?" -Default $false -ConfirmLabel "Publish v$target" -CancelLabel 'Keep private' -Destructive)) {
         Write-Host "Cancelled." -ForegroundColor DarkGray
         return
     }
@@ -168,7 +183,7 @@ function Invoke-NativeRuntime {
     $publish = Read-YesNo -Question 'Publish native runtime GitHub Release after building?' -Default $false
     if ($publish) {
         Write-Host "This publishes a PUBLIC GitHub Release native-v$version via gh." -ForegroundColor Yellow
-        if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false)) {
+        if (-not (Read-YesNo -Question "Publish native-v$version now?" -Default $false -ConfirmLabel "Publish native-v$version" -CancelLabel 'Keep private' -Destructive)) {
             Write-Host "Cancelled." -ForegroundColor DarkGray
             return
         }
@@ -202,7 +217,7 @@ function Invoke-SetupAssets {
     $fromRelease = Read-Optional -Question 'Native runtime release version X.Y.Z (blank = local/sibling source or skip)'
     if ($fromRelease) { $assetArgs.FromRelease = $fromRelease }
     if (Read-YesNo -Question 'Download ggml-large-v3.bin (~3 GB)?' -Default $false) { $assetArgs.WithLarge = $true }
-    if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false) { $assetArgs.Force = $true }
+    if (Read-YesNo -Question 'Force re-copy / re-download existing files?' -Default $false -ConfirmLabel 'Replace files' -CancelLabel 'Keep existing' -Destructive) { $assetArgs.Force = $true }
     Begin-DeckleAction
     & (Join-Path $LibDir 'setup-assets.ps1') @assetArgs
 }

@@ -11,15 +11,16 @@ $entries = @(
     [pscustomobject]@{ Branch = 'main'; Path = 'D:\projects\ai\deckle' }
     [pscustomobject]@{ Branch = 'fix/a-branch-name-that-needs-truncation'; Path = 'D:\worktrees\deckle\menu-polish' }
 )
-$rows = @(New-WorktreeGridRows -Entries $entries -BranchWidth 12)
+$rows = @(New-WorktreeGridRows -Entries $entries)
 
 Assert-Equal 5 $rows.Count 'worktree picker includes navigation and section rows'
 Assert-Equal '< Back' $rows[0].Cells[0].Label 'worktree picker starts with back'
 Assert-Equal 'Available' $rows[2].Title 'worktree picker labels the list once'
-Assert-Equal 'main' $rows[3].Prefix 'worktree branch has its own column'
-Assert-Equal 'deckle' $rows[3].Cells[0].Label 'worktree directory has its own column'
-Assert-Equal 12 $rows[4].Prefix.Length 'long branch is constrained before layout'
-Assert-Equal 'menu-polish' $rows[4].Cells[0].Label 'directory stays readable when branch is long'
+Assert-Equal 'main  ·  deckle' $rows[3].Cells[0].Label 'main worktree keeps branch and directory together'
+Assert-Equal 'fix/a-branch-name-that-needs-truncation  ·  menu-polish' $rows[4].Cells[0].Label 'branch uses the full action area without early truncation'
 Assert-Equal $entries[1].Path $rows[4].Cells[0].Value 'selection preserves the full worktree path'
+
+$matching = Get-WorktreeMenuLabel -Branch 'feat/menu-polish' -Path 'D:\worktrees\deckle\menu-polish'
+Assert-Equal 'feat/menu-polish' $matching 'matching branch and directory names are not repeated'
 
 Write-Host 'list-picker.tests.ps1: PASS' -ForegroundColor Green

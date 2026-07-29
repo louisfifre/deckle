@@ -4,6 +4,10 @@
 param(
     [string]$Target,
     [switch]$Pick,
+    [string]$RelativePath,
+    [string[]]$LoadingMode = @(),
+    [string[]]$DocumentType = @(),
+    [switch]$SkipActivity,
     [string]$Json,
     [switch]$PassThru
 )
@@ -23,7 +27,12 @@ if ($Pick) {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
 }
 
-$documents = @(Get-ContextInventory -RepoRoot $RepoRoot)
+$documents = @(Get-ContextInventory `
+    -RepoRoot $RepoRoot `
+    -RelativePath $RelativePath `
+    -LoadingModes $LoadingMode `
+    -DocumentTypes $DocumentType `
+    -IncludeActivity:(-not $SkipActivity))
 $groups = @($documents | Group-Object LoadingMode | ForEach-Object {
     [pscustomobject]@{
         LoadingMode     = $_.Name
@@ -122,6 +131,7 @@ if ($PassThru) {
             EstimatedTokens = $totalTokens
         }
         Groups = $groups
+        Documents = $documents
     }
 }
 

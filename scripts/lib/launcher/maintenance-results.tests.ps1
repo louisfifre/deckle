@@ -1,4 +1,5 @@
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'statistics-plans.ps1')
 . (Join-Path $PSScriptRoot 'maintenance-results.ps1')
 
 function Assert-Contains([string[]]$Lines, [string]$Expected, [string]$Case) {
@@ -34,5 +35,27 @@ Assert-Contains $contextLines 'Automatic instructions' 'context loading mode'
 $failure = Invoke-MaintenanceStatisticsScan -Kind Repository -Worktree 'D:\missing' -LibDir 'D:\missing'
 if ($failure.Succeeded) { throw 'failed scan should return a failure result' }
 Assert-Contains $failure.Lines 'could not complete' 'failed scan stays renderable'
+
+$targetedSpecification = New-MaintenanceScanSpecification -Kind Repository -Goal files-to-review
+$targeted = [pscustomobject]@{
+    Kind = 'Repository'
+    Worktree = 'D:\repo'
+    Specification = $targetedSpecification
+    Totals = [pscustomobject]@{
+        Files = 3; Bytes = 4096; Lines = 1200; SourceLines = 700; ReswKeys = 0
+        MeasuredFiles = 3; LinkedFiles = 1
+    }
+    Groups = @()
+    Findings = @([pscustomobject]@{
+        Category = 'Threshold'; Path = 'src/App/Large.cs'; Measure = 'SourceLines'
+        Value = 700; Threshold = 600; Level = 'Critical'
+    })
+    Items = @()
+    Diagnostics = @('Link counted without traversal: docs/reference.md')
+}
+$targetedLines = @(ConvertTo-TargetedStatisticsLines -Result $targeted)
+Assert-Contains $targetedLines 'Goal      Files to review' 'targeted result remembers its purpose'
+Assert-Contains $targetedLines '700 source lines' 'finding exposes the measured value'
+Assert-Contains $targetedLines 'counted without traversal' 'safe scan diagnostics remain visible'
 
 Write-Host 'maintenance-results.tests.ps1: PASS' -ForegroundColor Green

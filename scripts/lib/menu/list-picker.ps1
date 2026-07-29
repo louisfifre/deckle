@@ -126,11 +126,20 @@ function Invoke-MenuLoop {
     }
 }
 
-function New-WorktreeGridRows {
+function Get-WorktreeMenuLabel {
     param(
-        [Parameter(Mandatory)][object[]]$Entries,
-        [ValidateRange(8, 40)][int]$BranchWidth = 24
+        [Parameter(Mandatory)][string]$Branch,
+        [Parameter(Mandatory)][string]$Path
     )
+
+    $directory = Split-Path -Leaf $Path
+    $branchLeaf = @($Branch -split '/')[-1]
+    if ($branchLeaf -eq $directory) { return $Branch }
+    return "$Branch  ·  $directory"
+}
+
+function New-WorktreeGridRows {
+    param([Parameter(Mandatory)][object[]]$Entries)
 
     $rows = @(
         @{ Cells = @( @{ Label = '< Back'; Value = '__back__'; Role = 'back' } ) }
@@ -139,10 +148,9 @@ function New-WorktreeGridRows {
     )
     foreach ($entry in $Entries) {
         $rows += @{
-            Prefix = Limit-MenuText -Text ([string]$entry.Branch) -Width $BranchWidth
             Cells = @(
                 @{
-                    Label = Split-Path -Leaf ([string]$entry.Path)
+                    Label = Get-WorktreeMenuLabel -Branch ([string]$entry.Branch) -Path ([string]$entry.Path)
                     Value = [string]$entry.Path
                 }
             )
@@ -213,7 +221,8 @@ function Select-Worktree {
         -Rows $rows `
         -StartSel 1 `
         -ClearScreen:$false `
-        -BannerStyle $BannerStyle
+        -BannerStyle $BannerStyle `
+        -CategoryWidth $script:MenuCategoryWidth
     if ($null -eq $choice -or $choice -eq '__back__') {
         throw [System.OperationCanceledException]::new('Worktree selection was cancelled.')
     }
@@ -282,7 +291,8 @@ function Select-Action {
         -Rows $rows `
         -StartSel ($defaultSelection + 1) `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle
+        -BannerStyle $BannerStyle `
+        -CategoryWidth $script:MenuCategoryWidth
     if ($null -eq $choice -or $choice -eq '__back__') { throw 'Cancelled' }
     return $choice
 }
@@ -292,6 +302,9 @@ function Select-YesNo {
     param(
         [Parameter(Mandatory)][string]$Question,
         [bool]$Default = $false,
+        [string]$ConfirmLabel = 'Yes',
+        [string]$CancelLabel = 'No',
+        [switch]$Destructive,
         [switch]$ClearScreen,
         [ValidateSet('Full', 'Compact')]
         [string]$BannerStyle = 'Full'
@@ -306,8 +319,8 @@ function Select-YesNo {
 
     $rows = @(
         @{ Cells = @(
-            @{ Label = 'Yes'; Value = $true }
-            @{ Label = 'No';  Value = $false; Role = 'back' }
+            @{ Label = $ConfirmLabel; Value = $true; Role = $(if ($Destructive) { 'danger' } else { 'action' }) }
+            @{ Label = $CancelLabel;  Value = $false; Role = 'back' }
         ) }
     )
 
@@ -319,7 +332,8 @@ function Select-YesNo {
         -StartCol $(if ($Default) { 0 } else { 1 }) `
         -EscapeAction Ignore `
         -ClearScreen:$ClearScreen `
-        -BannerStyle $BannerStyle
+        -BannerStyle $BannerStyle `
+        -CategoryWidth $script:MenuCategoryWidth
 
     return [bool]$choice
 }

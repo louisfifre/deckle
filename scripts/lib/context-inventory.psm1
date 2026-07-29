@@ -57,7 +57,7 @@ function Measure-ContextDocument {
 
     $fullPath = Join-Path $RepoRoot $RelativePath
     $text = [System.IO.File]::ReadAllText($fullPath)
-    $bytes = [System.IO.File]::ReadAllBytes($fullPath).Length
+    $bytes = (Get-Item -LiteralPath $fullPath -Force).Length
     $contentLines = [System.IO.File]::ReadAllLines($fullPath)
 
     [pscustomobject]@{
@@ -77,6 +77,9 @@ function Get-RecentlyAddedMarkdownPaths {
         [Parameter(Mandatory)][string]$RepoRoot,
         [ValidateRange(1, 3650)][int]$Days = 30
     )
+
+    $head = & git -C $RepoRoot rev-parse --verify HEAD 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $head) { return @() }
 
     $baseline = & git -C $RepoRoot rev-list -1 --before="$Days days ago" HEAD
     if ($LASTEXITCODE -ne 0) { throw "Could not resolve the Git baseline from $Days days ago." }
@@ -108,35 +111,100 @@ function ConvertFrom-GitMarkdownLog {
 function Get-MarkdownLastModifiedDates {
     param([Parameter(Mandatory)][string]$RepoRoot)
 
+    $head = & git -C $RepoRoot rev-parse --verify HEAD 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $head) { return @{} }
+
     $log = @(& git -C $RepoRoot log --date=short '--format=@@%cs' --name-only -- '*.md')
     if ($LASTEXITCODE -ne 0) { throw 'Could not read Markdown modification dates from Git history.' }
     return ConvertFrom-GitMarkdownLog -Lines $log
 }
 
+function Select-ContextInventoryPaths {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Paths,
+        [AllowEmptyString()][string]$RelativePath = '',
+        [string[]]$LoadingModes = @(),
+        [string[]]$DocumentTypes = @()
+    )
+
+    $scope = $RelativePath.Trim().Trim('./').Replace('\', '/')
+    foreach ($pathValue in $Paths) {
+        $path = $pathValue.Replace('\', '/')
+        if ($scope -and
+            -not $path.Equals($scope, [StringComparison]::OrdinalIgnoreCase) -and
+            -not $path.StartsWith($scope + '/', [StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+        $loadingMode = Get-ContextLoadingMode -RelativePath $path
+        if ($LoadingModes.Count -gt 0 -and $loadingMode -notin $LoadingModes) { continue }
+        $documentType = Get-ContextDocumentType -RelativePath $path
+        if ($DocumentTypes.Count -gt 0 -and $documentType -notin $DocumentTypes) { continue }
+        [pscustomobject]@{
+            Path         = $path
+            LoadingMode  = $loadingMode
+            DocumentType = $documentType
+        }
+    }
+}
+
 function Get-ContextInventory {
-    param([Parameter(Mandatory)][string]$RepoRoot)
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [AllowEmptyString()][string]$RelativePath = '',
+        [string[]]$LoadingModes = @(),
+        [string[]]$DocumentTypes = @(),
+        [bool]$IncludeActivity = $true,
+        [ValidateRange(1, 3650)][int[]]$ActivityDays = @(1, 7, 30),
+        [ValidateRange(0, 3650)][int]$ActivityWindowDays = 0
+    )
 
     $paths = @(& git -C $RepoRoot ls-files -- '*.md')
     if ($LASTEXITCODE -ne 0) { throw "Could not list tracked Markdown files under $RepoRoot." }
 
+    $candidates = @(Select-ContextInventoryPaths -Paths $paths -RelativePath $RelativePath `
+        -LoadingModes $LoadingModes -DocumentTypes $DocumentTypes)
+
     $recentPaths = @{}
-    foreach ($days in @(1, 7, 30)) {
+    $requestedDays = @(@(1, 7, 30) + $(if ($ActivityWindowDays -gt 0) { $ActivityWindowDays }) | Select-Object -Unique)
+    foreach ($days in $requestedDays) {
         $recentPaths[$days] = [System.Collections.Generic.HashSet[string]]::new(
             [System.StringComparer]::OrdinalIgnoreCase)
-        foreach ($path in @(Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days)) {
-            $recentPaths[$days].Add($path) | Out-Null
+        if ($IncludeActivity -and ($days -in $ActivityDays -or $days -eq $ActivityWindowDays)) {
+            foreach ($path in @(Get-RecentlyAddedMarkdownPaths -RepoRoot $RepoRoot -Days $days)) {
+                $recentPaths[$days].Add($path) | Out-Null
+            }
         }
     }
-    $modifiedDates = Get-MarkdownLastModifiedDates -RepoRoot $RepoRoot
+    $modifiedDates = if ($IncludeActivity) { Get-MarkdownLastModifiedDates -RepoRoot $RepoRoot } else { @{} }
 
-    @($paths | ForEach-Object {
-        $document = Measure-ContextDocument -RepoRoot $RepoRoot -RelativePath $_
+    if ($IncludeActivity -and $ActivityWindowDays -gt 0) {
+        $cutoff = [DateTime]::Today.AddDays(-$ActivityWindowDays)
+        $candidates = @($candidates | Where-Object {
+            if ($recentPaths[$ActivityWindowDays].Contains($_.Path)) { return $true }
+            $modified = [DateTime]::MinValue
+            return $modifiedDates[$_.Path] -and
+                [DateTime]::TryParse([string]$modifiedDates[$_.Path], [ref]$modified) -and
+                $modified -ge $cutoff
+        })
+    }
+
+    @($candidates | ForEach-Object {
+        $fullPath = Join-Path $RepoRoot $_.Path
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) { return }
+        $item = Get-Item -LiteralPath $fullPath -Force
+        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            -not [string]::IsNullOrWhiteSpace([string]$item.LinkType)) {
+            return
+        }
+        $document = Measure-ContextDocument -RepoRoot $RepoRoot -RelativePath $_.Path
         $document | Add-Member -NotePropertyName Modified -NotePropertyValue $modifiedDates[$document.Path]
         $document | Add-Member -NotePropertyName Added1Day -NotePropertyValue $recentPaths[1].Contains($document.Path)
         $document | Add-Member -NotePropertyName Added7Days -NotePropertyValue $recentPaths[7].Contains($document.Path)
         $document | Add-Member -NotePropertyName Added30Days -NotePropertyValue $recentPaths[30].Contains($document.Path)
+        $document | Add-Member -NotePropertyName AddedInPeriod -NotePropertyValue $(
+            $ActivityWindowDays -gt 0 -and $recentPaths[$ActivityWindowDays].Contains($document.Path))
         $document
     })
 }
 
-Export-ModuleMember -Function Get-ContextLoadingMode, Get-ContextDocumentType, Measure-MarkdownSections, Measure-ContextDocument, Get-RecentlyAddedMarkdownPaths, ConvertFrom-GitMarkdownLog, Get-MarkdownLastModifiedDates, Get-ContextInventory
+Export-ModuleMember -Function Get-ContextLoadingMode, Get-ContextDocumentType, Measure-MarkdownSections, Measure-ContextDocument, Get-RecentlyAddedMarkdownPaths, ConvertFrom-GitMarkdownLog, Get-MarkdownLastModifiedDates, Select-ContextInventoryPaths, Get-ContextInventory

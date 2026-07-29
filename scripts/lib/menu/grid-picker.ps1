@@ -26,7 +26,8 @@ function Write-GridLine {
         # 'row'
         Write-MenuContentSegment -Text '  ' -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor $null -BackgroundColor $null
         if ($PrefixW -gt 0) {
-            $p = ([string]$entry.Prefix).PadRight($PrefixW)
+            $prefixContentWidth = [Math]::Max(0, $PrefixW - $script:MenuGridGap)
+            $p = (Limit-MenuText -Text ([string]$entry.Prefix) -Width $prefixContentWidth).PadRight($PrefixW)
             Write-MenuContentSegment -Text $p -Written ([ref]$written) -InnerWidth $ContentWidth -ForegroundColor Cyan -BackgroundColor $null
         }
         $columnOffset = [int]$entry.ColumnOffset
@@ -74,6 +75,8 @@ function Invoke-GridLoop {
         [switch]$ClearScreen,
         [ValidateSet('Full', 'Compact')]
         [string]$BannerStyle = 'Full',
+        [ValidateRange(0, 40)]
+        [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
         [string[]]$ResultLines = @()
     )
@@ -81,7 +84,7 @@ function Invoke-GridLoop {
         throw 'Invoke-GridLoop requires an interactive console (input or output is redirected).'
     }
 
-    $GAP = 3
+    $GAP = $script:MenuGridGap
     $body = @()
     $sel  = @()          # selectable rows: @{ BodyIndex; NCells; ColumnOffset }
     $prefixW = 0
@@ -113,6 +116,7 @@ function Invoke-GridLoop {
         }
     }
     if ($sel.Count -eq 0) { return $null }
+    if ($CategoryWidth -gt 0) { $prefixW = $CategoryWidth }
     if ($prefixW -gt 0) { $prefixW += $GAP }
     $columnCount = (@($colW.Keys | Measure-Object -Maximum).Maximum + 1)
     foreach ($selection in $sel) {
@@ -230,10 +234,12 @@ function Select-Grid {
         [switch]$ClearScreen,
         [ValidateSet('Full', 'Compact')]
         [string]$BannerStyle = 'Full',
+        [ValidateRange(0, 40)]
+        [int]$CategoryWidth = $script:MenuCategoryWidth,
         [string]$ResultTitle,
         [string[]]$ResultLines = @()
     )
-    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol -EscapeAction $EscapeAction -ClearScreen:$ClearScreen -BannerStyle $BannerStyle -ResultTitle $ResultTitle -ResultLines $ResultLines
+    return Invoke-GridLoop -Header $Header -Rows $Rows -Footer $Footer -StartSel $StartSel -StartCol $StartCol -EscapeAction $EscapeAction -ClearScreen:$ClearScreen -BannerStyle $BannerStyle -CategoryWidth $CategoryWidth -ResultTitle $ResultTitle -ResultLines $ResultLines
 }
 
 function Get-GridColumnWidths {

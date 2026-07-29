@@ -13,6 +13,9 @@ Assert-Equal 11 (New-MenuRule -MaxWidth 11 -Style Section).Length 'section rule 
 Assert-Equal 16 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 24) 'compact body capacity'
 Assert-Equal 12 (Get-MenuBodyCapacity -BannerStyle Full -WindowHeight 24) 'full body capacity'
 Assert-Equal 0 (Get-MenuBodyCapacity -BannerStyle Compact -WindowHeight 6) 'undersized terminal has no body capacity'
+Assert-Equal 14 $script:MenuCategoryWidth 'launcher category column is shared across menus'
+Assert-Equal 'Red' (Get-MenuRoleColor -Role danger).Foreground 'destructive confirmation is red'
+Assert-Equal 'DarkRed' (Get-MenuRoleColor -Role danger -Selected).Background 'selected destructive confirmation stays red'
 
 $fits = [pscustomobject]@{ ContentWidth = 74; WindowHeight = 24 }
 $tooNarrow = [pscustomobject]@{ ContentWidth = 39; WindowHeight = 24 }

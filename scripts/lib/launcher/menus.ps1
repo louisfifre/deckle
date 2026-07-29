@@ -6,6 +6,8 @@ function Show-Submenu {
         [Parameter(Mandatory)][string]$Header,
         [Parameter(Mandatory)][object[]]$Rows,
         [string]$Footer = 'Back returns to the main menu; Ctrl+C quits anytime',
+        [ValidateSet('Full', 'Compact')]
+        [string]$BannerStyle = 'Full',
         [string]$ResultTitle,
         [string[]]$ResultLines = @()
     )
@@ -19,10 +21,12 @@ function Show-Submenu {
 
     # Arrive on the first action: '< Back' keeps its top spot (one ↑ away) but
     # never holds the entry selection.
-    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen -BannerStyle Compact -ResultTitle $ResultTitle -ResultLines $ResultLines
+    $v = Select-Grid -Header $Header -Rows $withBack -Footer $Footer -StartSel 1 -ClearScreen -BannerStyle $BannerStyle -ResultTitle $ResultTitle -ResultLines $ResultLines
     if ($null -eq $v -or $v -eq '__back__') { return $null }
     return $v
 }
+
+. (Join-Path $PSScriptRoot 'statistics-menus.ps1')
 
 function Show-ProjectMenu {
     $v = Show-Submenu -Header 'Deckle > Project   -   ↑↓←→ move   Enter run   Ctrl+C quit' -Rows @(
@@ -81,42 +85,18 @@ function Show-MaintenanceMenu {
 
         if ($null -eq $v) { return }
         switch ($v) {
-            'clean'         { Invoke-WorktreeScript -Script 'clean.ps1'; return }
+            'clean'         { Invoke-CleanBuildOutputs; return }
             'build-servers' { Invoke-StopBuildServers; return }
             'stats' {
-                try {
-                    $wt = Get-WorktreeOrReturn
-                } catch {
-                    $resultTitle = 'Repository statistics failed'
-                    $resultLines = @(Get-MaintenanceFailureLines -ErrorRecord $_)
-                    continue
-                }
-                if ($null -eq $wt) { continue }
-                $resultTitle = 'Repository statistics'
-                Show-MenuStatus `
-                    -Header 'Deckle > Maintenance' `
-                    -Title $resultTitle `
-                    -Lines @('Scanning repository files…')
-                $scan = Invoke-MaintenanceStatisticsScan -Kind Repository -Worktree $wt -LibDir $LibDir
-                $resultTitle = if ($scan.Succeeded) { 'Repository statistics' } else { 'Repository statistics failed' }
+                $scan = Invoke-MaintenanceScanFlow -Kind Repository
+                if ($null -eq $scan) { continue }
+                $resultTitle = $scan.Title
                 $resultLines = @($scan.Lines)
             }
             'context' {
-                try {
-                    $wt = Get-WorktreeOrReturn
-                } catch {
-                    $resultTitle = 'Context statistics failed'
-                    $resultLines = @(Get-MaintenanceFailureLines -ErrorRecord $_)
-                    continue
-                }
-                if ($null -eq $wt) { continue }
-                $resultTitle = 'Context statistics'
-                Show-MenuStatus `
-                    -Header 'Deckle > Maintenance' `
-                    -Title $resultTitle `
-                    -Lines @('Scanning context documents…')
-                $scan = Invoke-MaintenanceStatisticsScan -Kind Context -Worktree $wt -LibDir $LibDir
-                $resultTitle = if ($scan.Succeeded) { 'Context statistics' } else { 'Context statistics failed' }
+                $scan = Invoke-MaintenanceScanFlow -Kind Context
+                if ($null -eq $scan) { continue }
+                $resultTitle = $scan.Title
                 $resultLines = @($scan.Lines)
             }
         }

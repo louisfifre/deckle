@@ -12,5 +12,6 @@ $ModuleDir = $PSScriptRoot
 . (Join-Path $ModuleDir 'menu\list-picker.ps1')
 . (Join-Path $ModuleDir 'menu\grid-picker.ps1')
 . (Join-Path $ModuleDir 'menu\status-view.ps1')
+. (Join-Path $ModuleDir 'menu\text-input.ps1')
 
-Export-ModuleMember -Function Start-MenuSession, Stop-MenuSession, Suspend-MenuSession, Select-Worktree, Select-Action, Select-YesNo, Select-Grid, Show-MenuStatus
+Export-ModuleMember -Function Start-MenuSession, Stop-MenuSession, Suspend-MenuSession, Select-Worktree, Select-Action, Select-YesNo, Select-Grid, Show-MenuStatus, Read-MenuText

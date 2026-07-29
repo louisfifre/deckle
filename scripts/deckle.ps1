@@ -22,6 +22,7 @@ $script:DeckleMenuSessionActive = $false
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')
 . (Join-Path $LibDir 'launcher\actions.ps1')
+. (Join-Path $LibDir 'launcher\statistics-plans.ps1')
 . (Join-Path $LibDir 'launcher\maintenance-results.ps1')
 . (Join-Path $LibDir 'launcher\menus.ps1')
 

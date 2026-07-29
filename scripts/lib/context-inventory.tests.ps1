@@ -16,6 +16,22 @@ Assert-Equal 'Skill reference' (Get-ContextDocumentType '.agents/skills/winui-ap
 Assert-Equal 'ADR' (Get-ContextDocumentType 'docs/adr/0001-decision.md') 'ADR type'
 Assert-Equal 'README' (Get-ContextDocumentType 'scripts/README.md') 'readme type'
 
+$filtered = @(Select-ContextInventoryPaths -Paths @(
+    'AGENTS.md',
+    'docs/adr/0001-decision.md',
+    'src/App/AGENTS.md',
+    'src/App/README.md'
+) -RelativePath 'src' -LoadingModes 'Automatic instructions')
+Assert-Equal 1 $filtered.Count 'context paths are filtered before document reads'
+Assert-Equal 'src/App/AGENTS.md' $filtered[0].Path 'path and loading-mode filters compose'
+
+$references = @(Select-ContextInventoryPaths -Paths @(
+    'docs/adr/0001-decision.md',
+    'docs/README.md'
+) -DocumentTypes 'ADR')
+Assert-Equal 1 $references.Count 'document type filter'
+Assert-Equal 'ADR' $references[0].DocumentType 'classified candidate is retained'
+
 Assert-Equal 3 (Measure-MarkdownSections -Lines @(
     '# Title',
     '',
@@ -48,6 +64,12 @@ try {
     Assert-Equal 0 $measured.Sections 'section count'
     Assert-Equal 2 $measured.EstimatedTokens 'estimated tokens'
     Assert-Equal 7 $measured.Bytes 'UTF-8 bytes'
+
+    & git -C $fixture init --quiet
+    & git -C $fixture add -- CONTEXT.md
+    $uncommittedInventory = @(Get-ContextInventory -RepoRoot $fixture)
+    Assert-Equal 1 $uncommittedInventory.Count 'a repository without HEAD still has a context inventory'
+    Assert-Equal $null $uncommittedInventory[0].Modified 'missing Git history has no invented modification date'
 } finally {
     Remove-Item -LiteralPath $fixture -Recurse -Force
 }

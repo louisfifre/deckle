@@ -6,7 +6,9 @@ function Assert-Equal($Expected, $Actual, [string]$Case) {
     if ($Expected -ne $Actual) { throw "${Case}: expected $Expected, got $Actual" }
 }
 
-$widths = Get-GridColumnWidths -ContentWidth 74 -PrefixWidth 17 -ColumnCount 2
+$fixedPrefixWidth = $script:MenuCategoryWidth + $script:MenuGridGap
+$widths = Get-GridColumnWidths -ContentWidth 74 -PrefixWidth $fixedPrefixWidth -ColumnCount 2
+Assert-Equal 17 $fixedPrefixWidth 'fixed category track preserves the main menu geometry'
 Assert-Equal 28 $widths[0] 'first column receives remainder'
 Assert-Equal 27 $widths[1] 'second column width'
 Assert-Equal 55 ($widths[0] + $widths[1]) 'columns fill available content width'

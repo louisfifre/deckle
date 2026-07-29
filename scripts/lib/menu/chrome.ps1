@@ -1,6 +1,8 @@
 # Shared menu chrome and rendering primitives.
 $script:MenuPreferredContentWidth = 74
 $script:MenuMinimumContentWidth = 40
+$script:MenuCategoryWidth = 14
+$script:MenuGridGap = 3
 
 function Get-MenuMetrics {
     try {
@@ -51,6 +53,9 @@ function Get-MenuRoleColor {
         [switch]$Selected
     )
 
+    if ($Selected -and $Role -eq 'danger') {
+        return @{ Foreground = 'White'; Background = 'DarkRed' }
+    }
     if ($Selected) {
         return @{ Foreground = 'Black'; Background = 'Gray' }
     }
@@ -59,6 +64,7 @@ function Get-MenuRoleColor {
         'folder' { return @{ Foreground = 'DarkYellow'; Background = $null } }
         'back'   { return @{ Foreground = 'DarkGray';   Background = $null } }
         'quit'   { return @{ Foreground = 'Red';        Background = $null } }
+        'danger' { return @{ Foreground = 'Red';        Background = $null } }
         default  { return @{ Foreground = $null;        Background = $null } }
     }
 }
