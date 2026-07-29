@@ -46,6 +46,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **input:** Preserve wheel device telemetry
 - **precision-scroll:** Derive motion from wheel cadence
 - **scripts:** Add targeted maintenance scans
+- **scripts:** Keep action logs in menu viewport
 
 ### Changed
 
