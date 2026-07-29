@@ -19,6 +19,7 @@ $ScriptDir = $PSScriptRoot
 $LibDir    = Join-Path $ScriptDir 'lib'
 $script:DeckleActionCompleted = $false
 $script:DeckleMenuSessionActive = $false
+$script:DeckleMenuIsCompact = $false
 
 Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 . (Join-Path $LibDir 'launcher\context.ps1')
@@ -31,7 +32,6 @@ Import-Module (Join-Path $LibDir '_menu.psm1') -Force
 $mainRows = @(Get-DeckleMainMenuRows)
 $mainResultTitle = $null
 $mainResultLines = @()
-$mainBannerStyle = 'Full'
 
 Start-DeckleMenuSession
 try {
@@ -39,17 +39,17 @@ try {
         $v = Select-Grid `
             -Header 'Deckle   -   ↑↓←→ move   Enter run   Ctrl+C quit' `
             -Footer $(if ($mainResultTitle) { 'Arrows move   Enter runs   Wheel/PgUp/PgDn pages   Home/End first/latest' } else { 'worktrees are asked after you pick; action results stay in the menu' }) `
-            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle $mainBannerStyle `
+            -Rows $mainRows -StartSel 0 -StartCol 0 -EscapeAction Ignore -ClearScreen -BannerStyle (Get-DeckleMenuBannerStyle) `
             -ResultTitle $mainResultTitle -ResultLines $mainResultLines -ResultFollowTail
         if ($null -eq $v) { continue }
         if ($v -eq 'quit') { break }
 
         if ($v -match '^(launch|run|norun):(Release|Debug)$') {
+            Use-DeckleCompactMenu
             $result = Invoke-LaunchOrBuild -Kind $Matches[1] -Configuration $Matches[2] -MenuRows $mainRows
             if ($null -ne $result) {
                 $mainResultTitle = $result.Title
                 $mainResultLines = @($result.Lines)
-                $mainBannerStyle = 'Compact'
             }
         } else {
             switch ($v) {

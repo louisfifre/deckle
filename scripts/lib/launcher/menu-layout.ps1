@@ -29,13 +29,6 @@ function ConvertTo-MenuRows {
     }
 }
 
-function Get-MaintenanceBannerStyle {
-    param([bool]$ScanHasRun)
-
-    if ($ScanHasRun) { return 'Compact' }
-    return 'Full'
-}
-
 function Get-DeckleMainMenuRows {
     $rows = [System.Collections.Generic.List[object]]::new()
 
