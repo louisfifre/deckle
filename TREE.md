@@ -2,7 +2,7 @@
 _Généré depuis `git ls-files` — ne pas éditer à la main._
 
 ```
-├── .claude/
+├── .agents/
 │   └── skills/
 │       ├── deckle-commits/
 │       │   └── SKILL.md  — deckle-commits [skill] Commit grain and the few deviations from the universal convention. Invoke befor…
@@ -66,6 +66,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │           ├── config.yaml
 │           ├── LICENSE.txt
 │           └── SKILL.md  — winui-app [skill] Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps…
+├── .claude/
+│   └── skills
+├── .codex/
+│   └── skills
 ├── .github/
 │   └── workflows/
 │       └── update-readme-stats.yml
@@ -240,6 +244,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── _menu.psm1
 │   │   ├── action-summary.ps1
 │   │   ├── action-summary.tests.ps1
+│   │   ├── agent-skills-layout.tests.ps1
 │   │   ├── bootstrap-dev-env.ps1
 │   │   ├── build-run.ps1
 │   │   ├── build-server-cleanup.ps1
