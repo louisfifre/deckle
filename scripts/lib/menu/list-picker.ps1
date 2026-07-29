@@ -220,7 +220,7 @@ function Select-Worktree {
         -Footer '↑↓ move   Enter select   Esc back' `
         -Rows $rows `
         -StartSel 1 `
-        -ClearScreen:$false `
+        -ClearScreen:$ClearScreen `
         -BannerStyle $BannerStyle `
         -CategoryWidth $script:MenuCategoryWidth
     if ($null -eq $choice -or $choice -eq '__back__') {
